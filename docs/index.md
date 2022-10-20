@@ -1,7 +1,7 @@
 ---
 title: "Primer on Reproducible Research"
 author: "Dr. J. Adamson"
-date: "`r format(Sys.time(), '%d.%m.%Y')`"
+date: "20.10.2022"
 description: 'Primers on R'
 url: 'https://github.com/Jadamso/Rbooks'
 github-repo: "Jadamso/Rbooks"
