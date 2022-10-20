@@ -1,0 +1,714 @@
+---
+title: "Primer on Programming in R"
+author: "Dr. J. Adamson"
+date: "`r format(Sys.time(), '%d.%m.%Y')`"
+output:
+  html_document:
+        code_download: true
+        toc: true
+        toc_float: true
+        toc_collapsed: true
+        toc_depth: 2
+        number_sections: true
+        self_contained: false
+---
+
+https://github.com/
+   http://htmlpreview.github.com/Jadamso/Teaching/blob/main/RPrimers/RReproducible.html
+  
+# First steps
+***
+
+## Install R
+
+Download R and the RStudio GUI
+
+* [R](https://cloud.r-project.org/)
+* [Rstudio](https://www.rstudio.com/products/rstudio/download/)
+
+
+For more help setting up
+
+* https://learnr-examples.shinyapps.io/ex-setup-r/
+* https://rstudio-education.github.io/hopr/starting.html
+* https://a-little-book-of-r-for-bioinformatics.readthedocs.io/en/latest/src/installr.html
+* https://cran.r-project.org/doc/manuals/R-admin.html
+
+* https://courses.edx.org/courses/UTAustinX/UT.7.01x/3T2014/56c5437b88fa43cf828bff5371c6a924/
+* https://owi.usgs.gov/R/training-curriculum/installr/
+* https://www.earthdatascience.org/courses/earth-analytics/document-your-science/setup-r-rstudio/
+
+
+
+
+## Interfacing with the GUI.
+
+Rstudio is easiest to get going.
+(There are other GUI's.)
+
+From https://datacarpentry.org/
+```{r, echo=FALSE}
+ knitr::include_graphics("./Figures_Manual/rstudio_session_4pane_layout.png")
+```
+
+
+* top left is where you write and save code
+ * Create and save a new `R Script` file *My_First_Script.R*
+ * could also use a plain .txt file.
+* below is where you run your code.
+* to the right shows files and plots and ...
+
+For all following examples, make sure to both execute and store your code.
+
+
+Note that 
+
+
+```{r, eval=TRUE, echo=TRUE}
+CodeInput_String <- c('code output looks like this')
+CodeInput_String
+## while this is just a comment
+```
+
+# Mathematical Objects
+***
+
+
+## Scalars and Vectors
+
+```{r}
+x0 <- 1 ## Your first scalar
+x0 ## Print the scalar
+(x0+1)^2 ## Perform and print a simple calculation
+x0 + NA ## often used for missing values
+```
+
+```{r}
+x <- c(0,1,3,10,6) ## Your First Vector
+x ## Print the vector
+x[2] ## Print the 2nd Element; 1
+x+2 ## Print simple calculation; 2,3,5,8,12
+(x+x)^2 ## Another simple calculation with two vectors;
+```
+
+
+
+
+
+
+
+In R, you use multiple functions on different types of data objects. Moreover, ``typically solve complex problems by decomposing them into simple functions, not simple objects.'' (H. Wickham)
+
+
+
+##  Functions of Scalars and Vectors
+
+Define function sum_squared
+```{r}
+sum_squared <- function(x1, x2) {
+	y <- (x1 + x2)^2
+	return(y)
+} 
+```
+```{r}
+sum_squared(1, 3) ## 16
+sum_squared(x, 2) ## 0,4,9,36,144,400
+sum_squared(x, NA) ## NA,NA,NA,NA,NA
+sum_squared(x, x) ## 0,4,36,144,400
+```
+
+
+## Random Variables
+
+random variables are vectors
+```{r}
+x2 <- runif(1000)
+```
+
+
+## Functionals
+
+Functions that take functions as arguments 
+
+```{r}
+randomise <- function(f){
+    f( runif(1e3) )
+}
+```
+```{r}
+randomise(mean)
+
+randomise(mean)
+
+randomise(sum)
+```
+
+
+Very useful for applying a function over and over again
+
+```{r}
+## sapply(1:3, f) is equivalent to c(f(1), f(2), f(3)).
+## mapply takes multiple vectors
+mapply(sum, 1:3, runif(3) )
+```
+
+##  Matrices and Matrix-Functions
+
+```{r}
+x_mat <- cbind(x,x)
+x_mat ## Print full matrix
+x_mat[2,] ## Print Row 2 Elements
+x_mat[,2] ## Print Column 2 Elements
+
+y <- apply(x_mat, 1, sum)^2 ## Apply function to each row
+## ?apply  #checks the function details
+y - sum_squared(x, x) ## tests if there are any differences
+```
+
+Many Other Functions
+```{r}
+x_mat * x_mat
+
+crossprod(x_mat)
+
+tcrossprod(x_mat) ##x_mat %*% t(x_mat)
+
+outer(x,x) ##x %o% x
+```
+
+
+Example Calculations
+
+```{r}
+## Return Y-value with minimum absolute difference from 3
+abs_diff_y <- abs( y - 3 ) 
+abs_diff_y ## is this the luckiest number?
+
+min(abs_diff_y)
+which.min(abs_diff_y)
+y[ which.min(abs_diff_y) ]
+```
+
+
+
+## Arrays and Array Functions
+
+generalization of matrices
+used in spatial econometrics
+
+```{r}
+a <- array(data = 1:24, dim = c(2, 3, 4))
+a
+
+a[1, , , drop = FALSE]  # Row 1
+a[, 1, , drop = FALSE]  # Column 1
+a[, , 1, drop = FALSE]  # Layer 1
+
+
+a[ 1, 1,  ]  # Row 1, column 1
+a[ 1,  , 1]  # Row 1, "layer" 1
+a[  , 1, 1]  # Column 1, "layer" 1
+a[1 , 1, 1]  # Row 1, column 1, "layer" 1
+```
+
+apply extends to arrays
+
+
+```{r}
+apply(a, 1, mean)    # Row means
+apply(a, 2, mean)    # Column means
+apply(a, 3, mean)    # "Layer" means
+apply(a, 1:2, mean)  # Row/Column combination 
+```
+
+
+
+
+
+##  Other Commom Types of Data
+
+```{r}
+l1 <- 1:10 ## cardinal numbers
+l2 <- factor(c(1,2,3), ordered=T) ## ordinal numbers, "indicator names"
+l3 <- 'hello world'  ## character strings
+l4 <- list(l1, l2, list(l3, 'way too late')) ## lists
+
+## data.frames: your most common data type
+    ## matrix of different data-types
+    ## well-ordered lists
+l5 <- data.frame(x=l1, y=l1)
+```
+
+
+# Plots
+***
+
+
+## Basics
+
+Create and Plot a Toy Dataset
+
+```{r}
+x <- seq(1,10) ## create values for x
+## Create random standard-normal noise
+rnorm(length(x), mean=0, sd=1) ## noise 
+rnorm(length(x), mean=0, sd=1) ## new noise
+e <- rnorm(length(x), mean=0, sd=1) ## store 
+y <- .25*x + e ## create values for y
+xy_mat <- cbind(x=x, y=y)
+
+## your first plot is pretty standard
+plot(y~x, xy_mat)  ## pretty and standard
+```
+
+
+
+Create and Plot a Larger Toy Dataset
+
+```{r}
+x <- seq(1, 10, by=.0002)
+e <- rnorm(length(x), mean=0, sd=1)
+y <- .25*x + e
+xy_dat <- data.frame(x=x, y=y)
+head(xy_dat)
+
+plot(y~x, xy_dat, pch=16, col=rgb(0,0,0,.1), cex=.5)
+```
+
+
+
+
+
+##  Equation Fitting Example
+
+
+Run and Plot an OLS Regression
+
+```{r}
+reg <- lm(y~x, data=xy_dat)
+summary(reg)
+## Add the line of best fit
+plot(y~x, xy_dat, pch=16, col=rgb(0,0,0,.1), cex=.5)
+abline(reg)
+
+## Can Also Add Confidence Intervals
+## https://rpubs.com/aaronsc32/regression-confidence-prediction-intervals
+```
+
+
+
+Polish and Export Your Plot
+
+```{r}
+plot(y~x, xy_dat, pch=16, col=rgb(0,0,0,.1), cex=.5,
+    xlab='', ylab='') ## Format Axis Labels Seperately
+mtext('y=0.25 x + e\n e ~ standard-normal', 2, line=2)
+mtext('x=[1,...,10]', 1, line=2)
+title('Plot like a Boss')
+title('boss: american slang for excellent; outstanding',
+    cex.main=.5, font=1, line=1)
+legend('topleft', legend='single data point',
+    title='do you see the normal distribution?',
+    pch=16, col=rgb(0,0,0,.1), cex=.5)
+```
+
+
+Can export figure with specific dimensions
+```{r, eval=F}
+pdf( 'Figures/plot_example.pdf', height=5, width=5)
+plot(y~x, xy_dat, pch=16, col=rgb(0,0,0,.1), cex=.5)
+dev.off()
+```
+
+
+# Moving beyond the basics
+***
+
+
+
+Use expansion `packages` for common procedures and more functionality
+```{r, eval=FALSE}
+## Other packages used in this primer
+install.packages("stargazer")
+install.packages("reshape2")
+install.packages("purrr")
+```
+
+
+The most common tasks have [cheatsheets](https://www.rstudio.com/resources/cheatsheets/) you can use. E.g., 
+
+* https://github.com/rstudio/cheatsheets/blob/main/rstudio-ide.pdf
+
+
+Sometimes you will want to install a package from GitHub. For this, you can use [devtools](https://devtools.r-lib.org/)
+```{r, eval=F}
+install.packages("devtools")
+```
+
+
+## Task Views
+
+Task views list relevant packages. E.g., 
+
+
+For all students and early researchers, 
+
+* https://cran.r-project.org/web/views/ReproducibleResearch.html
+
+
+For microeconometrics,
+
+* https://cran.r-project.org/web/views/Econometrics.html
+
+
+For spatial econometrics 
+
+* https://cran.r-project.org/web/views/Spatial.html
+* https://cran.r-project.org/web/views/SpatioTemporal.html
+
+
+Multiple packages may have the same function name for different commands. 
+In this case use ``package::function_name`` to specify the package
+
+
+
+
+
+**Don't fret** Sometimes there is not a specific package for your data.
+
+Odds are, you can do most of what you want with base code.
+
+* Packages just wrap base code in convient formats
+* see https://cran.r-project.org/web/views/ for topical overviews
+
+Statisticians might have different naming conventions
+
+* if the usual software just spits out a nice plot
+you might have to dig a little to know precisely what you want
+* your data are fundamentally numbers, strings, etc...
+You only have to figure out how to read it in.
+
+
+But remember that many of the best plots are custom made (see https://www.r-graph-gallery.com/),
+and can also be interactive or animated
+
+* https://plotly.com/r/
+* https://shiny.rstudio.com/gallery/
+
+
+## Introductions to R
+
+There are many good yet free programming books online. E.g., 
+
+* https://cran.r-project.org/doc/manuals/R-intro.html
+* R Graphics Cookbook, 2nd edition. Winston Chang. 2021. https://r-graphics.org/
+* Spatial Data Science with R: Introduction to R. Robert J. Hijmans. 2021. https://rspatial.org/intr/index.html
+* R for Data Science. H. Wickham and G. Grolemund. 2017. https://r4ds.had.co.nz/index.html
+* An Introduction to R. W. N. Venables, D. M. Smith, R Core Team. 2017. https://colinfay.me/intro-to-r/
+
+
+There are also many good yet free-online tutorials and courses. E.g., \\
+
+* https://rafalab.github.io/dsbook/
+* https://moderndive.com/foreword.html
+* https://rstudio.cloud/learn/primers/1.2
+* https://cran.r-project.org/manuals.html
+* https://stats.idre.ucla.edu/stat/data/intro_r/intro_r_interactive_flat.html
+* https://cswr.nrhstat.org/app-r
+
+What we covered in this primer should be enough to get you going.
+
+
+
+
+# Data analysis examples
+***
+
+## US Gov't Spending on Science
+
+
+Lets inspect some spurious correlations inside https://tylervigen.com/spurious-correlations
+
+```{r}
+## Your data is not made up in the computer (hopefully!)
+## will normally be an address on your PC
+vigen_csv <- read.csv( paste0(
+'https://raw.githubusercontent.com/the-mad-statter/',
+'whysospurious/master/data-raw/tylervigen.csv') ) 
+class(vigen_csv)
+names(vigen_csv)
+vigen_csv[1:5,1:5]
+
+## similar `apply' functions
+lapply(vigen_csv[,1:5], class) ## like apply, but for lists
+sapply(vigen_csv[,1:5], class) ## lapply, formatted to a vector
+```
+
+
+The US government spending on science is ruining cinema
+(p<.001)!
+
+```{r}
+## Drop Data before 1999
+vigen_csv <- vigen_csv[vigen_csv$year >= 1999,] 
+
+## Run OLS Regression $
+reg1 <-  lm(cage_films ~ -1 + science_spending,
+    data=vigen_csv)
+summary(reg1)
+```
+
+
+
+It's not all bad, people in maine stay married longer.
+
+```{r}
+plot.new()
+plot.window(xlim=c(1999, 2009), ylim=c(7,9))
+lines(log(maine_divorce_rate*1000)~year, data=vigen_csv)
+lines(log(science_spending/10)~year, data=vigen_csv, lty=2)
+axis(1)
+axis(2)
+legend('topright', lty=c(1,2), legend=c(
+    'log(maine_divorce_rate*1000)',
+    'log(science_spending/10)'))
+```
+
+
+
+
+
+
+For more intuition on spurious correlations, try http://shiny.calpoly.sh/Corr_Reg_Game/
+
+```{r}
+par(mfrow=c(1,2), mar=c(2,2,2,1))
+plot.new()
+plot.window(xlim=c(1999, 2009), ylim=c(5,9)*1000)
+lines(science_spending/3~year, data=vigen_csv, lty=1, col=2, pch=16)
+text(2003, 8200, 'US spending on science, space, technology (USD/3)', col=2, cex=.6, srt=30)
+lines(hanging_suicides~year, data=vigen_csv, lty=1, col=4, pch=16)
+text(2004, 6500, 'US Suicides by hanging, strangulation, suffocation (Deaths)', col=4, cex=.6, srt=30)
+axis(1)
+axis(2)
+
+
+plot.new()
+plot.window(xlim=c(2002, 2009), ylim=c(0,5))
+lines(cage_films~year, data=vigen_csv[vigen_csv$year>=2002,], lty=1, col=2, pch=16)
+text(2006, 0.5, 'Number of films with Nicolas Cage (Films)', col=2, cex=.6, srt=0)
+lines(pool_fall_drownings/25~year, data=vigen_csv[vigen_csv$year>=2002,], lty=1, col=4, pch=16)
+text(2006, 4.5, 'Number of drownings by falling into pool (US Deaths/25)', col=4, cex=.6, srt=0)
+axis(1)
+axis(2)
+```
+
+
+And don't Forget ``if you torture the data long enough, it will confess.''
+
+```{r}
+## Include an intercept to regression 1
+reg2 <-  lm(cage_films ~ science_spending, data=vigen_csv)
+library(stargazer)
+stargazer(reg1, reg2, type='text')
+```
+
+Nevertheless, data transformation is often necessary before regression analysis.
+For downloading tips, see https://raw.githubusercontent.com/rstudio/cheatsheets/main/data-import.pdf
+
+
+<!--\url{https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf}-->
+
+
+## Data processing simulation
+
+Make random datasets
+
+```{r}
+make_noisy_data <- function(n){
+    x <- seq(1,10, length.out=n)
+    e <- rnorm(length(x), mean=0, sd=10)
+    y <- .25*x + e
+    xy_mat <- data.frame(ID=seq(x),x=x, y=y)
+    return(xy_mat)
+}
+dat1 <- make_noisy_data(6)
+dat1
+
+dat2 <- make_noisy_data(6)
+## merging data in wide format
+dat_merged_wide <- merge(dat1, dat2,
+    by='ID', suffixes=c('.1','.2'))
+```
+
+
+
+Data Merging
+
+```{r}
+## merging data in long format and reshaping to wide
+dat_merged_long <- rbind( cbind(dat1,DF=1),cbind(dat2,DF=2))
+library(reshape2)
+dat_melted <- melt(dat_merged_long, id.vars=c('ID', 'DF'))
+dat_merged_wide2 <- dcast(dat_melted, ID~DF+variable)
+
+dat_merged_wide == dat_merged_wide2
+```
+
+
+
+<!-- ## CONVERT IMAGES
+for pdfile in *.pdf ; do 
+convert -verbose -density 500  "${pdfile}" "${pdfile%.*}".png;
+done
+-->
+
+## Custom figures
+
+
+```{r, echo=FALSE}
+ knitr::include_graphics("./Figures_Manual/Vegetation.png")
+```
+
+
+```{r, echo=FALSE}
+ knitr::include_graphics("./Figures_Manual/Balances_Trial.png")
+```
+
+```{r, echo=FALSE}
+ knitr::include_graphics("./Figures_Manual/PopulationDensity2.png")
+```
+
+
+```{r, echo=FALSE}
+ knitr::include_graphics("./Figures_Manual/SampleExample.png")
+```
+
+```{r, echo=FALSE}
+ knitr::include_graphics("./Figures_Manual/SemiInclusive_Example.png")
+```
+
+```{r, echo=FALSE}
+ knitr::include_graphics("./Figures_Manual/Stability_3.png")
+```
+
+```{r, echo=FALSE}
+ knitr::include_graphics("./Figures_Manual/EvolutionaryDynamics.png")
+```
+
+
+```{r, echo=FALSE}
+ knitr::include_graphics("./Figures_Manual/Experiment_Timeline.png")
+```
+
+
+
+
+
+
+
+# Latest versions
+***
+
+Make sure your packages are up to date
+```{r,  eval=FALSE}
+update.packages()
+```
+
+Make sure you have the latest version of R for class. If not, then reinstall R.
+
+
+After reinstalling, you can update *all* packages stored in *all* `.libPaths()` with the following command
+
+```{r,  eval=FALSE}
+pkgs <- installed.packages( .libPaths() )[,'Package']
+install.packages(
+    pkgs=pkgs,
+    lib=.libPaths()[1],
+    type='source'
+)
+```
+
+To find all broken packages after an update
+```{r,  eval=FALSE}
+library(purrr)
+
+set_names(.libPaths()) %>%
+  map(function(lib) {
+    .packages(all.available = TRUE, lib.loc = lib) %>%
+        keep(function(pkg) {
+            f <- system.file('Meta', 'package.rds', package = pkg, lib.loc = lib)
+            tryCatch({readRDS(f); FALSE}, error = function(e) TRUE)
+        })
+  })
+## https://stackoverflow.com/questions/31935516/installing-r-packages-error-in-readrdsfile-error-reading-from-connection/55997765
+```
+
+
+
+
+
+```{r, echo=FALSE}
+knitr::knit_exit()
+```
+
+
+
+
+
+<!--
+###  Quantitative Analysis of Almost Any Type of Data} 
+
+E.g., plotting galactic superclusters
+\vspace{.5\baselineskip}
+\includegraphics[scale=0.25, trim=0 5cm 0 5cm, clip=true]{./Figures/shapley.pdf}
+\vspace{-2\baselineskip}
+
+\begin{Rcode}{basicstyle=\tiny\ttfamily}
+library(spatstat)
+data(shapley)
+plot(shapley, pch=16, main="", cols=rgb(0,0,0,.1), cex=.4, use.marks=F)
+\end{Rcode}
+<<echo=TRUE, cache=FALSE, fig=TRUE, eval=TRUE>>=
+library(spatstat)
+data(shapley)
+plot(shapley, pch=16, main="", cols=rgb(0,0,0,.1), cex=.4, use.marks=F)
+@
+\vspace{-.5\baselineskip}
+
+\textbf{Physics and Chemistry:}
+Particle Simulations, DNA Sequences, Protein Folding\\
+\textbf{Biology:} 
+Human Brain Morphology, Insect Trajectories  \\
+{\footnotesize \texttt{bio3d:} 
+\url{http://thegrantlab.org/bio3d/tutorials/structure-analysis} \\
+\url{https://ecomorph.wordpress.com/2015/08/05/retinal-topography-maps-in-r/}} \\
+\textbf{Astronomy:} Map the Brightness of Galaxy Locations 
+{\footnotesize \url{https://asaip.psu.edu/resources/datasets}}
+\bash
+Rscript -e 'library(spatstat); data(shapley);  pdf("./shapley.pdf"); plot(unmark(shapley), pch=16, main = "", cols=rgb(0,0,0,.1), cex=.4 )'
+\END
+
+###  ... To Large Scale Observational Data ...}
+{\footnotesize \url{https://cran.r-project.org/web/views/MedicalImaging.html}}
+data(brains)
+shapes3d(brains$x[,,], type="dots", axes3=T)  ## 24 markers (x,y,z) for 59 people $
+
+\textbf{Social and Historical:} Income, Population, Crime, ... \\
+i.e. \footnotesize{\url{http://www.census.gov/did/www/saipe/data/statecounty/maps/iy2014/Tot_Pct_Poor2014.pdf}} \\
+i.e. \footnotesize{\url{http://lincolnmullen.com/projects/slavery/}}\\~\\
+
+\textbf{Ecology:} Global Temperatures, Soil Attributes, Land Use, ...\\
+https://benborgy.wordpress.com/
+i.e. \footnotesize{\url{https://benborgy.files.wordpress.com/2014/08/spatializemap_2.jpg}} \\
+i.e. \footnotesize{\url{http://esdac.jrc.ec.europa.eu/themes/global-data-other-initiatives}} \\
+-->
+
+
+
+
+<!-- ## COMPILE FROM CLI
+    Rscript -e "rmarkdown::render('RandRstudio.Rmd')"
+-->
+
+
