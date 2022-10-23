@@ -1,9 +1,9 @@
 ---
 title: "Primer on Reproducible Research"
-author: "Dr. J. Adamson"
-date: "20.10.2022"
+author: "Jordan Adamson"
+date: "23.10.2022"
 description: 'Primers on R'
-url: 'https://github.com/Jadamso/Rbooks'
+url: 'https://jadamso.github.io/Rbooks/'
 github-repo: "Jadamso/Rbooks"
 site: bookdown::bookdown_site
 documentclass: book
