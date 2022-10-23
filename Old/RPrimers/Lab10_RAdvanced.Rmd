@@ -1,0 +1,551 @@
+---
+title: "Advanced R Programming"
+author: "Dr. J. Adamson"
+date: "`r format(Sys.time(), '%d.%m.%Y')`"
+output:
+  html_document:
+    code_download: true
+---
+
+```{r}
+library(profvis)
+library(bench)
+library(parallel)
+library(Rcpp)
+library(compiler)
+```
+
+
+# Debugging 
+***
+
+Problems print to the console
+```{r, error=TRUE}
+message("This is what a message looks like")
+
+warning("This is what a warning looks like")
+
+stop("This is what an error looks like")
+```
+
+
+Nonproblems also print to the console
+```{r, error=TRUE}
+cat('cat\n')
+print('print')
+```
+
+### Memory Leaks
+
+Use garbage cleanup
+```{r}
+gc()
+```
+
+### Tracing Errors
+
+Example of error process
+```{r, error=TRUE}
+## Let i() check if its argument is numeric
+i <- function(i0) {
+  if ( !is.numeric(i0) ) {
+    stop("`d` must be numeric", call.=FALSE)
+  }
+  i0 + 10
+}
+
+## Let f() call g() call h() call i()
+h <- function(i0) i(i0)
+g <- function(h0) h(h0)
+f <- function(g0) g(g0)
+
+## Observe Error
+f("a")
+```
+
+
+
+Traceback debugging
+```{r, error=TRUE}
+traceback()
+```
+
+
+
+Simple print debugging
+```{r, error=TRUE}
+f2 <- function(g0) {
+  cat("f2 calls g2()\n")
+  g2(g0)
+}
+g2 <- function(h0) {
+  cat("g2 calls h2() \n")
+  cat("b =", h0, "\n")
+  h2(h0)
+}
+h2 <- function(i0) {
+  cat("h2 call i() \n")
+  i(i0)
+}
+
+f2("a")
+```
+
+
+Interactive approach
+```{r, error=TRUE}
+g3 <- function(h0) {
+  browser()
+  h(h0)
+}
+f3 <- function(g0){
+  g3(g0)
+}
+f3("a")
+```
+
+
+
+
+### Checking problems 
+
+To inspect objects
+```{r, eval=FALSE}
+is.object(f)
+is.object(c(1,1))
+
+class(f)
+class(c(1,1))
+
+## Storage Mode Type 
+typeof(f)
+typeof(c(1,1))
+
+storage.mode(f)
+storage.mode(c(1,1))
+```
+
+
+To check for valid inputs/outputs
+```{r, eval=FALSE}
+x <- c(NA, NULL, NaN, Inf, 0)
+
+cat("Vector to inspect: ")
+x
+
+cat("NA: ")
+is.na(x)
+
+cat("NULL: ")
+is.null(x)
+
+cat("NaN: ")
+is.nan(x)
+
+cat("Finite: ")
+is.finite(x)
+
+cat("Infinite: ")
+is.infinite(x)
+## Many others
+```
+
+
+To check for values
+```{r, eval=FALSE}
+all( x > -2 )
+any( x > -2 )
+## Check Matrix Rows
+rowAny <- function(x) rowSums(x) > 0
+rowAll <- function(x) rowSums(x) == ncol(x)
+```
+
+
+### Proactively dealing with errors
+
+Supress errors is possible but a bad idea
+```{r, error=TRUE}
+try(1+2, silent=T)
+try(warning('warning'), silent=T)
+try(error('error'), silent=T)
+```
+```{r, error=TRUE}
+try(1+2, silent=F)
+try(warning('warning'), silent=F)
+try(error('error'), silent=F)
+```
+
+Try to handle errors
+```{r, eval=F}
+tryCatch(
+  error = function(e) {
+    # code to run when error is thrown
+  },
+  code_to_run_while_handlers_are_active
+)
+```
+
+Simple Example
+```{r}
+tryCatch(
+    expr = {
+        message( log(-Inf) )
+        message("Successfully executed the log(x) call.")
+    },
+    error = function(e){
+        message('Caught an error!')
+        print(e)
+    },
+    warning = function(w){
+        message('Caught an warning!')
+        print(w)
+    },
+    finally = {
+        message('All done, quitting.')
+    }
+)
+```
+
+
+
+<!--## Ignore warnings/messages-->
+<!--#suppressWarnings()-->
+<!--#suppressMessages()-->
+
+Safe Functions
+```{r, error=TRUE}
+## Define
+log_safe <- function(x){
+    tryCatch(
+        expr = {
+            message( log(x) )
+            message("Successfully executed the log(x) call.")
+        },
+        error = function(e){
+            message('Caught an error!')
+            print(e)
+        },
+        warning = function(w){
+            message('Caught an warning!')
+            print(w)
+        },
+        finally = {
+            message('All done, quitting.')
+        }
+    )
+}
+
+## Test 
+log_safe( 10)
+log_safe(-10)
+log_safe(' ')
+```
+
+
+
+
+
+
+
+
+
+
+
+# Optimzing 
+***
+
+In General: Clean code is often faster and less error prone
+
+
+*Repetitive tasks can be optimized* You end up with code that
+
+* is cleaner, faster, and more general
+* can be easily parallelized
+
+
+*Computers have big memories and are really good at math.*
+
+* First try vectors
+* then try `apply` functions
+
+
+*Don't waste time on code that is not holding you back.*
+
+* Your code may break, be slow, or incorrect.
+* Look at what has already done.
+
+
+
+
+### microbenchmarking
+
+The simplest approach
+
+```{r, error=TRUE}
+system.time({
+    x <- runif(1e5)
+    sqrt(x)
+})
+```
+
+
+
+
+For identifying bottlenecks
+```{r, error=TRUE}
+## Generate Large Random Dataset
+n <- 2e6
+x <- runif(n)
+y <- runif(n)
+z <- runif(n)
+XYZ <- cbind(x,y,z)
+
+## Inspect 4 equivalent `row mean` calculations 
+profvis::profvis({
+    m <- rowSums(XYZ)/ncol(XYZ)
+    m <- rowMeans(XYZ)
+    m <- apply(XYZ, 1, mean)
+    m <- rep(NA, n);  for(i in 1:n){ m[i] <- (x[i] + y[i] + z[i]) / 3 }
+})
+## rowSums(), colSums(), rowMeans(), and colMeans() are vectorised and fast.
+## for loop is not the slowest, but the ugliest.
+```
+
+
+
+
+
+For easily comparing solutions to specific bottlenecks
+```{r, error=TRUE}
+## 3 Equivalent calculations of the mean of a vector
+mean1 <- function(x,p=1) mean(x^p)
+mean2 <- function(x,p=1) sum(x^p) / length(x)
+mean3 <- function(x,p=1) mean.default(x^p)
+
+## Time them
+x <- runif(1e6)
+bench::mark(
+  mean1(x,.5),
+  mean2(x,.5),
+  mean3(x,.5)
+)
+```
+
+Check for easy speed-ups before creating your own program
+```{r, error=TRUE}
+X <- cbind(1, runif(1e6))
+Y <- X %*% c(1,2) + rnorm(1e6)
+DAT <- as.data.frame(cbind(Y,X))
+
+system.time({.lm.fit(X, Y) })
+system.time({ lm(Y~X, data=DAT) })
+
+## But note that quicker codes 
+## tend to have fewer checks
+## and return less information
+```
+
+
+**Vectors are generally faster and easier to read than loops**
+```{r, error=TRUE}
+x <- runif(1e6)
+
+## Compare 2 moving averages
+
+## First Try
+ma1 <- function(y){
+    z <- y*NA
+    for(i in 2:length(y)){
+        z[i] <- (y[i]-y[i-1])/2
+    }
+    return(z)
+}
+
+# Optimized using diff
+diff( c(2,2,10,9) )
+
+ma2 <- function(y){
+    z2 <- diff(y)/2
+    z2 <- c(NA, z2) 
+    return(z2)
+}
+
+all.equal(ma1(y),ma2(y))
+
+bench::mark(
+  ma1(y),
+  ma2(y)
+)
+```
+
+### Bottlenecks
+
+Sometimes there will still be a problematic bottleneck. 
+
+
+
+Your next step should be parallelism:
+
+* Write the function as a general vectorized function.
+* Apply the same function to every element in a list *at the same time*
+
+```{r, error=TRUE}
+## lapply in parallel on {m}ultiple {c}ores
+x <- c(10,20,30,40,50)
+f <- function(element) { element^element } 
+parallel::mclapply( x, mc.cores=2, FUN=f)
+```
+
+
+More power is often not the solution
+
+```{r, error=TRUE}
+## vectorize and compile
+e_power_e_fun <- compiler::cmpfun( function(vector){ vector^vector} )
+
+## base R
+x <- 0:1E6
+s_vc <- system.time( e_power_e_vec <- e_power_e_fun(x) )
+s_vc
+
+## brute power
+x <- 0:1E6
+s_bp <- system.time({
+  e_power_e_mc <- unlist( parallel::mclapply(x, mc.cores=2, FUN=e_power_e_fun))
+})
+s_bp
+
+## Same results
+all(e_power_e_vec==e_power_e_mc)
+```
+
+Parallelism does not go great with a GUI.
+For identifying bottlenecks on a cluster without a GUI, try `Rprof()`
+```{r, error=TRUE, eval=F}
+Rprof( interval = 0.005)
+    # Create Data
+    x <- runif(2e6)
+    y <- sqrt(x)
+    ## Loop Format Data
+    z <- y*NA
+    for(i in 2:length(y)){ z[i] <- (y[i]-y[i-1])/2 }
+    ## Regression
+    X <- cbind(1,x)[-1,]
+    Z <- z[-1]
+    reg_fast <- .lm.fit(X, Z)
+Rprof(NULL)
+summaryRprof()
+```
+
+
+If you still are stuck, you can
+
+* try [Amazon Web Server](https://aws.amazon.com/ec2/) for more brute-power 
+* rewrite bottlenecks with a working C++ compiler or Fortran compiler.
+
+
+
+##### Compiled Code
+
+
+To get C++
+
+* On Windows, install Rtools.
+* On Mac, install Xcode from the app store.
+* On Linux, sudo apt-get install r-base-dev or similar.
+
+To call C++ from R use package `Rcpp`
+```{r, error=TRUE}
+Rcpp::cppFunction('
+  int add(int x, int y, int z) {
+    int sum = x + y + z;
+    return sum;
+  }'
+)
+add(1, 2, 3)
+```
+
+For help getting started with Rcpp, see https://cran.r-project.org/web/packages/Rcpp/vignettes/Rcpp-quickref.pdf
+
+
+First try to use C++ (or Fortran) code that others have written
+```{r, eval=FALSE}
+.C
+.Fortran
+```
+For a tutorial, see https://masuday.github.io/fortran_tutorial/r.html
+
+
+
+#  Further Programming Guidance
+
+https://rmd4sci.njtierney.com/
+https://smac-group.github.io/ds/high-performance-computing.html
+https://www.stat.umn.edu/geyer/3701/notes/arithmetic.Rmd
+
+For debugging tips
+
+* https://cran.r-project.org/doc/manuals/R-lang.html#Debugging
+* https://cran.r-project.org/doc/manuals/R-exts.html#Debugging
+* https://adv-r.hadley.nz/debugging.html
+* https://adv-r.hadley.nz/conditions.html
+* https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/debugging.html
+* https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/functions.html
+
+
+For optimization tips
+
+* https://cran.r-project.org/doc/manuals/R-exts.html#Tidying-and-profiling-R-code
+* https://cran.r-project.org/doc/manuals/R-lang.html#Exception-handling
+* https://adv-r.hadley.nz/perf-measure.html
+* https://adv-r.hadley.nz/perf-improve.html
+* https://cran.r-project.org/doc/manuals/R-exts.html#System-and-foreign-language-interfaces
+ https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/profiling.html
+* https://adv-r.hadley.nz/rcpp.html
+
+
+For parallel programming 
+
+* https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/parallel.html
+* https://bookdown.org/rdpeng/rprogdatascience/parallel-computation.html
+* https://grantmcdermott.com/ds4e/parallel.html
+* https://psu-psychology.github.io/r-bootcamp-2018/talks/parallel_r.html
+
+
+For general tips
+
+* https://github.com/christophergandrud/Rep-Res-Book
+* Efficient R programming. C. Gillespie R. Lovelace. 2021. https://csgillespie.github.io/efficientR/
+* Data Science at the Command Line, 1e. Janssens J. 2020. https://www.datascienceatthecommandline.com/1e/
+* R Programming for Data Science. Peng R. 2020. https://bookdown.org/rdpeng/rprogdatascience/
+* Advanced R. H. Wickham 2019. https://adv-r.hadley.nz/
+* Econometrics in R. Grant Farnsworth. 2008. http://cran.r-project.org/doc/contrib/Farnsworth-EconometricsInR.pdf
+* The R Inferno. https://www.burns-stat.com/documents/books/the-r-inferno/
+
+
+
+
+
+
+<!--```{r, error=TRUE}-->
+<!--https://cran.r-project.org/web/views/NumericalMathematics.html-->
+<!--https://cran.r-project.org/web/views/Optimization.html-->
+
+<!--    integrate() finds the area under the curve defined by f()-->
+<!--    uniroot() finds where f() hits zero-->
+<!--    optimise() finds the location of the lowest (or highest) value of f()-->
+
+<!--f <- function(x) x^2-->
+<!--f1 <- Deriv::Deriv(f)-->
+
+<!--for more dimesniosn-->
+
+<!--optim-->
+<!--```-->
+
+
+
+<!-- ## COMPILE FROM CLI
+    Rscript -e "rmarkdown::render('Lab10_RAdvanced.Rmd')"
+-->
+
