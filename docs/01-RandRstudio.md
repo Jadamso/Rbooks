@@ -1,6 +1,18 @@
+# Preface {#index}
+
+In this book, there are three R primers that should get you going with R in academic research.
+
+ * *Part   I*: Introduction to R
+ * *Part  II*: Introduction to Reproducible Research in R
+ * *Part III*: Intermediate R
+
+Much of this material was copied or modified from elsewhere, especially https://r4ds.had.co.nz/ and https://adv-r.hadley.nz/ but also many other sources I have found online and elsewhere over the years.
+
+
+
 # (PART) Part I {-} 
 
-# First steps on Programming in R  {#index}
+# First steps on Programming in R 
 ***
 
 
@@ -206,7 +218,7 @@ randomise(mean)
 ```
 
 ```
-## [1] 0.5041263
+## [1] 0.5030783
 ```
 
 ```r
@@ -214,7 +226,7 @@ randomise(mean)
 ```
 
 ```
-## [1] 0.5156314
+## [1] 0.489226
 ```
 
 ```r
@@ -222,7 +234,7 @@ randomise(sum)
 ```
 
 ```
-## [1] 490.5093
+## [1] 507.5291
 ```
 
 
@@ -236,7 +248,7 @@ mapply(sum, 1:3, runif(3) )
 ```
 
 ```
-## [1] 1.840667 2.701791 3.559714
+## [1] 1.986627 2.943573 3.553065
 ```
 
 ##  Matrices and Matrix-Functions
@@ -585,8 +597,8 @@ rnorm(length(x), mean=0, sd=1) ## noise
 ```
 
 ```
-##  [1]  0.6369160  1.6175170  0.1335771 -0.1153696  0.3053145  0.1221242
-##  [7]  1.7813025 -1.2255729 -1.3496645  0.2243530
+##  [1]  1.44606736 -0.84737514  0.03205615 -0.33755940 -0.06474346  0.18798242
+##  [7]  1.43840611 -0.27501136  0.58590719  0.50618422
 ```
 
 ```r
@@ -594,8 +606,8 @@ rnorm(length(x), mean=0, sd=1) ## new noise
 ```
 
 ```
-##  [1]  0.91425030  0.16486872 -1.66788812 -0.25991831  0.45436500 -0.24453294
-##  [7] -0.74416808 -0.03792987 -0.28977452 -0.67159808
+##  [1] -1.5360179  0.6291917  1.2981726  0.5069942  0.5474447  1.6177128
+##  [7] -0.2642064 -0.5807416 -0.5926778 -0.1593475
 ```
 
 ```r
@@ -624,12 +636,12 @@ head(xy_dat)
 
 ```
 ##        x          y
-## 1 1.0000  1.4011161
-## 2 1.0002 -0.5524725
-## 3 1.0004  1.8082610
-## 4 1.0006  0.2721039
-## 5 1.0008  0.6829158
-## 6 1.0010 -0.8256814
+## 1 1.0000  0.3599908
+## 2 1.0002  1.0104017
+## 3 1.0004  0.3804610
+## 4 1.0006  1.3374703
+## 5 1.0008  1.4840175
+## 6 1.0010 -0.2223943
 ```
 
 ```r
@@ -660,18 +672,18 @@ summary(reg)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -4.2866 -0.6784  0.0024  0.6784  4.6532 
+## -4.2659 -0.6726  0.0016  0.6688  3.9411 
 ## 
 ## Coefficients:
-##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) -0.001738   0.011058  -0.157    0.875    
-## x            0.247851   0.001818 136.337   <2e-16 ***
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) 0.008538   0.010989   0.777    0.437    
+## x           0.249222   0.001807 137.956   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 1.002 on 44999 degrees of freedom
-## Multiple R-squared:  0.2923,	Adjusted R-squared:  0.2923 
-## F-statistic: 1.859e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.9957 on 44999 degrees of freedom
+## Multiple R-squared:  0.2972,	Adjusted R-squared:  0.2972 
+## F-statistic: 1.903e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -1073,13 +1085,13 @@ dat1
 ```
 
 ```
-##   ID    x           y
-## 1  1  1.0  12.5137997
-## 2  2  2.8   0.5389323
-## 3  3  4.6 -14.6383722
-## 4  4  6.4  -0.6592975
-## 5  5  8.2   6.3061949
-## 6  6 10.0   1.6925587
+##   ID    x          y
+## 1  1  1.0 -6.1470347
+## 2  2  2.8  4.2699058
+## 3  3  4.6 29.2882246
+## 4  4  6.4 -2.4522214
+## 5  5  8.2 -0.6208467
+## 6  6 10.0  3.8648116
 ```
 
 ```r
