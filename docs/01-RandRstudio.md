@@ -214,8 +214,8 @@ rnorm(10)
 ```
 
 ```
-##  [1]  1.8596737  2.6848379 -0.5012682 -2.0737752  0.6282066  1.1616610
-##  [7] -2.4492401 -1.0180871 -1.1267840  0.4211375
+##  [1]  0.25709979 -0.21090467 -1.32058682 -1.03401448 -0.25593755 -0.54011934
+##  [7]  2.36359776 -1.59776855  0.05128931  1.30857478
 ```
 
 ```r
@@ -223,8 +223,8 @@ rnorm(10)
 ```
 
 ```
-##  [1]  1.27335698  0.41997485 -1.17291661 -0.54386800 -0.70495501 -0.16427169
-##  [7] -0.05054328 -1.61566083 -1.07952452  0.26824375
+##  [1] -0.9366208  0.1612929 -0.7571102  0.6046680 -0.5627682 -0.5470264
+##  [7]  0.1600091 -0.5315609  0.1478208  0.6490565
 ```
 
 ```r
@@ -234,7 +234,7 @@ head(x2)
 ```
 
 ```
-## [1] 0.4550397 0.6286691 0.8162775 0.6859077 0.5066003 0.8929980
+## [1] 0.4270734 0.2518087 0.4085083 0.2687439 0.1847869 0.1590238
 ```
 
 ```r
@@ -263,7 +263,7 @@ fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.4964727
+## [1] 0.5026881
 ```
 
 ```r
@@ -271,7 +271,7 @@ fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.5052714
+## [1] 0.5129541
 ```
 
 ```r
@@ -279,7 +279,7 @@ fun_of_rv(sum)
 ```
 
 ```
-## [1] 516.118
+## [1] 507.3792
 ```
 
 
@@ -293,7 +293,7 @@ fun_of_rv()
 ```
 
 ```
-## [1] 0.383107
+## [1] 0.4502301
 ```
 
 Very useful for applying a function over and over again
@@ -306,7 +306,7 @@ mapply(sum, 1:3, runif(3) )
 ```
 
 ```
-## [1] 1.084076 2.980137 3.116753
+## [1] 1.366577 2.358559 3.839909
 ```
 
 ##  Matrices and Matrix-Functions
@@ -677,13 +677,13 @@ head(xy_dat)
 ```
 
 ```
-##        x           y
-## 1 1.0000 -0.10432528
-## 2 1.0002  2.72913288
-## 3 1.0004 -0.36541721
-## 4 1.0006  0.32225749
-## 5 1.0008  0.56440469
-## 6 1.0010 -0.02429826
+##        x          y
+## 1 1.0000 -0.5263347
+## 2 1.0002  0.5125636
+## 3 1.0004  2.6758628
+## 4 1.0006  1.4633565
+## 5 1.0008  0.6341992
+## 6 1.0010  0.3634467
 ```
 
 ```r
@@ -715,18 +715,18 @@ summary(reg)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -4.0814 -0.6736  0.0039  0.6730  3.8023 
+## -4.0999 -0.6702  0.0006  0.6754  4.5117 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) 0.008665   0.011023   0.786    0.432    
-## x           0.248975   0.001812 137.387   <2e-16 ***
+## (Intercept) 0.003119   0.010994   0.284    0.777    
+## x           0.249800   0.001807 138.206   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.9988 on 44999 degrees of freedom
-## Multiple R-squared:  0.2955,	Adjusted R-squared:  0.2955 
-## F-statistic: 1.888e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.9962 on 44999 degrees of freedom
+## Multiple R-squared:  0.298,	Adjusted R-squared:  0.298 
+## F-statistic: 1.91e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -1085,34 +1085,14 @@ axis(2)
 <img src="01-RandRstudio_files/figure-html/unnamed-chunk-38-1.png" width="672" />
 
 
-And don't Forget ``if you torture the data long enough, it will confess.''
 
 
 ```r
 ## Include an intercept to regression 1
-reg2 <-  lm(cage_films ~ science_spending, data=vigen_csv)
-suppressMessages(library(stargazer))
-stargazer(reg1, reg2, type='html')
+#reg2 <-  lm(cage_films ~ science_spending, data=vigen_csv)
+#suppressMessages(library(stargazer))
+#stargazer(reg1, reg2, type='html')
 ```
-
-
-<table style="text-align:center"><tr><td colspan="3" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td colspan="2"><em>Dependent variable:</em></td></tr>
-<tr><td></td><td colspan="2" style="border-bottom: 1px solid black"></td></tr>
-<tr><td style="text-align:left"></td><td colspan="2">cage_films</td></tr>
-<tr><td style="text-align:left"></td><td>(1)</td><td>(2)</td></tr>
-<tr><td colspan="3" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">science_spending</td><td>0.0001<sup>***</sup></td><td>0.0001</td></tr>
-<tr><td style="text-align:left"></td><td>(0.00001)</td><td>(0.0001)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td></tr>
-<tr><td style="text-align:left">Constant</td><td></td><td>-0.140</td></tr>
-<tr><td style="text-align:left"></td><td></td><td>(2.166)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td></tr>
-<tr><td colspan="3" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Observations</td><td>11</td><td>11</td></tr>
-<tr><td style="text-align:left">R<sup>2</sup></td><td>0.845</td><td>0.124</td></tr>
-<tr><td style="text-align:left">Adjusted R<sup>2</sup></td><td>0.830</td><td>0.026</td></tr>
-<tr><td style="text-align:left">Residual Std. Error</td><td>1.033 (df = 10)</td><td>1.089 (df = 9)</td></tr>
-<tr><td style="text-align:left">F Statistic</td><td>54.609<sup>***</sup> (df = 1; 10)</td><td>1.271 (df = 1; 9)</td></tr>
-<tr><td colspan="3" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"><em>Note:</em></td><td colspan="2" style="text-align:right"><sup>*</sup>p<0.1; <sup>**</sup>p<0.05; <sup>***</sup>p<0.01</td></tr>
-</table>
 
 Nevertheless, data transformation is often necessary before regression analysis. For downloading tips, see https://raw.githubusercontent.com/rstudio/cheatsheets/main/data-import.pdf
 
@@ -1139,44 +1119,35 @@ dat1
 
 ```
 ##   ID    x          y
-## 1  1  1.0  5.2779810
-## 2  2  2.8 -6.6752695
-## 3  3  4.6 -0.1832388
-## 4  4  6.4  8.7389111
-## 5  5  8.2 11.6327149
-## 6  6 10.0 -0.1492892
+## 1  1  1.0  7.0554979
+## 2  2  2.8  5.4179847
+## 3  3  4.6  2.5501814
+## 4  4  6.4  0.5793721
+## 5  5  8.2 12.5912940
+## 6  6 10.0 -3.6259808
 ```
 
+
+
+Data merging
+
 ```r
+## Some spurious results are driven by errors with cleaning/merging
+
+## Try out a small example
 dat2 <- make_noisy_data(6)
 ## merging data in wide format
 dat_merged_wide <- merge(dat1, dat2,
     by='ID', suffixes=c('.1','.2'))
-```
 
-
-
-Data Merging
-
-
-```r
 ## merging data in long format and reshaping to wide
 dat_merged_long <- rbind( cbind(dat1,DF=1),cbind(dat2,DF=2))
 library(reshape2)
 dat_melted <- melt(dat_merged_long, id.vars=c('ID', 'DF'))
 dat_merged_wide2 <- dcast(dat_melted, ID~DF+variable)
 
+## CHECK!
 dat_merged_wide == dat_merged_wide2
-```
-
-```
-##        ID  x.1  y.1  x.2  y.2
-## [1,] TRUE TRUE TRUE TRUE TRUE
-## [2,] TRUE TRUE TRUE TRUE TRUE
-## [3,] TRUE TRUE TRUE TRUE TRUE
-## [4,] TRUE TRUE TRUE TRUE TRUE
-## [5,] TRUE TRUE TRUE TRUE TRUE
-## [6,] TRUE TRUE TRUE TRUE TRUE
 ```
 
 
@@ -1196,7 +1167,9 @@ while(p >= .001){
     i <- i+1
 }
 
-plot(X1~X2, data=rdf, main=paste0('Random Dataset ', i))
+plot(X1~X2, data=rdf,
+    pch=16, col=grey(.5,.5),
+    main=paste0('Random Dataset ', i))
 reg_h <- lm(X1~X2, rdf)
 abline(a=coef(reg_h)[1], b=coef(reg_h)[2])
 ```
@@ -1205,6 +1178,12 @@ abline(a=coef(reg_h)[1], b=coef(reg_h)[2])
 
 
 ## Causal effects *sans theory*
+
+There is currently a boom in empirical research. This is not for the first time, and we'd be wise to recall some earlier wisdom from economists on the matter. Here are just two simple examples for the ''latest and greatest'' empirical recipes.
+
+> if you torture the data long enough, it will confess
+>
+> --- Ronald Coase
 
 
 RDD
