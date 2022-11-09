@@ -1,0 +1,190 @@
+---
+title: "Mr. Helter Skelter's Recipe for All-Natural Experiments"
+author:
+  - Jordan Adamson^[adamson@wifa.uni-leipzig.de, Institute for Empirical Economic Research, Leipzig University]
+date: "`r format(Sys.time(), '%d.%m.%Y')`"
+output:
+    beamer_presentation
+---
+
+
+
+## All-natural experiments generate robust stars
+
+* Many datasets, many spurious differences.
+
+* Replace
+$$P( \text{natural experiment} ~|~ \text{big change in time trend} ),$$
+which converges to unity with more data available, with 
+$$P( \text{big change in time trend} ~|~ \text{natural experiment} ),$$
+which is covered in statistical theory.
+
+
+## Background
+
+
+Pyrrho's Lemma, Infinite Monkey Theorem
+
+* *Cheating with Models* (AER:I 2021)
+* *Methods Matter: p-Hacking and Publication Bias in Causal Analysis in Economics* (AER 2020). 
+* *Surprised by the Hot Hand Fallacy? A Truth in the Law of Small Numbers* (ECMA 2018)
+<!--* "Cheating with Models" by Eliaz, Kfir, Ran Spiegler, and Yair Weiss (2021, American Economic Review: Insights, 3 (4): 417-34. DOI: 10.1257/aeri.20200635)-->
+<!--* "Methods Matter: p-Hacking and Publication Bias in Causal Analysis in Economics" by Brodeur, Abel, Nikolai Cook, and Anthony Heyes (2020, American Economic Review, 110 (11): 3634-60. DOI: 10.1257/aer.20190687). -->
+<!--* "Surprised by the Hot Hand Fallacy? A Truth in the Law of Small Numbers" by Joshua B. Miller and Adam Sanjurjo (2018, Econometrica, 86: 2019-2047. DOI: 10.3982/ECTA14943). -->
+
+  
+## Two Random Walks
+
+```{r, message=F, warning=F, echo=F, out.width="100%"}
+n <- 1000
+n_index <- seq(n)
+
+set.seed(1)
+random_walk1 <- cumsum(runif(n,-1,1))
+
+set.seed(2)
+random_walk2 <- cumsum(runif(n,-1,1))
+
+par(mfrow=c(1,2))
+plot(random_walk1, pch=16, col=grey(.5,.5),
+    xlab='', main='Simulation 1')
+plot(random_walk2, pch=16, col=grey(.5,.5),
+    xlab='', main='Simulation 2')
+```
+
+
+# The RDD Recipe
+
+
+
+
+## Let the Random Walk 1 data take shape
+Find a big break, find a policy treatment.
+
+```{r, message=F, warning=F, echo=F, out.width="100%"}
+n1 <- 290
+wind1 <- c(n1-300,n1+300)
+dat1 <- data.frame(t=n_index, y=random_walk1, d=1*(n_index > n1))
+dat1_sub <- dat1[ n_index>wind1[1] & n_index < wind1[2],]
+
+reg0 <- lm(y~t, data=dat1_sub[dat1_sub$d==0,])
+reg1 <- lm(y~t, data=dat1_sub[dat1_sub$d==1,])
+
+plot(random_walk1, pch=16, col=grey(.5,.5), xlim=wind1)
+abline(v=n1, lty=2)
+lines(reg0$model$t, reg0$fitted.values, col=2)
+lines(reg1$model$t, reg1$fitted.values, col=4)
+```
+
+## ``Test'' for differences
+
+Notice smaller windows (more causal?) have bigger effects
+
+```{r, include=F}
+rdd_sub <- lm(y~d+t+d*t, data=dat1_sub)
+rdd_full <- lm(y~d+t+d*t, data=dat1)
+stab <- stargazer::stargazer(rdd_sub, rdd_full, 
+    type='latex',
+    table.placement='h!',
+    header=F,
+    omit=c('Constant'),
+    covariate.labels=c('Treatment', 'Time', 'Treatment $\\times$ Time'),
+    single.row=T,
+    omit.stat=c('f','ser', 'adj.rsq'),
+    dep.var.caption='',
+    dep.var.labels.include=F,
+    dep.var.labels='',
+    notes=c('{\\footnotesize First column uses a dataset around the discontinuity.}')
+)
+```
+
+```{r, message=F, warning=F, echo=F, results='asis', out.width="100%"}
+cat(sub('^.+\\caption.+$','', stab), sep='\n')
+```
+
+
+# The DID Recipe
+
+
+## Find a reversal of fortune
+
+A success story pairs well with a nice pre-trend
+
+```{r, message=F, warning=F, echo=F, out.width="100%"}
+n2 <- 318
+wind2 <- c(n2-20,n2+20)
+plot(random_walk2, pch=16, col=4, xlim=wind2, ylim=c(-15,15))
+points(random_walk1, pch=16, col=2)
+abline(v=n2, lty=2)
+```
+
+
+## ``Test'' for differences
+
+Notice the fixed effects.
+(Control for most biases, others in the opposite direction.)\
+\
+\
+     
+```{r, include=F}
+## Knead out any effects that are non-causal 
+## (or even just correlation)
+dat2A <- data.frame(t=n_index, y=random_walk1, d=1*(n_index > n2), RWid=1)
+dat2B <- data.frame(t=n_index, y=random_walk2, d=0, RWid=2)
+dat2  <- rbind(dat2A, dat2B)
+dat2$RWid <- as.factor(dat2$RWid)
+dat2$tid <- as.factor(dat2$t)
+dat2_sub <- dat2[ dat2$t>wind2[1] & dat2$t < wind2[2],]
+
+## Report the stars for all to enjoy
+## (and remind that stable coefficients are the good ones)
+did_fe1 <- lm(y~d+tid, data=dat2_sub)
+did_fe2 <- lm(y~d+RWid, data=dat2_sub)
+did_fe3 <- lm(y~d*RWid+tid, data=dat2_sub)
+stab <- stargazer::stargazer(did_fe1, did_fe2, did_fe3,
+    type='latex',
+    table.placement='h!',
+    header=F,
+    omit=c('tid','RWid', 'Constant'),
+    covariate.labels='Treatment',
+    single.row=T,
+    omit.stat=c('f','ser', 'adj.rsq'),
+    dep.var.caption='',
+    dep.var.labels.include=F,
+    dep.var.labels='',
+    add.lines=c('Fixed Effects & Time & ID & Time and ID \\\\ \\hline')
+)
+```
+
+```{r, message=F, warning=F, echo=F, results='asis', out.width="100%"}
+cat(sub('^.+\\caption.+$','\\\\footnotesize', stab), sep='\n')
+```
+
+
+# Conclusion
+
+## A confusing literature of mixed results
+
+* We found a robust causal impact. (Spurious, Streak Selection)
+
+* More work on mechanism. (Unclear what we learn from `letting data speak')
+
+\
+\
+
+**``estimate, not testimate''** McCloskey, (2008, p.249)
+
+
+
+
+
+
+<!-- ## COMPILE FROM CLI
+    Rscript -e "rmarkdown::render('Template_Slides.Rmd')"
+    latexmk -c  && rm *.spl *.log
+-->
+
+
+
+
+

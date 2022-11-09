@@ -1,13 +1,3 @@
-# Preface {#index}
-
-In this book, there are three R primers that should get you using R in econometrics research.
-
- * *Part   I*: Introduction to R
- * *Part  II*: Introduction to Reproducible R
- * *Part III*: Intermediate R
-
-Much of this material was copied or modified from elsewhere, especially https://r4ds.had.co.nz/ and https://adv-r.hadley.nz/ but also many other sources I have found online and elsewhere over the years.
-
 
 # (PART) Introduction to R {-} 
 
@@ -214,8 +204,8 @@ rnorm(10)
 ```
 
 ```
-##  [1]  0.25709979 -0.21090467 -1.32058682 -1.03401448 -0.25593755 -0.54011934
-##  [7]  2.36359776 -1.59776855  0.05128931  1.30857478
+##  [1] -0.3736787 -1.0062917 -1.3105501 -1.3736797 -1.6500717 -0.5495136
+##  [7]  2.2308795  1.9388205 -0.2634111 -0.5370078
 ```
 
 ```r
@@ -223,8 +213,8 @@ rnorm(10)
 ```
 
 ```
-##  [1] -0.9366208  0.1612929 -0.7571102  0.6046680 -0.5627682 -0.5470264
-##  [7]  0.1600091 -0.5315609  0.1478208  0.6490565
+##  [1] -0.6849937 -1.8403877 -1.3029194  0.8317640 -0.7172891 -0.8106105
+##  [7]  0.6128300 -1.0859125  0.9105872 -1.7095427
 ```
 
 ```r
@@ -234,7 +224,7 @@ head(x2)
 ```
 
 ```
-## [1] 0.4270734 0.2518087 0.4085083 0.2687439 0.1847869 0.1590238
+## [1] 0.8393459 0.7371067 0.9661007 0.2175937 0.5958275 0.3857523
 ```
 
 ```r
@@ -263,7 +253,7 @@ fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.5026881
+## [1] 0.4996955
 ```
 
 ```r
@@ -271,7 +261,7 @@ fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.5129541
+## [1] 0.5060156
 ```
 
 ```r
@@ -279,7 +269,7 @@ fun_of_rv(sum)
 ```
 
 ```
-## [1] 507.3792
+## [1] 491.4294
 ```
 
 
@@ -293,7 +283,7 @@ fun_of_rv()
 ```
 
 ```
-## [1] 0.4502301
+## [1] 0.5536695
 ```
 
 Very useful for applying a function over and over again
@@ -306,7 +296,7 @@ mapply(sum, 1:3, runif(3) )
 ```
 
 ```
-## [1] 1.366577 2.358559 3.839909
+## [1] 1.195046 2.668925 3.055925
 ```
 
 ##  Matrices and Matrix-Functions
@@ -678,12 +668,12 @@ head(xy_dat)
 
 ```
 ##        x          y
-## 1 1.0000 -0.5263347
-## 2 1.0002  0.5125636
-## 3 1.0004  2.6758628
-## 4 1.0006  1.4633565
-## 5 1.0008  0.6341992
-## 6 1.0010  0.3634467
+## 1 1.0000  1.3386151
+## 2 1.0002  0.8352031
+## 3 1.0004 -1.6615219
+## 4 1.0006  1.8566289
+## 5 1.0008 -0.3727606
+## 6 1.0010  1.1354360
 ```
 
 ```r
@@ -715,18 +705,18 @@ summary(reg)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -4.0999 -0.6702  0.0006  0.6754  4.5117 
+## -4.5716 -0.6731  0.0008  0.6804  4.1346 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) 0.003119   0.010994   0.284    0.777    
-## x           0.249800   0.001807 138.206   <2e-16 ***
+## (Intercept) 0.003158   0.011053   0.286    0.775    
+## x           0.248490   0.001817 136.748   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.9962 on 44999 degrees of freedom
-## Multiple R-squared:  0.298,	Adjusted R-squared:  0.298 
-## F-statistic: 1.91e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
+## Residual standard error: 1.002 on 44999 degrees of freedom
+## Multiple R-squared:  0.2936,	Adjusted R-squared:  0.2936 
+## F-statistic: 1.87e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -798,6 +788,12 @@ install.packages("devtools")
 install.packages("remotes")
 ```
 
+For devtools, you need to have developer tools installed on your pc. If you have not, try
+
+* Windows: [Rtools](https://cran.r-project.org/bin/windows/Rtools/rtools42/rtools.html)
+* Mac: [Xcode](https://apps.apple.com/us/app/xcode/id497799835?mt=12)
+
+
 For example, to color terminal output on Linux you can 
 
 ```r
@@ -806,6 +802,7 @@ library(remotes)
 # to .libPaths()[1]
 install_github('jalvesaq/colorout')
 ```
+
 
 
 ## Task Views
@@ -867,6 +864,7 @@ There are many good yet free programming books online. E.g.,
 
 There are also many good yet free-online tutorials and courses. E.g., \\
 
+* https://www.econometrics-with-r.org/1.2-a-very-short-introduction-to-r-and-rstudio.html
 * https://rafalab.github.io/dsbook/
 * https://moderndive.com/foreword.html
 * https://rstudio.cloud/learn/primers/1.2
@@ -875,8 +873,6 @@ There are also many good yet free-online tutorials and courses. E.g., \\
 * https://cswr.nrhstat.org/app-r
 
 What we cover in this primer should be enough to get you going.
-
-
 
 
 ## Custom figures
@@ -903,432 +899,4 @@ done
 <img src="./Figures_Manual/EvolutionaryDynamics.png" width="3000" />
 
 <img src="./Figures_Manual/Experiment_Timeline.png" width="1750" />
-
-
-
-
-
-
-# Data scientism
-***
-
-## US Gov't Spending on Science
-
-Lets inspect some data from https://tylervigen.com/spurious-correlations
-
-
-```r
-## Your data is not made up in the computer (hopefully!)
-## will normally be an address on your PC
-vigen_csv <- read.csv( paste0(
-'https://raw.githubusercontent.com/the-mad-statter/',
-'whysospurious/master/data-raw/tylervigen.csv') ) 
-class(vigen_csv)
-```
-
-```
-## [1] "data.frame"
-```
-
-```r
-names(vigen_csv)
-```
-
-```
-##  [1] "year"                         "science_spending"            
-##  [3] "hanging_suicides"             "pool_fall_drownings"         
-##  [5] "cage_films"                   "cheese_percap"               
-##  [7] "bed_deaths"                   "maine_divorce_rate"          
-##  [9] "margarine_percap"             "miss_usa_age"                
-## [11] "steam_murders"                "arcade_revenue"              
-## [13] "computer_science_doctorates"  "noncom_space_launches"       
-## [15] "sociology_doctorates"         "mozzarella_percap"           
-## [17] "civil_engineering_doctorates" "fishing_drownings"           
-## [19] "kentucky_marriage_rate"       "oil_imports_norway"          
-## [21] "chicken_percap"               "train_collision_deaths"      
-## [23] "oil_imports_total"            "pool_drownings"              
-## [25] "nuclear_power"                "japanese_cars_sold"          
-## [27] "motor_vehicle_suicides"       "spelling_bee_word_length"    
-## [29] "spider_deaths"                "math_doctorates"             
-## [31] "uranium"
-```
-
-```r
-vigen_csv[1:5,1:5]
-```
-
-```
-##   year science_spending hanging_suicides pool_fall_drownings cage_films
-## 1 1996               NA               NA                  NA         NA
-## 2 1997               NA               NA                  NA         NA
-## 3 1998               NA               NA                  NA         NA
-## 4 1999            18079             5427                 109          2
-## 5 2000            18594             5688                 102          2
-```
-
-```r
-## similar `apply' functions
-lapply(vigen_csv[,1:5], class) ## like apply, but for lists
-```
-
-```
-## $year
-## [1] "integer"
-## 
-## $science_spending
-## [1] "integer"
-## 
-## $hanging_suicides
-## [1] "integer"
-## 
-## $pool_fall_drownings
-## [1] "integer"
-## 
-## $cage_films
-## [1] "integer"
-```
-
-```r
-sapply(vigen_csv[,1:5], class) ## lapply, formatted to a vector
-```
-
-```
-##                year    science_spending    hanging_suicides pool_fall_drownings 
-##           "integer"           "integer"           "integer"           "integer" 
-##          cage_films 
-##           "integer"
-```
-
-The US government spending on science is ruining cinema
-(p<.001)!?
-
-
-```r
-## Drop Data before 1999
-vigen_csv <- vigen_csv[vigen_csv$year >= 1999,] 
-
-## Run OLS Regression $
-reg1 <-  lm(cage_films ~ -1 + science_spending,
-    data=vigen_csv)
-summary(reg1)
-```
-
-```
-## 
-## Call:
-## lm(formula = cage_films ~ -1 + science_spending, data = vigen_csv)
-## 
-## Residuals:
-##     Min      1Q  Median      3Q     Max 
-## -1.7670 -0.7165  0.1447  0.7890  1.4531 
-## 
-## Coefficients:
-##                   Estimate Std. Error t value Pr(>|t|)    
-## science_spending 9.978e-05  1.350e-05    7.39 2.34e-05 ***
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Residual standard error: 1.033 on 10 degrees of freedom
-##   (1 observation deleted due to missingness)
-## Multiple R-squared:  0.8452,	Adjusted R-squared:  0.8297 
-## F-statistic: 54.61 on 1 and 10 DF,  p-value: 2.343e-05
-```
-
-
-It's not all bad, people in maine stay married longer?
-
-
-```r
-plot.new()
-plot.window(xlim=c(1999, 2009), ylim=c(7,9))
-lines(log(maine_divorce_rate*1000)~year, data=vigen_csv)
-lines(log(science_spending/10)~year, data=vigen_csv, lty=2)
-axis(1)
-axis(2)
-legend('topright', lty=c(1,2), legend=c(
-    'log(maine_divorce_rate*1000)',
-    'log(science_spending/10)'))
-```
-
-<img src="01-RandRstudio_files/figure-html/unnamed-chunk-37-1.png" width="672" />
-
-
-
-
-
-
-For more intuition on spurious correlations, try http://shiny.calpoly.sh/Corr_Reg_Game/
-
-
-```r
-par(mfrow=c(1,2), mar=c(2,2,2,1))
-plot.new()
-plot.window(xlim=c(1999, 2009), ylim=c(5,9)*1000)
-lines(science_spending/3~year, data=vigen_csv, lty=1, col=2, pch=16)
-text(2003, 8200, 'US spending on science, space, technology (USD/3)', col=2, cex=.6, srt=30)
-lines(hanging_suicides~year, data=vigen_csv, lty=1, col=4, pch=16)
-text(2004, 6500, 'US Suicides by hanging, strangulation, suffocation (Deaths)', col=4, cex=.6, srt=30)
-axis(1)
-axis(2)
-
-
-plot.new()
-plot.window(xlim=c(2002, 2009), ylim=c(0,5))
-lines(cage_films~year, data=vigen_csv[vigen_csv$year>=2002,], lty=1, col=2, pch=16)
-text(2006, 0.5, 'Number of films with Nicolas Cage (Films)', col=2, cex=.6, srt=0)
-lines(pool_fall_drownings/25~year, data=vigen_csv[vigen_csv$year>=2002,], lty=1, col=4, pch=16)
-text(2006, 4.5, 'Number of drownings by falling into pool (US Deaths/25)', col=4, cex=.6, srt=0)
-axis(1)
-axis(2)
-```
-
-<img src="01-RandRstudio_files/figure-html/unnamed-chunk-38-1.png" width="672" />
-
-
-
-
-```r
-## Include an intercept to regression 1
-#reg2 <-  lm(cage_films ~ science_spending, data=vigen_csv)
-#suppressMessages(library(stargazer))
-#stargazer(reg1, reg2, type='html')
-```
-
-Nevertheless, data transformation is often necessary before regression analysis. For downloading tips, see https://raw.githubusercontent.com/rstudio/cheatsheets/main/data-import.pdf
-
-
-<!--\url{https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf}-->
-
-
-## OLS in the age of big data
-
-Consider random datasets
-
-
-```r
-make_noisy_data <- function(n){
-    x <- seq(1,10, length.out=n)
-    e <- rnorm(length(x), mean=0, sd=10)
-    y <- .25*x + e
-    xy_mat <- data.frame(ID=seq(x), x=x, y=y)
-    return(xy_mat)
-}
-dat1 <- make_noisy_data(6)
-dat1
-```
-
-```
-##   ID    x          y
-## 1  1  1.0  7.0554979
-## 2  2  2.8  5.4179847
-## 3  3  4.6  2.5501814
-## 4  4  6.4  0.5793721
-## 5  5  8.2 12.5912940
-## 6  6 10.0 -3.6259808
-```
-
-
-
-Data merging
-
-```r
-## Some spurious results are driven by errors with cleaning/merging
-
-## Try out a small example
-dat2 <- make_noisy_data(6)
-## merging data in wide format
-dat_merged_wide <- merge(dat1, dat2,
-    by='ID', suffixes=c('.1','.2'))
-
-## merging data in long format and reshaping to wide
-dat_merged_long <- rbind( cbind(dat1,DF=1),cbind(dat2,DF=2))
-library(reshape2)
-dat_melted <- melt(dat_merged_long, id.vars=c('ID', 'DF'))
-dat_merged_wide2 <- dcast(dat_melted, ID~DF+variable)
-
-## CHECK!
-dat_merged_wide == dat_merged_wide2
-```
-
-
-Regression Machines
-
-```r
-n <- 50
-p <- 1
-i <- 0
-
-## P-hacking
-while(p >= .001){
-    set.seed(i)
-    rdf <- data.frame( sapply(1:2, function(i) runif(n) ) )
-    reg_h <- lm(X1~X2, rdf)
-    p <- summary(reg_h)$coefficients[2,4]
-    i <- i+1
-}
-
-plot(X1~X2, data=rdf,
-    pch=16, col=grey(.5,.5),
-    main=paste0('Random Dataset ', i))
-reg_h <- lm(X1~X2, rdf)
-abline(a=coef(reg_h)[1], b=coef(reg_h)[2])
-```
-
-<img src="01-RandRstudio_files/figure-html/unnamed-chunk-42-1.png" width="672" />
-
-
-## Causal effects *sans theory*
-
-There is currently a boom in empirical research. This is not for the first time, and we'd be wise to recall some earlier wisdom from economists on the matter. Here are just two simple examples for the ''latest and greatest'' empirical recipes.
-
-> if you torture the data long enough, it will confess
->
-> --- Ronald Coase
-
-
-RDD
-
-
-```r
-n <- 1000
-n_index <- seq(n)
-
-set.seed(1)
-random_walk1 <- cumsum(runif(n,-1,1))
-
-set.seed(2)
-random_walk2 <- cumsum(runif(n,-1,1))
-
-par(mfrow=c(1,2))
-plot(random_walk1, pch=16, col=grey(.5,.5))
-plot(random_walk2, pch=16, col=grey(.5,.5))
-```
-
-<img src="01-RandRstudio_files/figure-html/unnamed-chunk-43-1.png" width="672" />
-
-
-```r
-## Let the data take shape
-## (around the large differences before and after)
-n1 <- 290
-wind1 <- c(n1-300,n1+300)
-dat1 <- data.frame(t=n_index, y=random_walk1, d=1*(n_index > n1))
-dat1_sub <- dat1[ n_index>wind1[1] & n_index < wind1[2],]
-
-## Then find your big break
-reg0 <- lm(y~t, data=dat1_sub[dat1_sub$d==0,])
-reg1 <- lm(y~t, data=dat1_sub[dat1_sub$d==1,])
-
-## The evidence should show openly (it's just science)
-plot(random_walk1, pch=16, col=grey(.5,.5), xlim=wind1)
-abline(v=n1, lty=2)
-lines(reg0$model$t, reg0$fitted.values, col=2)
-lines(reg1$model$t, reg1$fitted.values, col=4)
-```
-
-<img src="01-RandRstudio_files/figure-html/unnamed-chunk-44-1.png" width="672" />
-
-
-```r
-## Dress with some statistics for added credibility
-rdd_sub <- lm(y~d+t+d*t, data=dat1_sub)
-rdd_full <- lm(y~d+t+d*t, data=dat1)
-stargazer::stargazer(rdd_sub, rdd_full, 
-    type='html',
-    title='Recipe RDD',
-    header=F,
-    omit=c('Constant'),
-    notes=c('First column uses a dataset around the discontinuity.',
-    'Smaller windows are more causal, and where the effect is bigger.'))
-```
-
-
-<table style="text-align:center"><caption><strong>Recipe RDD</strong></caption>
-<tr><td colspan="3" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td colspan="2"><em>Dependent variable:</em></td></tr>
-<tr><td></td><td colspan="2" style="border-bottom: 1px solid black"></td></tr>
-<tr><td style="text-align:left"></td><td colspan="2">y</td></tr>
-<tr><td style="text-align:left"></td><td>(1)</td><td>(2)</td></tr>
-<tr><td colspan="3" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">d</td><td>-13.169<sup>***</sup></td><td>-9.639<sup>***</sup></td></tr>
-<tr><td style="text-align:left"></td><td>(0.569)</td><td>(0.527)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td></tr>
-<tr><td style="text-align:left">t</td><td>0.011<sup>***</sup></td><td>0.011<sup>***</sup></td></tr>
-<tr><td style="text-align:left"></td><td>(0.001)</td><td>(0.002)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td></tr>
-<tr><td style="text-align:left">d:t</td><td>0.009<sup>***</sup></td><td>0.004<sup>*</sup></td></tr>
-<tr><td style="text-align:left"></td><td>(0.002)</td><td>(0.002)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td></tr>
-<tr><td colspan="3" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Observations</td><td>589</td><td>1,000</td></tr>
-<tr><td style="text-align:left">R<sup>2</sup></td><td>0.771</td><td>0.447</td></tr>
-<tr><td style="text-align:left">Adjusted R<sup>2</sup></td><td>0.770</td><td>0.446</td></tr>
-<tr><td style="text-align:left">Residual Std. Error</td><td>1.764 (df = 585)</td><td>3.081 (df = 996)</td></tr>
-<tr><td style="text-align:left">F Statistic</td><td>658.281<sup>***</sup> (df = 3; 585)</td><td>268.763<sup>***</sup> (df = 3; 996)</td></tr>
-<tr><td colspan="3" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"><em>Note:</em></td><td colspan="2" style="text-align:right"><sup>*</sup>p<0.1; <sup>**</sup>p<0.05; <sup>***</sup>p<0.01</td></tr>
-<tr><td style="text-align:left"></td><td colspan="2" style="text-align:right">First column uses a dataset around the discontinuity.</td></tr>
-<tr><td style="text-align:left"></td><td colspan="2" style="text-align:right">Smaller windows are more causal, and where the effect is bigger.</td></tr>
-</table>
-
-
-DID
-
-
-```r
-## Find a reversal of fortune
-## (A good story always goes well with a nice pre-trend)
-n2 <- 318
-wind2 <- c(n2-20,n2+20)
-plot(random_walk2, pch=16, col=4, xlim=wind2, ylim=c(-15,15))
-points(random_walk1, pch=16, col=2)
-abline(v=n2, lty=2)
-```
-
-<img src="01-RandRstudio_files/figure-html/unnamed-chunk-46-1.png" width="672" />
-
-
-```r
-## Knead out any effects that are non-causal 
-## (or even just correlation)
-dat2A <- data.frame(t=n_index, y=random_walk1, d=1*(n_index > n2), RWid=1)
-dat2B <- data.frame(t=n_index, y=random_walk2, d=0, RWid=2)
-dat2  <- rbind(dat2A, dat2B)
-dat2$RWid <- as.factor(dat2$RWid)
-dat2$tid <- as.factor(dat2$t)
-dat2_sub <- dat2[ dat2$t>wind2[1] & dat2$t < wind2[2],]
-
-## Report the stars for all to enjoy
-## (and remind that stable coefficients are the good ones)
-did_fe1 <- lm(y~d+tid, data=dat2_sub)
-did_fe2 <- lm(y~d+RWid, data=dat2_sub)
-did_fe3 <- lm(y~d*RWid+tid, data=dat2_sub)
-stargazer::stargazer(did_fe1, did_fe2, did_fe3,
-    type='html',
-    title='Recipe DID',
-    header=F,
-    omit=c('tid','RWid', 'Constant'),
-    notes=c(
-     'Fixed effects for time in column 1, for id in column 2, and both in column 3.',
-     'Fixed effects control for most of your concerns.',
-     'Anything else creates a bias in the opposite direction.'))
-```
-
-
-<table style="text-align:center"><caption><strong>Recipe DID</strong></caption>
-<tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"></td><td colspan="3"><em>Dependent variable:</em></td></tr>
-<tr><td></td><td colspan="3" style="border-bottom: 1px solid black"></td></tr>
-<tr><td style="text-align:left"></td><td colspan="3">y</td></tr>
-<tr><td style="text-align:left"></td><td>(1)</td><td>(2)</td><td>(3)</td></tr>
-<tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">d</td><td>1.804<sup>*</sup></td><td>1.847<sup>***</sup></td><td>5.851<sup>***</sup></td></tr>
-<tr><td style="text-align:left"></td><td>(0.892)</td><td>(0.652)</td><td>(0.828)</td></tr>
-<tr><td style="text-align:left"></td><td></td><td></td><td></td></tr>
-<tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Observations</td><td>78</td><td>78</td><td>78</td></tr>
-<tr><td style="text-align:left">R<sup>2</sup></td><td>0.227</td><td>0.164</td><td>0.668</td></tr>
-<tr><td style="text-align:left">Adjusted R<sup>2</sup></td><td>-0.566</td><td>0.142</td><td>0.309</td></tr>
-<tr><td style="text-align:left">Residual Std. Error</td><td>2.750 (df = 38)</td><td>2.035 (df = 75)</td><td>1.827 (df = 37)</td></tr>
-<tr><td style="text-align:left">F Statistic</td><td>0.287 (df = 39; 38)</td><td>7.379<sup>***</sup> (df = 2; 75)</td><td>1.860<sup>**</sup> (df = 40; 37)</td></tr>
-<tr><td colspan="4" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left"><em>Note:</em></td><td colspan="3" style="text-align:right"><sup>*</sup>p<0.1; <sup>**</sup>p<0.05; <sup>***</sup>p<0.01</td></tr>
-<tr><td style="text-align:left"></td><td colspan="3" style="text-align:right">Fixed effects for time in column 1, for id in column 2, and both in column 3.</td></tr>
-<tr><td style="text-align:left"></td><td colspan="3" style="text-align:right">Fixed effects control for most of your concerns.</td></tr>
-<tr><td style="text-align:left"></td><td colspan="3" style="text-align:right">Anything else creates a bias in the opposite direction.</td></tr>
-</table>
-
-
 
