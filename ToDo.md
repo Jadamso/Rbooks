@@ -1,8 +1,9 @@
 # To Do
 
-Add templates for
+Add /DataScientism/* templates
+- edit
+- post in ./docs 
+- link. eg [RandRstudio](https://jadamso.github.io/Rbooks/01-RandRstudio.md)
 
-* basic Markdown.Rmd for HW
-* poster/presentations 
 
 Add title page
