@@ -1,5 +1,5 @@
 
-# (PART) Introduction to Regression Analysis in R {-} 
+# (PART) Introduction to Linear Regression in R {-} 
 
 
 # Simple OLS (bivariate linear regression)
@@ -720,17 +720,6 @@ sqrt(car::vif(reg)) > 2 # problem?
 
 
 ## More Literature
-
-OLS
-
-* https://bookdown.org/ripberjt/labbook/multivariable-linear-regression.html
-* https://online.stat.psu.edu/stat462/node/137/
-* https://book.stat420.org/
-* Hill, Griffiths & Lim (2007), Principles of Econometrics, 3rd ed., Wiley, S. 86f.
-* Verbeek (2004), A Guide to Modern Econometrics, 2nd ed., Wiley, S. 51ff.
-* Asteriou & Hall (2011), Applied Econometrics, 2nd ed., Palgrave MacMillan, S. 177ff.
-* https://online.stat.psu.edu/stat485/lesson/11/
-
 
 OLS Diagnostics
 
