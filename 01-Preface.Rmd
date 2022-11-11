@@ -3,7 +3,7 @@
 This book contains the following primers that should get you going with R in econometrics research
 
  * *Part   I*: Introduction to R
- * *Part  II*: Introduction to Regression Analysis in R
+ * *Part  II*: Introduction to Linear Regression in R
  * *Part III*: Introduction to Reproducible Research in R
  * *Part  IV*: Intermediate R
 

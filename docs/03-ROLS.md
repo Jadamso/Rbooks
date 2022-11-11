@@ -1,5 +1,5 @@
 
-# (PART) Introduction to Regression Analysis in R {-} 
+# (PART) Introduction to Linear Regression in R {-} 
 
 
 # Ordinary Least Squares
@@ -40,7 +40,7 @@ reg
 ## 
 ## Coefficients:
 ## (Intercept)            x  
-##    -0.33643      0.02521
+##     0.34002      0.01761
 ```
 
 ```r
@@ -342,38 +342,23 @@ summary(reg)
 
 
 
-# Coefficient Interpretation
-***
+## Coefficient Interpretation
 
 The above procedure will always give us number, the question is how to interpret them. 
 
-If we know the true data generating process is 
+*If* the data generating process is 
 $$
-Y=X\beta + \epsilon\\
-\mathbb{E}[\epsilon | X]=0
+y=X\beta + \epsilon\\
+\mathbb{E}[\epsilon | X]=0,
 $$
-then we have a famous result that lets us attach a simple interpretation of OLS coefficients as unbiased estimates:
+then we have a famous result that lets us attach a simple interpretation of OLS coefficients as unbiased estimates of the effect of X:
 $$
- (X'X)^{-1}X'Y = (X'X)^{-1}X'(X\beta + \epsilon) = (X'X)^{-1}X'X\beta + (X'X)^{-1}X'\epsilon = \beta + (X'X)^{-1}X'\epsilon\\
-\mathbb{E}\left[ \hat{\beta} \right] = \mathbb{E}\left[ (X'X)^{-1}X'Y \right] = \beta (X'X)^{-1}\mathbb{E}\left[ X'\epsilon \right] = \beta
+\hat{\beta} = (X'X)^{-1}X'y = (X'X)^{-1}X'(X\beta + \epsilon) = \beta + (X'X)^{-1}X'\epsilon\\
+\mathbb{E}\left[ \hat{\beta} \right] = \mathbb{E}\left[ (X'X)^{-1}X'y \right] = \beta + (X'X)^{-1}\mathbb{E}\left[ X'\epsilon \right] = \beta
 $$
-
-Those conditions are typically violated in econometric studies, even when including potential transforms of $Y$ and $X$. Sometimes the OLS model may still be a good or even great approximation (how good depends on the research question). In any case, you are safe to interpret your OLS coefficients as "conditional correlations".
-
-
-
-
-## Simulation Excercise
 
 
 Generate a simulated dataset with 30 observations and two exogenous variables. Assume the following relationship: $yi = \beta_0 + \beta_1 x_{1,i} + \beta_2 x_{2,i} + \epsilon_i$ where the variables and the error term are realizations of the following data generating processes (DGP):
-$$
-x_{1,i} \sim U(0, 5) \\
-x_{2,i} \sim B(1, 0.7)\\
-\epsilon_i \sim N(0, 3)\\
-\beta=[10, 2, −1].
-$$
-
 
 ```r
 N <- 30
@@ -390,11 +375,10 @@ coef(lm(Y~x1+x2, data=dat))
 
 ```
 ## (Intercept)          x1          x2 
-##  11.0237650   1.5767964  -0.2440487
+##   9.3391825   2.0817029  -0.2103545
 ```
 
 Simulate the distribution of coefficients under a correctly specified model. Interpret the average.
-
 
 ```r
 N <- 30
@@ -432,7 +416,7 @@ plot(fBjoint, xlab='B2', ylab='B3')
 <img src="03-ROLS_files/figure-html/unnamed-chunk-10-1.png" width="672" />
 
 
-Now examine the distribution of coefficients under a mispecified model. Interpret the average.
+Many economic phenomena are nonlinear, even when including potential transforms of $Y$ and $X$. Sometimes the OLS model may still be a good or even great approximation (how good depends on the research question). In any case, you are safe to interpret your OLS coefficients as "conditional correlations". For example, examine the distribution of coefficients under this mispecified model. Interpret the average.
 
 ```r
 N <- 30
@@ -456,6 +440,21 @@ for(i in 2:3){
 <img src="03-ROLS_files/figure-html/unnamed-chunk-11-1.png" width="672" />
 
 
+## More Literature
+
+* https://bookdown.org/ripberjt/labbook/multivariable-linear-regression.html
+* https://online.stat.psu.edu/stat462/node/137/
+* https://book.stat420.org/
+* Hill, Griffiths & Lim (2007), Principles of Econometrics, 3rd ed., Wiley, S. 86f.
+* Verbeek (2004), A Guide to Modern Econometrics, 2nd ed., Wiley, S. 51ff.
+* Asteriou & Hall (2011), Applied Econometrics, 2nd ed., Palgrave MacMillan, S. 177ff.
+* https://online.stat.psu.edu/stat485/lesson/11/
+
+
+
+# Regression Diagnostics
+***
+
 Simply plotting your regression object can help diagnose whether your model is a good one. There's little sense in getting great standard errors for the wrong model, and is a simple and easy step. So do it early and often.
 
 ```r
@@ -465,8 +464,6 @@ plot(reg)
 ```
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-12-1.png" width="672" />
-
-
 
 
 ## First Plot: Assessing Outlier $Y$
@@ -718,23 +715,8 @@ sqrt(car::vif(reg)) > 2 # problem?
 ```
 
 
-
-
-
 ## More Literature
 
-OLS
-
-* https://bookdown.org/ripberjt/labbook/multivariable-linear-regression.html
-* https://online.stat.psu.edu/stat462/node/137/
-* https://book.stat420.org/
-* Hill, Griffiths & Lim (2007), Principles of Econometrics, 3rd ed., Wiley, S. 86f.
-* Verbeek (2004), A Guide to Modern Econometrics, 2nd ed., Wiley, S. 51ff.
-* Asteriou & Hall (2011), Applied Econometrics, 2nd ed., Palgrave MacMillan, S. 177ff.
-* https://online.stat.psu.edu/stat485/lesson/11/
-
-
-OLS Diagnostics
 
 * https://book.stat420.org/model-diagnostics.html#leverage
 * https://socialsciences.mcmaster.ca/jfox/Books/RegressionDiagnostics/index.html
@@ -746,11 +728,26 @@ OLS Diagnostics
 # 2SLS, RDD, DID
 ***
 
+Just like many economic relationships are nonlinear, many economic variables are endogenous. By this we typically mean that $X$ is an outcome determined (or caused: $\to$) by some other variable.
+
+ * If $Y \to X$, then we have reverse causality
+ * If $Y \to X, X \to Y$, then we have simultaneity
+ * If $Z\to Y$ and either $Z\to X$ or $X \to Z$, then we have omitted a potentially important variable
+
+These endogeneity issues imply $\mathbb{E}[\epsilon|X]\neq 0$, which is a barrier to interpreting OLS as a causal models. Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels, they are not covered in this notebook. You are instead directed to
+
+* https://www.mostlyharmlesseconometrics.com/
+* https://bookdown.org/paul/applied-causal-analysis/
+* https://mixtape.scunning.com/
+* https://theeffectbook.net/
+* https://www.r-causal.org/
+* https://matheusfacure.github.io/python-causality-handbook/landing-page.html
+
 
 # Data scientism
 ***
 
-There is currently a boom in empirical research. This is not for the first time, and we'd be wise to recall some earlier wisdom from economists on the matter.
+There is currently a boom in empirical research centered around linear regression analysis. This is not for the first boom in empirical research, and we'd be wise to recall some earlier wisdom from economists on the matter.
 
 > The blind transfer of the striving for quantitative measurements to a field where the specific conditions are not present which give it its basic importance in the natural sciences is the result of an entirely unfounded prejudice. It is probably responsible for the worst aberrations and absurdities produced by scientism in the social sciences. It not only leads frequently to the selection for study of the most irrelevant aspects of the phenomena because they happen to be measurable, but also to "measurements" and assignments of numerical values which are absolutely meaningless. What a distinguished philosopher recently wrote about psychology is at least equally true of the social sciences, namely that it is only too easy "to rush off to measure something without considering what it is we are measuring, or what measurement means. In this respect some recent measurements are of the same logical type as Plato's determination that a just ruler is 729 times as happy as an unjust one."
 >
@@ -758,20 +755,20 @@ There is currently a boom in empirical research. This is not for the first time,
 
 > if you torture the data long enough, it will confess
 >
-> --- Ronald Coase, Unknown Date
+> --- R. Coase (Source Unknown)
 
 
 > the definition of a causal parameter is not always clearly stated, and formal statements of identifying conditions in terms of well-specified economic models are rarely presented. Moreover, the absence of explicit structural frameworks makes it difficult to cumulate knowledge across studies conducted within this framework. Many studies produced by this research program have a `stand alone' feature and neither inform nor are influenced by the general body of empirical knowledge in economics.
 >
-> --- Heckman 2000
+> --- J.J. Heckman, 2000
 
 
 > without explicit prior consideration of the effect of the instrument choice on the parameter being estimated, such a procedure is effectively the opposite of standard statistical practice in which a parameter of interest is defined first, followed by an estimator that delivers that parameter. Instead, we have a procedure in which the choice of the instrument, which is guided by criteria designed for a situation in which there is no heterogeneity, is implicitly allowed to determine the parameter of interest. This goes beyond the old story of looking for an object where the light is strong enough to see; rather, we have at least some control over the light but choose to let it fall where it may and then proclaim that whatever it illuminates is what we were looking for all along.
 >
-> --- Deaton 2010
+> --- A. Deaton, 2010
 
 
-The first example is a familiar one, the second is currently being research. At the end are two simple examples of scientism with the ''latest and greatest'' empirical recipes---we don't have many theoretical results yet, but I think you can understand the issue with the numerical example. 
+The next example is a familiar one, and the one after is currently being researched. At the end are two simple examples of scientism with the ''latest and greatest'' empirical recipes---we don't have many theoretical results yet but I think you can understand the issue with the numerical example. 
 
 ## US Gov't Spending on Science
 
@@ -915,12 +912,6 @@ legend('topright', lty=c(1,2), legend=c(
 
 
 
-
-
-
-For more intuition on spurious correlations, try http://shiny.calpoly.sh/Corr_Reg_Game/
-
-
 ```r
 par(mfrow=c(1,2), mar=c(2,2,2,1))
 plot.new()
@@ -955,10 +946,7 @@ axis(2)
 #stargazer(reg1, reg2, type='html')
 ```
 
-Nevertheless, data transformation is often necessary before regression analysis. For downloading tips, see https://raw.githubusercontent.com/rstudio/cheatsheets/main/data-import.pdf
-
-
-<!--\url{https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf}-->
+For more intuition on spurious correlations, try http://shiny.calpoly.sh/Corr_Reg_Game/
 
 
 ## OLS in the age of big data
@@ -1005,7 +993,11 @@ dat_merged_wide == dat_merged_wide2
 ## [6,] TRUE TRUE TRUE TRUE TRUE
 ```
 
-Another class of errors pertains to `Regression Machines`. 
+Nevertheless, data transformation is often necessary before regression analysis. For downloading tips, see https://raw.githubusercontent.com/rstudio/cheatsheets/main/data-import.pdf
+<!--\url{https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf}-->
+
+
+Another class of errors pertains to *Regression Machines*. 
 
 ```r
 n <- 50
