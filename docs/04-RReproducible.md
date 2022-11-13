@@ -93,14 +93,28 @@ Suppose you decided to code what you did beginning with Step 2.
 
 ## Types of Projects
 
-HW assignments are small scale projects. We will create these little reports using R markdown to be almost entirely self-contained (showing both code and output).
+Homework reports are the smallest and probably first document you create. We will create little homework reports using R markdown that are almost entirely self-contained (showing both code and output). To do this, you will need to install [Pandoc](http://pandoc.org) on your computer.
 
-Posters and presentations are another important type of scientific document. R markdown is also good at creating both of these, and actually *very* good with some additional packages. So we will also use [flexdashboard](https://pkgs.rstudio.com/flexdashboard/) for posters and [beamer]( https://bookdown.org/yihui/rmarkdown/beamer-presentation.html) for presentions. (Click the links for guides on using these tools.)
+Posters and presentations are another important type of scientific document. R markdown is good at creating both of these, and actually *very* good with some additional packages. So we will also use [flexdashboard](https://pkgs.rstudio.com/flexdashboard/) for posters and [beamer]( https://bookdown.org/yihui/rmarkdown/beamer-presentation.html) for presentions. Since beamer is a pdf output, you will need to install [TinyTex](https://yihui.org/tinytex/), which can be done within R
 
+```r
+install.packages('tinytex')
+tinytex::install_tinytex()  # install TinyTeX
+```
 
+Install any required packages
 
+```r
+## Packages for Rmarkdown
+install.packages("knitr")
+install.packages("rmarkdown")
+install.packages("bookdown")
 
-## Why R and R-Markdown
+## Other packages used in this primer
+install.packages("plotly")
+install.packages("sf")
+```
+
 
 Note that
 
@@ -111,6 +125,7 @@ Note that
 R and R markdown are also both languages: R studio interprets R code to produce statistics, R studio interprets R markdown code to produce pretty documents which contain both writing and statistics. You should already be a bit familiar with R, but not necessarily R Markdown. So to get you started, you should first read and work through this document, and then recreate it yourself as a litte tutorial. Before hopping into programming, however, understand why you will learn to program in both R and R-markdown languages
 
 
+## Why R and R-Markdown
 
 Good for complex stats, concise figures, and coherent organization.
 
@@ -143,52 +158,30 @@ Good for getting a job
 ## HW Example {.tabset}
 Below is a template of what questions (and answers) look like. 
 
-Install any required packages
-
-```r
-## Packages for Rmarkdown
-install.packages("knitr")
-install.packages("rmarkdown")
-install.packages("bookdown")
-
-## Other packages used in this primer
-install.packages("plotly")
-install.packages("sf")
-```
-
 ### Question1
-Simulate 100 random observations of the form $y=x\beta+\epsilon$ and plot the relationship. Play around with different styles, https://www.r-graph-gallery.com/13-scatter-plot.html, to best express your point.
+Simulate 100 random observations of the form $y=x\beta+\epsilon$ and plot the relationship. Plot and explore the data interactively via plotly, https://plotly.com/r/line-and-scatter/. Then play around with different styles, https://www.r-graph-gallery.com/13-scatter-plot.html, to best express your point.
 
 *Answer*
-I simulate $400$ observations for $\epsilon \sim 2\times N(0,1)$ and $\beta=4$, as seen in this single chunk of code. Notice the upward trend.
+I simulate $400$ observations for $\epsilon \sim 2\times N(0,1)$ and $\beta=4$, as seen in this single chunk. Notice an upward trend.
 
 ```r
 n <- 100
 E <- rnorm(n)
 X <- seq(n)
 Y <- 4*X + 2*E
-plot(Y~X)
-```
 
-<img src="04-RReproducible_files/figure-html/answer1-1.png" width="672" />
-
-### Question 2
-Explore the data interactively via plotly, https://plotly.com/r/line-and-scatter/.
-
-*Answer*
-Again, notice the upward trend.
-
-```r
 library(plotly)
 plot_ly( data=data.frame(X=X,Y=Y), x=~X, y=~Y)
 ```
 
 ```{=html}
-<div id="htmlwidget-a88315382c397555b402" style="width:672px;height:480px;" class="plotly html-widget"></div>
-<script type="application/json" data-for="htmlwidget-a88315382c397555b402">{"x":{"visdat":{"fceadbb8050":["function () ","plotlyVisDat"]},"cur_data":"fceadbb8050","attrs":{"fceadbb8050":{"x":{},"y":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20]}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"xaxis":{"domain":[0,1],"automargin":true,"title":"X"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Y"},"hovermode":"closest","showlegend":false},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100],"y":[0.149111363775088,7.50101329107136,8.71079755045526,17.0472241618167,19.9150001268168,25.3992252541838,28.7084169856175,32.5366059673252,34.866139480486,41.084520710096,44.1302867296308,47.0229980423415,52.0867465006618,58.161689497768,57.5156794402967,63.583904240873,67.5978794317153,69.5094729807453,76.6643475816558,77.6993392773393,83.0121285048644,86.7258527955873,95.9336701245222,99.110260572514,100.975964178256,106.155376252042,104.731856198753,111.965039026,114.216756747338,120.990707888549,122.032857724937,128.901748898459,131.69968736598,137.106591769847,141.15898391614,146.920416046912,152.257078637686,153.558195342965,157.427097428731,160.994982934198,166.469803766967,166.394338783005,176.729578343589,175.905518352443,178.639984790073,179.904143926051,188.617803564879,193.244037468706,193.912738400583,198.791275462329,199.980128036882,206.608958948343,210.294624143517,215.447733745829,220.082234178476,222.655799745125,228.004913592181,230.408048818196,237.602810033719,241.75227923377,245.674302016455,249.142452459345,255.926372426255,257.94748646392,258.700792924387,265.63584836123,266.752494063512,273.095827798404,280.025848630819,281.613699338144,283.010296438185,288.634357115959,291.463938935796,294.850985560083,301.764820267299,305.171436839051,308.756166119414,306.444271520074,318.213688509412,315.055440286212,325.261456664921,328.370439164241,332.290863331338,333.620469242739,340.397247936863,342.072461584154,348.805296690889,352.120874598357,357.440887213134,361.363569630707,363.299718625338,369.425811840568,371.080117384604,378.681392044163,379.574487125948,385.274928960782,387.692626280592,392.758515425269,399.419514307369,400.299266872303],"type":"scatter","mode":"markers","marker":{"color":"rgba(31,119,180,1)","line":{"color":"rgba(31,119,180,1)"}},"error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"line":{"color":"rgba(31,119,180,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-06e5130b01e5704c0f1a" style="width:672px;height:480px;" class="plotly html-widget"></div>
+<script type="application/json" data-for="htmlwidget-06e5130b01e5704c0f1a">{"x":{"visdat":{"738568471752":["function () ","plotlyVisDat"]},"cur_data":"738568471752","attrs":{"738568471752":{"x":{},"y":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20]}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"xaxis":{"domain":[0,1],"automargin":true,"title":"X"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Y"},"hovermode":"closest","showlegend":false},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100],"y":[3.9768323307419,7.76664233131185,13.1660331917176,16.7906652340817,20.8721029534402,25.3662911575133,27.2250972919734,33.2160651860127,36.5421124582145,41.1955885965442,43.7405405570808,47.4289001792736,56.2118017661391,55.5292433356514,61.8300158574589,63.3889627364633,67.5799134362553,72.4095653174883,76.2531177731681,79.2044428072798,83.1764510723372,87.3677509662431,91.5288284945306,94.9139392447969,101.438915980222,104.179757932237,103.058666118023,112.279106317257,114.986244997959,118.304473505208,123.405622279233,129.14213409165,130.198320650273,136.010940568704,139.762428428621,145.317563338467,150.707497187316,152.022623040688,155.790772418127,160.57627111319,162.250464696208,167.156654860284,172.87538049827,176.39809404709,178.387617986036,183.333026539881,188.575723080364,193.598338626747,196.784630034097,199.167718685218,202.395800885462,208.337550144208,212.585182460909,215.652351209006,215.974592943517,222.592828575956,229.910114110372,236.748982991622,233.984853246856,238.406528187909,244.355183456376,246.652223347749,254.532728792898,255.448150198051,259.766343730258,261.670474700976,266.95394007657,270.995650407083,271.175503253674,282.331665426868,285.317260288481,286.330764946086,291.993791502326,295.091337648163,301.267869155404,305.001146259511,309.289407726503,311.175079760868,317.024676135512,320.185712269294,322.852904804619,328.570130413533,336.037066288245,335.724196680451,338.415019194237,344.105796736675,349.998822536491,352.022544817204,353.153471808686,358.113482307366,361.520309912791,369.617915843443,372.950243998643,378.092091141716,378.99121037913,383.283100635486,386.347272962261,394.618262745558,397.443367203415,400.775763716736],"type":"scatter","mode":"markers","marker":{"color":"rgba(31,119,180,1)","line":{"color":"rgba(31,119,180,1)"}},"error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"line":{"color":"rgba(31,119,180,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 
-### Question 3
+*Answer*
+
+### Question 2
 Verify the definition of a line segment for points $A=(0,3), B=(1,5)$ using a $101 \times 101$ grid. Recall a line segment is all points $s$ that have $d(s, A) + d(s, B) = d(A, B)$.
 
 *Answer* 
@@ -217,7 +210,7 @@ points(D_point_seg)
 box()
 ```
 
-<img src="04-RReproducible_files/figure-html/answer3-1.png" width="672" />
+<img src="04-RReproducible_files/figure-html/answer2-1.png" width="672" />
 
 
 

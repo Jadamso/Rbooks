@@ -204,8 +204,8 @@ rnorm(10)
 ```
 
 ```
-##  [1] -0.22350285  1.22709655 -0.25434092  0.41036513  0.37601036  1.15293714
-##  [7]  0.46875316 -0.00252935  0.81124727  0.81697964
+##  [1]  0.077157401 -0.380950644  0.002505716  0.015013150 -1.095611466
+##  [6] -0.115032297 -1.464641770 -0.992012890  1.483519990  0.232776756
 ```
 
 ```r
@@ -213,8 +213,8 @@ rnorm(10)
 ```
 
 ```
-##  [1]  2.744289e-05 -7.212443e-01  7.834888e-01 -6.683952e-01 -6.663240e-01
-##  [6]  9.765241e-02  1.528832e-01  1.870049e-01  2.133448e-02  8.045017e-01
+##  [1] -1.9864434  1.4189550  0.5901312  1.7516799 -0.7077949  0.8393727
+##  [7]  0.1633591 -0.5547314 -1.3016912  1.5367715
 ```
 
 ```r
@@ -224,7 +224,7 @@ head(x2)
 ```
 
 ```
-## [1] 0.10555965 0.05908624 0.62292299 0.50658207 0.67009784 0.79638513
+## [1] 0.50027673 0.39824885 0.07929054 0.42053494 0.35505265 0.75541022
 ```
 
 ```r
@@ -253,7 +253,7 @@ fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.4972659
+## [1] 0.4957625
 ```
 
 ```r
@@ -261,7 +261,7 @@ fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.5070405
+## [1] 0.4939116
 ```
 
 ```r
@@ -269,7 +269,7 @@ fun_of_rv(sum)
 ```
 
 ```
-## [1] 491.6266
+## [1] 504.5895
 ```
 
 
@@ -283,7 +283,7 @@ fun_of_rv()
 ```
 
 ```
-## [1] 0.4486649
+## [1] 0.4855311
 ```
 
 Very useful for applying a function over and over again
@@ -296,7 +296,7 @@ mapply(sum, 1:3, runif(3) )
 ```
 
 ```
-## [1] 1.551212 2.474137 3.421294
+## [1] 1.159946 2.978030 3.765094
 ```
 
 ##  Matrices and Matrix-Functions
@@ -668,12 +668,12 @@ head(xy_dat)
 
 ```
 ##        x          y
-## 1 1.0000  0.5121964
-## 2 1.0002  1.1204466
-## 3 1.0004  0.4957833
-## 4 1.0006  1.6491836
-## 5 1.0008 -0.3551281
-## 6 1.0010 -0.7390765
+## 1 1.0000 -0.7539424
+## 2 1.0002  1.0218986
+## 3 1.0004  0.6834813
+## 4 1.0006  1.0622460
+## 5 1.0008 -1.2961225
+## 6 1.0010 -0.2335646
 ```
 
 ```r
@@ -705,18 +705,18 @@ summary(reg)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -4.3514 -0.6781  0.0019  0.6747  3.9706 
+## -4.1475 -0.6763 -0.0013  0.6771  4.6691 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) 0.008810   0.010985   0.802    0.423    
-## x           0.247967   0.001806 137.307   <2e-16 ***
+## (Intercept) 0.012952   0.011056   1.172    0.241    
+## x           0.248498   0.001818 136.716   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.9953 on 44999 degrees of freedom
-## Multiple R-squared:  0.2953,	Adjusted R-squared:  0.2952 
-## F-statistic: 1.885e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
+## Residual standard error: 1.002 on 44999 degrees of freedom
+## Multiple R-squared:  0.2935,	Adjusted R-squared:  0.2935 
+## F-statistic: 1.869e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -857,10 +857,11 @@ There are many good yet free programming books online. E.g.,
 
 * https://cran.r-project.org/doc/manuals/R-intro.html
 * R Graphics Cookbook, 2nd edition. Winston Chang. 2021. https://r-graphics.org/
-* Spatial Data Science with R: Introduction to R. Robert J. Hijmans. 2021. https://rspatial.org/intr/index.html
+* https://intro2r.com/
 * R for Data Science. H. Wickham and G. Grolemund. 2017. https://r4ds.had.co.nz/index.html
 * An Introduction to R. W. N. Venables, D. M. Smith, R Core Team. 2017. https://colinfay.me/intro-to-r/
 * https://bookdown.org/kieranmarray/intro_to_r_for_econometrics/
+* Spatial Data Science with R: Introduction to R. Robert J. Hijmans. 2021. https://rspatial.org/intr/index.html
 
 There are also many good yet free-online tutorials and courses. E.g., \\
 

@@ -64,6 +64,7 @@ $$
 \hat{\sigma}^2_{\hat{y}_j}=\hat{\sigma}^2\left[\frac{1}{n}+\frac{(x_j-\bar{x})^2}{\sum_{i}(x_i-\bar{x})^2}\right]\\
 $$
 
+For more details, see https://www.econometrics-with-r.org/4-lrwor.html
 
 ## OLS (multiple linear regression)
 
@@ -303,9 +304,83 @@ for(i in 2:3){
 }
 ```
 
+## Factor Variables
+
+So far, we have discussed cardinal data where the difference between units always means the same thing: e.g., $4 -3=3-2$. There are also factor variables
+
+* Ordered: The difference between units means something, but not always the same thing. E.g., $1st - 2nd \neq 2nd - 3rd$.
+* Unordered: The difference between units does not mean something $B-A =??$
+
+Sometimes Ordinal and Categorical data are called Ordinal and Categorical variables. 
+
+To analyze either factor, we often convert them into indicator variables or dummies; $D_{c}=\mathbf{1}( Factor = c)$. One common case is if you have observations of individuals over time periods, then you may have two factor variables. An unordered factor that indicates who an individual is; for example $D_{i}=\mathbf{1}( Individual = i)$, and an order factor that indicates the time period; for example $D_{t}=\mathbf{1}( Time \in [month~ t, month~ t+1) )$. There are many other cases you see factor variables, including spatial ID's in purely cross sectional data.
+
+Be careful not to handle categorical data as if they were cardinal. E.g., generate city data with Leipzig=1, Lausanne=2, LosAngeles=3, ... and then include city as if it were a cardinal number (that's a big no-no). The same applied to ordinal data; PopulationLeipzig=2, PopulationLausanne=3, PopulationLosAngeles=1.  
+
+```{r}
+N <- 1000
+x <- runif(N,3,8)
+e <- rnorm(N,0,0.4)
+fo <- factor(rbinom(N,4,.5), ordered=T)
+fu <- factor(rep(c('A','B'),N/2), ordered=F)
+dA <- 1*(fu=='A')
+y <- (2^as.integer(fo)*dA )*sqrt(x)+ 2*as.integer(fo)*e
+dat_f <- data.frame(y,x,fo,fu)
+```
+
+
+With factors, you can still include them in the design matrix of an OLS regression
+$$
+y_{it} = x_{it} \beta_{x} + d_{c}\beta_{c}
+$$
+When, as commonly done, the factors are modeled as being additively seperable, they are modelled as either "fixed" or "random" effects.
+
+Simply including the factors into the OLS regression yields a "dummy variable" fixed effects estimator.
+```{r}
+fe_reg0 <- lm(y~x+fo+fu, dat_f)
+summary(fe_reg0)
+```
+We can also compute averages for each group and construct a "between estimator"
+$$
+\overline{y}_i = \alpha + \overline{x}_i \beta
+$$
+Or we can subtract the average from each group to construct a "within estimator", 
+$$
+(y_{it} - \overline{y}_i) = (x_{it}-\overline{x}_i)\beta\\
+$$
+that tends to be more computationally efficient, has corrections for standard errors, and has additional summary statistics.
+```{r}
+library(fixest)
+fe_reg1 <- feols(y~x|fo+fu, dat_f)
+summary(fe_reg1)
+```
+
+**Hansen Econometrics, Theorem 17.1:** The fixed effects estimator of $\beta$ algebraically equals the dummy
+variable estimator of $\beta$. The two estimators have the same residuals.
+
+In fact, if the fixed effect is ``fully unstructured then the only way to consistently estimate the coefficient $\beta$ is by an estimator which is invariant'' (Hansen Econometrics, p). 
+
+Consistency is a great property, but only if the data generating process does in fact match the model. Many factor variables have effects that are not additively seperable.
+```{r}
+reg1 <- feols(y~x|fo^fu, dat_f)
+summary(reg1)
+reg2 <- lm(y~x*fo*fu, dat_f)
+summary(reg2)
+#reg2 <- feols(y~x*fo*fu|fo^fu, dat_f)
+```
+
+
+With *Random Effects*, the factor variable is modelled as coming from a distribution that is uncorrelated with the regressors. This is rarely used in economics today, and mostly included for historical reasons and a few cases where fixed effects cannot be estimates.
+
+<!-- 
+> The labels "random effects" and "fixed effects" are misleading. These are labels which arose in the early literature and we are stuck with these labels today. In a previous era regressors were viewed as "fixed". Viewing the individual effect as an unobserved regressor leads to the label of the individual effect as "fixed". Today, we rarely refer to regressors as "fixed" when dealing with observational data. We view all variables as random. Consequently describing u i as "fixed" does not make much sense and it is hardly a contrast with the "random effect" label since under either assumption u i is treated as random. Once again, the labels are unfortunate but the key difference is whether u i is correlated with the regressors.
+-->
+
 
 ## More Literature
 
+* https://www.econometrics-with-r.org/6-rmwmr.html
+* https://www.econometrics-with-r.org/7-htaciimr.html
 * https://bookdown.org/ripberjt/labbook/multivariable-linear-regression.html
 * https://online.stat.psu.edu/stat462/node/137/
 * https://book.stat420.org/
@@ -315,8 +390,13 @@ for(i in 2:3){
 * https://online.stat.psu.edu/stat485/lesson/11/
 
 
+For fixed effects, see
 
-# Regression Diagnostics
+* https://www.princeton.edu/~otorres/Panel101.pdf
+* https://www.stata.com/manuals13/xtxtreg.pdf
+
+
+# OLS Diagnostics
 ***
 
 Simply plotting your regression object can help diagnose whether your model is a good one. There's little sense in getting great standard errors for the wrong model, and is a simple and easy step. So do it early and often.
@@ -327,8 +407,9 @@ plot(reg)
 ```
 
 
-## First Plot: Assessing Outlier $Y$
+## Assessing Outlier $Y$
 
+This is the first plot.
 
 >``In our $y_i = a + b x_i + e_i$ regression, the residuals are, of course, $e_i$ -- they reveal how much our fitted value $\hat{y}_i = a + b x_i$ differs from the observed $y_i$. A point $(x_i ,y_i)$ with a corresponding large residual is called an *outlier*. Say that you are interested in outliers because you somehow think that such points will exert undue *influence* on your estimates. Your feelings are generally right, but there are exceptions. A point might have a huge residual and yet not affect the estimated $b$ at all''
 >Stata Press (2015) Base Reference Manual, Release 14, p. 2138.
@@ -342,10 +423,8 @@ abline(h = 0, col = "darkorange", lwd = 2)
 # car::outlierTest(reg)
 ```
 
-## Second Plot: Violations of Normality 
-OLS point estimates do not depend on the Normality of the residuals. Good thing, because there's no reason the residuals of economic phenomena should be so well behaved. The variability of the point estimates are, however, affected by the distribution of the residuals. For these reasons, you may be interested in
-
-Assessing Normality 
+## Assessing Normality 
+The second plot examines whether the residuals are normally distributed. OLS point estimates do not depend on the Normality of the residuals. Good thing, because there's no reason the residuals of economic phenomena should be so well behaved. The variability of the point estimates are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality 
 ```{r}
 par(mfrow=c(1,2))
 hist(resid(reg), main='Histogram of Residuals')
@@ -357,17 +436,16 @@ shapiro.test(resid(reg))
 # car::qqPlot(reg)
 ```
 
-
-Assessing Heterskedasticity may also matter for variance estimates. This is not shown in the plot, but you can run a simple test
+Assessing Heterskedasticity may also matters for variance estimates. This is not shown in the plot, but you can run a simple test
 ```{r}
 library(lmtest)
 lmtest::bptest(reg)
 ```
 
 
+## Assessing Outlier $X$
 
-## Third Plot: Assessing Outlier $X$, "Leverage"
-
+The third plot examines "Leverage".
 
 >"$(x_i ,y_i)$ can be an outlier in another way -- just as $y_i$ can be far from $\hat{y}_i$, $x_i$ can be far from the center of mass of the other $x$'s. Such an `outlier' should interest you just as much as the more traditional outliers. Picture a scatterplot of $y$ against $x$ with thousands of points in some sort of mass at the lower left of the graph and one point at the upper right of the graph. Now run a regression line through the points—the regression line will come close to the point at the upper right of the graph and may in fact, go through it. That is, this isolated point will not appear as an outlier as measured by residuals because its residual will be small. Yet this point might have a dramatic effect on our resulting estimates in the sense that, were you to delete the point, the estimates would change markedly. Such a point is said to have high *leverage*''
 Stata Press (2015) Base Reference Manual, Release 14, pp. 2138-39.
@@ -406,9 +484,8 @@ which.max(hatvalues(reg))
 which.max(rstandard(reg))
 ```
 
-## Fourth Plot: Further Assessing Outlier $X$, Cook's Distance
 
-Cook's Distance is defined as the sum of all the changes in the regression model when observation i is removed from.
+The fourth plot further assesses outlier $X$ using "Cook's Distance". Cook's Distance is defined as the sum of all the changes in the regression model when observation i is removed from.
 $$
 D_{i} = \frac{\sum_{j} \left( \hat{y_j} - \hat{y_j}_{[i]} \right)^2 }{ p s^2 }
 = \frac{[e_{i}]^2}{p s^2 } \frac{h_i}{(1-h_i)^2}\\
@@ -442,11 +519,10 @@ head(influence.measures(reg)$infmat)
 ```
 
 
-## Collinearity: Variance Inflation Factor
+## Collinearity
+This is when one explanatory variable in a multiple regression model can be linearly predicted from the others with a substantial degree of accuracy. Coefficient estimates may change erratically in response to small changes in the model or the data. (In the extreme case where there are more variables than observations $K>\geq N$, $X'X$ has an infinite number of solutions and is not invertible.)
 
-One explanatory variable in a multiple regression model can be linearly predicted from the others with a substantial degree of accuracy. Coefficient estimates may change erratically in response to small changes in the model or the data. (In the extreme case where there are more variables than observations $K>\geq N$, $X'X$ has an infinite number of solutions and is not invertible.)
-
-To diagnose this, we can use
+To diagnose this, we can use the Variance Inflation Factor
 $$
 VIF_{k}=\frac{1}{1-R^2_k},
 $$
@@ -456,6 +532,134 @@ where $R^2_k$ is the $R^2$ for the regression of $X_k$ on the other covariates $
 car::vif(reg) 
 sqrt(car::vif(reg)) > 2 # problem?
 ```
+
+
+## Transformations
+
+
+Coefficient transformations can often improve model fit. Note for small changes, $\Delta ln(x) \approx \Delta x / x = \Delta x \% \cdot 100$. Under the assumptions of the OLS model, we have 
+
+| *Model* | *Regressand* | *Regressor* | *Derivative* | *Interpretation* |
+| --- | --- | --- | --- | --- |
+| linear--linear | $y$          | $x$   | $\Delta y = \beta_1\cdot\Delta x$ | Change $x$ by one unit $\rightarrow$ change $y$ by $\beta_1$ units.|
+| log--linear | $ln(y)$ | $x$ | $\Delta y \% \cdot 100 \approx \beta_1 \cdot \Delta x$ | Change $x$ by one unit $\rightarrow$ change $y$ by $100 \cdot \beta_1$ percent. |
+| linear--log | $y$ | $ln(x)$ | $\Delta y \approx  \frac{\beta_1}{100}\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\frac{\beta_1}{100}$ units |
+| log--log | $ln(y)$ | $ln(x)$ | $\Delta y \% \approx \beta_1\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\beta_1$ percent|
+
+There are many reasons why the OLS model is unlikely to be true. Recall from micro theory, that an additively seperable and linear production function is referred to as ``perfect substitutes''. You have implicitly modelled the different regressors $X$ as perfect substitutes, when in fact they may be compliments.
+
+Further recall that the ''perfect substitutes'' model is a special case of the constant elasticity of substitution production function. Here, we will build on http://dx.doi.org/10.2139/ssrn.3917397, and consider box-cox transforming both $X$ and $y$. Specifically, apply the box-cox transform of $y$ using parameter $\lambda$ and apply another box-cox transform to each $x$ using the same parameter $\rho$;so that
+
+$$
+y^{(\lambda)}_{i} = \sum_{k}\beta_{k} x^{(\rho)}_{k,i} + \epsilon_{i}\\
+y^{(\lambda)}_{i} =
+\begin{cases}
+\lambda^{-1}[ (y_i+1)^{\lambda}- 1] & \lambda \neq 0 \\
+log(y_i+1) &  \lambda=0
+\end{cases}.\\
+x^{(\rho)}_{i} =
+\begin{cases}
+\rho^{-1}[ (x_i)^{\rho}- 1] & \rho \neq 0 \\
+log(x_{i}+1) &  \rho=0
+\end{cases}.
+$$
+
+Notice that this nests:
+
+ * linear-linear $(\rho=\lambda=1)$.
+ * linear-log $(\rho=1, \lambda=0)$.
+ * log-linear $(\rho=0, \lambda=1)$.
+ * log-log  $(\rho=\lambda=0)$.
+
+
+If $\rho=\lambda$, we get the CES production function. This nests the ''perfect substitutes'' linear-linear model ($\rho=\lambda=1$) , the ''cobb-douglas''  log-log model  ($\rho=\lambda=0$), and many others. We can define $\lambda=\rho/\lambda'$ to be clear that this is indeed a CES-type transformation where
+
+* $\rho \in (-\infty,1]$ controls the ''substitutability'' of explanatory variables ($\rho <0$ is ''complementary'')
+* $\lambda$ determines ''returns to scale'' ($\lambda'<1$ is ''decreasing returns'').
+
+
+We compute the mean squared error in the original scale by inverting the predictions;
+$$
+\widehat{y}_{i} =
+\begin{cases}
+[ \widehat{y^{(\lambda)}}_{i} \cdot \lambda ]^{1/\lambda} -1 & \lambda  \neq 0 \\
+exp( \widehat{y^{(\lambda)}}_{i}) -1 &  \lambda=0
+\end{cases}.
+$$
+
+
+It is easiest to optimize parameters in a 2-step procedure called  `concentrated optimization'. We first solve for $\widehat{\beta}(\rho,\lambda)$ and compute the mean squared error $MSE(\rho,\lambda)$. We then find the $(\rho,\lambda)$ which minimizes $MSE$.
+```{r}
+## Box-Cox Transformation Function
+bxcx <- function( xy, rho){
+    if (rho == 0L) {
+      log(xy+1)
+    } else if(rho == 1L){
+      xy
+    } else {
+      ((xy+1)^rho - 1)/rho
+    }
+}
+bxcx_inv <- function( xy, rho){
+    if (rho == 0L) {
+      exp(xy) - 1
+    } else if(rho == 1L){
+      xy
+    } else {
+     (xy * rho + 1)^(1/rho) - 1
+    }
+}
+
+
+## Which Variables
+reg <- lm(Rape~Murder+Assault+UrbanPop, data=USArrests)
+X <- USArrests[,c('Murder','Assault','UrbanPop')]
+Y <- USArrests[,'Rape']
+
+## Simple Grid Search
+## Which potential (Rho,Lambda) 
+rl_df <- expand.grid(rho=seq(-2,2,by=.5),lambda=seq(-2,2,by=.5))
+
+## Compute Mean Squared Error
+## from OLS on Transformed Data
+errors <- apply(rl_df,1,function(rl){
+    Xr <- bxcx(X,rl[[1]])
+    Yr <- bxcx(Y,rl[[2]])
+    Datr <- cbind(Rape=Yr,Xr)
+    Regr <- lm(Rape~Murder+Assault+UrbanPop, data=Datr)
+    Predr <- bxcx_inv(predict(Regr),rl[[2]])
+    Resr  <- (Y - Predr)
+    return(Resr)
+})
+rl_df$mse <- colMeans(errors^2)
+
+## Want Small MSE and Interpretable
+## (-1,0,1,2 are Easy to interpretable)
+library(ggplot2)
+ggplot(rl_df, aes(rho, lambda, fill=mse )) +
+    geom_tile() + ggtitle('Mean Squared Error') 
+    
+## Which min
+rl0 <- rl_df[which.min(rl_df$mse),c('rho','lambda')]
+
+## Which give NA?
+## which(is.na(errors), arr.ind=T)
+
+## Plot
+Xr <- bxcx(X,rl0[[1]])
+Yr <- bxcx(Y,rl0[[2]])
+Datr <- cbind(Rape=Yr,Xr)
+Regr <- lm(Rape~Murder+Assault+UrbanPop, data=Datr)
+Predr <- bxcx_inv(predict(Regr),rl0[[2]])
+
+cols <- c(rgb(1,0,0,.5), col=rgb(0,0,1,.5))
+plot(Y, Predr, pch=16, col=cols[1], ylab='Prediction')
+points(Y, predict(reg), pch=16, col=cols[2])
+legend('topleft', pch=c(16), col=cols, title='Rho,Lambda',
+    legend=c(  paste0(rl0, collapse=','),'1,1') )
+```
+
+Note that your hypothesis testing procedures do not account for you trying out different transformations.
 
 
 ## More Literature
@@ -468,7 +672,8 @@ sqrt(car::vif(reg)) > 2 # problem?
 * Fox, J. D. (2020). Regression diagnostics: An introduction (2nd ed.). SAGE. https://dx.doi.org/10.4135/9781071878651
 
 
-# 2SLS, RDD, DID
+
+# OLS and Endogeneity
 ***
 
 Just like many economic relationships are nonlinear, many economic variables are endogenous. By this we typically mean that $X$ is an outcome determined (or caused: $\to$) by some other variable.
@@ -477,14 +682,52 @@ Just like many economic relationships are nonlinear, many economic variables are
  * If $Y \to X, X \to Y$, then we have simultaneity
  * If $Z\to Y$ and either $Z\to X$ or $X \to Z$, then we have omitted a potentially important variable
 
-These endogeneity issues imply $\mathbb{E}[\epsilon|X]\neq 0$, which is a barrier to interpreting OLS as a causal models. Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels, they are not covered in this notebook. You are instead directed to
+These endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a barrier to interpreting OLS as a causal model. Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels of technical detail, they are not covered extensively in this notebook. You are directed to the following resources which discuss these statistical models in more general terms and how they can be applied across many social sciences.
 
+* Causal Inference for Statistics, Social, and Biomedical Sciences: An Introduction
 * https://www.mostlyharmlesseconometrics.com/
+* https://www.econometrics-with-r.org
 * https://bookdown.org/paul/applied-causal-analysis/
 * https://mixtape.scunning.com/
 * https://theeffectbook.net/
 * https://www.r-causal.org/
 * https://matheusfacure.github.io/python-causality-handbook/landing-page.html
+
+
+## Two Stage Least Squares (2SLS)
+
+* https://www.econometrics-with-r.org/12-ivr.html
+* https://bookdown.org/paul/applied-causal-analysis/estimation-2.html
+* https://mixtape.scunning.com/07-instrumental_variables
+* https://theeffectbook.net/ch-InstrumentalVariables.html
+* http://www.urfie.net/read/index.html#page/247
+
+Note that the coefficient interpretation still rests on many assumptions
+
+* do you know both supply and demand are linear?
+* do you know only supply was affected, and it was only an intercept shift?
+* is the shock large enough to be picked up statistically
+
+If we had multiple alleged supply shifts and recorded their magnitudes, then we could recover more information about demand. One common diagnostic tool is simply to report the reduced form results, but we could use a nonparametric estimator to diagnose linearity at the same time. 
+```{r, eval=F, results='hide'}
+#reg2_alt_fs <- lm(Q~cost, data=dat2)
+#summary(reg2_alt_fs)
+#lo2_alt_fs <- loess(Q~cost, data=dat2)
+```
+
+Other tools are used to help address some of the other assumptions.
+
+## Regression Discontinuity (RD)
+
+* https://bookdown.org/paul/applied-causal-analysis/rdd-regression-discontinuity-design.html
+* https://mixtape.scunning.com/06-regression_discontinuity
+* https://theeffectbook.net/ch-RegressionDiscontinuity.html
+
+## Difference in Differences (DID)
+
+* https://mixtape.scunning.com/09-difference_in_differences
+* https://theeffectbook.net/ch-DifferenceinDifference.html
+* http://www.urfie.net/read/index.html#page/226
 
 
 # Data scientism
