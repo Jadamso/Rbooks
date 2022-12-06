@@ -87,8 +87,33 @@ Suppose you decided to code what you did beginning with Step 2.
   * it doesn't make the paper, but you have some confidence that candidate issue isn't a big problem
 
 
-# Small Scale Projects
-***
+
+## Why R and R-Markdown
+
+Good for complex stats, concise figures, and coherent organization.
+
+* Built and developed by applied statisticians for statistics.
+* Used by many in academia and industry.
+
+
+Good for reproducible research 
+
+* http://www.r-bloggers.com/the-reproducibility-crisis-in-science-and-prospects-for-r/
+* http://fmwww.bc.edu/GStat/docs/pointclick.html
+* https://github.com/qinwf/awesome-R\#reproducible-research
+* A Guide to Reproducible Code in Ecology and Evolution
+* https://biostat.app.vumc.org/wiki/pub/Main/TheresaScott/ReproducibleResearch.TAScott.handout.pdf
+
+
+Good for teaching
+
+* https://doi.org/10.1080/00220485.2019.1618765
+* https://doi.org/10.1002/jae.657
+
+
+Good for getting a job
+
+* As a student, think about labour demand. R skills, unlike other purely academic software, is something future employers use and want. Do more of your own research on this to understand how much to invest.
 
 
 ## Types of Projects
@@ -125,40 +150,100 @@ Note that
 R and R markdown are also both languages: R studio interprets R code to produce statistics, R studio interprets R markdown code to produce pretty documents which contain both writing and statistics. You should already be a bit familiar with R, but not necessarily R Markdown. So to get you started, you should first read and work through this document, and then recreate it yourself as a litte tutorial. Before hopping into programming, however, understand why you will learn to program in both R and R-markdown languages
 
 
-## Why R and R-Markdown
-
-Good for complex stats, concise figures, and coherent organization.
-
-* Built and developed by applied statisticians for statistics.
-* Used by many in academia and industry.
 
 
-Good for reproducible research 
+# Small Scale Projects
+***
 
-* http://www.r-bloggers.com/the-reproducibility-crisis-in-science-and-prospects-for-r/
-* http://fmwww.bc.edu/GStat/docs/pointclick.html
-* https://github.com/qinwf/awesome-R\#reproducible-research
-* A Guide to Reproducible Code in Ecology and Evolution
-* https://biostat.app.vumc.org/wiki/pub/Main/TheresaScott/ReproducibleResearch.TAScott.handout.pdf
+## An R Code Chunk
+
+Save the following code as `CodeChunk.R`
+
+```r
+sum_squared <- function(x1, x2) {
+	y <- (x1 + x2)^2
+	return(y)
+} 
+
+x <- c(0,1,3,10,6)
+sum_squared(x[1], x[3])
+sum_squared(x, x[2])
+sum_squared(x, x[7])
+sum_squared(x, x) 
+```
+
+**Clean the workspace** In the right panels, manually cleanup
+
+* save the code as *MyFirstCode.R*
+* clear the environment and history (use the broom in top right panel)
+* clear unsaved plots (use the broom in bottom right panel)
+
+    
+**Replicate** using the grahical user interface (GUI) while in Rstudio either using a "point-click" or "console" method
+
+*GUI: point-click*
+click 'Source > Source as a local job' on top right
+
+*GUI: console*
+into the console on the bottom left, enter
+
+```r
+source('MyFirstCode.R')
+```
 
 
-Good for teaching
+**CLI Alternatives** *(Skippable)* There are also alternative ways to replicate via the command line interface (CLI) after opening a terminal
+ 
+*CLI: console*
 
-* https://doi.org/10.1080/00220485.2019.1618765
-* https://doi.org/10.1002/jae.657
+```bash
+Rscript -e "source('CodeChunk.R')"
+```
 
-
-Good for getting a job
-
-* As a student, think about labour demand. R skills, unlike other purely academic software, is something future employers use and want. Do more of your own research on this to understand how much to invest.
-
-
+*CLI: direct*
 
 
-## HW Example {.tabset}
-Below is a template of what questions (and answers) look like. 
+```bash
+Rscript CodeChunk.R
+```
 
-### Question1
+Note that you can open a new terminal in RStudio in the top bar by
+clicking 'tools > terminal > new terminal'
+
+
+
+## An R Markdown Document
+
+### Copy/Paste Example
+<!-- 
+**Clean workspace**
+Delete any temporary files which you do not want (or start a fresh session).
+
+(for example *summarytable_example.txt* and *plot_example.pdf* and section *Data analysis examples: custom figures*)
+-->
+
+**Download** 
+
+See [DataScientism.html](https://github.com/Jadamso/Rbooks/blob/main/Templates/DataScientism.html)
+
+And download source file Directly from [DataScientism.Rmd](https://github.com/Jadamso/Rbooks/blob/main/Templates/DataScientism.Rmd)
+
+
+
+**Replicate**
+
+You can now create the primers by opening the Rstudio GUI and then point-and-click.
+
+Alternatively, you can use the console to run
+
+```r
+rmarkdown::render('DataScientism.Rmd')
+```
+
+### A Homework Example {.tabset}
+Below is a template of what homework questions (and answers) look like. Create an .Rmd from scratch that produces a similar looking .html file.
+
+**Question 1**
 Simulate 100 random observations of the form $y=x\beta+\epsilon$ and plot the relationship. Plot and explore the data interactively via plotly, https://plotly.com/r/line-and-scatter/. Then play around with different styles, https://www.r-graph-gallery.com/13-scatter-plot.html, to best express your point.
 
 *Answer*
@@ -175,13 +260,11 @@ plot_ly( data=data.frame(X=X,Y=Y), x=~X, y=~Y)
 ```
 
 ```{=html}
-<div id="htmlwidget-06e5130b01e5704c0f1a" style="width:672px;height:480px;" class="plotly html-widget"></div>
-<script type="application/json" data-for="htmlwidget-06e5130b01e5704c0f1a">{"x":{"visdat":{"738568471752":["function () ","plotlyVisDat"]},"cur_data":"738568471752","attrs":{"738568471752":{"x":{},"y":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20]}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"xaxis":{"domain":[0,1],"automargin":true,"title":"X"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Y"},"hovermode":"closest","showlegend":false},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100],"y":[3.9768323307419,7.76664233131185,13.1660331917176,16.7906652340817,20.8721029534402,25.3662911575133,27.2250972919734,33.2160651860127,36.5421124582145,41.1955885965442,43.7405405570808,47.4289001792736,56.2118017661391,55.5292433356514,61.8300158574589,63.3889627364633,67.5799134362553,72.4095653174883,76.2531177731681,79.2044428072798,83.1764510723372,87.3677509662431,91.5288284945306,94.9139392447969,101.438915980222,104.179757932237,103.058666118023,112.279106317257,114.986244997959,118.304473505208,123.405622279233,129.14213409165,130.198320650273,136.010940568704,139.762428428621,145.317563338467,150.707497187316,152.022623040688,155.790772418127,160.57627111319,162.250464696208,167.156654860284,172.87538049827,176.39809404709,178.387617986036,183.333026539881,188.575723080364,193.598338626747,196.784630034097,199.167718685218,202.395800885462,208.337550144208,212.585182460909,215.652351209006,215.974592943517,222.592828575956,229.910114110372,236.748982991622,233.984853246856,238.406528187909,244.355183456376,246.652223347749,254.532728792898,255.448150198051,259.766343730258,261.670474700976,266.95394007657,270.995650407083,271.175503253674,282.331665426868,285.317260288481,286.330764946086,291.993791502326,295.091337648163,301.267869155404,305.001146259511,309.289407726503,311.175079760868,317.024676135512,320.185712269294,322.852904804619,328.570130413533,336.037066288245,335.724196680451,338.415019194237,344.105796736675,349.998822536491,352.022544817204,353.153471808686,358.113482307366,361.520309912791,369.617915843443,372.950243998643,378.092091141716,378.99121037913,383.283100635486,386.347272962261,394.618262745558,397.443367203415,400.775763716736],"type":"scatter","mode":"markers","marker":{"color":"rgba(31,119,180,1)","line":{"color":"rgba(31,119,180,1)"}},"error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"line":{"color":"rgba(31,119,180,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-92eb9757d847b56e4cb0" style="width:672px;height:480px;" class="plotly html-widget"></div>
+<script type="application/json" data-for="htmlwidget-92eb9757d847b56e4cb0">{"x":{"visdat":{"3a3e394d7eb3":["function () ","plotlyVisDat"]},"cur_data":"3a3e394d7eb3","attrs":{"3a3e394d7eb3":{"x":{},"y":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20]}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"xaxis":{"domain":[0,1],"automargin":true,"title":"X"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Y"},"hovermode":"closest","showlegend":false},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100],"y":[0.951103127126971,12.0126327947661,11.4748657322007,15.5751622901923,19.4301196271616,24.5940917191516,29.6976489961804,31.4561781290867,38.6670802404894,37.5953533931458,42.0578489669172,44.4905603885531,50.0746363393583,54.4014123367042,54.2633073852806,65.7514635727201,68.5497540366614,74.4692688997834,76.819689386185,80.282660948265,80.4001677417964,86.5050588623792,90.2829127803094,97.2750673544427,99.2457652737046,104.949040192102,111.467337351284,114.384987426611,116.516120356774,122.287439133128,125.230741178279,127.974297460111,130.96110374348,134.574404696964,144.202845438206,145.611447100135,149.457574743776,154.464592787569,155.1717733382,161.987200437217,164.442783492255,170.404226059218,169.576527880583,172.958464026237,182.334784329857,184.533807928838,185.087040074455,193.450368921537,197.589642205978,202.712704882837,205.925238872615,208.257068556033,210.283176636444,213.296304625876,215.085104200477,220.962177670551,227.838336564914,234.849561074626,238.002039432596,241.0451159673,247.395813714177,248.540213605579,254.240013764103,256.911306869805,261.191203274067,268.151551355918,271.400564912375,266.200215506758,275.723569497426,279.242403349331,288.031836229008,286.913557121457,289.82472066952,292.090290423779,300.920172599532,301.352192101899,308.357716297209,308.978173023422,315.007343534606,317.563439776545,325.367264996467,324.930650123917,333.081474699694,335.981542618933,339.454933962356,343.998637944467,348.973082048097,351.575778409065,358.294684139652,358.740729188926,365.707991391079,369.938415337373,369.157697219655,377.428527151988,378.76350317996,383.39416661499,390.786134399821,392.361140078833,393.427508311843,396.712496602573],"type":"scatter","mode":"markers","marker":{"color":"rgba(31,119,180,1)","line":{"color":"rgba(31,119,180,1)"}},"error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"line":{"color":"rgba(31,119,180,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 
-*Answer*
-
-### Question 2
+**Question 2**
 Verify the definition of a line segment for points $A=(0,3), B=(1,5)$ using a $101 \times 101$ grid. Recall a line segment is all points $s$ that have $d(s, A) + d(s, B) = d(A, B)$.
 
 *Answer* 
@@ -212,6 +295,50 @@ box()
 
 <img src="04-RReproducible_files/figure-html/answer2-1.png" width="672" />
 
+## Posters and Slides
+
+See
+
+* [DataScientism_Slides.pdf](https://github.com/Jadamso/Rbooks/blob/main/Templates/DataScientism_Slides.pdf)
+* [DataScientism_Poster.html](https://github.com/Jadamso/Rbooks/blob/main/Templates/DataScientism_Poster.html)
+
+And download source files
+
+* [DataScientism_Slides.Rmd](https://github.com/Jadamso/Rbooks/blob/main/Templates/DataScientism_Slides.Rmd)
+* [DataScientism_Poster.Rmd](https://github.com/Jadamso/Rbooks/blob/main/Templates/DataScientism_Poster.Rmd)
+
+
+
+## Getting help w/ R Markdown
+
+For more guidance on how to create Rmarkdown documents, see
+
+* https://github.com/rstudio/cheatsheets/blob/main/rmarkdown.pdf
+* https://cran.r-project.org/web/packages/rmarkdown/vignettes/rmarkdown.html
+* http://rmarkdown.rstudio.com
+* https://bookdown.org/yihui/rmarkdown/
+* https://bookdown.org/yihui/rmarkdown-cookbook/
+* https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/rmarkdown.html
+* An Introduction to the Advanced Theory and Practice of Nonparametric Econometrics. Raccine 2019. Appendices B \& D.
+* https://rmd4sci.njtierney.com/using-rmarkdown.html
+
+If you are still lost, try one of the many online tutorials (such as these)
+
+* https://www.rstudio.com/wp-content/uploads/2015/03/rmarkdown-reference.pdf
+* https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet
+* https://www.neonscience.org/resources/learning-hub/tutorials/rmd-code-intro
+* https://m-clark.github.io/Introduction-to-Rmarkdown/
+* https://www.stat.cmu.edu/~cshalizi/rmarkdown/
+* http://math.wsu.edu/faculty/xchen/stat412/HwWriteUp.Rmd
+* http://math.wsu.edu/faculty/xchen/stat412/HwWriteUp.html
+* https://holtzy.github.io/Pimp-my-rmd/
+* https://ntaback.github.io/UofT_STA130/Rmarkdownforclassreports.html
+* https://crd150.github.io/hw_guidelines.html
+* https://r4ds.had.co.nz/r-markdown.html
+* http://www.stat.cmu.edu/~cshalizi/rmarkdown
+* http://www.ssc.wisc.edu/sscc/pubs/RFR/RFR_RMarkdown.html
+* http://kbroman.org/knitr_knutshell/pages/Rmarkdown.html
+
 
 
 
@@ -219,7 +346,6 @@ box()
 ***
 
 As you scale up to a medium sized project, however, you will have to be more organized.
-
 
 Medium sized projects should have their own `Project` folder on your computer with files, subdirectories with files, and subsubdirectories with files. It should look like this
 ```
@@ -274,7 +400,6 @@ There are two main meta-files
 
 * `README.txt` overviews the project structure and what the codes are doing
 * `MAKEFILE` explicitly describes and executes all codes. 
-
 
 
 If all code is written with the same program, the makefile can be written in that programs code: `MAKEFILE.R`, which looks like
@@ -372,130 +497,9 @@ Your code should be readable and error free. For code writing guides, see
 * https://www.burns-stat.com/pages/Tutor/R_inferno.pdf
 
 
-
 For additional logging capabilities, see https://cran.r-project.org/web/packages/logr/
 
 For very large projects, there are many more tools available at https://cran.r-project.org/web/views/ReproducibleResearch.html
-
-
-
-
-
-# Replication
-***
-
-## An R Code Chunk
-
-Save the following code as `CodeChunk.R`
-
-```r
-sum_squared <- function(x1, x2) {
-	y <- (x1 + x2)^2
-	return(y)
-} 
-
-x <- c(0,1,3,10,6)
-sum_squared(x[1], x[3])
-sum_squared(x, x[2])
-sum_squared(x, x[7])
-sum_squared(x, x) 
-```
-
-**Clean the workspace** In the right panels, manually cleanup
-
-* save the code as *RandRstudio.Rmd*
-* clear the environment and history (use the broom in top right panel)
-* clear unsaved plots (use the broom in bottom right panel)
-    
-    
-**Replicate** using the grahical user interface (GUI) while in Rstudio either using a "point-click" or "console" method
-
-*GUI: point-click*
-click 'Source > Source as a local job' on top right
-
-*GUI: console*
-into the console on the bottom left, enter
-
-```r
-source('CodeChunk.R')
-```
-
-
-
-(Skippable) There are also alternative ways to replicate via the command line interface (CLI) after opening a terminal
- 
-*CLI: console*
-
-```bash
-Rscript -e "source('CodeChunk.R')"
-```
-
-*CLI: direct*
-
-
-```bash
-Rscript CodeChunk.R
-```
-
-You can open a new terminal in RStudio in the top bar by
-clicking 'tools > terminal > new terminal'
-
-
-
-
-
-## An R Markdown Document
-
-
-**Download code** from the top right button in the R Primers
-
-
-**Clean**
-Also delete any files and sections which you do not want (*summarytable_example.txt* and *plot_example.pdf* and section *Data analysis examples: custom figures*)
-    
-
-**Replicate** 
-
-You can now create the primers by opening the Rstudio GUI and then point-and-click. Alternatively,
-
-*GUI: console*
-
-```r
-rmarkdown::render('RandRstudio.Rmd')
-rmarkdown::render('RReproducible.Rmd')
-```
-
-
-## Getting help
-
-For more guidance on how to create Rmarkdown documents, see
-
-* https://github.com/rstudio/cheatsheets/blob/main/rmarkdown.pdf
-* https://cran.r-project.org/web/packages/rmarkdown/vignettes/rmarkdown.html
-* http://rmarkdown.rstudio.com
-* https://bookdown.org/yihui/rmarkdown/
-* https://bookdown.org/yihui/rmarkdown-cookbook/
-* https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/rmarkdown.html
-* An Introduction to the Advanced Theory and Practice of Nonparametric Econometrics. Raccine 2019. Appendices B \& D.
-* https://rmd4sci.njtierney.com/using-rmarkdown.html
-
-If you are still lost, try one of the many online tutorials (such as these)
-
-* https://www.rstudio.com/wp-content/uploads/2015/03/rmarkdown-reference.pdf
-* https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet
-* https://www.neonscience.org/resources/learning-hub/tutorials/rmd-code-intro
-* https://m-clark.github.io/Introduction-to-Rmarkdown/
-* https://www.stat.cmu.edu/~cshalizi/rmarkdown/
-* http://math.wsu.edu/faculty/xchen/stat412/HwWriteUp.Rmd
-* http://math.wsu.edu/faculty/xchen/stat412/HwWriteUp.html
-* https://holtzy.github.io/Pimp-my-rmd/
-* https://ntaback.github.io/UofT_STA130/Rmarkdownforclassreports.html
-* https://crd150.github.io/hw_guidelines.html
-* https://r4ds.had.co.nz/r-markdown.html
-* http://www.stat.cmu.edu/~cshalizi/rmarkdown
-* http://www.ssc.wisc.edu/sscc/pubs/RFR/RFR_RMarkdown.html
-* http://kbroman.org/knitr_knutshell/pages/Rmarkdown.html
-
 
 
 
@@ -507,11 +511,12 @@ For those transitioning from Stata or replicating others' Stata work, you can wo
 
 Translations of common procedures is provided by https://stata2r.github.io/
 
-The `foreign` package allows you to read data created by different programs, including Stata.
+Many packages allows you to read data created by different programs. As of right now, `haven` is a particularly useful for reading in Stata files
 
 ```r
-library(foreign) 
-read.dta
+library(haven)
+read_dta()
+## See also foreign::read.dta
 ```
 
 You can also execute stata commands directly in R via package `Rstata`. (Last time I checked, `Rstata` requires you to have purchased a non-student version of Stata.) Moreover, you can include stata in the markdown reports via package `Statamarkdown`:

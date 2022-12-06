@@ -24,6 +24,7 @@ $$
 
 
 ```r
+## Example 1 (Theoretical)
 x <- seq(0,100)
 e <- rnorm(length(x))
 y <- .02*x + e
@@ -40,7 +41,7 @@ reg
 ## 
 ## Coefficients:
 ## (Intercept)            x  
-##     0.48047      0.01277
+##    -0.02834      0.02113
 ```
 
 ```r
@@ -52,6 +53,7 @@ abline(reg, col='orange')
 
 
 ```r
+## Example 2 (Theoretical)
 N <- 1000
 z <- rbinom(N,1,.5)
 xy <- sapply(z, function(zi){
@@ -66,6 +68,19 @@ abline(reg, col='orange')
 ```
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-2-1.png" width="672" />
+
+
+
+
+```r
+## Example 3 (Empirical)
+## head(USArrests)
+plot(Murder~UrbanPop, USArrests, col=grey(.5,.5), pch=16)
+reg <- lm(Murder~UrbanPop, dat=USArrests)
+abline(reg, col='orange')
+```
+
+<img src="03-ROLS_files/figure-html/unnamed-chunk-3-1.png" width="672" />
 
 
 
@@ -100,9 +115,9 @@ $$
 $$
 
 ```r
-X <- USArrests[,c('Murder','Assault','UrbanPop')]
+X <- USArrests[,c('Assault','UrbanPop')]
 X <- as.matrix(cbind(1,X))
-Y <- USArrests[,'Rape']
+Y <- USArrests[,'Murder']
 
 XtXi <- solve(t(X)%*%X)
 Bhat <- XtXi %*% (t(X)%*%Y)
@@ -111,20 +126,19 @@ Bhat
 
 ```
 ##                 [,1]
-## 1        -2.47409878
-## Murder    0.41856368
-## Assault   0.04893072
-## UrbanPop  0.18448146
+## 1         3.20715340
+## Assault   0.04390995
+## UrbanPop -0.04451047
 ```
 
 ```r
-reg <- lm(Rape~Murder+Assault+UrbanPop, data=USArrests)
+reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 coef(reg)
 ```
 
 ```
-## (Intercept)      Murder     Assault    UrbanPop 
-## -2.47409878  0.41856368  0.04893072  0.18448146
+## (Intercept)     Assault    UrbanPop 
+##  3.20715340  0.04390995 -0.04451047
 ```
 
 
@@ -162,13 +176,13 @@ summary(reg)$r.squared
 ```
 
 ```
-## [1] 0.5165872
+## [1] 0.6634156
 ```
 
 
 ### Coefficient Variability
 
-Note that
+In general, note that the linear model has
 $$
 \hat{\Sigma}_{\beta} = (X'X)^{-1} X' \widehat{\Omega} X (X'X)^{-1}.\\
 \widehat{\Omega} = \begin{pmatrix}
@@ -177,10 +191,10 @@ $$
 \hat{\sigma}_{n,1} & ... & \hat{\sigma}_{n,n}
 \end{pmatrix}
 $$
+Standard Errors are the diagonal: $diag( \hat{\Sigma}_{\beta}  )$
 
 
-
-**Classical Model (CLRM) Standard Errors**
+**Classical Linear Model (CLM)**
 Independance: $\hat{\sigma_{i,j}}=0$
 Homoskedasticity: 
 $$
@@ -203,11 +217,10 @@ vcov(reg)
 ```
 
 ```
-##              (Intercept)       Murder       Assault      UrbanPop
-## (Intercept) 22.049878823 -0.463075762  0.0099362260 -0.2935100713
-## Murder      -0.463075762  0.144388404 -0.0063400876  0.0064267964
-## Assault      0.009936226 -0.006340088  0.0004206739 -0.0004942615
-## UrbanPop    -0.293510071  0.006426796 -0.0004942615  0.0050024150
+##              (Intercept)       Assault      UrbanPop
+## (Intercept)  3.030349406 -1.532127e-03 -4.021339e-02
+## Assault     -0.001532127  2.096605e-05 -3.124864e-05
+## UrbanPop    -0.040213394 -3.124864e-05  6.949864e-04
 ```
 
 
@@ -219,7 +232,9 @@ $$
 diag( \widehat{\Omega} ) = [\widehat{\sigma^2_{1}}, \widehat{\sigma^2_{1}}, ..., \widehat{\sigma^2_{n}}]\\
 \widehat{\sigma^2_{i}} = \hat{\epsilon_{i}}^2
 $$
+
 Autocorrelation Dependance: $\sigma_{i,j}=f( dist(i,j) )$.
+
 Cluster Dependance: 
 $$\sigma_{i,j}=
 \begin{cases}
@@ -261,11 +276,10 @@ Phat2
 ```
 
 ```
-##                [,1]
-## 1        0.60080684
-## Murder   0.27639755
-## Assault  0.02122227
-## UrbanPop 0.01223030
+##                  [,1]
+## 1        7.173654e-02
+## Assault  1.216319e-12
+## UrbanPop 9.796088e-02
 ```
 
 ```r
@@ -275,24 +289,23 @@ summary(reg)
 ```
 ## 
 ## Call:
-## lm(formula = Rape ~ Murder + Assault + UrbanPop, data = USArrests)
+## lm(formula = Murder ~ Assault + UrbanPop, data = USArrests)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -15.213  -3.729  -0.239   2.928  21.065 
+## -4.5530 -1.7093 -0.3677  1.2284  7.5985 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)  
-## (Intercept) -2.47410    4.69573  -0.527   0.6008  
-## Murder       0.41856    0.37998   1.102   0.2764  
-## Assault      0.04893    0.02051   2.386   0.0212 *
-## UrbanPop     0.18448    0.07073   2.608   0.0122 *
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  3.207153   1.740790   1.842   0.0717 .  
+## Assault      0.043910   0.004579   9.590 1.22e-12 ***
+## UrbanPop    -0.044510   0.026363  -1.688   0.0980 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 6.721 on 46 degrees of freedom
-## Multiple R-squared:  0.5166,	Adjusted R-squared:  0.4851 
-## F-statistic: 16.39 on 3 and 46 DF,  p-value: 2.21e-07
+## Residual standard error: 2.58 on 47 degrees of freedom
+## Multiple R-squared:  0.6634,	Adjusted R-squared:  0.6491 
+## F-statistic: 46.32 on 2 and 47 DF,  p-value: 7.704e-12
 ```
 
 ```r
@@ -302,7 +315,7 @@ Fhat <- (TSS - ESS)/ESS * (n-K)/3
 ```
 
 ```
-## [1] 2.210175e-07
+## [1] 3.522538e-11
 ```
 
 ```r
@@ -311,7 +324,7 @@ summary(reg)$fstatistic
 
 ```
 ##    value    numdf    dendf 
-## 16.38559  3.00000 46.00000
+## 46.31903  2.00000 47.00000
 ```
 
 ```r
@@ -321,24 +334,23 @@ summary(reg)
 ```
 ## 
 ## Call:
-## lm(formula = Rape ~ Murder + Assault + UrbanPop, data = USArrests)
+## lm(formula = Murder ~ Assault + UrbanPop, data = USArrests)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -15.213  -3.729  -0.239   2.928  21.065 
+## -4.5530 -1.7093 -0.3677  1.2284  7.5985 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)  
-## (Intercept) -2.47410    4.69573  -0.527   0.6008  
-## Murder       0.41856    0.37998   1.102   0.2764  
-## Assault      0.04893    0.02051   2.386   0.0212 *
-## UrbanPop     0.18448    0.07073   2.608   0.0122 *
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  3.207153   1.740790   1.842   0.0717 .  
+## Assault      0.043910   0.004579   9.590 1.22e-12 ***
+## UrbanPop    -0.044510   0.026363  -1.688   0.0980 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 6.721 on 46 degrees of freedom
-## Multiple R-squared:  0.5166,	Adjusted R-squared:  0.4851 
-## F-statistic: 16.39 on 3 and 46 DF,  p-value: 2.21e-07
+## Residual standard error: 2.58 on 47 degrees of freedom
+## Multiple R-squared:  0.6634,	Adjusted R-squared:  0.6491 
+## F-statistic: 46.32 on 2 and 47 DF,  p-value: 7.704e-12
 ```
 
 
@@ -376,7 +388,7 @@ coef(lm(Y~x1+x2, data=dat))
 
 ```
 ## (Intercept)          x1          x2 
-##  11.1053651   1.5143908  -0.7727627
+##  10.3285043   1.8911637  -0.2378815
 ```
 
 Simulate the distribution of coefficients under a correctly specified model. Interpret the average.
@@ -403,7 +415,7 @@ for(i in 1:3){
 }
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-9-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-10-1.png" width="672" />
 
 Note that for joint tests, we look at the joint distribution of coefficients
 
@@ -414,7 +426,7 @@ fBjoint <- histde(Bjoint, binw=c(.2,.5))
 plot(fBjoint, xlab='B2', ylab='B3')
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-10-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-11-1.png" width="672" />
 
 
 Many economic phenomena are nonlinear, even when including potential transforms of $Y$ and $X$. Sometimes the OLS model may still be a good or even great approximation (how good depends on the research question). In any case, you are safe to interpret your OLS coefficients as "conditional correlations". For example, examine the distribution of coefficients under this mispecified model. Interpret the average.
@@ -438,7 +450,7 @@ for(i in 2:3){
 }
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-11-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-12-1.png" width="672" />
 
 ## Factor Variables
 
@@ -486,23 +498,23 @@ summary(fe_reg0)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -39.109  -5.612  -0.211   5.686  38.500 
+## -33.853  -6.304  -0.131   5.707  41.293 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  19.7622     1.2183  16.221  < 2e-16 ***
-## x             1.3499     0.2053   6.574 7.91e-11 ***
-## fo.L         27.8651     1.1209  24.860  < 2e-16 ***
-## fo.Q         12.0019     0.9793  12.255  < 2e-16 ***
-## fo.C          2.6875     0.7566   3.552   0.0004 ***
-## fo^4          0.6662     0.5624   1.185   0.2365    
-## fuB         -23.7459     0.5856 -40.550  < 2e-16 ***
+## (Intercept)  19.6113     1.1830  16.578  < 2e-16 ***
+## x             1.2004     0.1973   6.084 1.67e-09 ***
+## fo.L         27.8759     1.1011  25.316  < 2e-16 ***
+## fo.Q          9.3039     0.9625   9.666  < 2e-16 ***
+## fo.C          2.8968     0.7337   3.948 8.43e-05 ***
+## fo^4         -0.1056     0.5421  -0.195    0.846    
+## fuB         -23.7093     0.5670 -41.817  < 2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 9.246 on 993 degrees of freedom
-## Multiple R-squared:  0.7356,	Adjusted R-squared:  0.734 
-## F-statistic: 460.4 on 6 and 993 DF,  p-value: < 2.2e-16
+## Residual standard error: 8.948 on 993 degrees of freedom
+## Multiple R-squared:  0.7307,	Adjusted R-squared:  0.729 
+## F-statistic:   449 on 6 and 993 DF,  p-value: < 2.2e-16
 ```
 We can also compute averages for each group and construct a "between estimator"
 $$
@@ -526,17 +538,18 @@ summary(fe_reg1)
 ## Fixed-effects: fo: 5,  fu: 2
 ## Standard-errors: Clustered (fo) 
 ##   Estimate Std. Error t value Pr(>|t|)    
-## x  1.34989   0.466918 2.89107 0.044515 *  
+## x  1.20038   0.437601  2.7431  0.05174 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 9.21406     Adj. R2: 0.733975
-##                 Within R2: 0.041706
+## RMSE: 8.91677     Adj. R2: 0.729042
+##                 Within R2: 0.035941
 ```
 
 **Hansen Econometrics, Theorem 17.1:** The fixed effects estimator of $\beta$ algebraically equals the dummy
 variable estimator of $\beta$. The two estimators have the same residuals.
-
+<!--
 In fact, if the fixed effect is ``fully unstructured then the only way to consistently estimate the coefficient $\beta$ is by an estimator which is invariant'' (Hansen Econometrics, p). 
+-->
 
 Consistency is a great property, but only if the data generating process does in fact match the model. Many factor variables have effects that are not additively seperable.
 
@@ -551,11 +564,11 @@ summary(reg1)
 ## Fixed-effects: fo^fu: 10
 ## Standard-errors: Clustered (fo^fu) 
 ##   Estimate Std. Error t value Pr(>|t|)    
-## x  1.14046   0.538534  2.1177 0.063273 .  
+## x  1.03275   0.554259  1.8633 0.095311 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 3.50396     Adj. R2: 0.961373
-##                 Within R2: 0.175829
+## RMSE: 3.34378     Adj. R2: 0.961743
+##                 Within R2: 0.163477
 ```
 
 ```r
@@ -570,36 +583,36 @@ summary(reg2)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -9.3170 -1.4908 -0.0201  1.4836  9.4954 
+## -8.8733 -1.5219 -0.0082  1.3318  9.2378 
 ## 
 ## Coefficients:
 ##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  13.15705    0.58824  22.367  < 2e-16 ***
-## x             2.83742    0.10315  27.509  < 2e-16 ***
-## fo.L         23.98554    1.64890  14.546  < 2e-16 ***
-## fo.Q          8.57919    1.44296   5.946 3.83e-09 ***
-## fo.C          1.69129    1.16677   1.450   0.1475    
-## fo^4          0.44063    0.87077   0.506   0.6130    
-## fuB         -13.09705    0.83469 -15.691  < 2e-16 ***
-## x:fo.L        5.20706    0.28867  18.038  < 2e-16 ***
-## x:fo.Q        2.08718    0.25379   8.224 6.21e-16 ***
-## x:fo.C        0.47917    0.20273   2.364   0.0183 *  
-## x:fo^4        0.03697    0.15472   0.239   0.8112    
-## x:fuB        -2.91009    0.14844 -19.604  < 2e-16 ***
-## fo.L:fuB    -25.65300    2.35284 -10.903  < 2e-16 ***
-## fo.Q:fuB     -8.84289    2.05889  -4.295 1.92e-05 ***
-## fo.C:fuB     -1.14505    1.63538  -0.700   0.4840    
-## fo^4:fuB     -0.12010    1.21849  -0.099   0.9215    
-## x:fo.L:fuB   -5.09251    0.41974 -12.133  < 2e-16 ***
-## x:fo.Q:fuB   -2.20840    0.36785  -6.004 2.72e-09 ***
-## x:fo.C:fuB   -0.65392    0.28756  -2.274   0.0232 *  
-## x:fo^4:fuB   -0.08171    0.21569  -0.379   0.7049    
+## (Intercept)  13.42306    0.68192  19.684  < 2e-16 ***
+## x             2.80479    0.11957  23.458  < 2e-16 ***
+## fo.L         25.74255    1.98137  12.992  < 2e-16 ***
+## fo.Q          9.71686    1.72044   5.648 2.13e-08 ***
+## fo.C          1.36887    1.27053   1.077 0.281570    
+## fo^4          0.71443    0.89458   0.799 0.424702    
+## fuB         -12.54584    0.93092 -13.477  < 2e-16 ***
+## x:fo.L        4.97852    0.34726  14.336  < 2e-16 ***
+## x:fo.Q        1.85668    0.30176   6.153 1.11e-09 ***
+## x:fo.C        0.49337    0.22248   2.218 0.026809 *  
+## x:fo^4       -0.03081    0.15742  -0.196 0.844881    
+## x:fuB        -2.97997    0.16560 -17.995  < 2e-16 ***
+## fo.L:fuB    -23.61920    2.69189  -8.774  < 2e-16 ***
+## fo.Q:fuB     -8.97674    2.34078  -3.835 0.000134 ***
+## fo.C:fuB     -1.27689    1.74800  -0.730 0.465267    
+## fo^4:fuB     -0.10608    1.24546  -0.085 0.932143    
+## x:fo.L:fuB   -5.44494    0.48068 -11.328  < 2e-16 ***
+## x:fo.Q:fuB   -2.01135    0.41738  -4.819 1.67e-06 ***
+## x:fo.C:fuB   -0.50193    0.30938  -1.622 0.105050    
+## x:fo^4:fuB   -0.01492    0.21799  -0.068 0.945446    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 2.517 on 980 degrees of freedom
-## Multiple R-squared:  0.9807,	Adjusted R-squared:  0.9803 
-## F-statistic:  2616 on 19 and 980 DF,  p-value: < 2.2e-16
+## Residual standard error: 2.54 on 980 degrees of freedom
+## Multiple R-squared:  0.9786,	Adjusted R-squared:  0.9782 
+## F-statistic:  2356 on 19 and 980 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -639,12 +652,12 @@ For fixed effects, see
 Simply plotting your regression object can help diagnose whether your model is a good one. There's little sense in getting great standard errors for the wrong model, and is a simple and easy step. So do it early and often.
 
 ```r
-reg <- lm(Rape~Murder+Assault+UrbanPop, data=USArrests)
+reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 par(mfrow=c(2,2))
 plot(reg)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-16-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-17-1.png" width="672" />
 
 
 ## Assessing Outlier $Y$
@@ -663,7 +676,7 @@ plot(fitted(reg), resid(reg),col = "grey", pch = 20,
 abline(h = 0, col = "darkorange", lwd = 2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-17-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-18-1.png" width="672" />
 
 ```r
 # car::outlierTest(reg)
@@ -680,7 +693,7 @@ qqnorm(resid(reg), main = "Normal Q-Q Plot of Residuals", col = "darkgrey")
 qqline(resid(reg), col = "dodgerblue", lwd = 2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-18-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-19-1.png" width="672" />
 
 ```r
 shapiro.test(resid(reg))
@@ -691,7 +704,7 @@ shapiro.test(resid(reg))
 ## 	Shapiro-Wilk normality test
 ## 
 ## data:  resid(reg)
-## W = 0.94794, p-value = 0.02809
+## W = 0.96937, p-value = 0.2182
 ```
 
 ```r
@@ -728,7 +741,7 @@ lmtest::bptest(reg)
 ## 	studentized Breusch-Pagan test
 ## 
 ## data:  reg
-## BP = 8.9049, df = 3, p-value = 0.03058
+## BP = 1.9073, df = 2, p-value = 0.3853
 ```
 
 
@@ -753,7 +766,7 @@ abline(lm(y~x), col=2, lty=2)
 abline(lm(y[-1]~x[-1]))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-20-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-21-1.png" width="672" />
 
 See https://www.r-bloggers.com/2016/06/leverage-and-influence-in-a-nutshell/ for a good interactive explaination.
 
@@ -777,8 +790,8 @@ which.max(hatvalues(reg))
 ```
 
 ```
-## Georgia 
-##      10
+## North Carolina 
+##             33
 ```
 
 ```r
@@ -786,8 +799,8 @@ which.max(rstandard(reg))
 ```
 
 ```
-## Alaska 
-##      2
+## Georgia 
+##      10
 ```
 
 
@@ -805,22 +818,23 @@ which.max(cooks.distance(reg))
 ```
 
 ```
-## Alaska 
-##      2
+## North Carolina 
+##             33
 ```
 
 ```r
 car::influencePlot(reg)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-22-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-23-1.png" width="672" />
 
 ```
-##                    StudRes        Hat        CookD
-## Alaska          3.78570999 0.11602814 0.3646123432
-## Georgia        -0.06679825 0.21493470 0.0003121571
-## Nevada          2.62517777 0.06145855 0.1000109235
-## North Carolina -2.01817190 0.21194394 0.2567055530
+##                   StudRes        Hat      CookD
+## Delaware       -1.8410049 0.03451853 0.03843811
+## Georgia         3.2882774 0.03039710 0.09347723
+## Hawaii          1.5824197 0.12130042 0.11165131
+## North Carolina -1.2965915 0.18314307 0.12384563
+## Vermont        -0.7053099 0.14625247 0.02871316
 ```
 
 There are many other diagnostics (which can often be written in terms of Cooks Distance or Vice Versa)
@@ -846,20 +860,20 @@ head(influence.measures(reg)$infmat)
 ```
 
 ```
-##                  dfb.1_    dfb.Mrdr     dfb.Assl     dfb.UrbP        dffit
-## Alabama    -0.025686940 -0.08053898  0.014676264  0.047669803 -0.157239638
-## Alaska      0.758304736 -0.59617559  0.976957649 -1.008931529  1.371544155
-## Arizona    -0.011470229 -0.04034123  0.049624809  0.004523264  0.059142496
-## Arkansas   -0.005860294  0.00105735 -0.002420583  0.006056285 -0.007978192
-## California -0.295223556 -0.19702231  0.266630954  0.267792657  0.516921957
-## Colorado   -0.169794005 -0.09705845  0.111735442  0.212324868  0.420983022
-##                cov.r       cook.d        hat
-## Alabama    1.1216797 6.264122e-03 0.05959345
-## Alaska     0.4087414 3.646123e-01 0.11602814
-## Arizona    1.2618576 8.934514e-04 0.13639303
-## Arkansas   1.1493186 1.626607e-05 0.05006430
-## California 1.0287684 6.527294e-02 0.11395594
-## Colorado   0.7744530 4.116548e-02 0.03780975
+##                 dfb.1_     dfb.Assl    dfb.UrbP       dffit     cov.r
+## Alabama     0.06698666  0.121390693 -0.09571195  0.18752074 1.0618439
+## Alaska     -0.17418713 -0.235763735  0.24867215 -0.34425048 1.0940193
+## Arizona     0.27088406 -0.344591986 -0.17400794 -0.51567630 0.9300932
+## Arkansas   -0.03432852 -0.015924497  0.03547264 -0.04693298 1.1187126
+## California  0.22854460 -0.116535586 -0.20666902 -0.30454073 1.1179113
+## Colorado    0.02943825 -0.008217938 -0.03536831 -0.05972787 1.0993461
+##                  cook.d        hat
+## Alabama    0.0117803023 0.04395885
+## Alaska     0.0393848071 0.09410554
+## Arizona    0.0843681938 0.07293432
+## Arkansas   0.0007495028 0.04918497
+## California 0.0310077445 0.09740137
+## Colorado   0.0012124579 0.03580000
 ```
 
 
@@ -878,8 +892,8 @@ car::vif(reg)
 ```
 
 ```
-##   Murder  Assault UrbanPop 
-## 2.971023 3.169012 1.136837
+##  Assault UrbanPop 
+## 1.071828 1.071828
 ```
 
 ```r
@@ -887,8 +901,8 @@ sqrt(car::vif(reg)) > 2 # problem?
 ```
 
 ```
-##   Murder  Assault UrbanPop 
-##    FALSE    FALSE    FALSE
+##  Assault UrbanPop 
+##    FALSE    FALSE
 ```
 
 
@@ -971,9 +985,9 @@ bxcx_inv <- function( xy, rho){
 
 
 ## Which Variables
-reg <- lm(Rape~Murder+Assault+UrbanPop, data=USArrests)
-X <- USArrests[,c('Murder','Assault','UrbanPop')]
-Y <- USArrests[,'Rape']
+reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
+X <- USArrests[,c('Assault','UrbanPop')]
+Y <- USArrests[,'Murder']
 
 ## Simple Grid Search
 ## Which potential (Rho,Lambda) 
@@ -984,8 +998,8 @@ rl_df <- expand.grid(rho=seq(-2,2,by=.5),lambda=seq(-2,2,by=.5))
 errors <- apply(rl_df,1,function(rl){
     Xr <- bxcx(X,rl[[1]])
     Yr <- bxcx(Y,rl[[2]])
-    Datr <- cbind(Rape=Yr,Xr)
-    Regr <- lm(Rape~Murder+Assault+UrbanPop, data=Datr)
+    Datr <- cbind(Murder=Yr,Xr)
+    Regr <- lm(Murder~Assault+UrbanPop, data=Datr)
     Predr <- bxcx_inv(predict(Regr),rl[[2]])
     Resr  <- (Y - Predr)
     return(Resr)
@@ -999,7 +1013,7 @@ ggplot(rl_df, aes(rho, lambda, fill=mse )) +
     geom_tile() + ggtitle('Mean Squared Error') 
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-26-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-27-1.png" width="672" />
 
 ```r
 ## Which min
@@ -1011,8 +1025,8 @@ rl0 <- rl_df[which.min(rl_df$mse),c('rho','lambda')]
 ## Plot
 Xr <- bxcx(X,rl0[[1]])
 Yr <- bxcx(Y,rl0[[2]])
-Datr <- cbind(Rape=Yr,Xr)
-Regr <- lm(Rape~Murder+Assault+UrbanPop, data=Datr)
+Datr <- cbind(Murder=Yr,Xr)
+Regr <- lm(Murder~Assault+UrbanPop, data=Datr)
 Predr <- bxcx_inv(predict(Regr),rl0[[2]])
 
 cols <- c(rgb(1,0,0,.5), col=rgb(0,0,1,.5))
@@ -1022,7 +1036,7 @@ legend('topleft', pch=c(16), col=cols, title='Rho,Lambda',
     legend=c(  paste0(rl0, collapse=','),'1,1') )
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-26-2.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-27-2.png" width="672" />
 
 Note that your hypothesis testing procedures do not account for you trying out different transformations.
 
@@ -1067,13 +1081,13 @@ These endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a bar
 * https://theeffectbook.net/ch-InstrumentalVariables.html
 * http://www.urfie.net/read/index.html#page/247
 
-Note that the coefficient interpretation still rests on many assumptions
+Note that the coefficient interpretation still rests on many assumptions. Taking the classic case of supply shock in a market setting (the situation the method was originally developed for) we are implicitly assuming
 
-* do you know both supply and demand are linear?
-* do you know only supply was affected, and it was only an intercept shift?
-* is the shock large enough to be picked up statistically
+* both supply and demand are linear (and additively seperable in covariates).
+* only supply was affected, and it was only an intercept shift.
+* the shock large enough to be picked up statistically.
 
-If we had multiple alleged supply shifts and recorded their magnitudes, then we could recover more information about demand. One common diagnostic tool is simply to report the reduced form results, but we could use a nonparametric estimator to diagnose linearity at the same time. 
+If we had multiple alleged supply shifts and recorded their magnitudes, then we could recover more information about demand. One common diagnostic tool is simply to report the reduced form results. We could also use a nonparametric estimator to diagnose linearity at each stage.
 
 ```r
 #reg2_alt_fs <- lm(Q~cost, data=dat2)
@@ -1082,6 +1096,7 @@ If we had multiple alleged supply shifts and recorded their magnitudes, then we 
 ```
 
 Other tools are used to help address some of the other assumptions.
+
 
 ## Regression Discontinuity (RD)
 
@@ -1260,7 +1275,7 @@ legend('topright', lty=c(1,2), legend=c(
     'log(science_spending/10)'))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-30-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-31-1.png" width="672" />
 
 
 
@@ -1286,7 +1301,7 @@ axis(1)
 axis(2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-31-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-32-1.png" width="672" />
 
 
 
@@ -1376,7 +1391,7 @@ plot(X1~X2, data=dat_i,
 abline(reg_i)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-34-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-35-1.png" width="672" />
 
 ## Causal effects *sans theory*
 
@@ -1401,7 +1416,7 @@ plot(random_walk1, pch=16, col=grey(.5,.5))
 plot(random_walk2, pch=16, col=grey(.5,.5))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-35-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-36-1.png" width="672" />
 
 
 ```r
@@ -1423,7 +1438,7 @@ lines(reg0$model$t, reg0$fitted.values, col=2)
 lines(reg1$model$t, reg1$fitted.values, col=4)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-36-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-37-1.png" width="672" />
 
 
 ```r
@@ -1478,7 +1493,7 @@ points(random_walk1, pch=16, col=2)
 abline(v=n2, lty=2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-38-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-39-1.png" width="672" />
 
 
 ```r
