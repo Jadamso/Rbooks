@@ -30,9 +30,10 @@ gsub("[aeiouy]", "_", kingText)
 gsub("([[:alpha:]]{3,})ing\\b", "\\1", kingText) 
 
 For and while loops
+
+
 ## Intermediate R
 
-Add Fortran Code, https://masuday.github.io/fortran_tutorial/r.html
 
 showDot = function(...){
   dots = list(...)
@@ -41,6 +42,11 @@ showDot = function(...){
 showDot(arg1 = 1:5, "test stuff", 
         b = "another", list(test_still = 2))
         
+Add Fortran Code, https://masuday.github.io/fortran_tutorial/r.html
+
+Update packages after new install, 
+    for loop checks for old packages and installs if not already installed. not from source
+
 ## RReproducible
 
 Add 

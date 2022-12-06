@@ -36,9 +36,7 @@ Rstudio is easiest to get going with. (There are other GUI's.) There are 4 panes
 The pane below is where your code is executed. For all following examples, make sure to both execute and store your code.
 
 
-Note that 
-
-
+Note that the coded examples generally have inputs, outputs, and comments. For example, 
 
 ```r
 CodeInput_String <- c('code output looks like this')
@@ -52,6 +50,35 @@ CodeInput_String
 ```r
 ## while this is just a comment
 ```
+
+
+
+## Introductions to R
+
+Some coding examples are copied from https://r4ds.had.co.nz/ but also other sources I have found online and elsewhere over the years.
+
+There are many good yet free programming books online. E.g., 
+
+* https://cran.r-project.org/doc/manuals/R-intro.html
+* R Graphics Cookbook, 2nd edition. Winston Chang. 2021. https://r-graphics.org/
+* https://intro2r.com/
+* R for Data Science. H. Wickham and G. Grolemund. 2017. https://r4ds.had.co.nz/index.html
+* An Introduction to R. W. N. Venables, D. M. Smith, R Core Team. 2017. https://colinfay.me/intro-to-r/
+* https://bookdown.org/kieranmarray/intro_to_r_for_econometrics/
+* Spatial Data Science with R: Introduction to R. Robert J. Hijmans. 2021. https://rspatial.org/intr/index.html
+
+There are also many good yet free-online tutorials and courses. E.g., \\
+
+* https://www.econometrics-with-r.org/1.2-a-very-short-introduction-to-r-and-rstudio.html
+* https://rafalab.github.io/dsbook/
+* https://moderndive.com/foreword.html
+* https://rstudio.cloud/learn/primers/1.2
+* https://cran.r-project.org/manuals.html
+* https://stats.idre.ucla.edu/stat/data/intro_r/intro_r_interactive_flat.html
+* https://cswr.nrhstat.org/app-r
+
+What we cover in this primer should be enough to get you going. But other resources should be used if needed. 
+
 
 # Mathematical Objects
 ***
@@ -204,8 +231,8 @@ rnorm(10)
 ```
 
 ```
-##  [1]  0.077157401 -0.380950644  0.002505716  0.015013150 -1.095611466
-##  [6] -0.115032297 -1.464641770 -0.992012890  1.483519990  0.232776756
+##  [1] -0.12686659  0.71697950  0.04874219 -0.88306644  0.78824244  0.18869958
+##  [7]  0.48243391  0.44694455 -0.60286276 -1.93930492
 ```
 
 ```r
@@ -213,8 +240,8 @@ rnorm(10)
 ```
 
 ```
-##  [1] -1.9864434  1.4189550  0.5901312  1.7516799 -0.7077949  0.8393727
-##  [7]  0.1633591 -0.5547314 -1.3016912  1.5367715
+##  [1] -1.6975511 -2.2585683 -0.8210272  0.8391844 -0.7860296 -0.2371421
+##  [7]  0.5194246 -1.0320101  0.3608332  1.1777374
 ```
 
 ```r
@@ -224,7 +251,7 @@ head(x2)
 ```
 
 ```
-## [1] 0.50027673 0.39824885 0.07929054 0.42053494 0.35505265 0.75541022
+## [1] 0.3025295 0.9182357 0.5324454 0.1355072 0.4894154 0.1759472
 ```
 
 ```r
@@ -253,7 +280,7 @@ fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.4957625
+## [1] 0.5077204
 ```
 
 ```r
@@ -261,7 +288,7 @@ fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.4939116
+## [1] 0.4893451
 ```
 
 ```r
@@ -269,7 +296,7 @@ fun_of_rv(sum)
 ```
 
 ```
-## [1] 504.5895
+## [1] 490.1649
 ```
 
 
@@ -283,7 +310,7 @@ fun_of_rv()
 ```
 
 ```
-## [1] 0.4855311
+## [1] 0.4953285
 ```
 
 Very useful for applying a function over and over again
@@ -296,7 +323,7 @@ mapply(sum, 1:3, runif(3) )
 ```
 
 ```
-## [1] 1.159946 2.978030 3.765094
+## [1] 1.361350 2.716709 3.775561
 ```
 
 ##  Matrices and Matrix-Functions
@@ -668,12 +695,12 @@ head(xy_dat)
 
 ```
 ##        x          y
-## 1 1.0000 -0.7539424
-## 2 1.0002  1.0218986
-## 3 1.0004  0.6834813
-## 4 1.0006  1.0622460
-## 5 1.0008 -1.2961225
-## 6 1.0010 -0.2335646
+## 1 1.0000  0.8001600
+## 2 1.0002 -0.2808319
+## 3 1.0004  0.4802754
+## 4 1.0006 -0.5523070
+## 5 1.0008  2.3083646
+## 6 1.0010  0.2765271
 ```
 
 ```r
@@ -705,18 +732,18 @@ summary(reg)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -4.1475 -0.6763 -0.0013  0.6771  4.6691 
+## -4.2001 -0.6706 -0.0015  0.6719  3.6972 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) 0.012952   0.011056   1.172    0.241    
-## x           0.248498   0.001818 136.716   <2e-16 ***
+## (Intercept) 0.016144   0.011034   1.463    0.143    
+## x           0.247628   0.001814 136.515   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 1.002 on 44999 degrees of freedom
-## Multiple R-squared:  0.2935,	Adjusted R-squared:  0.2935 
-## F-statistic: 1.869e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.9998 on 44999 degrees of freedom
+## Multiple R-squared:  0.2929,	Adjusted R-squared:  0.2928 
+## F-statistic: 1.864e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -849,31 +876,6 @@ But remember that many of the best plots are custom made (see https://www.r-grap
 
 * https://plotly.com/r/
 * https://shiny.rstudio.com/gallery/
-
-
-## Introductions to R
-
-There are many good yet free programming books online. E.g., 
-
-* https://cran.r-project.org/doc/manuals/R-intro.html
-* R Graphics Cookbook, 2nd edition. Winston Chang. 2021. https://r-graphics.org/
-* https://intro2r.com/
-* R for Data Science. H. Wickham and G. Grolemund. 2017. https://r4ds.had.co.nz/index.html
-* An Introduction to R. W. N. Venables, D. M. Smith, R Core Team. 2017. https://colinfay.me/intro-to-r/
-* https://bookdown.org/kieranmarray/intro_to_r_for_econometrics/
-* Spatial Data Science with R: Introduction to R. Robert J. Hijmans. 2021. https://rspatial.org/intr/index.html
-
-There are also many good yet free-online tutorials and courses. E.g., \\
-
-* https://www.econometrics-with-r.org/1.2-a-very-short-introduction-to-r-and-rstudio.html
-* https://rafalab.github.io/dsbook/
-* https://moderndive.com/foreword.html
-* https://rstudio.cloud/learn/primers/1.2
-* https://cran.r-project.org/manuals.html
-* https://stats.idre.ucla.edu/stat/data/intro_r/intro_r_interactive_flat.html
-* https://cswr.nrhstat.org/app-r
-
-What we cover in this primer should be enough to get you going.
 
 
 ## Custom figures

@@ -23,6 +23,7 @@ $$
 $$
 
 ```{r}
+## Example 1 (Theoretical)
 x <- seq(0,100)
 e <- rnorm(length(x))
 y <- .02*x + e
@@ -35,6 +36,7 @@ abline(reg, col='orange')
 
 
 ```{r}
+## Example 2 (Theoretical)
 N <- 1000
 z <- rbinom(N,1,.5)
 xy <- sapply(z, function(zi){
@@ -45,6 +47,16 @@ xy <- sapply(z, function(zi){
 xy <- data.frame(x=xy[1,],y=xy[2,])
 plot(y~x, xy, col=grey(.5,.5), pch=16)
 reg <- lm(y~x, dat=xy)
+abline(reg, col='orange')
+```
+
+
+
+```{r}
+## Example 3 (Empirical)
+## head(USArrests)
+plot(Murder~UrbanPop, USArrests, col=grey(.5,.5), pch=16)
+reg <- lm(Murder~UrbanPop, dat=USArrests)
 abline(reg, col='orange')
 ```
 
@@ -80,15 +92,15 @@ $$
 \hat{\beta}=(\textbf{X}'\textbf{X})^{-1}\textbf{X}'y\\
 $$
 ```{r}
-X <- USArrests[,c('Murder','Assault','UrbanPop')]
+X <- USArrests[,c('Assault','UrbanPop')]
 X <- as.matrix(cbind(1,X))
-Y <- USArrests[,'Rape']
+Y <- USArrests[,'Murder']
 
 XtXi <- solve(t(X)%*%X)
 Bhat <- XtXi %*% (t(X)%*%Y)
 Bhat
 
-reg <- lm(Rape~Murder+Assault+UrbanPop, data=USArrests)
+reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 coef(reg)
 ```
 
@@ -127,7 +139,7 @@ summary(reg)$r.squared
 
 ### Coefficient Variability
 
-Note that
+In general, note that the linear model has
 $$
 \hat{\Sigma}_{\beta} = (X'X)^{-1} X' \widehat{\Omega} X (X'X)^{-1}.\\
 \widehat{\Omega} = \begin{pmatrix}
@@ -136,10 +148,10 @@ $$
 \hat{\sigma}_{n,1} & ... & \hat{\sigma}_{n,n}
 \end{pmatrix}
 $$
+Standard Errors are the diagonal: $diag( \hat{\Sigma}_{\beta}  )$
 
 
-
-**Classical Model (CLRM) Standard Errors**
+**Classical Linear Model (CLM)**
 Independance: $\hat{\sigma_{i,j}}=0$
 Homoskedasticity: 
 $$
@@ -169,7 +181,9 @@ $$
 diag( \widehat{\Omega} ) = [\widehat{\sigma^2_{1}}, \widehat{\sigma^2_{1}}, ..., \widehat{\sigma^2_{n}}]\\
 \widehat{\sigma^2_{i}} = \hat{\epsilon_{i}}^2
 $$
+
 Autocorrelation Dependance: $\sigma_{i,j}=f( dist(i,j) )$.
+
 Cluster Dependance: 
 $$\sigma_{i,j}=
 \begin{cases}
@@ -357,8 +371,9 @@ summary(fe_reg1)
 
 **Hansen Econometrics, Theorem 17.1:** The fixed effects estimator of $\beta$ algebraically equals the dummy
 variable estimator of $\beta$. The two estimators have the same residuals.
-
+<!--
 In fact, if the fixed effect is ``fully unstructured then the only way to consistently estimate the coefficient $\beta$ is by an estimator which is invariant'' (Hansen Econometrics, p). 
+-->
 
 Consistency is a great property, but only if the data generating process does in fact match the model. Many factor variables have effects that are not additively seperable.
 ```{r}
@@ -401,7 +416,7 @@ For fixed effects, see
 
 Simply plotting your regression object can help diagnose whether your model is a good one. There's little sense in getting great standard errors for the wrong model, and is a simple and easy step. So do it early and often.
 ```{r}
-reg <- lm(Rape~Murder+Assault+UrbanPop, data=USArrests)
+reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 par(mfrow=c(2,2))
 plot(reg)
 ```
@@ -612,9 +627,9 @@ bxcx_inv <- function( xy, rho){
 
 
 ## Which Variables
-reg <- lm(Rape~Murder+Assault+UrbanPop, data=USArrests)
-X <- USArrests[,c('Murder','Assault','UrbanPop')]
-Y <- USArrests[,'Rape']
+reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
+X <- USArrests[,c('Assault','UrbanPop')]
+Y <- USArrests[,'Murder']
 
 ## Simple Grid Search
 ## Which potential (Rho,Lambda) 
@@ -625,8 +640,8 @@ rl_df <- expand.grid(rho=seq(-2,2,by=.5),lambda=seq(-2,2,by=.5))
 errors <- apply(rl_df,1,function(rl){
     Xr <- bxcx(X,rl[[1]])
     Yr <- bxcx(Y,rl[[2]])
-    Datr <- cbind(Rape=Yr,Xr)
-    Regr <- lm(Rape~Murder+Assault+UrbanPop, data=Datr)
+    Datr <- cbind(Murder=Yr,Xr)
+    Regr <- lm(Murder~Assault+UrbanPop, data=Datr)
     Predr <- bxcx_inv(predict(Regr),rl[[2]])
     Resr  <- (Y - Predr)
     return(Resr)
@@ -648,8 +663,8 @@ rl0 <- rl_df[which.min(rl_df$mse),c('rho','lambda')]
 ## Plot
 Xr <- bxcx(X,rl0[[1]])
 Yr <- bxcx(Y,rl0[[2]])
-Datr <- cbind(Rape=Yr,Xr)
-Regr <- lm(Rape~Murder+Assault+UrbanPop, data=Datr)
+Datr <- cbind(Murder=Yr,Xr)
+Regr <- lm(Murder~Assault+UrbanPop, data=Datr)
 Predr <- bxcx_inv(predict(Regr),rl0[[2]])
 
 cols <- c(rgb(1,0,0,.5), col=rgb(0,0,1,.5))
@@ -702,13 +717,13 @@ These endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a bar
 * https://theeffectbook.net/ch-InstrumentalVariables.html
 * http://www.urfie.net/read/index.html#page/247
 
-Note that the coefficient interpretation still rests on many assumptions
+Note that the coefficient interpretation still rests on many assumptions. Taking the classic case of supply shock in a market setting (the situation the method was originally developed for) we are implicitly assuming
 
-* do you know both supply and demand are linear?
-* do you know only supply was affected, and it was only an intercept shift?
-* is the shock large enough to be picked up statistically
+* both supply and demand are linear (and additively seperable in covariates).
+* only supply was affected, and it was only an intercept shift.
+* the shock large enough to be picked up statistically.
 
-If we had multiple alleged supply shifts and recorded their magnitudes, then we could recover more information about demand. One common diagnostic tool is simply to report the reduced form results, but we could use a nonparametric estimator to diagnose linearity at the same time. 
+If we had multiple alleged supply shifts and recorded their magnitudes, then we could recover more information about demand. One common diagnostic tool is simply to report the reduced form results. We could also use a nonparametric estimator to diagnose linearity at each stage.
 ```{r, eval=F, results='hide'}
 #reg2_alt_fs <- lm(Q~cost, data=dat2)
 #summary(reg2_alt_fs)
@@ -716,6 +731,7 @@ If we had multiple alleged supply shifts and recorded their magnitudes, then we 
 ```
 
 Other tools are used to help address some of the other assumptions.
+
 
 ## Regression Discontinuity (RD)
 
