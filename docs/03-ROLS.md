@@ -41,7 +41,7 @@ reg
 ## 
 ## Coefficients:
 ## (Intercept)            x  
-##    -0.06629      0.02224
+##    -0.10715      0.02473
 ```
 
 ```r
@@ -388,7 +388,7 @@ coef(lm(Y~x1+x2, data=dat))
 
 ```
 ## (Intercept)          x1          x2 
-##  10.5992682   1.8025682  -0.2040407
+##    9.514278    2.008898   -1.071302
 ```
 
 Simulate the distribution of coefficients under a correctly specified model. Interpret the average.
@@ -498,23 +498,23 @@ summary(fe_reg0)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -33.580  -5.816  -0.989   5.740  42.516 
+## -40.226  -5.808  -0.387   5.868  37.415 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  18.5892     1.1844  15.696  < 2e-16 ***
-## x             1.2844     0.2003   6.412 2.21e-10 ***
-## fo.L         26.6864     1.0770  24.779  < 2e-16 ***
-## fo.Q          9.0884     0.9446   9.622  < 2e-16 ***
-## fo.C          2.6824     0.7330   3.660 0.000266 ***
-## fo^4          0.9420     0.5514   1.708 0.087881 .  
-## fuB         -23.7790     0.5785 -41.104  < 2e-16 ***
+## (Intercept)  20.9744     1.2463  16.829  < 2e-16 ***
+## x             1.1489     0.2026   5.672 1.85e-08 ***
+## fo.L         30.7334     1.1375  27.019  < 2e-16 ***
+## fo.Q         12.5182     0.9986  12.535  < 2e-16 ***
+## fo.C          3.9573     0.7510   5.269 1.68e-07 ***
+## fo^4          1.0801     0.5518   1.957   0.0506 .  
+## fuB         -23.6523     0.5768 -41.008  < 2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 9.109 on 993 degrees of freedom
-## Multiple R-squared:  0.7102,	Adjusted R-squared:  0.7085 
-## F-statistic: 405.7 on 6 and 993 DF,  p-value: < 2.2e-16
+## Residual standard error: 9.101 on 993 degrees of freedom
+## Multiple R-squared:  0.7426,	Adjusted R-squared:  0.7411 
+## F-statistic: 477.6 on 6 and 993 DF,  p-value: < 2.2e-16
 ```
 We can also compute averages for each group and construct a "between estimator"
 $$
@@ -538,11 +538,11 @@ summary(fe_reg1)
 ## Fixed-effects: fo: 5,  fu: 2
 ## Standard-errors: Clustered (fo) 
 ##   Estimate Std. Error t value Pr(>|t|)    
-## x  1.28437   0.320591 4.00625 0.016047 *  
+## x  1.14892   0.418653 2.74433 0.051675 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 9.07741     Adj. R2: 0.708485
-##                 Within R2: 0.03976
+## RMSE: 9.06864     Adj. R2: 0.741095
+##                 Within R2: 0.031384
 ```
 
 **Hansen Econometrics, Theorem 17.1:** The fixed effects estimator of $\beta$ algebraically equals the dummy
@@ -564,11 +564,11 @@ summary(reg1)
 ## Fixed-effects: fo^fu: 10
 ## Standard-errors: Clustered (fo^fu) 
 ##   Estimate Std. Error t value Pr(>|t|)    
-## x  1.07292   0.514963  2.0835 0.066885 .  
+## x  1.27096   0.567874  2.2381 0.052004 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 3.40999     Adj. R2: 0.958696
-##                 Within R2: 0.16957
+## RMSE: 3.6686     Adj. R2: 0.957459
+##                Within R2: 0.194625
 ```
 
 ```r
@@ -583,36 +583,36 @@ summary(reg2)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -11.4263  -1.4529   0.0281   1.4283   9.9958 
+## -10.3517  -1.4383   0.0133   1.5181  10.1531 
 ## 
 ## Coefficients:
-##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  14.11109    0.58649  24.060  < 2e-16 ***
-## x             2.69819    0.10412  25.915  < 2e-16 ***
-## fo.L         27.69504    1.64490  16.837  < 2e-16 ***
-## fo.Q         10.85795    1.44255   7.527 1.18e-13 ***
-## fo.C          3.41562    1.15514   2.957  0.00318 ** 
-## fo^4          0.42086    0.87082   0.483  0.62900    
-## fuB         -13.09242    0.83918 -15.601  < 2e-16 ***
-## x:fo.L        4.59499    0.29250  15.710  < 2e-16 ***
-## x:fo.Q        1.65366    0.25631   6.452 1.73e-10 ***
-## x:fo.C        0.24436    0.20477   1.193  0.23302    
-## x:fo^4        0.06345    0.15373   0.413  0.67988    
-## x:fuB        -2.94367    0.15338 -19.192  < 2e-16 ***
-## fo.L:fuB    -25.00216    2.35460 -10.618  < 2e-16 ***
-## fo.Q:fuB     -8.30729    2.06213  -4.029 6.05e-05 ***
-## fo.C:fuB     -2.34392    1.65745  -1.414  0.15763    
-## fo^4:fuB      0.58923    1.24126   0.475  0.63510    
-## x:fo.L:fuB   -5.18407    0.43380 -11.950  < 2e-16 ***
-## x:fo.Q:fuB   -2.23339    0.37890  -5.894 5.17e-09 ***
-## x:fo.C:fuB   -0.36633    0.29980  -1.222  0.22203    
-## x:fo^4:fuB   -0.21523    0.22113  -0.973  0.33064    
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  12.7092     0.7911  16.066  < 2e-16 ***
+## x             2.9514     0.1308  22.563  < 2e-16 ***
+## fo.L         22.2574     2.3467   9.484  < 2e-16 ***
+## fo.Q          6.4010     2.0269   3.158  0.00164 ** 
+## fo.C          0.5691     1.4176   0.401  0.68815    
+## fo^4         -0.2009     0.9436  -0.213  0.83143    
+## fuB         -12.3489     1.1644 -10.606  < 2e-16 ***
+## x:fo.L        5.6451     0.3847  14.674  < 2e-16 ***
+## x:fo.Q        2.4730     0.3339   7.407 2.78e-13 ***
+## x:fo.C        0.7191     0.2363   3.044  0.00240 ** 
+## x:fo^4        0.2180     0.1641   1.328  0.18434    
+## x:fuB        -3.0068     0.1914 -15.711  < 2e-16 ***
+## fo.L:fuB    -21.2313     3.4724  -6.114 1.40e-09 ***
+## fo.Q:fuB     -4.0395     2.9925  -1.350  0.17736    
+## fo.C:fuB      0.8604     2.0715   0.415  0.67798    
+## fo^4:fuB      1.1858     1.3464   0.881  0.37871    
+## x:fo.L:fuB   -5.7984     0.5659 -10.246  < 2e-16 ***
+## x:fo.Q:fuB   -2.8296     0.4897  -5.778 1.01e-08 ***
+## x:fo.C:fuB   -0.9292     0.3438  -2.702  0.00700 ** 
+## x:fo^4:fuB   -0.3896     0.2329  -1.673  0.09474 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 2.587 on 980 degrees of freedom
-## Multiple R-squared:  0.9769,	Adjusted R-squared:  0.9765 
-## F-statistic:  2184 on 19 and 980 DF,  p-value: < 2.2e-16
+## Residual standard error: 2.65 on 980 degrees of freedom
+## Multiple R-squared:  0.9785,	Adjusted R-squared:  0.978 
+## F-statistic:  2343 on 19 and 980 DF,  p-value: < 2.2e-16
 ```
 
 ```r
