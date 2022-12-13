@@ -2,11 +2,6 @@
 
 Add title page
 
-## R OLS
-Add /DataScientism/* templates
-- edit
-- post in ./docs 
-- link. eg [RandRstudio](https://jadamso.github.io/Rbooks/01-RandRstudio.md)
 
 ## Intro R
 The & and | operators
@@ -48,6 +43,9 @@ Update packages after new install,
     for loop checks for old packages and installs if not already installed. not from source
 
 ## RReproducible
+
+- edit /DataScientism_Poster
+- links [RandRstudio](https://jadamso.github.io/Rbooks/01-RandRstudio.md)
 
 Add 
  - Screenshot of Rmarkdown
