@@ -5,7 +5,7 @@
 # Ordinary Least Squares
 ***
 
-## Simple OLS (bivariate linear regression)
+## Simple OLS (linear regression)
 Model and objective
 $$
 y_i=\alpha+\beta x_i+\epsilon_{i} \\
@@ -41,7 +41,7 @@ reg
 ## 
 ## Coefficients:
 ## (Intercept)            x  
-##    -0.10715      0.02473
+##    -0.18614      0.02314
 ```
 
 ```r
@@ -388,7 +388,7 @@ coef(lm(Y~x1+x2, data=dat))
 
 ```
 ## (Intercept)          x1          x2 
-##    9.514278    2.008898   -1.071302
+##  10.0279329   1.7874466  -0.1071464
 ```
 
 Simulate the distribution of coefficients under a correctly specified model. Interpret the average.
@@ -498,23 +498,23 @@ summary(fe_reg0)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -40.226  -5.808  -0.387   5.868  37.415 
+## -36.944  -5.563   0.268   5.620  37.156 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  20.9744     1.2463  16.829  < 2e-16 ***
-## x             1.1489     0.2026   5.672 1.85e-08 ***
-## fo.L         30.7334     1.1375  27.019  < 2e-16 ***
-## fo.Q         12.5182     0.9986  12.535  < 2e-16 ***
-## fo.C          3.9573     0.7510   5.269 1.68e-07 ***
-## fo^4          1.0801     0.5518   1.957   0.0506 .  
-## fuB         -23.6523     0.5768 -41.008  < 2e-16 ***
+## (Intercept)  21.1202     1.2433  16.987  < 2e-16 ***
+## x             1.0883     0.2107   5.165 2.91e-07 ***
+## fo.L         26.8910     0.9976  26.956  < 2e-16 ***
+## fo.Q         12.3615     0.8794  14.056  < 2e-16 ***
+## fo.C          3.2560     0.7229   4.504 7.45e-06 ***
+## fo^4          0.2842     0.5636   0.504    0.614    
+## fuB         -23.7184     0.5883 -40.318  < 2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 9.101 on 993 degrees of freedom
-## Multiple R-squared:  0.7426,	Adjusted R-squared:  0.7411 
-## F-statistic: 477.6 on 6 and 993 DF,  p-value: < 2.2e-16
+## Residual standard error: 9.264 on 993 degrees of freedom
+## Multiple R-squared:  0.7325,	Adjusted R-squared:  0.7308 
+## F-statistic: 453.1 on 6 and 993 DF,  p-value: < 2.2e-16
 ```
 We can also compute averages for each group and construct a "between estimator"
 $$
@@ -538,11 +538,11 @@ summary(fe_reg1)
 ## Fixed-effects: fo: 5,  fu: 2
 ## Standard-errors: Clustered (fo) 
 ##   Estimate Std. Error t value Pr(>|t|)    
-## x  1.14892   0.418653 2.74433 0.051675 .  
+## x  1.08834   0.407848 2.66849 0.055894 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 9.06864     Adj. R2: 0.741095
-##                 Within R2: 0.031384
+## RMSE: 9.23108     Adj. R2: 0.730846
+##                 Within R2: 0.026159
 ```
 
 **Hansen Econometrics, Theorem 17.1:** The fixed effects estimator of $\beta$ algebraically equals the dummy
@@ -564,11 +564,11 @@ summary(reg1)
 ## Fixed-effects: fo^fu: 10
 ## Standard-errors: Clustered (fo^fu) 
 ##   Estimate Std. Error t value Pr(>|t|)    
-## x  1.27096   0.567874  2.2381 0.052004 .  
+## x  1.06159   0.470726 2.25521 0.050571 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 3.6686     Adj. R2: 0.957459
-##                Within R2: 0.194625
+## RMSE: 3.21944     Adj. R2: 0.967129
+##                 Within R2: 0.17339
 ```
 
 ```r
@@ -582,37 +582,37 @@ summary(reg2)
 ## lm(formula = y ~ x * fo * fu, data = dat_f)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -10.3517  -1.4383   0.0133   1.5181  10.1531 
+##     Min      1Q  Median      3Q     Max 
+## -9.4256 -1.3459 -0.0527  1.4108 11.8944 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  12.7092     0.7911  16.066  < 2e-16 ***
-## x             2.9514     0.1308  22.563  < 2e-16 ***
-## fo.L         22.2574     2.3467   9.484  < 2e-16 ***
-## fo.Q          6.4010     2.0269   3.158  0.00164 ** 
-## fo.C          0.5691     1.4176   0.401  0.68815    
-## fo^4         -0.2009     0.9436  -0.213  0.83143    
-## fuB         -12.3489     1.1644 -10.606  < 2e-16 ***
-## x:fo.L        5.6451     0.3847  14.674  < 2e-16 ***
-## x:fo.Q        2.4730     0.3339   7.407 2.78e-13 ***
-## x:fo.C        0.7191     0.2363   3.044  0.00240 ** 
-## x:fo^4        0.2180     0.1641   1.328  0.18434    
-## x:fuB        -3.0068     0.1914 -15.711  < 2e-16 ***
-## fo.L:fuB    -21.2313     3.4724  -6.114 1.40e-09 ***
-## fo.Q:fuB     -4.0395     2.9925  -1.350  0.17736    
-## fo.C:fuB      0.8604     2.0715   0.415  0.67798    
-## fo^4:fuB      1.1858     1.3464   0.881  0.37871    
-## x:fo.L:fuB   -5.7984     0.5659 -10.246  < 2e-16 ***
-## x:fo.Q:fuB   -2.8296     0.4897  -5.778 1.01e-08 ***
-## x:fo.C:fuB   -0.9292     0.3438  -2.702  0.00700 ** 
-## x:fo^4:fuB   -0.3896     0.2329  -1.673  0.09474 .  
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  15.04892    0.55281  27.223  < 2e-16 ***
+## x             2.46810    0.09742  25.333  < 2e-16 ***
+## fo.L         30.28363    1.51806  19.949  < 2e-16 ***
+## fo.Q         12.34630    1.33775   9.229  < 2e-16 ***
+## fo.C          3.70364    1.12443   3.294  0.00102 ** 
+## fo^4          1.43155    0.86808   1.649  0.09945 .  
+## fuB         -15.31515    0.78058 -19.620  < 2e-16 ***
+## x:fo.L        4.04441    0.26730  15.131  < 2e-16 ***
+## x:fo.Q        1.33459    0.23544   5.669 1.89e-08 ***
+## x:fo.C        0.07372    0.19876   0.371  0.71077    
+## x:fo^4       -0.18017    0.15313  -1.177  0.23963    
+## x:fuB        -2.45266    0.13868 -17.686  < 2e-16 ***
+## fo.L:fuB    -33.31117    2.13822 -15.579  < 2e-16 ***
+## fo.Q:fuB    -13.94211    1.89833  -7.344 4.34e-13 ***
+## fo.C:fuB     -4.97226    1.56615  -3.175  0.00155 ** 
+## fo^4:fuB     -2.18912    1.24800  -1.754  0.07972 .  
+## x:fo.L:fuB   -3.52653    0.38082  -9.260  < 2e-16 ***
+## x:fo.Q:fuB   -1.04324    0.33741  -3.092  0.00205 ** 
+## x:fo.C:fuB    0.17856    0.27822   0.642  0.52116    
+## x:fo^4:fuB    0.30349    0.21986   1.380  0.16779    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 2.65 on 980 degrees of freedom
-## Multiple R-squared:  0.9785,	Adjusted R-squared:  0.978 
-## F-statistic:  2343 on 19 and 980 DF,  p-value: < 2.2e-16
+## Residual standard error: 2.499 on 980 degrees of freedom
+## Multiple R-squared:  0.9808,	Adjusted R-squared:  0.9804 
+## F-statistic:  2633 on 19 and 980 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -660,9 +660,9 @@ plot(reg)
 <img src="03-ROLS_files/figure-html/unnamed-chunk-17-1.png" width="672" />
 
 
-## Assessing Outlier $Y$
+## Assessing Outliers
 
-This is the first plot.
+The first plot examines outlier $Y$ and $\hat{Y}$.
 
 >``In our $y_i = a + b x_i + e_i$ regression, the residuals are, of course, $e_i$ -- they reveal how much our fitted value $\hat{y}_i = a + b x_i$ differs from the observed $y_i$. A point $(x_i ,y_i)$ with a corresponding large residual is called an *outlier*. Say that you are interested in outliers because you somehow think that such points will exert undue *influence* on your estimates. Your feelings are generally right, but there are exceptions. A point might have a huge residual and yet not affect the estimated $b$ at all''
 >Stata Press (2015) Base Reference Manual, Release 14, p. 2138.
@@ -682,72 +682,8 @@ abline(h = 0, col = "darkorange", lwd = 2)
 # car::outlierTest(reg)
 ```
 
-## Assessing Normality 
-The second plot examines whether the residuals are normally distributed. OLS point estimates do not depend on the Normality of the residuals. Good thing, because there's no reason the residuals of economic phenomena should be so well behaved. The variability of the point estimates are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality 
 
-```r
-par(mfrow=c(1,2))
-hist(resid(reg), main='Histogram of Residuals')
-
-qqnorm(resid(reg), main = "Normal Q-Q Plot of Residuals", col = "darkgrey")
-qqline(resid(reg), col = "dodgerblue", lwd = 2)
-```
-
-<img src="03-ROLS_files/figure-html/unnamed-chunk-19-1.png" width="672" />
-
-```r
-shapiro.test(resid(reg))
-```
-
-```
-## 
-## 	Shapiro-Wilk normality test
-## 
-## data:  resid(reg)
-## W = 0.96937, p-value = 0.2182
-```
-
-```r
-# car::qqPlot(reg)
-```
-
-Assessing Heterskedasticity may also matters for variance estimates. This is not shown in the plot, but you can run a simple test
-
-```r
-library(lmtest)
-```
-
-```
-## Loading required package: zoo
-```
-
-```
-## 
-## Attaching package: 'zoo'
-```
-
-```
-## The following objects are masked from 'package:base':
-## 
-##     as.Date, as.Date.numeric
-```
-
-```r
-lmtest::bptest(reg)
-```
-
-```
-## 
-## 	studentized Breusch-Pagan test
-## 
-## data:  reg
-## BP = 1.9073, df = 2, p-value = 0.3853
-```
-
-
-## Assessing Outlier $X$
-
-The third plot examines "Leverage".
+The third plot examines outlier $X$ via ``leverage''
 
 >"$(x_i ,y_i)$ can be an outlier in another way -- just as $y_i$ can be far from $\hat{y}_i$, $x_i$ can be far from the center of mass of the other $x$'s. Such an `outlier' should interest you just as much as the more traditional outliers. Picture a scatterplot of $y$ against $x$ with thousands of points in some sort of mass at the lower left of the graph and one point at the upper right of the graph. Now run a regression line through the points—the regression line will come close to the point at the upper right of the graph and may in fact, go through it. That is, this isolated point will not appear as an outlier as measured by residuals because its residual will be small. Yet this point might have a dramatic effect on our resulting estimates in the sense that, were you to delete the point, the estimates would change markedly. Such a point is said to have high *leverage*''
 Stata Press (2015) Base Reference Manual, Release 14, pp. 2138-39.
@@ -766,7 +702,7 @@ abline(lm(y~x), col=2, lty=2)
 abline(lm(y[-1]~x[-1]))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-21-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-19-1.png" width="672" />
 
 See https://www.r-bloggers.com/2016/06/leverage-and-influence-in-a-nutshell/ for a good interactive explaination.
 
@@ -826,7 +762,7 @@ which.max(cooks.distance(reg))
 car::influencePlot(reg)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-23-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-21-1.png" width="672" />
 
 ```
 ##                   StudRes        Hat      CookD
@@ -877,7 +813,70 @@ head(influence.measures(reg)$infmat)
 ```
 
 
-## Collinearity
+## Assessing Normality and Collinearity
+
+The second plot examines whether the residuals are normally distributed. OLS point estimates do not depend on the normality of the residuals. (Good thing, because there's no reason the residuals of economic phenomena should be so well behaved.) The variability of the point estimates are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality 
+
+```r
+par(mfrow=c(1,2))
+hist(resid(reg), main='Histogram of Residuals')
+
+qqnorm(resid(reg), main = "Normal Q-Q Plot of Residuals", col = "darkgrey")
+qqline(resid(reg), col = "dodgerblue", lwd = 2)
+```
+
+<img src="03-ROLS_files/figure-html/unnamed-chunk-24-1.png" width="672" />
+
+```r
+shapiro.test(resid(reg))
+```
+
+```
+## 
+## 	Shapiro-Wilk normality test
+## 
+## data:  resid(reg)
+## W = 0.96937, p-value = 0.2182
+```
+
+```r
+# car::qqPlot(reg)
+```
+
+Assessing Heterskedasticity may also matters for variance estimates. This is not shown in the plot, but you can run a simple test
+
+```r
+library(lmtest)
+```
+
+```
+## Loading required package: zoo
+```
+
+```
+## 
+## Attaching package: 'zoo'
+```
+
+```
+## The following objects are masked from 'package:base':
+## 
+##     as.Date, as.Date.numeric
+```
+
+```r
+lmtest::bptest(reg)
+```
+
+```
+## 
+## 	studentized Breusch-Pagan test
+## 
+## data:  reg
+## BP = 1.9073, df = 2, p-value = 0.3853
+```
+
+
 This is when one explanatory variable in a multiple regression model can be linearly predicted from the others with a substantial degree of accuracy. Coefficient estimates may change erratically in response to small changes in the model or the data. (In the extreme case where there are more variables than observations $K>\geq N$, $X'X$ has an infinite number of solutions and is not invertible.)
 
 To diagnose this, we can use the Variance Inflation Factor
@@ -1097,8 +1096,7 @@ If we had multiple alleged supply shifts and recorded their magnitudes, then we 
 
 Other tools are used to help address some of the other assumptions.
 
-
-## Regression Discontinuity (RD)
+## Regression Discontinuities/Kink (RD/RK)
 
 * https://bookdown.org/paul/applied-causal-analysis/rdd-regression-discontinuity-design.html
 * https://mixtape.scunning.com/06-regression_discontinuity
@@ -1135,11 +1133,15 @@ There is currently a boom in empirical research centered around linear regressio
 > --- A. Deaton, 2010
 
 
-The next example is a familiar one, and the one after is currently being researched. At the end are two simple examples of scientism with the ''latest and greatest'' empirical recipes---we don't have many theoretical results yet but I think you can understand the issue with the numerical example. 
+The OLS examples are familiar are subject to current research. At the end are two simple examples of scientism with the ''latest and greatest'' empirical recipes---we don't have many theoretical results yet but I think you can understand the issue with the numerical example. 
 
-## US Gov't Spending on Science
+## OLS in the age of big data
 
-Lets inspect some data from https://tylervigen.com/spurious-correlations
+We begin with a motivating empirical example and then an simulation excercise.
+
+### US Gov't Spending on Science
+
+Get and inspect some data from https://tylervigen.com/spurious-correlations
 
 
 ```r
@@ -1313,13 +1315,12 @@ axis(2)
 #stargazer(reg1, reg2, type='html')
 ```
 
-For more intuition on spurious correlations, try http://shiny.calpoly.sh/Corr_Reg_Game/
 
 
-## OLS in the age of big data
 
-A huge amount of data normally means a huge amount of data cleaning/merging/aggregating.
-Some spurious results are driven by errors in this process, so be careful.
+### False Positives arise from errors
+
+A huge amount of data normally means a huge amount of data cleaning/merging/aggregating. Some spurious results are driven by errors in this process, so be careful.
 
 
 ```r
@@ -1363,8 +1364,10 @@ dat_merged_wide == dat_merged_wide2
 Nevertheless, data transformation is often necessary before regression analysis. For downloading tips, see https://raw.githubusercontent.com/rstudio/cheatsheets/main/data-import.pdf
 <!--\url{https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf}-->
 
+### False Positives arise from Regression Machines
 
-Another class of errors pertains to *Regression Machines*. 
+Another class of errors pertains to P-hacking (and it's various synonyms) 
+
 
 ```r
 n <- 50
@@ -1392,6 +1395,10 @@ abline(reg_i)
 ```
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-35-1.png" width="672" />
+
+
+For more intuition on spurious correlations, try http://shiny.calpoly.sh/Corr_Reg_Game/
+
 
 ## Causal effects *sans theory*
 
