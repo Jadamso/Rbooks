@@ -54,7 +54,7 @@ reg
 ## 
 ## Coefficients:
 ## (Intercept)            x  
-##      0.7007       0.4224
+##      0.3264       0.6295
 ```
 
 ```r
@@ -86,7 +86,7 @@ summary(reg)$r.squared
 ```
 
 ```
-## [1] 0.1318784
+## [1] 0.2759816
 ```
 
 ### Variability Estimates and Hypothesis Tests
@@ -252,8 +252,8 @@ plotly::plot_ly(
 ```
 
 ```{=html}
-<div class="plotly html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-05db331bd815443767b7" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-05db331bd815443767b7">{"x":{"visdat":{"a614509485b0":["function () ","plotlyVisDat"]},"cur_data":"a614509485b0","attrs":{"a614509485b0":{"x":{},"y":{},"text":{},"marker":{"size":{},"opacity":0.5},"title":"Murder arrests (per 100,000)","color":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20]}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"xaxis":{"domain":[0,1],"automargin":true,"title":"UrbanPop"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Assault"},"hovermode":"closest","showlegend":false,"legend":{"yanchor":"top","y":0.5}},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[58,48,80,50,91,78,77,72,80,60,83,54,83,65,57,66,52,66,51,67,85,74,66,44,70,53,62,81,56,89,70,86,45,44,75,68,67,72,87,48,45,59,80,80,32,63,73,39,66,60],"y":[236,263,294,190,276,204,110,238,335,211,46,120,249,113,56,115,109,249,83,300,149,255,72,259,178,109,102,252,57,159,285,254,337,45,120,151,159,106,174,279,86,188,201,120,48,156,145,81,53,161],"text":["State:  Alabama <br>Murder Arrests: 13.2","State:  Alaska <br>Murder Arrests: 10","State:  Arizona <br>Murder Arrests: 8.1","State:  Arkansas <br>Murder Arrests: 8.8","State:  California <br>Murder Arrests: 9","State:  Colorado <br>Murder Arrests: 7.9","State:  Connecticut <br>Murder Arrests: 3.3","State:  Delaware <br>Murder Arrests: 5.9","State:  Florida <br>Murder Arrests: 15.4","State:  Georgia <br>Murder Arrests: 17.4","State:  Hawaii <br>Murder Arrests: 5.3","State:  Idaho <br>Murder Arrests: 2.6","State:  Illinois <br>Murder Arrests: 10.4","State:  Indiana <br>Murder Arrests: 7.2","State:  Iowa <br>Murder Arrests: 2.2","State:  Kansas <br>Murder Arrests: 6","State:  Kentucky <br>Murder Arrests: 9.7","State:  Louisiana <br>Murder Arrests: 15.4","State:  Maine <br>Murder Arrests: 2.1","State:  Maryland <br>Murder Arrests: 11.3","State:  Massachusetts <br>Murder Arrests: 4.4","State:  Michigan <br>Murder Arrests: 12.1","State:  Minnesota <br>Murder Arrests: 2.7","State:  Mississippi <br>Murder Arrests: 16.1","State:  Missouri <br>Murder Arrests: 9","State:  Montana <br>Murder Arrests: 6","State:  Nebraska <br>Murder Arrests: 4.3","State:  Nevada <br>Murder Arrests: 12.2","State:  New Hampshire <br>Murder Arrests: 2.1","State:  New Jersey <br>Murder Arrests: 7.4","State:  New Mexico <br>Murder Arrests: 11.4","State:  New York <br>Murder Arrests: 11.1","State:  North Carolina <br>Murder Arrests: 13","State:  North Dakota <br>Murder Arrests: 0.8","State:  Ohio <br>Murder Arrests: 7.3","State:  Oklahoma <br>Murder Arrests: 6.6","State:  Oregon <br>Murder Arrests: 4.9","State:  Pennsylvania <br>Murder Arrests: 6.3","State:  Rhode Island <br>Murder Arrests: 3.4","State:  South Carolina <br>Murder Arrests: 14.4","State:  South Dakota <br>Murder Arrests: 3.8","State:  Tennessee <br>Murder Arrests: 13.2","State:  Texas <br>Murder Arrests: 12.7","State:  Utah <br>Murder Arrests: 3.2","State:  Vermont <br>Murder Arrests: 2.2","State:  Virginia <br>Murder Arrests: 8.5","State:  Washington <br>Murder Arrests: 4","State:  West Virginia <br>Murder Arrests: 5.7","State:  Wisconsin <br>Murder Arrests: 2.6","State:  Wyoming <br>Murder Arrests: 6.8"],"marker":{"colorbar":{"title":"Murder","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":false,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"size":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"opacity":0.5,"line":{"colorbar":{"title":"","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":false,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998]}},"title":"Murder arrests (per 100,000)","type":"scatter","mode":"markers","xaxis":"x","yaxis":"y","frame":null},{"x":[32,91],"y":[45,337],"type":"scatter","mode":"markers","opacity":0,"hoverinfo":"none","showlegend":false,"marker":{"colorbar":{"title":"Murder","ticklen":2,"len":0.5,"lenmode":"fraction","y":1,"yanchor":"top"},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"color":[0.80000000000000004,17.399999999999999],"line":{"color":"rgba(255,127,14,1)"}},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<div class="plotly html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-ce87be325fd72165e7d2" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-ce87be325fd72165e7d2">{"x":{"visdat":{"bdb7753a9998":["function () ","plotlyVisDat"]},"cur_data":"bdb7753a9998","attrs":{"bdb7753a9998":{"x":{},"y":{},"text":{},"marker":{"size":{},"opacity":0.5},"title":"Murder arrests (per 100,000)","color":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20]}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"xaxis":{"domain":[0,1],"automargin":true,"title":"UrbanPop"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Assault"},"hovermode":"closest","showlegend":false,"legend":{"yanchor":"top","y":0.5}},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[58,48,80,50,91,78,77,72,80,60,83,54,83,65,57,66,52,66,51,67,85,74,66,44,70,53,62,81,56,89,70,86,45,44,75,68,67,72,87,48,45,59,80,80,32,63,73,39,66,60],"y":[236,263,294,190,276,204,110,238,335,211,46,120,249,113,56,115,109,249,83,300,149,255,72,259,178,109,102,252,57,159,285,254,337,45,120,151,159,106,174,279,86,188,201,120,48,156,145,81,53,161],"text":["State:  Alabama <br>Murder Arrests: 13.2","State:  Alaska <br>Murder Arrests: 10","State:  Arizona <br>Murder Arrests: 8.1","State:  Arkansas <br>Murder Arrests: 8.8","State:  California <br>Murder Arrests: 9","State:  Colorado <br>Murder Arrests: 7.9","State:  Connecticut <br>Murder Arrests: 3.3","State:  Delaware <br>Murder Arrests: 5.9","State:  Florida <br>Murder Arrests: 15.4","State:  Georgia <br>Murder Arrests: 17.4","State:  Hawaii <br>Murder Arrests: 5.3","State:  Idaho <br>Murder Arrests: 2.6","State:  Illinois <br>Murder Arrests: 10.4","State:  Indiana <br>Murder Arrests: 7.2","State:  Iowa <br>Murder Arrests: 2.2","State:  Kansas <br>Murder Arrests: 6","State:  Kentucky <br>Murder Arrests: 9.7","State:  Louisiana <br>Murder Arrests: 15.4","State:  Maine <br>Murder Arrests: 2.1","State:  Maryland <br>Murder Arrests: 11.3","State:  Massachusetts <br>Murder Arrests: 4.4","State:  Michigan <br>Murder Arrests: 12.1","State:  Minnesota <br>Murder Arrests: 2.7","State:  Mississippi <br>Murder Arrests: 16.1","State:  Missouri <br>Murder Arrests: 9","State:  Montana <br>Murder Arrests: 6","State:  Nebraska <br>Murder Arrests: 4.3","State:  Nevada <br>Murder Arrests: 12.2","State:  New Hampshire <br>Murder Arrests: 2.1","State:  New Jersey <br>Murder Arrests: 7.4","State:  New Mexico <br>Murder Arrests: 11.4","State:  New York <br>Murder Arrests: 11.1","State:  North Carolina <br>Murder Arrests: 13","State:  North Dakota <br>Murder Arrests: 0.8","State:  Ohio <br>Murder Arrests: 7.3","State:  Oklahoma <br>Murder Arrests: 6.6","State:  Oregon <br>Murder Arrests: 4.9","State:  Pennsylvania <br>Murder Arrests: 6.3","State:  Rhode Island <br>Murder Arrests: 3.4","State:  South Carolina <br>Murder Arrests: 14.4","State:  South Dakota <br>Murder Arrests: 3.8","State:  Tennessee <br>Murder Arrests: 13.2","State:  Texas <br>Murder Arrests: 12.7","State:  Utah <br>Murder Arrests: 3.2","State:  Vermont <br>Murder Arrests: 2.2","State:  Virginia <br>Murder Arrests: 8.5","State:  Washington <br>Murder Arrests: 4","State:  West Virginia <br>Murder Arrests: 5.7","State:  Wisconsin <br>Murder Arrests: 2.6","State:  Wyoming <br>Murder Arrests: 6.8"],"marker":{"colorbar":{"title":"Murder","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":false,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"size":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"opacity":0.5,"line":{"colorbar":{"title":"","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":false,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998]}},"title":"Murder arrests (per 100,000)","type":"scatter","mode":"markers","xaxis":"x","yaxis":"y","frame":null},{"x":[32,91],"y":[45,337],"type":"scatter","mode":"markers","opacity":0,"hoverinfo":"none","showlegend":false,"marker":{"colorbar":{"title":"Murder","ticklen":2,"len":0.5,"lenmode":"fraction","y":1,"yanchor":"top"},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"color":[0.80000000000000004,17.399999999999999],"line":{"color":"rgba(255,127,14,1)"}},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 
 ```r
@@ -419,9 +419,9 @@ Phat2
 
 ```
 ##                  [,1]
-## 1        2.193368e-02
-## Assault  2.309673e-16
-## UrbanPop 3.492429e-02
+## 1        1.480485e-02
+## Assault  1.091559e-17
+## UrbanPop 2.480018e-02
 ```
 
 ```r
@@ -457,7 +457,7 @@ Fhat <- (TSS - ESS)/ESS * (n-K)/3
 ```
 
 ```
-## [1] 0.08151657
+## [1] 0.001552493
 ```
 
 ```r
@@ -541,7 +541,7 @@ coef(lm(Y~x1+x2, data=dat))
 
 ```
 ## (Intercept)          x1          x2 
-##  10.1453478   1.6858902  -0.7235963
+##    9.097868    1.496441    1.652753
 ```
 
 Simulate the distribution of coefficients under a correctly specified model. Interpret the average.
@@ -651,23 +651,23 @@ summary(fe_reg0)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -34.007  -5.942  -0.397   5.806  47.060 
+## -35.808  -5.471  -0.114   5.791  41.652 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  19.3092     1.2482  15.470  < 2e-16 ***
-## x             1.2169     0.2108   5.773 1.04e-08 ***
-## fo.L         24.2336     1.0467  23.153  < 2e-16 ***
-## fo.Q          9.5722     0.9245  10.354  < 2e-16 ***
-## fo.C          0.4653     0.7374   0.631    0.528    
-## fo^4          0.2825     0.5751   0.491    0.623    
-## fuB         -23.5085     0.6001 -39.172  < 2e-16 ***
+## (Intercept)  20.9843     1.1676  17.973  < 2e-16 ***
+## x             1.0056     0.1932   5.205 2.35e-07 ***
+## fo.L         28.6990     1.0535  27.242  < 2e-16 ***
+## fo.Q         12.1229     0.9227  13.139  < 2e-16 ***
+## fo.C          2.7619     0.7213   3.829 0.000137 ***
+## fo^4          0.9292     0.5390   1.724 0.085030 .  
+## fuB         -22.6951     0.5626 -40.339  < 2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 9.466 on 993 degrees of freedom
-## Multiple R-squared:  0.7038,	Adjusted R-squared:  0.702 
-## F-statistic: 393.2 on 6 and 993 DF,  p-value: < 2.2e-16
+## Residual standard error: 8.877 on 993 degrees of freedom
+## Multiple R-squared:  0.7331,	Adjusted R-squared:  0.7315 
+## F-statistic: 454.5 on 6 and 993 DF,  p-value: < 2.2e-16
 ```
 We can also compute averages for each group and construct a "between estimator"
 $$
@@ -691,11 +691,11 @@ summary(fe_reg1)
 ## Fixed-effects: fo: 5,  fu: 2
 ## Standard-errors: Clustered (fo) 
 ##   Estimate Std. Error t value Pr(>|t|)    
-## x  1.21688   0.427625 2.84568 0.046599 *  
+## x  1.00556   0.342108 2.93931 0.042418 *  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 9.43295     Adj. R2: 0.701964
-##                 Within R2: 0.032478
+## RMSE: 8.84557     Adj. R2: 0.731451
+##                 Within R2: 0.026562
 ```
 
 **Hansen Econometrics, Theorem 17.1:** The fixed effects estimator of $\beta$ algebraically equals the dummy
@@ -717,11 +717,11 @@ summary(reg1)
 ## Fixed-effects: fo^fu: 10
 ## Standard-errors: Clustered (fo^fu) 
 ##   Estimate Std. Error t value Pr(>|t|)    
-## x   1.2088   0.524281 2.30564 0.046568 *  
+## x  1.09143   0.546591 1.99679  0.07695 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 3.54766     Adj. R2: 0.957674
-##                 Within R2: 0.189008
+## RMSE: 3.51458     Adj. R2: 0.957433
+##                 Within R2: 0.169022
 ```
 
 ```r
@@ -735,37 +735,37 @@ summary(reg2)
 ## lm(formula = y ~ x * fo * fu, data = dat_f)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -10.4774  -1.4671   0.0183   1.3872   9.2305 
+##    Min     1Q Median     3Q    Max 
+## -8.485 -1.554 -0.011  1.478  9.891 
 ## 
 ## Coefficients:
-##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  13.33974    0.57810  23.075  < 2e-16 ***
-## x             2.82499    0.10695  26.413  < 2e-16 ***
-## fo.L         23.35762    1.60506  14.553  < 2e-16 ***
-## fo.Q          8.94389    1.42614   6.271 5.36e-10 ***
-## fo.C          2.61109    1.12346   2.324   0.0203 *  
-## fo^4         -0.34388    0.90089  -0.382   0.7028    
-## fuB         -13.81712    0.80636 -17.135  < 2e-16 ***
-## x:fo.L        5.49528    0.30173  18.212  < 2e-16 ***
-## x:fo.Q        2.11928    0.26676   7.945 5.32e-15 ***
-## x:fo.C        0.43736    0.20304   2.154   0.0315 *  
-## x:fo^4        0.19195    0.15924   1.205   0.2283    
-## x:fuB        -2.70494    0.14583 -18.549  < 2e-16 ***
-## fo.L:fuB    -25.45728    2.23202 -11.405  < 2e-16 ***
-## fo.Q:fuB     -9.15568    1.97998  -4.624 4.26e-06 ***
-## fo.C:fuB     -1.50698    1.58517  -0.951   0.3420    
-## fo^4:fuB     -1.08585    1.26076  -0.861   0.3893    
-## x:fo.L:fuB   -5.10098    0.40694 -12.535  < 2e-16 ***
-## x:fo.Q:fuB   -2.10654    0.36038  -5.845 6.88e-09 ***
-## x:fo.C:fuB   -0.62048    0.28275  -2.194   0.0284 *  
-## x:fo^4:fuB    0.00996    0.22340   0.045   0.9645    
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  13.4358     0.5936  22.633  < 2e-16 ***
+## x             2.7875     0.1037  26.877  < 2e-16 ***
+## fo.L         24.0508     1.6863  14.262  < 2e-16 ***
+## fo.Q          7.7904     1.4838   5.250 1.86e-07 ***
+## fo.C          0.5784     1.1237   0.515 0.606871    
+## fo^4         -0.6427     0.8600  -0.747 0.455053    
+## fuB         -12.6559     0.8675 -14.589  < 2e-16 ***
+## x:fo.L        5.2906     0.2942  17.980  < 2e-16 ***
+## x:fo.Q        2.2462     0.2594   8.661  < 2e-16 ***
+## x:fo.C        0.7006     0.1959   3.576 0.000366 ***
+## x:fo^4        0.2078     0.1513   1.373 0.169951    
+## x:fuB        -2.9228     0.1488 -19.649  < 2e-16 ***
+## fo.L:fuB    -22.3283     2.4676  -9.049  < 2e-16 ***
+## fo.Q:fuB     -6.2700     2.1546  -2.910 0.003696 ** 
+## fo.C:fuB     -0.1373     1.6750  -0.082 0.934707    
+## fo^4:fuB      1.6039     1.2308   1.303 0.192814    
+## x:fo.L:fuB   -5.5921     0.4212 -13.275  < 2e-16 ***
+## x:fo.Q:fuB   -2.4679     0.3688  -6.691 3.72e-11 ***
+## x:fo.C:fuB   -0.7609     0.2879  -2.643 0.008341 ** 
+## x:fo^4:fuB   -0.3485     0.2149  -1.622 0.105143    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 2.599 on 980 degrees of freedom
-## Multiple R-squared:  0.978,	Adjusted R-squared:  0.9775 
-## F-statistic:  2289 on 19 and 980 DF,  p-value: < 2.2e-16
+## Residual standard error: 2.551 on 980 degrees of freedom
+## Multiple R-squared:  0.9782,	Adjusted R-squared:  0.9778 
+## F-statistic:  2318 on 19 and 980 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -897,8 +897,8 @@ which.max(rstandard(reg))
 ```
 
 ```
-## 7 
-## 7
+## 40 
+## 40
 ```
 
 
@@ -927,11 +927,11 @@ car::influencePlot(reg)
 <img src="03-ROLS_files/figure-html/unnamed-chunk-24-1.png" width="672" />
 
 ```
-##       StudRes        Hat       CookD
-## 1   0.4128605 0.83421982 0.438440247
-## 7   2.2278995 0.03384138 0.078717691
-## 15  1.9799443 0.02670170 0.049936134
-## 25 -0.5933150 0.04276918 0.008000634
+##      StudRes        Hat      CookD
+## 1  -1.135802 0.82288202 2.97404619
+## 2  -3.245434 0.02671436 0.11556060
+## 26 -1.561529 0.04073120 0.04987946
+## 40  2.772220 0.02603334 0.08734359
 ```
 
 There are many other diagnostics (which can often be written in terms of Cooks Distance or Vice Versa)
@@ -957,13 +957,13 @@ head(influence.measures(reg)$infmat)
 ```
 
 ```
-##         dfb.1_         dfb.x       dffit    cov.r       cook.d        hat
-## 1 -0.714727511  0.9121585679  0.92614148 6.304329 0.4384402467 0.83421982
-## 2  0.004317106  0.0123449040  0.03296027 1.084249 0.0005573241 0.02907921
-## 3 -0.110082454  0.0327121907 -0.16883335 1.022956 0.0142265620 0.02597513
-## 4  0.052856399 -0.0007389844  0.10596413 1.056673 0.0056984930 0.02500122
-## 5  0.021487655  0.0273946591  0.09597621 1.065255 0.0046884772 0.02721744
-## 6 -0.013561535  0.0064011055 -0.01743546 1.085569 0.0001560626 0.02889457
+##          dfb.1_       dfb.x       dffit     cov.r       cook.d        hat
+## 1  1.8591880695 -2.41068546 -2.44816112 5.5607423 2.9740461887 0.82288202
+## 2 -0.3816754403  0.13620828 -0.53768134 0.6566582 0.1155605959 0.02671436
+## 3  0.2236832126 -0.08171332  0.31250672 0.9027702 0.0457689157 0.02683469
+## 4 -0.1113705988  0.06308104 -0.12874685 1.0624945 0.0084012287 0.03289745
+## 5  0.0158797098 -0.25404151 -0.47317609 0.8037581 0.0985856945 0.03512451
+## 6  0.0001368876  0.01285535  0.02552464 1.0902327 0.0003343879 0.03349670
 ```
 
 
@@ -990,7 +990,7 @@ shapiro.test(resid(reg))
 ## 	Shapiro-Wilk normality test
 ## 
 ## data:  resid(reg)
-## W = 0.97323, p-value = 0.4527
+## W = 0.96042, p-value = 0.1732
 ```
 
 ```r
@@ -1027,7 +1027,7 @@ lmtest::bptest(reg)
 ## 	studentized Breusch-Pagan test
 ## 
 ## data:  reg
-## BP = 0.65206, df = 1, p-value = 0.4194
+## BP = 0.011149, df = 1, p-value = 0.9159
 ```
 
 
