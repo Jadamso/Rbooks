@@ -1,6 +1,9 @@
 
 # (PART) Introduction to Linear Regression in R {-} 
 
+This section is a quick overview of linear regression models from the perspective that ``all models are wrong, but some are useful''. For more in-depth introductions, which typically begin by assuming the true data generating process is linear, see https://jadamso.github.io/Rbooks/ordinary-least-squares.html#more-literature. 
+
+
 
 # Ordinary Least Squares
 ***
@@ -24,20 +27,9 @@ $$
 
 ```{r}
 ## Example 1 (Theoretical)
-x <- seq(0,100)
-e <- rnorm(length(x))
-y <- .02*x + e
-xy <- data.frame(x,y)
-plot(y~x, xy, col=grey(.5,.5), pch=16)
-reg <- lm(y~x, dat=xy)
-reg
-abline(reg, col='orange')
-```
 
-
-```{r}
-## Example 2 (Theoretical)
-N <- 1000
+## Generate Dataset
+N <- 100
 z <- rbinom(N,1,.5)
 xy <- sapply(z, function(zi){
     y <- rnorm(1,zi*2,1)
@@ -45,99 +37,213 @@ xy <- sapply(z, function(zi){
     c(x,y)
 })
 xy <- data.frame(x=xy[1,],y=xy[2,])
+
+## Plot Data
 plot(y~x, xy, col=grey(.5,.5), pch=16)
+
+## Estimate Regression Coefficeints
 reg <- lm(y~x, dat=xy)
+reg
+
+## Add Predictions to Plot
 abline(reg, col='orange')
 ```
-
-
-
-```{r}
-## Example 3 (Empirical)
-## head(USArrests)
-plot(Murder~UrbanPop, USArrests, col=grey(.5,.5), pch=16)
-reg <- lm(Murder~UrbanPop, dat=USArrests)
-abline(reg, col='orange')
-```
-
 
 
 Sums of Squared Errors
 $$
 \underbrace{\sum\nolimits_{i}(y_i-\bar{y})^2}_\text{TSS}=\underbrace{\sum\nolimits_{i}(\hat{y}_i-\bar{y})^2}_\text{RSS}+\underbrace{\sum\nolimits_{i}\hat{\epsilon}^2}_\text{ESS}\\
-R^2=\frac{RSS}{TSS}=1-\frac{ESS}{TSS}
+R^2 = \frac{RSS}{TSS}=1-\frac{ESS}{TSS}
 $$
+Note that $R^2$ is also called the coefficient of determination.
 
-Variability Estimates
+```{r}
+## Manually Compute Goodness of Fit
+Ehat <- resid(reg)
+ESS  <- sum(Ehat^2)
+Y <- xy$y
+TSS  <- sum((Y-mean(Y))^2)
+R2 <- 1 - ESS/TSS
+
+## Check R2
+summary(reg)$r.squared
+```
+
+### Variability Estimates and Hypothesis Tests
+
+The classic estimates for variability are the Standard Error of the Regression $\hat{\sigma}$, and Standard Error of the Coefficient Estimates $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\alpha}}$ --- or simply Standard Errors.
 $$
-\hat{\sigma}^2=\frac{1}{n-2}\sum_{i}\hat{\epsilon}^2\\
+\hat{\sigma}^2 = \frac{1}{n-2}\sum_{i}\hat{\epsilon_{i}}^2\\
 \hat{\sigma}^2_{\hat{\alpha}}=\hat{\sigma}^2\left[\frac{1}{n}+\frac{\bar{x}^2}{\sum_{i}(x_i-\bar{x})^2}\right]\\
-\hat{\sigma}^2_{\hat{\beta}}=\frac{\hat{\sigma}^2}{\sum_{i}(x_i-\bar{x})^2}\\
-\hat{\sigma}^2_{\hat{y}_j}=\hat{\sigma}^2\left[\frac{1}{n}+\frac{(x_j-\bar{x})^2}{\sum_{i}(x_i-\bar{x})^2}\right]\\
+\hat{\sigma}^2_{\hat{\beta}}=\frac{\hat{\sigma}^2}{\sum_{i}(x_i-\bar{x})^2}.
 $$
+These estimates are motivated by particular data generating proceses, and you can read more about this at https://www.econometrics-with-r.org/4-lrwor.html. 
 
-For more details, see https://www.econometrics-with-r.org/4-lrwor.html
+We can also estimate variabilty using *data-driven* methods that assume much less about the data generating process. We focus on the simplest, the jackknife, where we loop through each row of the dataset. In each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``subsamples''.
+
+```{r}
+## Example 1 Continued
+
+## Point Estimates
+reg <- lm(y~x, dat=xy)
+coefX <- coef(reg)['x']
+
+## Standard Errors for Beta
+jack_regs <- lapply(1:nrow(xy), function(i){
+    xy_i <- xy[-i,]
+    reg_u <- lm(y~x, dat=xy_i)
+})
+jack_coefs <- sapply(jack_regs, coef)['x',]
+jack_mean <- mean(jack_coefs)
+jack_se <- sd(jack_coefs)
+jack_cl <- jack_mean-2*jack_se
+jack_cu <- jack_mean+2*jack_se
+
+## Jackknife Distribution
+hist(jack_coefs, breaks=25, main='',
+    xlab=expression(beta[-i]),
+    xlim=range(c(jack_coefs, jack_cl, jack_cu)))
+abline(v=jack_mean, col="red", lwd=2)
+##abline(v=coefX, lty=1, col='blue', lwd=2)
+abline(v=jack_cl, col="red", lty=2)
+abline(v=jack_cu, col="red", lty=2)
+```
+
+**Hypothesis Testing: Impose the Null**
+Regardless of how we calculate standard errors, we can use them to conduct a t-test. Specifically, we can use them to compute a t-value. We also compute the distribution of t-values under the null hypothesis, and compare how extreme the oberved value is. Often, we our null hypothesis is ``'no relationship''. And, under some assumptions, we theoretically know that the null distribution is a $t_{n-2}$. For more on regression t-testing, see https://www.econometrics-with-r.org/4-lrwor.html. 
+
+We can also compute the null distribution using *data-driven* methods that assume much less about the data generating process. We focus on the simplest, the bootstrap, where loop through a large number of simulations. In each iteration of the loop, we drop impose the null hypothesis and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''.
+
+```{r}
+## Example 1 Continued Again
+
+## Null Distribution for Beta
+boots <- 1:399
+boot_regs <- lapply(boots, function(b){
+    xy_b <- xy
+    xy_b$y <- sample( xy_b$y, replace=T)
+    reg_b <- lm(y~x, dat=xy_b)
+})
+boot_coefs <- sapply(boot_regs, coef)['x',]
+
+## Bootstrap Distribution
+hist(boot_coefs, breaks=25, main='',
+    xlab=expression(beta[b]),
+    xlim=range(c(boot_coefs, coefX)))
+abline(v=coefX, col="red", lwd=2)
+```
+
+
+**Hypothesis Testing: Invert a CI**
+The other main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. Often, this is $0$.
+```{r}
+## Example 1 Continued Yet Again
+
+## Distribution for Beta
+boots <- 1:399
+boot_regs2 <- lapply(boots, function(b){
+    id_b <- sample( nrow(xy), replace=T)
+    xy_b <- xy[id_b,]
+    reg_b <- lm(y~x, dat=xy_b)
+})
+boot_coefs2 <- sapply(boot_regs2, coef)['x',]
+
+## Bootstrap Distribution
+hist(boot_coefs2, breaks=25, main='', xlab=expression(beta[b]),
+    xlim=range(c(0,boot_coefs2)))
+abline( v=quantile(boot_coefs2, probs=c(.025, .975)))
+abline(v=0, col="red", lwd=2)
+```
+
+We can also bootstrap other statistics, such as a t-statistic or $R^2$. However, we are rarely interested in computing standard errrors and conducting hypothesis tests for two variables. We only work through the ideas in the two-variable case to better understand the multi-variable case.
 
 ## OLS (multiple linear regression)
 
 Model and objective
 $$
-y_i=\beta_0+\beta_1x_{i1}+\beta_2x_{i2}+\ldots+\beta_kx_{ik}+\epsilon_i\\
-y=\textbf{X}\beta+\epsilon\\
+y_i=\beta_0+\beta_1x_{i1}+\beta_2x_{i2}+\ldots+\beta_kx_{ik}+\epsilon_i = X_{i}\beta + +\epsilon_i \\
 min_{\beta} \sum_{i=1}^{n} (\epsilon_i)^2
 $$
 
-Point Estimates
+Point Estimates in matrix form
 $$
-\hat{\beta}=(\textbf{X}'\textbf{X})^{-1}\textbf{X}'y\\
+y=\textbf{X}\beta+\epsilon\\
+\hat{\beta}=(\textbf{X}'\textbf{X})^{-1}\textbf{X}'y
 $$
+
 ```{r}
+## Example 2 (Empirical)
+## Inspect Dataset on police arrests for the USA in 1973
+head(USArrests)
+
+## Simple Plot
+#plot(Assault~UrbanPop, USArrests, col=grey(0,.5), pch=16,
+#    cex=USArrests$Murder/diff(range(USArrests$Murder))*2,
+#    main='US Murder arrests (per 100,000)')
+
+# Superior Plot
+USArrests$ID <- rownames(USArrests)
+plotly::plot_ly(
+  USArrests, x = ~UrbanPop, y = ~Assault,
+  text = ~paste('State: ', ID, "<br>Murder Arrests:", Murder),
+  color = ~Murder,
+  marker = list(size = ~Murder, opacity = 0.5),
+  title = 'Murder arrests (per 100,000)')
+  
+## For further exploratory plotting,
+## see https://plotly.com/r/bubble-charts/
+```
+
+```{r}
+## Manually Compute
+Y <- USArrests[,'Murder']
 X <- USArrests[,c('Assault','UrbanPop')]
 X <- as.matrix(cbind(1,X))
-Y <- USArrests[,'Murder']
 
 XtXi <- solve(t(X)%*%X)
 Bhat <- XtXi %*% (t(X)%*%Y)
-Bhat
+c(Bhat)
 
+## Check
 reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 coef(reg)
 ```
 
 
-Predictions and Projection Matrix
-$$
-\hat{\epsilon}=y-X\hat{\beta}=y-X(X'X)^{-1}X'y\\
-\hat{P}=X(X'X)^{-1}X'\\
-\hat{P}y=X(X'X)^{-1}X'y=y-(y-X(X'X)^{-1}X'y)=y-\hat{\epsilon}=\hat{y}\\
-$$
-
-```{r}
-Ehat <- Y - X%*% Bhat
-## Ehat
-## resid(reg)
-
-Pmat <- X%*%XtXi%*%t(X)
-Yhat <- Pmat%*%Y
-## Yhat
-## predict(reg)
-```
-
 Sums of Squared Errors
 $$
-R^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-R^2)\\
-R^2 = \frac{RSS}{TSS}=1-\frac{ESS}{TSS}
+R^2 = \frac{RSS}{TSS}=1-\frac{ESS}{TSS}\\
+R^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-R^2)
 $$
+With multiple variables, sometimes random data may improve the fit. So we adjust the $R^2$ by the number of covariates $K$.
 ```{r}
-ESS <- sum(Ehat^2)
-TSS <- sum((Y-mean(Y))^2)
-R2 <- 1 - ESS/TSS
+ksims <- 1:30
+for(k in ksims){ 
+    USArrests[,paste0('R',k)] <- runif(nrow(USArrests),0,20)
+}
+reg_sim <- lapply(ksims, function(k){
+    rvars <- c('Assault','UrbanPop', paste0('R',1:k))
+    rvars2 <- paste0(rvars, collapse='+')
+    reg_k <- lm( paste0('Murder~',rvars2), data=USArrests)
+})
+R2_sim <- sapply(reg_sim, function(reg_k){  summary(reg_k)$r.squared })
+R2adj_sim <- sapply(reg_sim, function(reg_k){  summary(reg_k)$adj.r.squared })
 
-summary(reg)$r.squared
+plot.new()
+plot.window(xlim=c(0,30), ylim=c(0,1))
+points(ksims, R2_sim)
+points(ksims, R2adj_sim, pch=16)
+axis(1)
+axis(2)
+mtext(expression(R^2),2, line=3)
+mtext('Additional Random Covariates', 1, line=3)
+legend('topleft', horiz=T,
+    legend=c('Undjusted', 'Adjusted'), pch=c(1,16))
 ```
 
 
-### Coefficient Variability
+
+### Variability Estimates and Hypothesis Tests [Under Construction]
 
 In general, note that the linear model has
 $$
@@ -198,12 +304,9 @@ $$
 This is for a later course. (See https://cran.r-project.org/web/packages/sandwich/vignettes/sandwich.pdf and then https://cran.r-project.org/web/packages/sandwich/vignettes/sandwich-CL.pdf)
 
 
-### Hypothesis Testing 
-
-Is not to be done routinely. For one hypothesis, we can use a $t$ test. For multiple, we can use an $F$ test.
+**Hypothesis Testing** is not to be done routinely. For one hypothesis, we can use a $t$ test. For multiple, we can use an $F$ test.
 $$
-\hat{t}_{j} = \frac{\hat{\beta}_j- \beta_{0} }{\hat{\sigma}_{\
-\hat{\beta}_j}}\sim t_{n-K}\\
+\hat{t}_{j} = \frac{\hat{\beta}_j - \beta_{0} }{\hat{\sigma}_{\\hat{\beta}_j}}\sim t_{n-K} \\
 \hat{F}_{q} = \frac{(ESS_{restricted}-ESS_{unrestricted})/q}{ESS_{unrestricted}/(n-K)} \sim F_{q,n-K}
 $$
 
@@ -233,11 +336,19 @@ summary(reg)$fstatistic
 summary(reg)
 ```
 
+```{r}
+## Null Bootstrap Distribution for R2
+boot_R2s <- sapply(boot_regs, function(reg_b){
+    summary(reg_b)$r.squared
+})
+hist(boot_R2s, breaks=25, main='', xlab=expression(R[b]^2), xlim=c(0,.50))
+abline(v=summary(reg)$r.squared, col="red", lwd=2)
+```
 
 
 ## Coefficient Interpretation
 
-The above procedure will always give us number, the question is how to interpret them. 
+Notice that we have gotten pretty far without actually trying to meaningfully interpret regression coefficients. That is because the above procedure will always give us number, regardless as to whether the true data generating process is linear or not. So, to be cautious, we have been interpretting the regression outputs while being agnostic as to how the data are generated. We now consider a special situation where we know the data are generated according to a linear process and are only uncertain about the parameter values.
 
 *If* the data generating process is 
 $$
@@ -283,7 +394,7 @@ Coefs <- sapply(1:400, function(sim){
 
 par(mfrow=c(1,3))
 for(i in 1:3){
-    hist(Coefs[i,])
+    hist(Coefs[i,], xlab=bquote(beta[.(i)]), main='')
     abline(v=mean(Coefs[i,]), col=1, lty=2)
     abline(v=B[i], col=2)
 }
@@ -294,7 +405,7 @@ Note that for joint tests, we look at the joint distribution of coefficients
 library(ks)
 Bjoint <- t(Coefs[2:3,])
 fBjoint <- histde(Bjoint, binw=c(.2,.5))
-plot(fBjoint, xlab='B2', ylab='B3')
+plot(fBjoint, xlab=expression(beta[2]), ylab=expression(beta[3]))
 ```
 
 
@@ -313,7 +424,7 @@ Coefs <- sapply(1:600, function(sim){
 
 par(mfrow=c(1,2))
 for(i in 2:3){
-    hist(Coefs[i,])
+    hist(Coefs[i,],  xlab=bquote(beta[.(i)]), main='')
     abline(v=mean(Coefs[i,]), col=1, lty=2)
 }
 ```
@@ -394,8 +505,13 @@ With *Random Effects*, the factor variable is modelled as coming from a distribu
 
 ## More Literature
 
+For OLS, see
+
+* https://bookdown.org/josiesmith/qrmbook/linear-estimation-and-minimizing-error.html
+* https://www.econometrics-with-r.org/4-lrwor.html
 * https://www.econometrics-with-r.org/6-rmwmr.html
 * https://www.econometrics-with-r.org/7-htaciimr.html
+* https://bookdown.org/ripberjt/labbook/bivariate-linear-regression.html
 * https://bookdown.org/ripberjt/labbook/multivariable-linear-regression.html
 * https://online.stat.psu.edu/stat462/node/137/
 * https://book.stat420.org/
@@ -407,6 +523,9 @@ With *Random Effects*, the factor variable is modelled as coming from a distribu
 
 For fixed effects, see
 
+* https://www.econometrics-with-r.org/10-rwpd.html
+* https://bookdown.org/josiesmith/qrmbook/topics-in-multiple-regression.html
+* https://bookdown.org/ripberjt/labbook/multivariable-linear-regression.html
 * https://www.princeton.edu/~otorres/Panel101.pdf
 * https://www.stata.com/manuals13/xtxtreg.pdf
 
@@ -474,6 +593,7 @@ $$
 and $s_{(i)}$ the root mean squared error of a regression with the $i$th observation removed.
 
 ```{r}
+reg <- lm(y~x)
 which.max(hatvalues(reg))
 which.max(rstandard(reg))
 ```
@@ -515,13 +635,13 @@ head(influence.measures(reg)$infmat)
 
 ## Assessing Normality and Collinearity
 
-The second plot examines whether the residuals are normally distributed. OLS point estimates do not depend on the normality of the residuals. (Good thing, because there's no reason the residuals of economic phenomena should be so well behaved.) The variability of the point estimates are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality 
+The second plot examines whether the residuals are normally distributed. OLS point estimates do not depend on the normality of the residuals. (Good thing, because there's no reason the residuals of economic phenomena should be so well behaved.) Many hypothesis tests of the regression estimates are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality 
 ```{r}
 par(mfrow=c(1,2))
 hist(resid(reg), main='Histogram of Residuals')
 
-qqnorm(resid(reg), main = "Normal Q-Q Plot of Residuals", col = "darkgrey")
-qqline(resid(reg), col = "dodgerblue", lwd = 2)
+qqnorm(resid(reg), main="Normal Q-Q Plot of Residuals", col="darkgrey")
+qqline(resid(reg), col="dodgerblue", lwd=2)
 
 shapiro.test(resid(reg))
 # car::qqPlot(reg)
@@ -541,17 +661,16 @@ $$
 VIF_{k}=\frac{1}{1-R^2_k},
 $$
 where $R^2_k$ is the $R^2$ for the regression of $X_k$ on the other covariates $X_{-k}$ (a regression that does not involve the response variable Y)
-
-```{r}
+```{r, eval=F}
 car::vif(reg) 
 sqrt(car::vif(reg)) > 2 # problem?
 ```
 
 
-## Transformations
+## Linear in parameters
 
 
-Coefficient transformations can often improve model fit. Note for small changes, $\Delta ln(x) \approx \Delta x / x = \Delta x \% \cdot 100$. Under the assumptions of the OLS model, we have 
+Data transformations can often improve model fit and still be estimated via OLS. This is because OLS is only required to be linear in the parameters. Under the assumptions of the model is correctly specified, this is how we can interpret the coefficients of the transformed data. (Note for small changes, $\Delta ln(x) \approx \Delta x / x = \Delta x \% \cdot 100$.)
 
 | *Model* | *Regressand* | *Regressor* | *Derivative* | *Interpretation* |
 | --- | --- | --- | --- | --- |
@@ -560,9 +679,7 @@ Coefficient transformations can often improve model fit. Note for small changes,
 | linear--log | $y$ | $ln(x)$ | $\Delta y \approx  \frac{\beta_1}{100}\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\frac{\beta_1}{100}$ units |
 | log--log | $ln(y)$ | $ln(x)$ | $\Delta y \% \approx \beta_1\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\beta_1$ percent|
 
-There are many reasons why the OLS model is unlikely to be true. Recall from micro theory, that an additively seperable and linear production function is referred to as ``perfect substitutes''. You have implicitly modelled the different regressors $X$ as perfect substitutes, when in fact they may be compliments.
-
-Further recall that the ''perfect substitutes'' model is a special case of the constant elasticity of substitution production function. Here, we will build on http://dx.doi.org/10.2139/ssrn.3917397, and consider box-cox transforming both $X$ and $y$. Specifically, apply the box-cox transform of $y$ using parameter $\lambda$ and apply another box-cox transform to each $x$ using the same parameter $\rho$;so that
+Now recall from micro theory that an additively seperable and linear production function is referred to as ``perfect substitutes''. With a linear model and untranformed data, you have implicitly modelled the different regressors $X$ as perfect substitutes. Further recall that the ''perfect substitutes'' model is a special case of the constant elasticity of substitution production function. Here, we will build on http://dx.doi.org/10.2139/ssrn.3917397, and consider box-cox transforming both $X$ and $y$. Specifically, apply the box-cox transform of $y$ using parameter $\lambda$ and apply another box-cox transform to each $x$ using the same parameter $\rho$;so that
 
 $$
 y^{(\lambda)}_{i} = \sum_{k}\beta_{k} x^{(\rho)}_{k,i} + \epsilon_{i}\\
@@ -588,8 +705,8 @@ Notice that this nests:
 
 If $\rho=\lambda$, we get the CES production function. This nests the ''perfect substitutes'' linear-linear model ($\rho=\lambda=1$) , the ''cobb-douglas''  log-log model  ($\rho=\lambda=0$), and many others. We can define $\lambda=\rho/\lambda'$ to be clear that this is indeed a CES-type transformation where
 
-* $\rho \in (-\infty,1]$ controls the ''substitutability'' of explanatory variables ($\rho <0$ is ''complementary'')
-* $\lambda$ determines ''returns to scale'' ($\lambda'<1$ is ''decreasing returns'').
+* $\rho \in (-\infty,1]$ controls the "substitutability" of explanatory variables. E.g., $\rho <0$ is ''complementary''.
+* $\lambda$ determines ''returns to scale''. E.g., $\lambda<1$ is ''decreasing returns''.
 
 
 We compute the mean squared error in the original scale by inverting the predictions;
@@ -673,7 +790,7 @@ legend('topleft', pch=c(16), col=cols, title='Rho,Lambda',
     legend=c(  paste0(rl0, collapse=','),'1,1') )
 ```
 
-Note that your hypothesis testing procedures do not account for you trying out different transformations.
+Note that the default hypothesis testing procedures do not account for you trying out different transformations. Specification searches deflate standard errors and are a major source for false discoveries.
 
 
 ## More Literature

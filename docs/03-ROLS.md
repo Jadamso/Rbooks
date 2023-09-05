@@ -1,6 +1,9 @@
 
 # (PART) Introduction to Linear Regression in R {-} 
 
+This section is a quick overview of linear regression models from the perspective that ``all models are wrong, but some are useful''. For more in-depth introductions, which typically begin by assuming the true data generating process is linear, see https://jadamso.github.io/Rbooks/ordinary-least-squares.html#more-literature. 
+
+
 
 # Ordinary Least Squares
 ***
@@ -25,11 +28,21 @@ $$
 
 ```r
 ## Example 1 (Theoretical)
-x <- seq(0,100)
-e <- rnorm(length(x))
-y <- .02*x + e
-xy <- data.frame(x,y)
+
+## Generate Dataset
+N <- 100
+z <- rbinom(N,1,.5)
+xy <- sapply(z, function(zi){
+    y <- rnorm(1,zi*2,1)
+    x <- rnorm(1,zi*2,1)
+    c(x,y)
+})
+xy <- data.frame(x=xy[1,],y=xy[2,])
+
+## Plot Data
 plot(y~x, xy, col=grey(.5,.5), pch=16)
+
+## Estimate Regression Coefficeints
 reg <- lm(y~x, dat=xy)
 reg
 ```
@@ -41,97 +54,231 @@ reg
 ## 
 ## Coefficients:
 ## (Intercept)            x  
-##    0.570036     0.009372
+##      0.7007       0.4224
 ```
 
 ```r
+## Add Predictions to Plot
 abline(reg, col='orange')
 ```
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-1-1.png" width="672" />
 
 
+Sums of Squared Errors
+$$
+\underbrace{\sum\nolimits_{i}(y_i-\bar{y})^2}_\text{TSS}=\underbrace{\sum\nolimits_{i}(\hat{y}_i-\bar{y})^2}_\text{RSS}+\underbrace{\sum\nolimits_{i}\hat{\epsilon}^2}_\text{ESS}\\
+R^2 = \frac{RSS}{TSS}=1-\frac{ESS}{TSS}
+$$
+Note that $R^2$ is also called the coefficient of determination.
+
 
 ```r
-## Example 2 (Theoretical)
-N <- 1000
-z <- rbinom(N,1,.5)
-xy <- sapply(z, function(zi){
-    y <- rnorm(1,zi*2,1)
-    x <- rnorm(1,zi*2,1)
-    c(x,y)
-})
-xy <- data.frame(x=xy[1,],y=xy[2,])
-plot(y~x, xy, col=grey(.5,.5), pch=16)
-reg <- lm(y~x, dat=xy)
-abline(reg, col='orange')
+## Manually Compute Goodness of Fit
+Ehat <- resid(reg)
+ESS  <- sum(Ehat^2)
+Y <- xy$y
+TSS  <- sum((Y-mean(Y))^2)
+R2 <- 1 - ESS/TSS
+
+## Check R2
+summary(reg)$r.squared
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-2-1.png" width="672" />
+```
+## [1] 0.1318784
+```
 
+### Variability Estimates and Hypothesis Tests
 
+The classic estimates for variability are the Standard Error of the Regression $\hat{\sigma}$, and Standard Error of the Coefficient Estimates $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\alpha}}$ --- or simply Standard Errors.
+$$
+\hat{\sigma}^2 = \frac{1}{n-2}\sum_{i}\hat{\epsilon_{i}}^2\\
+\hat{\sigma}^2_{\hat{\alpha}}=\hat{\sigma}^2\left[\frac{1}{n}+\frac{\bar{x}^2}{\sum_{i}(x_i-\bar{x})^2}\right]\\
+\hat{\sigma}^2_{\hat{\beta}}=\frac{\hat{\sigma}^2}{\sum_{i}(x_i-\bar{x})^2}.
+$$
+These estimates are motivated by particular data generating proceses, and you can read more about this at https://www.econometrics-with-r.org/4-lrwor.html. 
+
+We can also estimate variabilty using *data-driven* methods that assume much less about the data generating process. We focus on the simplest, the jackknife, where we loop through each row of the dataset. In each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``subsamples''.
 
 
 ```r
-## Example 3 (Empirical)
-## head(USArrests)
-plot(Murder~UrbanPop, USArrests, col=grey(.5,.5), pch=16)
-reg <- lm(Murder~UrbanPop, dat=USArrests)
-abline(reg, col='orange')
+## Example 1 Continued
+
+## Point Estimates
+reg <- lm(y~x, dat=xy)
+coefX <- coef(reg)['x']
+
+## Standard Errors for Beta
+jack_regs <- lapply(1:nrow(xy), function(i){
+    xy_i <- xy[-i,]
+    reg_u <- lm(y~x, dat=xy_i)
+})
+jack_coefs <- sapply(jack_regs, coef)['x',]
+jack_mean <- mean(jack_coefs)
+jack_se <- sd(jack_coefs)
+jack_cl <- jack_mean-2*jack_se
+jack_cu <- jack_mean+2*jack_se
+
+## Jackknife Distribution
+hist(jack_coefs, breaks=25, main='',
+    xlab=expression(beta[-i]),
+    xlim=range(c(jack_coefs, jack_cl, jack_cu)))
+abline(v=jack_mean, col="red", lwd=2)
+##abline(v=coefX, lty=1, col='blue', lwd=2)
+abline(v=jack_cl, col="red", lty=2)
+abline(v=jack_cu, col="red", lty=2)
 ```
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-3-1.png" width="672" />
 
+**Hypothesis Testing: Impose the Null**
+Regardless of how we calculate standard errors, we can use them to conduct a t-test. Specifically, we can use them to compute a t-value. We also compute the distribution of t-values under the null hypothesis, and compare how extreme the oberved value is. Often, we our null hypothesis is ``'no relationship''. And, under some assumptions, we theoretically know that the null distribution is a $t_{n-2}$. For more on regression t-testing, see https://www.econometrics-with-r.org/4-lrwor.html. 
+
+We can also compute the null distribution using *data-driven* methods that assume much less about the data generating process. We focus on the simplest, the bootstrap, where loop through a large number of simulations. In each iteration of the loop, we drop impose the null hypothesis and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''.
 
 
-Sums of Squared Errors
-$$
-\underbrace{\sum\nolimits_{i}(y_i-\bar{y})^2}_\text{TSS}=\underbrace{\sum\nolimits_{i}(\hat{y}_i-\bar{y})^2}_\text{RSS}+\underbrace{\sum\nolimits_{i}\hat{\epsilon}^2}_\text{ESS}\\
-R^2=\frac{RSS}{TSS}=1-\frac{ESS}{TSS}
-$$
+```r
+## Example 1 Continued Again
 
-Variability Estimates
-$$
-\hat{\sigma}^2=\frac{1}{n-2}\sum_{i}\hat{\epsilon}^2\\
-\hat{\sigma}^2_{\hat{\alpha}}=\hat{\sigma}^2\left[\frac{1}{n}+\frac{\bar{x}^2}{\sum_{i}(x_i-\bar{x})^2}\right]\\
-\hat{\sigma}^2_{\hat{\beta}}=\frac{\hat{\sigma}^2}{\sum_{i}(x_i-\bar{x})^2}\\
-\hat{\sigma}^2_{\hat{y}_j}=\hat{\sigma}^2\left[\frac{1}{n}+\frac{(x_j-\bar{x})^2}{\sum_{i}(x_i-\bar{x})^2}\right]\\
-$$
+## Null Distribution for Beta
+boots <- 1:399
+boot_regs <- lapply(boots, function(b){
+    xy_b <- xy
+    xy_b$y <- sample( xy_b$y, replace=T)
+    reg_b <- lm(y~x, dat=xy_b)
+})
+boot_coefs <- sapply(boot_regs, coef)['x',]
 
-For more details, see https://www.econometrics-with-r.org/4-lrwor.html
+## Bootstrap Distribution
+hist(boot_coefs, breaks=25, main='',
+    xlab=expression(beta[b]),
+    xlim=range(c(boot_coefs, coefX)))
+abline(v=coefX, col="red", lwd=2)
+```
+
+<img src="03-ROLS_files/figure-html/unnamed-chunk-4-1.png" width="672" />
+
+
+**Hypothesis Testing: Invert a CI**
+The other main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. Often, this is $0$.
+
+```r
+## Example 1 Continued Yet Again
+
+## Distribution for Beta
+boots <- 1:399
+boot_regs2 <- lapply(boots, function(b){
+    id_b <- sample( nrow(xy), replace=T)
+    xy_b <- xy[id_b,]
+    reg_b <- lm(y~x, dat=xy_b)
+})
+boot_coefs2 <- sapply(boot_regs2, coef)['x',]
+
+## Bootstrap Distribution
+hist(boot_coefs2, breaks=25, main='', xlab=expression(beta[b]),
+    xlim=range(c(0,boot_coefs2)))
+abline( v=quantile(boot_coefs2, probs=c(.025, .975)))
+abline(v=0, col="red", lwd=2)
+```
+
+<img src="03-ROLS_files/figure-html/unnamed-chunk-5-1.png" width="672" />
+
+We can also bootstrap other statistics, such as a t-statistic or $R^2$. However, we are rarely interested in computing standard errrors and conducting hypothesis tests for two variables. We only work through the ideas in the two-variable case to better understand the multi-variable case.
 
 ## OLS (multiple linear regression)
 
 Model and objective
 $$
-y_i=\beta_0+\beta_1x_{i1}+\beta_2x_{i2}+\ldots+\beta_kx_{ik}+\epsilon_i\\
-y=\textbf{X}\beta+\epsilon\\
+y_i=\beta_0+\beta_1x_{i1}+\beta_2x_{i2}+\ldots+\beta_kx_{ik}+\epsilon_i = X_{i}\beta + +\epsilon_i \\
 min_{\beta} \sum_{i=1}^{n} (\epsilon_i)^2
 $$
 
-Point Estimates
+Point Estimates in matrix form
 $$
-\hat{\beta}=(\textbf{X}'\textbf{X})^{-1}\textbf{X}'y\\
+y=\textbf{X}\beta+\epsilon\\
+\hat{\beta}=(\textbf{X}'\textbf{X})^{-1}\textbf{X}'y
 $$
 
+
 ```r
+## Example 2 (Empirical)
+## Inspect Dataset on police arrests for the USA in 1973
+head(USArrests)
+```
+
+```
+##            Murder Assault UrbanPop Rape
+## Alabama      13.2     236       58 21.2
+## Alaska       10.0     263       48 44.5
+## Arizona       8.1     294       80 31.0
+## Arkansas      8.8     190       50 19.5
+## California    9.0     276       91 40.6
+## Colorado      7.9     204       78 38.7
+```
+
+```r
+## Simple Plot
+#plot(Assault~UrbanPop, USArrests, col=grey(0,.5), pch=16,
+#    cex=USArrests$Murder/diff(range(USArrests$Murder))*2,
+#    main='US Murder arrests (per 100,000)')
+
+# Superior Plot
+USArrests$ID <- rownames(USArrests)
+plotly::plot_ly(
+  USArrests, x = ~UrbanPop, y = ~Assault,
+  text = ~paste('State: ', ID, "<br>Murder Arrests:", Murder),
+  color = ~Murder,
+  marker = list(size = ~Murder, opacity = 0.5),
+  title = 'Murder arrests (per 100,000)')
+```
+
+```
+## No trace type specified:
+##   Based on info supplied, a 'scatter' trace seems appropriate.
+##   Read more about this trace type -> https://plotly.com/r/reference/#scatter
+```
+
+```
+## No scatter mode specifed:
+##   Setting the mode to markers
+##   Read more about this attribute -> https://plotly.com/r/reference/#scatter-mode
+```
+
+```
+## Warning: 'scatter' objects don't have these attributes: 'title'
+## Valid attributes include:
+## 'cliponaxis', 'connectgaps', 'customdata', 'customdatasrc', 'dx', 'dy', 'error_x', 'error_y', 'fill', 'fillcolor', 'fillpattern', 'groupnorm', 'hoverinfo', 'hoverinfosrc', 'hoverlabel', 'hoveron', 'hovertemplate', 'hovertemplatesrc', 'hovertext', 'hovertextsrc', 'ids', 'idssrc', 'legendgroup', 'legendgrouptitle', 'legendrank', 'line', 'marker', 'meta', 'metasrc', 'mode', 'name', 'opacity', 'orientation', 'selected', 'selectedpoints', 'showlegend', 'stackgaps', 'stackgroup', 'stream', 'text', 'textfont', 'textposition', 'textpositionsrc', 'textsrc', 'texttemplate', 'texttemplatesrc', 'transforms', 'type', 'uid', 'uirevision', 'unselected', 'visible', 'x', 'x0', 'xaxis', 'xcalendar', 'xhoverformat', 'xperiod', 'xperiod0', 'xperiodalignment', 'xsrc', 'y', 'y0', 'yaxis', 'ycalendar', 'yhoverformat', 'yperiod', 'yperiod0', 'yperiodalignment', 'ysrc', 'key', 'set', 'frame', 'transforms', '_isNestedKey', '_isSimpleKey', '_isGraticule', '_bbox'
+```
+
+```{=html}
+<div class="plotly html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-05db331bd815443767b7" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-05db331bd815443767b7">{"x":{"visdat":{"a614509485b0":["function () ","plotlyVisDat"]},"cur_data":"a614509485b0","attrs":{"a614509485b0":{"x":{},"y":{},"text":{},"marker":{"size":{},"opacity":0.5},"title":"Murder arrests (per 100,000)","color":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20]}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"xaxis":{"domain":[0,1],"automargin":true,"title":"UrbanPop"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Assault"},"hovermode":"closest","showlegend":false,"legend":{"yanchor":"top","y":0.5}},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[58,48,80,50,91,78,77,72,80,60,83,54,83,65,57,66,52,66,51,67,85,74,66,44,70,53,62,81,56,89,70,86,45,44,75,68,67,72,87,48,45,59,80,80,32,63,73,39,66,60],"y":[236,263,294,190,276,204,110,238,335,211,46,120,249,113,56,115,109,249,83,300,149,255,72,259,178,109,102,252,57,159,285,254,337,45,120,151,159,106,174,279,86,188,201,120,48,156,145,81,53,161],"text":["State:  Alabama <br>Murder Arrests: 13.2","State:  Alaska <br>Murder Arrests: 10","State:  Arizona <br>Murder Arrests: 8.1","State:  Arkansas <br>Murder Arrests: 8.8","State:  California <br>Murder Arrests: 9","State:  Colorado <br>Murder Arrests: 7.9","State:  Connecticut <br>Murder Arrests: 3.3","State:  Delaware <br>Murder Arrests: 5.9","State:  Florida <br>Murder Arrests: 15.4","State:  Georgia <br>Murder Arrests: 17.4","State:  Hawaii <br>Murder Arrests: 5.3","State:  Idaho <br>Murder Arrests: 2.6","State:  Illinois <br>Murder Arrests: 10.4","State:  Indiana <br>Murder Arrests: 7.2","State:  Iowa <br>Murder Arrests: 2.2","State:  Kansas <br>Murder Arrests: 6","State:  Kentucky <br>Murder Arrests: 9.7","State:  Louisiana <br>Murder Arrests: 15.4","State:  Maine <br>Murder Arrests: 2.1","State:  Maryland <br>Murder Arrests: 11.3","State:  Massachusetts <br>Murder Arrests: 4.4","State:  Michigan <br>Murder Arrests: 12.1","State:  Minnesota <br>Murder Arrests: 2.7","State:  Mississippi <br>Murder Arrests: 16.1","State:  Missouri <br>Murder Arrests: 9","State:  Montana <br>Murder Arrests: 6","State:  Nebraska <br>Murder Arrests: 4.3","State:  Nevada <br>Murder Arrests: 12.2","State:  New Hampshire <br>Murder Arrests: 2.1","State:  New Jersey <br>Murder Arrests: 7.4","State:  New Mexico <br>Murder Arrests: 11.4","State:  New York <br>Murder Arrests: 11.1","State:  North Carolina <br>Murder Arrests: 13","State:  North Dakota <br>Murder Arrests: 0.8","State:  Ohio <br>Murder Arrests: 7.3","State:  Oklahoma <br>Murder Arrests: 6.6","State:  Oregon <br>Murder Arrests: 4.9","State:  Pennsylvania <br>Murder Arrests: 6.3","State:  Rhode Island <br>Murder Arrests: 3.4","State:  South Carolina <br>Murder Arrests: 14.4","State:  South Dakota <br>Murder Arrests: 3.8","State:  Tennessee <br>Murder Arrests: 13.2","State:  Texas <br>Murder Arrests: 12.7","State:  Utah <br>Murder Arrests: 3.2","State:  Vermont <br>Murder Arrests: 2.2","State:  Virginia <br>Murder Arrests: 8.5","State:  Washington <br>Murder Arrests: 4","State:  West Virginia <br>Murder Arrests: 5.7","State:  Wisconsin <br>Murder Arrests: 2.6","State:  Wyoming <br>Murder Arrests: 6.8"],"marker":{"colorbar":{"title":"Murder","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":false,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"size":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"opacity":0.5,"line":{"colorbar":{"title":"","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":false,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998]}},"title":"Murder arrests (per 100,000)","type":"scatter","mode":"markers","xaxis":"x","yaxis":"y","frame":null},{"x":[32,91],"y":[45,337],"type":"scatter","mode":"markers","opacity":0,"hoverinfo":"none","showlegend":false,"marker":{"colorbar":{"title":"Murder","ticklen":2,"len":0.5,"lenmode":"fraction","y":1,"yanchor":"top"},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"color":[0.80000000000000004,17.399999999999999],"line":{"color":"rgba(255,127,14,1)"}},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+```
+
+```r
+## For further exploratory plotting,
+## see https://plotly.com/r/bubble-charts/
+```
+
+
+```r
+## Manually Compute
+Y <- USArrests[,'Murder']
 X <- USArrests[,c('Assault','UrbanPop')]
 X <- as.matrix(cbind(1,X))
-Y <- USArrests[,'Murder']
 
 XtXi <- solve(t(X)%*%X)
 Bhat <- XtXi %*% (t(X)%*%Y)
-Bhat
+c(Bhat)
 ```
 
 ```
-##                 [,1]
-## 1         3.20715340
-## Assault   0.04390995
-## UrbanPop -0.04451047
+## [1]  3.20715340  0.04390995 -0.04451047
 ```
 
 ```r
+## Check
 reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 coef(reg)
 ```
@@ -142,45 +289,43 @@ coef(reg)
 ```
 
 
-Predictions and Projection Matrix
-$$
-\hat{\epsilon}=y-X\hat{\beta}=y-X(X'X)^{-1}X'y\\
-\hat{P}=X(X'X)^{-1}X'\\
-\hat{P}y=X(X'X)^{-1}X'y=y-(y-X(X'X)^{-1}X'y)=y-\hat{\epsilon}=\hat{y}\\
-$$
-
-
-```r
-Ehat <- Y - X%*% Bhat
-## Ehat
-## resid(reg)
-
-Pmat <- X%*%XtXi%*%t(X)
-Yhat <- Pmat%*%Y
-## Yhat
-## predict(reg)
-```
-
 Sums of Squared Errors
 $$
-R^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-R^2)\\
-R^2 = \frac{RSS}{TSS}=1-\frac{ESS}{TSS}
+R^2 = \frac{RSS}{TSS}=1-\frac{ESS}{TSS}\\
+R^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-R^2)
 $$
+With multiple variables, sometimes random data may improve the fit. So we adjust the $R^2$ by the number of covariates $K$.
 
 ```r
-ESS <- sum(Ehat^2)
-TSS <- sum((Y-mean(Y))^2)
-R2 <- 1 - ESS/TSS
+ksims <- 1:30
+for(k in ksims){ 
+    USArrests[,paste0('R',k)] <- runif(nrow(USArrests),0,20)
+}
+reg_sim <- lapply(ksims, function(k){
+    rvars <- c('Assault','UrbanPop', paste0('R',1:k))
+    rvars2 <- paste0(rvars, collapse='+')
+    reg_k <- lm( paste0('Murder~',rvars2), data=USArrests)
+})
+R2_sim <- sapply(reg_sim, function(reg_k){  summary(reg_k)$r.squared })
+R2adj_sim <- sapply(reg_sim, function(reg_k){  summary(reg_k)$adj.r.squared })
 
-summary(reg)$r.squared
+plot.new()
+plot.window(xlim=c(0,30), ylim=c(0,1))
+points(ksims, R2_sim)
+points(ksims, R2adj_sim, pch=16)
+axis(1)
+axis(2)
+mtext(expression(R^2),2, line=3)
+mtext('Additional Random Covariates', 1, line=3)
+legend('topleft', horiz=T,
+    legend=c('Undjusted', 'Adjusted'), pch=c(1,16))
 ```
 
-```
-## [1] 0.6634156
-```
+<img src="03-ROLS_files/figure-html/unnamed-chunk-8-1.png" width="672" />
 
 
-### Coefficient Variability
+
+### Variability Estimates and Hypothesis Tests [Under Construction]
 
 In general, note that the linear model has
 $$
@@ -249,12 +394,9 @@ $$
 This is for a later course. (See https://cran.r-project.org/web/packages/sandwich/vignettes/sandwich.pdf and then https://cran.r-project.org/web/packages/sandwich/vignettes/sandwich-CL.pdf)
 
 
-### Hypothesis Testing 
-
-Is not to be done routinely. For one hypothesis, we can use a $t$ test. For multiple, we can use an $F$ test.
+**Hypothesis Testing** is not to be done routinely. For one hypothesis, we can use a $t$ test. For multiple, we can use an $F$ test.
 $$
-\hat{t}_{j} = \frac{\hat{\beta}_j- \beta_{0} }{\hat{\sigma}_{\
-\hat{\beta}_j}}\sim t_{n-K}\\
+\hat{t}_{j} = \frac{\hat{\beta}_j - \beta_{0} }{\hat{\sigma}_{\\hat{\beta}_j}}\sim t_{n-K} \\
 \hat{F}_{q} = \frac{(ESS_{restricted}-ESS_{unrestricted})/q}{ESS_{unrestricted}/(n-K)} \sim F_{q,n-K}
 $$
 
@@ -277,9 +419,9 @@ Phat2
 
 ```
 ##                  [,1]
-## 1        7.173654e-02
-## Assault  1.216319e-12
-## UrbanPop 9.796088e-02
+## 1        2.193368e-02
+## Assault  2.309673e-16
+## UrbanPop 3.492429e-02
 ```
 
 ```r
@@ -315,7 +457,7 @@ Fhat <- (TSS - ESS)/ESS * (n-K)/3
 ```
 
 ```
-## [1] 3.522538e-11
+## [1] 0.08151657
 ```
 
 ```r
@@ -354,10 +496,21 @@ summary(reg)
 ```
 
 
+```r
+## Null Bootstrap Distribution for R2
+boot_R2s <- sapply(boot_regs, function(reg_b){
+    summary(reg_b)$r.squared
+})
+hist(boot_R2s, breaks=25, main='', xlab=expression(R[b]^2), xlim=c(0,.50))
+abline(v=summary(reg)$r.squared, col="red", lwd=2)
+```
+
+<img src="03-ROLS_files/figure-html/unnamed-chunk-11-1.png" width="672" />
+
 
 ## Coefficient Interpretation
 
-The above procedure will always give us number, the question is how to interpret them. 
+Notice that we have gotten pretty far without actually trying to meaningfully interpret regression coefficients. That is because the above procedure will always give us number, regardless as to whether the true data generating process is linear or not. So, to be cautious, we have been interpretting the regression outputs while being agnostic as to how the data are generated. We now consider a special situation where we know the data are generated according to a linear process and are only uncertain about the parameter values.
 
 *If* the data generating process is 
 $$
@@ -388,7 +541,7 @@ coef(lm(Y~x1+x2, data=dat))
 
 ```
 ## (Intercept)          x1          x2 
-##   10.365015    1.989076   -1.369191
+##  10.1453478   1.6858902  -0.7235963
 ```
 
 Simulate the distribution of coefficients under a correctly specified model. Interpret the average.
@@ -409,13 +562,13 @@ Coefs <- sapply(1:400, function(sim){
 
 par(mfrow=c(1,3))
 for(i in 1:3){
-    hist(Coefs[i,])
+    hist(Coefs[i,], xlab=bquote(beta[.(i)]), main='')
     abline(v=mean(Coefs[i,]), col=1, lty=2)
     abline(v=B[i], col=2)
 }
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-10-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-13-1.png" width="672" />
 
 Note that for joint tests, we look at the joint distribution of coefficients
 
@@ -423,10 +576,10 @@ Note that for joint tests, we look at the joint distribution of coefficients
 library(ks)
 Bjoint <- t(Coefs[2:3,])
 fBjoint <- histde(Bjoint, binw=c(.2,.5))
-plot(fBjoint, xlab='B2', ylab='B3')
+plot(fBjoint, xlab=expression(beta[2]), ylab=expression(beta[3]))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-11-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-14-1.png" width="672" />
 
 
 Many economic phenomena are nonlinear, even when including potential transforms of $Y$ and $X$. Sometimes the OLS model may still be a good or even great approximation (how good depends on the research question). In any case, you are safe to interpret your OLS coefficients as "conditional correlations". For example, examine the distribution of coefficients under this mispecified model. Interpret the average.
@@ -445,12 +598,12 @@ Coefs <- sapply(1:600, function(sim){
 
 par(mfrow=c(1,2))
 for(i in 2:3){
-    hist(Coefs[i,])
+    hist(Coefs[i,],  xlab=bquote(beta[.(i)]), main='')
     abline(v=mean(Coefs[i,]), col=1, lty=2)
 }
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-12-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-15-1.png" width="672" />
 
 ## Factor Variables
 
@@ -498,23 +651,23 @@ summary(fe_reg0)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -35.488  -5.601   0.080   5.716  43.404 
+## -34.007  -5.942  -0.397   5.806  47.060 
 ## 
 ## Coefficients:
-##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  19.94874    1.25489  15.897  < 2e-16 ***
-## x             1.31644    0.20628   6.382 2.68e-10 ***
-## fo.L         27.76653    1.13944  24.369  < 2e-16 ***
-## fo.Q         10.53385    0.99725  10.563  < 2e-16 ***
-## fo.C          3.29927    0.76237   4.328 1.66e-05 ***
-## fo^4          0.01023    0.56536   0.018    0.986    
-## fuB         -24.47203    0.59176 -41.355  < 2e-16 ***
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  19.3092     1.2482  15.470  < 2e-16 ***
+## x             1.2169     0.2108   5.773 1.04e-08 ***
+## fo.L         24.2336     1.0467  23.153  < 2e-16 ***
+## fo.Q          9.5722     0.9245  10.354  < 2e-16 ***
+## fo.C          0.4653     0.7374   0.631    0.528    
+## fo^4          0.2825     0.5751   0.491    0.623    
+## fuB         -23.5085     0.6001 -39.172  < 2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 9.322 on 993 degrees of freedom
-## Multiple R-squared:  0.7366,	Adjusted R-squared:  0.735 
-## F-statistic: 462.9 on 6 and 993 DF,  p-value: < 2.2e-16
+## Residual standard error: 9.466 on 993 degrees of freedom
+## Multiple R-squared:  0.7038,	Adjusted R-squared:  0.702 
+## F-statistic: 393.2 on 6 and 993 DF,  p-value: < 2.2e-16
 ```
 We can also compute averages for each group and construct a "between estimator"
 $$
@@ -538,11 +691,11 @@ summary(fe_reg1)
 ## Fixed-effects: fo: 5,  fu: 2
 ## Standard-errors: Clustered (fo) 
 ##   Estimate Std. Error t value Pr(>|t|)    
-## x  1.31644   0.512316 2.56958 0.062006 .  
+## x  1.21688   0.427625 2.84568 0.046599 *  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 9.28884     Adj. R2: 0.735047
-##                 Within R2: 0.039399
+## RMSE: 9.43295     Adj. R2: 0.701964
+##                 Within R2: 0.032478
 ```
 
 **Hansen Econometrics, Theorem 17.1:** The fixed effects estimator of $\beta$ algebraically equals the dummy
@@ -564,11 +717,11 @@ summary(reg1)
 ## Fixed-effects: fo^fu: 10
 ## Standard-errors: Clustered (fo^fu) 
 ##   Estimate Std. Error t value Pr(>|t|)    
-## x  1.11754   0.560487 1.99387 0.077313 .  
+## x   1.2088   0.524281 2.30564 0.046568 *  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 3.57975     Adj. R2: 0.96049 
-##                 Within R2: 0.165785
+## RMSE: 3.54766     Adj. R2: 0.957674
+##                 Within R2: 0.189008
 ```
 
 ```r
@@ -583,36 +736,36 @@ summary(reg2)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -10.4709  -1.5275  -0.0623   1.5661  11.5398 
+## -10.4774  -1.4671   0.0183   1.3872   9.2305 
 ## 
 ## Coefficients:
 ##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  13.43827    0.62040  21.661  < 2e-16 ***
-## x             2.75225    0.10835  25.402  < 2e-16 ***
-## fo.L         23.99110    1.72880  13.877  < 2e-16 ***
-## fo.Q          6.91971    1.53036   4.522 6.89e-06 ***
-## fo.C          1.69970    1.20822   1.407 0.159810    
-## fo^4          0.52103    0.95251   0.547 0.584496    
-## fuB         -13.73813    0.90147 -15.240  < 2e-16 ***
-## x:fo.L        5.21033    0.30306  17.192  < 2e-16 ***
-## x:fo.Q        2.27075    0.26779   8.480  < 2e-16 ***
-## x:fo.C        0.49987    0.21028   2.377 0.017636 *  
-## x:fo^4        0.05099    0.16438   0.310 0.756478    
-## x:fuB        -2.72519    0.16045 -16.985  < 2e-16 ***
-## fo.L:fuB    -24.48839    2.56394  -9.551  < 2e-16 ***
-## fo.Q:fuB     -7.80555    2.25348  -3.464 0.000556 ***
-## fo.C:fuB     -1.89021    1.70730  -1.107 0.268508    
-## fo^4:fuB     -0.56133    1.29857  -0.432 0.665640    
-## x:fo.L:fuB   -5.19171    0.45904 -11.310  < 2e-16 ***
-## x:fo.Q:fuB   -2.12252    0.40250  -5.273 1.65e-07 ***
-## x:fo.C:fuB   -0.47950    0.30162  -1.590 0.112215    
-## x:fo^4:fuB   -0.01655    0.22625  -0.073 0.941703    
+## (Intercept)  13.33974    0.57810  23.075  < 2e-16 ***
+## x             2.82499    0.10695  26.413  < 2e-16 ***
+## fo.L         23.35762    1.60506  14.553  < 2e-16 ***
+## fo.Q          8.94389    1.42614   6.271 5.36e-10 ***
+## fo.C          2.61109    1.12346   2.324   0.0203 *  
+## fo^4         -0.34388    0.90089  -0.382   0.7028    
+## fuB         -13.81712    0.80636 -17.135  < 2e-16 ***
+## x:fo.L        5.49528    0.30173  18.212  < 2e-16 ***
+## x:fo.Q        2.11928    0.26676   7.945 5.32e-15 ***
+## x:fo.C        0.43736    0.20304   2.154   0.0315 *  
+## x:fo^4        0.19195    0.15924   1.205   0.2283    
+## x:fuB        -2.70494    0.14583 -18.549  < 2e-16 ***
+## fo.L:fuB    -25.45728    2.23202 -11.405  < 2e-16 ***
+## fo.Q:fuB     -9.15568    1.97998  -4.624 4.26e-06 ***
+## fo.C:fuB     -1.50698    1.58517  -0.951   0.3420    
+## fo^4:fuB     -1.08585    1.26076  -0.861   0.3893    
+## x:fo.L:fuB   -5.10098    0.40694 -12.535  < 2e-16 ***
+## x:fo.Q:fuB   -2.10654    0.36038  -5.845 6.88e-09 ***
+## x:fo.C:fuB   -0.62048    0.28275  -2.194   0.0284 *  
+## x:fo^4:fuB    0.00996    0.22340   0.045   0.9645    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 2.629 on 980 degrees of freedom
-## Multiple R-squared:  0.9793,	Adjusted R-squared:  0.9789 
-## F-statistic:  2443 on 19 and 980 DF,  p-value: < 2.2e-16
+## Residual standard error: 2.599 on 980 degrees of freedom
+## Multiple R-squared:  0.978,	Adjusted R-squared:  0.9775 
+## F-statistic:  2289 on 19 and 980 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -629,8 +782,13 @@ With *Random Effects*, the factor variable is modelled as coming from a distribu
 
 ## More Literature
 
+For OLS, see
+
+* https://bookdown.org/josiesmith/qrmbook/linear-estimation-and-minimizing-error.html
+* https://www.econometrics-with-r.org/4-lrwor.html
 * https://www.econometrics-with-r.org/6-rmwmr.html
 * https://www.econometrics-with-r.org/7-htaciimr.html
+* https://bookdown.org/ripberjt/labbook/bivariate-linear-regression.html
 * https://bookdown.org/ripberjt/labbook/multivariable-linear-regression.html
 * https://online.stat.psu.edu/stat462/node/137/
 * https://book.stat420.org/
@@ -642,6 +800,9 @@ With *Random Effects*, the factor variable is modelled as coming from a distribu
 
 For fixed effects, see
 
+* https://www.econometrics-with-r.org/10-rwpd.html
+* https://bookdown.org/josiesmith/qrmbook/topics-in-multiple-regression.html
+* https://bookdown.org/ripberjt/labbook/multivariable-linear-regression.html
 * https://www.princeton.edu/~otorres/Panel101.pdf
 * https://www.stata.com/manuals13/xtxtreg.pdf
 
@@ -657,7 +818,7 @@ par(mfrow=c(2,2))
 plot(reg)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-17-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-20-1.png" width="672" />
 
 
 ## Assessing Outliers
@@ -676,7 +837,7 @@ plot(fitted(reg), resid(reg),col = "grey", pch = 20,
 abline(h = 0, col = "darkorange", lwd = 2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-18-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-21-1.png" width="672" />
 
 ```r
 # car::outlierTest(reg)
@@ -702,7 +863,7 @@ abline(lm(y~x), col=2, lty=2)
 abline(lm(y[-1]~x[-1]))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-19-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-22-1.png" width="672" />
 
 See https://www.r-bloggers.com/2016/06/leverage-and-influence-in-a-nutshell/ for a good interactive explaination.
 
@@ -722,12 +883,13 @@ and $s_{(i)}$ the root mean squared error of a regression with the $i$th observa
 
 
 ```r
+reg <- lm(y~x)
 which.max(hatvalues(reg))
 ```
 
 ```
-## North Carolina 
-##             33
+## 1 
+## 1
 ```
 
 ```r
@@ -735,8 +897,8 @@ which.max(rstandard(reg))
 ```
 
 ```
-## Georgia 
-##      10
+## 7 
+## 7
 ```
 
 
@@ -754,23 +916,22 @@ which.max(cooks.distance(reg))
 ```
 
 ```
-## North Carolina 
-##             33
+## 1 
+## 1
 ```
 
 ```r
 car::influencePlot(reg)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-21-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-24-1.png" width="672" />
 
 ```
-##                   StudRes        Hat      CookD
-## Delaware       -1.8410049 0.03451853 0.03843811
-## Georgia         3.2882774 0.03039710 0.09347723
-## Hawaii          1.5824197 0.12130042 0.11165131
-## North Carolina -1.2965915 0.18314307 0.12384563
-## Vermont        -0.7053099 0.14625247 0.02871316
+##       StudRes        Hat       CookD
+## 1   0.4128605 0.83421982 0.438440247
+## 7   2.2278995 0.03384138 0.078717691
+## 15  1.9799443 0.02670170 0.049936134
+## 25 -0.5933150 0.04276918 0.008000634
 ```
 
 There are many other diagnostics (which can often be written in terms of Cooks Distance or Vice Versa)
@@ -796,36 +957,29 @@ head(influence.measures(reg)$infmat)
 ```
 
 ```
-##                 dfb.1_     dfb.Assl    dfb.UrbP       dffit     cov.r
-## Alabama     0.06698666  0.121390693 -0.09571195  0.18752074 1.0618439
-## Alaska     -0.17418713 -0.235763735  0.24867215 -0.34425048 1.0940193
-## Arizona     0.27088406 -0.344591986 -0.17400794 -0.51567630 0.9300932
-## Arkansas   -0.03432852 -0.015924497  0.03547264 -0.04693298 1.1187126
-## California  0.22854460 -0.116535586 -0.20666902 -0.30454073 1.1179113
-## Colorado    0.02943825 -0.008217938 -0.03536831 -0.05972787 1.0993461
-##                  cook.d        hat
-## Alabama    0.0117803023 0.04395885
-## Alaska     0.0393848071 0.09410554
-## Arizona    0.0843681938 0.07293432
-## Arkansas   0.0007495028 0.04918497
-## California 0.0310077445 0.09740137
-## Colorado   0.0012124579 0.03580000
+##         dfb.1_         dfb.x       dffit    cov.r       cook.d        hat
+## 1 -0.714727511  0.9121585679  0.92614148 6.304329 0.4384402467 0.83421982
+## 2  0.004317106  0.0123449040  0.03296027 1.084249 0.0005573241 0.02907921
+## 3 -0.110082454  0.0327121907 -0.16883335 1.022956 0.0142265620 0.02597513
+## 4  0.052856399 -0.0007389844  0.10596413 1.056673 0.0056984930 0.02500122
+## 5  0.021487655  0.0273946591  0.09597621 1.065255 0.0046884772 0.02721744
+## 6 -0.013561535  0.0064011055 -0.01743546 1.085569 0.0001560626 0.02889457
 ```
 
 
 ## Assessing Normality and Collinearity
 
-The second plot examines whether the residuals are normally distributed. OLS point estimates do not depend on the normality of the residuals. (Good thing, because there's no reason the residuals of economic phenomena should be so well behaved.) The variability of the point estimates are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality 
+The second plot examines whether the residuals are normally distributed. OLS point estimates do not depend on the normality of the residuals. (Good thing, because there's no reason the residuals of economic phenomena should be so well behaved.) Many hypothesis tests of the regression estimates are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality 
 
 ```r
 par(mfrow=c(1,2))
 hist(resid(reg), main='Histogram of Residuals')
 
-qqnorm(resid(reg), main = "Normal Q-Q Plot of Residuals", col = "darkgrey")
-qqline(resid(reg), col = "dodgerblue", lwd = 2)
+qqnorm(resid(reg), main="Normal Q-Q Plot of Residuals", col="darkgrey")
+qqline(resid(reg), col="dodgerblue", lwd=2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-24-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-27-1.png" width="672" />
 
 ```r
 shapiro.test(resid(reg))
@@ -836,7 +990,7 @@ shapiro.test(resid(reg))
 ## 	Shapiro-Wilk normality test
 ## 
 ## data:  resid(reg)
-## W = 0.96937, p-value = 0.2182
+## W = 0.97323, p-value = 0.4527
 ```
 
 ```r
@@ -873,7 +1027,7 @@ lmtest::bptest(reg)
 ## 	studentized Breusch-Pagan test
 ## 
 ## data:  reg
-## BP = 1.9073, df = 2, p-value = 0.3853
+## BP = 0.65206, df = 1, p-value = 0.4194
 ```
 
 
@@ -885,30 +1039,16 @@ VIF_{k}=\frac{1}{1-R^2_k},
 $$
 where $R^2_k$ is the $R^2$ for the regression of $X_k$ on the other covariates $X_{-k}$ (a regression that does not involve the response variable Y)
 
-
 ```r
 car::vif(reg) 
-```
-
-```
-##  Assault UrbanPop 
-## 1.071828 1.071828
-```
-
-```r
 sqrt(car::vif(reg)) > 2 # problem?
 ```
 
-```
-##  Assault UrbanPop 
-##    FALSE    FALSE
-```
+
+## Linear in parameters
 
 
-## Transformations
-
-
-Coefficient transformations can often improve model fit. Note for small changes, $\Delta ln(x) \approx \Delta x / x = \Delta x \% \cdot 100$. Under the assumptions of the OLS model, we have 
+Data transformations can often improve model fit and still be estimated via OLS. This is because OLS is only required to be linear in the parameters. Under the assumptions of the model is correctly specified, this is how we can interpret the coefficients of the transformed data. (Note for small changes, $\Delta ln(x) \approx \Delta x / x = \Delta x \% \cdot 100$.)
 
 | *Model* | *Regressand* | *Regressor* | *Derivative* | *Interpretation* |
 | --- | --- | --- | --- | --- |
@@ -917,9 +1057,7 @@ Coefficient transformations can often improve model fit. Note for small changes,
 | linear--log | $y$ | $ln(x)$ | $\Delta y \approx  \frac{\beta_1}{100}\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\frac{\beta_1}{100}$ units |
 | log--log | $ln(y)$ | $ln(x)$ | $\Delta y \% \approx \beta_1\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\beta_1$ percent|
 
-There are many reasons why the OLS model is unlikely to be true. Recall from micro theory, that an additively seperable and linear production function is referred to as ``perfect substitutes''. You have implicitly modelled the different regressors $X$ as perfect substitutes, when in fact they may be compliments.
-
-Further recall that the ''perfect substitutes'' model is a special case of the constant elasticity of substitution production function. Here, we will build on http://dx.doi.org/10.2139/ssrn.3917397, and consider box-cox transforming both $X$ and $y$. Specifically, apply the box-cox transform of $y$ using parameter $\lambda$ and apply another box-cox transform to each $x$ using the same parameter $\rho$;so that
+Now recall from micro theory that an additively seperable and linear production function is referred to as ``perfect substitutes''. With a linear model and untranformed data, you have implicitly modelled the different regressors $X$ as perfect substitutes. Further recall that the ''perfect substitutes'' model is a special case of the constant elasticity of substitution production function. Here, we will build on http://dx.doi.org/10.2139/ssrn.3917397, and consider box-cox transforming both $X$ and $y$. Specifically, apply the box-cox transform of $y$ using parameter $\lambda$ and apply another box-cox transform to each $x$ using the same parameter $\rho$;so that
 
 $$
 y^{(\lambda)}_{i} = \sum_{k}\beta_{k} x^{(\rho)}_{k,i} + \epsilon_{i}\\
@@ -945,8 +1083,8 @@ Notice that this nests:
 
 If $\rho=\lambda$, we get the CES production function. This nests the ''perfect substitutes'' linear-linear model ($\rho=\lambda=1$) , the ''cobb-douglas''  log-log model  ($\rho=\lambda=0$), and many others. We can define $\lambda=\rho/\lambda'$ to be clear that this is indeed a CES-type transformation where
 
-* $\rho \in (-\infty,1]$ controls the ''substitutability'' of explanatory variables ($\rho <0$ is ''complementary'')
-* $\lambda$ determines ''returns to scale'' ($\lambda'<1$ is ''decreasing returns'').
+* $\rho \in (-\infty,1]$ controls the "substitutability" of explanatory variables. E.g., $\rho <0$ is ''complementary''.
+* $\lambda$ determines ''returns to scale''. E.g., $\lambda<1$ is ''decreasing returns''.
 
 
 We compute the mean squared error in the original scale by inverting the predictions;
@@ -1012,7 +1150,7 @@ ggplot(rl_df, aes(rho, lambda, fill=mse )) +
     geom_tile() + ggtitle('Mean Squared Error') 
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-27-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-30-1.png" width="672" />
 
 ```r
 ## Which min
@@ -1035,9 +1173,9 @@ legend('topleft', pch=c(16), col=cols, title='Rho,Lambda',
     legend=c(  paste0(rl0, collapse=','),'1,1') )
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-27-2.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-30-2.png" width="672" />
 
-Note that your hypothesis testing procedures do not account for you trying out different transformations.
+Note that the default hypothesis testing procedures do not account for you trying out different transformations. Specification searches deflate standard errors and are a major source for false discoveries.
 
 
 ## More Literature
@@ -1277,7 +1415,7 @@ legend('topright', lty=c(1,2), legend=c(
     'log(science_spending/10)'))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-31-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-34-1.png" width="672" />
 
 
 
@@ -1303,7 +1441,7 @@ axis(1)
 axis(2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-32-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-35-1.png" width="672" />
 
 
 
@@ -1394,7 +1532,7 @@ plot(X1~X2, data=dat_i,
 abline(reg_i)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-35-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-38-1.png" width="672" />
 
 
 For more intuition on spurious correlations, try http://shiny.calpoly.sh/Corr_Reg_Game/
@@ -1423,7 +1561,7 @@ plot(random_walk1, pch=16, col=grey(.5,.5))
 plot(random_walk2, pch=16, col=grey(.5,.5))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-36-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-39-1.png" width="672" />
 
 
 ```r
@@ -1445,7 +1583,7 @@ lines(reg0$model$t, reg0$fitted.values, col=2)
 lines(reg1$model$t, reg1$fitted.values, col=4)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-37-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-40-1.png" width="672" />
 
 
 ```r
@@ -1500,7 +1638,7 @@ points(random_walk1, pch=16, col=2)
 abline(v=n2, lty=2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-39-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-42-1.png" width="672" />
 
 
 ```r
