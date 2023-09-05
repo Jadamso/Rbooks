@@ -1,6 +1,13 @@
 # Preface {#index}
 
-This book contains the following primers that should get you going with R in econometrics research
+
+
+<!--- Add Title Image
+<img src="Figures_Manual/Logo.png" class="cover" height="50%"/>  
+
+--->
+
+This book contains three primers that should get you going with R in econometrics research
 
  * *Part   I*: Introduction to R
  * *Part  II*: Introduction to Linear Regression in R
@@ -10,4 +17,4 @@ Much of the R-programming material (Parts I and III) was copied or modified from
 
 Much of Part II was also copied from elsewhere, namely other econometrics textbooks. I cut a lot of material pertaining to inference with linear models and treat it more as a technical prerequisite (taking seriously Greene's "Model Building--A General to Simple Strategy"). At the end is a novel chapter on `Data scientism' that illustrates some of the limits and ways linear models mislead rather than illuminate. Part II provides a more humble view towards what we can say with linear models and leaves more room for economic theory in model development and interpretation.
 
-I use this book for my own teaching and not all of my materials are available online yet. It is online for my students, but an interested reader may find it useful.
+These are actively being developed for my classes, although any interested reader may find it useful.

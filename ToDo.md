@@ -2,6 +2,66 @@
 
 Add title page
 
+<!--
+The compilation instructions are in 'index.Rmd' 
+To Create from scratch, use a template ``bookdown::create_gitbook('index.Rmd')``
+-->
+
+* https://bookdown.org/bkrauth/IS4E/
+* https://bookdown.org/pkaldunn/SRM-Textbook/
+* https://github.com/Camilo-Mora/GEO380/tree/main
+
+## OLS
+
+Predictions and Projection Matrix
+$$
+\hat{\epsilon}=y-X\hat{\beta}=y-X(X'X)^{-1}X'y\\
+\hat{P}=X(X'X)^{-1}X'\\
+\hat{P}y=X(X'X)^{-1}X'y=y-(y-X(X'X)^{-1}X'y)=y-\hat{\epsilon}=\hat{y}\\
+$$
+
+```{r}
+Ehat <- Y - X%*% Bhat
+## Ehat
+## resid(reg)
+
+Pmat <- X%*%XtXi%*%t(X)
+Yhat <- Pmat%*%Y
+## Yhat
+## predict(reg)
+```
+
+
+For OLS, we calculate a Leverage Vector: Distance within explanatory variables
+$$
+H = diag(\hat{P}) = [h_{1}, h_{2}, ...., h_{N}]\\
+\hat{P} = X(X'X)^{-1}X'
+$$
+$h_i$ is the leverage of residual $\hat{\epsilon_i}$
+
+Studentized residuals
+$$
+r_i=\frac{\hat{\epsilon}_i}{s_{[i]}\sqrt{1-h_i}}
+$$
+and $s_{(i)}$ the root mean squared error of a regression with the $i$th observation removed.
+Cook's Distance is defined as the sum of all the changes in the regression model when observation i is removed from.
+$$
+D_{i} = \frac{\sum_{j} \left( \hat{y_j} - \hat{y_j}_{[i]} \right)^2 }{ p s^2 }
+= \frac{[e_{i}]^2}{p s^2 } \frac{h_i}{(1-h_i)^2}\\
+s^2 = \frac{\sum_{i} (e_{i})^2 }{n-K}
+$$
+
+<<application_OLS, echo=FALSE, cache=FALSE, fig.keep='none', eval=FALSE>>=
+library(AER)
+data(CASchools)
+CASchools$score <- (CASchools$read + CASchools$math) / 2)
+reg <- lm(score ~ income, data = CASchools)
+hvec <- lm.influence(reg)$hat
+iplot <- car::influencePlot(reg)
+CASchools[rownames(iplot),]
+@
+
+
 
 ## Intro R
 The & and | operators
@@ -17,6 +77,7 @@ https://meek-parfait-60672c.netlify.app/docs/m1_r-intro_01#103
 
 Data clean/merge
  * by, with, subset, split, aggregate, stack, switch, do.call, reduce
+ * data.table, ...
 
 Strings. https://meek-parfait-60672c.netlify.app/docs/M1_R-intro_03_text.html, https://raw.githubusercontent.com/rstudio/cheatsheets/main/regex.pdf
 kingText = "The king infringes the law on playing curling."
@@ -79,4 +140,21 @@ https://community.rstudio.com/t/tikz-in-r-markdown-with-html-output/54260/2
 \draw[->] (c) -- (d);
 \end{tikzpicture}
 ```
+
+
+<!--```{r, error=TRUE}-->
+<!--https://cran.r-project.org/web/views/NumericalMathematics.html-->
+<!--https://cran.r-project.org/web/views/Optimization.html-->
+
+<!--    integrate() finds the area under the curve defined by f()-->
+<!--    uniroot() finds where f() hits zero-->
+<!--    optimise() finds the location of the lowest (or highest) value of f()-->
+
+<!--f <- function(x) x^2-->
+<!--f1 <- Deriv::Deriv(f)-->
+
+<!--for more dimesniosn-->
+
+<!--optim-->
+<!--```-->
 
