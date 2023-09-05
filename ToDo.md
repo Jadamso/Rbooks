@@ -7,9 +7,10 @@ The compilation instructions are in 'index.Rmd'
 To Create from scratch, use a template ``bookdown::create_gitbook('index.Rmd')``
 -->
 
-* https://bookdown.org/bkrauth/IS4E/
+* https://github.com/bvkrauth/is4e/, https://bookdown.org/bkrauth/IS4E/
+* https://github.com/Camilo-Mora/GEO380
+* https://github.com/rstudio/bookdown
 * https://bookdown.org/pkaldunn/SRM-Textbook/
-* https://github.com/Camilo-Mora/GEO380/tree/main
 
 ## OLS
 
