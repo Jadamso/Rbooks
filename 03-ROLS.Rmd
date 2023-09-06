@@ -29,10 +29,10 @@ $$
 ## Example 1 (Theoretical)
 
 ## Generate Dataset
-N <- 100
-z <- rbinom(N,1,.5)
+n <- 100
+z <- rbinom(n,1,.5)
 xy <- sapply(z, function(zi){
-    y <- rnorm(1,zi*2,1)
+    y <- rnorm(1,zi,1)
     x <- rnorm(1,zi*2,1)
     c(x,y)
 })
@@ -69,7 +69,7 @@ R2 <- 1 - ESS/TSS
 summary(reg)$r.squared
 ```
 
-### Variability Estimates and Hypothesis Tests
+### Variability Estimates
 
 The classic estimates for variability are the Standard Error of the Regression $\hat{\sigma}$, and Standard Error of the Coefficient Estimates $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\alpha}}$ --- or simply Standard Errors.
 $$
@@ -77,9 +77,9 @@ $$
 \hat{\sigma}^2_{\hat{\alpha}}=\hat{\sigma}^2\left[\frac{1}{n}+\frac{\bar{x}^2}{\sum_{i}(x_i-\bar{x})^2}\right]\\
 \hat{\sigma}^2_{\hat{\beta}}=\frac{\hat{\sigma}^2}{\sum_{i}(x_i-\bar{x})^2}.
 $$
-These estimates are motivated by particular data generating proceses, and you can read more about this at https://www.econometrics-with-r.org/4-lrwor.html. 
+These equations are motivated by particular data generating proceses, which you can read more about this at https://www.econometrics-with-r.org/4-lrwor.html.
 
-We can also estimate variabilty using *data-driven* methods that assume much less about the data generating process. We focus on the simplest, the jackknife, where we loop through each row of the dataset. In each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``subsamples''.
+We can also estimate variabilty using *data-driven* methods that assume much less. We first consider the simplest, the jackknife, where we loop through each row of the dataset. In each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''.
 
 ```{r}
 ## Example 1 Continued
@@ -88,74 +88,136 @@ We can also estimate variabilty using *data-driven* methods that assume much les
 reg <- lm(y~x, dat=xy)
 coefX <- coef(reg)['x']
 
-## Standard Errors for Beta
+## Jackknife Standard Errors for Beta
 jack_regs <- lapply(1:nrow(xy), function(i){
     xy_i <- xy[-i,]
-    reg_u <- lm(y~x, dat=xy_i)
+    reg_i <- lm(y~x, dat=xy_i)
 })
 jack_coefs <- sapply(jack_regs, coef)['x',]
 jack_mean <- mean(jack_coefs)
 jack_se <- sd(jack_coefs)
-jack_cl <- jack_mean-2*jack_se
-jack_cu <- jack_mean+2*jack_se
 
-## Jackknife Distribution
-hist(jack_coefs, breaks=25, main='',
-    xlab=expression(beta[-i]),
-    xlim=range(c(jack_coefs, jack_cl, jack_cu)))
+## Jackknife Confidence Intervals
+jack_ci_percentile <- quantile(jack_coefs, probs=c(.025,.975))
+hist(jack_coefs, breaks=25,
+    main=paste0('SE est.=', round(jack_se,4)),
+    xlab=expression(beta[-i]))
 abline(v=jack_mean, col="red", lwd=2)
-##abline(v=coefX, lty=1, col='blue', lwd=2)
-abline(v=jack_cl, col="red", lty=2)
-abline(v=jack_cu, col="red", lty=2)
+abline(v=jack_ci_percentile, col="red", lty=2)
+
+## Plot Full-Sample Estimate
+## abline(v=coefX, lty=1, col='blue', lwd=2)
+
+## Plot Normal Approximation
+## jack_ci_normal <- jack_mean+c(-1.96, +1.96)*jack_se
+## abline(v=jack_ci_normal, col="red", lty=3)
 ```
 
-**Hypothesis Testing: Impose the Null**
-Regardless of how we calculate standard errors, we can use them to conduct a t-test. Specifically, we can use them to compute a t-value. We also compute the distribution of t-values under the null hypothesis, and compare how extreme the oberved value is. Often, we our null hypothesis is ``'no relationship''. And, under some assumptions, we theoretically know that the null distribution is a $t_{n-2}$. For more on regression t-testing, see https://www.econometrics-with-r.org/4-lrwor.html. 
+There are several other resampling techniques. We consider the other main one, the bootstrap, which resamples with *replacement* for an *arbitrary* number of iterations. For a dataset with $n$ observations, you now randomly resamples all $n$ rows in your data set $B$ times. 
 
-We can also compute the null distribution using *data-driven* methods that assume much less about the data generating process. We focus on the simplest, the bootstrap, where loop through a large number of simulations. In each iteration of the loop, we drop impose the null hypothesis and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''.
+| Sample Size per Iteration | Number of Iterations | Resample With Replacement | Resample Without Replacement |
+| -------- | ------- | ------- | ------- |
+| $$n$$     | $$B$$  | Bootstrap | --- |
+| $$n-1$$   | $$n$$  |--- | Jackknife |
+
+```{r}
+## Bootstrap Standard Errors for Beta
+boots <- 1:399
+boot_regs <- lapply(boots, function(b){
+    b_id <- sample( nrow(xy), replace=T)
+    xy_b <- xy[b_id,]
+    reg_b <- lm(y~x, dat=xy_b)
+})
+boot_coefs <- sapply(boot_regs, coef)['x',]
+boot_mean <- mean(boot_coefs)
+boot_se <- sd(boot_coefs)
+
+## Bootstrap Confidence Intervals
+boot_ci_percentile <- quantile(boot_coefs, probs=c(.025,.975))
+hist(boot_coefs, breaks=25,
+    main=paste0('SE est.=', round(boot_se,4)),
+    xlab=expression(beta[b]))
+abline(v=boot_mean, col="red", lwd=2)
+abline(v=boot_ci_percentile, col="red", lty=2)
+
+## Normal Approximation
+## boot_ci_normal <- boot_mean+c(-1.96, +1.96)*boot
+```
+
+We can also bootstrap other statistics, such as a t-statistic or $R^2$. We do such things to test a null hypothesis, which is often ``no relationship''. We are rarely interested in computing standard errrors and conducting hypothesis tests for two variables. However, we work through the ideas in the two-variable case to better understand the multi-variable case.
+
+### Hypothesis Tests
+ 
+There are two main ways to conduct a hypothesis test.
+ 
+**Invert a CI**
+One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. Often, this is $0$.
+```{r}
+## Example 1 Continued Yet Again
+
+## Bootstrap Distribution
+boot_ci_percentile <- quantile(boot_coefs, probs=c(.025,.975))
+hist(boot_coefs, breaks=25,
+    main=paste0('SE est.=', round(boot_se,4)),
+    xlab=expression(beta[b]), 
+    xlim=range(c(0, boot_coefs)) )
+abline(v=boot_ci_percentile, lty=2)
+abline(v=0, col="red", lwd=2)
+```
+
+
+**Impose the Null**
+We can also compute a null distribution using *data-driven* methods that assume much less about the data generating process. We focus on the simplest, the bootstrap, where loop through a large number of simulations. In each iteration of the loop, we drop impose the null hypothesis and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''.
 
 ```{r}
 ## Example 1 Continued Again
 
 ## Null Distribution for Beta
 boots <- 1:399
-boot_regs <- lapply(boots, function(b){
+boot_regs0 <- lapply(boots, function(b){
     xy_b <- xy
     xy_b$y <- sample( xy_b$y, replace=T)
     reg_b <- lm(y~x, dat=xy_b)
 })
-boot_coefs <- sapply(boot_regs, coef)['x',]
+boot_coefs0 <- sapply(boot_regs0, coef)['x',]
 
-## Bootstrap Distribution
-hist(boot_coefs, breaks=25, main='',
+## Null Bootstrap Distribution
+boot_ci_percentile0 <- quantile(boot_coefs0, probs=c(.025,.975))
+hist(boot_coefs0, breaks=25, main='',
     xlab=expression(beta[b]),
-    xlim=range(c(boot_coefs, coefX)))
+    xlim=range(c(boot_coefs0, coefX)))
+abline(v=boot_ci_percentile0, lty=2)
 abline(v=coefX, col="red", lwd=2)
 ```
 
+Regardless of how we calculate standard errors, we can use them to conduct a t-test. We also compute the distribution of t-values under the null hypothesis, and compare how extreme the oberved value is.
+$$ \hat{t} = \frac{\hat{\beta} - \beta_{0} }{\hat{\sigma}_{\hat{\beta}}} $$
 
-**Hypothesis Testing: Invert a CI**
-The other main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. Often, this is $0$.
 ```{r}
-## Example 1 Continued Yet Again
+## T Test
+B0 <- 0
+boot_t  <- (coefX-B0)/boot_se
 
-## Distribution for Beta
-boots <- 1:399
-boot_regs2 <- lapply(boots, function(b){
-    id_b <- sample( nrow(xy), replace=T)
-    xy_b <- xy[id_b,]
-    reg_b <- lm(y~x, dat=xy_b)
+## Compute Bootstrap T-Values (without refinement)
+boot_t_boot0 <- sapply(boot_regs0, function(reg_b){
+    beta_b <- coef(reg_b)[['x']]
+    t_hat_b <- (beta_b)/boot_se
+    return(t_hat_b)
 })
-boot_coefs2 <- sapply(boot_regs2, coef)['x',]
+hist(boot_t_boot0, breaks=100,
+    xlim=range(c(boot_t_boot0, boot_t)) )
+abline(v=boot_t, lwd=2, col='red')
 
-## Bootstrap Distribution
-hist(boot_coefs2, breaks=25, main='', xlab=expression(beta[b]),
-    xlim=range(c(0,boot_coefs2)))
-abline( v=quantile(boot_coefs2, probs=c(.025, .975)))
-abline(v=0, col="red", lwd=2)
+
+## One Sided Test for P(t > boot_t | Null)=1- P(t < boot_t | Null)
+That_NullDist1 <- ecdf(boot_t_boot0)
+Phat1  <- 1-That_NullDist1(boot_t)
+## Two Sided Test for P(t > jack_t or  t < -jack_t | Null)
+That_NullDist2 <- ecdf(abs(boot_t_boot0))
+Phat2  <-  1-That_NullDist2(boot_t)
 ```
 
-We can also bootstrap other statistics, such as a t-statistic or $R^2$. However, we are rarely interested in computing standard errrors and conducting hypothesis tests for two variables. We only work through the ideas in the two-variable case to better understand the multi-variable case.
+Under some assumptions, the null distribution is distributed $t_{n-2}$. For more on theory based regression t-testing, see https://www.econometrics-with-r.org/4-lrwor.html. 
 
 ## OLS (multiple linear regression)
 
@@ -171,7 +233,7 @@ y=\textbf{X}\beta+\epsilon\\
 \hat{\beta}=(\textbf{X}'\textbf{X})^{-1}\textbf{X}'y
 $$
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 ## Example 2 (Empirical)
 ## Inspect Dataset on police arrests for the USA in 1973
 head(USArrests)
@@ -242,108 +304,50 @@ legend('topleft', horiz=T,
 ```
 
 
+### Variability Estimates and Hypothesis Tests
 
-### Variability Estimates and Hypothesis Tests [Under Construction]
-
-In general, note that the linear model has
-$$
-\hat{\Sigma}_{\beta} = (X'X)^{-1} X' \widehat{\Omega} X (X'X)^{-1}.\\
-\widehat{\Omega} = \begin{pmatrix}
-\hat{\sigma}_{1,1} & ... & \hat{\sigma}_{1,n}\\
-& ... &  \\
-\hat{\sigma}_{n,1} & ... & \hat{\sigma}_{n,n}
-\end{pmatrix}
-$$
-Standard Errors are the diagonal: $diag( \hat{\Sigma}_{\beta}  )$
-
-
-**Classical Linear Model (CLM)**
-Independance: $\hat{\sigma_{i,j}}=0$
-Homoskedasticity: 
-$$
-diag( \widehat{\Omega} ) = [\hat{\sigma}^2, \hat{\sigma}^2, ..., \hat{\sigma}^2] \\
-\hat{\sigma}^2=\frac{1}{n-K}\sum_{i}\hat{\epsilon}_i^2\\
-$$
-IID Variability Estimates
-$$
-\hat{\Sigma}_{\beta} = \hat{\sigma}^2 (X'X)^{-1}\\
-$$
+We can use the same *data-driven* methods to estimate the variability of the estimated parameters.
 
 ```{r}
-n <- nrow(X)
-K <- ncol(X)
-s <- sum( Ehat^2 )/(n-K)
-Vhat <- s * XtXi
-
-vcov(reg)
+## Bootstrap SE's
+boots <- 1:399
+boot_regs <- lapply(boots, function(b){
+    b_id <- sample( nrow(USArrests), replace=T)
+    xy_b <- USArrests[b_id,]
+    reg_b <- lm(Murder~Assault+UrbanPop, dat=xy_b)
+})
+boot_coefs <- sapply(boot_regs, coef)
+boot_mean <- apply(boot_coefs,1, mean)
+boot_se <- apply(boot_coefs,1, sd)
 ```
 
+Also as before, we can conduct independant hypothesis tests using t-values 
+$$\hat{t}_{j} = \frac{\hat{\beta}_j - \beta_{0} }{\hat{\sigma}_{\hat{\beta}_j}}$$
+and, under some additional assumptions $\hat{t}_{j} \sim t_{n-K}$. But note that *Hypothesis Testing is not to be done routinely*, and some additional complications arise when examining multiple variables.
 
-
-**Reality**
-There are common violations to the iid case. 
-Heteroskedasticity:
-$$
-diag( \widehat{\Omega} ) = [\widehat{\sigma^2_{1}}, \widehat{\sigma^2_{1}}, ..., \widehat{\sigma^2_{n}}]\\
-\widehat{\sigma^2_{i}} = \hat{\epsilon_{i}}^2
-$$
-
-Autocorrelation Dependance: $\sigma_{i,j}=f( dist(i,j) )$.
-
-Cluster Dependance: 
-$$\sigma_{i,j}=
-\begin{cases}
-\hat{\sigma}_{group1} & i,j \in \text{group } 1\\
-...\\
-\hat{\sigma}_{groupG} & i,j \in \text{group } G \\
-0 & \text{otherwise} \\ 
-\end{cases}
-$$
-
-
-This is for a later course. (See https://cran.r-project.org/web/packages/sandwich/vignettes/sandwich.pdf and then https://cran.r-project.org/web/packages/sandwich/vignettes/sandwich-CL.pdf)
-
-
-**Hypothesis Testing** is not to be done routinely. For one hypothesis, we can use a $t$ test. For multiple, we can use an $F$ test.
-$$
-\hat{t}_{j} = \frac{\hat{\beta}_j - \beta_{0} }{\hat{\sigma}_{\\hat{\beta}_j}}\sim t_{n-K} \\
-\hat{F}_{q} = \frac{(ESS_{restricted}-ESS_{unrestricted})/q}{ESS_{unrestricted}/(n-K)} \sim F_{q,n-K}
-$$
-
-Note that $\hat{F}$ can be written in terms of unrestricted and restricted $R^2$ 
-
+We can conduct joint tests, such as whether two coefficients are equal, by looking at the their joint distribution
 ```{r}
-## Seperate tests each coef is 0
-## Calculate standard errors, t–statistics, p-values
-SEhat <- sqrt(diag(Vhat))
-That  <- Bhat/SEhat
-
-## One Sided Test for P(t > That | Null)
-Phat1  <- pt(That, n-K)
-## Two Sided Test for P(t > That or  t < -That | Null)
-Phat2  <- 1-pt( abs(That), n-K) + pt(-abs(That), n-K)
-
-Phat2
-summary(reg)
-
-
-## Joint test all 3 coefs are 0
-Fhat <- (TSS - ESS)/ESS * (n-K)/3
-1-pf(Fhat, 3, n-K)
-
-summary(reg)$fstatistic
-
-summary(reg)
+library(ks)
+fBjoint <- histde( t(boot_coefs[2:3,]))
+plot(fBjoint, xlab=expression(beta[2]), ylab=expression(beta[3]))
 ```
 
+We can use an $F$ test for $q$ hypotheses;
+$$
+\hat{F}_{q} = \frac{(ESS_{restricted}-ESS_{unrestricted})/q}{ESS_{unrestricted}/(n-K)},
+$$
+and $\hat{F}$ can be written in terms of unrestricted and restricted $R^2$. Under some additional assumptions $\hat{F}_{q}  \sim F_{q,n-K}$. For some inuition, see how the $R^2$ statistic varies with bootstrap samples. Then compute a null $R^2$ distribution by randomly reshuffling the outcomes, and compare that to the observed $R^2$.
 ```{r}
-## Null Bootstrap Distribution for R2
+## Bootstrap Distribution for R2
 boot_R2s <- sapply(boot_regs, function(reg_b){
     summary(reg_b)$r.squared
 })
-hist(boot_R2s, breaks=25, main='', xlab=expression(R[b]^2), xlim=c(0,.50))
+hist(boot_R2s, breaks=25, main='', xlab=expression(R[b]^2), xlim=c(0,1))
 abline(v=summary(reg)$r.squared, col="red", lwd=2)
+
+## NULL Bootstrap Distribution for R2 ???
 ```
+
 
 
 ## Coefficient Interpretation
@@ -392,20 +396,12 @@ Coefs <- sapply(1:400, function(sim){
     coef(lm(Y~x1+x2, data=dat))
 })
 
-par(mfrow=c(1,3))
-for(i in 1:3){
+par(mfrow=c(1,2))
+for(i in 2:3){
     hist(Coefs[i,], xlab=bquote(beta[.(i)]), main='')
     abline(v=mean(Coefs[i,]), col=1, lty=2)
     abline(v=B[i], col=2)
 }
-```
-
-Note that for joint tests, we look at the joint distribution of coefficients
-```{r}
-library(ks)
-Bjoint <- t(Coefs[2:3,])
-fBjoint <- histde(Bjoint, binw=c(.2,.5))
-plot(fBjoint, xlab=expression(beta[2]), ylab=expression(beta[3]))
 ```
 
 
@@ -740,7 +736,6 @@ bxcx_inv <- function( xy, rho){
      (xy * rho + 1)^(1/rho) - 1
     }
 }
-
 
 ## Which Variables
 reg <- lm(Murder~Assault+UrbanPop, data=USArrests)

@@ -12,6 +12,10 @@ To Create from scratch, use a template ``bookdown::create_gitbook('index.Rmd')``
 * https://github.com/rstudio/bookdown
 * https://bookdown.org/pkaldunn/SRM-Textbook/
 
+
+Github repos must be public to deploy!
+https://bookdown.org/yihui/bookdown/github.html
+
 ## OLS
 
 Predictions and Projection Matrix
@@ -61,6 +65,94 @@ hvec <- lm.influence(reg)$hat
 iplot <- car::influencePlot(reg)
 CASchools[rownames(iplot),]
 @
+
+
+
+
+### Parametric Variability Estimates and Hypothesis Tests [Under Construction]
+
+In general, note that the linear model has
+$$
+\hat{\Sigma}_{\beta} = (X'X)^{-1} X' \widehat{\Omega} X (X'X)^{-1}.\\
+\widehat{\Omega} = \begin{pmatrix}
+\hat{\sigma}_{1,1} & ... & \hat{\sigma}_{1,n}\\
+& ... &  \\
+\hat{\sigma}_{n,1} & ... & \hat{\sigma}_{n,n}
+\end{pmatrix}
+$$
+Standard Errors are the diagonal: $diag( \hat{\Sigma}_{\beta}  )$
+
+
+**Classical Linear Model (CLM)**
+Independance: $\hat{\sigma_{i,j}}=0$
+Homoskedasticity: 
+$$
+diag( \widehat{\Omega} ) = [\hat{\sigma}^2, \hat{\sigma}^2, ..., \hat{\sigma}^2] \\
+\hat{\sigma}^2=\frac{1}{n-K}\sum_{i}\hat{\epsilon}_i^2\\
+$$
+IID Variability Estimates
+$$
+\hat{\Sigma}_{\beta} = \hat{\sigma}^2 (X'X)^{-1}\\
+$$
+
+```{r}
+n <- nrow(X)
+K <- ncol(X)
+s <- sum( Ehat^2 )/(n-K)
+Vhat <- s * XtXi
+
+vcov(reg)
+```
+
+
+
+**Reality**
+There are common violations to the iid case. 
+Heteroskedasticity:
+$$
+diag( \widehat{\Omega} ) = [\widehat{\sigma^2_{1}}, \widehat{\sigma^2_{1}}, ..., \widehat{\sigma^2_{n}}]\\
+\widehat{\sigma^2_{i}} = \hat{\epsilon_{i}}^2
+$$
+
+Autocorrelation Dependance: $\sigma_{i,j}=f( dist(i,j) )$.
+
+Cluster Dependance: 
+$$\sigma_{i,j}=
+\begin{cases}
+\hat{\sigma}_{group1} & i,j \in \text{group } 1\\
+...\\
+\hat{\sigma}_{groupG} & i,j \in \text{group } G \\
+0 & \text{otherwise} \\ 
+\end{cases}
+$$
+
+
+This is for a later course. (See https://cran.r-project.org/web/packages/sandwich/vignettes/sandwich.pdf and then https://cran.r-project.org/web/packages/sandwich/vignettes/sandwich-CL.pdf)
+
+
+```{r, eval=F, results='hide'}
+## Seperate tests each coef is 0
+## Calculate standard errors, t–statistics, p-values
+SEhat <- sqrt(diag(Vhat))
+That  <- Bhat/SEhat
+
+## One Sided Test for P(t > That | Null)
+Phat1  <- pt(That, n-K)
+## Two Sided Test for P(t > That or  t < -That | Null)
+Phat2  <- 1-pt( abs(That), n-K) + pt(-abs(That), n-K)
+
+Phat2
+summary(reg)
+
+
+## Joint test all 3 coefs are 0
+Fhat <- (TSS - ESS)/ESS * (n-K)/3
+1-pf(Fhat, 3, n-K)
+
+summary(reg)$fstatistic
+
+summary(reg)
+```
 
 
 
