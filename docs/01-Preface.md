@@ -9,9 +9,9 @@
 
 This [Rbook](https://jadamso.github.io/Rbooks/) contains three primers that should get you going with R in econometrics research
 
- * *Part   I*: Introduction to R
- * *Part  II*: Introduction to Linear Regression in R
- * *Part III*: Introduction to Reproducible Research in R
+ * *Part   I*: Programming in R
+ * *Part  II*: Linear Regression in R
+ * *Part III*: Reproducible Research in R
 
 Much of the programming material (Parts I and III) was copied or modified from elsewhere. I include references when I remembered to.
 
@@ -19,4 +19,4 @@ Much of Part II was also copied from elsewhere, namely other econometrics textbo
 
 These notes are actively developed for my classes, although any interested reader may find it useful. Please report any errors/issues at https://github.com/Jadamso/Rbooks/issues.
 
-Last updated: 06.09.2023
+Last updated: 12.09.2023

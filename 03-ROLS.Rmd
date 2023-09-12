@@ -1,5 +1,5 @@
 
-# (PART) Introduction to Linear Regression in R {-} 
+# (PART) Linear Regression in R {-} 
 
 This section is a quick overview of linear regression models from the perspective that ``all models are wrong, but some are useful''. For more in-depth introductions, which typically begin by assuming the true data generating process is linear, see https://jadamso.github.io/Rbooks/ordinary-least-squares.html#more-literature. 
 
@@ -71,15 +71,22 @@ summary(reg)$r.squared
 
 ### Variability Estimates
 
+A regression coefficient is a statistic. And, just like all statistics, we can calculate 
+
+* *standard deviation*: variability within a single sample.
+* *standard error*: variability across different samples.
+* *p-value* the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true).
+* null distribution*: the distribution of the statistic under the null hypothesis.
+
 The classic estimates for variability are the Standard Error of the Regression $\hat{\sigma}$, and Standard Error of the Coefficient Estimates $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\alpha}}$ --- or simply Standard Errors.
 $$
 \hat{\sigma}^2 = \frac{1}{n-2}\sum_{i}\hat{\epsilon_{i}}^2\\
 \hat{\sigma}^2_{\hat{\alpha}}=\hat{\sigma}^2\left[\frac{1}{n}+\frac{\bar{x}^2}{\sum_{i}(x_i-\bar{x})^2}\right]\\
 \hat{\sigma}^2_{\hat{\beta}}=\frac{\hat{\sigma}^2}{\sum_{i}(x_i-\bar{x})^2}.
 $$
-These equations are motivated by particular data generating proceses, which you can read more about this at https://www.econometrics-with-r.org/4-lrwor.html.
+These equations are motivated by particular data generating proceses, which you can read more about this at https://www.econometrics-with-r.org/4-lrwor.html. We can also estimate variabilty using *data-driven* methods that assume much less. See, e.g., https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf
 
-We can also estimate variabilty using *data-driven* methods that assume much less. We first consider the simplest, the jackknife, where we loop through each row of the dataset. In each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''.
+We first consider the simplest, the jackknife, where we loop through each row of the dataset. In each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''.
 
 ```{r}
 ## Example 1 Continued
@@ -147,7 +154,7 @@ abline(v=boot_ci_percentile, col="red", lty=2)
 We can also bootstrap other statistics, such as a t-statistic or $R^2$. We do such things to test a null hypothesis, which is often ``no relationship''. We are rarely interested in computing standard errrors and conducting hypothesis tests for two variables. However, we work through the ideas in the two-variable case to better understand the multi-variable case.
 
 ### Hypothesis Tests
- 
+
 There are two main ways to conduct a hypothesis test.
  
 **Invert a CI**
@@ -207,8 +214,10 @@ boot_t_boot0 <- sapply(boot_regs0, function(reg_b){
 hist(boot_t_boot0, breaks=100,
     xlim=range(c(boot_t_boot0, boot_t)) )
 abline(v=boot_t, lwd=2, col='red')
+```
 
-
+From this, we can calculate a *p-value*: the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true).  Note that the $p$ reported by your computer does not necessarily satisfy this definition! We can always calcuate a p-value from an explicit null distribution.
+```{r}
 ## One Sided Test for P(t > boot_t | Null)=1- P(t < boot_t | Null)
 That_NullDist1 <- ecdf(boot_t_boot0)
 Phat1  <- 1-That_NullDist1(boot_t)
@@ -216,8 +225,10 @@ Phat1  <- 1-That_NullDist1(boot_t)
 That_NullDist2 <- ecdf(abs(boot_t_boot0))
 Phat2  <-  1-That_NullDist2(boot_t)
 ```
+Under some assumptions, the null distribution is distributed $t_{n-2}$. (For more on theory based regression t-testing, see https://www.econometrics-with-r.org/4-lrwor.html.) 
 
-Under some assumptions, the null distribution is distributed $t_{n-2}$. For more on theory based regression t-testing, see https://www.econometrics-with-r.org/4-lrwor.html. 
+
+
 
 ## OLS (multiple linear regression)
 
@@ -325,11 +336,20 @@ Also as before, we can conduct independant hypothesis tests using t-values
 $$\hat{t}_{j} = \frac{\hat{\beta}_j - \beta_{0} }{\hat{\sigma}_{\hat{\beta}_j}}$$
 and, under some additional assumptions $\hat{t}_{j} \sim t_{n-K}$. But note that *Hypothesis Testing is not to be done routinely*, and some additional complications arise when examining multiple variables.
 
-We can conduct joint tests, such as whether two coefficients are equal, by looking at the their joint distribution
+We can conduct joint tests, such as whether two coefficients are equal, by looking at the their joint distribution.
 ```{r}
-library(ks)
-fBjoint <- histde( t(boot_coefs[2:3,]))
-plot(fBjoint, xlab=expression(beta[2]), ylab=expression(beta[3]))
+fig <- plotly::plot_ly(x=boot_coefs[2,], y=boot_coefs[3,]) 
+plotly::add_histogram2d(fig, nbinsx=20, nbinsy=20)
+
+## plotly::add_histogram2dcontour(fig)
+## fig <- layout(fig,
+##    yaxis = list(title=expression(beta[3])),
+##    xaxis = list(title=expression(beta[2])))
+```
+
+```{r, results='hide'}
+## fBjoint <- ks::histde( t(boot_coefs[2:3,]))
+## ks::plot(fBjoint, xlab=expression(beta[2]), ylab=expression(beta[3]))
 ```
 
 We can use an $F$ test for $q$ hypotheses;

@@ -1,5 +1,5 @@
 
-# (PART) Introduction to R {-} 
+# (PART) Programming in R {-} 
 
 # First steps
 ***
@@ -166,8 +166,6 @@ x*2
 
 
 
-
-
 In R, you use multiple functions on different types of data objects. Moreover, ``typically solve complex problems by decomposing them into simple functions, not simple objects.'' (H. Wickham)
 
 
@@ -231,8 +229,8 @@ rnorm(10)
 ```
 
 ```
-##  [1]  1.4954226  1.3102270  2.6576875 -0.5153978 -0.5355577 -0.1118100
-##  [7] -0.7881237 -1.4277851  0.7066875 -0.1740730
+##  [1]  1.0011494 -0.8951479 -1.0866895  0.3072749  0.5458133 -0.4330847
+##  [7] -0.5757402 -0.2907946 -1.3817570 -1.1057656
 ```
 
 ```r
@@ -240,8 +238,8 @@ rnorm(10)
 ```
 
 ```
-##  [1] -0.86928212  1.06858279  0.99604010  0.01053946 -1.41507070 -0.18914769
-##  [7]  1.11555554  1.52811145  0.80823921  0.82139083
+##  [1] -0.03200791 -1.68765330 -1.40395243  1.88711336  1.44783945 -0.04751586
+##  [7]  1.62140216 -0.99307473 -0.22799582  3.29373846
 ```
 
 ```r
@@ -251,7 +249,7 @@ head(x2)
 ```
 
 ```
-## [1] 0.8463569 0.2960295 0.6321266 0.6616437 0.5470729 0.2834220
+## [1] 0.1484726 0.6320787 0.7343521 0.1427800 0.2218904 0.2915861
 ```
 
 ```r
@@ -280,7 +278,7 @@ fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.4997455
+## [1] 0.4949615
 ```
 
 ```r
@@ -288,7 +286,7 @@ fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.5051958
+## [1] 0.500454
 ```
 
 ```r
@@ -296,7 +294,7 @@ fun_of_rv(sum)
 ```
 
 ```
-## [1] 493.1639
+## [1] 497.5472
 ```
 
 
@@ -310,7 +308,7 @@ fun_of_rv()
 ```
 
 ```
-## [1] 0.483032
+## [1] 0.4820644
 ```
 
 Very useful for applying a function over and over again
@@ -323,7 +321,7 @@ mapply(sum, 1:3, runif(3) )
 ```
 
 ```
-## [1] 1.238514 2.141698 3.737995
+## [1] 1.736040 2.239068 3.541566
 ```
 
 ##  Matrices and Matrix-Functions
@@ -694,13 +692,13 @@ head(xy_dat)
 ```
 
 ```
-##        x           y
-## 1 1.0000  1.45995380
-## 2 1.0002  1.54302230
-## 3 1.0004  0.04757841
-## 4 1.0006 -0.80046770
-## 5 1.0008 -1.57756819
-## 6 1.0010  0.27562528
+##        x          y
+## 1 1.0000  0.1777235
+## 2 1.0002  0.6045840
+## 3 1.0004 -0.2981507
+## 4 1.0006  1.0304176
+## 5 1.0008  0.5024766
+## 6 1.0010  0.1771191
 ```
 
 ```r
@@ -732,18 +730,18 @@ summary(reg)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -5.3732 -0.6735  0.0024  0.6748  4.1399 
+## -4.0594 -0.6821 -0.0040  0.6818  4.4114 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) 0.007070   0.011063   0.639    0.523    
-## x           0.248845   0.001819 136.825   <2e-16 ***
+## (Intercept) 0.015376   0.011074   1.388    0.165    
+## x           0.247674   0.001821 136.043   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 1.002 on 44999 degrees of freedom
-## Multiple R-squared:  0.2938,	Adjusted R-squared:  0.2938 
-## F-statistic: 1.872e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
+## Residual standard error: 1.003 on 44999 degrees of freedom
+## Multiple R-squared:  0.2914,	Adjusted R-squared:  0.2914 
+## F-statistic: 1.851e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -761,17 +759,15 @@ abline(reg)
 
 
 
-Polish and Export Your Plot
+Polish and Export Your Plot.
 
 
 ```r
 plot(y~x, xy_dat, pch=16, col=rgb(0,0,0,.1), cex=.5,
     xlab='', ylab='') ## Format Axis Labels Seperately
-mtext('y=0.25 x + e\n e ~ standard-normal', 2, line=2)
-mtext('x=[1,...,10]', 1, line=2)
-title('Plot like a Boss')
-title('boss: american slang for excellent; outstanding',
-    cex.main=.5, font=1, line=1)
+mtext( 'y=0.25 x + e\n e ~ standard-normal', 2, line=2)
+mtext( expression(x%in%~'[0,10]'), 1, line=2)
+title('Plot with good features and excessive notation')
 legend('topleft', legend='single data point',
     title='do you see the normal distribution?',
     pch=16, col=rgb(0,0,0,.1), cex=.5)
