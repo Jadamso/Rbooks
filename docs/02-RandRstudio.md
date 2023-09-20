@@ -1,8 +1,17 @@
 
 # (PART) Programming in R {-} 
 
-# First steps
+# First Steps
 ***
+
+## Why R
+
+We focus on R because it is good for complex stats, concise figures, and coherent organization. It is built and developed by applied statisticians for statistics, and used by many in academia and industry. For you, this could be good for getting a job.
+
+* As a student, think about labour demand. R skills, unlike most purely academic software, is something future employers use and want. Do more of your own research on this to understand how much to invest.
+
+
+
 
 
 ## Install R
@@ -229,8 +238,8 @@ rnorm(10)
 ```
 
 ```
-##  [1]  1.0011494 -0.8951479 -1.0866895  0.3072749  0.5458133 -0.4330847
-##  [7] -0.5757402 -0.2907946 -1.3817570 -1.1057656
+##  [1]  0.3965155 -0.2857464  0.2263977  0.3928362  1.2167184 -3.1824807
+##  [7]  1.0994460  1.0133244 -0.4219697  0.5767022
 ```
 
 ```r
@@ -238,8 +247,8 @@ rnorm(10)
 ```
 
 ```
-##  [1] -0.03200791 -1.68765330 -1.40395243  1.88711336  1.44783945 -0.04751586
-##  [7]  1.62140216 -0.99307473 -0.22799582  3.29373846
+##  [1] -1.4758455  1.3902508 -0.2530003  0.4025946 -0.3635249 -1.7100001
+##  [7]  0.3284824 -0.7617661  0.4456927 -1.1205292
 ```
 
 ```r
@@ -249,7 +258,7 @@ head(x2)
 ```
 
 ```
-## [1] 0.1484726 0.6320787 0.7343521 0.1427800 0.2218904 0.2915861
+## [1] 0.5361820 0.8165181 0.1356223 0.5179095 0.3583702 0.5021216
 ```
 
 ```r
@@ -278,7 +287,7 @@ fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.4949615
+## [1] 0.4989316
 ```
 
 ```r
@@ -286,7 +295,7 @@ fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.500454
+## [1] 0.5108197
 ```
 
 ```r
@@ -294,7 +303,7 @@ fun_of_rv(sum)
 ```
 
 ```
-## [1] 497.5472
+## [1] 497.8523
 ```
 
 
@@ -308,7 +317,7 @@ fun_of_rv()
 ```
 
 ```
-## [1] 0.4820644
+## [1] 0.4653833
 ```
 
 Very useful for applying a function over and over again
@@ -321,7 +330,7 @@ mapply(sum, 1:3, runif(3) )
 ```
 
 ```
-## [1] 1.736040 2.239068 3.541566
+## [1] 1.695574 2.492102 3.988127
 ```
 
 ##  Matrices and Matrix-Functions
@@ -661,7 +670,7 @@ l5 <- data.frame(x=l1, y=l1)
 ***
 
 
-## Basics
+## Scatterplot
 
 Create and Plot a Toy Dataset
 
@@ -679,7 +688,6 @@ plot(y~x, xy_dat)  ## pretty and standard
 <img src="02-RandRstudio_files/figure-html/unnamed-chunk-18-1.png" width="672" />
 
 
-
 Create and Plot a Larger Toy Dataset
 
 
@@ -692,13 +700,13 @@ head(xy_dat)
 ```
 
 ```
-##        x          y
-## 1 1.0000  0.1777235
-## 2 1.0002  0.6045840
-## 3 1.0004 -0.2981507
-## 4 1.0006  1.0304176
-## 5 1.0008  0.5024766
-## 6 1.0010  0.1771191
+##        x           y
+## 1 1.0000  0.94801724
+## 2 1.0002  0.19113148
+## 3 1.0004  1.46862761
+## 4 1.0006  0.08295228
+## 5 1.0008  0.54455380
+## 6 1.0010 -0.11436414
 ```
 
 ```r
@@ -730,18 +738,18 @@ summary(reg)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -4.0594 -0.6821 -0.0040  0.6818  4.4114 
+## -4.5750 -0.6699  0.0013  0.6734  3.9315 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) 0.015376   0.011074   1.388    0.165    
-## x           0.247674   0.001821 136.043   <2e-16 ***
+## (Intercept) 0.007732   0.011006   0.703    0.482    
+## x           0.249303   0.001809 137.786   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 1.003 on 44999 degrees of freedom
-## Multiple R-squared:  0.2914,	Adjusted R-squared:  0.2914 
-## F-statistic: 1.851e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.9972 on 44999 degrees of freedom
+## Multiple R-squared:  0.2967,	Adjusted R-squared:  0.2967 
+## F-statistic: 1.899e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -785,7 +793,7 @@ dev.off()
 ```
 
 
-# Beyond the basics
+# Beyond Basics
 ***
 
 

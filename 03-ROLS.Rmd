@@ -29,7 +29,7 @@ $$
 ## Example 1 (Theoretical)
 
 ## Generate Dataset
-n <- 100
+n <- 300
 z <- rbinom(n,1,.5)
 xy <- sapply(z, function(zi){
     y <- rnorm(1,zi,1)
@@ -75,6 +75,7 @@ A regression coefficient is a statistic. And, just like all statistics, we can c
 
 * *standard deviation*: variability within a single sample.
 * *standard error*: variability across different samples.
+* *confidence interval* range of variability across different samples.
 * *p-value* the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true).
 * null distribution*: the distribution of the statistic under the null hypothesis.
 
@@ -122,10 +123,10 @@ abline(v=jack_ci_percentile, col="red", lty=2)
 
 There are several other resampling techniques. We consider the other main one, the bootstrap, which resamples with *replacement* for an *arbitrary* number of iterations. For a dataset with $n$ observations, you now randomly resamples all $n$ rows in your data set $B$ times. 
 
-| Sample Size per Iteration | Number of Iterations | Resample With Replacement | Resample Without Replacement |
+| | Sample Size per Iteration | Number of Iterations | Resample |
 | -------- | ------- | ------- | ------- |
-| $$n$$     | $$B$$  | Bootstrap | --- |
-| $$n-1$$   | $$n$$  |--- | Jackknife |
+Bootstrap | $n$     | $B$  | With Replacement |
+Jackknife | $n-1$   | $n$  | Without Replacement |
 
 ```{r}
 ## Bootstrap Standard Errors for Beta
@@ -147,6 +148,7 @@ hist(boot_coefs, breaks=25,
 abline(v=boot_mean, col="red", lwd=2)
 abline(v=boot_ci_percentile, col="red", lty=2)
 
+    
 ## Normal Approximation
 ## boot_ci_normal <- boot_mean+c(-1.96, +1.96)*boot
 ```
@@ -226,6 +228,60 @@ That_NullDist2 <- ecdf(abs(boot_t_boot0))
 Phat2  <-  1-That_NullDist2(boot_t)
 ```
 Under some assumptions, the null distribution is distributed $t_{n-2}$. (For more on theory based regression t-testing, see https://www.econometrics-with-r.org/4-lrwor.html.) 
+
+
+### Prediction Intervals [Under Construction]
+
+In addition to confidence intervales, we can also compute a *prediction interval* which estimates the range of variability across different samples for the outcomes. These intervals also take into account the residuals--- the variability of individuals around the mean. 
+
+For a nice overview of different types of intervals, see https://www.jstor.org/stable/2685212
+For an indepth view, see "Statistical Intervals: A Guide for Practitioners and Researchers" or "Statistical Tolerance Regions: Theory, Applications, and Computation". 
+See https://robjhyndman.com/hyndsight/intervals/ for constructing intervals for future observations in a time-series context
+
+
+```{r}
+## Bootstrap Prediction Interval
+boot_resids <- lapply(boot_regs, function(reg_b){
+    e_b <- resid(reg_b)
+    x_b <- reg_b$model$x
+    res_b <- cbind(e_b, x_b)
+})
+boot_resids <- as.data.frame(do.call(rbind, boot_resids))
+## Estimate Residual Quantiles using data around X points
+x <- data.frame(x=quantile(xy$x,probs=seq(0,1,by=.1)))
+boot_resid_list <- split(boot_resids,
+    cut(boot_resids$x_b, x$x) )
+boot_resid_est <- lapply(boot_resid_list, function(res_b) {
+    if( nrow(res_b)==0){ ## If Empty, Return Nothing
+        ehat <- c(NA,NA)
+    } else{ ## Estimate Quantiles of Residuals
+        ehat <- quantile(res_b$e_b, probs=c(.025, .975))
+    }
+    return(ehat)
+    })
+boot_resid_est <- do.call(rbind, boot_resid_est)
+## Construct PI at x points
+boot_x <- x$x[-1] - diff(x$x)/2
+boot_pmean <- boot_mean*boot_x
+boot_pi <-  boot_pmean + boot_resid_est
+
+## Plot Bootstrap PI
+plot(y~x, dat=xy, pch=16)
+polygon( c(boot_x, rev(boot_x)), c(boot_pi[,1], rev(boot_pi[,2])),
+    col=grey(0,.2), border=0)
+
+## Parametric PI (For Comparison)
+pi <- predict(reg, interval='prediction', newdata=x)
+lines( x$x, pi[,'lwr'], lty=2)
+lines( x$x, pi[,'upr'], lty=2)
+
+## Parametric CI
+## x <- data.frame(x=quantile(xy$x,probs=seq(0,1,by=.1)))
+## ci <- predict(reg, interval='confidence', newdata=x)
+## polygon( c(x$x, rev(x$x)), c(ci[,'lwr'], rev(ci[,'upr'])), col=grey(0,.2), border=0)
+```
+
+There are many ways to improve upon the prediction intervals you just created. Again, this is just an introduction. For more, see Davison and Hinkley, chapters 5 and 6 (also (Efron and Tibshirani, or Wehrens et al.)
 
 
 
@@ -549,13 +605,13 @@ For fixed effects, see
 # OLS Diagnostics
 ***
 
-Simply plotting your regression object can help diagnose whether your model is a good one. There's little sense in getting great standard errors for the wrong model, and is a simple and easy step. So do it early and often.
+There's little sense in getting great standard errors for a bad model. Plotting your regression object a simple and easy step to help diagnose whether your model is in some way bad.
 ```{r}
 reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 par(mfrow=c(2,2))
 plot(reg)
 ```
-
+We now go through what these figures show, and then some additional
 
 ## Assessing Outliers
 
@@ -597,9 +653,9 @@ See https://www.r-bloggers.com/2016/06/leverage-and-influence-in-a-nutshell/ for
 
 Leverage Vector: Distance within explanatory variables
 $$
-H = diag(\hat{P}) = [h_{1}, h_{2}, ...., h_{N}]
+H = [h_{1}, h_{2}, ...., h_{N}]
 $$
-$h_i$ is the leverage of residual $\hat{\epsilon_i}$
+$h_i$ is the leverage of residual $\hat{\epsilon_i}$. 
 
 
 Studentized residuals
@@ -621,14 +677,31 @@ D_{i} = \frac{\sum_{j} \left( \hat{y_j} - \hat{y_j}_{[i]} \right)^2 }{ p s^2 }
 = \frac{[e_{i}]^2}{p s^2 } \frac{h_i}{(1-h_i)^2}\\
 s^2 = \frac{\sum_{i} (e_{i})^2 }{n-K}
 $$
-
-
 ```{r}
 which.max(cooks.distance(reg))
 car::influencePlot(reg)
 ```
 
-There are many other diagnostics (which can often be written in terms of Cooks Distance or Vice Versa)
+Note that we can also calculate $H$ directly from our OLS projection matrix $\hat{P}$, since $H=diag(\hat{P})$ and
+$$
+\hat{P}=X(X'X)^{-1}X'\\
+\hat{\epsilon}=y-X\hat{\beta}=y-X(X'X)^{-1}X'y=y-\hat{P}y\\
+\hat{P}y=X(X'X)^{-1}X'y=y-(y-X(X'X)^{-1}X'y)=y-\hat{\epsilon}=\hat{y}\\
+$$
+```{r}
+Ehat <- Y - X%*% Bhat
+## Ehat
+## resid(reg)
+
+Pmat <- X%*%XtXi%*%t(X)
+Yhat <- Pmat%*%Y
+## Yhat
+## predict(reg)
+```
+
+
+
+There are many other diagnostics (which can often be written in terms of Cooks Distance or Vice Versa). 
 ```{r}
 # Sall, J. (1990) Leverage plots for general linear hypotheses. American Statistician *44*, 308-315.
 # car::leveragePlots(reg)
@@ -683,20 +756,19 @@ sqrt(car::vif(reg)) > 2 # problem?
 ```
 
 
-## Linear in parameters
+## Linear in Parameters
 
 
 Data transformations can often improve model fit and still be estimated via OLS. This is because OLS is only required to be linear in the parameters. Under the assumptions of the model is correctly specified, this is how we can interpret the coefficients of the transformed data. (Note for small changes, $\Delta ln(x) \approx \Delta x / x = \Delta x \% \cdot 100$.)
 
-| *Model* | *Regressand* | *Regressor* | *Derivative* | *Interpretation* |
+| *Specification* | *Regressand* | *Regressor* | *Derivative* | *Interpretation (If True)* |
 | --- | --- | --- | --- | --- |
 | linear--linear | $y$          | $x$   | $\Delta y = \beta_1\cdot\Delta x$ | Change $x$ by one unit $\rightarrow$ change $y$ by $\beta_1$ units.|
 | log--linear | $ln(y)$ | $x$ | $\Delta y \% \cdot 100 \approx \beta_1 \cdot \Delta x$ | Change $x$ by one unit $\rightarrow$ change $y$ by $100 \cdot \beta_1$ percent. |
 | linear--log | $y$ | $ln(x)$ | $\Delta y \approx  \frac{\beta_1}{100}\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\frac{\beta_1}{100}$ units |
 | log--log | $ln(y)$ | $ln(x)$ | $\Delta y \% \approx \beta_1\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\beta_1$ percent|
 
-Now recall from micro theory that an additively seperable and linear production function is referred to as ``perfect substitutes''. With a linear model and untranformed data, you have implicitly modelled the different regressors $X$ as perfect substitutes. Further recall that the ''perfect substitutes'' model is a special case of the constant elasticity of substitution production function. Here, we will build on http://dx.doi.org/10.2139/ssrn.3917397, and consider box-cox transforming both $X$ and $y$. Specifically, apply the box-cox transform of $y$ using parameter $\lambda$ and apply another box-cox transform to each $x$ using the same parameter $\rho$;so that
-
+Now recall from micro theory that an additively seperable and linear production function is referred to as ``perfect substitutes''. With a linear model and untranformed data, you have implicitly modelled the different regressors $X$ as perfect substitutes. Further recall that the ''perfect substitutes'' model is a special case of the constant elasticity of substitution production function. Here, we will build on http://dx.doi.org/10.2139/ssrn.3917397, and consider box-cox transforming both $X$ and $y$. Specifically, apply the box-cox transform of $y$ using parameter $\lambda$ and apply another box-cox transform to each $x$ using the same parameter $\rho$ so that
 $$
 y^{(\lambda)}_{i} = \sum_{k}\beta_{k} x^{(\rho)}_{k,i} + \epsilon_{i}\\
 y^{(\lambda)}_{i} =
@@ -825,7 +897,7 @@ Note that the default hypothesis testing procedures do not account for you tryin
 Just like many economic relationships are nonlinear, many economic variables are endogenous. By this we typically mean that $X$ is an outcome determined (or caused: $\to$) by some other variable.
 
  * If $Y \to X$, then we have reverse causality
- * If $Y \to X, X \to Y$, then we have simultaneity
+ * If $Y \to X$ and $X \to Y$, then we have simultaneity
  * If $Z\to Y$ and either $Z\to X$ or $X \to Z$, then we have omitted a potentially important variable
 
 These endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a barrier to interpreting OLS as a causal model. Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels of technical detail, they are not covered extensively in this notebook. You are directed to the following resources which discuss these statistical models in more general terms and how they can be applied across many social sciences.
@@ -876,7 +948,7 @@ Other tools are used to help address some of the other assumptions.
 * http://www.urfie.net/read/index.html#page/226
 
 
-# Data scientism
+# Data Scientism
 ***
 
 There is currently a boom in empirical research centered around linear regression analysis. This is not for the first boom in empirical research, and we'd be wise to recall some earlier wisdom from economists on the matter.

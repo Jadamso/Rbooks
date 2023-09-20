@@ -18,45 +18,6 @@ https://bookdown.org/yihui/bookdown/github.html
 
 ## OLS
 
-Predictions and Projection Matrix
-$$
-\hat{\epsilon}=y-X\hat{\beta}=y-X(X'X)^{-1}X'y\\
-\hat{P}=X(X'X)^{-1}X'\\
-\hat{P}y=X(X'X)^{-1}X'y=y-(y-X(X'X)^{-1}X'y)=y-\hat{\epsilon}=\hat{y}\\
-$$
-
-```{r}
-Ehat <- Y - X%*% Bhat
-## Ehat
-## resid(reg)
-
-Pmat <- X%*%XtXi%*%t(X)
-Yhat <- Pmat%*%Y
-## Yhat
-## predict(reg)
-```
-
-
-For OLS, we calculate a Leverage Vector: Distance within explanatory variables
-$$
-H = diag(\hat{P}) = [h_{1}, h_{2}, ...., h_{N}]\\
-\hat{P} = X(X'X)^{-1}X'
-$$
-$h_i$ is the leverage of residual $\hat{\epsilon_i}$
-
-Studentized residuals
-$$
-r_i=\frac{\hat{\epsilon}_i}{s_{[i]}\sqrt{1-h_i}}
-$$
-and $s_{(i)}$ the root mean squared error of a regression with the $i$th observation removed.
-Cook's Distance is defined as the sum of all the changes in the regression model when observation i is removed from.
-$$
-D_{i} = \frac{\sum_{j} \left( \hat{y_j} - \hat{y_j}_{[i]} \right)^2 }{ p s^2 }
-= \frac{[e_{i}]^2}{p s^2 } \frac{h_i}{(1-h_i)^2}\\
-s^2 = \frac{\sum_{i} (e_{i})^2 }{n-K}
-$$
-
-<<application_OLS, echo=FALSE, cache=FALSE, fig.keep='none', eval=FALSE>>=
 library(AER)
 data(CASchools)
 CASchools$score <- (CASchools$read + CASchools$math) / 2)
@@ -64,8 +25,6 @@ reg <- lm(score ~ income, data = CASchools)
 hvec <- lm.influence(reg)$hat
 iplot <- car::influencePlot(reg)
 CASchools[rownames(iplot),]
-@
-
 
 
 
