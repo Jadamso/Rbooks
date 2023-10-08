@@ -16,6 +16,11 @@ To Create from scratch, use a template ``bookdown::create_gitbook('index.Rmd')``
 Github repos must be public to deploy!
 https://bookdown.org/yihui/bookdown/github.html
 
+
+## R Programming
+
+https://plotly-r.com/
+
 ## OLS
 
 library(AER)

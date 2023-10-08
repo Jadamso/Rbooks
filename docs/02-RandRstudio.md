@@ -61,34 +61,6 @@ CodeInput_String
 ```
 
 
-
-## Introductions to R
-
-Some coding examples are copied from https://r4ds.had.co.nz/ but also other sources I have found online and elsewhere over the years.
-
-There are many good yet free programming books online. E.g., 
-
-* https://cran.r-project.org/doc/manuals/R-intro.html
-* R Graphics Cookbook, 2nd edition. Winston Chang. 2021. https://r-graphics.org/
-* https://intro2r.com/
-* R for Data Science. H. Wickham and G. Grolemund. 2017. https://r4ds.had.co.nz/index.html
-* An Introduction to R. W. N. Venables, D. M. Smith, R Core Team. 2017. https://colinfay.me/intro-to-r/
-* https://bookdown.org/kieranmarray/intro_to_r_for_econometrics/
-* Spatial Data Science with R: Introduction to R. Robert J. Hijmans. 2021. https://rspatial.org/intr/index.html
-
-There are also many good yet free-online tutorials and courses. E.g., \\
-
-* https://www.econometrics-with-r.org/1.2-a-very-short-introduction-to-r-and-rstudio.html
-* https://rafalab.github.io/dsbook/
-* https://moderndive.com/foreword.html
-* https://rstudio.cloud/learn/primers/1.2
-* https://cran.r-project.org/manuals.html
-* https://stats.idre.ucla.edu/stat/data/intro_r/intro_r_interactive_flat.html
-* https://cswr.nrhstat.org/app-r
-
-What we cover in this primer should be enough to get you going. But other resources should be used if needed. 
-
-
 # Mathematical Objects
 ***
 
@@ -238,8 +210,8 @@ rnorm(10)
 ```
 
 ```
-##  [1]  0.3965155 -0.2857464  0.2263977  0.3928362  1.2167184 -3.1824807
-##  [7]  1.0994460  1.0133244 -0.4219697  0.5767022
+##  [1] -1.659114612 -0.893319072  1.028185724  0.175974438  0.805598106
+##  [6] -0.286323007 -0.220622089  0.610450703  0.001307709 -1.270002728
 ```
 
 ```r
@@ -247,8 +219,8 @@ rnorm(10)
 ```
 
 ```
-##  [1] -1.4758455  1.3902508 -0.2530003  0.4025946 -0.3635249 -1.7100001
-##  [7]  0.3284824 -0.7617661  0.4456927 -1.1205292
+##  [1] -0.4343422 -0.6215811 -0.2599112 -0.7581629 -0.5302672  1.7420162
+##  [7] -0.5462935 -2.2278339  0.3593115  0.1203228
 ```
 
 ```r
@@ -258,7 +230,7 @@ head(x2)
 ```
 
 ```
-## [1] 0.5361820 0.8165181 0.1356223 0.5179095 0.3583702 0.5021216
+## [1] 0.2434022 0.8730505 0.3551018 0.3874562 0.1506225 0.4580846
 ```
 
 ```r
@@ -287,7 +259,7 @@ fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.4989316
+## [1] 0.502619
 ```
 
 ```r
@@ -295,7 +267,7 @@ fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.5108197
+## [1] 0.5020712
 ```
 
 ```r
@@ -303,7 +275,7 @@ fun_of_rv(sum)
 ```
 
 ```
-## [1] 497.8523
+## [1] 499.6072
 ```
 
 
@@ -317,7 +289,7 @@ fun_of_rv()
 ```
 
 ```
-## [1] 0.4653833
+## [1] 0.4750519
 ```
 
 Very useful for applying a function over and over again
@@ -330,7 +302,7 @@ mapply(sum, 1:3, runif(3) )
 ```
 
 ```
-## [1] 1.695574 2.492102 3.988127
+## [1] 1.153112 2.289946 3.784061
 ```
 
 ##  Matrices and Matrix-Functions
@@ -646,9 +618,6 @@ apply(a, 1:2, mean)  # Row/Column combination
 ```
 
 
-
-
-
 ##  Other Commom Types of Data
 
 
@@ -670,95 +639,169 @@ l5 <- data.frame(x=l1, y=l1)
 ***
 
 
-## Scatterplot
+## Histograms 
 
-Create and Plot a Toy Dataset
-
+Consider some historical data on crime in the US
 
 ```r
-x <- seq(1,10) ## create values for x
-e <- rnorm(length(x), mean=0, sd=1) ## store 
-y <- .25*x + e ## create values for y
-xy_dat <- data.frame(x=x, y=y)
-
-## your first plot is pretty standard
-plot(y~x, xy_dat)  ## pretty and standard
+## ?USArrests
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-18-1.png" width="672" />
+Histograms Summarize Distributions
+
+```r
+hist(USArrests$Murder, xlab='Murder Arrests',
+    main='Arrests per 100,000 across 50 US states in 1973')
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-19-1.png" width="672" />
+
+Show data splits
+
+```r
+## Urban Population above/below mean
+u <- mean(USArrests$UrbanPop)
+m1 <- USArrests[USArrests$UrbanPop<u,'Murder']
+m2 <- USArrests[USArrests$UrbanPop>=u,'Murder']
+
+xbks <-  seq(min(m1,m2), max(m1,m2), length.out=10)
+hist(m1, col=rgb(0,0,1,.5), breaks=xbks, xlab='Murder Arrests', main='Split Data')
+hist(m2, add=T, col=rgb(1,0,0,.5), breaks=xbks)
+cols <- c(rgb(0,0,1,.5), rgb(1,0,0,.5))
+legend('topright', col=cols, pch=15,
+    title='% Urban Pop.', legend=c('Above Mean', 'Below Mean'))
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-20-1.png" width="672" />
 
 
-Create and Plot a Larger Toy Dataset
+### Glue together
+
+Combine plots together to convey more information all at once
 
 
 ```r
+par(mfrow=c(1,2))
+## All Data
+hist(USArrests$Murder, main='All Data', xlab='Murder Arrests')
+
+## Split Data
+xbks <-  seq(min(m1,m2), max(m1,m2), length.out=10)
+cols <- c(rgb(0,0,1,.5), rgb(1,0,0,.5))
+hist(m1, col=cols[1], breaks=xbks, xlab='Murder Arrests', main='Split Data')
+hist(m2, add=T, col=cols[2], breaks=xbks)
+legend('topright', col=cols, pch=15, bty='n',
+    title='% Urban Pop.', legend=c('Above Mean', 'Below Mean'))
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-21-1.png" width="672" />
+
+
+
+```r
+par(fig=c(0,1,0,0.5), new=F)
+hist(USArrests$Murder, breaks=xbks, main='All Data', xlab='Murder Arrests')
+par(fig=c(0,.5,0.5,1), new=TRUE)
+hist(m1, breaks=xbks, col=rgb(0,0,1,.5), main='Urban Pop >= Mean',xlab='Murder Arrests')
+par(fig=c(0.5,1,0.5,1), new=TRUE)
+hist(m2,breaks=xbks, col=rgb(1,0,0,.5),  main='Urban Pop < Mean',xlab='Murder Arrests')
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-22-1.png" width="672" />
+
+For more histogram visuals, see https://r-graph-gallery.com/histogram.html
+
+
+## Boxplots
+
+All Data
+
+```r
+boxplot(USArrests$Murder, main='All Data', ylab='Murder Arrests')
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-23-1.png" width="672" />
+
+Split data into groups
+
+```r
+## cut(USArrests$UrbanPop,2)
+USArrests$UrbanPop_cut <- cut(USArrests$UrbanPop,4)
+boxplot(Murder~UrbanPop_cut, USArrests, main='Split Data', xlab='Urban Population', ylab='Murder Arrests', col=hcl.colors(4,alpha=.5))
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-24-1.png" width="672" />
+
+Glue together
+
+```r
+par(mfrow=c(1,2))
+boxplot(USArrests$Murder, main='All Data', ylab='Murder Arrests')
+boxplot(Murder~UrbanPop_cut, USArrests, main='Split Data', xlab='Urban Population', ylab='Murder Arrests', col=hcl.colors(4,alpha=.5))
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-25-1.png" width="672" />
+
+## Scatterplots
+
+
+```r
+plot(Murder~UrbanPop, USArrests, pch=16, col=rgb(0,0,0,.5))
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-26-1.png" width="672" />
+
+
+```r
+par(fig=c(0,0.8,0,0.8), new=F)
+plot(Murder~UrbanPop, USArrests, pch=16, col=rgb(0,0,0,.5))
+par(fig=c(0,0.8,0.55,1), new=TRUE)
+boxplot(USArrests$Murder, horizontal=TRUE, axes=FALSE)
+par(fig=c(0.65,1,0,0.8),new=TRUE)
+boxplot(USArrests$UrbanPop, axes=FALSE)
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-27-1.png" width="672" />
+
+
+
+### Example with simulated data
+
+Create a simulated dataset
+
+```r
+## Data Generating Process
 x <- seq(1, 10, by=.0002)
 e <- rnorm(length(x), mean=0, sd=1)
-y <- .25*x + e
+y <- .25*x + e 
+
 xy_dat <- data.frame(x=x, y=y)
 head(xy_dat)
 ```
 
 ```
-##        x           y
-## 1 1.0000  0.94801724
-## 2 1.0002  0.19113148
-## 3 1.0004  1.46862761
-## 4 1.0006  0.08295228
-## 5 1.0008  0.54455380
-## 6 1.0010 -0.11436414
+##        x          y
+## 1 1.0000  0.5748906
+## 2 1.0002  1.2265783
+## 3 1.0004  1.5144384
+## 4 1.0006  0.5556307
+## 5 1.0008  0.5672396
+## 6 1.0010 -2.6348463
 ```
 
+Plot the data and the line of best fit
+
 ```r
+## Data
 plot(y~x, xy_dat, pch=16, col=rgb(0,0,0,.1), cex=.5)
-```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-19-1.png" width="672" />
-
-
-
-
-
-##  Equation Fitting Example
-
-
-Run and Plot an OLS Regression
-
-
-```r
 ## OLS Regression
 reg <- lm(y~x, data=xy_dat)
-summary(reg)
-```
-
-```
-## 
-## Call:
-## lm(formula = y ~ x, data = xy_dat)
-## 
-## Residuals:
-##     Min      1Q  Median      3Q     Max 
-## -4.5750 -0.6699  0.0013  0.6734  3.9315 
-## 
-## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) 0.007732   0.011006   0.703    0.482    
-## x           0.249303   0.001809 137.786   <2e-16 ***
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Residual standard error: 0.9972 on 44999 degrees of freedom
-## Multiple R-squared:  0.2967,	Adjusted R-squared:  0.2967 
-## F-statistic: 1.899e+04 on 1 and 44999 DF,  p-value: < 2.2e-16
-```
-
-```r
 ## Add the line of best fit
-plot(y~x, xy_dat, pch=16, col=rgb(0,0,0,.1), cex=.5)
 abline(reg)
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-20-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-29-1.png" width="672" />
 
 ```r
 ## Can Also Add Confidence Intervals
@@ -766,51 +809,91 @@ abline(reg)
 ```
 
 
-
-Polish and Export Your Plot.
+Polish the plot
 
 
 ```r
+## your first plot is pretty standard
+## plot(y~x, xy_dat)
+
+
 plot(y~x, xy_dat, pch=16, col=rgb(0,0,0,.1), cex=.5,
     xlab='', ylab='') ## Format Axis Labels Seperately
 mtext( 'y=0.25 x + e\n e ~ standard-normal', 2, line=2)
 mtext( expression(x%in%~'[0,10]'), 1, line=2)
+abline(reg)
 title('Plot with good features and excessive notation')
 legend('topleft', legend='single data point',
     title='do you see the normal distribution?',
     pch=16, col=rgb(0,0,0,.1), cex=.5)
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-21-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-30-1.png" width="672" />
 
 
 Can export figure with specific dimensions
 
 ```r
 pdf( 'Figures/plot_example.pdf', height=5, width=5)
-plot(y~x, xy_dat, pch=16, col=rgb(0,0,0,.1), cex=.5)
+## plot goes here
 dev.off()
 ```
+
+For plotting math, see
+https://astrostatistics.psu.edu/su07/R/html/grDevices/html/plotmath.html
+https://library.virginia.edu/data/articles/mathematical-annotation-in-r
+
+For exporting options, see `?pdf`.
+For saving other types of files, see `png("*.png")`, `tiff("*.tiff")`, and  `jpeg("*.jpg")`
 
 
 # Beyond Basics
 ***
 
 
-Use expansion `packages` for common procedures and more functionality
+## Introductions to R
+
+Some coding examples are copied from https://r4ds.had.co.nz/ but also other sources I have found online and elsewhere over the years.
+
+There are many good yet free programming books online. E.g., 
+
+* https://cran.r-project.org/doc/manuals/R-intro.html
+* https://intro2r.com/
+* R Graphics Cookbook, 2nd edition. Winston Chang. 2021. https://r-graphics.org/
+* R for Data Science. H. Wickham and G. Grolemund. 2017. https://r4ds.had.co.nz/index.html
+* An Introduction to R. W. N. Venables, D. M. Smith, R Core Team. 2017. https://colinfay.me/intro-to-r/
+* https://bookdown.org/kieranmarray/intro_to_r_for_econometrics/
+* Spatial Data Science with R: Introduction to R. Robert J. Hijmans. 2021. https://rspatial.org/intr/index.html
+
+There are also many good yet free-online tutorials and courses. E.g., \\
+
+* https://www.econometrics-with-r.org/1.2-a-very-short-introduction-to-r-and-rstudio.html
+* https://rafalab.github.io/dsbook/
+* https://moderndive.com/foreword.html
+* https://rstudio.cloud/learn/primers/1.2
+* https://cran.r-project.org/manuals.html
+* https://stats.idre.ucla.edu/stat/data/intro_r/intro_r_interactive_flat.html
+* https://cswr.nrhstat.org/app-r
+
+What we cover in this primer should be enough to get you going. But other resources should be used if needed. 
+
+
+## The R Ecosystem
+
+### Packages
+
+Use expansion "packages" for common procedures and more functionality
 
 ```r
-## Other packages used in this primer
+## Other packages commonly used
 install.packages("stargazer")
-install.packages("reshape2")
 install.packages("purrr")
+## install.packages("reshape2")
 ```
-
 
 The most common tasks have [cheatsheets](https://www.rstudio.com/resources/cheatsheets/) you can use. E.g., 
 
 * https://github.com/rstudio/cheatsheets/blob/main/rstudio-ide.pdf
-
 
 Sometimes you will want to install a package from GitHub. For this, you can use [devtools](https://devtools.r-lib.org/) or the lighter [remotes](https://remotes.r-lib.org/)
 
@@ -836,7 +919,7 @@ install_github('jalvesaq/colorout')
 
 
 
-## Task Views
+### Task Views
 
 Task views list relevant packages. 
 
