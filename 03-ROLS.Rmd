@@ -26,33 +26,27 @@ $$
 $$
 
 ```{r}
-## Example 1 (Theoretical)
-
 ## Generate Dataset
-n <- 300
-z <- rbinom(n,1,.5)
-xy <- sapply(z, function(zi){
-    y <- rnorm(1,zi,1)
-    x <- rnorm(1,zi*2,1)
-    c(x,y)
-})
-xy <- data.frame(x=xy[1,],y=xy[2,])
+xy <- USArrests[,c('Murder','UrbanPop')]
+colnames(xy) <- c('y','x')
 
 ## Plot Data
 plot(y~x, xy, col=grey(.5,.5), pch=16)
 
 ## Estimate Regression Coefficeints
 reg <- lm(y~x, dat=xy)
-reg
+reg 
+
+## Point Estimates
+coef(reg)
 
 ## Add Predictions to Plot
 abline(reg, col='orange')
 ```
 
-
-Sums of Squared Errors
+To measure the ''Goodness of fit'', we analyze sums of squared errors
 $$
-\underbrace{\sum\nolimits_{i}(y_i-\bar{y})^2}_\text{TSS}=\underbrace{\sum\nolimits_{i}(\hat{y}_i-\bar{y})^2}_\text{RSS}+\underbrace{\sum\nolimits_{i}\hat{\epsilon}^2}_\text{ESS}\\
+\underbrace{\sum_{i}(y_i-\bar{y})^2}_\text{TSS}=\underbrace{\sum_{i}(\hat{y}_i-\bar{y})^2}_\text{RSS}+\underbrace{\sum_{i}\hat{\epsilon_{i}}^2}_\text{ESS}\\
 R^2 = \frac{RSS}{TSS}=1-\frac{ESS}{TSS}
 $$
 Note that $R^2$ is also called the coefficient of determination.
@@ -64,6 +58,7 @@ ESS  <- sum(Ehat^2)
 Y <- xy$y
 TSS  <- sum((Y-mean(Y))^2)
 R2 <- 1 - ESS/TSS
+R2
 
 ## Check R2
 summary(reg)$r.squared
@@ -79,7 +74,7 @@ A regression coefficient is a statistic. And, just like all statistics, we can c
 * *p-value* the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true).
 * null distribution*: the distribution of the statistic under the null hypothesis.
 
-The classic estimates for variability are the Standard Error of the Regression $\hat{\sigma}$, and Standard Error of the Coefficient Estimates $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\alpha}}$ --- or simply Standard Errors.
+The classic estimates for variability are the Standard Error of the Regression $\hat{\sigma}$, and Standard Error of the Coefficient Estimates $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\alpha}}~~$ (or simply Standard Errors).
 $$
 \hat{\sigma}^2 = \frac{1}{n-2}\sum_{i}\hat{\epsilon_{i}}^2\\
 \hat{\sigma}^2_{\hat{\alpha}}=\hat{\sigma}^2\left[\frac{1}{n}+\frac{\bar{x}^2}{\sum_{i}(x_i-\bar{x})^2}\right]\\
@@ -91,10 +86,6 @@ We first consider the simplest, the jackknife, where we loop through each row of
 
 ```{r}
 ## Example 1 Continued
-
-## Point Estimates
-reg <- lm(y~x, dat=xy)
-coefX <- coef(reg)['x']
 
 ## Jackknife Standard Errors for Beta
 jack_regs <- lapply(1:nrow(xy), function(i){
@@ -108,13 +99,13 @@ jack_se <- sd(jack_coefs)
 ## Jackknife Confidence Intervals
 jack_ci_percentile <- quantile(jack_coefs, probs=c(.025,.975))
 hist(jack_coefs, breaks=25,
-    main=paste0('SE est.=', round(jack_se,4)),
+    main=paste0('SE est. = ', round(jack_se,4)),
     xlab=expression(beta[-i]))
 abline(v=jack_mean, col="red", lwd=2)
 abline(v=jack_ci_percentile, col="red", lty=2)
 
 ## Plot Full-Sample Estimate
-## abline(v=coefX, lty=1, col='blue', lwd=2)
+## abline(v=coef(reg)['x'], lty=1, col='blue', lwd=2)
 
 ## Plot Normal Approximation
 ## jack_ci_normal <- jack_mean+c(-1.96, +1.96)*jack_se
@@ -143,14 +134,19 @@ boot_se <- sd(boot_coefs)
 ## Bootstrap Confidence Intervals
 boot_ci_percentile <- quantile(boot_coefs, probs=c(.025,.975))
 hist(boot_coefs, breaks=25,
-    main=paste0('SE est.=', round(boot_se,4)),
+    main=paste0('SE est. = ', round(boot_se,4)),
     xlab=expression(beta[b]))
 abline(v=boot_mean, col="red", lwd=2)
 abline(v=boot_ci_percentile, col="red", lty=2)
 
-    
+
 ## Normal Approximation
 ## boot_ci_normal <- boot_mean+c(-1.96, +1.96)*boot
+
+## Parametric CI
+## x <- data.frame(x=quantile(xy$x,probs=seq(0,1,by=.1)))
+## ci <- predict(reg, interval='confidence', newdata=data.frame(x))
+## polygon( c(x, rev(x)), c(ci[,'lwr'], rev(ci[,'upr'])), col=grey(0,.2), border=0)
 ```
 
 We can also bootstrap other statistics, such as a t-statistic or $R^2$. We do such things to test a null hypothesis, which is often ``no relationship''. We are rarely interested in computing standard errrors and conducting hypothesis tests for two variables. However, we work through the ideas in the two-variable case to better understand the multi-variable case.
@@ -167,7 +163,7 @@ One main way to conduct hypothesis tests is to examine whether a confidence inte
 ## Bootstrap Distribution
 boot_ci_percentile <- quantile(boot_coefs, probs=c(.025,.975))
 hist(boot_coefs, breaks=25,
-    main=paste0('SE est.=', round(boot_se,4)),
+    main=paste0('SE est. = ', round(boot_se,4)),
     xlab=expression(beta[b]), 
     xlim=range(c(0, boot_coefs)) )
 abline(v=boot_ci_percentile, lty=2)
@@ -194,9 +190,9 @@ boot_coefs0 <- sapply(boot_regs0, coef)['x',]
 boot_ci_percentile0 <- quantile(boot_coefs0, probs=c(.025,.975))
 hist(boot_coefs0, breaks=25, main='',
     xlab=expression(beta[b]),
-    xlim=range(c(boot_coefs0, coefX)))
+    xlim=range(c(boot_coefs0, coef(reg)['x'])))
 abline(v=boot_ci_percentile0, lty=2)
-abline(v=coefX, col="red", lwd=2)
+abline(v=coef(reg)['x'], col="red", lwd=2)
 ```
 
 Regardless of how we calculate standard errors, we can use them to conduct a t-test. We also compute the distribution of t-values under the null hypothesis, and compare how extreme the oberved value is.
@@ -205,7 +201,7 @@ $$ \hat{t} = \frac{\hat{\beta} - \beta_{0} }{\hat{\sigma}_{\hat{\beta}}} $$
 ```{r}
 ## T Test
 B0 <- 0
-boot_t  <- (coefX-B0)/boot_se
+boot_t  <- (coef(reg)['x']-B0)/boot_se
 
 ## Compute Bootstrap T-Values (without refinement)
 boot_t_boot0 <- sapply(boot_regs0, function(reg_b){
@@ -214,29 +210,32 @@ boot_t_boot0 <- sapply(boot_regs0, function(reg_b){
     return(t_hat_b)
 })
 hist(boot_t_boot0, breaks=100,
+    main='Bootstrapped t values', xlab='t',
     xlim=range(c(boot_t_boot0, boot_t)) )
 abline(v=boot_t, lwd=2, col='red')
 ```
 
-From this, we can calculate a *p-value*: the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true).  Note that the $p$ reported by your computer does not necessarily satisfy this definition! We can always calcuate a p-value from an explicit null distribution.
+From this, we can calculate a *p-value*: the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true). Note that the $p$ reported by your computer does not necessarily satisfy this definition. We can always calcuate a p-value from an explicit null distribution.
 ```{r}
 ## One Sided Test for P(t > boot_t | Null)=1- P(t < boot_t | Null)
 That_NullDist1 <- ecdf(boot_t_boot0)
 Phat1  <- 1-That_NullDist1(boot_t)
+
 ## Two Sided Test for P(t > jack_t or  t < -jack_t | Null)
 That_NullDist2 <- ecdf(abs(boot_t_boot0))
+plot(That_NullDist2, xlim=range(boot_t_boot0, boot_t))
+abline(v=quantile(That_NullDist2,probs=.95), lty=3)
+abline(v=boot_t, col='red')
+
 Phat2  <-  1-That_NullDist2(boot_t)
+Phat2
 ```
-Under some assumptions, the null distribution is distributed $t_{n-2}$. (For more on theory based regression t-testing, see https://www.econometrics-with-r.org/4-lrwor.html.) 
+Under some assumptions, the null distribution is distributed $t_{n-2}$. (For more on parametric t-testing based on statistical theory, see https://www.econometrics-with-r.org/4-lrwor.html.)
 
 
-### Prediction Intervals [Under Construction]
+### Prediction Intervals
 
 In addition to confidence intervales, we can also compute a *prediction interval* which estimates the range of variability across different samples for the outcomes. These intervals also take into account the residuals--- the variability of individuals around the mean. 
-
-For a nice overview of different types of intervals, see https://www.jstor.org/stable/2685212
-For an indepth view, see "Statistical Intervals: A Guide for Practitioners and Researchers" or "Statistical Tolerance Regions: Theory, Applications, and Computation". 
-See https://robjhyndman.com/hyndsight/intervals/ for constructing intervals for future observations in a time-series context
 
 
 ```{r}
@@ -247,10 +246,30 @@ boot_resids <- lapply(boot_regs, function(reg_b){
     res_b <- cbind(e_b, x_b)
 })
 boot_resids <- as.data.frame(do.call(rbind, boot_resids))
-## Estimate Residual Quantiles using data around X points
-x <- data.frame(x=quantile(xy$x,probs=seq(0,1,by=.1)))
+## Homoskedastic
+ehat <- quantile(boot_resids$e_b, probs=c(.025, .975))
+x <- quantile(xy$x,probs=seq(0,1,by=.1))
+boot_pi <- coef(reg)[1] + x*coef(reg)['x']
+boot_pi <- cbind(boot_pi + ehat[1], boot_pi + ehat[2])
+
+## Plot Bootstrap PI
+plot(y~x, dat=xy, pch=16, main='Prediction Intervals',
+ylim=c(-5,20))
+polygon( c(x, rev(x)), c(boot_pi[,1], rev(boot_pi[,2])),
+    col=grey(0,.2), border=NA)
+
+## Parametric PI (For Comparison)
+pi <- predict(reg, interval='prediction', newdata=data.frame(x))
+lines( x, pi[,'lwr'], lty=2)
+lines( x, pi[,'upr'], lty=2)
+```
+
+There are many ways to improve upon the prediction intervals you just created. Probably the most basic way is to allow the residuals to be heteroskedastic. 
+
+```{r}
+## Estimate Residual Quantiles seperately around X points
 boot_resid_list <- split(boot_resids,
-    cut(boot_resids$x_b, x$x) )
+    cut(boot_resids$x_b, x) )
 boot_resid_est <- lapply(boot_resid_list, function(res_b) {
     if( nrow(res_b)==0){ ## If Empty, Return Nothing
         ehat <- c(NA,NA)
@@ -261,42 +280,34 @@ boot_resid_est <- lapply(boot_resid_list, function(res_b) {
     })
 boot_resid_est <- do.call(rbind, boot_resid_est)
 ## Construct PI at x points
-boot_x <- x$x[-1] - diff(x$x)/2
-boot_pmean <- boot_mean*boot_x
-boot_pi <-  boot_pmean + boot_resid_est
+boot_x <- x[-1] - diff(x)/2
+boot_pi <- coef(reg)[1] + boot_x*coef(reg)['x']
+boot_pi <- cbind(boot_pi + boot_resid_est[,1], boot_pi + boot_resid_est[,2])
 
-## Plot Bootstrap PI
-plot(y~x, dat=xy, pch=16)
+plot(y~x, dat=xy, pch=16, main='Heteroskedastic P.I.')
 polygon( c(boot_x, rev(boot_x)), c(boot_pi[,1], rev(boot_pi[,2])),
-    col=grey(0,.2), border=0)
-
-## Parametric PI (For Comparison)
-pi <- predict(reg, interval='prediction', newdata=x)
-lines( x$x, pi[,'lwr'], lty=2)
-lines( x$x, pi[,'upr'], lty=2)
-
-## Parametric CI
-## x <- data.frame(x=quantile(xy$x,probs=seq(0,1,by=.1)))
-## ci <- predict(reg, interval='confidence', newdata=x)
-## polygon( c(x$x, rev(x$x)), c(ci[,'lwr'], rev(ci[,'upr'])), col=grey(0,.2), border=0)
+    col=grey(0,.2), border=NA)
+rug(boot_x)
 ```
 
-There are many ways to improve upon the prediction intervals you just created. Again, this is just an introduction. For more, see Davison and Hinkley, chapters 5 and 6 (also (Efron and Tibshirani, or Wehrens et al.)
 
-
+For a nice overview of different types of intervals, see https://www.jstor.org/stable/2685212. For an indepth view, see "Statistical Intervals: A Guide for Practitioners and Researchers" or "Statistical Tolerance Regions: Theory, Applications, and Computation". See https://robjhyndman.com/hyndsight/intervals/ for constructing intervals for future observations in a time-series context. See Davison and Hinkley, chapters 5 and 6 (also Efron and Tibshirani, or Wehrens et al.)
 
 
 ## OLS (multiple linear regression)
 
 Model and objective
 $$
-y_i=\beta_0+\beta_1x_{i1}+\beta_2x_{i2}+\ldots+\beta_kx_{ik}+\epsilon_i = X_{i}\beta + +\epsilon_i \\
+y_i=\beta_0+\beta_1x_{i1}+\beta_2x_{i2}+\ldots+\beta_kx_{ik}+\epsilon_i = X_{i}\beta +\epsilon_i \\
 min_{\beta} \sum_{i=1}^{n} (\epsilon_i)^2
 $$
-
-Point Estimates in matrix form
+Can be written in matrix form
 $$
 y=\textbf{X}\beta+\epsilon\\
+min_{\beta} (\epsilon' \epsilon)
+$$
+Point Estimates 
+$$
 \hat{\beta}=(\textbf{X}'\textbf{X})^{-1}\textbf{X}'y
 $$
 
@@ -312,13 +323,29 @@ head(USArrests)
 
 # Superior Plot
 USArrests$ID <- rownames(USArrests)
-plotly::plot_ly(
+fig <- plotly::plot_ly(
   USArrests, x = ~UrbanPop, y = ~Assault,
-  text = ~paste('State: ', ID, "<br>Murder Arrests:", Murder),
-  color = ~Murder,
-  marker = list(size = ~Murder, opacity = 0.5),
-  title = 'Murder arrests (per 100,000)')
-  
+  text = ~paste('<b>', ID, '</b>',
+    "<br>Urban  :", UrbanPop,
+    "<br>Assault:", Assault,
+    "<br>Murder :", Murder),
+  mode='markers',
+  type='scatter',
+  hoverinfo='text',
+  color=~Murder,
+  showlegend=F,
+  marker=list(
+    size=~Murder,
+    opacity=0.5,
+    showscale=T,  
+    colorbar = list(title='Murder Arrests (per 100,000)')))
+fig <- plotly::layout(fig,
+  title='Crime and Urbanization in America 1975',
+  xaxis = list(title = 'Percent of People in an Urban Area'),
+  yaxis = list(title = 'Assault Arrests per 100,000 People'))
+fig
+
+                          
 ## For further exploratory plotting,
 ## see https://plotly.com/r/bubble-charts/
 ```
@@ -338,8 +365,7 @@ reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 coef(reg)
 ```
 
-
-Sums of Squared Errors
+To measure the ``Goodness of fit'', we can compute various sums of squared srrors
 $$
 R^2 = \frac{RSS}{TSS}=1-\frac{ESS}{TSS}\\
 R^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-R^2)
@@ -442,7 +468,7 @@ $$
 $$
 
 
-Generate a simulated dataset with 30 observations and two exogenous variables. Assume the following relationship: $yi = \beta_0 + \beta_1 x_{1,i} + \beta_2 x_{2,i} + \epsilon_i$ where the variables and the error term are realizations of the following data generating processes (DGP):
+Generate a simulated dataset with 30 observations and two exogenous variables. Assume the following relationship: $y_{i} = \beta_0 + \beta_1 x_{1,i} + \beta_2 x_{2,i} + \epsilon_i$ where the variables and the error term are realizations of the following data generating processes (DGP):
 ```{r}
 N <- 30
 B <- c(10, 2, -1)
@@ -503,12 +529,11 @@ for(i in 2:3){
 
 ## Factor Variables
 
-So far, we have discussed cardinal data where the difference between units always means the same thing: e.g., $4 -3=3-2$. There are also factor variables
+So far, we have discussed cardinal data where the difference between units always means the same thing: e.g., $4-3=2-1$. There are also factor variables
 
-* Ordered: The difference between units means something, but not always the same thing. E.g., $1st - 2nd \neq 2nd - 3rd$.
-* Unordered: The difference between units does not mean something $B-A =??$
+* Ordered: refers to Ordinal data. The difference between units means something, but not always the same thing. For example, $4th - 3rd \neq 2nd - 1st$.
+* Unordered: refers to Categorical data. The difference between units is meaningless. For example, $B-A=?$
 
-Sometimes Ordinal and Categorical data are called Ordinal and Categorical variables. 
 
 To analyze either factor, we often convert them into indicator variables or dummies; $D_{c}=\mathbf{1}( Factor = c)$. One common case is if you have observations of individuals over time periods, then you may have two factor variables. An unordered factor that indicates who an individual is; for example $D_{i}=\mathbf{1}( Individual = i)$, and an order factor that indicates the time period; for example $D_{t}=\mathbf{1}( Time \in [month~ t, month~ t+1) )$. There are many other cases you see factor variables, including spatial ID's in purely cross sectional data.
 
@@ -900,7 +925,23 @@ Just like many economic relationships are nonlinear, many economic variables are
  * If $Y \to X$ and $X \to Y$, then we have simultaneity
  * If $Z\to Y$ and either $Z\to X$ or $X \to Z$, then we have omitted a potentially important variable
 
-These endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a barrier to interpreting OLS as a causal model. Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels of technical detail, they are not covered extensively in this notebook. You are directed to the following resources which discuss these statistical models in more general terms and how they can be applied across many social sciences.
+These endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a barrier to interpreting OLS as a causal model.
+
+```{r}
+## Simulate data with an endogeneity issue
+n <- 300
+z <- rbinom(n,1,.5)
+xy <- sapply(z, function(zi){
+    y <- rnorm(1,zi,1)
+    x <- rnorm(1,zi*2,1)
+    c(x,y)
+})
+xy <- data.frame(x=xy[1,],y=xy[2,])
+plot(y~x, data=xy, pch=16, col=grey(.5,.5))
+abline(lm(y~x,data=xy))
+```
+
+Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels of technical detail, they are not covered extensively in this notebook. You are directed to the following resources which discuss these statistical models in more general terms and how they can be applied across many social sciences.
 
 * Causal Inference for Statistics, Social, and Biomedical Sciences: An Introduction
 * https://www.mostlyharmlesseconometrics.com/
@@ -970,6 +1011,8 @@ There is currently a boom in empirical research centered around linear regressio
 > without explicit prior consideration of the effect of the instrument choice on the parameter being estimated, such a procedure is effectively the opposite of standard statistical practice in which a parameter of interest is defined first, followed by an estimator that delivers that parameter. Instead, we have a procedure in which the choice of the instrument, which is guided by criteria designed for a situation in which there is no heterogeneity, is implicitly allowed to determine the parameter of interest. This goes beyond the old story of looking for an object where the light is strong enough to see; rather, we have at least some control over the light but choose to let it fall where it may and then proclaim that whatever it illuminates is what we were looking for all along.
 >
 > --- A. Deaton, 2010
+
+
 
 
 The OLS examples are familiar are subject to current research. At the end are two simple examples of scientism with the ''latest and greatest'' empirical recipes---we don't have many theoretical results yet but I think you can understand the issue with the numerical example. 

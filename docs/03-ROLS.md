@@ -27,24 +27,16 @@ $$
 
 
 ```r
-## Example 1 (Theoretical)
-
 ## Generate Dataset
-n <- 300
-z <- rbinom(n,1,.5)
-xy <- sapply(z, function(zi){
-    y <- rnorm(1,zi,1)
-    x <- rnorm(1,zi*2,1)
-    c(x,y)
-})
-xy <- data.frame(x=xy[1,],y=xy[2,])
+xy <- USArrests[,c('Murder','UrbanPop')]
+colnames(xy) <- c('y','x')
 
 ## Plot Data
 plot(y~x, xy, col=grey(.5,.5), pch=16)
 
 ## Estimate Regression Coefficeints
 reg <- lm(y~x, dat=xy)
-reg
+reg 
 ```
 
 ```
@@ -54,7 +46,17 @@ reg
 ## 
 ## Coefficients:
 ## (Intercept)            x  
-##      0.2209       0.2169
+##     6.41594      0.02093
+```
+
+```r
+## Point Estimates
+coef(reg)
+```
+
+```
+## (Intercept)           x 
+##  6.41594246  0.02093466
 ```
 
 ```r
@@ -64,10 +66,9 @@ abline(reg, col='orange')
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-1-1.png" width="672" />
 
-
-Sums of Squared Errors
+To measure the ''Goodness of fit'', we analyze sums of squared errors
 $$
-\underbrace{\sum\nolimits_{i}(y_i-\bar{y})^2}_\text{TSS}=\underbrace{\sum\nolimits_{i}(\hat{y}_i-\bar{y})^2}_\text{RSS}+\underbrace{\sum\nolimits_{i}\hat{\epsilon}^2}_\text{ESS}\\
+\underbrace{\sum_{i}(y_i-\bar{y})^2}_\text{TSS}=\underbrace{\sum_{i}(\hat{y}_i-\bar{y})^2}_\text{RSS}+\underbrace{\sum_{i}\hat{\epsilon_{i}}^2}_\text{ESS}\\
 R^2 = \frac{RSS}{TSS}=1-\frac{ESS}{TSS}
 $$
 Note that $R^2$ is also called the coefficient of determination.
@@ -80,13 +81,20 @@ ESS  <- sum(Ehat^2)
 Y <- xy$y
 TSS  <- sum((Y-mean(Y))^2)
 R2 <- 1 - ESS/TSS
+R2
+```
 
+```
+## [1] 0.00484035
+```
+
+```r
 ## Check R2
 summary(reg)$r.squared
 ```
 
 ```
-## [1] 0.07597341
+## [1] 0.00484035
 ```
 
 ### Variability Estimates
@@ -99,7 +107,7 @@ A regression coefficient is a statistic. And, just like all statistics, we can c
 * *p-value* the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true).
 * null distribution*: the distribution of the statistic under the null hypothesis.
 
-The classic estimates for variability are the Standard Error of the Regression $\hat{\sigma}$, and Standard Error of the Coefficient Estimates $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\alpha}}$ --- or simply Standard Errors.
+The classic estimates for variability are the Standard Error of the Regression $\hat{\sigma}$, and Standard Error of the Coefficient Estimates $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\alpha}}~~$ (or simply Standard Errors).
 $$
 \hat{\sigma}^2 = \frac{1}{n-2}\sum_{i}\hat{\epsilon_{i}}^2\\
 \hat{\sigma}^2_{\hat{\alpha}}=\hat{\sigma}^2\left[\frac{1}{n}+\frac{\bar{x}^2}{\sum_{i}(x_i-\bar{x})^2}\right]\\
@@ -113,10 +121,6 @@ We first consider the simplest, the jackknife, where we loop through each row of
 ```r
 ## Example 1 Continued
 
-## Point Estimates
-reg <- lm(y~x, dat=xy)
-coefX <- coef(reg)['x']
-
 ## Jackknife Standard Errors for Beta
 jack_regs <- lapply(1:nrow(xy), function(i){
     xy_i <- xy[-i,]
@@ -129,7 +133,7 @@ jack_se <- sd(jack_coefs)
 ## Jackknife Confidence Intervals
 jack_ci_percentile <- quantile(jack_coefs, probs=c(.025,.975))
 hist(jack_coefs, breaks=25,
-    main=paste0('SE est.=', round(jack_se,4)),
+    main=paste0('SE est. = ', round(jack_se,4)),
     xlab=expression(beta[-i]))
 abline(v=jack_mean, col="red", lwd=2)
 abline(v=jack_ci_percentile, col="red", lty=2)
@@ -139,7 +143,7 @@ abline(v=jack_ci_percentile, col="red", lty=2)
 
 ```r
 ## Plot Full-Sample Estimate
-## abline(v=coefX, lty=1, col='blue', lwd=2)
+## abline(v=coef(reg)['x'], lty=1, col='blue', lwd=2)
 
 ## Plot Normal Approximation
 ## jack_ci_normal <- jack_mean+c(-1.96, +1.96)*jack_se
@@ -169,7 +173,7 @@ boot_se <- sd(boot_coefs)
 ## Bootstrap Confidence Intervals
 boot_ci_percentile <- quantile(boot_coefs, probs=c(.025,.975))
 hist(boot_coefs, breaks=25,
-    main=paste0('SE est.=', round(boot_se,4)),
+    main=paste0('SE est. = ', round(boot_se,4)),
     xlab=expression(beta[b]))
 abline(v=boot_mean, col="red", lwd=2)
 abline(v=boot_ci_percentile, col="red", lty=2)
@@ -180,6 +184,11 @@ abline(v=boot_ci_percentile, col="red", lty=2)
 ```r
 ## Normal Approximation
 ## boot_ci_normal <- boot_mean+c(-1.96, +1.96)*boot
+
+## Parametric CI
+## x <- data.frame(x=quantile(xy$x,probs=seq(0,1,by=.1)))
+## ci <- predict(reg, interval='confidence', newdata=data.frame(x))
+## polygon( c(x, rev(x)), c(ci[,'lwr'], rev(ci[,'upr'])), col=grey(0,.2), border=0)
 ```
 
 We can also bootstrap other statistics, such as a t-statistic or $R^2$. We do such things to test a null hypothesis, which is often ``no relationship''. We are rarely interested in computing standard errrors and conducting hypothesis tests for two variables. However, we work through the ideas in the two-variable case to better understand the multi-variable case.
@@ -197,7 +206,7 @@ One main way to conduct hypothesis tests is to examine whether a confidence inte
 ## Bootstrap Distribution
 boot_ci_percentile <- quantile(boot_coefs, probs=c(.025,.975))
 hist(boot_coefs, breaks=25,
-    main=paste0('SE est.=', round(boot_se,4)),
+    main=paste0('SE est. = ', round(boot_se,4)),
     xlab=expression(beta[b]), 
     xlim=range(c(0, boot_coefs)) )
 abline(v=boot_ci_percentile, lty=2)
@@ -227,9 +236,9 @@ boot_coefs0 <- sapply(boot_regs0, coef)['x',]
 boot_ci_percentile0 <- quantile(boot_coefs0, probs=c(.025,.975))
 hist(boot_coefs0, breaks=25, main='',
     xlab=expression(beta[b]),
-    xlim=range(c(boot_coefs0, coefX)))
+    xlim=range(c(boot_coefs0, coef(reg)['x'])))
 abline(v=boot_ci_percentile0, lty=2)
-abline(v=coefX, col="red", lwd=2)
+abline(v=coef(reg)['x'], col="red", lwd=2)
 ```
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-6-1.png" width="672" />
@@ -241,7 +250,7 @@ $$ \hat{t} = \frac{\hat{\beta} - \beta_{0} }{\hat{\sigma}_{\hat{\beta}}} $$
 ```r
 ## T Test
 B0 <- 0
-boot_t  <- (coefX-B0)/boot_se
+boot_t  <- (coef(reg)['x']-B0)/boot_se
 
 ## Compute Bootstrap T-Values (without refinement)
 boot_t_boot0 <- sapply(boot_regs0, function(reg_b){
@@ -250,32 +259,43 @@ boot_t_boot0 <- sapply(boot_regs0, function(reg_b){
     return(t_hat_b)
 })
 hist(boot_t_boot0, breaks=100,
+    main='Bootstrapped t values', xlab='t',
     xlim=range(c(boot_t_boot0, boot_t)) )
 abline(v=boot_t, lwd=2, col='red')
 ```
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-7-1.png" width="672" />
 
-From this, we can calculate a *p-value*: the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true).  Note that the $p$ reported by your computer does not necessarily satisfy this definition! We can always calcuate a p-value from an explicit null distribution.
+From this, we can calculate a *p-value*: the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true). Note that the $p$ reported by your computer does not necessarily satisfy this definition. We can always calcuate a p-value from an explicit null distribution.
 
 ```r
 ## One Sided Test for P(t > boot_t | Null)=1- P(t < boot_t | Null)
 That_NullDist1 <- ecdf(boot_t_boot0)
 Phat1  <- 1-That_NullDist1(boot_t)
+
 ## Two Sided Test for P(t > jack_t or  t < -jack_t | Null)
 That_NullDist2 <- ecdf(abs(boot_t_boot0))
-Phat2  <-  1-That_NullDist2(boot_t)
+plot(That_NullDist2, xlim=range(boot_t_boot0, boot_t))
+abline(v=quantile(That_NullDist2,probs=.95), lty=3)
+abline(v=boot_t, col='red')
 ```
-Under some assumptions, the null distribution is distributed $t_{n-2}$. (For more on theory based regression t-testing, see https://www.econometrics-with-r.org/4-lrwor.html.) 
+
+<img src="03-ROLS_files/figure-html/unnamed-chunk-8-1.png" width="672" />
+
+```r
+Phat2  <-  1-That_NullDist2(boot_t)
+Phat2
+```
+
+```
+## [1] 0.5889724
+```
+Under some assumptions, the null distribution is distributed $t_{n-2}$. (For more on parametric t-testing based on statistical theory, see https://www.econometrics-with-r.org/4-lrwor.html.)
 
 
-### Prediction Intervals [Under Construction]
+### Prediction Intervals
 
 In addition to confidence intervales, we can also compute a *prediction interval* which estimates the range of variability across different samples for the outcomes. These intervals also take into account the residuals--- the variability of individuals around the mean. 
-
-For a nice overview of different types of intervals, see https://www.jstor.org/stable/2685212
-For an indepth view, see "Statistical Intervals: A Guide for Practitioners and Researchers" or "Statistical Tolerance Regions: Theory, Applications, and Computation". 
-See https://robjhyndman.com/hyndsight/intervals/ for constructing intervals for future observations in a time-series context
 
 
 
@@ -287,10 +307,33 @@ boot_resids <- lapply(boot_regs, function(reg_b){
     res_b <- cbind(e_b, x_b)
 })
 boot_resids <- as.data.frame(do.call(rbind, boot_resids))
-## Estimate Residual Quantiles using data around X points
-x <- data.frame(x=quantile(xy$x,probs=seq(0,1,by=.1)))
+## Homoskedastic
+ehat <- quantile(boot_resids$e_b, probs=c(.025, .975))
+x <- quantile(xy$x,probs=seq(0,1,by=.1))
+boot_pi <- coef(reg)[1] + x*coef(reg)['x']
+boot_pi <- cbind(boot_pi + ehat[1], boot_pi + ehat[2])
+
+## Plot Bootstrap PI
+plot(y~x, dat=xy, pch=16, main='Prediction Intervals',
+ylim=c(-5,20))
+polygon( c(x, rev(x)), c(boot_pi[,1], rev(boot_pi[,2])),
+    col=grey(0,.2), border=NA)
+
+## Parametric PI (For Comparison)
+pi <- predict(reg, interval='prediction', newdata=data.frame(x))
+lines( x, pi[,'lwr'], lty=2)
+lines( x, pi[,'upr'], lty=2)
+```
+
+<img src="03-ROLS_files/figure-html/unnamed-chunk-9-1.png" width="672" />
+
+There are many ways to improve upon the prediction intervals you just created. Probably the most basic way is to allow the residuals to be heteroskedastic. 
+
+
+```r
+## Estimate Residual Quantiles seperately around X points
 boot_resid_list <- split(boot_resids,
-    cut(boot_resids$x_b, x$x) )
+    cut(boot_resids$x_b, x) )
 boot_resid_est <- lapply(boot_resid_list, function(res_b) {
     if( nrow(res_b)==0){ ## If Empty, Return Nothing
         ehat <- c(NA,NA)
@@ -301,46 +344,36 @@ boot_resid_est <- lapply(boot_resid_list, function(res_b) {
     })
 boot_resid_est <- do.call(rbind, boot_resid_est)
 ## Construct PI at x points
-boot_x <- x$x[-1] - diff(x$x)/2
-boot_pmean <- boot_mean*boot_x
-boot_pi <-  boot_pmean + boot_resid_est
+boot_x <- x[-1] - diff(x)/2
+boot_pi <- coef(reg)[1] + boot_x*coef(reg)['x']
+boot_pi <- cbind(boot_pi + boot_resid_est[,1], boot_pi + boot_resid_est[,2])
 
-## Plot Bootstrap PI
-plot(y~x, dat=xy, pch=16)
+plot(y~x, dat=xy, pch=16, main='Heteroskedastic P.I.')
 polygon( c(boot_x, rev(boot_x)), c(boot_pi[,1], rev(boot_pi[,2])),
-    col=grey(0,.2), border=0)
-
-## Parametric PI (For Comparison)
-pi <- predict(reg, interval='prediction', newdata=x)
-lines( x$x, pi[,'lwr'], lty=2)
-lines( x$x, pi[,'upr'], lty=2)
+    col=grey(0,.2), border=NA)
+rug(boot_x)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-9-1.png" width="672" />
-
-```r
-## Parametric CI
-## x <- data.frame(x=quantile(xy$x,probs=seq(0,1,by=.1)))
-## ci <- predict(reg, interval='confidence', newdata=x)
-## polygon( c(x$x, rev(x$x)), c(ci[,'lwr'], rev(ci[,'upr'])), col=grey(0,.2), border=0)
-```
-
-There are many ways to improve upon the prediction intervals you just created. Again, this is just an introduction. For more, see Davison and Hinkley, chapters 5 and 6 (also (Efron and Tibshirani, or Wehrens et al.)
+<img src="03-ROLS_files/figure-html/unnamed-chunk-10-1.png" width="672" />
 
 
+For a nice overview of different types of intervals, see https://www.jstor.org/stable/2685212. For an indepth view, see "Statistical Intervals: A Guide for Practitioners and Researchers" or "Statistical Tolerance Regions: Theory, Applications, and Computation". See https://robjhyndman.com/hyndsight/intervals/ for constructing intervals for future observations in a time-series context. See Davison and Hinkley, chapters 5 and 6 (also Efron and Tibshirani, or Wehrens et al.)
 
 
 ## OLS (multiple linear regression)
 
 Model and objective
 $$
-y_i=\beta_0+\beta_1x_{i1}+\beta_2x_{i2}+\ldots+\beta_kx_{ik}+\epsilon_i = X_{i}\beta + +\epsilon_i \\
+y_i=\beta_0+\beta_1x_{i1}+\beta_2x_{i2}+\ldots+\beta_kx_{ik}+\epsilon_i = X_{i}\beta +\epsilon_i \\
 min_{\beta} \sum_{i=1}^{n} (\epsilon_i)^2
 $$
-
-Point Estimates in matrix form
+Can be written in matrix form
 $$
 y=\textbf{X}\beta+\epsilon\\
+min_{\beta} (\epsilon' \epsilon)
+$$
+Point Estimates 
+$$
 \hat{\beta}=(\textbf{X}'\textbf{X})^{-1}\textbf{X}'y
 $$
 
@@ -369,17 +402,32 @@ head(USArrests)
 
 # Superior Plot
 USArrests$ID <- rownames(USArrests)
-plotly::plot_ly(
+fig <- plotly::plot_ly(
   USArrests, x = ~UrbanPop, y = ~Assault,
-  text = ~paste('State: ', ID, "<br>Murder Arrests:", Murder),
-  color = ~Murder,
-  marker = list(size = ~Murder, opacity = 0.5),
-  title = 'Murder arrests (per 100,000)')
+  text = ~paste('<b>', ID, '</b>',
+    "<br>Urban  :", UrbanPop,
+    "<br>Assault:", Assault,
+    "<br>Murder :", Murder),
+  mode='markers',
+  type='scatter',
+  hoverinfo='text',
+  color=~Murder,
+  showlegend=F,
+  marker=list(
+    size=~Murder,
+    opacity=0.5,
+    showscale=T,  
+    colorbar = list(title='Murder Arrests (per 100,000)')))
+fig <- plotly::layout(fig,
+  title='Crime and Urbanization in America 1975',
+  xaxis = list(title = 'Percent of People in an Urban Area'),
+  yaxis = list(title = 'Assault Arrests per 100,000 People'))
+fig
 ```
 
 ```{=html}
-<div class="plotly html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-3675438f9f778c094c45" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-3675438f9f778c094c45">{"x":{"visdat":{"2f726d2879c2":["function () ","plotlyVisDat"]},"cur_data":"2f726d2879c2","attrs":{"2f726d2879c2":{"x":{},"y":{},"text":{},"marker":{"size":{},"opacity":0.5},"title":"Murder arrests (per 100,000)","color":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20]}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"xaxis":{"domain":[0,1],"automargin":true,"title":"UrbanPop"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Assault"},"hovermode":"closest","showlegend":false,"legend":{"yanchor":"top","y":0.5}},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[58,48,80,50,91,78,77,72,80,60,83,54,83,65,57,66,52,66,51,67,85,74,66,44,70,53,62,81,56,89,70,86,45,44,75,68,67,72,87,48,45,59,80,80,32,63,73,39,66,60],"y":[236,263,294,190,276,204,110,238,335,211,46,120,249,113,56,115,109,249,83,300,149,255,72,259,178,109,102,252,57,159,285,254,337,45,120,151,159,106,174,279,86,188,201,120,48,156,145,81,53,161],"text":["State:  Alabama <br>Murder Arrests: 13.2","State:  Alaska <br>Murder Arrests: 10","State:  Arizona <br>Murder Arrests: 8.1","State:  Arkansas <br>Murder Arrests: 8.8","State:  California <br>Murder Arrests: 9","State:  Colorado <br>Murder Arrests: 7.9","State:  Connecticut <br>Murder Arrests: 3.3","State:  Delaware <br>Murder Arrests: 5.9","State:  Florida <br>Murder Arrests: 15.4","State:  Georgia <br>Murder Arrests: 17.4","State:  Hawaii <br>Murder Arrests: 5.3","State:  Idaho <br>Murder Arrests: 2.6","State:  Illinois <br>Murder Arrests: 10.4","State:  Indiana <br>Murder Arrests: 7.2","State:  Iowa <br>Murder Arrests: 2.2","State:  Kansas <br>Murder Arrests: 6","State:  Kentucky <br>Murder Arrests: 9.7","State:  Louisiana <br>Murder Arrests: 15.4","State:  Maine <br>Murder Arrests: 2.1","State:  Maryland <br>Murder Arrests: 11.3","State:  Massachusetts <br>Murder Arrests: 4.4","State:  Michigan <br>Murder Arrests: 12.1","State:  Minnesota <br>Murder Arrests: 2.7","State:  Mississippi <br>Murder Arrests: 16.1","State:  Missouri <br>Murder Arrests: 9","State:  Montana <br>Murder Arrests: 6","State:  Nebraska <br>Murder Arrests: 4.3","State:  Nevada <br>Murder Arrests: 12.2","State:  New Hampshire <br>Murder Arrests: 2.1","State:  New Jersey <br>Murder Arrests: 7.4","State:  New Mexico <br>Murder Arrests: 11.4","State:  New York <br>Murder Arrests: 11.1","State:  North Carolina <br>Murder Arrests: 13","State:  North Dakota <br>Murder Arrests: 0.8","State:  Ohio <br>Murder Arrests: 7.3","State:  Oklahoma <br>Murder Arrests: 6.6","State:  Oregon <br>Murder Arrests: 4.9","State:  Pennsylvania <br>Murder Arrests: 6.3","State:  Rhode Island <br>Murder Arrests: 3.4","State:  South Carolina <br>Murder Arrests: 14.4","State:  South Dakota <br>Murder Arrests: 3.8","State:  Tennessee <br>Murder Arrests: 13.2","State:  Texas <br>Murder Arrests: 12.7","State:  Utah <br>Murder Arrests: 3.2","State:  Vermont <br>Murder Arrests: 2.2","State:  Virginia <br>Murder Arrests: 8.5","State:  Washington <br>Murder Arrests: 4","State:  West Virginia <br>Murder Arrests: 5.7","State:  Wisconsin <br>Murder Arrests: 2.6","State:  Wyoming <br>Murder Arrests: 6.8"],"marker":{"colorbar":{"title":"Murder","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":false,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"size":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"opacity":0.5,"line":{"colorbar":{"title":"","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":false,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998]}},"title":"Murder arrests (per 100,000)","type":"scatter","mode":"markers","xaxis":"x","yaxis":"y","frame":null},{"x":[32,91],"y":[45,337],"type":"scatter","mode":"markers","opacity":0,"hoverinfo":"none","showlegend":false,"marker":{"colorbar":{"title":"Murder","ticklen":2,"len":0.5,"lenmode":"fraction","y":1,"yanchor":"top"},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"color":[0.80000000000000004,17.399999999999999],"line":{"color":"rgba(255,127,14,1)"}},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<div class="plotly html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-f145034e777aef9affb3" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-f145034e777aef9affb3">{"x":{"visdat":{"20a177e1b6ae":["function () ","plotlyVisDat"]},"cur_data":"20a177e1b6ae","attrs":{"20a177e1b6ae":{"x":{},"y":{},"text":{},"mode":"markers","hoverinfo":"text","showlegend":false,"marker":{"size":{},"opacity":0.5,"showscale":true,"colorbar":{"title":"Murder Arrests (per 100,000)"}},"color":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Percent of People in an Urban Area"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Assault Arrests per 100,000 People"},"hovermode":"closest","showlegend":false},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[58,48,80,50,91,78,77,72,80,60,83,54,83,65,57,66,52,66,51,67,85,74,66,44,70,53,62,81,56,89,70,86,45,44,75,68,67,72,87,48,45,59,80,80,32,63,73,39,66,60],"y":[236,263,294,190,276,204,110,238,335,211,46,120,249,113,56,115,109,249,83,300,149,255,72,259,178,109,102,252,57,159,285,254,337,45,120,151,159,106,174,279,86,188,201,120,48,156,145,81,53,161],"text":["<b> Alabama <\/b> <br>Urban  : 58 <br>Assault: 236 <br>Murder : 13.2","<b> Alaska <\/b> <br>Urban  : 48 <br>Assault: 263 <br>Murder : 10","<b> Arizona <\/b> <br>Urban  : 80 <br>Assault: 294 <br>Murder : 8.1","<b> Arkansas <\/b> <br>Urban  : 50 <br>Assault: 190 <br>Murder : 8.8","<b> California <\/b> <br>Urban  : 91 <br>Assault: 276 <br>Murder : 9","<b> Colorado <\/b> <br>Urban  : 78 <br>Assault: 204 <br>Murder : 7.9","<b> Connecticut <\/b> <br>Urban  : 77 <br>Assault: 110 <br>Murder : 3.3","<b> Delaware <\/b> <br>Urban  : 72 <br>Assault: 238 <br>Murder : 5.9","<b> Florida <\/b> <br>Urban  : 80 <br>Assault: 335 <br>Murder : 15.4","<b> Georgia <\/b> <br>Urban  : 60 <br>Assault: 211 <br>Murder : 17.4","<b> Hawaii <\/b> <br>Urban  : 83 <br>Assault: 46 <br>Murder : 5.3","<b> Idaho <\/b> <br>Urban  : 54 <br>Assault: 120 <br>Murder : 2.6","<b> Illinois <\/b> <br>Urban  : 83 <br>Assault: 249 <br>Murder : 10.4","<b> Indiana <\/b> <br>Urban  : 65 <br>Assault: 113 <br>Murder : 7.2","<b> Iowa <\/b> <br>Urban  : 57 <br>Assault: 56 <br>Murder : 2.2","<b> Kansas <\/b> <br>Urban  : 66 <br>Assault: 115 <br>Murder : 6","<b> Kentucky <\/b> <br>Urban  : 52 <br>Assault: 109 <br>Murder : 9.7","<b> Louisiana <\/b> <br>Urban  : 66 <br>Assault: 249 <br>Murder : 15.4","<b> Maine <\/b> <br>Urban  : 51 <br>Assault: 83 <br>Murder : 2.1","<b> Maryland <\/b> <br>Urban  : 67 <br>Assault: 300 <br>Murder : 11.3","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Assault: 149 <br>Murder : 4.4","<b> Michigan <\/b> <br>Urban  : 74 <br>Assault: 255 <br>Murder : 12.1","<b> Minnesota <\/b> <br>Urban  : 66 <br>Assault: 72 <br>Murder : 2.7","<b> Mississippi <\/b> <br>Urban  : 44 <br>Assault: 259 <br>Murder : 16.1","<b> Missouri <\/b> <br>Urban  : 70 <br>Assault: 178 <br>Murder : 9","<b> Montana <\/b> <br>Urban  : 53 <br>Assault: 109 <br>Murder : 6","<b> Nebraska <\/b> <br>Urban  : 62 <br>Assault: 102 <br>Murder : 4.3","<b> Nevada <\/b> <br>Urban  : 81 <br>Assault: 252 <br>Murder : 12.2","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Assault: 57 <br>Murder : 2.1","<b> New Jersey <\/b> <br>Urban  : 89 <br>Assault: 159 <br>Murder : 7.4","<b> New Mexico <\/b> <br>Urban  : 70 <br>Assault: 285 <br>Murder : 11.4","<b> New York <\/b> <br>Urban  : 86 <br>Assault: 254 <br>Murder : 11.1","<b> North Carolina <\/b> <br>Urban  : 45 <br>Assault: 337 <br>Murder : 13","<b> North Dakota <\/b> <br>Urban  : 44 <br>Assault: 45 <br>Murder : 0.8","<b> Ohio <\/b> <br>Urban  : 75 <br>Assault: 120 <br>Murder : 7.3","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Assault: 151 <br>Murder : 6.6","<b> Oregon <\/b> <br>Urban  : 67 <br>Assault: 159 <br>Murder : 4.9","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Assault: 106 <br>Murder : 6.3","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Assault: 174 <br>Murder : 3.4","<b> South Carolina <\/b> <br>Urban  : 48 <br>Assault: 279 <br>Murder : 14.4","<b> South Dakota <\/b> <br>Urban  : 45 <br>Assault: 86 <br>Murder : 3.8","<b> Tennessee <\/b> <br>Urban  : 59 <br>Assault: 188 <br>Murder : 13.2","<b> Texas <\/b> <br>Urban  : 80 <br>Assault: 201 <br>Murder : 12.7","<b> Utah <\/b> <br>Urban  : 80 <br>Assault: 120 <br>Murder : 3.2","<b> Vermont <\/b> <br>Urban  : 32 <br>Assault: 48 <br>Murder : 2.2","<b> Virginia <\/b> <br>Urban  : 63 <br>Assault: 156 <br>Murder : 8.5","<b> Washington <\/b> <br>Urban  : 73 <br>Assault: 145 <br>Murder : 4","<b> West Virginia <\/b> <br>Urban  : 39 <br>Assault: 81 <br>Murder : 5.7","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Assault: 53 <br>Murder : 2.6","<b> Wyoming <\/b> <br>Urban  : 60 <br>Assault: 161 <br>Murder : 6.8"],"mode":"markers","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"showlegend":false,"marker":{"colorbar":{"title":"Murder Arrests (per 100,000)","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"size":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"opacity":0.5,"line":{"colorbar":{"title":"","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":false,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998]}},"type":"scatter","xaxis":"x","yaxis":"y","frame":null},{"x":[32,91],"y":[45,337],"type":"scatter","mode":"markers","opacity":0,"hoverinfo":"none","showlegend":false,"marker":{"colorbar":{"title":"Murder","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"color":[0.80000000000000004,17.399999999999999],"line":{"color":"rgba(255,127,14,1)"}},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 
 ```r
@@ -414,8 +462,7 @@ coef(reg)
 ##  3.20715340  0.04390995 -0.04451047
 ```
 
-
-Sums of Squared Errors
+To measure the ``Goodness of fit'', we can compute various sums of squared srrors
 $$
 R^2 = \frac{RSS}{TSS}=1-\frac{ESS}{TSS}\\
 R^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-R^2)
@@ -447,7 +494,7 @@ legend('topleft', horiz=T,
     legend=c('Undjusted', 'Adjusted'), pch=c(1,16))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-12-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-13-1.png" width="672" />
 
 
 ### Variability Estimates and Hypothesis Tests
@@ -480,8 +527,8 @@ plotly::add_histogram2d(fig, nbinsx=20, nbinsy=20)
 ```
 
 ```{=html}
-<div class="plotly html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-2957ddbdcd88d652cbd0" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-2957ddbdcd88d652cbd0">{"x":{"visdat":{"2f722fb4eceb":["function () ","plotlyVisDat"]},"cur_data":"2f722fb4eceb","attrs":{"2f722fb4eceb":{"x":[0.052642997962285845,0.040801478469323457,0.040935602728793749,0.043017968750892484,0.036938841032154078,0.044804260373237467,0.042964962949070415,0.049214687474997708,0.047986829406784746,0.044251999196216897,0.044568406016771367,0.054955514289893211,0.041016373833306773,0.044221773314322005,0.044697022492597951,0.031250984326667015,0.039234221844662624,0.046714589552645597,0.040940290888041783,0.045546566867141258,0.046536061460558865,0.042491826660883615,0.04046246355616441,0.042643601847090602,0.043618931955011798,0.04689081607203531,0.047121945711399812,0.043922755724643603,0.053528484905738527,0.04032871086012893,0.038547781422523769,0.042878088709822036,0.04887152217552275,0.044950552305783049,0.040993741995647454,0.041512596992188219,0.037693624446867878,0.043460035465790872,0.04516705608469674,0.043281054218148679,0.044045108305718207,0.044478615721400772,0.040947349366127053,0.044497992454377994,0.045489081062407934,0.044886732656467913,0.045644824138284273,0.042387646823234572,0.048065838640807511,0.042590703256042826,0.050024864337711993,0.036995022858481642,0.040814685156124429,0.049106229173394508,0.053024976940854382,0.039744602660325999,0.049207589217279864,0.04531909245359924,0.044147991278847422,0.042520173737643316,0.040647021368851302,0.041512765144039898,0.039657474200505936,0.040140943869352338,0.03463515767563298,0.047417906568894296,0.051050294632165018,0.043130046049612895,0.03924870401246093,0.042800433720487703,0.043836811034702973,0.049838771297971284,0.037679237118763281,0.039539987041964736,0.040639707974942624,0.039769956687837935,0.039171243248986749,0.04637832705000159,0.044687998623867325,0.041810967830884851,0.042152968132249911,0.04016973404847194,0.041294923702333772,0.048071026662161224,0.039956766649328637,0.043545317663182447,0.047631670683441929,0.04158254729110622,0.046451076367572307,0.048961900892495032,0.043706526399311663,0.043067754697055503,0.039449163915634113,0.037757596063774997,0.046371873961154102,0.04032363286212505,0.04630177925377453,0.051425348344363214,0.04846006995900351,0.046892381167221213,0.049972574546039893,0.040786586990038537,0.04206253570525894,0.044540334493680826,0.043410653661739261,0.04611480373492044,0.044353432077843098,0.042546923463874869,0.050148963499000838,0.043518590025664362,0.044186593795437996,0.04391796959290515,0.04461823840295355,0.039380701904586521,0.05310449213138483,0.037507229395484287,0.051587628134919884,0.039142769494928419,0.048450460102657425,0.049529626400196827,0.042926805137821392,0.040784767362386391,0.045553343313159224,0.049155849971137186,0.04347323829918525,0.045930701325088849,0.036191974329128226,0.047057603756285558,0.035668182841776412,0.040975003246540992,0.040874901414922976,0.033492551636873195,0.044269353913742641,0.049119049502449379,0.047868919531647958,0.043002638660592056,0.042596389441307128,0.038886687462070781,0.045414168197072093,0.046290072804638101,0.04130077441457667,0.044353930599613497,0.043459777012720011,0.041278312674083405,0.032786843800355618,0.045395624050333122,0.041984373060481694,0.050377125676396517,0.042583954488185381,0.035097084737095378,0.043684888268690769,0.043691179087374112,0.035181941375112068,0.042858338925853702,0.037730702180605397,0.047063878552827107,0.050059826469496707,0.04505624870576469,0.040189353331436702,0.044250785338746226,0.042556795482672584,0.046735055592570206,0.04068483981423366,0.037541725855276181,0.043910527897424334,0.051639383183537758,0.042150891122565079,0.040562345952967004,0.042012311455076327,0.046350170194907885,0.042955411274895605,0.043153324225435143,0.040128613442963909,0.040585766540960168,0.042753527529916298,0.050435178850202864,0.041055264557576784,0.047855313381664058,0.042318317468654922,0.043426249106045152,0.046569474362258563,0.039861483781457416,0.043471181236001306,0.031972154111555476,0.041576370957471451,0.043560523635171114,0.051779621132945923,0.037071044769188294,0.04195495452211806,0.035205733402664474,0.049718134361177398,0.043272563905217838,0.055258185407516917,0.048715967969121768,0.054538337416947934,0.048127618001743977,0.044700587563308067,0.039667620876519712,0.042804496013825064,0.045113705071974451,0.045645795972642601,0.041044854624810681,0.049273746547925087,0.042081746682427382,0.040199366848288724,0.045885426718059008,0.049056828325833503,0.045769815239671205,0.04157636245946586,0.041841375120786888,0.043144071366415661,0.04835528463458276,0.043270224562617199,0.049418971185384755,0.046074698261823116,0.047960134946642759,0.0404423990634908,0.03854912938507888,0.044463809643332131,0.043632097954187946,0.04810177401481508,0.036525116249416165,0.043284554601615066,0.05099118897175358,0.034146230849352074,0.040963685631192091,0.044840660412508344,0.054088746746191442,0.041456947347054393,0.04991823201264,0.044056002006982613,0.047711449562615471,0.039620138355828699,0.041453035227122306,0.04060398505555797,0.04192633661088626,0.045892328832703964,0.046630869315975786,0.043495538062289237,0.04232038698776338,0.046582987768100215,0.049227330680475204,0.044030347988495401,0.046089835998371395,0.048176476349826906,0.043082372348715384,0.040125484660635702,0.039189777900832286,0.035484830016157161,0.034246174015158781,0.041608147895020035,0.037658440118250959,0.041194527064402089,0.052234249032057929,0.040748936702174762,0.039391554467317749,0.044747972806029303,0.045642050732009054,0.041746011494908676,0.047597691022876448,0.048226473273767612,0.041346434180731535,0.048907659247721967,0.039437587099375615,0.040761427799869548,0.042159092501182452,0.051400976384052915,0.041387915845171847,0.052566578392838917,0.047277401247747666,0.042508899617494794,0.048643526486218114,0.052993568327748146,0.048202575072901939,0.043153324000704825,0.038376919541906883,0.053329064699070519,0.045842556360133645,0.038384592707149473,0.059821088888475496,0.040185666064052439,0.038072975999677475,0.048901073347294099,0.040497327727968865,0.044444656747313502,0.038824764887663114,0.045619423542406161,0.047152184747737698,0.048091311370690594,0.047791074329830104,0.042938515135590383,0.04460928256761329,0.044318046395719436,0.056361163599344274,0.047069088233744713,0.045720735900304836,0.044171528327372804,0.037521486392144469,0.044789842329014694,0.049207252121526233,0.043457443164675348,0.050783424290122545,0.045908696769920251,0.051560854271516625,0.039285576887219023,0.03775449623653665,0.040491967713629173,0.045196553295756683,0.0422355025188745,0.043354401372751011,0.036084490935141683,0.043641122683428332,0.049997518938142742,0.040207185581910776,0.055057784669710674,0.046388355184570476,0.044157841096460718,0.049936390649873333,0.050697589828567771,0.042024558098327114,0.041234256872764823,0.038804539459156434,0.044054946703714862,0.03998565566705483,0.042838690537834255,0.043872297963614519,0.051333093364569267,0.043540173036866935,0.040891345859966996,0.042910833453610589,0.037279246715490752,0.040501899845872706,0.048906435334844962,0.048022073127577204,0.049208844190833552,0.050143464526732684,0.04767767370050853,0.046362248055944195,0.036478171795185137,0.033940371521434809,0.044785024080196301,0.040563583841763694,0.043680258422818793,0.042734808931608879,0.046009872932469817,0.044158645046193622,0.044107857495954007,0.041032819322338918,0.045380424017597412,0.04631337596199208,0.047984323228913953,0.042256925091231481,0.047456709214840145,0.041233897596510694,0.042371374773839857,0.050315965381483883,0.042040643292777569,0.038071617968391563,0.044396675893626197,0.046852137710091279,0.040628182029901719,0.041467514275190215,0.045985908209610425,0.04707879516246493,0.045695568700397184,0.048449261564360607,0.03664620011861467,0.042371202081975673,0.051020980726704919,0.037439759839624366,0.050311959924504025,0.040596123352859045,0.032985303048273164,0.048974783015852529,0.059442866881126967,0.047388521136617366,0.042469090340169192,0.037005819370821792,0.041667311097019676,0.043936306168463002,0.047348316640399311,0.048593352712730263,0.04427629197792099,0.036203023446674629,0.040186172865141569,0.039604969194878541,0.047180824278878347,0.044713255974241958,0.041226867747447854,0.040504103849978407,0.038796868595592671,0.032939954497624074,0.049699575555851021,0.04203910334174564,0.047918969096703873,0.046009672312034344,0.047960013418345979,0.03891629752082508,0.042193193917246942],"y":[-0.081903451165601701,-0.077495672911755395,-0.047385460844986849,-0.027067281588523999,-0.032664667065250293,-0.026067968036116756,-0.021402639699820491,-0.057931770632811873,-0.092026543116480439,-0.052779077347680434,-0.089104034467508544,-0.072476418104293103,-0.037377519571034509,-0.031617838210040376,-0.037000137939184198,-0.066202992199197855,-0.03556500488506651,-0.028536678583704393,-0.049377192479347291,-0.04921843440868888,-0.047934504505556759,-0.032056469246700983,-0.064613783015435342,-0.046838912187379227,-0.075247065494002743,-0.017446219664640009,-0.066338778888815786,-0.034784861119667693,-0.08247413353200557,0.031326592132210763,-0.02724202367898116,-0.11503771270635904,-0.086041759139925109,-0.079375191458983863,0.0099035006374742027,-0.039718618937564301,-0.040609919644254838,-0.055810983591337383,-0.041542183279589043,-0.076559178433139641,-0.039784704194300406,-0.071484042116996827,-0.0030061501697152587,-0.043443773355493577,-0.02978788605546134,-0.017518948402771264,-0.070246648299006453,-0.04811485618218328,-0.070899134461649291,-0.031342696816578419,-0.077521707386032479,-0.046839221675028943,-0.051093736589274942,-0.03897606607273206,-0.06779280116893413,-0.071964524963469612,-0.0464659414429415,-0.042791786386356528,-0.012862398793173925,-0.055710546928876607,-0.06454278306632695,-0.018454914669368827,-0.063267477683203288,-0.065516726143442089,-0.016634167658077573,-0.071261382015116684,-0.060286468573132058,-0.028670075459046662,-0.0048713638774021831,-0.015633460279525564,-0.019014907055733263,-0.062357896978345144,-0.034538003439997765,-0.020599262588826703,-0.069615857484749119,-0.029565700948984693,-0.036858261255474298,-0.026583967384274175,-0.0056422927276350721,-0.029299346293705918,-0.045427879574413389,-0.0065414594761519689,-0.054412574874046812,-0.043060318925756069,-0.046809873700164081,-0.033593692443156256,-0.056223882758745715,-0.080274534750416904,-0.070373184883739476,-0.048113837510789986,-0.063538299498343165,-0.037872952821833686,-0.039618120218359754,-0.044818600494436471,-0.051638940103808144,-0.024023654640416715,-0.027775757782167371,-0.075434170676583284,-0.012734860203653102,-0.067906296957078269,-0.048012628488583821,-0.0062787971581788251,-0.072471890348559137,-0.056019032786510707,-0.042867933661485273,-0.058392600773076168,-0.023000331812767592,-0.0040555054776090461,-0.043181508161705004,-0.028165052863427603,-0.026857680640229739,-0.055747404697452083,-0.041615927053252302,-0.016772411214410886,-0.12959594822126982,-0.062512363496033632,-0.061620779324139036,-0.081145031381763294,-0.082250996018186098,-0.063736334358158633,-0.038741512002944796,-0.024650354292022423,-0.017939611653649042,-0.081395463759484435,-0.048167379839893824,-0.016774382735707846,0.014011397786164522,-0.021638673439556159,0.0056976458317746391,-0.054008658606205531,-0.05524191575364374,-0.01298658859005886,-0.035409294787482837,-0.071001609030053064,-0.038413142488607749,-0.088722448669018392,-0.0086237046502362497,-0.023505058097984012,-0.072236674175036375,-0.047253132715974644,-0.017281432408477678,-0.044326545021727615,-0.020330714030718497,-0.042531483635779833,-0.010365404694293321,-0.046067629675957379,-0.025385137038208459,-0.054934811182074758,-0.060599490375551568,-0.063813437494003325,-0.051059822446890175,-0.059614004504177164,-0.059174597211034297,-0.057594311202839345,-0.052622020149263649,-0.043904115902992431,-0.087742546726883794,-0.048639159059006391,-0.045674176598184832,-0.020787590911159677,-0.028356545263687485,-0.06794336698656997,-0.037783392792528972,-0.024118600425410825,-0.062960144280188923,-0.031294742971456971,-0.039429680401915447,-0.072227759765143423,-0.031354677481922742,-0.082076128020059605,-0.0015008634762965966,-0.018632381791148917,-0.03616101255012065,-0.020536198734698266,-0.027772944458851131,-0.085795057485342288,-0.078504801267684443,-0.064511133054784911,-0.027596378745388853,-0.017274930912723186,-0.047216467807980757,-0.041926045151895269,-0.038423526247442975,-0.031898828901158582,-0.050055620148816114,-0.048595608744219525,-0.071762808377249021,-0.009609044827906716,-0.04499251516122374,-0.036361241048692733,-0.047623301237012375,-0.0033792256590043793,-0.072961866273522705,-0.05102414407880547,-0.089288911882215993,-0.042865549254576779,-0.040784079026465185,-0.0049723541192267734,-0.040477943485843611,-0.092774771498764827,-0.058337230384742748,-0.0092136348782453931,-0.050560329339644106,-0.0045756612343351415,-0.012014135946277751,-0.030948925639670846,-0.091509957289623037,-0.041308317707072231,-0.05113124946338226,-0.051651400632237159,-0.0895312114233284,-0.026132042685286499,-0.011233600792001275,-0.064692709110077296,-0.038184498959253341,-0.059316103185503434,-0.038262160667887748,-0.049513799693641121,-0.041005602935264958,-0.058123803786037542,-0.024484219039390184,-0.024992795080385776,-0.0099097287224914361,-0.068419509562294381,-0.031621589882182152,-0.037618570253361898,-0.089425100585127426,-0.073175628989357436,-0.0052146769241850754,-0.083788058945967595,-0.025237235151095029,-0.052801379248252088,-0.051402644263781751,-0.037520022115962039,-0.049188798507089168,-0.061648692791066925,-0.016852479472977081,-0.037605725752548655,-0.07476306399858805,-0.066748109586128326,-0.083544662061771233,-0.044529048353716946,-0.057753785956827883,-0.075978786136420423,-0.054829369127478059,-0.017173737695027735,-0.046668090931480326,-0.028175718758905764,0.0034805145090774504,-0.035002969458879471,-0.010224180142731049,-0.025777534275599673,-0.051327078831487856,-0.095924747756486253,-0.037269744682031702,-0.055683973021805,-0.11235510070819013,-0.041355999874432531,-0.060527719326749108,-0.0692378135847974,-0.080632550486664095,0.0059107817204400127,-0.044108288609566684,-0.064763723012573271,0.014969104740271022,-0.036164913211784305,-0.10901785344595363,-0.069584123134967021,-0.080315398988395459,-0.084208448909847439,-0.045452878678807533,-0.084858007779085282,-0.051477382938856293,-0.094203732490758238,-0.043570056963173599,0.014663709505303981,-0.065367506409766213,-0.031680323588558532,-0.10157951995539874,-0.1161932836898268,-0.042715980013983135,-0.005071058409733032,-0.057485030365446638,-0.01539990894615015,-0.0080209923150562495,-0.037174409699898422,-0.055539526811853528,-0.02978748597819773,-0.044875882596797499,-0.013061698192473546,-0.054048709415279013,-0.062152036917824956,-0.066112470391113509,-0.096907935909493342,-0.040824236217912542,-0.015498782553125569,-0.0040695107301233231,-0.0078528786260042959,-0.066738678800044526,-0.096229688750022857,-0.079964169406396557,-0.058994221836592531,-0.032802381363871799,-0.057249308792291939,-0.01968556907720773,-0.041294791565097591,-0.019189552800767094,-0.041179065923050172,-0.036819199403001247,-0.021976566180714724,-0.017647813157866246,-0.076383302619172561,-0.082759957473615142,-0.061571407203665288,-0.13831644086362413,-0.060864740059138403,-0.050755736104456245,-0.058067949161440952,-0.082324614910308971,-0.070033164186094329,-0.017184884497500805,-0.063389076944187966,-0.065102563152614437,-0.04269401264856592,-0.05724705018315613,-0.0011774937990925484,-0.028233243987107887,-0.085822086834290615,-0.048037432725468704,-0.032449703496725685,-0.042964459822022863,-0.048550525329425012,-0.061411496202944942,-0.064078914375952853,-0.06080699106355094,-0.075733358840474052,-0.055514278224782089,-0.026007863387374385,-0.0038309087909662496,-0.025326123375252547,-0.08831761348625107,-0.026105900497968872,-0.043315870315062378,-0.013034569615116908,-0.064525451073255288,-0.092290381801014093,-0.067877550809394407,-0.0074688004960390287,-0.071475597261052348,-0.003238217245113749,-0.029221180116512698,-0.038074187236780903,-0.032183311263791564,-0.059661990377419406,-0.01745243036972877,-0.047247973054695906,-0.018008182312839745,-0.070864701545322997,-0.066927043566413297,-0.063320259543241386,-0.02616138525550981,-0.042330303290041199,-0.042363792499824811,-0.02568393076716197,-0.04170840774359489,-0.044154557440109488,-0.046032780874251798,-0.03850922068514661,-0.055245462424224422,-0.046454876835975323,-0.070669332879459174,-0.038950590007478941,-0.029680165821683951,-0.060916531999044593,-0.10172090009361044,-0.055200818642906622,-0.036137066487297698,-0.017142737510590245,-0.015733621075578828,-0.035256684964240413,-0.040384191217214857,-0.041615401389595491,-0.045624815291493447,-0.0097699879698969899,0.010918588566359083,-0.040731236998668145,-0.048841898122088508,-0.043017124263799639,-0.027002552946293838,-0.045539798292360094,-0.035172955223464801,-0.021128793934253588,-0.051768712179352604,-0.051311672778627068,-0.031162274861655043,-0.056937637375574807,-0.043294379325133761,-0.0071061982308987907,-0.010899402003809421],"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"histogram2d","nbinsx":20,"nbinsy":20,"inherit":true}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"xaxis":{"domain":[0,1],"automargin":true,"title":[]},"yaxis":{"domain":[0,1],"automargin":true,"title":[]},"hovermode":"closest","showlegend":false,"legend":{"yanchor":"top","y":0.5}},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"colorbar":{"title":"","ticklen":2,"len":0.5,"lenmode":"fraction","y":1,"yanchor":"top"},"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"x":[0.052642997962285845,0.040801478469323457,0.040935602728793749,0.043017968750892484,0.036938841032154078,0.044804260373237467,0.042964962949070415,0.049214687474997708,0.047986829406784746,0.044251999196216897,0.044568406016771367,0.054955514289893211,0.041016373833306773,0.044221773314322005,0.044697022492597951,0.031250984326667015,0.039234221844662624,0.046714589552645597,0.040940290888041783,0.045546566867141258,0.046536061460558865,0.042491826660883615,0.04046246355616441,0.042643601847090602,0.043618931955011798,0.04689081607203531,0.047121945711399812,0.043922755724643603,0.053528484905738527,0.04032871086012893,0.038547781422523769,0.042878088709822036,0.04887152217552275,0.044950552305783049,0.040993741995647454,0.041512596992188219,0.037693624446867878,0.043460035465790872,0.04516705608469674,0.043281054218148679,0.044045108305718207,0.044478615721400772,0.040947349366127053,0.044497992454377994,0.045489081062407934,0.044886732656467913,0.045644824138284273,0.042387646823234572,0.048065838640807511,0.042590703256042826,0.050024864337711993,0.036995022858481642,0.040814685156124429,0.049106229173394508,0.053024976940854382,0.039744602660325999,0.049207589217279864,0.04531909245359924,0.044147991278847422,0.042520173737643316,0.040647021368851302,0.041512765144039898,0.039657474200505936,0.040140943869352338,0.03463515767563298,0.047417906568894296,0.051050294632165018,0.043130046049612895,0.03924870401246093,0.042800433720487703,0.043836811034702973,0.049838771297971284,0.037679237118763281,0.039539987041964736,0.040639707974942624,0.039769956687837935,0.039171243248986749,0.04637832705000159,0.044687998623867325,0.041810967830884851,0.042152968132249911,0.04016973404847194,0.041294923702333772,0.048071026662161224,0.039956766649328637,0.043545317663182447,0.047631670683441929,0.04158254729110622,0.046451076367572307,0.048961900892495032,0.043706526399311663,0.043067754697055503,0.039449163915634113,0.037757596063774997,0.046371873961154102,0.04032363286212505,0.04630177925377453,0.051425348344363214,0.04846006995900351,0.046892381167221213,0.049972574546039893,0.040786586990038537,0.04206253570525894,0.044540334493680826,0.043410653661739261,0.04611480373492044,0.044353432077843098,0.042546923463874869,0.050148963499000838,0.043518590025664362,0.044186593795437996,0.04391796959290515,0.04461823840295355,0.039380701904586521,0.05310449213138483,0.037507229395484287,0.051587628134919884,0.039142769494928419,0.048450460102657425,0.049529626400196827,0.042926805137821392,0.040784767362386391,0.045553343313159224,0.049155849971137186,0.04347323829918525,0.045930701325088849,0.036191974329128226,0.047057603756285558,0.035668182841776412,0.040975003246540992,0.040874901414922976,0.033492551636873195,0.044269353913742641,0.049119049502449379,0.047868919531647958,0.043002638660592056,0.042596389441307128,0.038886687462070781,0.045414168197072093,0.046290072804638101,0.04130077441457667,0.044353930599613497,0.043459777012720011,0.041278312674083405,0.032786843800355618,0.045395624050333122,0.041984373060481694,0.050377125676396517,0.042583954488185381,0.035097084737095378,0.043684888268690769,0.043691179087374112,0.035181941375112068,0.042858338925853702,0.037730702180605397,0.047063878552827107,0.050059826469496707,0.04505624870576469,0.040189353331436702,0.044250785338746226,0.042556795482672584,0.046735055592570206,0.04068483981423366,0.037541725855276181,0.043910527897424334,0.051639383183537758,0.042150891122565079,0.040562345952967004,0.042012311455076327,0.046350170194907885,0.042955411274895605,0.043153324225435143,0.040128613442963909,0.040585766540960168,0.042753527529916298,0.050435178850202864,0.041055264557576784,0.047855313381664058,0.042318317468654922,0.043426249106045152,0.046569474362258563,0.039861483781457416,0.043471181236001306,0.031972154111555476,0.041576370957471451,0.043560523635171114,0.051779621132945923,0.037071044769188294,0.04195495452211806,0.035205733402664474,0.049718134361177398,0.043272563905217838,0.055258185407516917,0.048715967969121768,0.054538337416947934,0.048127618001743977,0.044700587563308067,0.039667620876519712,0.042804496013825064,0.045113705071974451,0.045645795972642601,0.041044854624810681,0.049273746547925087,0.042081746682427382,0.040199366848288724,0.045885426718059008,0.049056828325833503,0.045769815239671205,0.04157636245946586,0.041841375120786888,0.043144071366415661,0.04835528463458276,0.043270224562617199,0.049418971185384755,0.046074698261823116,0.047960134946642759,0.0404423990634908,0.03854912938507888,0.044463809643332131,0.043632097954187946,0.04810177401481508,0.036525116249416165,0.043284554601615066,0.05099118897175358,0.034146230849352074,0.040963685631192091,0.044840660412508344,0.054088746746191442,0.041456947347054393,0.04991823201264,0.044056002006982613,0.047711449562615471,0.039620138355828699,0.041453035227122306,0.04060398505555797,0.04192633661088626,0.045892328832703964,0.046630869315975786,0.043495538062289237,0.04232038698776338,0.046582987768100215,0.049227330680475204,0.044030347988495401,0.046089835998371395,0.048176476349826906,0.043082372348715384,0.040125484660635702,0.039189777900832286,0.035484830016157161,0.034246174015158781,0.041608147895020035,0.037658440118250959,0.041194527064402089,0.052234249032057929,0.040748936702174762,0.039391554467317749,0.044747972806029303,0.045642050732009054,0.041746011494908676,0.047597691022876448,0.048226473273767612,0.041346434180731535,0.048907659247721967,0.039437587099375615,0.040761427799869548,0.042159092501182452,0.051400976384052915,0.041387915845171847,0.052566578392838917,0.047277401247747666,0.042508899617494794,0.048643526486218114,0.052993568327748146,0.048202575072901939,0.043153324000704825,0.038376919541906883,0.053329064699070519,0.045842556360133645,0.038384592707149473,0.059821088888475496,0.040185666064052439,0.038072975999677475,0.048901073347294099,0.040497327727968865,0.044444656747313502,0.038824764887663114,0.045619423542406161,0.047152184747737698,0.048091311370690594,0.047791074329830104,0.042938515135590383,0.04460928256761329,0.044318046395719436,0.056361163599344274,0.047069088233744713,0.045720735900304836,0.044171528327372804,0.037521486392144469,0.044789842329014694,0.049207252121526233,0.043457443164675348,0.050783424290122545,0.045908696769920251,0.051560854271516625,0.039285576887219023,0.03775449623653665,0.040491967713629173,0.045196553295756683,0.0422355025188745,0.043354401372751011,0.036084490935141683,0.043641122683428332,0.049997518938142742,0.040207185581910776,0.055057784669710674,0.046388355184570476,0.044157841096460718,0.049936390649873333,0.050697589828567771,0.042024558098327114,0.041234256872764823,0.038804539459156434,0.044054946703714862,0.03998565566705483,0.042838690537834255,0.043872297963614519,0.051333093364569267,0.043540173036866935,0.040891345859966996,0.042910833453610589,0.037279246715490752,0.040501899845872706,0.048906435334844962,0.048022073127577204,0.049208844190833552,0.050143464526732684,0.04767767370050853,0.046362248055944195,0.036478171795185137,0.033940371521434809,0.044785024080196301,0.040563583841763694,0.043680258422818793,0.042734808931608879,0.046009872932469817,0.044158645046193622,0.044107857495954007,0.041032819322338918,0.045380424017597412,0.04631337596199208,0.047984323228913953,0.042256925091231481,0.047456709214840145,0.041233897596510694,0.042371374773839857,0.050315965381483883,0.042040643292777569,0.038071617968391563,0.044396675893626197,0.046852137710091279,0.040628182029901719,0.041467514275190215,0.045985908209610425,0.04707879516246493,0.045695568700397184,0.048449261564360607,0.03664620011861467,0.042371202081975673,0.051020980726704919,0.037439759839624366,0.050311959924504025,0.040596123352859045,0.032985303048273164,0.048974783015852529,0.059442866881126967,0.047388521136617366,0.042469090340169192,0.037005819370821792,0.041667311097019676,0.043936306168463002,0.047348316640399311,0.048593352712730263,0.04427629197792099,0.036203023446674629,0.040186172865141569,0.039604969194878541,0.047180824278878347,0.044713255974241958,0.041226867747447854,0.040504103849978407,0.038796868595592671,0.032939954497624074,0.049699575555851021,0.04203910334174564,0.047918969096703873,0.046009672312034344,0.047960013418345979,0.03891629752082508,0.042193193917246942],"y":[-0.081903451165601701,-0.077495672911755395,-0.047385460844986849,-0.027067281588523999,-0.032664667065250293,-0.026067968036116756,-0.021402639699820491,-0.057931770632811873,-0.092026543116480439,-0.052779077347680434,-0.089104034467508544,-0.072476418104293103,-0.037377519571034509,-0.031617838210040376,-0.037000137939184198,-0.066202992199197855,-0.03556500488506651,-0.028536678583704393,-0.049377192479347291,-0.04921843440868888,-0.047934504505556759,-0.032056469246700983,-0.064613783015435342,-0.046838912187379227,-0.075247065494002743,-0.017446219664640009,-0.066338778888815786,-0.034784861119667693,-0.08247413353200557,0.031326592132210763,-0.02724202367898116,-0.11503771270635904,-0.086041759139925109,-0.079375191458983863,0.0099035006374742027,-0.039718618937564301,-0.040609919644254838,-0.055810983591337383,-0.041542183279589043,-0.076559178433139641,-0.039784704194300406,-0.071484042116996827,-0.0030061501697152587,-0.043443773355493577,-0.02978788605546134,-0.017518948402771264,-0.070246648299006453,-0.04811485618218328,-0.070899134461649291,-0.031342696816578419,-0.077521707386032479,-0.046839221675028943,-0.051093736589274942,-0.03897606607273206,-0.06779280116893413,-0.071964524963469612,-0.0464659414429415,-0.042791786386356528,-0.012862398793173925,-0.055710546928876607,-0.06454278306632695,-0.018454914669368827,-0.063267477683203288,-0.065516726143442089,-0.016634167658077573,-0.071261382015116684,-0.060286468573132058,-0.028670075459046662,-0.0048713638774021831,-0.015633460279525564,-0.019014907055733263,-0.062357896978345144,-0.034538003439997765,-0.020599262588826703,-0.069615857484749119,-0.029565700948984693,-0.036858261255474298,-0.026583967384274175,-0.0056422927276350721,-0.029299346293705918,-0.045427879574413389,-0.0065414594761519689,-0.054412574874046812,-0.043060318925756069,-0.046809873700164081,-0.033593692443156256,-0.056223882758745715,-0.080274534750416904,-0.070373184883739476,-0.048113837510789986,-0.063538299498343165,-0.037872952821833686,-0.039618120218359754,-0.044818600494436471,-0.051638940103808144,-0.024023654640416715,-0.027775757782167371,-0.075434170676583284,-0.012734860203653102,-0.067906296957078269,-0.048012628488583821,-0.0062787971581788251,-0.072471890348559137,-0.056019032786510707,-0.042867933661485273,-0.058392600773076168,-0.023000331812767592,-0.0040555054776090461,-0.043181508161705004,-0.028165052863427603,-0.026857680640229739,-0.055747404697452083,-0.041615927053252302,-0.016772411214410886,-0.12959594822126982,-0.062512363496033632,-0.061620779324139036,-0.081145031381763294,-0.082250996018186098,-0.063736334358158633,-0.038741512002944796,-0.024650354292022423,-0.017939611653649042,-0.081395463759484435,-0.048167379839893824,-0.016774382735707846,0.014011397786164522,-0.021638673439556159,0.0056976458317746391,-0.054008658606205531,-0.05524191575364374,-0.01298658859005886,-0.035409294787482837,-0.071001609030053064,-0.038413142488607749,-0.088722448669018392,-0.0086237046502362497,-0.023505058097984012,-0.072236674175036375,-0.047253132715974644,-0.017281432408477678,-0.044326545021727615,-0.020330714030718497,-0.042531483635779833,-0.010365404694293321,-0.046067629675957379,-0.025385137038208459,-0.054934811182074758,-0.060599490375551568,-0.063813437494003325,-0.051059822446890175,-0.059614004504177164,-0.059174597211034297,-0.057594311202839345,-0.052622020149263649,-0.043904115902992431,-0.087742546726883794,-0.048639159059006391,-0.045674176598184832,-0.020787590911159677,-0.028356545263687485,-0.06794336698656997,-0.037783392792528972,-0.024118600425410825,-0.062960144280188923,-0.031294742971456971,-0.039429680401915447,-0.072227759765143423,-0.031354677481922742,-0.082076128020059605,-0.0015008634762965966,-0.018632381791148917,-0.03616101255012065,-0.020536198734698266,-0.027772944458851131,-0.085795057485342288,-0.078504801267684443,-0.064511133054784911,-0.027596378745388853,-0.017274930912723186,-0.047216467807980757,-0.041926045151895269,-0.038423526247442975,-0.031898828901158582,-0.050055620148816114,-0.048595608744219525,-0.071762808377249021,-0.009609044827906716,-0.04499251516122374,-0.036361241048692733,-0.047623301237012375,-0.0033792256590043793,-0.072961866273522705,-0.05102414407880547,-0.089288911882215993,-0.042865549254576779,-0.040784079026465185,-0.0049723541192267734,-0.040477943485843611,-0.092774771498764827,-0.058337230384742748,-0.0092136348782453931,-0.050560329339644106,-0.0045756612343351415,-0.012014135946277751,-0.030948925639670846,-0.091509957289623037,-0.041308317707072231,-0.05113124946338226,-0.051651400632237159,-0.0895312114233284,-0.026132042685286499,-0.011233600792001275,-0.064692709110077296,-0.038184498959253341,-0.059316103185503434,-0.038262160667887748,-0.049513799693641121,-0.041005602935264958,-0.058123803786037542,-0.024484219039390184,-0.024992795080385776,-0.0099097287224914361,-0.068419509562294381,-0.031621589882182152,-0.037618570253361898,-0.089425100585127426,-0.073175628989357436,-0.0052146769241850754,-0.083788058945967595,-0.025237235151095029,-0.052801379248252088,-0.051402644263781751,-0.037520022115962039,-0.049188798507089168,-0.061648692791066925,-0.016852479472977081,-0.037605725752548655,-0.07476306399858805,-0.066748109586128326,-0.083544662061771233,-0.044529048353716946,-0.057753785956827883,-0.075978786136420423,-0.054829369127478059,-0.017173737695027735,-0.046668090931480326,-0.028175718758905764,0.0034805145090774504,-0.035002969458879471,-0.010224180142731049,-0.025777534275599673,-0.051327078831487856,-0.095924747756486253,-0.037269744682031702,-0.055683973021805,-0.11235510070819013,-0.041355999874432531,-0.060527719326749108,-0.0692378135847974,-0.080632550486664095,0.0059107817204400127,-0.044108288609566684,-0.064763723012573271,0.014969104740271022,-0.036164913211784305,-0.10901785344595363,-0.069584123134967021,-0.080315398988395459,-0.084208448909847439,-0.045452878678807533,-0.084858007779085282,-0.051477382938856293,-0.094203732490758238,-0.043570056963173599,0.014663709505303981,-0.065367506409766213,-0.031680323588558532,-0.10157951995539874,-0.1161932836898268,-0.042715980013983135,-0.005071058409733032,-0.057485030365446638,-0.01539990894615015,-0.0080209923150562495,-0.037174409699898422,-0.055539526811853528,-0.02978748597819773,-0.044875882596797499,-0.013061698192473546,-0.054048709415279013,-0.062152036917824956,-0.066112470391113509,-0.096907935909493342,-0.040824236217912542,-0.015498782553125569,-0.0040695107301233231,-0.0078528786260042959,-0.066738678800044526,-0.096229688750022857,-0.079964169406396557,-0.058994221836592531,-0.032802381363871799,-0.057249308792291939,-0.01968556907720773,-0.041294791565097591,-0.019189552800767094,-0.041179065923050172,-0.036819199403001247,-0.021976566180714724,-0.017647813157866246,-0.076383302619172561,-0.082759957473615142,-0.061571407203665288,-0.13831644086362413,-0.060864740059138403,-0.050755736104456245,-0.058067949161440952,-0.082324614910308971,-0.070033164186094329,-0.017184884497500805,-0.063389076944187966,-0.065102563152614437,-0.04269401264856592,-0.05724705018315613,-0.0011774937990925484,-0.028233243987107887,-0.085822086834290615,-0.048037432725468704,-0.032449703496725685,-0.042964459822022863,-0.048550525329425012,-0.061411496202944942,-0.064078914375952853,-0.06080699106355094,-0.075733358840474052,-0.055514278224782089,-0.026007863387374385,-0.0038309087909662496,-0.025326123375252547,-0.08831761348625107,-0.026105900497968872,-0.043315870315062378,-0.013034569615116908,-0.064525451073255288,-0.092290381801014093,-0.067877550809394407,-0.0074688004960390287,-0.071475597261052348,-0.003238217245113749,-0.029221180116512698,-0.038074187236780903,-0.032183311263791564,-0.059661990377419406,-0.01745243036972877,-0.047247973054695906,-0.018008182312839745,-0.070864701545322997,-0.066927043566413297,-0.063320259543241386,-0.02616138525550981,-0.042330303290041199,-0.042363792499824811,-0.02568393076716197,-0.04170840774359489,-0.044154557440109488,-0.046032780874251798,-0.03850922068514661,-0.055245462424224422,-0.046454876835975323,-0.070669332879459174,-0.038950590007478941,-0.029680165821683951,-0.060916531999044593,-0.10172090009361044,-0.055200818642906622,-0.036137066487297698,-0.017142737510590245,-0.015733621075578828,-0.035256684964240413,-0.040384191217214857,-0.041615401389595491,-0.045624815291493447,-0.0097699879698969899,0.010918588566359083,-0.040731236998668145,-0.048841898122088508,-0.043017124263799639,-0.027002552946293838,-0.045539798292360094,-0.035172955223464801,-0.021128793934253588,-0.051768712179352604,-0.051311672778627068,-0.031162274861655043,-0.056937637375574807,-0.043294379325133761,-0.0071061982308987907,-0.010899402003809421],"type":"histogram2d","nbinsx":20,"nbinsy":20,"marker":{"line":{"color":"rgba(31,119,180,1)"}},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<div class="plotly html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-0b6fb29e7719bcda6c75" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-0b6fb29e7719bcda6c75">{"x":{"visdat":{"20a16e4a46d5":["function () ","plotlyVisDat"]},"cur_data":"20a16e4a46d5","attrs":{"20a16e4a46d5":{"x":[0.048002447704248503,0.044134504049139635,0.038789291332079208,0.05091769718015856,0.0421760656888545,0.045034005378413407,0.045319096154077546,0.046825505706604424,0.0452537111101175,0.043275198795438771,0.041982807775398465,0.040004630828155585,0.051628462528751078,0.04277095655575628,0.046472592427275958,0.044040072457783595,0.04877748850092653,0.03862889356440953,0.042239173473875839,0.052514764942726187,0.043900920526198567,0.045611989855136162,0.039557506026634916,0.043242668874779802,0.044081177955709205,0.044676232676453549,0.038378761254818629,0.048458709300923129,0.03508048337250038,0.044581019108345034,0.039950773255827528,0.044462114799659017,0.05868284731366321,0.040582752707334427,0.046533296855412097,0.05104246262013299,0.051925909726019646,0.04417206866946187,0.046800351821926309,0.044848284338934924,0.044619259414540147,0.042829163938637532,0.046097295887102985,0.044523869357944522,0.044903007190389574,0.046324578300315486,0.044730538450090798,0.041717392337051254,0.033766829509669624,0.045102401352946533,0.039011121252404773,0.041876059094326235,0.038485236497549147,0.040165333322903653,0.0396217721491815,0.041149183869529628,0.04073831350562044,0.048662073573897818,0.041083896258982872,0.047933043807635245,0.043065461612392615,0.043471321663635737,0.044766855771756035,0.044339312326355511,0.044671007400215346,0.045148767639666812,0.042529717727873353,0.051737177777223219,0.049638832327007741,0.045208821935939329,0.052153083668580874,0.052195890584302747,0.043071162516664978,0.04301575732570332,0.047828417180780521,0.039100081503923197,0.046204254245340748,0.042256592352634757,0.046000939262963683,0.050046877135323291,0.040280611409138703,0.046683829817079969,0.04505327612696812,0.042425745882058823,0.043379319177843184,0.044890450337050934,0.048007501459111757,0.040099714107844568,0.041667836193063634,0.050476313483103337,0.041749898309871886,0.040838696731967161,0.039091703497942464,0.045749917762435394,0.042804522702432776,0.056613161262432078,0.047280082871769921,0.045059235995254909,0.044233654133539774,0.04700313323269633,0.050317355734745134,0.063572427764438971,0.043459401166659584,0.035786629811412611,0.052054688161449245,0.04121430303125697,0.050416612039256646,0.050123838435236032,0.037619603900338743,0.04452833176644224,0.039535196442007856,0.048679096132680164,0.046763013327638152,0.039929864957013908,0.038939206376531962,0.043166436256285405,0.047736030817694411,0.033345763627071971,0.0456015231356297,0.043060852755514155,0.045348649709519455,0.043637523133155533,0.040095063156556462,0.045282335911118257,0.050090666616800082,0.043505187549527854,0.049540247224055416,0.043135692295237504,0.037840118911058825,0.046608697464842502,0.045018705015519148,0.050784512870383929,0.045345352812028054,0.049743319559244485,0.05078217635767826,0.041757880237813357,0.040139719005603099,0.038638506858906796,0.044634204194219866,0.037625695707404566,0.045182812675666185,0.047027517551421073,0.039545003025763949,0.042299740206154922,0.034151705132189632,0.044143183522675218,0.050949802758157831,0.040348012615290467,0.048060413973515473,0.040512806583724005,0.047165328965291679,0.048749368752773359,0.052317630856733431,0.043455701855212622,0.045505187966301257,0.049186065239325456,0.049987248354110385,0.045401524369827792,0.052611257657355852,0.044128148844788689,0.046691530666822322,0.037422497233614731,0.049033246867612228,0.04726416122672774,0.035009824850810542,0.037683747471251333,0.054762051674440544,0.039940683464949521,0.035217366967403053,0.044052835558025423,0.046978211315325244,0.045642583234461451,0.050167147269807116,0.043272590292133352,0.045879828541006203,0.043987869478465183,0.043960473578738342,0.04418306827226539,0.040047121078528793,0.044059431254717653,0.053811961466855435,0.061407127214139191,0.047170583727097218,0.041462354272411295,0.037023475869896363,0.042743856586505403,0.051641672070808456,0.039304846580480807,0.039595864742292756,0.038474950594502733,0.053466223055857541,0.046103882307705811,0.040152183924087974,0.040312342793800533,0.053535208116869591,0.047239640095033342,0.050073819594946577,0.052847206945582814,0.038949268265323987,0.042600168368098774,0.036136194596127283,0.037394880420109598,0.046837221936181207,0.042648227173004538,0.048292362924330035,0.053300512458494209,0.046550582839038755,0.046582754996639511,0.04285648630766719,0.045254969531337494,0.036706871130970209,0.040745241665273213,0.039607963441056715,0.040392069886903741,0.052001345124495925,0.038774050060548231,0.042569206802616132,0.043276743326629161,0.041582432025823041,0.047821689561735957,0.041167758852229931,0.056715788239092846,0.051121058805069973,0.040129010477510427,0.041181463314838483,0.041262870798064989,0.058171080021191,0.041254494723294739,0.049036399641932849,0.046527174244513157,0.042064435937152693,0.051240297608155135,0.037890739441293973,0.042036539452414111,0.047033809914153575,0.043893854319396658,0.04282338031772797,0.043047326471283835,0.042123754256888947,0.044672176717496868,0.044811550294698528,0.041721200253256756,0.039923258320874587,0.044206412824398487,0.045039947630062888,0.04995783599810432,0.056293675880199436,0.042269215760945777,0.04355739620240541,0.043023765715451641,0.040653585642783492,0.041131706199979419,0.043719067033362292,0.040390161099722516,0.045329405920270432,0.041325901278819792,0.048264186649607993,0.045676249912410156,0.050836611329280919,0.043667258331162764,0.043790119480234549,0.042960534630127452,0.053968434257446338,0.038431148991888972,0.037597593918602117,0.039281441622939853,0.051140941684370479,0.044958577903756416,0.041058525129713717,0.040422691882759827,0.043729181906737011,0.043446615966908034,0.039110629950947134,0.043463278961530814,0.037948361489181959,0.044658579916771128,0.045294865435542189,0.040076992029629319,0.050386882715540454,0.048944621049341379,0.045772727833589058,0.041103187701723991,0.036453818366523408,0.050483567757758543,0.041646805165527073,0.04096950003476596,0.046728883523496578,0.035802330126585472,0.044375610238708944,0.040055990251262864,0.038182675915959398,0.038286752380280245,0.050553912900481716,0.053220819924285484,0.053172611212619847,0.048824271634451237,0.043362241038404518,0.050495279141397953,0.044559089873132729,0.04180009112194974,0.050323731197277996,0.049004328383191562,0.047023070130478399,0.045727672585450324,0.046004895988771069,0.048218231833893281,0.051518943403945472,0.036142087823172672,0.047712621054752179,0.044947060514309529,0.047455461891221587,0.053570722611875538,0.042804224884183173,0.039295827199076809,0.037808654924567982,0.04710076661450787,0.050126686356761423,0.043087509670203902,0.045318895809953089,0.039318999605330592,0.037634781096723822,0.047507097681124807,0.04930748825955026,0.038193224866758552,0.046189925918979823,0.048644057906808411,0.048889781084686744,0.044818888612935072,0.0492072984563987,0.039673786085296522,0.044748487646115095,0.044670110613524674,0.04915314102496187,0.040087580717822056,0.037848427927023476,0.042234799975142283,0.049731608848157756,0.050985422425644883,0.042873127143141974,0.040195909503168752,0.042248669701893386,0.04264552306376683,0.041277648776772966,0.042935785586597906,0.040542134038055684,0.050499447194051895,0.033902880769151877,0.043093614579251913,0.048379606846361459,0.049183447502702773,0.045770909830660955,0.045228528964574743,0.041539089918403826,0.047767771994734781,0.039470373989851246,0.043234612170869026,0.042535908780052145,0.047556253483478549,0.051428081497467817,0.045382674794870584,0.041954379703617782,0.04592475901133812,0.04126153855843865,0.047505857382679345,0.039392419855469867,0.044851141426700672,0.039285389089299433,0.051284205771928784,0.049341082534417054,0.048213125862789183,0.048398748313715378,0.041928147219481467,0.042178512068215893,0.042228567836539735,0.046334742806326726,0.039467544732936698,0.049937556297675309,0.049535058421468998,0.037805159438672069,0.046316492133978551,0.040359558565689867,0.051934516837827474,0.040294077086457818,0.050534505611993283,0.044559108428810557,0.043954240573637456,0.042217300400278837,0.0442099897918714,0.048464712364699118,0.047525008200232401,0.041952467050179403,0.051693087891597433,0.053853852577904773,0.040198919087246363,0.046147205765591677,0.042038682572105114,0.038126776105922772,0.043810213914896777,0.046197385287180343],"y":[-0.040299562103735524,-0.088230334283796299,-0.039500624823700432,-0.057031890164134603,-0.049328824114834614,-0.04151746667265397,-0.067928673753379049,-0.044826899457047958,-0.034424376114587325,-0.0094739693178192627,-0.053302476953742024,-0.034608280508379129,-0.10835959116471548,-0.013240736387677072,-0.08828052249725532,-0.070732264546847126,-0.10236266443744127,-0.020826708851989211,-0.0092047884648305822,-0.066673680122288165,-0.011960562055818911,-0.079916148848546711,-0.032761361349051041,-0.084339625707645083,-0.0086077467748118495,-0.04045762463437591,-0.00022429551845793707,-0.091318282936248732,-0.020108204341057225,-0.04102890207744718,-0.0086732919615090456,-0.038965679496203651,-0.090745061427136217,-0.038918927395989962,-0.071779240250964368,-0.026072189792532272,-0.058815049714847668,-0.020900320495787616,-0.067406238880285532,-0.011472026440148199,-0.03774292231648424,-0.03184727638399304,-0.048007282569805285,-0.019374993623139394,0.0051788678775668024,-0.056042362254313791,-0.033069590585096412,-0.03340013077723316,-0.012976876116509549,-0.045188806566604497,-0.039966038119770009,-0.055913952174814777,-0.02366857793154142,-0.062387306844919055,-0.068587535959009974,-0.051903525005644269,-0.0672104558509488,-0.029289958606582046,-0.021984150356063169,-0.044368657996655216,-0.041407211530199585,-0.04479428221335674,-0.0055344051108216575,-0.074264108613462443,-0.029740731462724979,-0.054871166293712477,-0.022170059957024577,-0.04092400659385171,-0.065173096591683924,-0.090234749735704056,-0.11169347873019744,-0.071039887157990006,-0.038357441342829028,-0.060939647993056262,-0.055085540267339271,-0.029681991046214731,-0.052184291474396807,-0.019025538447659154,-0.014253067000942175,-0.034983728746662467,-0.037739833645360071,-0.06482760443087901,-0.03617297442210686,-0.035224100029391817,-0.0061640129932066879,-0.021934409858445303,-0.052074027377318047,-0.052129026418441061,-0.00034240865665184791,-0.058988094884154824,-0.062136070901960078,-0.042409980280444216,-0.033704878941016606,-0.058577876290718298,-0.026234905527885457,-0.070910804058930549,-0.049250222789756923,-0.040169405280323055,-0.045382877850045529,-0.043452983215285686,-0.059931908729604973,-0.075074517683840089,-0.018617107536836548,-0.040892178367138612,-0.093852304945178336,-0.041782753260860894,-0.080925821734675343,-0.015785578825374735,-0.032168494469769507,-0.043571959074909669,0.0058609406444976942,-0.049436054620878765,-0.068271726275245651,-0.019032979215061599,0.010291578980259088,-0.030809364933935511,-0.05774615996201575,-0.040970619486109354,-0.047282392345948367,-0.047664598970508024,-0.027428547649620393,-0.096679919674137194,-0.034164680049251342,-0.10116251899136748,-0.057639244394745263,0.0015528556487139987,-0.066607590315037976,-0.025704362387536921,-0.0039429131626173763,-0.041054690779021297,-0.026388660088784287,-0.045618778425739255,-0.037009612067355514,-0.053566938989154704,-0.065047235474962037,-0.018371794752595018,-0.036972448515559392,-0.072468816712229864,-0.055021104571165456,-0.014737415563475402,-0.10681253276225866,-0.050791103385014892,-0.053590760283314567,-0.041429833727732193,-0.039186898277736935,-0.041672406817567356,-0.03954300693985513,-0.095341874637765611,-0.065722211297552,-0.04001522715240894,-0.070390008051165048,-0.044054434923147735,-0.05901371799610388,-0.054171661678783893,-0.052878518298604432,-0.050767424338463207,-0.08314830428707061,0.0011132231898234009,-0.062002517079784797,-0.067908896355172818,-0.07626736253721314,-0.019245458733231424,-0.10761527350785159,-0.052997744118038738,-0.061578521045428797,-0.063646958052385086,-0.013687853759316042,0.017758606899758042,-0.034439051358689181,-0.073889124033446552,-0.066298454831254183,-0.038233879907880831,-0.054287618688009201,-0.052590322310880476,-0.10133349865076657,-0.007363846331948103,-0.052385335811221394,-0.036925729475847338,-0.027446621639555635,-0.059728576845234999,-0.094432397541754795,-0.076215565260114623,-0.061807819866242987,-0.045328681099319305,-0.039801457069294763,-0.042973571268833242,-0.091265628630190318,-0.046721378828597483,-0.080404613987457643,-0.010573190722466753,-0.097652303737288088,-0.053437661626531505,-0.049119556741830543,-0.03943465386178336,-0.019540289795115556,-0.045570929583795883,-0.034646360770414178,-0.027602765307468614,-0.040823157022749239,-0.049205660243297103,-0.053681352289599978,-0.018842055853504486,-0.047238959186788297,-0.049050363519961469,-0.094613904768481694,-0.06605678226452931,-0.023196010544330785,-0.027826552757274563,-0.015093998823705913,-0.039926056402240083,-0.025807766561871521,0.0060016145806473676,0.0071573886321371349,-0.043702104395649713,-0.085964826466628494,-0.027228060965217463,-0.027061957611489912,-0.058609889903928056,-0.023197829747732445,-0.067537407600936211,-0.041482528405386965,-0.083879501734195477,-0.0925083721991206,-0.063947192806665679,-0.036750963120386081,-0.032036455290422032,-0.090607281765684194,-0.033781784048095238,-0.056676604834448904,-0.062431337085282666,-0.023844822408397161,-0.045250943015373656,-0.029632910250469369,-0.095701130224465858,-0.062685181936831952,-0.052643213038320875,-0.032604177559801953,-0.056813250843097365,-0.070706755868230178,-0.052480097935289981,-0.03926211968765745,0.0030563154335810803,-0.0076398839618791641,-0.016018580165078011,-0.056358438956037614,-0.052284923826670326,-0.079091183136820717,-0.03623681510142665,-0.029806810258513713,-0.040223558135678683,-0.01742621742636968,-0.037227933201354806,-0.079430212493670341,-0.053229119590031279,-0.04055078290115146,-0.038366847791338712,-0.039229904950951335,-0.064523828381425896,-0.06740591078115156,-0.03693604734480236,-0.053699340527905016,-0.068154481871255349,-0.04813880182765206,-0.061799199389308584,-0.06060449628505258,-0.048578836307491886,-0.084630519951840233,-0.027603059673495283,0.010147866280479007,-0.0047513481280726591,-0.040728012641342945,-0.054670503316114442,-0.040204201579505862,-0.055302672828390499,0.0085463235652791097,-0.058373449556208136,-0.07163614509374247,-0.043161156225982454,-0.094100565056731797,-0.051474703488979812,-0.080661919952056821,-0.03597876296980887,0.0019139640652373188,-0.066316190107010897,-0.0044074046435818685,0.0049932147951690124,-0.055150789529731438,-0.021639490243246969,-0.012692599013573114,-0.019784697766269423,-0.015799149310372584,-0.023088378786800944,-0.039732299014541422,-0.062813878896209929,-0.10177656366690607,-0.05451946144458255,-0.057130316639634894,-0.032360540155097324,-0.052245002505775441,-0.052913996928272561,-0.06688388932961134,-0.019184000738688044,-0.054575827530392709,-0.057321797798467328,-0.077561561876206317,-0.052914380944870602,-0.084668334488605557,-0.045800167779708016,-0.057638305775082666,-0.025180452550849736,-0.051707837724050278,-0.082583067782189531,-0.058596084190394873,-0.054181127304092719,-0.02497729210136251,-0.058108617748493588,-0.038949111623097402,-0.062950256534102939,-0.033882195893763956,-0.03072147960800433,-0.028645451920396147,-0.04883232756816986,-0.086586208985344804,0.010705754356962137,-0.092683767531139424,-0.051103870729153955,-0.12351458217640454,-0.063873643917108897,-0.030590723277847238,-0.05429766566505051,-0.065661214846073096,-0.050857267187254758,-0.027743604458506044,-0.037635074126151066,-0.062033213401217299,-0.022650296618833207,-0.06727766657690494,-0.062746666730704892,-0.076185660687040496,-0.063819104080355682,-0.046909257074236904,-0.049686196090563559,-0.047901223435507991,-0.011531242950984774,-0.055685807577074246,-0.067828195880091216,-0.057526003772604743,-0.04952469740128071,-0.075825806710839577,-0.032980755735044213,-0.022435645120642864,-0.03075938280780913,-0.046704838113163616,-0.041058163585462722,-0.051697754191844122,-0.021937261919957905,-0.03296699625388632,-0.098752819947914405,-0.0068467971677475589,-0.044447223227802111,-0.028711583986370026,-0.089093649168794795,-0.069027215373040074,-0.074094492261603404,-0.044316046205428318,-0.041971500607498075,-0.07656974406002387,-0.073628180842955207,-0.067364863495135013,-0.055472120896591592,-0.061529871649546854,-0.021415384864267927,-0.049719318774303932,-0.06298835461109889,-0.061588559077310416,-0.05500466414922122,-0.055401669126102525,-0.069237270831914319,-0.036208273469838501,-0.056692446353992905,-0.038002779344492962,-0.070136431293547075,-0.055620721868181143,-0.080325681743375982,-0.037098866671567345,-0.0408204427706629,-0.064058559806687496,-0.074248821662154824,-0.089449642059827958,-0.066139163173791066,-0.059845826855879192,-0.097797233593953717,-0.079907359590885282,-0.061428039327539166,-0.031571616972474764,-0.032911953888416931,-0.039248337322649776,-0.057527676315227698,-0.029257148666375951],"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"histogram2d","nbinsx":20,"nbinsy":20,"inherit":true}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"xaxis":{"domain":[0,1],"automargin":true,"title":[]},"yaxis":{"domain":[0,1],"automargin":true,"title":[]},"hovermode":"closest","showlegend":false,"legend":{"yanchor":"top","y":0.5}},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"colorbar":{"title":"","ticklen":2,"len":0.5,"lenmode":"fraction","y":1,"yanchor":"top"},"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"x":[0.048002447704248503,0.044134504049139635,0.038789291332079208,0.05091769718015856,0.0421760656888545,0.045034005378413407,0.045319096154077546,0.046825505706604424,0.0452537111101175,0.043275198795438771,0.041982807775398465,0.040004630828155585,0.051628462528751078,0.04277095655575628,0.046472592427275958,0.044040072457783595,0.04877748850092653,0.03862889356440953,0.042239173473875839,0.052514764942726187,0.043900920526198567,0.045611989855136162,0.039557506026634916,0.043242668874779802,0.044081177955709205,0.044676232676453549,0.038378761254818629,0.048458709300923129,0.03508048337250038,0.044581019108345034,0.039950773255827528,0.044462114799659017,0.05868284731366321,0.040582752707334427,0.046533296855412097,0.05104246262013299,0.051925909726019646,0.04417206866946187,0.046800351821926309,0.044848284338934924,0.044619259414540147,0.042829163938637532,0.046097295887102985,0.044523869357944522,0.044903007190389574,0.046324578300315486,0.044730538450090798,0.041717392337051254,0.033766829509669624,0.045102401352946533,0.039011121252404773,0.041876059094326235,0.038485236497549147,0.040165333322903653,0.0396217721491815,0.041149183869529628,0.04073831350562044,0.048662073573897818,0.041083896258982872,0.047933043807635245,0.043065461612392615,0.043471321663635737,0.044766855771756035,0.044339312326355511,0.044671007400215346,0.045148767639666812,0.042529717727873353,0.051737177777223219,0.049638832327007741,0.045208821935939329,0.052153083668580874,0.052195890584302747,0.043071162516664978,0.04301575732570332,0.047828417180780521,0.039100081503923197,0.046204254245340748,0.042256592352634757,0.046000939262963683,0.050046877135323291,0.040280611409138703,0.046683829817079969,0.04505327612696812,0.042425745882058823,0.043379319177843184,0.044890450337050934,0.048007501459111757,0.040099714107844568,0.041667836193063634,0.050476313483103337,0.041749898309871886,0.040838696731967161,0.039091703497942464,0.045749917762435394,0.042804522702432776,0.056613161262432078,0.047280082871769921,0.045059235995254909,0.044233654133539774,0.04700313323269633,0.050317355734745134,0.063572427764438971,0.043459401166659584,0.035786629811412611,0.052054688161449245,0.04121430303125697,0.050416612039256646,0.050123838435236032,0.037619603900338743,0.04452833176644224,0.039535196442007856,0.048679096132680164,0.046763013327638152,0.039929864957013908,0.038939206376531962,0.043166436256285405,0.047736030817694411,0.033345763627071971,0.0456015231356297,0.043060852755514155,0.045348649709519455,0.043637523133155533,0.040095063156556462,0.045282335911118257,0.050090666616800082,0.043505187549527854,0.049540247224055416,0.043135692295237504,0.037840118911058825,0.046608697464842502,0.045018705015519148,0.050784512870383929,0.045345352812028054,0.049743319559244485,0.05078217635767826,0.041757880237813357,0.040139719005603099,0.038638506858906796,0.044634204194219866,0.037625695707404566,0.045182812675666185,0.047027517551421073,0.039545003025763949,0.042299740206154922,0.034151705132189632,0.044143183522675218,0.050949802758157831,0.040348012615290467,0.048060413973515473,0.040512806583724005,0.047165328965291679,0.048749368752773359,0.052317630856733431,0.043455701855212622,0.045505187966301257,0.049186065239325456,0.049987248354110385,0.045401524369827792,0.052611257657355852,0.044128148844788689,0.046691530666822322,0.037422497233614731,0.049033246867612228,0.04726416122672774,0.035009824850810542,0.037683747471251333,0.054762051674440544,0.039940683464949521,0.035217366967403053,0.044052835558025423,0.046978211315325244,0.045642583234461451,0.050167147269807116,0.043272590292133352,0.045879828541006203,0.043987869478465183,0.043960473578738342,0.04418306827226539,0.040047121078528793,0.044059431254717653,0.053811961466855435,0.061407127214139191,0.047170583727097218,0.041462354272411295,0.037023475869896363,0.042743856586505403,0.051641672070808456,0.039304846580480807,0.039595864742292756,0.038474950594502733,0.053466223055857541,0.046103882307705811,0.040152183924087974,0.040312342793800533,0.053535208116869591,0.047239640095033342,0.050073819594946577,0.052847206945582814,0.038949268265323987,0.042600168368098774,0.036136194596127283,0.037394880420109598,0.046837221936181207,0.042648227173004538,0.048292362924330035,0.053300512458494209,0.046550582839038755,0.046582754996639511,0.04285648630766719,0.045254969531337494,0.036706871130970209,0.040745241665273213,0.039607963441056715,0.040392069886903741,0.052001345124495925,0.038774050060548231,0.042569206802616132,0.043276743326629161,0.041582432025823041,0.047821689561735957,0.041167758852229931,0.056715788239092846,0.051121058805069973,0.040129010477510427,0.041181463314838483,0.041262870798064989,0.058171080021191,0.041254494723294739,0.049036399641932849,0.046527174244513157,0.042064435937152693,0.051240297608155135,0.037890739441293973,0.042036539452414111,0.047033809914153575,0.043893854319396658,0.04282338031772797,0.043047326471283835,0.042123754256888947,0.044672176717496868,0.044811550294698528,0.041721200253256756,0.039923258320874587,0.044206412824398487,0.045039947630062888,0.04995783599810432,0.056293675880199436,0.042269215760945777,0.04355739620240541,0.043023765715451641,0.040653585642783492,0.041131706199979419,0.043719067033362292,0.040390161099722516,0.045329405920270432,0.041325901278819792,0.048264186649607993,0.045676249912410156,0.050836611329280919,0.043667258331162764,0.043790119480234549,0.042960534630127452,0.053968434257446338,0.038431148991888972,0.037597593918602117,0.039281441622939853,0.051140941684370479,0.044958577903756416,0.041058525129713717,0.040422691882759827,0.043729181906737011,0.043446615966908034,0.039110629950947134,0.043463278961530814,0.037948361489181959,0.044658579916771128,0.045294865435542189,0.040076992029629319,0.050386882715540454,0.048944621049341379,0.045772727833589058,0.041103187701723991,0.036453818366523408,0.050483567757758543,0.041646805165527073,0.04096950003476596,0.046728883523496578,0.035802330126585472,0.044375610238708944,0.040055990251262864,0.038182675915959398,0.038286752380280245,0.050553912900481716,0.053220819924285484,0.053172611212619847,0.048824271634451237,0.043362241038404518,0.050495279141397953,0.044559089873132729,0.04180009112194974,0.050323731197277996,0.049004328383191562,0.047023070130478399,0.045727672585450324,0.046004895988771069,0.048218231833893281,0.051518943403945472,0.036142087823172672,0.047712621054752179,0.044947060514309529,0.047455461891221587,0.053570722611875538,0.042804224884183173,0.039295827199076809,0.037808654924567982,0.04710076661450787,0.050126686356761423,0.043087509670203902,0.045318895809953089,0.039318999605330592,0.037634781096723822,0.047507097681124807,0.04930748825955026,0.038193224866758552,0.046189925918979823,0.048644057906808411,0.048889781084686744,0.044818888612935072,0.0492072984563987,0.039673786085296522,0.044748487646115095,0.044670110613524674,0.04915314102496187,0.040087580717822056,0.037848427927023476,0.042234799975142283,0.049731608848157756,0.050985422425644883,0.042873127143141974,0.040195909503168752,0.042248669701893386,0.04264552306376683,0.041277648776772966,0.042935785586597906,0.040542134038055684,0.050499447194051895,0.033902880769151877,0.043093614579251913,0.048379606846361459,0.049183447502702773,0.045770909830660955,0.045228528964574743,0.041539089918403826,0.047767771994734781,0.039470373989851246,0.043234612170869026,0.042535908780052145,0.047556253483478549,0.051428081497467817,0.045382674794870584,0.041954379703617782,0.04592475901133812,0.04126153855843865,0.047505857382679345,0.039392419855469867,0.044851141426700672,0.039285389089299433,0.051284205771928784,0.049341082534417054,0.048213125862789183,0.048398748313715378,0.041928147219481467,0.042178512068215893,0.042228567836539735,0.046334742806326726,0.039467544732936698,0.049937556297675309,0.049535058421468998,0.037805159438672069,0.046316492133978551,0.040359558565689867,0.051934516837827474,0.040294077086457818,0.050534505611993283,0.044559108428810557,0.043954240573637456,0.042217300400278837,0.0442099897918714,0.048464712364699118,0.047525008200232401,0.041952467050179403,0.051693087891597433,0.053853852577904773,0.040198919087246363,0.046147205765591677,0.042038682572105114,0.038126776105922772,0.043810213914896777,0.046197385287180343],"y":[-0.040299562103735524,-0.088230334283796299,-0.039500624823700432,-0.057031890164134603,-0.049328824114834614,-0.04151746667265397,-0.067928673753379049,-0.044826899457047958,-0.034424376114587325,-0.0094739693178192627,-0.053302476953742024,-0.034608280508379129,-0.10835959116471548,-0.013240736387677072,-0.08828052249725532,-0.070732264546847126,-0.10236266443744127,-0.020826708851989211,-0.0092047884648305822,-0.066673680122288165,-0.011960562055818911,-0.079916148848546711,-0.032761361349051041,-0.084339625707645083,-0.0086077467748118495,-0.04045762463437591,-0.00022429551845793707,-0.091318282936248732,-0.020108204341057225,-0.04102890207744718,-0.0086732919615090456,-0.038965679496203651,-0.090745061427136217,-0.038918927395989962,-0.071779240250964368,-0.026072189792532272,-0.058815049714847668,-0.020900320495787616,-0.067406238880285532,-0.011472026440148199,-0.03774292231648424,-0.03184727638399304,-0.048007282569805285,-0.019374993623139394,0.0051788678775668024,-0.056042362254313791,-0.033069590585096412,-0.03340013077723316,-0.012976876116509549,-0.045188806566604497,-0.039966038119770009,-0.055913952174814777,-0.02366857793154142,-0.062387306844919055,-0.068587535959009974,-0.051903525005644269,-0.0672104558509488,-0.029289958606582046,-0.021984150356063169,-0.044368657996655216,-0.041407211530199585,-0.04479428221335674,-0.0055344051108216575,-0.074264108613462443,-0.029740731462724979,-0.054871166293712477,-0.022170059957024577,-0.04092400659385171,-0.065173096591683924,-0.090234749735704056,-0.11169347873019744,-0.071039887157990006,-0.038357441342829028,-0.060939647993056262,-0.055085540267339271,-0.029681991046214731,-0.052184291474396807,-0.019025538447659154,-0.014253067000942175,-0.034983728746662467,-0.037739833645360071,-0.06482760443087901,-0.03617297442210686,-0.035224100029391817,-0.0061640129932066879,-0.021934409858445303,-0.052074027377318047,-0.052129026418441061,-0.00034240865665184791,-0.058988094884154824,-0.062136070901960078,-0.042409980280444216,-0.033704878941016606,-0.058577876290718298,-0.026234905527885457,-0.070910804058930549,-0.049250222789756923,-0.040169405280323055,-0.045382877850045529,-0.043452983215285686,-0.059931908729604973,-0.075074517683840089,-0.018617107536836548,-0.040892178367138612,-0.093852304945178336,-0.041782753260860894,-0.080925821734675343,-0.015785578825374735,-0.032168494469769507,-0.043571959074909669,0.0058609406444976942,-0.049436054620878765,-0.068271726275245651,-0.019032979215061599,0.010291578980259088,-0.030809364933935511,-0.05774615996201575,-0.040970619486109354,-0.047282392345948367,-0.047664598970508024,-0.027428547649620393,-0.096679919674137194,-0.034164680049251342,-0.10116251899136748,-0.057639244394745263,0.0015528556487139987,-0.066607590315037976,-0.025704362387536921,-0.0039429131626173763,-0.041054690779021297,-0.026388660088784287,-0.045618778425739255,-0.037009612067355514,-0.053566938989154704,-0.065047235474962037,-0.018371794752595018,-0.036972448515559392,-0.072468816712229864,-0.055021104571165456,-0.014737415563475402,-0.10681253276225866,-0.050791103385014892,-0.053590760283314567,-0.041429833727732193,-0.039186898277736935,-0.041672406817567356,-0.03954300693985513,-0.095341874637765611,-0.065722211297552,-0.04001522715240894,-0.070390008051165048,-0.044054434923147735,-0.05901371799610388,-0.054171661678783893,-0.052878518298604432,-0.050767424338463207,-0.08314830428707061,0.0011132231898234009,-0.062002517079784797,-0.067908896355172818,-0.07626736253721314,-0.019245458733231424,-0.10761527350785159,-0.052997744118038738,-0.061578521045428797,-0.063646958052385086,-0.013687853759316042,0.017758606899758042,-0.034439051358689181,-0.073889124033446552,-0.066298454831254183,-0.038233879907880831,-0.054287618688009201,-0.052590322310880476,-0.10133349865076657,-0.007363846331948103,-0.052385335811221394,-0.036925729475847338,-0.027446621639555635,-0.059728576845234999,-0.094432397541754795,-0.076215565260114623,-0.061807819866242987,-0.045328681099319305,-0.039801457069294763,-0.042973571268833242,-0.091265628630190318,-0.046721378828597483,-0.080404613987457643,-0.010573190722466753,-0.097652303737288088,-0.053437661626531505,-0.049119556741830543,-0.03943465386178336,-0.019540289795115556,-0.045570929583795883,-0.034646360770414178,-0.027602765307468614,-0.040823157022749239,-0.049205660243297103,-0.053681352289599978,-0.018842055853504486,-0.047238959186788297,-0.049050363519961469,-0.094613904768481694,-0.06605678226452931,-0.023196010544330785,-0.027826552757274563,-0.015093998823705913,-0.039926056402240083,-0.025807766561871521,0.0060016145806473676,0.0071573886321371349,-0.043702104395649713,-0.085964826466628494,-0.027228060965217463,-0.027061957611489912,-0.058609889903928056,-0.023197829747732445,-0.067537407600936211,-0.041482528405386965,-0.083879501734195477,-0.0925083721991206,-0.063947192806665679,-0.036750963120386081,-0.032036455290422032,-0.090607281765684194,-0.033781784048095238,-0.056676604834448904,-0.062431337085282666,-0.023844822408397161,-0.045250943015373656,-0.029632910250469369,-0.095701130224465858,-0.062685181936831952,-0.052643213038320875,-0.032604177559801953,-0.056813250843097365,-0.070706755868230178,-0.052480097935289981,-0.03926211968765745,0.0030563154335810803,-0.0076398839618791641,-0.016018580165078011,-0.056358438956037614,-0.052284923826670326,-0.079091183136820717,-0.03623681510142665,-0.029806810258513713,-0.040223558135678683,-0.01742621742636968,-0.037227933201354806,-0.079430212493670341,-0.053229119590031279,-0.04055078290115146,-0.038366847791338712,-0.039229904950951335,-0.064523828381425896,-0.06740591078115156,-0.03693604734480236,-0.053699340527905016,-0.068154481871255349,-0.04813880182765206,-0.061799199389308584,-0.06060449628505258,-0.048578836307491886,-0.084630519951840233,-0.027603059673495283,0.010147866280479007,-0.0047513481280726591,-0.040728012641342945,-0.054670503316114442,-0.040204201579505862,-0.055302672828390499,0.0085463235652791097,-0.058373449556208136,-0.07163614509374247,-0.043161156225982454,-0.094100565056731797,-0.051474703488979812,-0.080661919952056821,-0.03597876296980887,0.0019139640652373188,-0.066316190107010897,-0.0044074046435818685,0.0049932147951690124,-0.055150789529731438,-0.021639490243246969,-0.012692599013573114,-0.019784697766269423,-0.015799149310372584,-0.023088378786800944,-0.039732299014541422,-0.062813878896209929,-0.10177656366690607,-0.05451946144458255,-0.057130316639634894,-0.032360540155097324,-0.052245002505775441,-0.052913996928272561,-0.06688388932961134,-0.019184000738688044,-0.054575827530392709,-0.057321797798467328,-0.077561561876206317,-0.052914380944870602,-0.084668334488605557,-0.045800167779708016,-0.057638305775082666,-0.025180452550849736,-0.051707837724050278,-0.082583067782189531,-0.058596084190394873,-0.054181127304092719,-0.02497729210136251,-0.058108617748493588,-0.038949111623097402,-0.062950256534102939,-0.033882195893763956,-0.03072147960800433,-0.028645451920396147,-0.04883232756816986,-0.086586208985344804,0.010705754356962137,-0.092683767531139424,-0.051103870729153955,-0.12351458217640454,-0.063873643917108897,-0.030590723277847238,-0.05429766566505051,-0.065661214846073096,-0.050857267187254758,-0.027743604458506044,-0.037635074126151066,-0.062033213401217299,-0.022650296618833207,-0.06727766657690494,-0.062746666730704892,-0.076185660687040496,-0.063819104080355682,-0.046909257074236904,-0.049686196090563559,-0.047901223435507991,-0.011531242950984774,-0.055685807577074246,-0.067828195880091216,-0.057526003772604743,-0.04952469740128071,-0.075825806710839577,-0.032980755735044213,-0.022435645120642864,-0.03075938280780913,-0.046704838113163616,-0.041058163585462722,-0.051697754191844122,-0.021937261919957905,-0.03296699625388632,-0.098752819947914405,-0.0068467971677475589,-0.044447223227802111,-0.028711583986370026,-0.089093649168794795,-0.069027215373040074,-0.074094492261603404,-0.044316046205428318,-0.041971500607498075,-0.07656974406002387,-0.073628180842955207,-0.067364863495135013,-0.055472120896591592,-0.061529871649546854,-0.021415384864267927,-0.049719318774303932,-0.06298835461109889,-0.061588559077310416,-0.05500466414922122,-0.055401669126102525,-0.069237270831914319,-0.036208273469838501,-0.056692446353992905,-0.038002779344492962,-0.070136431293547075,-0.055620721868181143,-0.080325681743375982,-0.037098866671567345,-0.0408204427706629,-0.064058559806687496,-0.074248821662154824,-0.089449642059827958,-0.066139163173791066,-0.059845826855879192,-0.097797233593953717,-0.079907359590885282,-0.061428039327539166,-0.031571616972474764,-0.032911953888416931,-0.039248337322649776,-0.057527676315227698,-0.029257148666375951],"type":"histogram2d","nbinsx":20,"nbinsy":20,"marker":{"line":{"color":"rgba(31,119,180,1)"}},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 
 ```r
@@ -512,7 +559,7 @@ hist(boot_R2s, breaks=25, main='', xlab=expression(R[b]^2), xlim=c(0,1))
 abline(v=summary(reg)$r.squared, col="red", lwd=2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-16-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-17-1.png" width="672" />
 
 ```r
 ## NULL Bootstrap Distribution for R2 ???
@@ -536,7 +583,7 @@ $$
 $$
 
 
-Generate a simulated dataset with 30 observations and two exogenous variables. Assume the following relationship: $yi = \beta_0 + \beta_1 x_{1,i} + \beta_2 x_{2,i} + \epsilon_i$ where the variables and the error term are realizations of the following data generating processes (DGP):
+Generate a simulated dataset with 30 observations and two exogenous variables. Assume the following relationship: $y_{i} = \beta_0 + \beta_1 x_{1,i} + \beta_2 x_{2,i} + \epsilon_i$ where the variables and the error term are realizations of the following data generating processes (DGP):
 
 ```r
 N <- 30
@@ -553,7 +600,7 @@ coef(lm(Y~x1+x2, data=dat))
 
 ```
 ## (Intercept)          x1          x2 
-##    9.128378    2.087306   -1.243350
+##   10.887805    2.181328   -3.322781
 ```
 
 Simulate the distribution of coefficients under a correctly specified model. Interpret the average.
@@ -580,7 +627,7 @@ for(i in 2:3){
 }
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-18-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-19-1.png" width="672" />
 
 
 Many economic phenomena are nonlinear, even when including potential transforms of $Y$ and $X$. Sometimes the OLS model may still be a good or even great approximation (how good depends on the research question). In any case, you are safe to interpret your OLS coefficients as "conditional correlations". For example, examine the distribution of coefficients under this mispecified model. Interpret the average.
@@ -604,16 +651,15 @@ for(i in 2:3){
 }
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-19-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-20-1.png" width="672" />
 
 ## Factor Variables
 
-So far, we have discussed cardinal data where the difference between units always means the same thing: e.g., $4 -3=3-2$. There are also factor variables
+So far, we have discussed cardinal data where the difference between units always means the same thing: e.g., $4-3=2-1$. There are also factor variables
 
-* Ordered: The difference between units means something, but not always the same thing. E.g., $1st - 2nd \neq 2nd - 3rd$.
-* Unordered: The difference between units does not mean something $B-A =??$
+* Ordered: refers to Ordinal data. The difference between units means something, but not always the same thing. For example, $4th - 3rd \neq 2nd - 1st$.
+* Unordered: refers to Categorical data. The difference between units is meaningless. For example, $B-A=?$
 
-Sometimes Ordinal and Categorical data are called Ordinal and Categorical variables. 
 
 To analyze either factor, we often convert them into indicator variables or dummies; $D_{c}=\mathbf{1}( Factor = c)$. One common case is if you have observations of individuals over time periods, then you may have two factor variables. An unordered factor that indicates who an individual is; for example $D_{i}=\mathbf{1}( Individual = i)$, and an order factor that indicates the time period; for example $D_{t}=\mathbf{1}( Time \in [month~ t, month~ t+1) )$. There are many other cases you see factor variables, including spatial ID's in purely cross sectional data.
 
@@ -652,23 +698,23 @@ summary(fe_reg0)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -31.749  -6.491  -0.166   5.952  41.151 
+## -28.606  -5.866  -0.684   6.033  46.496 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  20.4211     1.2423  16.438  < 2e-16 ***
-## x             1.0452     0.2071   5.047 5.34e-07 ***
-## fo.L         26.2420     1.0737  24.441  < 2e-16 ***
-## fo.Q          8.4317     0.9454   8.919  < 2e-16 ***
-## fo.C          1.9211     0.7477   2.569   0.0103 *  
-## fo^4         -0.3942     0.5757  -0.685   0.4937    
-## fuB         -24.4561     0.6012 -40.677  < 2e-16 ***
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  18.79371    1.22136  15.387  < 2e-16 ***
+## x             1.27897    0.20418   6.264 5.59e-10 ***
+## fo.L         23.10034    1.06631  21.664  < 2e-16 ***
+## fo.Q          7.88356    0.94164   8.372  < 2e-16 ***
+## fo.C         -0.07374    0.73117  -0.101    0.920    
+## fo^4          0.08209    0.56711   0.145    0.885    
+## fuB         -24.30839    0.59121 -41.116  < 2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 9.499 on 993 degrees of freedom
-## Multiple R-squared:  0.7153,	Adjusted R-squared:  0.7136 
-## F-statistic: 415.9 on 6 and 993 DF,  p-value: < 2.2e-16
+## Residual standard error: 9.322 on 993 degrees of freedom
+## Multiple R-squared:  0.7091,	Adjusted R-squared:  0.7074 
+## F-statistic: 403.5 on 6 and 993 DF,  p-value: < 2.2e-16
 ```
 We can also compute averages for each group and construct a "between estimator"
 $$
@@ -692,11 +738,11 @@ summary(fe_reg1)
 ## Fixed-effects: fo: 5,  fu: 2
 ## Standard-errors: Clustered (fo) 
 ##   Estimate Std. Error t value Pr(>|t|)    
-## x  1.04517   0.414008 2.52452 0.065043 .  
+## x  1.27897   0.400706 3.19179  0.03316 *  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 9.46541     Adj. R2: 0.713607
-##                 Within R2: 0.025011
+## RMSE: 9.28967     Adj. R2: 0.707384
+##                 Within R2: 0.03801
 ```
 
 **Hansen Econometrics, Theorem 17.1:** The fixed effects estimator of $\beta$ algebraically equals the dummy
@@ -717,12 +763,12 @@ summary(reg1)
 ## Observations: 1,000 
 ## Fixed-effects: fo^fu: 10
 ## Standard-errors: Clustered (fo^fu) 
-##   Estimate Std. Error t value Pr(>|t|)    
-## x  1.02533   0.502079 2.04217 0.071514 .  
+##   Estimate Std. Error t value Pr(>|t|) 
+## x  1.02792   0.570424 1.80204  0.10505 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 3.33598     Adj. R2: 0.964282
-##                 Within R2: 0.165442
+## RMSE: 3.5052     Adj. R2: 0.958171
+##                Within R2: 0.151641
 ```
 
 ```r
@@ -737,36 +783,36 @@ summary(reg2)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -9.9527 -1.4995 -0.1032  1.5492 10.8650 
+## -8.6528 -1.4293  0.0413  1.5571 10.9282 
 ## 
 ## Coefficients:
 ##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  15.85889    0.59083  26.842  < 2e-16 ***
-## x             2.36432    0.10219  23.137  < 2e-16 ***
-## fo.L         29.73451    1.66417  17.868  < 2e-16 ***
-## fo.Q         12.08475    1.46143   8.269 4.36e-16 ***
-## fo.C          4.08007    1.14814   3.554 0.000398 ***
-## fo^4          1.28348    0.87070   1.474 0.140779    
-## fuB         -15.59240    0.83872 -18.591  < 2e-16 ***
-## x:fo.L        4.27380    0.28660  14.912  < 2e-16 ***
-## x:fo.Q        1.44516    0.25213   5.732 1.32e-08 ***
-## x:fo.C        0.07966    0.19955   0.399 0.689841    
-## x:fo^4       -0.18291    0.15273  -1.198 0.231349    
-## x:fuB        -2.44360    0.14740 -16.578  < 2e-16 ***
-## fo.L:fuB    -27.97796    2.36129 -11.849  < 2e-16 ***
-## fo.Q:fuB    -11.67964    2.07548  -5.627 2.39e-08 ***
-## fo.C:fuB     -2.35275    1.62752  -1.446 0.148608    
-## fo^4:fuB     -0.82052    1.23976  -0.662 0.508231    
-## x:fo.L:fuB   -4.64681    0.41477 -11.203  < 2e-16 ***
-## x:fo.Q:fuB   -1.58208    0.36443  -4.341 1.56e-05 ***
-## x:fo.C:fuB   -0.42091    0.28667  -1.468 0.142357    
-## x:fo^4:fuB    0.07381    0.21797   0.339 0.734953    
+## (Intercept)  14.06324    0.62628  22.455  < 2e-16 ***
+## x             2.67169    0.11102  24.065  < 2e-16 ***
+## fo.L         26.61764    1.77554  14.991  < 2e-16 ***
+## fo.Q         10.83497    1.56621   6.918 8.26e-12 ***
+## fo.C          3.75762    1.18245   3.178  0.00153 ** 
+## fo^4          0.84591    0.91694   0.923  0.35647    
+## fuB         -13.11239    0.83905 -15.628  < 2e-16 ***
+## x:fo.L        4.78362    0.31550  15.162  < 2e-16 ***
+## x:fo.Q        1.66583    0.27794   5.993 2.88e-09 ***
+## x:fo.C        0.17324    0.20921   0.828  0.40783    
+## x:fo^4       -0.02364    0.16111  -0.147  0.88336    
+## x:fuB        -2.86196    0.14848 -19.275  < 2e-16 ***
+## fo.L:fuB    -25.47630    2.35067 -10.838  < 2e-16 ***
+## fo.Q:fuB    -10.35221    2.07860  -4.980 7.50e-07 ***
+## fo.C:fuB     -3.01887    1.61877  -1.865  0.06249 .  
+## fo^4:fuB     -0.17002    1.27017  -0.134  0.89354    
+## x:fo.L:fuB   -5.09252    0.41742 -12.200  < 2e-16 ***
+## x:fo.Q:fuB   -1.81497    0.36864  -4.923 9.97e-07 ***
+## x:fo.C:fuB   -0.32208    0.28518  -1.129  0.25901    
+## x:fo^4:fuB   -0.06217    0.22242  -0.280  0.77992    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 2.599 on 980 degrees of freedom
-## Multiple R-squared:  0.979,	Adjusted R-squared:  0.9786 
-## F-statistic:  2400 on 19 and 980 DF,  p-value: < 2.2e-16
+## Residual standard error: 2.625 on 980 degrees of freedom
+## Multiple R-squared:  0.9772,	Adjusted R-squared:  0.9768 
+## F-statistic:  2215 on 19 and 980 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -819,7 +865,7 @@ par(mfrow=c(2,2))
 plot(reg)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-24-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-25-1.png" width="672" />
 We now go through what these figures show, and then some additional
 
 ## Assessing Outliers
@@ -838,7 +884,7 @@ plot(fitted(reg), resid(reg),col = "grey", pch = 20,
 abline(h = 0, col = "darkorange", lwd = 2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-25-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-26-1.png" width="672" />
 
 ```r
 # car::outlierTest(reg)
@@ -864,7 +910,7 @@ abline(lm(y~x), col=2, lty=2)
 abline(lm(y[-1]~x[-1]))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-26-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-27-1.png" width="672" />
 
 See https://www.r-bloggers.com/2016/06/leverage-and-influence-in-a-nutshell/ for a good interactive explaination.
 
@@ -898,8 +944,8 @@ which.max(rstandard(reg))
 ```
 
 ```
-## 21 
-## 21
+## 23 
+## 23
 ```
 
 
@@ -923,14 +969,14 @@ which.max(cooks.distance(reg))
 car::influencePlot(reg)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-28-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-29-1.png" width="672" />
 
 ```
-##       StudRes        Hat      CookD
-## 1  -1.7254560 0.84307284 7.60179245
-## 8   2.1929731 0.02852086 0.06416205
-## 21  2.8564028 0.02833577 0.10010752
-## 40 -0.6877953 0.04147049 0.01037735
+##       StudRes        Hat       CookD
+## 1  -1.0553986 0.79313265 2.128911072
+## 5  -3.4563211 0.03168028 0.151716723
+## 15  0.2423741 0.04497063 0.001418233
+## 23  2.0255414 0.02829720 0.055229894
 ```
 
 Note that we can also calculate $H$ directly from our OLS projection matrix $\hat{P}$, since $H=diag(\hat{P})$ and
@@ -976,13 +1022,13 @@ head(influence.measures(reg)$infmat)
 ```
 
 ```
-##         dfb.1_         dfb.x        dffit     cov.r       cook.d        hat
-## 1  3.088084020 -3.939588e+00 -3.999331289 5.7576383 7.601792e+00 0.84307284
-## 2  0.044064881  2.019585e-02  0.126647593 1.0477661 8.103134e-03 0.02565231
-## 3 -0.002541388  1.524401e-03 -0.002898103 1.0925319 4.312973e-06 0.03456264
-## 4  0.002377938 -7.255395e-05  0.004696091 1.0817866 1.132439e-05 0.02500597
-## 5 -0.037968687 -1.480231e-02 -0.104198967 1.0585418 5.513640e-03 0.02551490
-## 6  0.303668767 -1.887792e-01  0.340033343 0.9324281 5.480598e-02 0.03613882
+##        dfb.1_       dfb.x       dffit     cov.r      cook.d        hat
+## 1  1.59997737 -2.03370830 -2.06653832 4.8051752 2.128911072 0.79313265
+## 2  0.04649812 -0.03278573  0.04924212 1.1013071 0.001243428 0.04490737
+## 3 -0.14604380  0.08626803 -0.16914400 1.0449519 0.014373654 0.03378961
+## 4 -0.04336266  0.02609955 -0.04972464 1.0884084 0.001267313 0.03450659
+## 5 -0.52055985  0.28707946 -0.62517157 0.6224597 0.151716723 0.03168028
+## 6  0.02211689  0.08676102  0.21969778 0.9997028 0.023769928 0.02961926
 ```
 
 
@@ -998,7 +1044,7 @@ qqnorm(resid(reg), main="Normal Q-Q Plot of Residuals", col="darkgrey")
 qqline(resid(reg), col="dodgerblue", lwd=2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-32-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-33-1.png" width="672" />
 
 ```r
 shapiro.test(resid(reg))
@@ -1009,7 +1055,7 @@ shapiro.test(resid(reg))
 ## 	Shapiro-Wilk normality test
 ## 
 ## data:  resid(reg)
-## W = 0.89132, p-value = 0.001079
+## W = 0.97074, p-value = 0.3797
 ```
 
 ```r
@@ -1046,7 +1092,7 @@ lmtest::bptest(reg)
 ## 	studentized Breusch-Pagan test
 ## 
 ## data:  reg
-## BP = 0.021162, df = 1, p-value = 0.8843
+## BP = 0.2643, df = 1, p-value = 0.6072
 ```
 
 
@@ -1167,7 +1213,7 @@ ggplot(rl_df, aes(rho, lambda, fill=mse )) +
     geom_tile() + ggtitle('Mean Squared Error') 
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-35-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-36-1.png" width="672" />
 
 ```r
 ## Which min
@@ -1190,7 +1236,7 @@ legend('topleft', pch=c(16), col=cols, title='Rho,Lambda',
     legend=c(  paste0(rl0, collapse=','),'1,1') )
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-35-2.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-36-2.png" width="672" />
 
 Note that the default hypothesis testing procedures do not account for you trying out different transformations. Specification searches deflate standard errors and are a major source for false discoveries.
 
@@ -1215,7 +1261,26 @@ Just like many economic relationships are nonlinear, many economic variables are
  * If $Y \to X$ and $X \to Y$, then we have simultaneity
  * If $Z\to Y$ and either $Z\to X$ or $X \to Z$, then we have omitted a potentially important variable
 
-These endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a barrier to interpreting OLS as a causal model. Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels of technical detail, they are not covered extensively in this notebook. You are directed to the following resources which discuss these statistical models in more general terms and how they can be applied across many social sciences.
+These endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a barrier to interpreting OLS as a causal model.
+
+
+```r
+## Simulate data with an endogeneity issue
+n <- 300
+z <- rbinom(n,1,.5)
+xy <- sapply(z, function(zi){
+    y <- rnorm(1,zi,1)
+    x <- rnorm(1,zi*2,1)
+    c(x,y)
+})
+xy <- data.frame(x=xy[1,],y=xy[2,])
+plot(y~x, data=xy, pch=16, col=grey(.5,.5))
+abline(lm(y~x,data=xy))
+```
+
+<img src="03-ROLS_files/figure-html/unnamed-chunk-37-1.png" width="672" />
+
+Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels of technical detail, they are not covered extensively in this notebook. You are directed to the following resources which discuss these statistical models in more general terms and how they can be applied across many social sciences.
 
 * Causal Inference for Statistics, Social, and Biomedical Sciences: An Introduction
 * https://www.mostlyharmlesseconometrics.com/
@@ -1286,6 +1351,8 @@ There is currently a boom in empirical research centered around linear regressio
 > without explicit prior consideration of the effect of the instrument choice on the parameter being estimated, such a procedure is effectively the opposite of standard statistical practice in which a parameter of interest is defined first, followed by an estimator that delivers that parameter. Instead, we have a procedure in which the choice of the instrument, which is guided by criteria designed for a situation in which there is no heterogeneity, is implicitly allowed to determine the parameter of interest. This goes beyond the old story of looking for an object where the light is strong enough to see; rather, we have at least some control over the light but choose to let it fall where it may and then proclaim that whatever it illuminates is what we were looking for all along.
 >
 > --- A. Deaton, 2010
+
+
 
 
 The OLS examples are familiar are subject to current research. At the end are two simple examples of scientism with the ''latest and greatest'' empirical recipes---we don't have many theoretical results yet but I think you can understand the issue with the numerical example. 
@@ -1432,7 +1499,7 @@ legend('topright', lty=c(1,2), legend=c(
     'log(science_spending/10)'))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-39-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-41-1.png" width="672" />
 
 
 
@@ -1458,7 +1525,7 @@ axis(1)
 axis(2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-40-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-42-1.png" width="672" />
 
 
 
@@ -1549,7 +1616,7 @@ plot(X1~X2, data=dat_i,
 abline(reg_i)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-43-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-45-1.png" width="672" />
 
 
 For more intuition on spurious correlations, try http://shiny.calpoly.sh/Corr_Reg_Game/
@@ -1578,7 +1645,7 @@ plot(random_walk1, pch=16, col=grey(.5,.5))
 plot(random_walk2, pch=16, col=grey(.5,.5))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-44-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-46-1.png" width="672" />
 
 
 ```r
@@ -1600,7 +1667,7 @@ lines(reg0$model$t, reg0$fitted.values, col=2)
 lines(reg1$model$t, reg1$fitted.values, col=4)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-45-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-47-1.png" width="672" />
 
 
 ```r
@@ -1655,7 +1722,7 @@ points(random_walk1, pch=16, col=2)
 abline(v=n2, lty=2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-47-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-49-1.png" width="672" />
 
 
 ```r
