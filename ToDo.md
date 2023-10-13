@@ -21,6 +21,56 @@ https://bookdown.org/yihui/bookdown/github.html
 
 https://plotly-r.com/
 
+```{r}
+runif(1e3)
+x <- runif(1e3) 
+hist(x)
+m <- mean(x)
+abline(v=m, col=2)
+
+
+fun_of_rv <- function(f=mean, n=20){
+  x <- runif(n)
+  y <- f(x)
+  return(y)
+}
+
+x1 <- fun_of_rv(mean)
+x2 <- fun_of_rv(mean)
+x3 <- fun_of_rv(mean)
+samples_of_mean <- c(x1,x2,x3)
+
+
+
+fun_of_rv <- function(f=mean, n=100){
+    x <- runif(n)
+    y <- f(x)
+    return(y)    
+}
+fun_of_rv()
+
+sample_means <- sapply(1:1000, fun_of_rv, f=mean)
+hist(sample_means, breaks=50)
+
+
+
+twosam <- function(y1, y2){
+    n1  <- length(y1)
+    n2  <- length(y2)
+    yb1 <- mean(y1)
+    yb2 <- mean(y2)
+    s1  <- var(y1)
+    s2  <- var(y2)
+    s   <- ((n1-1)*s1 + (n2-1)*s2)/(n1+n2-2)
+    tst <- (yb1-yb2)/sqrt(s*(1/n1+1/n2))
+    return(tst)
+}
+ 
+tstat <- twosam(data$male, data$female); tstat
+
+```
+
+
 ## OLS
 
 library(AER)

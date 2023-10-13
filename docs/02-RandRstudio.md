@@ -61,32 +61,32 @@ CodeInput_String
 ```
 
 
-# Mathematical Objects
+# Mathematics
 ***
 
 
-## Scalars and Vectors
+## Scalars
 
 
 ```r
-x0 <- 1 ## Your first scalar
-x0 ## Print the scalar
+xs <- 2 ## Your first scalar
+xs  ## Print the scalar
 ```
 
 ```
-## [1] 1
-```
-
-```r
-(x0+1)^2 ## Perform and print a simple calculation
-```
-
-```
-## [1] 4
+## [1] 2
 ```
 
 ```r
-x0 + NA ## often used for missing values
+(xs+1)^2 ## Perform and print a simple calculation
+```
+
+```
+## [1] 9
+```
+
+```r
+xs + NA ## often used for missing values
 ```
 
 ```
@@ -94,13 +94,15 @@ x0 + NA ## often used for missing values
 ```
 
 ```r
-x0*2
+xs*2
 ```
 
 ```
-## [1] 2
+## [1] 4
 ```
 
+## Vectors
+ 
 
 ```r
 x <- c(0,1,3,10,6) ## Your First Vector
@@ -136,34 +138,112 @@ x*2
 ```
 
 ```r
-(x+x)^2 ## Another simple calculation with two vectors
+x^2
 ```
 
 ```
-## [1]   0   4  36 400 144
+## [1]   0   1   9 100  36
 ```
 
 
 
+```r
+x+x
+```
+
+```
+## [1]  0  2  6 20 12
+```
+
+```r
+x*x
+```
+
+```
+## [1]   0   1   9 100  36
+```
+
+```r
+x^x
+```
+
+```
+## [1] 1.0000e+00 1.0000e+00 2.7000e+01 1.0000e+10 4.6656e+04
+```
 
 
-In R, you use multiple functions on different types of data objects. Moreover, ``typically solve complex problems by decomposing them into simple functions, not simple objects.'' (H. Wickham)
+```r
+c(1) ## scalars are vectors
+```
+
+```
+## [1] 1
+```
+
+```r
+1:7
+```
+
+```
+## [1] 1 2 3 4 5 6 7
+```
+
+```r
+seq(0,1,by=.1)
+```
+
+```
+##  [1] 0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0
+```
+
+
+##  Functions
+
+Function of a vector
+
+```r
+## Add two to any vector
+add2 <- function(x1) {
+    x1+2
+}
+add2(x)
+```
+
+```
+## [1]  2  3  5 12  8
+```
+
+```r
+## Generalization
+addn <- function(x1,n=2) {
+    x1+n
+}
+addn(x)
+```
+
+```
+## [1]  2  3  5 12  8
+```
+
+```r
+addn(x,3)
+```
+
+```
+## [1]  3  4  6 13  9
+```
 
 
 
-##  Functions of Scalars and Vectors
-
-Define function sum_squared
+Function for two vectors
 
 ```r
 sum_squared <- function(x1, x2) {
 	y <- (x1 + x2)^2
 	return(y)
-} 
-```
+}
 
-```r
-sum_squared(1, 3) ## 16
+sum_squared(1, 3)
 ```
 
 ```
@@ -171,7 +251,7 @@ sum_squared(1, 3) ## 16
 ```
 
 ```r
-sum_squared(x, 2) ## 0,4,9,36,144,400
+sum_squared(x, 2)
 ```
 
 ```
@@ -179,7 +259,7 @@ sum_squared(x, 2) ## 0,4,9,36,144,400
 ```
 
 ```r
-sum_squared(x, NA) ## NA,NA,NA,NA,NA
+sum_squared(x, NA) 
 ```
 
 ```
@@ -187,7 +267,7 @@ sum_squared(x, NA) ## NA,NA,NA,NA,NA
 ```
 
 ```r
-sum_squared(x, x) ## 0,4,36,144,400
+sum_squared(x, x)
 ```
 
 ```
@@ -202,7 +282,67 @@ sum_squared(x, 2*x)
 ## [1]   0   9  81 900 324
 ```
 
+Applying a function over and over again
+
+```r
+sapply(1:3, exp)
+```
+
+```
+## [1]  2.718282  7.389056 20.085537
+```
+
+```r
+exp(1:3)
+```
+
+```
+## [1]  2.718282  7.389056 20.085537
+```
+
+```r
+## mapply takes multiple vectors
+mapply(sum, 1:3, exp(1:3) )
+```
+
+```
+## [1]  3.718282  9.389056 23.085537
+```
+
 Random variables are vectors created by functions
+
+```r
+## Random binomial (Coin Flip)
+rbinom(1, 1, 0.5)
+```
+
+```
+## [1] 0
+```
+
+```r
+rbinom(1, 1, 0.5)
+```
+
+```
+## [1] 0
+```
+
+```r
+rbinom(1, 1, 0.5)
+```
+
+```
+## [1] 0
+```
+
+```r
+rbinom(1, 1, 0.5)
+```
+
+```
+## [1] 0
+```
 
 ```r
 ## random standard-normal
@@ -210,8 +350,8 @@ rnorm(10)
 ```
 
 ```
-##  [1] -1.659114612 -0.893319072  1.028185724  0.175974438  0.805598106
-##  [6] -0.286323007 -0.220622089  0.610450703  0.001307709 -1.270002728
+##  [1]  1.483609514  0.025230375  2.458000192 -1.262334015  0.300731081
+##  [6] -0.637446172  0.943546828  0.005170051 -1.645740299 -0.302138796
 ```
 
 ```r
@@ -219,8 +359,8 @@ rnorm(10)
 ```
 
 ```
-##  [1] -0.4343422 -0.6215811 -0.2599112 -0.7581629 -0.5302672  1.7420162
-##  [7] -0.5462935 -2.2278339  0.3593115  0.1203228
+##  [1]  0.38561526  1.60708885 -0.68705186 -0.32955560 -0.71261817 -0.77832158
+##  [7] -1.42500510 -0.27520102 -0.21780050  0.00768097
 ```
 
 ```r
@@ -230,7 +370,7 @@ head(x2)
 ```
 
 ```
-## [1] 0.2434022 0.8730505 0.3551018 0.3874562 0.1506225 0.4580846
+## [1] 0.07989056 0.82996588 0.20275052 0.89328720 0.61714201 0.05405807
 ```
 
 ```r
@@ -241,103 +381,144 @@ length(x2)
 ## [1] 1000
 ```
 
-## Functions of Functions
-
-Functions can take functions as arguments 
+Functions of functions! Functions can take functions as arguments 
 
 
 ```r
 fun_of_rv <- function(f){
-    y <- f( runif(1e3) )
+    x <- runif(1e3)
+    y <- f(x)
     return(y)
 }
+
+fun_of_rv(mean)
 ```
 
+```
+## [1] 0.5137635
+```
 
 ```r
 fun_of_rv(mean)
 ```
 
 ```
-## [1] 0.502619
+## [1] 0.506757
 ```
 
 ```r
-fun_of_rv(mean)
+fun_of_rv(sd)
 ```
 
 ```
-## [1] 0.5020712
+## [1] 0.288107
 ```
 
-```r
-fun_of_rv(sum)
-```
 
-```
-## [1] 499.6072
-```
 
+
+##  Matrices
 
 
 ```r
-fun_of_rv <- function(f=mean, n=20){
-    y <- f( runif(n) )
-    return(y)    
-}
-fun_of_rv()
-```
-
-```
-## [1] 0.4750519
-```
-
-Very useful for applying a function over and over again
-
-
-```r
-## sapply(1:3, f) is equivalent to c(f(1), f(2), f(3)).
-## mapply takes multiple vectors
-mapply(sum, 1:3, runif(3) )
-```
-
-```
-## [1] 1.153112 2.289946 3.784061
-```
-
-##  Matrices and Matrix-Functions
-
-
-```r
-x_mat <- cbind(x,x)
+x <- c(1,4,9)
+x_mat <- rbind(x, x)
 x_mat ## Print full matrix
 ```
 
 ```
-##       x  x
-## [1,]  0  0
-## [2,]  1  1
-## [3,]  3  3
-## [4,] 10 10
-## [5,]  6  6
+##   [,1] [,2] [,3]
+## x    1    4    9
+## x    1    4    9
 ```
 
 ```r
-x_mat[2,] ## Print Row 2 Elements
+x_mat[2,] ## Print Second Row
+```
+
+```
+## [1] 1 4 9
+```
+
+```r
+x_mat[,2] ## Print Second Column
 ```
 
 ```
 ## x x 
-## 1 1
+## 4 4
 ```
 
 ```r
-x_mat[,2] ## Print Column 2 Elements
+x_mat[2,2]  ## Print Element in Second Column and Second Row
 ```
 
 ```
-## [1]  0  1  3 10  6
+## x 
+## 4
 ```
+
+```r
+x_mat+2
+```
+
+```
+##   [,1] [,2] [,3]
+## x    3    6   11
+## x    3    6   11
+```
+
+```r
+x_mat*2
+```
+
+```
+##   [,1] [,2] [,3]
+## x    2    8   18
+## x    2    8   18
+```
+
+```r
+x_mat^2
+```
+
+```
+##   [,1] [,2] [,3]
+## x    1   16   81
+## x    1   16   81
+```
+
+```r
+x_mat + x_mat
+```
+
+```
+##   [,1] [,2] [,3]
+## x    2    8   18
+## x    2    8   18
+```
+
+```r
+x_mat*x_mat
+```
+
+```
+##   [,1] [,2] [,3]
+## x    1   16   81
+## x    1   16   81
+```
+
+```r
+x_mat^x_mat
+```
+
+```
+##   [,1] [,2]      [,3]
+## x    1  256 387420489
+## x    1  256 387420489
+```
+
+
 
 ```r
 y <- apply(x_mat, 1, sum)^2 ## Apply function to each row
@@ -346,26 +527,24 @@ y - sum_squared(x, x) ## tests if there are any differences
 ```
 
 ```
-## [1] 0 0 0 0 0
+## Warning in y - sum_squared(x, x): longer object length is not a multiple of
+## shorter object length
+```
+
+```
+## [1]  192  132 -128
 ```
 
 Many Other Functions
 
 ```r
-#col1 <- x_mat[,1]
-#col1
-#col2 <- x_mat[,2]
-#col2
 x_mat * x_mat
 ```
 
 ```
-##        x   x
-## [1,]   0   0
-## [2,]   1   1
-## [3,]   9   9
-## [4,] 100 100
-## [5,]  36  36
+##   [,1] [,2] [,3]
+## x    1   16   81
+## x    1   16   81
 ```
 
 ```r
@@ -373,9 +552,10 @@ crossprod(x_mat)
 ```
 
 ```
-##     x   x
-## x 146 146
-## x 146 146
+##      [,1] [,2] [,3]
+## [1,]    2    8   18
+## [2,]    8   32   72
+## [3,]   18   72  162
 ```
 
 ```r
@@ -383,12 +563,9 @@ tcrossprod(x_mat) ##x_mat %*% t(x_mat)
 ```
 
 ```
-##      [,1] [,2] [,3] [,4] [,5]
-## [1,]    0    0    0    0    0
-## [2,]    0    2    6   20   12
-## [3,]    0    6   18   60   36
-## [4,]    0   20   60  200  120
-## [5,]    0   12   36  120   72
+##    x  x
+## x 98 98
+## x 98 98
 ```
 
 ```r
@@ -396,12 +573,10 @@ outer(x,x) ##x %o% x
 ```
 
 ```
-##      [,1] [,2] [,3] [,4] [,5]
-## [1,]    0    0    0    0    0
-## [2,]    0    1    3   10    6
-## [3,]    0    3    9   30   18
-## [4,]    0   10   30  100   60
-## [5,]    0    6   18   60   36
+##      [,1] [,2] [,3]
+## [1,]    1    4    9
+## [2,]    4   16   36
+## [3,]    9   36   81
 ```
 
 
@@ -415,7 +590,8 @@ abs_diff_y ## is this the luckiest number?
 ```
 
 ```
-## [1]   3   1  33 397 141
+##   x   x 
+## 193 193
 ```
 
 ```r
@@ -423,7 +599,7 @@ min(abs_diff_y)
 ```
 
 ```
-## [1] 1
+## [1] 193
 ```
 
 ```r
@@ -431,7 +607,8 @@ which.min(abs_diff_y)
 ```
 
 ```
-## [1] 2
+## x 
+## 1
 ```
 
 ```r
@@ -439,12 +616,13 @@ y[ which.min(abs_diff_y) ]
 ```
 
 ```
-## [1] 4
+##   x 
+## 196
 ```
 
 
 
-## Arrays and Array Functions
+## Arrays
 
 Generalization of matrices used in spatial econometrics
 
@@ -617,35 +795,149 @@ apply(a, 1:2, mean)  # Row/Column combination
 ## [2,]   11   13   15
 ```
 
+# Data Analysis
+***
 
-##  Other Commom Types of Data
+## Data
 
+Commom Types
 
 ```r
-l1 <- 1:10 ## cardinal numbers
-l2 <- factor(c(1,2,3), ordered=T) ## ordinal numbers
-l2 <- factor(c(1,2,3), ordered=F) ## "indicators", "names", 'etc'
-l3 <- 'hello world'  ## character strings
-l4 <- list(l1, l2, list(l3, 'way too late')) ## lists
+l1 <- 1:3 ## cardinal numbers
+l1
+```
 
+```
+## [1] 1 2 3
+```
+
+```r
+l2 <- factor(c('A','B','C'), ordered=T) ## ordinal numbers
+l2
+```
+
+```
+## [1] A B C
+## Levels: A < B < C
+```
+
+```r
+l3 <- factor(c('Leipzig','Los Angeles','Logan'), ordered=F) ## categorical numbers
+l3
+```
+
+```
+## [1] Leipzig     Los Angeles Logan      
+## Levels: Leipzig Logan Los Angeles
+```
+
+```r
+l4 <- c('hello world', 'hi mom')  ## character strings
+l4
+```
+
+```
+## [1] "hello world" "hi mom"
+```
+
+```r
+l5 <- list(l1, l2, list(l3, list('...inception...'))) ## lists
+l5
+```
+
+```
+## [[1]]
+## [1] 1 2 3
+## 
+## [[2]]
+## [1] A B C
+## Levels: A < B < C
+## 
+## [[3]]
+## [[3]][[1]]
+## [1] Leipzig     Los Angeles Logan      
+## Levels: Leipzig Logan Los Angeles
+## 
+## [[3]][[2]]
+## [[3]][[2]][[1]]
+## [1] "...inception..."
+```
+
+```r
 ## data.frames: your most common data type
     ## matrix of different data-types
     ## well-ordered lists
-l5 <- data.frame(x=l1, y=l1)
+l5 <- data.frame(x=l1, y=l2, z=l3)
+l5
 ```
 
+```
+##   x y           z
+## 1 1 A     Leipzig
+## 2 2 B Los Angeles
+## 3 3 C       Logan
+```
 
-# Plots
-***
+Reading in
 
-
-## Histograms 
-
-Consider some historical data on crime in the US
 
 ```r
-## ?USArrests
+## Load in from R packages
+library(wooldridge)
+data('crime2')
+data('crime4')
+
+## Read in csv from online
+dat_csv <- read.csv('http://www.stern.nyu.edu/~wgreene/Text/Edition7/TableF19-3.csv')
+dat_csv <- as.data.frame(dat_csv)
+
+## Read in csv from online
+dat_stata <- haven::read_dta('https://www.ssc.wisc.edu/~bhansen/econometrics/DS2004.dta')
+dat_stata <- as.data.frame(dat_stata)
+
+## For More Introductory Econometrics Data, see 
+# https://www.ssc.wisc.edu/~bhansen/econometrics/Econometrics%20Data.zip
+# https://pages.stern.nyu.edu/~wgreene/Text/Edition7/tablelist8new.htm
+# R packages: wooldridge, causaldata, Ecdat, AER, ....
 ```
+
+
+Read in some historical data on crime in the US
+
+```r
+head(USArrests)
+```
+
+```
+##            Murder Assault UrbanPop Rape
+## Alabama      13.2     236       58 21.2
+## Alaska       10.0     263       48 44.5
+## Arizona       8.1     294       80 31.0
+## Arkansas      8.8     190       50 19.5
+## California    9.0     276       91 40.6
+## Colorado      7.9     204       78 38.7
+```
+
+
+```r
+summary(USArrests)
+```
+
+```
+##      Murder          Assault         UrbanPop          Rape      
+##  Min.   : 0.800   Min.   : 45.0   Min.   :32.00   Min.   : 7.30  
+##  1st Qu.: 4.075   1st Qu.:109.0   1st Qu.:54.50   1st Qu.:15.07  
+##  Median : 7.250   Median :159.0   Median :66.00   Median :20.10  
+##  Mean   : 7.788   Mean   :170.8   Mean   :65.54   Mean   :21.23  
+##  3rd Qu.:11.250   3rd Qu.:249.0   3rd Qu.:77.75   3rd Qu.:26.18  
+##  Max.   :17.400   Max.   :337.0   Max.   :91.00   Max.   :46.00
+```
+
+
+## Plots
+
+### Histograms 
+
 
 Histograms Summarize Distributions
 
@@ -654,7 +946,7 @@ hist(USArrests$Murder, xlab='Murder Arrests',
     main='Arrests per 100,000 across 50 US states in 1973')
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-19-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-22-1.png" width="672" />
 
 Show data splits
 
@@ -672,12 +964,10 @@ legend('topright', col=cols, pch=15,
     title='% Urban Pop.', legend=c('Above Mean', 'Below Mean'))
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-20-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-23-1.png" width="672" />
 
 
-### Glue together
-
-Combine plots together to convey more information all at once
+**Glue together** to convey more information all at once
 
 
 ```r
@@ -694,7 +984,7 @@ legend('topright', col=cols, pch=15, bty='n',
     title='% Urban Pop.', legend=c('Above Mean', 'Below Mean'))
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-21-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-24-1.png" width="672" />
 
 
 
@@ -702,17 +992,19 @@ legend('topright', col=cols, pch=15, bty='n',
 par(fig=c(0,1,0,0.5), new=F)
 hist(USArrests$Murder, breaks=xbks, main='All Data', xlab='Murder Arrests')
 par(fig=c(0,.5,0.5,1), new=TRUE)
-hist(m1, breaks=xbks, col=rgb(0,0,1,.5), main='Urban Pop >= Mean',xlab='Murder Arrests')
+hist(m1, breaks=xbks, col=rgb(0,0,1,.5),
+    main='Urban Pop >= Mean', xlab='Murder Arrests')
 par(fig=c(0.5,1,0.5,1), new=TRUE)
-hist(m2,breaks=xbks, col=rgb(1,0,0,.5),  main='Urban Pop < Mean',xlab='Murder Arrests')
+hist(m2,breaks=xbks, col=rgb(1,0,0,.5),
+    main='Urban Pop < Mean', xlab='Murder Arrests')
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-22-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-25-1.png" width="672" />
 
 For more histogram visuals, see https://r-graph-gallery.com/histogram.html
 
 
-## Boxplots
+### Boxplots
 
 All Data
 
@@ -720,36 +1012,32 @@ All Data
 boxplot(USArrests$Murder, main='All Data', ylab='Murder Arrests')
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-23-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-26-1.png" width="672" />
 
-Split data into groups
 
-```r
-## cut(USArrests$UrbanPop,2)
-USArrests$UrbanPop_cut <- cut(USArrests$UrbanPop,4)
-boxplot(Murder~UrbanPop_cut, USArrests, main='Split Data', xlab='Urban Population', ylab='Murder Arrests', col=hcl.colors(4,alpha=.5))
-```
-
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-24-1.png" width="672" />
-
-Glue together
+Split data into groups and glue together
 
 ```r
+## Two Groups: cut(USArrests$UrbanPop,2)
+USArrests$UrbanPop_cut <- cut(USArrests$UrbanPop,4) ## 4 Groups
+
 par(mfrow=c(1,2))
 boxplot(USArrests$Murder, main='All Data', ylab='Murder Arrests')
-boxplot(Murder~UrbanPop_cut, USArrests, main='Split Data', xlab='Urban Population', ylab='Murder Arrests', col=hcl.colors(4,alpha=.5))
+boxplot(Murder~UrbanPop_cut, USArrests,
+    main='Split Data', col=hcl.colors(4,alpha=.5),
+    xlab='Urban Population', ylab='Murder Arrests')
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-25-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-27-1.png" width="672" />
 
-## Scatterplots
+### Scatterplots
 
 
 ```r
 plot(Murder~UrbanPop, USArrests, pch=16, col=rgb(0,0,0,.5))
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-26-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-28-1.png" width="672" />
 
 
 ```r
@@ -761,13 +1049,10 @@ par(fig=c(0.65,1,0,0.8),new=TRUE)
 boxplot(USArrests$UrbanPop, axes=FALSE)
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-27-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-29-1.png" width="672" />
 
 
-
-### Example with simulated data
-
-Create a simulated dataset
+Another example with a larger (simulated) dataset
 
 ```r
 ## Data Generating Process
@@ -780,13 +1065,13 @@ head(xy_dat)
 ```
 
 ```
-##        x          y
-## 1 1.0000  0.5748906
-## 2 1.0002  1.2265783
-## 3 1.0004  1.5144384
-## 4 1.0006  0.5556307
-## 5 1.0008  0.5672396
-## 6 1.0010 -2.6348463
+##        x           y
+## 1 1.0000  0.78894774
+## 2 1.0002  1.50094699
+## 3 1.0004  1.75575399
+## 4 1.0006  0.05022042
+## 5 1.0008  0.53143858
+## 6 1.0010 -1.19386159
 ```
 
 Plot the data and the line of best fit
@@ -801,7 +1086,7 @@ reg <- lm(y~x, data=xy_dat)
 abline(reg)
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-29-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-31-1.png" width="672" />
 
 ```r
 ## Can Also Add Confidence Intervals
@@ -828,7 +1113,7 @@ legend('topleft', legend='single data point',
     pch=16, col=rgb(0,0,0,.1), cex=.5)
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-30-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-32-1.png" width="672" />
 
 
 Can export figure with specific dimensions
@@ -855,17 +1140,16 @@ For saving other types of files, see `png("*.png")`, `tiff("*.tiff")`, and  `jpe
 
 Some coding examples are copied from https://r4ds.had.co.nz/ but also other sources I have found online and elsewhere over the years.
 
-There are many good yet free programming books online. E.g., 
+There are many good yet free programming books online. I recommend https://intro2r.com. But see also 
 
 * https://cran.r-project.org/doc/manuals/R-intro.html
-* https://intro2r.com/
 * R Graphics Cookbook, 2nd edition. Winston Chang. 2021. https://r-graphics.org/
 * R for Data Science. H. Wickham and G. Grolemund. 2017. https://r4ds.had.co.nz/index.html
 * An Introduction to R. W. N. Venables, D. M. Smith, R Core Team. 2017. https://colinfay.me/intro-to-r/
 * https://bookdown.org/kieranmarray/intro_to_r_for_econometrics/
 * Spatial Data Science with R: Introduction to R. Robert J. Hijmans. 2021. https://rspatial.org/intr/index.html
 
-There are also many good yet free-online tutorials and courses. E.g., \\
+There are also many good yet free-online tutorials and courses. 
 
 * https://www.econometrics-with-r.org/1.2-a-very-short-introduction-to-r-and-rstudio.html
 * https://rafalab.github.io/dsbook/
