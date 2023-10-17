@@ -70,9 +70,9 @@ A regression coefficient is a statistic. And, just like all statistics, we can c
 
 * *standard deviation*: variability within a single sample.
 * *standard error*: variability across different samples.
-* *confidence interval* range of variability across different samples.
-* *p-value* the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true).
-* null distribution*: the distribution of the statistic under the null hypothesis.
+* *confidence interval* range your statistic varies across different samples.
+* *p-value* the probability you would see something as extreme as your statistic when sampling from the null distribution.
+* *null distribution*: the sampling distribution of the statistic under the null hypothesis (assuming your null hypothesis was true).
 
 The classic estimates for variability are the Standard Error of the Regression $\hat{\sigma}$, and Standard Error of the Coefficient Estimates $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\alpha}}~~$ (or simply Standard Errors).
 $$
@@ -638,7 +638,7 @@ plot(reg)
 ```
 We now go through what these figures show, and then some additional
 
-## Assessing Outliers
+## Outliers
 
 The first plot examines outlier $Y$ and $\hat{Y}$.
 
@@ -747,7 +747,7 @@ head(influence.measures(reg)$infmat)
 ```
 
 
-## Assessing Normality and Collinearity
+## Normality
 
 The second plot examines whether the residuals are normally distributed. OLS point estimates do not depend on the normality of the residuals. (Good thing, because there's no reason the residuals of economic phenomena should be so well behaved.) Many hypothesis tests of the regression estimates are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality 
 ```{r}
@@ -761,12 +761,13 @@ shapiro.test(resid(reg))
 # car::qqPlot(reg)
 ```
 
-Assessing Heterskedasticity may also matters for variance estimates. This is not shown in the plot, but you can run a simple test
+Heterskedasticity may also matters for variance estimates. This is not shown in the plot, but you can run a simple test
 ```{r}
 library(lmtest)
 lmtest::bptest(reg)
 ```
 
+## Collinearity
 
 This is when one explanatory variable in a multiple regression model can be linearly predicted from the others with a substantial degree of accuracy. Coefficient estimates may change erratically in response to small changes in the model or the data. (In the extreme case where there are more variables than observations $K>\geq N$, $X'X$ has an infinite number of solutions and is not invertible.)
 
@@ -941,6 +942,26 @@ plot(y~x, data=xy, pch=16, col=grey(.5,.5))
 abline(lm(y~x,data=xy))
 ```
 
+With multiple linear regression, note that endogeneity biases are not just a problem your main variable. Suppose your interested in how $x_{1}$ affects $y$, conditional on $x_{2}$. Letting $X=[x_{1}, x_{2}]$, you estimate 
+\begin{eqnarray}
+\hat{\beta}_{OLS} = [X'X]^{-1}X'y
+\end{eqnarray}
+You paid special attention in your research design to find a case where $x_{1}$ is truly exogenous. Unfortunately, $x_{2}$ is correlated with the error term. (How unfair, I know, especially after all that work). Nonetheless,
+\begin{eqnarray}
+\mathbb{E}[X'\epsilon] = 
+\begin{bmatrix}
+0 \\ \rho
+\end{bmatrix}\\
+\mathbb{E}[ \hat{\beta}_{OLS} - \beta] = [X'X]^{-1} \begin{bmatrix}
+0 \\ \rho
+\end{bmatrix} = 
+\begin{bmatrix}
+\rho_{1} \\ \rho_{2}
+\end{bmatrix}
+\end{eqnarray}
+The magnitude of the bias for $x_{1}$ thus depends on the correlations between $x_{1}$ and $x_{2}$ as well as $x_{2}$ and $\epsilon$.
+
+
 Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels of technical detail, they are not covered extensively in this notebook. You are directed to the following resources which discuss these statistical models in more general terms and how they can be applied across many social sciences.
 
 * Causal Inference for Statistics, Social, and Biomedical Sciences: An Introduction
@@ -955,39 +976,261 @@ Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity
 
 ## Two Stage Least Squares (2SLS)
 
+
+There are many "Applied Statistics" approaches to 2SLS, and I encourage you to read up on them here
+
 * https://www.econometrics-with-r.org/12-ivr.html
 * https://bookdown.org/paul/applied-causal-analysis/estimation-2.html
 * https://mixtape.scunning.com/07-instrumental_variables
 * https://theeffectbook.net/ch-InstrumentalVariables.html
 * http://www.urfie.net/read/index.html#page/247
 
-Note that the coefficient interpretation still rests on many assumptions. Taking the classic case of supply shock in a market setting (the situation the method was originally developed for) we are implicitly assuming
+I will focus on the seminal case in economics, which is complementary and hopefully provides much intuition
 
-* both supply and demand are linear (and additively seperable in covariates).
+### Competitive Market Equilibrium
+
+Although there are many ways this simultaneity can happen, economic theorists have made great strides in analyzing the simultaneity problem as it arises from market relationships. In fact, the 2SLS statistical approach arose to understand the equilibrium of a single competitive market, which has three structural equations: (1) market supply is the sum of quantities supplied by individual firms, (2) market demand is the sum of quantities demanded by individual people, (3) market supply equals market demand.
+\begin{eqnarray}
+Q^{D}(P) &=& \sum_{i} q^{D}_{i}(P)  \\
+Q^{S}(P) &=& \sum_{i} q^{S}_{i}(P) \\
+Q^{D} &=& Q^{S} = Q.
+\end{eqnarray}
+This last equation implies a simultaneous "reduced form" relationship where both the price and the quantity are outcomes. If there is a linear parametric structure to these equations, then you can examine how a change in parameters affects both price and quantity. Specifically, if
+\begin{eqnarray}
+\label{eqn:linear_demand}
+Q^{D}(P) &=& A^{D} - B^{D} P + \epsilon^{D},\\
+\label{eqn:linear_supply}
+Q^{S}(P) &=& A^{S} + B^{S} P + \epsilon^{S},
+\end{eqnarray}
+then equilibrium yields reduced form equations that collapse into intercept and residual terms;
+\begin{eqnarray}
+P^{*} &=& \frac{A^{D}-A^{S}}{B^{D}+B^{S}} + \frac{\epsilon^{D} - \epsilon^{S}}{B^{D}+B^{S}} = \alpha^{P} + \nu^{P}, \\
+Q^{*} &=& \frac{A^{S}B^{D}+ A^{D}B^{S}}{B^{D}+B^{S}} + \frac{\epsilon^{S}B^{D}+ \epsilon^{D}B^{S}}{B^{D}+B^{S}}= \alpha^{Q} + \nu^{Q}.
+\end{eqnarray}
+
+
+```{r}
+# Competitive Market Process
+
+## Parameters
+plm <- c(5,10) ## Price Range
+P <- seq(plm[1],plm[2],by=.01) ## Price to Consider
+
+## Demand Curve Simulator
+qd_fun <- function(p, Ad=8, Bd=-.8, Ed_sigma=.25){
+    Qd <- Ad + Bd*p + rnorm(1,0,Ed_sigma)
+}
+
+## Supply Curve Simulator
+qs_fun <- function(p, As=-8, Bs=1, Es_sigma=.25){
+    Qs <- As + Bs*p + rnorm(1,0,Es_sigma)
+}
+```
+
+
+```{r}
+N <- 300 ## Number of Simulations
+
+## Generate Equilibrium Data
+## Plot Underlying Process
+plot.new()
+plot.window(xlim=c(0,2), ylim=plm)
+EQ1 <- sapply(1:N, function(n){
+
+    ## Market Mechanisms
+    demand <- qd_fun(P)
+    supply <- qs_fun(P)
+
+    ## Compute EQ (what we observe)
+    eq_id <- which.min( abs(demand-supply) )
+    eq <- c(P=P[eq_id], Q=demand[eq_id]) 
+    
+    ## Plot Theoretical Supply and Demand behind EQ
+	lines(demand, P, col=grey(0,.01))
+	lines(supply, P, col=grey(0,.01))
+    points(eq[2], eq[1], col=grey(0,.05), pch=16)
+
+    ## Return Equilibrium Observations
+    return(eq)
+})
+axis(1)
+axis(2)
+mtext('Quantity',1, line=2)
+mtext('Price',2, line=2)
+```
+
+
+You can simply run a regression of one variable on another, but you will need much luck to correctly interrupt the resulting number. Consider regressing quantity on price;
+\begin{eqnarray}
+Q &=& \alpha^{Q} + \beta^{Q} P + \epsilon^{Q} = \alpha^{Q} + \beta^{Q} [\alpha^{P} + \beta^{P} Q + \epsilon^{P}] + \epsilon^{Q} \\
+&=& \frac{[\alpha^{Q} +  \epsilon^{Q}] + \beta^{Q} [\alpha^{P} + \epsilon^{P}]}{1-\beta^{P}}
+\end{eqnarray}
+We can see $Q$ is a function of $\epsilon^{P}$, thus biasing the estimate of $\beta^{P}$. If you were to instead regress $Q$ on $P$, you would similarly get a number that is hard to interpret meaningfully. This simple derivation has a profound insight: price-quantity data does not generally tell you how price affects quantity supplied or demanded (and vice-versa).
+```{r}
+## Analyze Market Data
+dat1 <- data.frame(t(EQ1), cost='1')
+reg1 <- lm(Q~P, data=dat1)
+summary(reg1)
+```
+
+If you have exogeneous variation on one side of the market, ``shocks'', you can get information on the other. Experimental manipulation of $A^{S}$ would, for example, allow you to trace out part of a demand curve: 
+\begin{eqnarray}
+\frac{\partial P^{*}}{\partial A^{S}} = \frac{-1}{B^{D}+B^{S}}, \\
+\frac{\partial Q^{*}}{\partial A^{S}} = \frac{B^{D}}{B^{D}+B^{S}}.
+\end{eqnarray}
+Notice that even in this linear model, all effects are conditional: *The* effect of a cost change on quantity or price depends on the demand curve. A change in costs affects quantity supplied but not quantity demanded (which then affects equilibrium price) but the demand side of the market still matters! The change in price from a change in costs depends on the elasticity of demand. (Likewise for changes in demand parameters.) 
+
+With two equations and two unknowns, we can estimate $B^{D}$ and $B^{S}$, which was the original idea behind 2SLS. Substituting the equilibrium condition into the structural demand equation, we can rewrite them as
+\begin{eqnarray}
+\label{eqn:linear_demand_iv}
+P(Q) &=& -\frac{A^{D}}{{B^{D}}} + \frac{Q^{s}}{B^{D}} - \frac{\epsilon^{D}}{B^{D}}  = \alpha^{P} + \beta^{P} Q + \epsilon^{P}\\
+\label{eqn:linear_supply_iv}
+Q(P) &=&  A^{S}  + \epsilon^{S} +  B^{S} P .
+\end{eqnarray}
+
+```{r}
+## Supply Shifter
+EQ2 <- sapply(1:N, function(n){
+    ## New Demand, but same par's
+    demand <- qd_fun(P)
+    ## New Supply Curves
+    supply2 <- qs_fun(P, As=-6.5)
+	## lines(supply2, P, col=rgb(0,0,1,.01))
+    ## Compute New EQ
+    eq_id <- which.min( abs(demand-supply2) )
+    eq <- c(P=P[eq_id], Q=demand[eq_id]) 
+    #points(eq[2], eq[1], col=rgb(0,0,1,.05), pch=16)
+    return(eq)
+})
+
+## Market Data w/ Supply Shift
+dat2 <- data.frame(t(EQ2), cost='2')
+dat2 <- rbind(dat1, dat2)
+
+
+## Plot Market Data  w/ Supply Shift
+cols <- ifelse(as.numeric(dat2$cost)==2, rgb(0,0,1,.2), rgb(0,0,0,.2))
+plot.new()
+plot.window(xlim=c(0,2), ylim=plm)
+points(dat2$Q, dat2$P, col=cols, pch=16)
+axis(1)
+axis(2)
+mtext('Quantity',1, line=2)
+mtext('Price',2, line=2)
+```
+
+
+```{r}
+## Not exact, at least right sign
+reg2 <- lm(Q~P, data=dat2)
+summary(reg2)
+
+## Instrumental Variables Estimates
+library(fixest)
+reg2_iv <- feols(Q~1|P~cost, data=dat2)
+summary(reg2_iv)
+
+## Many alternative packages can do IV
+## library(ivreg)
+## summary( ivreg(Q~P|cost, data=dat2) )
+```
+
+If we had multiple alleged supply shifts and recorded their magnitudes, then we could recover more information about demand. 
+
+**Caveat** The coefficient interpretation rests on many assumptions. We have implicitly assumed
+
+* both supply and demand are linear and additively seperable in covariates.
 * only supply was affected, and it was only an intercept shift.
 * the shock large enough to be picked up statistically.
 
-If we had multiple alleged supply shifts and recorded their magnitudes, then we could recover more information about demand. One common diagnostic tool is simply to report the reduced form results. We could also use a nonparametric estimator to diagnose linearity at each stage.
-```{r, eval=F, results='hide'}
+We always get coefficients back when fitting `feols` but are rarely confident that all these assumptions hold. This is one reason why researchers often also report their OLS results.
+
+```{r, eval=F, results='hide', echo=F}
+We could also use a nonparametric estimator to diagnose linearity at each stage.
 #reg2_alt_fs <- lm(Q~cost, data=dat2)
 #summary(reg2_alt_fs)
 #lo2_alt_fs <- loess(Q~cost, data=dat2)
 ```
 
-Other tools are used to help address some of the other assumptions.
+
+
 
 ## Regression Discontinuities/Kink (RD/RK)
+
+The basic idea here is to examine how a variable changes in response to an exogenous shock. Again, there is a large "Applied Statistics" literature I direct you to first
 
 * https://bookdown.org/paul/applied-causal-analysis/rdd-regression-discontinuity-design.html
 * https://mixtape.scunning.com/06-regression_discontinuity
 * https://theeffectbook.net/ch-RegressionDiscontinuity.html
 
+The Regression Discontinuities estimate of the cost shock is the difference in the outcome variable just before and just after the shock. We now turn to our canonical competitive market example. The RD estimate is the difference between the red and blue lines at $T=300$.
+
+```{r}
+dat2$T <- 1:nrow(dat2)
+
+plot(P~T, dat2, main='Effect of Cost Shock on Price', pch=16, col=grey(0,.5))
+regP1 <- lm(P~T, dat2[dat2$cost==1,]) 
+lines(regP1$model$T, predict(regP1), col=2)
+regP2 <- lm(P~T, dat2[dat2$cost==2,]) 
+lines(regP2$model$T, predict(regP2), col=4)
+
+regP <- lm(P~T*cost, dat2)
+summary(regP)
+```
+
+```{r}
+plot(Q~T, dat2, main='Effect of Cost Shock on Quantity', pch=16, col=grey(0,.5))
+regQ1 <- lm(Q~T, dat2[dat2$cost==1,]) 
+lines(regQ1$model$T, predict(regQ1), col=2)
+regQ2 <- lm(Q~T, dat2[dat2$cost==2,]) 
+lines(regQ2$model$T, predict(regQ2), col=4)
+
+regQ <- lm(Q~T*cost, dat2)
+summary(regQ)
+```
+
+Remember that this is effect is *local*: different magnitudes of the cost shock or different demand curves generally yeild different estimates.
+
 ## Difference in Differences (DID)
+
+The basic idea here is to examine how a variable changes in response to an exogenous shock, *compared to a control group*. Again, there is a large "Applied Statistics" literature I direct you to first
 
 * https://mixtape.scunning.com/09-difference_in_differences
 * https://theeffectbook.net/ch-DifferenceinDifference.html
 * http://www.urfie.net/read/index.html#page/226
 
+```{r}
+EQ3 <- sapply(1:(2*N), function(n){
+
+    ## Market Mechanisms
+    demand <- qd_fun(P)
+    supply <- qs_fun(P)
+
+    ## Compute EQ (what we observe)
+    eq_id <- which.min( abs(demand-supply) )
+    eq <- c(P=P[eq_id], Q=demand[eq_id]) 
+
+    ## Return Equilibrium Observations
+    return(eq)
+})
+dat3 <- data.frame(t(EQ3), cost='1', T=1:ncol(EQ3))
+
+
+par(mfrow=c(1,2))
+plot(P~T, dat2, main='Effect of Cost Shock on Price', pch=17,col=rgb(0,0,1,.25))
+points(P~T, dat3, pch=16, col=rgb(1,0,0,.25))
+
+plot(Q~T, dat2, main='Effect of Cost Shock on Quantity', pch=17,col=rgb(0,0,1,.25))
+points(Q~T, dat3, pch=16, col=rgb(1,0,0,.25))
+
+dat <- rbind(dat2, dat3)
+regP <- lm(P~T*cost, dat)
+summary(regP)
+regQ <- lm(Q~T*cost, dat)
+summary(regQ)
+```
+
+Again, the effects are local. 
 
 # Data Scientism
 ***

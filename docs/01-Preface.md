@@ -19,4 +19,4 @@ Much of Part II was also copied from elsewhere, namely other econometrics textbo
 
 These notes are actively developed for my classes, although any interested reader may find it useful. Please report any errors/issues at https://github.com/Jadamso/Rbooks/issues.
 
-Last updated: 13.10.2023
+Last updated: 17.10.2023

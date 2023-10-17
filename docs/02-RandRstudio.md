@@ -6,13 +6,7 @@
 
 ## Why R
 
-We focus on R because it is good for complex stats, concise figures, and coherent organization. It is built and developed by applied statisticians for statistics, and used by many in academia and industry. For you, this could be good for getting a job.
-
-* As a student, think about labour demand. R skills, unlike most purely academic software, is something future employers use and want. Do more of your own research on this to understand how much to invest.
-
-
-
-
+We focus on R because it is good for complex stats, concise figures, and coherent organization. It is built and developed by applied statisticians for statistics, and used by many in academia and industry. For students, think about labor demand and what may be good for getting a job. Do some of your own research to best understand how much to invest.
 
 ## Install R
 
@@ -33,7 +27,7 @@ For help setting up
 
 Make sure you have the latest version of R and Rstudio for class. If not, then reinstall. 
 
-## Interfacing with the GUI
+## Interfacing with R
 
 Rstudio is easiest to get going with. (There are other GUI's.) There are 4 panes. The top left is where you write and save code
 
@@ -48,16 +42,13 @@ The pane below is where your code is executed. For all following examples, make 
 Note that the coded examples generally have inputs, outputs, and comments. For example, 
 
 ```r
-CodeInput_String <- c('code output looks like this')
-CodeInput_String
+## This is a comment
+CodeInput <- c('output looks like this')
+CodeInput
 ```
 
 ```
-## [1] "code output looks like this"
-```
-
-```r
-## while this is just a comment
+## [1] "output looks like this"
 ```
 
 
@@ -282,7 +273,7 @@ sum_squared(x, 2*x)
 ## [1]   0   9  81 900 324
 ```
 
-Applying a function over and over again
+Applying the same function over and over again
 
 ```r
 sapply(1:3, exp)
@@ -309,110 +300,60 @@ mapply(sum, 1:3, exp(1:3) )
 ## [1]  3.718282  9.389056 23.085537
 ```
 
-Random variables are vectors created by functions
+recursive functions
 
 ```r
-## Random binomial (Coin Flip)
-rbinom(1, 1, 0.5)
+## For Loop
+x <- rep(1, 3)
+for(i in 2:length(x) ){
+    x[i] <- (x[i-1]+1)^2
+}
+x
 ```
 
 ```
-## [1] 0
-```
-
-```r
-rbinom(1, 1, 0.5)
-```
-
-```
-## [1] 0
+## [1]  1  4 25
 ```
 
 ```r
-rbinom(1, 1, 0.5)
+r_fun <- function(n){
+    x <- rep(1,n)
+    for(i in 2:length(x) ){
+        x[i] <- (x[i-1]+1)^2
+    }
+    return(x)
+}
+r_fun(5)
 ```
 
 ```
-## [1] 0
+## [1]      1      4     25    676 458329
 ```
 
-```r
-rbinom(1, 1, 0.5)
-```
-
-```
-## [1] 0
-```
-
-```r
-## random standard-normal
-rnorm(10) 
-```
-
-```
-##  [1]  1.483609514  0.025230375  2.458000192 -1.262334015  0.300731081
-##  [6] -0.637446172  0.943546828  0.005170051 -1.645740299 -0.302138796
-```
+Functions can take functions as arguments 
 
 ```r
-rnorm(10)
-```
-
-```
-##  [1]  0.38561526  1.60708885 -0.68705186 -0.32955560 -0.71261817 -0.77832158
-##  [7] -1.42500510 -0.27520102 -0.21780050  0.00768097
-```
-
-```r
-## random uniform
-x2 <- runif(1000)
-head(x2)
-```
-
-```
-## [1] 0.07989056 0.82996588 0.20275052 0.89328720 0.61714201 0.05405807
-```
-
-```r
-length(x2)
-```
-
-```
-## [1] 1000
-```
-
-Functions of functions! Functions can take functions as arguments 
-
-
-```r
-fun_of_rv <- function(f){
-    x <- runif(1e3)
+fun_of_seq <- function(f){
+    x <- seq(1,3, length.out=12)
     y <- f(x)
     return(y)
 }
 
-fun_of_rv(mean)
+fun_of_seq(mean)
 ```
 
 ```
-## [1] 0.5137635
-```
-
-```r
-fun_of_rv(mean)
-```
-
-```
-## [1] 0.506757
+## [1] 2
 ```
 
 ```r
-fun_of_rv(sd)
+fun_of_seq(mean)
 ```
 
 ```
-## [1] 0.288107
+## [1] 2
 ```
+
 
 
 
@@ -795,6 +736,201 @@ apply(a, 1:2, mean)  # Row/Column combination
 ## [2,]   11   13   15
 ```
 
+# Statistics
+
+
+## Random Variables
+
+On your computer, random variables are vectors created by functions. The vectors appear to be generated from a known probability function.
+
+
+```r
+## Random bernoulli (Coin Flip)
+rbinom(1, 1, 0.5)
+```
+
+```
+## [1] 1
+```
+
+```r
+rbinom(4, 1, 0.5)
+```
+
+```
+## [1] 1 1 1 1
+```
+
+```r
+sapply(1:4, function(i) rbinom(1, 1, 0.5))
+```
+
+```
+## [1] 1 0 0 1
+```
+
+```r
+## random standard-normal
+rnorm(4) 
+```
+
+```
+## [1] -1.0830139  1.0012645  1.0169815 -0.1832709
+```
+
+```r
+sapply(1:4, function(i) rnorm(1))
+```
+
+```
+## [1]  1.215985 -1.473246  0.624566 -2.076260
+```
+
+```r
+x1 <- rnorm(1000)
+head(x1)
+```
+
+```
+## [1]  1.3668270 -0.6198533 -1.2607716  1.0967399 -0.4084538 -1.2633595
+```
+
+```r
+length(x1)
+```
+
+```
+## [1] 1000
+```
+
+```r
+hist(x1)
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-18-1.png" width="672" />
+
+```r
+## random uniform
+x2 <- runif(1000)
+head(x2)
+```
+
+```
+## [1] 0.96128561 0.15253890 0.84452274 0.03792471 0.71428694 0.50909129
+```
+
+```r
+length(x2)
+```
+
+```
+## [1] 1000
+```
+
+```r
+hist(x2)
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-18-2.png" width="672" />
+
+
+## Functions of Random Variables
+
+compute the mean of a random sample
+
+```r
+runif(10)
+```
+
+```
+##  [1] 0.1519318 0.6864031 0.9004112 0.7839101 0.9120637 0.7668445 0.6320371
+##  [8] 0.8529528 0.5184957 0.6574143
+```
+
+```r
+x <- runif(1e3) 
+hist(x)
+m <- mean(x)
+abline(v=m, col=2)
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-19-1.png" width="672" />
+
+see how the mean varies from sample to sample
+
+```r
+par(mfrow=c(1,3))
+sapply(1:3, function(i){
+    x <- runif(1e3) 
+    hist(x, main=paste0('sample ', i), breaks=seq(0,1,by=.1))
+    abline(v= mean(x), col=2)
+})
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-20-1.png" width="672" />
+
+```
+## [[1]]
+## NULL
+## 
+## [[2]]
+## NULL
+## 
+## [[3]]
+## NULL
+```
+
+examine the sampling distribution of the mean
+
+```r
+fun_of_rv <- function(f, n=20){
+  x <- runif(n)
+  y <- f(x)
+  return(y)
+}
+
+three_means <- c(  mean(runif(100)),  mean(runif(100)),  mean(runif(100))  )
+three_means
+```
+
+```
+## [1] 0.5134213 0.4991354 0.4560083
+```
+
+```r
+three_means <- sapply(1:3, fun_of_rv, f=mean)
+three_means
+```
+
+```
+## [1] 0.2928601 0.5099507 0.3708388
+```
+
+```r
+sample_means <- sapply(1:1000, fun_of_rv, f=mean)
+hist(sample_means, breaks=50, col=2, main='Sampling Distribution of the mean')
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-21-1.png" width="672" />
+
+examine the sampling distribution of the standard deviation
+
+```r
+three_sds <- c(  sd(runif(100)),  sd(runif(100)),  sd(runif(100))  )
+three_sds
+```
+
+```
+## [1] 0.2954934 0.2777635 0.2885504
+```
+
+```r
+sample_sds <- sapply(1:1000, fun_of_rv, f=sd)
+hist(sample_sds, breaks=50, col=4, main='Sampling Distribution of the sd')
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-22-1.png" width="672" />
+
 # Data Analysis
 ***
 
@@ -938,17 +1074,7 @@ summary(USArrests)
 
 ### Histograms 
 
-
-Histograms Summarize Distributions
-
-```r
-hist(USArrests$Murder, xlab='Murder Arrests',
-    main='Arrests per 100,000 across 50 US states in 1973')
-```
-
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-22-1.png" width="672" />
-
-Show data splits
+Histograms Summarize Distributions. Easy to show data splits
 
 ```r
 ## Urban Population above/below mean
@@ -957,14 +1083,15 @@ m1 <- USArrests[USArrests$UrbanPop<u,'Murder']
 m2 <- USArrests[USArrests$UrbanPop>=u,'Murder']
 
 xbks <-  seq(min(m1,m2), max(m1,m2), length.out=10)
-hist(m1, col=rgb(0,0,1,.5), breaks=xbks, xlab='Murder Arrests', main='Split Data')
+hist(m1, col=rgb(0,0,1,.5), breaks=xbks, xlab='Murder Arrests', main='')
 hist(m2, add=T, col=rgb(1,0,0,.5), breaks=xbks)
 cols <- c(rgb(0,0,1,.5), rgb(1,0,0,.5))
 legend('topright', col=cols, pch=15,
     title='% Urban Pop.', legend=c('Above Mean', 'Below Mean'))
+title('Arrests per 100,000 across 50 US states in 1973')
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-23-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-27-1.png" width="672" />
 
 
 **Glue together** to convey more information all at once
@@ -984,7 +1111,7 @@ legend('topright', col=cols, pch=15, bty='n',
     title='% Urban Pop.', legend=c('Above Mean', 'Below Mean'))
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-24-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-28-1.png" width="672" />
 
 
 
@@ -999,7 +1126,7 @@ hist(m2,breaks=xbks, col=rgb(1,0,0,.5),
     main='Urban Pop < Mean', xlab='Murder Arrests')
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-25-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-29-1.png" width="672" />
 
 For more histogram visuals, see https://r-graph-gallery.com/histogram.html
 
@@ -1012,7 +1139,7 @@ All Data
 boxplot(USArrests$Murder, main='All Data', ylab='Murder Arrests')
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-26-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-30-1.png" width="672" />
 
 
 Split data into groups and glue together
@@ -1028,7 +1155,7 @@ boxplot(Murder~UrbanPop_cut, USArrests,
     xlab='Urban Population', ylab='Murder Arrests')
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-27-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-31-1.png" width="672" />
 
 ### Scatterplots
 
@@ -1037,7 +1164,7 @@ boxplot(Murder~UrbanPop_cut, USArrests,
 plot(Murder~UrbanPop, USArrests, pch=16, col=rgb(0,0,0,.5))
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-28-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-32-1.png" width="672" />
 
 
 ```r
@@ -1049,7 +1176,7 @@ par(fig=c(0.65,1,0,0.8),new=TRUE)
 boxplot(USArrests$UrbanPop, axes=FALSE)
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-29-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-33-1.png" width="672" />
 
 
 Another example with a larger (simulated) dataset
@@ -1065,13 +1192,13 @@ head(xy_dat)
 ```
 
 ```
-##        x           y
-## 1 1.0000  0.78894774
-## 2 1.0002  1.50094699
-## 3 1.0004  1.75575399
-## 4 1.0006  0.05022042
-## 5 1.0008  0.53143858
-## 6 1.0010 -1.19386159
+##        x          y
+## 1 1.0000 -1.3459180
+## 2 1.0002 -0.1943442
+## 3 1.0004  1.7038705
+## 4 1.0006 -0.1029925
+## 5 1.0008 -1.3715003
+## 6 1.0010  1.4214878
 ```
 
 Plot the data and the line of best fit
@@ -1086,7 +1213,7 @@ reg <- lm(y~x, data=xy_dat)
 abline(reg)
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-31-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-35-1.png" width="672" />
 
 ```r
 ## Can Also Add Confidence Intervals
@@ -1113,7 +1240,7 @@ legend('topleft', legend='single data point',
     pch=16, col=rgb(0,0,0,.1), cex=.5)
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-32-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-36-1.png" width="672" />
 
 
 Can export figure with specific dimensions

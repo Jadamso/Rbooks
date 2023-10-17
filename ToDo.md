@@ -21,39 +21,9 @@ https://bookdown.org/yihui/bookdown/github.html
 
 https://plotly-r.com/
 
+#### Statistics 
+
 ```{r}
-runif(1e3)
-x <- runif(1e3) 
-hist(x)
-m <- mean(x)
-abline(v=m, col=2)
-
-
-fun_of_rv <- function(f=mean, n=20){
-  x <- runif(n)
-  y <- f(x)
-  return(y)
-}
-
-x1 <- fun_of_rv(mean)
-x2 <- fun_of_rv(mean)
-x3 <- fun_of_rv(mean)
-samples_of_mean <- c(x1,x2,x3)
-
-
-
-fun_of_rv <- function(f=mean, n=100){
-    x <- runif(n)
-    y <- f(x)
-    return(y)    
-}
-fun_of_rv()
-
-sample_means <- sapply(1:1000, fun_of_rv, f=mean)
-hist(sample_means, breaks=50)
-
-
-
 twosam <- function(y1, y2){
     n1  <- length(y1)
     n2  <- length(y2)
@@ -67,11 +37,40 @@ twosam <- function(y1, y2){
 }
  
 tstat <- twosam(data$male, data$female); tstat
-
 ```
 
 
-## OLS
+
+#### Data Analysis
+
+
+The & and | operators
+    always evaluate left and right
+    vectorised
+The && and || operators
+    they evaluate the right side only if needed (i.e. conditionally)
+    they accept only scalars on both sides!
+x <- 1:3
+if(length(x) >= 5 & x[5] > 12) print("ok")
+if(length(x) >= 5& & x[5] > 12) print("ok")
+https://meek-parfait-60672c.netlify.app/docs/m1_r-intro_01#103
+
+Data clean/merge
+ * by, with, subset, split, aggregate, stack, switch, do.call, reduce
+ * data.table, ...
+
+Strings. https://meek-parfait-60672c.netlify.app/docs/M1_R-intro_03_text.html, https://raw.githubusercontent.com/rstudio/cheatsheets/main/regex.pdf
+kingText = "The king infringes the law on playing curling."
+gsub(pattern = "ing", replacement = "", x = kingText)
+gsub("[aeiouy]", "_", kingText)
+gsub("([[:alpha:]]{3,})ing\\b", "\\1", kingText) 
+
+
+
+
+
+## Linear Regression
+
 
 library(AER)
 data(CASchools)
@@ -83,7 +82,7 @@ CASchools[rownames(iplot),]
 
 
 
-### Parametric Variability Estimates and Hypothesis Tests [Under Construction]
+#### Parametric Variability Estimates and Hypothesis Tests [Under Construction]
 
 In general, note that the linear model has
 $$
@@ -170,32 +169,10 @@ summary(reg)
 
 
 
-## Intro R
-The & and | operators
-    always evaluate left and right
-    vectorised
-The && and || operators
-    they evaluate the right side only if needed (i.e. conditionally)
-    they accept only scalars on both sides!
-x <- 1:3
-if(length(x) >= 5 & x[5] > 12) print("ok")
-if(length(x) >= 5& & x[5] > 12) print("ok")
-https://meek-parfait-60672c.netlify.app/docs/m1_r-intro_01#103
-
-Data clean/merge
- * by, with, subset, split, aggregate, stack, switch, do.call, reduce
- * data.table, ...
-
-Strings. https://meek-parfait-60672c.netlify.app/docs/M1_R-intro_03_text.html, https://raw.githubusercontent.com/rstudio/cheatsheets/main/regex.pdf
-kingText = "The king infringes the law on playing curling."
-gsub(pattern = "ing", replacement = "", x = kingText)
-gsub("[aeiouy]", "_", kingText)
-gsub("([[:alpha:]]{3,})ing\\b", "\\1", kingText) 
+## Intermediate R
 
 For and while loops
 
-
-## Intermediate R
 
 
 showDot = function(...){
@@ -210,7 +187,7 @@ Add Fortran Code, https://masuday.github.io/fortran_tutorial/r.html
 Update packages after new install, 
     for loop checks for old packages and installs if not already installed. not from source
 
-## RReproducible
+#### RReproducible
 
 - edit /DataScientism_Poster
 - links [RandRstudio](https://jadamso.github.io/Rbooks/01-RandRstudio.md)
@@ -264,4 +241,57 @@ https://community.rstudio.com/t/tikz-in-r-markdown-with-html-output/54260/2
 
 <!--optim-->
 <!--```-->
+
+
+
+
+<!--
+###  Quantitative Analysis of Almost Any Type of Data} 
+
+E.g., plotting galactic superclusters
+\vspace{.5\baselineskip}
+\includegraphics[scale=0.25, trim=0 5cm 0 5cm, clip=true]{./Figures/shapley.pdf}
+\vspace{-2\baselineskip}
+
+\begin{Rcode}{basicstyle=\tiny\ttfamily}
+library(spatstat)
+data(shapley)
+plot(shapley, pch=16, main="", cols=rgb(0,0,0,.1), cex=.4, use.marks=F)
+\end{Rcode}
+<<echo=TRUE, cache=FALSE, fig=TRUE, eval=TRUE>>=
+library(spatstat)
+data(shapley)
+plot(shapley, pch=16, main="", cols=rgb(0,0,0,.1), cex=.4, use.marks=F)
+@
+\vspace{-.5\baselineskip}
+
+\textbf{Physics and Chemistry:}
+Particle Simulations, DNA Sequences, Protein Folding\\
+\textbf{Biology:} 
+Human Brain Morphology, Insect Trajectories  \\
+{\footnotesize \texttt{bio3d:} 
+\url{http://thegrantlab.org/bio3d/tutorials/structure-analysis} \\
+\url{https://ecomorph.wordpress.com/2015/08/05/retinal-topography-maps-in-r/}} \\
+\textbf{Astronomy:} Map the Brightness of Galaxy Locations 
+{\footnotesize \url{https://asaip.psu.edu/resources/datasets}}
+\bash
+Rscript -e 'library(spatstat); data(shapley);  pdf("./shapley.pdf"); plot(unmark(shapley), pch=16, main = "", cols=rgb(0,0,0,.1), cex=.4 )'
+\END
+
+###  ... To Large Scale Observational Data ...}
+{\footnotesize \url{https://cran.r-project.org/web/views/MedicalImaging.html}}
+data(brains)
+shapes3d(brains$x[,,], type="dots", axes3=T)  ## 24 markers (x,y,z) for 59 people $
+
+\textbf{Social and Historical:} Income, Population, Crime, ... \\
+i.e. \footnotesize{\url{http://www.census.gov/did/www/saipe/data/statecounty/maps/iy2014/Tot_Pct_Poor2014.pdf}} \\
+i.e. \footnotesize{\url{http://lincolnmullen.com/projects/slavery/}}\\~\\
+
+\textbf{Ecology:} Global Temperatures, Soil Attributes, Land Use, ...\\
+https://benborgy.wordpress.com/
+i.e. \footnotesize{\url{https://benborgy.files.wordpress.com/2014/08/spatializemap_2.jpg}} \\
+i.e. \footnotesize{\url{http://esdac.jrc.ec.europa.eu/themes/global-data-other-initiatives}} \\
+-->
+
+
 
