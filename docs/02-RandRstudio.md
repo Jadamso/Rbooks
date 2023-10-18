@@ -356,8 +356,6 @@ fun_of_seq(mean)
 
 
 
-
-
 ##  Matrices
 
 
@@ -745,8 +743,8 @@ On your computer, random variables are vectors created by functions. The vectors
 
 
 ```r
-## Random bernoulli (Coin Flip)
-rbinom(1, 1, 0.5)
+## Random bernoulli (Coin Flip: Heads=1)
+rbinom(1, 1, 0.5) ## 1 Flip
 ```
 
 ```
@@ -754,15 +752,7 @@ rbinom(1, 1, 0.5)
 ```
 
 ```r
-rbinom(4, 1, 0.5)
-```
-
-```
-## [1] 1 1 1 1
-```
-
-```r
-sapply(1:4, function(i) rbinom(1, 1, 0.5))
+rbinom(4, 1, 0.5) ## 4 Flips in row
 ```
 
 ```
@@ -770,85 +760,58 @@ sapply(1:4, function(i) rbinom(1, 1, 0.5))
 ```
 
 ```r
-## random standard-normal
-rnorm(4) 
-```
-
-```
-## [1] -1.0830139  1.0012645  1.0169815 -0.1832709
-```
-
-```r
-sapply(1:4, function(i) rnorm(1))
-```
-
-```
-## [1]  1.215985 -1.473246  0.624566 -2.076260
-```
-
-```r
-x1 <- rnorm(1000)
-head(x1)
-```
-
-```
-## [1]  1.3668270 -0.6198533 -1.2607716  1.0967399 -0.4084538 -1.2633595
-```
-
-```r
-length(x1)
-```
-
-```
-## [1] 1000
-```
-
-```r
-hist(x1)
+x0 <- rbinom(1000, 1, 0.5)
+hist(x0)
 ```
 
 <img src="02-RandRstudio_files/figure-html/unnamed-chunk-18-1.png" width="672" />
 
 ```r
-## random uniform
-x2 <- runif(1000)
-head(x2)
+## random standard-normal
+rnorm(4) 
 ```
 
 ```
-## [1] 0.96128561 0.15253890 0.84452274 0.03792471 0.71428694 0.50909129
-```
-
-```r
-length(x2)
-```
-
-```
-## [1] 1000
+## [1] -0.845133755 -0.003519627  0.890714021 -0.705002990
 ```
 
 ```r
-hist(x2)
+x1 <- rnorm(1000)
+hist(x1)
 ```
 
 <img src="02-RandRstudio_files/figure-html/unnamed-chunk-18-2.png" width="672" />
 
+```r
+## random uniform
+runif(4)
+```
+
+```
+## [1] 0.7450341 0.1470342 0.8732999 0.9315401
+```
+
+```r
+x2 <- runif(1000)
+hist(x2)
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-18-3.png" width="672" />
+
+
 
 ## Functions of Random Variables
 
-compute the mean of a random sample
+Two definitions to remember
+
+* *statistic* a function of data
+* *sampling distribution* how a statistic varies from sample to sample
+
+The mean is a statistic
 
 ```r
-runif(10)
-```
-
-```
-##  [1] 0.1519318 0.6864031 0.9004112 0.7839101 0.9120637 0.7668445 0.6320371
-##  [8] 0.8529528 0.5184957 0.6574143
-```
-
-```r
-x <- runif(1e3) 
+## compute the mean of a random sample
+x <- runif(100)
 hist(x)
 m <- mean(x)
 abline(v=m, col=2)
@@ -856,58 +819,37 @@ abline(v=m, col=2)
 
 <img src="02-RandRstudio_files/figure-html/unnamed-chunk-19-1.png" width="672" />
 
-see how the mean varies from sample to sample
+```r
+## is m close to it's true value (1-0)/2=.5?
+## what about mean(runif(1000)) ?
+## what about mean( rbinom(100, 1, 0.5) )?
+```
+
+see how the mean varies from sample to sample to sample
 
 ```r
 par(mfrow=c(1,3))
 sapply(1:3, function(i){
-    x <- runif(1e3) 
-    hist(x, main=paste0('sample ', i), breaks=seq(0,1,by=.1))
-    abline(v= mean(x), col=2)
+    x <- runif(100) 
+    m <-  mean(x)
+    hist(x,
+        main=paste0('mean ', round(m,3)),
+        breaks=seq(0,1,by=.1))
+    abline(v=m, col=2)
+    return(m)
 })
 ```
 
 <img src="02-RandRstudio_files/figure-html/unnamed-chunk-20-1.png" width="672" />
 
 ```
-## [[1]]
-## NULL
-## 
-## [[2]]
-## NULL
-## 
-## [[3]]
-## NULL
+## [1] 0.4970080 0.4967883 0.5188648
 ```
 
 examine the sampling distribution of the mean
 
 ```r
-fun_of_rv <- function(f, n=20){
-  x <- runif(n)
-  y <- f(x)
-  return(y)
-}
-
-three_means <- c(  mean(runif(100)),  mean(runif(100)),  mean(runif(100))  )
-three_means
-```
-
-```
-## [1] 0.5134213 0.4991354 0.4560083
-```
-
-```r
-three_means <- sapply(1:3, fun_of_rv, f=mean)
-three_means
-```
-
-```
-## [1] 0.2928601 0.5099507 0.3708388
-```
-
-```r
-sample_means <- sapply(1:1000, fun_of_rv, f=mean)
+sample_means <- sapply(1:1000, function(i) mean(runif(100)) )
 hist(sample_means, breaks=50, col=2, main='Sampling Distribution of the mean')
 ```
 
@@ -921,15 +863,79 @@ three_sds
 ```
 
 ```
-## [1] 0.2954934 0.2777635 0.2885504
+## [1] 0.2729367 0.2874332 0.2837671
 ```
 
 ```r
-sample_sds <- sapply(1:1000, fun_of_rv, f=sd)
+sample_sds <- sapply(1:1000, function(i) sd(runif(100)) )
 hist(sample_sds, breaks=50, col=4, main='Sampling Distribution of the sd')
 ```
 
 <img src="02-RandRstudio_files/figure-html/unnamed-chunk-22-1.png" width="672" />
+
+examine the sampling distribution of "order statistics"
+
+```r
+## Create 300 samples, each with 1000 random uniform variables
+x <- sapply(1:300, function(i) runif(1000) )
+
+## Median looks normal
+xmed <- apply(x,1,quantile, probs=.5)
+hist(xmed,breaks=100)
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-23-1.png" width="672" />
+
+```r
+## Maximum does not!
+xmax <- apply(x,1,quantile, probs=1)
+hist(xmax,breaks=100)
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-23-2.png" width="672" />
+
+```r
+## Upper and Lower Quantiles
+xq <- apply(x,1,quantile, probs=c(.05,.95))
+bks <- seq(0,1,by=.01)
+hist(xq[1,], main='quantile estimates', col=rgb(0,0,1,.5), xlim=c(0,1), breaks=bks)
+hist(xq[2,], col=rgb(1,0,0,.5), add=T, breaks=seq(0,1,by=.01))
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-23-3.png" width="672" />
+
+```r
+## Coverage
+xcov <- sapply(bks, function(b){
+    bl <- b >= xq[1,]
+    bu <- b <= xq[2,]
+    mean( bl&bu )
+})
+plot.new()
+plot.window(xlim=c(0,1), ylim=c(0,1))
+polygon( c(bks, rev(bks)), c(xcov, xcov*0), col=grey(.5,.5), border=NA)
+title('coverage frequency')
+axis(1)
+axis(2)
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-23-4.png" width="672" />
+
+
+
+```r
+## Try any function!
+fun_of_rv <- function(f, n=100){
+  x <- runif(n)
+  y <- f(x)
+  return(y)
+}
+fun_of_rv( function(i){range(exp(i))})
+```
+
+```
+## [1] 1.000394 2.658886
+```
 
 # Data Analysis
 ***
@@ -1091,7 +1097,7 @@ legend('topright', col=cols, pch=15,
 title('Arrests per 100,000 across 50 US states in 1973')
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-27-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-29-1.png" width="672" />
 
 
 **Glue together** to convey more information all at once
@@ -1111,7 +1117,7 @@ legend('topright', col=cols, pch=15, bty='n',
     title='% Urban Pop.', legend=c('Above Mean', 'Below Mean'))
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-28-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-30-1.png" width="672" />
 
 
 
@@ -1126,7 +1132,7 @@ hist(m2,breaks=xbks, col=rgb(1,0,0,.5),
     main='Urban Pop < Mean', xlab='Murder Arrests')
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-29-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-31-1.png" width="672" />
 
 For more histogram visuals, see https://r-graph-gallery.com/histogram.html
 
@@ -1139,7 +1145,7 @@ All Data
 boxplot(USArrests$Murder, main='All Data', ylab='Murder Arrests')
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-30-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-32-1.png" width="672" />
 
 
 Split data into groups and glue together
@@ -1155,7 +1161,7 @@ boxplot(Murder~UrbanPop_cut, USArrests,
     xlab='Urban Population', ylab='Murder Arrests')
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-31-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-33-1.png" width="672" />
 
 ### Scatterplots
 
@@ -1164,7 +1170,7 @@ boxplot(Murder~UrbanPop_cut, USArrests,
 plot(Murder~UrbanPop, USArrests, pch=16, col=rgb(0,0,0,.5))
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-32-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-34-1.png" width="672" />
 
 
 ```r
@@ -1176,7 +1182,7 @@ par(fig=c(0.65,1,0,0.8),new=TRUE)
 boxplot(USArrests$UrbanPop, axes=FALSE)
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-33-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-35-1.png" width="672" />
 
 
 Another example with a larger (simulated) dataset
@@ -1193,12 +1199,12 @@ head(xy_dat)
 
 ```
 ##        x          y
-## 1 1.0000 -1.3459180
-## 2 1.0002 -0.1943442
-## 3 1.0004  1.7038705
-## 4 1.0006 -0.1029925
-## 5 1.0008 -1.3715003
-## 6 1.0010  1.4214878
+## 1 1.0000 -0.6514961
+## 2 1.0002 -0.1781862
+## 3 1.0004 -0.2339515
+## 4 1.0006  0.6802476
+## 5 1.0008  0.7070642
+## 6 1.0010 -0.1861744
 ```
 
 Plot the data and the line of best fit
@@ -1213,7 +1219,7 @@ reg <- lm(y~x, data=xy_dat)
 abline(reg)
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-35-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-37-1.png" width="672" />
 
 ```r
 ## Can Also Add Confidence Intervals
@@ -1240,7 +1246,7 @@ legend('topleft', legend='single data point',
     pch=16, col=rgb(0,0,0,.1), cex=.5)
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-36-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-38-1.png" width="672" />
 
 
 Can export figure with specific dimensions

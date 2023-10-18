@@ -167,8 +167,6 @@ fun_of_seq(mean)
 
 
 
-
-
 ##  Matrices
 
 ```{r}
@@ -257,63 +255,62 @@ apply(a, 1:2, mean)  # Row/Column combination
 On your computer, random variables are vectors created by functions. The vectors appear to be generated from a known probability function.
 
 ```{r}
-## Random bernoulli (Coin Flip)
-rbinom(1, 1, 0.5)
-rbinom(4, 1, 0.5)
-sapply(1:4, function(i) rbinom(1, 1, 0.5))
+## Random bernoulli (Coin Flip: Heads=1)
+rbinom(1, 1, 0.5) ## 1 Flip
+rbinom(4, 1, 0.5) ## 4 Flips in row
+x0 <- rbinom(1000, 1, 0.5)
+hist(x0)
 
 ## random standard-normal
 rnorm(4) 
-sapply(1:4, function(i) rnorm(1))
 x1 <- rnorm(1000)
-head(x1)
-length(x1)
 hist(x1)
 
 ## random uniform
+runif(4)
 x2 <- runif(1000)
-head(x2)
-length(x2)
 hist(x2)
 ```
 
 
+
 ## Functions of Random Variables
 
-compute the mean of a random sample
+Two definitions to remember
+
+* *statistic* a function of data
+* *sampling distribution* how a statistic varies from sample to sample
+
+The mean is a statistic
 ```{r}
-runif(10)
-x <- runif(1e3) 
+## compute the mean of a random sample
+x <- runif(100)
 hist(x)
 m <- mean(x)
 abline(v=m, col=2)
+
+## is m close to it's true value (1-0)/2=.5?
+## what about mean(runif(1000)) ?
+## what about mean( rbinom(100, 1, 0.5) )?
 ```
 
-see how the mean varies from sample to sample
+see how the mean varies from sample to sample to sample
 ```{r}
 par(mfrow=c(1,3))
 sapply(1:3, function(i){
-    x <- runif(1e3) 
-    hist(x, main=paste0('sample ', i), breaks=seq(0,1,by=.1))
-    abline(v= mean(x), col=2)
+    x <- runif(100) 
+    m <-  mean(x)
+    hist(x,
+        main=paste0('mean= ', round(m,4)),
+        breaks=seq(0,1,by=.1))
+    abline(v=m, col=2)
+    return(m)
 })
 ```
 
 examine the sampling distribution of the mean
 ```{r}
-fun_of_rv <- function(f, n=20){
-  x <- runif(n)
-  y <- f(x)
-  return(y)
-}
-
-three_means <- c(  mean(runif(100)),  mean(runif(100)),  mean(runif(100))  )
-three_means
-
-three_means <- sapply(1:3, fun_of_rv, f=mean)
-three_means
-
-sample_means <- sapply(1:1000, fun_of_rv, f=mean)
+sample_means <- sapply(1:1000, function(i) mean(runif(100)) )
 hist(sample_means, breaks=50, col=2, main='Sampling Distribution of the mean')
 ```
 
@@ -322,8 +319,52 @@ examine the sampling distribution of the standard deviation
 three_sds <- c(  sd(runif(100)),  sd(runif(100)),  sd(runif(100))  )
 three_sds
 
-sample_sds <- sapply(1:1000, fun_of_rv, f=sd)
+sample_sds <- sapply(1:1000, function(i) sd(runif(100)) )
 hist(sample_sds, breaks=50, col=4, main='Sampling Distribution of the sd')
+```
+
+examine the sampling distribution of "order statistics"
+```{r}
+## Create 300 samples, each with 1000 random uniform variables
+x <- sapply(1:300, function(i) runif(1000) )
+
+## Median looks normal
+xmed <- apply(x,1,quantile, probs=.5)
+hist(xmed,breaks=100)
+
+## Maximum does not!
+xmax <- apply(x,1,quantile, probs=1)
+hist(xmax,breaks=100)
+
+## Upper and Lower Quantiles
+xq <- apply(x,1,quantile, probs=c(.05,.95))
+bks <- seq(0,1,by=.01)
+hist(xq[1,], main='quantile estimates', col=rgb(0,0,1,.5), xlim=c(0,1), breaks=bks)
+hist(xq[2,], col=rgb(1,0,0,.5), add=T, breaks=seq(0,1,by=.01))
+
+## Coverage
+xcov <- sapply(bks, function(b){
+    bl <- b >= xq[1,]
+    bu <- b <= xq[2,]
+    mean( bl&bu )
+})
+plot.new()
+plot.window(xlim=c(0,1), ylim=c(0,1))
+polygon( c(bks, rev(bks)), c(xcov, xcov*0), col=grey(.5,.5), border=NA)
+title('coverage frequency')
+axis(1)
+axis(2)
+```
+
+
+```{r}
+## Try any function!
+fun_of_rv <- function(f, n=100){
+  x <- runif(n)
+  y <- f(x)
+  return(y)
+}
+fun_of_rv( function(i){range(exp(i))})
 ```
 
 # Data Analysis
