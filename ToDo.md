@@ -81,6 +81,10 @@ iplot <- car::influencePlot(reg)
 CASchools[rownames(iplot),]
 
 
+Section 7: Derive Simple OLS
+
+* "Introduction to Econometrics with R" by Hanck, Arnold, Gerber, and Schmelzer, https://www.econometrics-with-r.org/
+(taking seriously Greene's "Model Building--A General to Simple Strategy") 
 
 #### Parametric Variability Estimates and Hypothesis Tests [Under Construction]
 
@@ -172,7 +176,6 @@ summary(reg)
 ## Intermediate R
 
 For and while loops
-
 
 
 showDot = function(...){

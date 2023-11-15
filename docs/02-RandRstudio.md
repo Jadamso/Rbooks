@@ -748,7 +748,7 @@ rbinom(1, 1, 0.5) ## 1 Flip
 ```
 
 ```
-## [1] 1
+## [1] 0
 ```
 
 ```r
@@ -772,7 +772,7 @@ rnorm(4)
 ```
 
 ```
-## [1] -0.845133755 -0.003519627  0.890714021 -0.705002990
+## [1] -0.8849866  0.9483267  0.4466007  0.2373869
 ```
 
 ```r
@@ -788,7 +788,7 @@ runif(4)
 ```
 
 ```
-## [1] 0.7450341 0.1470342 0.8732999 0.9315401
+## [1] 0.07970298 0.30572562 0.05471778 0.30260641
 ```
 
 ```r
@@ -800,7 +800,7 @@ hist(x2)
 
 
 
-## Functions of Random Variables
+## Functions of Data
 
 Two definitions to remember
 
@@ -833,7 +833,7 @@ sapply(1:3, function(i){
     x <- runif(100) 
     m <-  mean(x)
     hist(x,
-        main=paste0('mean ', round(m,3)),
+        main=paste0('mean= ', round(m,4)),
         breaks=seq(0,1,by=.1))
     abline(v=m, col=2)
     return(m)
@@ -843,7 +843,7 @@ sapply(1:3, function(i){
 <img src="02-RandRstudio_files/figure-html/unnamed-chunk-20-1.png" width="672" />
 
 ```
-## [1] 0.4970080 0.4967883 0.5188648
+## [1] 0.4961423 0.4958101 0.5108168
 ```
 
 examine the sampling distribution of the mean
@@ -863,7 +863,7 @@ three_sds
 ```
 
 ```
-## [1] 0.2729367 0.2874332 0.2837671
+## [1] 0.2851381 0.2919014 0.2934204
 ```
 
 ```r
@@ -879,7 +879,7 @@ examine the sampling distribution of "order statistics"
 ## Create 300 samples, each with 1000 random uniform variables
 x <- sapply(1:300, function(i) runif(1000) )
 
-## Median looks normal
+## Median also looks normal
 xmed <- apply(x,1,quantile, probs=.5)
 hist(xmed,breaks=100)
 ```
@@ -887,8 +887,11 @@ hist(xmed,breaks=100)
 <img src="02-RandRstudio_files/figure-html/unnamed-chunk-23-1.png" width="672" />
 
 ```r
-## Maximum does not!
+## Maximum and Minumum do not!
+xmin <- apply(x,1,quantile, probs=0)
 xmax <- apply(x,1,quantile, probs=1)
+par(mfrow=c(1,2))
+hist(xmin,breaks=100)
 hist(xmax,breaks=100)
 ```
 
@@ -900,11 +903,7 @@ xq <- apply(x,1,quantile, probs=c(.05,.95))
 bks <- seq(0,1,by=.01)
 hist(xq[1,], main='quantile estimates', col=rgb(0,0,1,.5), xlim=c(0,1), breaks=bks)
 hist(xq[2,], col=rgb(1,0,0,.5), add=T, breaks=seq(0,1,by=.01))
-```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-23-3.png" width="672" />
-
-```r
 ## Coverage
 xcov <- sapply(bks, function(b){
     bl <- b >= xq[1,]
@@ -919,7 +918,7 @@ axis(1)
 axis(2)
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-23-4.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-23-3.png" width="672" />
 
 
 
@@ -934,7 +933,7 @@ fun_of_rv( function(i){range(exp(i))})
 ```
 
 ```
-## [1] 1.000394 2.658886
+## [1] 1.005187 2.713035
 ```
 
 # Data Analysis
@@ -1198,13 +1197,13 @@ head(xy_dat)
 ```
 
 ```
-##        x          y
-## 1 1.0000 -0.6514961
-## 2 1.0002 -0.1781862
-## 3 1.0004 -0.2339515
-## 4 1.0006  0.6802476
-## 5 1.0008  0.7070642
-## 6 1.0010 -0.1861744
+##        x           y
+## 1 1.0000  0.34664905
+## 2 1.0002  1.31219785
+## 3 1.0004  1.05188435
+## 4 1.0006 -0.38684677
+## 5 1.0008 -1.92041290
+## 6 1.0010 -0.04405203
 ```
 
 Plot the data and the line of best fit
