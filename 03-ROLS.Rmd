@@ -16,7 +16,6 @@ y_i=\alpha+\beta x_i+\epsilon_{i} \\
 min_{\beta} \sum_{i=1}^{n} (\epsilon_{i})^2
 $$
 
-
 Point Estimates
 $$
 \hat{\alpha}=\bar{y}-\hat{\beta}\bar{x} = \widehat{\mathbb{E}}[Y] - \hat{\beta} \widehat{\mathbb{E}}[X] \\
@@ -44,25 +43,29 @@ coef(reg)
 abline(reg, col='orange')
 ```
 
-To measure the ''Goodness of fit'', we analyze sums of squared errors
+
+To measure the ''Goodness of fit'', we analyze sums of squared errors (Total, Explained, and Residual) as
 $$
-\underbrace{\sum_{i}(y_i-\bar{y})^2}_\text{TSS}=\underbrace{\sum_{i}(\hat{y}_i-\bar{y})^2}_\text{RSS}+\underbrace{\sum_{i}\hat{\epsilon_{i}}^2}_\text{ESS}\\
-R^2 = \frac{RSS}{TSS}=1-\frac{ESS}{TSS}
+\underbrace{\sum_{i}(y_i-\bar{y})^2}_\text{TSS}=\underbrace{\sum_{i}(\hat{y}_i-\bar{y})^2}_\text{ESS}+\underbrace{\sum_{i}\hat{\epsilon_{i}}^2}_\text{RSS}\\
+R^2 = \frac{ESS}{TSS}=1-\frac{RSS}{TSS}
 $$
 Note that $R^2$ is also called the coefficient of determination.
 
 ```{r}
 ## Manually Compute Goodness of Fit
 Ehat <- resid(reg)
-ESS  <- sum(Ehat^2)
+RSS  <- sum(Ehat^2)
 Y <- xy$y
 TSS  <- sum((Y-mean(Y))^2)
-R2 <- 1 - ESS/TSS
+R2 <- 1 - RSS/TSS
 R2
 
 ## Check R2
 summary(reg)$r.squared
 ```
+
+
+
 
 ### Variability Estimates
 
@@ -306,10 +309,19 @@ $$
 y=\textbf{X}\beta+\epsilon\\
 min_{\beta} (\epsilon' \epsilon)
 $$
+
 Point Estimates 
 $$
 \hat{\beta}=(\textbf{X}'\textbf{X})^{-1}\textbf{X}'y
 $$
+
+^[To derive OLS coefficients in Matrix form, see
+
+* https://jrnold.github.io/intro-methods-notes/ols-in-matrix-form.html
+* https://www.fsb.miamioh.edu/lij14/411_note_matrix.pdf
+* https://web.stanford.edu/~mrosenfe/soc_meth_proj3/matrix_OLS_NYU_notes.pdf
+]
+
 
 ```{r, message=FALSE, warning=FALSE}
 ## Example 2 (Empirical)
@@ -367,7 +379,7 @@ coef(reg)
 
 To measure the ``Goodness of fit'', we can compute various sums of squared srrors
 $$
-R^2 = \frac{RSS}{TSS}=1-\frac{ESS}{TSS}\\
+R^2 = \frac{ESS}{TSS}=1-\frac{RSS}{TSS}\\
 R^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-R^2)
 $$
 With multiple variables, sometimes random data may improve the fit. So we adjust the $R^2$ by the number of covariates $K$.
@@ -507,7 +519,7 @@ for(i in 2:3){
 ```
 
 
-Many economic phenomena are nonlinear, even when including potential transforms of $Y$ and $X$. Sometimes the OLS model may still be a good or even great approximation (how good depends on the research question). In any case, you are safe to interpret your OLS coefficients as "conditional correlations". For example, examine the distribution of coefficients under this mispecified model. Interpret the average.
+Many economic phenomena are nonlinear, even when including potential transforms of $Y$ and $X$. Sometimes the linear model may still be a good or even great approximation (how good depends on the research question). In any case, you are safe to interpret your OLS coefficients as "conditional correlations". For example, examine the distribution of coefficients under this mispecified model. Interpret the average.
 ```{r}
 N <- 30
 
@@ -549,7 +561,6 @@ dA <- 1*(fu=='A')
 y <- (2^as.integer(fo)*dA )*sqrt(x)+ 2*as.integer(fo)*e
 dat_f <- data.frame(y,x,fo,fu)
 ```
-
 
 With factors, you can still include them in the design matrix of an OLS regression
 $$
@@ -769,7 +780,7 @@ lmtest::bptest(reg)
 
 ## Collinearity
 
-This is when one explanatory variable in a multiple regression model can be linearly predicted from the others with a substantial degree of accuracy. Coefficient estimates may change erratically in response to small changes in the model or the data. (In the extreme case where there are more variables than observations $K>\geq N$, $X'X$ has an infinite number of solutions and is not invertible.)
+This is when one explanatory variable in a multiple linear regression model can be linearly predicted from the others with a substantial degree of accuracy. Coefficient estimates may change erratically in response to small changes in the model or the data. (In the extreme case where there are more variables than observations $K>\geq N$, $X'X$ has an infinite number of solutions and is not invertible.)
 
 To diagnose this, we can use the Variance Inflation Factor
 $$
@@ -785,7 +796,7 @@ sqrt(car::vif(reg)) > 2 # problem?
 ## Linear in Parameters
 
 
-Data transformations can often improve model fit and still be estimated via OLS. This is because OLS is only required to be linear in the parameters. Under the assumptions of the model is correctly specified, this is how we can interpret the coefficients of the transformed data. (Note for small changes, $\Delta ln(x) \approx \Delta x / x = \Delta x \% \cdot 100$.)
+Data transformations can often improve model fit and still be estimated via OLS. This is because OLS only requires the model to be linear in the parameters. Under the assumptions of the model is correctly specified, the following table is how we can interpret the coefficients of the transformed data. (Note for small changes, $\Delta ln(x) \approx \Delta x / x = \Delta x \% \cdot 100$.)
 
 | *Specification* | *Regressand* | *Regressor* | *Derivative* | *Interpretation (If True)* |
 | --- | --- | --- | --- | --- |
