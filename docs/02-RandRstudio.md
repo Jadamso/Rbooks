@@ -748,7 +748,7 @@ rbinom(1, 1, 0.5) ## 1 Flip
 ```
 
 ```
-## [1] 0
+## [1] 1
 ```
 
 ```r
@@ -756,7 +756,7 @@ rbinom(4, 1, 0.5) ## 4 Flips in row
 ```
 
 ```
-## [1] 1 0 0 1
+## [1] 0 1 1 0
 ```
 
 ```r
@@ -772,7 +772,7 @@ rnorm(4)
 ```
 
 ```
-## [1] -0.8849866  0.9483267  0.4466007  0.2373869
+## [1] 0.2069631 1.0241947 0.6295147 0.1535637
 ```
 
 ```r
@@ -788,7 +788,7 @@ runif(4)
 ```
 
 ```
-## [1] 0.07970298 0.30572562 0.05471778 0.30260641
+## [1] 0.5289450 0.6673788 0.6257687 0.6303715
 ```
 
 ```r
@@ -797,7 +797,6 @@ hist(x2)
 ```
 
 <img src="02-RandRstudio_files/figure-html/unnamed-chunk-18-3.png" width="672" />
-
 
 
 ## Functions of Data
@@ -843,7 +842,7 @@ sapply(1:3, function(i){
 <img src="02-RandRstudio_files/figure-html/unnamed-chunk-20-1.png" width="672" />
 
 ```
-## [1] 0.4961423 0.4958101 0.5108168
+## [1] 0.4944555 0.4818921 0.5021556
 ```
 
 examine the sampling distribution of the mean
@@ -863,7 +862,7 @@ three_sds
 ```
 
 ```
-## [1] 0.2851381 0.2919014 0.2934204
+## [1] 0.2920204 0.2865738 0.2860968
 ```
 
 ```r
@@ -933,8 +932,22 @@ fun_of_rv( function(i){range(exp(i))})
 ```
 
 ```
-## [1] 1.005187 2.713035
+## [1] 1.019519 2.716061
 ```
+
+
+## Further Reading
+
+Many introductory econometrics textbooks have a good appendix on probability and statistics. There are many useful texts online too
+
+* https://bookdown.org/probability/statistics/
+* https://bookdown.org/probability/beta/
+* https://bookdown.org/a_shaker/STM1001_Topic_3/
+* https://bookdown.org/fsancier/bookdown-demo/
+* https://bookdown.org/kevin_davisross/probsim-book/
+* https://bookdown.org/machar1991/ITER/2-pt.html
+
+
 
 # Data Analysis
 ***
@@ -1198,12 +1211,12 @@ head(xy_dat)
 
 ```
 ##        x           y
-## 1 1.0000  0.34664905
-## 2 1.0002  1.31219785
-## 3 1.0004  1.05188435
-## 4 1.0006 -0.38684677
-## 5 1.0008 -1.92041290
-## 6 1.0010 -0.04405203
+## 1 1.0000 -1.18630033
+## 2 1.0002 -2.24615397
+## 3 1.0004 -0.79428358
+## 4 1.0006  1.46691034
+## 5 1.0008  0.85546733
+## 6 1.0010 -0.08284214
 ```
 
 Plot the data and the line of best fit

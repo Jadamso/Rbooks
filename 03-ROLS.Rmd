@@ -73,19 +73,19 @@ A regression coefficient is a statistic. And, just like all statistics, we can c
 
 * *standard deviation*: variability within a single sample.
 * *standard error*: variability across different samples.
-* *confidence interval* range your statistic varies across different samples.
-* *p-value* the probability you would see something as extreme as your statistic when sampling from the null distribution.
+* *confidence interval:* range your statistic varies across different samples.
 * *null distribution*: the sampling distribution of the statistic under the null hypothesis (assuming your null hypothesis was true).
+* *p-value* the probability you would see something as extreme as your statistic when sampling from the null distribution.
 
-The classic estimates for variability are the Standard Error of the Regression $\hat{\sigma}$, and Standard Error of the Coefficient Estimates $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\alpha}}~~$ (or simply Standard Errors).
+To calculate these variability statistics, we will estimate variabilty using *data-driven* methods.^[For some technical background, see, e.g., https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf. Also note that we can compute  classic estimates for variability: denoting the Standard Error of the Regression as $\hat{\sigma}$, and the Standard Error of the Coefficient Estimates as $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\beta}}~~$ (or simply Standard Errors).
 $$
 \hat{\sigma}^2 = \frac{1}{n-2}\sum_{i}\hat{\epsilon_{i}}^2\\
 \hat{\sigma}^2_{\hat{\alpha}}=\hat{\sigma}^2\left[\frac{1}{n}+\frac{\bar{x}^2}{\sum_{i}(x_i-\bar{x})^2}\right]\\
 \hat{\sigma}^2_{\hat{\beta}}=\frac{\hat{\sigma}^2}{\sum_{i}(x_i-\bar{x})^2}.
 $$
-These equations are motivated by particular data generating proceses, which you can read more about this at https://www.econometrics-with-r.org/4-lrwor.html. We can also estimate variabilty using *data-driven* methods that assume much less. See, e.g., https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf
+These equations are motivated by particular data generating proceses, which you can read more about this at https://www.econometrics-with-r.org/4-lrwor.html.]
 
-We first consider the simplest, the jackknife, where we loop through each row of the dataset. In each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''.
+We first consider the simplest, the jackknife. In this procedure, we loop through each row of the dataset. And, in each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''.
 
 ```{r}
 ## Example 1 Continued
@@ -115,7 +115,7 @@ abline(v=jack_ci_percentile, col="red", lty=2)
 ## abline(v=jack_ci_normal, col="red", lty=3)
 ```
 
-There are several other resampling techniques. We consider the other main one, the bootstrap, which resamples with *replacement* for an *arbitrary* number of iterations. For a dataset with $n$ observations, you now randomly resamples all $n$ rows in your data set $B$ times. 
+There are several other resampling techniques. We consider the other main one, the bootstrap, which resamples with *replacement* for an *arbitrary* number of iterations. When bootstrapping a dataset with $n$ observations, you randomly resample all $n$ rows in your data set $B$ times. 
 
 | | Sample Size per Iteration | Number of Iterations | Resample |
 | -------- | ------- | ------- | ------- |
@@ -304,7 +304,7 @@ $$
 y_i=\beta_0+\beta_1x_{i1}+\beta_2x_{i2}+\ldots+\beta_kx_{ik}+\epsilon_i = X_{i}\beta +\epsilon_i \\
 min_{\beta} \sum_{i=1}^{n} (\epsilon_i)^2
 $$
-Can be written in matrix form
+Can also be written in matrix form
 $$
 y=\textbf{X}\beta+\epsilon\\
 min_{\beta} (\epsilon' \epsilon)
@@ -315,13 +315,13 @@ $$
 \hat{\beta}=(\textbf{X}'\textbf{X})^{-1}\textbf{X}'y
 $$
 
-^[To derive OLS coefficients in Matrix form, see
-
+^[
+To derive OLS coefficients in Matrix form, see
 * https://jrnold.github.io/intro-methods-notes/ols-in-matrix-form.html
 * https://www.fsb.miamioh.edu/lij14/411_note_matrix.pdf
 * https://web.stanford.edu/~mrosenfe/soc_meth_proj3/matrix_OLS_NYU_notes.pdf
 ]
-
+Before fitting the model to your data, create a summary plot 
 
 ```{r, message=FALSE, warning=FALSE}
 ## Example 2 (Empirical)
@@ -362,6 +362,7 @@ fig
 ## see https://plotly.com/r/bubble-charts/
 ```
 
+Now we can estimate the parameters 
 ```{r}
 ## Manually Compute
 Y <- USArrests[,'Murder']
@@ -377,12 +378,12 @@ reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 coef(reg)
 ```
 
-To measure the ``Goodness of fit'', we can compute various sums of squared srrors
+To measure the ``Goodness of fit'' of the model, we can again compute sums of squared srrors. Adding random data may sometimes improve the fit, however, so we adjust the $R^2$ by the number of covariates $K$.
 $$
 R^2 = \frac{ESS}{TSS}=1-\frac{RSS}{TSS}\\
 R^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-R^2)
 $$
-With multiple variables, sometimes random data may improve the fit. So we adjust the $R^2$ by the number of covariates $K$.
+
 ```{r}
 ksims <- 1:30
 for(k in ksims){ 
@@ -411,7 +412,7 @@ legend('topleft', horiz=T,
 
 ### Variability Estimates and Hypothesis Tests
 
-We can use the same *data-driven* methods to estimate the variability of the estimated parameters.
+To estimate the variability of our estimates, we can use the same *data-driven* methods introduced with simple OLS.
 
 ```{r}
 ## Bootstrap SE's
@@ -426,15 +427,12 @@ boot_mean <- apply(boot_coefs,1, mean)
 boot_se <- apply(boot_coefs,1, sd)
 ```
 
-Also as before, we can conduct independant hypothesis tests using t-values 
-$$\hat{t}_{j} = \frac{\hat{\beta}_j - \beta_{0} }{\hat{\sigma}_{\hat{\beta}_j}}$$
-and, under some additional assumptions $\hat{t}_{j} \sim t_{n-K}$. But note that *Hypothesis Testing is not to be done routinely*, and some additional complications arise when examining multiple variables.
-
-We can conduct joint tests, such as whether two coefficients are equal, by looking at the their joint distribution.
+Also as before, we can conduct independant hypothesis tests.^[This is done using t-values $$\hat{t}_{j} = \frac{\hat{\beta}_j - \beta_{0} }{\hat{\sigma}_{\hat{\beta}_j}}$$. Under some additional assumptions $\hat{t}_{j} \sim t_{n-K}$.] We can conduct joint tests, such as whether two coefficients are equal, by looking at the their joint distribution.
 ```{r}
 fig <- plotly::plot_ly(x=boot_coefs[2,], y=boot_coefs[3,]) 
 plotly::add_histogram2d(fig, nbinsx=20, nbinsy=20)
 
+## Show 95% Contour
 ## plotly::add_histogram2dcontour(fig)
 ## fig <- layout(fig,
 ##    yaxis = list(title=expression(beta[3])),
@@ -446,23 +444,23 @@ plotly::add_histogram2d(fig, nbinsx=20, nbinsy=20)
 ## ks::plot(fBjoint, xlab=expression(beta[2]), ylab=expression(beta[3]))
 ```
 
-We can use an $F$ test for $q$ hypotheses;
+We can also use an $F$ test for $q$ hypotheses;
 $$
 \hat{F}_{q} = \frac{(ESS_{restricted}-ESS_{unrestricted})/q}{ESS_{unrestricted}/(n-K)},
 $$
 and $\hat{F}$ can be written in terms of unrestricted and restricted $R^2$. Under some additional assumptions $\hat{F}_{q}  \sim F_{q,n-K}$. For some inuition, see how the $R^2$ statistic varies with bootstrap samples. Then compute a null $R^2$ distribution by randomly reshuffling the outcomes, and compare that to the observed $R^2$.
 ```{r}
-## Bootstrap Distribution for R2
-boot_R2s <- sapply(boot_regs, function(reg_b){
-    summary(reg_b)$r.squared
+## Bootstrap Distribution for adjusted R2
+boot_R2s <- sapply(boot_regs0, function(reg_b){
+    summary(reg_b)$adj.r.squared
 })
-hist(boot_R2s, breaks=25, main='', xlab=expression(R[b]^2), xlim=c(0,1))
-abline(v=summary(reg)$r.squared, col="red", lwd=2)
+hist(boot_R2s, breaks=25, main='', xlab=expression('adj.'~R[b]^2), xlim=c(0,1))
+abline(v=summary(reg)$adj.r.squared, col="red", lwd=2)
 
 ## NULL Bootstrap Distribution for R2 ???
 ```
 
-
+*Hypothesis Testing is not to be done routinely* and additional complications arise when testing multiple hypothesis.
 
 ## Coefficient Interpretation
 
