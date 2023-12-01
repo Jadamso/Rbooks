@@ -429,8 +429,18 @@ boot_se <- apply(boot_coefs,1, sd)
 
 Also as before, we can conduct independant hypothesis tests.^[This is done using t-values $$\hat{t}_{j} = \frac{\hat{\beta}_j - \beta_{0} }{\hat{\sigma}_{\hat{\beta}_j}}$$. Under some additional assumptions $\hat{t}_{j} \sim t_{n-K}$.] We can conduct joint tests, such as whether two coefficients are equal, by looking at the their joint distribution.
 ```{r}
-fig <- plotly::plot_ly(x=boot_coefs[2,], y=boot_coefs[3,]) 
-plotly::add_histogram2d(fig, nbinsx=20, nbinsy=20)
+boot_coef_df <- as.data.frame(cbind(ID=boots, t(boot_coefs)))
+fig <- plotly::plot_ly(boot_coef_df,
+    type = 'scatter', mode = 'markers',
+    x = ~UrbanPop, y = ~Assault,
+    text = ~paste('<b> boot: ', ID, '</b>'),
+    hoverinfo='text',
+    showlegend=F,
+    marker=list( color='rgba(0, 0, 0, 0.5)'))
+fig
+
+## Show Histogram of Coefficients
+## plotly::add_histogram2d(fig, nbinsx=20, nbinsy=20)
 
 ## Show 95% Contour
 ## plotly::add_histogram2dcontour(fig)
@@ -439,7 +449,7 @@ plotly::add_histogram2d(fig, nbinsx=20, nbinsy=20)
 ##    xaxis = list(title=expression(beta[2])))
 ```
 
-```{r, results='hide'}
+```{r, eval=F, results='hide', echo=F}
 ## fBjoint <- ks::histde( t(boot_coefs[2:3,]))
 ## ks::plot(fBjoint, xlab=expression(beta[2]), ylab=expression(beta[3]))
 ```
@@ -448,16 +458,27 @@ We can also use an $F$ test for $q$ hypotheses;
 $$
 \hat{F}_{q} = \frac{(ESS_{restricted}-ESS_{unrestricted})/q}{ESS_{unrestricted}/(n-K)},
 $$
-and $\hat{F}$ can be written in terms of unrestricted and restricted $R^2$. Under some additional assumptions $\hat{F}_{q}  \sim F_{q,n-K}$. For some inuition, see how the $R^2$ statistic varies with bootstrap samples. Then compute a null $R^2$ distribution by randomly reshuffling the outcomes, and compare that to the observed $R^2$.
+and $\hat{F}$ can be written in terms of unrestricted and restricted $R^2$. Under some additional assumptions $\hat{F}_{q}  \sim F_{q,n-K}$. For some inuition, we will examine how the $R^2$ statistic varies with bootstrap samples. Specifically, compute a null $R^2$ distribution by randomly reshuffling the outcomes and compare it to the observed $R^2$.
 ```{r}
-## Bootstrap Distribution for adjusted R2
-boot_R2s <- sapply(boot_regs0, function(reg_b){
-    summary(reg_b)$adj.r.squared
+## Bootstrap NULL
+boots <- 1:399
+boot_regs0 <- lapply(boots, function(b){
+  xy_b <- USArrests
+  b_id <- sample( nrow(USArrests), replace=T)
+  xy_b$Murder <-  xy_b$Murder[b_id]
+  reg_b <- lm(Murder~Assault+UrbanPop, dat=xy_b)
 })
-hist(boot_R2s, breaks=25, main='', xlab=expression('adj.'~R[b]^2), xlim=c(0,1))
-abline(v=summary(reg)$adj.r.squared, col="red", lwd=2)
 
-## NULL Bootstrap Distribution for R2 ???
+boot_coefs0 <- sapply(boot_regs0, function(reg_k){
+    coef(reg_k) })
+R2_sim0 <- sapply(boot_regs0, function(reg_k){
+    summary(reg_k)$r.squared })
+R2adj_sim0 <- sapply(boot_regs0, function(reg_k){
+    summary(reg_k)$adj.r.squared })
+
+hist(R2adj_sim0, xlim=c(0,1), breaks=25,
+    main='', xlab=expression('adj.'~R[b]^2))
+abline(v=summary(reg)$adj.r.squared, col="red", lwd=2)
 ```
 
 *Hypothesis Testing is not to be done routinely* and additional complications arise when testing multiple hypothesis.
@@ -580,10 +601,15 @@ $$
 (y_{it} - \overline{y}_i) = (x_{it}-\overline{x}_i)\beta\\
 $$
 that tends to be more computationally efficient, has corrections for standard errors, and has additional summary statistics.
+
 ```{r}
 library(fixest)
 fe_reg1 <- feols(y~x|fo+fu, dat_f)
 summary(fe_reg1)
+
+## Compare Coefficients
+coef( lm(y~-1+x+fo+fu, dat_f) )
+fixef(fe_reg1)
 ```
 
 **Hansen Econometrics, Theorem 17.1:** The fixed effects estimator of $\beta$ algebraically equals the dummy
@@ -889,7 +915,7 @@ rl_df$mse <- colMeans(errors^2)
 ## Want Small MSE and Interpretable
 ## (-1,0,1,2 are Easy to interpretable)
 library(ggplot2)
-ggplot(rl_df, aes(rho, lambda, fill=mse )) +
+ggplot(rl_df, aes(rho, lambda, fill=log(mse) )) +
     geom_tile() + ggtitle('Mean Squared Error') 
     
 ## Which min
