@@ -665,7 +665,7 @@ For fixed effects, see
 # OLS Diagnostics
 ***
 
-There's little sense in getting great standard errors for a bad model. Plotting your regression object a simple and easy step to help diagnose whether your model is in some way bad.
+There's little sense in getting great standard errors for a terrible model. Plotting your regression object a simple and easy step to help diagnose whether your model is in some way bad.
 ```{r}
 reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 par(mfrow=c(2,2))
@@ -952,7 +952,7 @@ Note that the default hypothesis testing procedures do not account for you tryin
 
 
 
-# OLS and Endogeneity
+# Endogeneity Issues
 ***
 
 Just like many economic relationships are nonlinear, many economic variables are endogenous. By this we typically mean that $X$ is an outcome determined (or caused: $\to$) by some other variable.
@@ -961,7 +961,7 @@ Just like many economic relationships are nonlinear, many economic variables are
  * If $Y \to X$ and $X \to Y$, then we have simultaneity
  * If $Z\to Y$ and either $Z\to X$ or $X \to Z$, then we have omitted a potentially important variable
 
-These endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a barrier to interpreting OLS as a causal model.
+These endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a barrier to interpreting OLS estimates causally. ($X$ and $\epsilon$ may be correlated for other reasons too, such as when $X$ is measured with error.)
 
 ```{r}
 ## Simulate data with an endogeneity issue
@@ -997,7 +997,7 @@ You paid special attention in your research design to find a case where $x_{1}$ 
 The magnitude of the bias for $x_{1}$ thus depends on the correlations between $x_{1}$ and $x_{2}$ as well as $x_{2}$ and $\epsilon$.
 
 
-Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels of technical detail, they are not covered extensively in this notebook. You are directed to the following resources which discuss these statistical models in more general terms and how they can be applied across many social sciences.
+Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels of technical detail, they are not covered extensively in this notebook. You are directed to the following resources which discusses endogeneity in more detail and how it applies generally.
 
 * Causal Inference for Statistics, Social, and Biomedical Sciences: An Introduction
 * https://www.mostlyharmlesseconometrics.com/
@@ -1008,12 +1008,11 @@ Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity
 * https://www.r-causal.org/
 * https://matheusfacure.github.io/python-causality-handbook/landing-page.html
 
-
 ## Two Stage Least Squares (2SLS)
-
 
 There are many "Applied Statistics" approaches to 2SLS, and I encourage you to read up on them here
 
+* https://mru.org/courses/mastering-econometrics/introduction-instrumental-variables-part-one
 * https://www.econometrics-with-r.org/12-ivr.html
 * https://bookdown.org/paul/applied-causal-analysis/estimation-2.html
 * https://mixtape.scunning.com/07-instrumental_variables
@@ -1172,13 +1171,13 @@ summary(reg2_iv)
 
 If we had multiple alleged supply shifts and recorded their magnitudes, then we could recover more information about demand. 
 
-**Caveat** The coefficient interpretation rests on many assumptions. We have implicitly assumed
+**Caveat** The coefficient interpretation rests on many assumptions, namely
 
-* both supply and demand are linear and additively seperable in covariates.
-* only supply was affected, and it was only an intercept shift.
-* the shock large enough to be picked up statistically.
+* supply and demand are linear and additively seperable. (Functional form)
+* only supply was affected. (Instrument exogeneity)
+* the shock is large enough to be picked up statistically. (Instrument relevance)
 
-We always get coefficients back when fitting `feols` but are rarely confident that all these assumptions hold. This is one reason why researchers often also report their OLS results.
+We always get coefficients back when running `feols`, and sometimes they are statistically significant. But we are rarely sure that all of these assumptions hold, and this is one reason why researchers often also report their OLS results.
 
 ```{r, eval=F, results='hide', echo=F}
 We could also use a nonparametric estimator to diagnose linearity at each stage.
@@ -1186,8 +1185,6 @@ We could also use a nonparametric estimator to diagnose linearity at each stage.
 #summary(reg2_alt_fs)
 #lo2_alt_fs <- loess(Q~cost, data=dat2)
 ```
-
-
 
 
 ## Regression Discontinuities/Kink (RD/RK)
@@ -1267,6 +1264,7 @@ summary(regQ)
 
 Again, the effects are local. 
 
+
 # Data Scientism
 ***
 
@@ -1292,16 +1290,17 @@ There is currently a boom in empirical research centered around linear regressio
 
 
 
-
 The OLS examples are familiar are subject to current research. At the end are two simple examples of scientism with the ''latest and greatest'' empirical recipes---we don't have many theoretical results yet but I think you can understand the issue with the numerical example. 
 
-## OLS in the age of big data
 
-We begin with a motivating empirical example and then an simulation excercise.
+## The age of big data
 
-### US Gov't Spending on Science
+We are getting more and more data, and this makes it easier to make false disoveries. We consider three main ways for these to arise.
 
-Get and inspect some data from https://tylervigen.com/spurious-correlations
+
+### Randomly (Spurious Correlation)
+
+We begin with a motivating empirical example of "US Gov't Spending on Science". Get and inspect some data from https://tylervigen.com/spurious-correlations
 
 ```{r}
 ## Your data is not made up in the computer (hopefully!)
@@ -1326,8 +1325,7 @@ The US government spending on science is ruining cinema
 vigen_csv <- vigen_csv[vigen_csv$year >= 1999,] 
 
 ## Run OLS Regression $
-reg1 <-  lm(cage_films ~ -1 + science_spending,
-    data=vigen_csv)
+reg1 <-  lm(cage_films ~ -1 + science_spending, data=vigen_csv)
 summary(reg1)
 ```
 
@@ -1370,7 +1368,6 @@ axis(2)
 ```
 
 
-
 ```{r, results='asis', eval=F}
 ## Include an intercept to regression 1
 #reg2 <-  lm(cage_films ~ science_spending, data=vigen_csv)
@@ -1379,9 +1376,43 @@ axis(2)
 ```
 
 
+We now run IV regressions for different variable combinations in the dataset
+```{r}
+knames <- names(vigen_csv)[2:11] ## First 10 Variables
+#knames <- names(vigen_csv)[-1] ## All Variables
+p <- 1
+ii <- 1
+ivreg_list <- vector("list", factorial(length(knames))/factorial(length(knames)-3))
+
+## Choose 3 variable
+for( k1 in knames){
+for( k2 in setdiff(knames,k1)){
+for( k3 in setdiff(knames,c(k1,k2)) ){   
+    X1 <- vigen_csv[,k1]
+    X2 <- vigen_csv[,k2]
+    X3 <- vigen_csv[,k3]
+    ## Merge and `Analyze'        
+    dat_i <- na.omit(data.frame(X1,X2,X3))
+    ivreg_i <- feols(X1~1|X2~X3, data=dat_i)
+    ivreg_list[[ii]] <- list(ivreg_i, c(k1,k2,k3))
+    ii <- ii+1
+}}}
+pvals <- sapply(ivreg_list, function(ivreg_i){ivreg_i[[1]]$coeftable[2,4]})
+
+plot(ecdf(pvals), xlab='p-value', ylab='CDF', main='Frequency IV is Statistically Significant')
+abline(v=c(.01,.05), col=c(2,4))
+
+## Most Significant Spurious Combinations
+pvars <- sapply(ivreg_list, function(ivreg_i){ivreg_i[[2]]})
+pdat <- data.frame(t(pvars), pvals)
+pdat <- pdat[order(pdat$pvals),]
+head(pdat)
+```
+
+For more intuition on spurious correlations, try http://shiny.calpoly.sh/Corr_Reg_Game/
 
 
-### False Positives arise from errors
+### Programming Errors
 
 A huge amount of data normally means a huge amount of data cleaning/merging/aggregating. Some spurious results are driven by errors in this process, so be careful.
 
@@ -1416,20 +1447,23 @@ dat_merged_wide == dat_merged_wide2
 Nevertheless, data transformation is often necessary before regression analysis. For downloading tips, see https://raw.githubusercontent.com/rstudio/cheatsheets/main/data-import.pdf
 <!--\url{https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf}-->
 
-### False Positives arise from Regression Machines
+### P-Hacking
 
 Another class of errors pertains to P-hacking (and it's various synonyms) 
 
 ```{r}
+set.seed(123)
 n <- 50
-p <- 1
-i <- 0
 X1 <- runif(n)
 
-## P-hacking
-while(p >= .001){ ## stops when p < .001
+## Regression Machine:
+## repeatebdly finds covariate, runs regression
+## stops when statistically significant at .1\% 
+
+p <- 1
+i <- 0
+while(p >= .001){ 
     ## Get Random Covariate
-    set.seed(i)
     X2 <-  runif(n)
     ## Merge and `Analyze'
     dat_i <- data.frame(X1,X2)
@@ -1441,20 +1475,44 @@ while(p >= .001){ ## stops when p < .001
 
 plot(X1~X2, data=dat_i,
     pch=16, col=grey(.5,.5),
-    main=paste0('Random Dataset ', i))
+    main=paste0('Random Dataset ', i,": p=", round(p,4)))
 abline(reg_i)
+#summary(reg_i)
 ```
 
 
-For more intuition on spurious correlations, try http://shiny.calpoly.sh/Corr_Reg_Game/
+```{r}
+## P-hacking 2SLS
+library(fixest)
+p <- 1
+ii <- 0
+set.seed(123)
+while(p >= .05){
+    ## Get Random Covariates
+    X2 <-  runif(n)    
+    X3 <-  runif(n)
+    ## Create Treatment Variable based on Cutoff
+    cutoffs <- seq(0,1,length.out=11)[-c(1,11)]
+    for(tau in cutoffs){
+        T3 <- 1*(X3 > tau)
+        ## Merge and `Analyze'
+        dat_i <- data.frame(X1,X2,T3)
+        ivreg_i <- feols(X1~1|X2~T3, data=dat_i)
+        ## Update results in global environment
+        ptab <- summary(ivreg_i)$coeftable
+        if( nrow(ptab)==2){
+            p <- ptab[2,4]
+            ii <- ii+1
+        }
+    }
+}
+summary(ivreg_i)
+```
 
-
-## Causal effects *sans theory*
+## Causal Impacts *without theory*
 
 We simply apply ``credible methods'' to a couple of random walks; finding a treatment that fits mold and adding various robustness checks that make the treatment appear robust. The analysis sounds scientific, and you could probably be convinced if it were not just random noise. 
 
-
-### RDD
 
 ```{r, message=F, warning=F}
 n <- 1000
@@ -1470,6 +1528,37 @@ par(mfrow=c(1,2))
 plot(random_walk1, pch=16, col=grey(.5,.5))
 plot(random_walk2, pch=16, col=grey(.5,.5))
 ```
+
+
+### IV
+
+```{r}
+## Searching for a valid instrument
+library(fixest)
+p <- 1
+ii <- 0
+set.seed(3)
+while(p >= .001){
+    ## Get Random Covariates
+    random_walk3 <- cumsum(runif(n,-1,1))
+    ## Merge and `Analyze'
+    dat_i <- data.frame(
+        X1=random_walk1,
+        X2=random_walk2,
+        X3=random_walk3)
+    ivreg_i <- feols(X1~1|X2~X3, data=dat_i)
+    ## Update results in global environment
+    ptab <- summary(ivreg_i)$coeftable
+    if( nrow(ptab)==2){
+        p <- ptab[2,4]
+        ii <- ii+1
+    }
+}
+summary(ivreg_i)
+```
+
+
+### RDD
 
 ```{r, message=F, warning=F}
 ## Let the data take shape
