@@ -366,6 +366,7 @@ The magnitude of the bias for <span class="math inline">\(x_{1}\)</span> thus de
 <h2><span class="header-section-number">9.1</span> Two Stage Least Squares (2SLS)<a href="endogeneity-issues.html#two-stage-least-squares-2sls" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>There are many “Applied Statistics” approaches to 2SLS, and I encourage you to read up on them here</p>
 <ul>
+<li><a href="https://cameron.econ.ucdavis.edu/e240a/ch04iv.pdf" class="uri">https://cameron.econ.ucdavis.edu/e240a/ch04iv.pdf</a></li>
 <li><a href="https://mru.org/courses/mastering-econometrics/introduction-instrumental-variables-part-one" class="uri">https://mru.org/courses/mastering-econometrics/introduction-instrumental-variables-part-one</a></li>
 <li><a href="https://www.econometrics-with-r.org/12-ivr.html" class="uri">https://www.econometrics-with-r.org/12-ivr.html</a></li>
 <li><a href="https://bookdown.org/paul/applied-causal-analysis/estimation-2.html" class="uri">https://bookdown.org/paul/applied-causal-analysis/estimation-2.html</a></li>
@@ -373,189 +374,275 @@ The magnitude of the bias for <span class="math inline">\(x_{1}\)</span> thus de
 <li><a href="https://theeffectbook.net/ch-InstrumentalVariables.html" class="uri">https://theeffectbook.net/ch-InstrumentalVariables.html</a></li>
 <li><a href="http://www.urfie.net/read/index.html#page/247" class="uri">http://www.urfie.net/read/index.html#page/247</a></li>
 </ul>
-<p>I will focus on the seminal case in economics, which is complementary and hopefully provides much intuition</p>
+<p>I will focus on the seminal case in economics, which is complementary and hopefully provides much intuition.</p>
+<p>Suppose we ask “what is the effect of price on quantity?” You can simply run a regression of one variable on another, but you will need much luck to correctly intepret the resulting coefficient. The reason is simultaneity: price and quantity mutually cause one another in markets.<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a></p>
 <div id="competitive-market-equilibrium" class="section level3 hasAnchor" number="9.1.1">
 <h3><span class="header-section-number">9.1.1</span> Competitive Market Equilibrium<a href="endogeneity-issues.html#competitive-market-equilibrium" class="anchor-section" aria-label="Anchor link to header"></a></h3>
-<p>Although there are many ways this simultaneity can happen, economic theorists have made great strides in analyzing the simultaneity problem as it arises from market relationships. In fact, the 2SLS statistical approach arose to understand the equilibrium of a single competitive market, which has three structural equations: (1) market supply is the sum of quantities supplied by individual firms, (2) market demand is the sum of quantities demanded by individual people, (3) market supply equals market demand.
+<p>which has three structural relationships: (1) market supply is the sum of quantities supplied by individual firms at a given price, (2) market demand is the sum of quantities demanded by individual people at a given price, and (3) market supply equals market demand in equilibrium. Assuming market supply and demand are linear, we can write these three “structural equations” as
 <span class="math display">\[\begin{eqnarray}
-Q^{D}(P) &amp;=&amp; \sum_{i} q^{D}_{i}(P)  \\
-Q^{S}(P) &amp;=&amp; \sum_{i} q^{S}_{i}(P) \\
-Q^{D} &amp;=&amp; Q^{S} = Q.
+Q_{S}(P) &amp;=&amp; A_{S} + B_{S} P + E_{S},\\
+Q_{D}(P) &amp;=&amp; A_{D} - B_{D} P + E_{D},\\
+Q_{D} &amp;=&amp; Q_{S} = Q.
+%%  $Q_{D}(P) = \sum_{i} q_{D}_{i}(P)$,
 \end{eqnarray}\]</span>
-This last equation implies a simultaneous “reduced form” relationship where both the price and the quantity are outcomes. If there is a linear parametric structure to these equations, then you can examine how a change in parameters affects both price and quantity. Specifically, if
+This last equation implies a simultaneous “reduced form” relationship where both the price and the quantity are outcomes. With a linear parametric structure to these equations, we can use algebra to solve for the equilibrium price and quantity analytically as
 <span class="math display">\[\begin{eqnarray}
-\label{eqn:linear_demand}
-Q^{D}(P) &amp;=&amp; A^{D} - B^{D} P + \epsilon^{D},\\
-\label{eqn:linear_supply}
-Q^{S}(P) &amp;=&amp; A^{S} + B^{S} P + \epsilon^{S},
-\end{eqnarray}\]</span>
-then equilibrium yields reduced form equations that collapse into intercept and residual terms;
-<span class="math display">\[\begin{eqnarray}
-P^{*} &amp;=&amp; \frac{A^{D}-A^{S}}{B^{D}+B^{S}} + \frac{\epsilon^{D} - \epsilon^{S}}{B^{D}+B^{S}} = \alpha^{P} + \nu^{P}, \\
-Q^{*} &amp;=&amp; \frac{A^{S}B^{D}+ A^{D}B^{S}}{B^{D}+B^{S}} + \frac{\epsilon^{S}B^{D}+ \epsilon^{D}B^{S}}{B^{D}+B^{S}}= \alpha^{Q} + \nu^{Q}.
+P^{*} &amp;=&amp; \frac{A_{D}-A_{S}}{B_{D}+B_{S}} + \frac{E_{D} - E_{S}}{B_{D}+B_{S}}, \\
+Q^{*} &amp;=&amp; \frac{A_{S}B_{D}+ A_{D}B_{S}}{B_{D}+B_{S}} + \frac{E_{S}B_{D}+ E_{D}B_{S}}{B_{D}+B_{S}}.
 \end{eqnarray}\]</span></p>
-<div class="sourceCode" id="cb266"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb266-1"><a href="endogeneity-issues.html#cb266-1" tabindex="-1"></a><span class="co"># Competitive Market Process</span></span>
-<span id="cb266-2"><a href="endogeneity-issues.html#cb266-2" tabindex="-1"></a></span>
-<span id="cb266-3"><a href="endogeneity-issues.html#cb266-3" tabindex="-1"></a><span class="do">## Parameters</span></span>
-<span id="cb266-4"><a href="endogeneity-issues.html#cb266-4" tabindex="-1"></a>plm <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">10</span>) <span class="do">## Price Range</span></span>
-<span id="cb266-5"><a href="endogeneity-issues.html#cb266-5" tabindex="-1"></a>P <span class="ot">&lt;-</span> <span class="fu">seq</span>(plm[<span class="dv">1</span>],plm[<span class="dv">2</span>],<span class="at">by=</span>.<span class="dv">01</span>) <span class="do">## Price to Consider</span></span>
+<div class="sourceCode" id="cb266"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb266-1"><a href="endogeneity-issues.html#cb266-1" tabindex="-1"></a><span class="do">## Demand Curve Simulator</span></span>
+<span id="cb266-2"><a href="endogeneity-issues.html#cb266-2" tabindex="-1"></a>qd_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(p, <span class="at">Ad=</span><span class="dv">8</span>, <span class="at">Bd=</span><span class="sc">-</span>.<span class="dv">8</span>, <span class="at">Ed_sigma=</span>.<span class="dv">25</span>){</span>
+<span id="cb266-3"><a href="endogeneity-issues.html#cb266-3" tabindex="-1"></a>    Qd <span class="ot">&lt;-</span> Ad <span class="sc">+</span> Bd<span class="sc">*</span>p <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>,<span class="dv">0</span>,Ed_sigma)</span>
+<span id="cb266-4"><a href="endogeneity-issues.html#cb266-4" tabindex="-1"></a>    <span class="fu">return</span>(Qd)</span>
+<span id="cb266-5"><a href="endogeneity-issues.html#cb266-5" tabindex="-1"></a>}</span>
 <span id="cb266-6"><a href="endogeneity-issues.html#cb266-6" tabindex="-1"></a></span>
-<span id="cb266-7"><a href="endogeneity-issues.html#cb266-7" tabindex="-1"></a><span class="do">## Demand Curve Simulator</span></span>
-<span id="cb266-8"><a href="endogeneity-issues.html#cb266-8" tabindex="-1"></a>qd_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(p, <span class="at">Ad=</span><span class="dv">8</span>, <span class="at">Bd=</span><span class="sc">-</span>.<span class="dv">8</span>, <span class="at">Ed_sigma=</span>.<span class="dv">25</span>){</span>
-<span id="cb266-9"><a href="endogeneity-issues.html#cb266-9" tabindex="-1"></a>    Qd <span class="ot">&lt;-</span> Ad <span class="sc">+</span> Bd<span class="sc">*</span>p <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>,<span class="dv">0</span>,Ed_sigma)</span>
-<span id="cb266-10"><a href="endogeneity-issues.html#cb266-10" tabindex="-1"></a>}</span>
-<span id="cb266-11"><a href="endogeneity-issues.html#cb266-11" tabindex="-1"></a></span>
-<span id="cb266-12"><a href="endogeneity-issues.html#cb266-12" tabindex="-1"></a><span class="do">## Supply Curve Simulator</span></span>
-<span id="cb266-13"><a href="endogeneity-issues.html#cb266-13" tabindex="-1"></a>qs_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(p, <span class="at">As=</span><span class="sc">-</span><span class="dv">8</span>, <span class="at">Bs=</span><span class="dv">1</span>, <span class="at">Es_sigma=</span>.<span class="dv">25</span>){</span>
-<span id="cb266-14"><a href="endogeneity-issues.html#cb266-14" tabindex="-1"></a>    Qs <span class="ot">&lt;-</span> As <span class="sc">+</span> Bs<span class="sc">*</span>p <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>,<span class="dv">0</span>,Es_sigma)</span>
-<span id="cb266-15"><a href="endogeneity-issues.html#cb266-15" tabindex="-1"></a>}</span></code></pre></div>
-<div class="sourceCode" id="cb267"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb267-1"><a href="endogeneity-issues.html#cb267-1" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">300</span> <span class="do">## Number of Simulations</span></span>
-<span id="cb267-2"><a href="endogeneity-issues.html#cb267-2" tabindex="-1"></a></span>
-<span id="cb267-3"><a href="endogeneity-issues.html#cb267-3" tabindex="-1"></a><span class="do">## Generate Equilibrium Data</span></span>
-<span id="cb267-4"><a href="endogeneity-issues.html#cb267-4" tabindex="-1"></a><span class="do">## Plot Underlying Process</span></span>
-<span id="cb267-5"><a href="endogeneity-issues.html#cb267-5" tabindex="-1"></a><span class="fu">plot.new</span>()</span>
-<span id="cb267-6"><a href="endogeneity-issues.html#cb267-6" tabindex="-1"></a><span class="fu">plot.window</span>(<span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">2</span>), <span class="at">ylim=</span>plm)</span>
-<span id="cb267-7"><a href="endogeneity-issues.html#cb267-7" tabindex="-1"></a>EQ1 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>N, <span class="cf">function</span>(n){</span>
-<span id="cb267-8"><a href="endogeneity-issues.html#cb267-8" tabindex="-1"></a></span>
-<span id="cb267-9"><a href="endogeneity-issues.html#cb267-9" tabindex="-1"></a>    <span class="do">## Market Mechanisms</span></span>
-<span id="cb267-10"><a href="endogeneity-issues.html#cb267-10" tabindex="-1"></a>    demand <span class="ot">&lt;-</span> <span class="fu">qd_fun</span>(P)</span>
-<span id="cb267-11"><a href="endogeneity-issues.html#cb267-11" tabindex="-1"></a>    supply <span class="ot">&lt;-</span> <span class="fu">qs_fun</span>(P)</span>
-<span id="cb267-12"><a href="endogeneity-issues.html#cb267-12" tabindex="-1"></a></span>
-<span id="cb267-13"><a href="endogeneity-issues.html#cb267-13" tabindex="-1"></a>    <span class="do">## Compute EQ (what we observe)</span></span>
-<span id="cb267-14"><a href="endogeneity-issues.html#cb267-14" tabindex="-1"></a>    eq_id <span class="ot">&lt;-</span> <span class="fu">which.min</span>( <span class="fu">abs</span>(demand<span class="sc">-</span>supply) )</span>
-<span id="cb267-15"><a href="endogeneity-issues.html#cb267-15" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">P=</span>P[eq_id], <span class="at">Q=</span>demand[eq_id]) </span>
-<span id="cb267-16"><a href="endogeneity-issues.html#cb267-16" tabindex="-1"></a>    </span>
-<span id="cb267-17"><a href="endogeneity-issues.html#cb267-17" tabindex="-1"></a>    <span class="do">## Plot Theoretical Supply and Demand behind EQ</span></span>
-<span id="cb267-18"><a href="endogeneity-issues.html#cb267-18" tabindex="-1"></a>    <span class="fu">lines</span>(demand, P, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>,.<span class="dv">01</span>))</span>
-<span id="cb267-19"><a href="endogeneity-issues.html#cb267-19" tabindex="-1"></a>    <span class="fu">lines</span>(supply, P, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>,.<span class="dv">01</span>))</span>
-<span id="cb267-20"><a href="endogeneity-issues.html#cb267-20" tabindex="-1"></a>    <span class="fu">points</span>(eq[<span class="dv">2</span>], eq[<span class="dv">1</span>], <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>,.<span class="dv">05</span>), <span class="at">pch=</span><span class="dv">16</span>)</span>
-<span id="cb267-21"><a href="endogeneity-issues.html#cb267-21" tabindex="-1"></a></span>
-<span id="cb267-22"><a href="endogeneity-issues.html#cb267-22" tabindex="-1"></a>    <span class="do">## Return Equilibrium Observations</span></span>
-<span id="cb267-23"><a href="endogeneity-issues.html#cb267-23" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
-<span id="cb267-24"><a href="endogeneity-issues.html#cb267-24" tabindex="-1"></a>})</span>
-<span id="cb267-25"><a href="endogeneity-issues.html#cb267-25" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>)</span>
-<span id="cb267-26"><a href="endogeneity-issues.html#cb267-26" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>)</span>
-<span id="cb267-27"><a href="endogeneity-issues.html#cb267-27" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">&#39;Quantity&#39;</span>,<span class="dv">1</span>, <span class="at">line=</span><span class="dv">2</span>)</span>
-<span id="cb267-28"><a href="endogeneity-issues.html#cb267-28" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">&#39;Price&#39;</span>,<span class="dv">2</span>, <span class="at">line=</span><span class="dv">2</span>)</span></code></pre></div>
+<span id="cb266-7"><a href="endogeneity-issues.html#cb266-7" tabindex="-1"></a><span class="do">## Supply Curve Simulator</span></span>
+<span id="cb266-8"><a href="endogeneity-issues.html#cb266-8" tabindex="-1"></a>qs_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(p, <span class="at">As=</span><span class="sc">-</span><span class="dv">8</span>, <span class="at">Bs=</span><span class="dv">1</span>, <span class="at">Es_sigma=</span>.<span class="dv">25</span>){</span>
+<span id="cb266-9"><a href="endogeneity-issues.html#cb266-9" tabindex="-1"></a>    Qs <span class="ot">&lt;-</span> As <span class="sc">+</span> Bs<span class="sc">*</span>p <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>,<span class="dv">0</span>,Es_sigma)</span>
+<span id="cb266-10"><a href="endogeneity-issues.html#cb266-10" tabindex="-1"></a>    <span class="fu">return</span>(Qs)</span>
+<span id="cb266-11"><a href="endogeneity-issues.html#cb266-11" tabindex="-1"></a>}</span>
+<span id="cb266-12"><a href="endogeneity-issues.html#cb266-12" tabindex="-1"></a></span>
+<span id="cb266-13"><a href="endogeneity-issues.html#cb266-13" tabindex="-1"></a></span>
+<span id="cb266-14"><a href="endogeneity-issues.html#cb266-14" tabindex="-1"></a><span class="fu">cbind</span>(<span class="at">P=</span><span class="dv">8</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">D=</span><span class="fu">qd_fun</span>(<span class="dv">8</span><span class="sc">:</span><span class="dv">10</span>), <span class="at">S=</span><span class="fu">qs_fun</span>(<span class="dv">8</span><span class="sc">:</span><span class="dv">10</span>))</span></code></pre></div>
+<pre><code>##       P          D          S
+## [1,]  8 1.64742665 -0.2213577
+## [2,]  9 0.84742665  0.7786423
+## [3,] 10 0.04742665  1.7786423</code></pre>
+<div class="sourceCode" id="cb268"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb268-1"><a href="endogeneity-issues.html#cb268-1" tabindex="-1"></a><span class="do">## Market Equilibrium Finder</span></span>
+<span id="cb268-2"><a href="endogeneity-issues.html#cb268-2" tabindex="-1"></a>eq_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(demand, supply, P){</span>
+<span id="cb268-3"><a href="endogeneity-issues.html#cb268-3" tabindex="-1"></a>    <span class="do">## Compute EQ (what we observe)</span></span>
+<span id="cb268-4"><a href="endogeneity-issues.html#cb268-4" tabindex="-1"></a>    eq_id <span class="ot">&lt;-</span> <span class="fu">which.min</span>( <span class="fu">abs</span>(demand<span class="sc">-</span>supply) )</span>
+<span id="cb268-5"><a href="endogeneity-issues.html#cb268-5" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">P=</span>P[eq_id], <span class="at">Q=</span>demand[eq_id]) </span>
+<span id="cb268-6"><a href="endogeneity-issues.html#cb268-6" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
+<span id="cb268-7"><a href="endogeneity-issues.html#cb268-7" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb269"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb269-1"><a href="endogeneity-issues.html#cb269-1" tabindex="-1"></a><span class="do">## Simulations Parameters</span></span>
+<span id="cb269-2"><a href="endogeneity-issues.html#cb269-2" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">300</span> <span class="do">## Number of Market Interactions</span></span>
+<span id="cb269-3"><a href="endogeneity-issues.html#cb269-3" tabindex="-1"></a>P <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">5</span>,<span class="dv">10</span>,<span class="at">by=</span>.<span class="dv">01</span>) <span class="do">## Price Range to Consider</span></span>
+<span id="cb269-4"><a href="endogeneity-issues.html#cb269-4" tabindex="-1"></a></span>
+<span id="cb269-5"><a href="endogeneity-issues.html#cb269-5" tabindex="-1"></a></span>
+<span id="cb269-6"><a href="endogeneity-issues.html#cb269-6" tabindex="-1"></a><span class="do">## Generate Data from Competitive Market  </span></span>
+<span id="cb269-7"><a href="endogeneity-issues.html#cb269-7" tabindex="-1"></a><span class="do">## Plot Underlying Process</span></span>
+<span id="cb269-8"><a href="endogeneity-issues.html#cb269-8" tabindex="-1"></a><span class="fu">plot.new</span>()</span>
+<span id="cb269-9"><a href="endogeneity-issues.html#cb269-9" tabindex="-1"></a><span class="fu">plot.window</span>(<span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">2</span>), <span class="at">ylim=</span><span class="fu">range</span>(P))</span>
+<span id="cb269-10"><a href="endogeneity-issues.html#cb269-10" tabindex="-1"></a>EQ1 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>N, <span class="cf">function</span>(n){</span>
+<span id="cb269-11"><a href="endogeneity-issues.html#cb269-11" tabindex="-1"></a></span>
+<span id="cb269-12"><a href="endogeneity-issues.html#cb269-12" tabindex="-1"></a>    <span class="do">## Market Curves</span></span>
+<span id="cb269-13"><a href="endogeneity-issues.html#cb269-13" tabindex="-1"></a>    demand <span class="ot">&lt;-</span> <span class="fu">qd_fun</span>(P)</span>
+<span id="cb269-14"><a href="endogeneity-issues.html#cb269-14" tabindex="-1"></a>    supply <span class="ot">&lt;-</span> <span class="fu">qs_fun</span>(P)</span>
+<span id="cb269-15"><a href="endogeneity-issues.html#cb269-15" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">eq_fun</span>(demand, supply, P)</span>
+<span id="cb269-16"><a href="endogeneity-issues.html#cb269-16" tabindex="-1"></a>    </span>
+<span id="cb269-17"><a href="endogeneity-issues.html#cb269-17" tabindex="-1"></a>    <span class="do">## Plot Theoretical Supply and Demand behind EQ</span></span>
+<span id="cb269-18"><a href="endogeneity-issues.html#cb269-18" tabindex="-1"></a>    <span class="fu">lines</span>(demand, P, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>,.<span class="dv">01</span>))</span>
+<span id="cb269-19"><a href="endogeneity-issues.html#cb269-19" tabindex="-1"></a>    <span class="fu">lines</span>(supply, P, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>,.<span class="dv">01</span>))</span>
+<span id="cb269-20"><a href="endogeneity-issues.html#cb269-20" tabindex="-1"></a>    <span class="fu">points</span>(eq[<span class="dv">2</span>], eq[<span class="dv">1</span>], <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>,.<span class="dv">05</span>), <span class="at">pch=</span><span class="dv">16</span>)</span>
+<span id="cb269-21"><a href="endogeneity-issues.html#cb269-21" tabindex="-1"></a>    </span>
+<span id="cb269-22"><a href="endogeneity-issues.html#cb269-22" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
+<span id="cb269-23"><a href="endogeneity-issues.html#cb269-23" tabindex="-1"></a>})</span>
+<span id="cb269-24"><a href="endogeneity-issues.html#cb269-24" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>)</span>
+<span id="cb269-25"><a href="endogeneity-issues.html#cb269-25" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>)</span>
+<span id="cb269-26"><a href="endogeneity-issues.html#cb269-26" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">&#39;Quantity&#39;</span>,<span class="dv">1</span>, <span class="at">line=</span><span class="dv">2</span>)</span>
+<span id="cb269-27"><a href="endogeneity-issues.html#cb269-27" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">&#39;Price&#39;</span>,<span class="dv">2</span>, <span class="at">line=</span><span class="dv">2</span>)</span></code></pre></div>
 <p><img src="03-ROLS_files/figure-html/unnamed-chunk-39-1.png" width="672" /></p>
-<p>You can simply run a regression of one variable on another, but you will need much luck to correctly interrupt the resulting number. Consider regressing quantity on price;
-<span class="math display">\[\begin{eqnarray}
-Q &amp;=&amp; \alpha^{Q} + \beta^{Q} P + \epsilon^{Q} = \alpha^{Q} + \beta^{Q} [\alpha^{P} + \beta^{P} Q + \epsilon^{P}] + \epsilon^{Q} \\
-&amp;=&amp; \frac{[\alpha^{Q} +  \epsilon^{Q}] + \beta^{Q} [\alpha^{P} + \epsilon^{P}]}{1-\beta^{P}}
-\end{eqnarray}\]</span>
-We can see <span class="math inline">\(Q\)</span> is a function of <span class="math inline">\(\epsilon^{P}\)</span>, thus biasing the estimate of <span class="math inline">\(\beta^{P}\)</span>. If you were to instead regress <span class="math inline">\(Q\)</span> on <span class="math inline">\(P\)</span>, you would similarly get a number that is hard to interpret meaningfully. This simple derivation has a profound insight: price-quantity data does not generally tell you how price affects quantity supplied or demanded (and vice-versa).</p>
-<div class="sourceCode" id="cb268"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb268-1"><a href="endogeneity-issues.html#cb268-1" tabindex="-1"></a><span class="do">## Analyze Market Data</span></span>
-<span id="cb268-2"><a href="endogeneity-issues.html#cb268-2" tabindex="-1"></a>dat1 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">t</span>(EQ1), <span class="at">cost=</span><span class="st">&#39;1&#39;</span>)</span>
-<span id="cb268-3"><a href="endogeneity-issues.html#cb268-3" tabindex="-1"></a>reg1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q<span class="sc">~</span>P, <span class="at">data=</span>dat1)</span>
-<span id="cb268-4"><a href="endogeneity-issues.html#cb268-4" tabindex="-1"></a><span class="fu">summary</span>(reg1)</span></code></pre></div>
+<p>Now regress quantity (“Y”) on price (“X”): <span class="math inline">\(\beta_{OLS} = \frac{Cov(Q^{*}, P^{*})}{ Var(P^{*})}\)</span>. You get a number back, but it is hard to interpret meaningfully.</p>
+<div class="sourceCode" id="cb270"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb270-1"><a href="endogeneity-issues.html#cb270-1" tabindex="-1"></a><span class="do">## Analyze Market Data</span></span>
+<span id="cb270-2"><a href="endogeneity-issues.html#cb270-2" tabindex="-1"></a>dat1 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">t</span>(EQ1), <span class="at">cost=</span><span class="st">&#39;1&#39;</span>)</span>
+<span id="cb270-3"><a href="endogeneity-issues.html#cb270-3" tabindex="-1"></a>reg1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q<span class="sc">~</span>P, <span class="at">data=</span>dat1)</span>
+<span id="cb270-4"><a href="endogeneity-issues.html#cb270-4" tabindex="-1"></a><span class="fu">summary</span>(reg1)</span></code></pre></div>
 <pre><code>## 
 ## Call:
 ## lm(formula = Q ~ P, data = dat1)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.58468 -0.09451 -0.00441  0.10659  0.45402 
+## -0.53991 -0.12051 -0.00067  0.11943  0.49791 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(&gt;|t|)  
-## (Intercept) -0.07383    0.47305  -0.156   0.8761  
-## P            0.10891    0.05317   2.048   0.0414 *
-## ---
-## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+##             Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept)  0.14821    0.45661   0.325    0.746
+## P            0.08435    0.05144   1.640    0.102
 ## 
-## Residual standard error: 0.178 on 298 degrees of freedom
-## Multiple R-squared:  0.01388,    Adjusted R-squared:  0.01057 
-## F-statistic: 4.195 on 1 and 298 DF,  p-value: 0.04142</code></pre>
-<p>If you have exogeneous variation on one side of the market, ``shocks’’, you can get information on the other. Experimental manipulation of <span class="math inline">\(A^{S}\)</span> would, for example, allow you to trace out part of a demand curve:
+## Residual standard error: 0.1877 on 298 degrees of freedom
+## Multiple R-squared:  0.008943,   Adjusted R-squared:  0.005617 
+## F-statistic: 2.689 on 1 and 298 DF,  p-value: 0.1021</code></pre>
+<p>This simple derivation has a profound insight: price-quantity data does not generally tell you how price affects quantity (or vice-versa). Moreover, it also clarifies that our initial question “what is the effect of price on quantity?” is misguided. We could more sensibly ask “what is the effect of price on quantity supplied?” or “what is the effect of price on quantity demanded?”</p>
+<p>If you have exogeneous variation on one side of the market, “shocks”, you can get information on the other. For example, lower costs shift out supply (more is produced at given price), allowing you to trace out part of a demand curve.
+Experimental manipulation of <span class="math inline">\(A_{S}\)</span> leads to
 <span class="math display">\[\begin{eqnarray}
-\frac{\partial P^{*}}{\partial A^{S}} = \frac{-1}{B^{D}+B^{S}}, \\
-\frac{\partial Q^{*}}{\partial A^{S}} = \frac{B^{D}}{B^{D}+B^{S}}.
+\label{eqn:comp_market_statics}
+\frac{d P^{*}}{d A_{S}} = \frac{-1}{B_{D}+B_{S}}, \\
+\frac{d Q^{*}}{d A_{S}} = \frac{B_{D}}{B_{D}+B_{S}}.
 \end{eqnarray}\]</span>
-Notice that even in this linear model, all effects are conditional: <em>The</em> effect of a cost change on quantity or price depends on the demand curve. A change in costs affects quantity supplied but not quantity demanded (which then affects equilibrium price) but the demand side of the market still matters! The change in price from a change in costs depends on the elasticity of demand. (Likewise for changes in demand parameters.)</p>
-<p>With two equations and two unknowns, we can estimate <span class="math inline">\(B^{D}\)</span> and <span class="math inline">\(B^{S}\)</span>, which was the original idea behind 2SLS. Substituting the equilibrium condition into the structural demand equation, we can rewrite them as
-<span class="math display">\[\begin{eqnarray}
-\label{eqn:linear_demand_iv}
-P(Q) &amp;=&amp; -\frac{A^{D}}{{B^{D}}} + \frac{Q^{s}}{B^{D}} - \frac{\epsilon^{D}}{B^{D}}  = \alpha^{P} + \beta^{P} Q + \epsilon^{P}\\
-\label{eqn:linear_supply_iv}
-Q(P) &amp;=&amp;  A^{S}  + \epsilon^{S} +  B^{S} P .
-\end{eqnarray}\]</span></p>
-<div class="sourceCode" id="cb270"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb270-1"><a href="endogeneity-issues.html#cb270-1" tabindex="-1"></a><span class="do">## Supply Shifter</span></span>
-<span id="cb270-2"><a href="endogeneity-issues.html#cb270-2" tabindex="-1"></a>EQ2 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>N, <span class="cf">function</span>(n){</span>
-<span id="cb270-3"><a href="endogeneity-issues.html#cb270-3" tabindex="-1"></a>    <span class="do">## New Demand, but same par&#39;s</span></span>
-<span id="cb270-4"><a href="endogeneity-issues.html#cb270-4" tabindex="-1"></a>    demand <span class="ot">&lt;-</span> <span class="fu">qd_fun</span>(P)</span>
-<span id="cb270-5"><a href="endogeneity-issues.html#cb270-5" tabindex="-1"></a>    <span class="do">## New Supply Curves</span></span>
-<span id="cb270-6"><a href="endogeneity-issues.html#cb270-6" tabindex="-1"></a>    supply2 <span class="ot">&lt;-</span> <span class="fu">qs_fun</span>(P, <span class="at">As=</span><span class="sc">-</span><span class="fl">6.5</span>)</span>
-<span id="cb270-7"><a href="endogeneity-issues.html#cb270-7" tabindex="-1"></a>    <span class="do">## lines(supply2, P, col=rgb(0,0,1,.01))</span></span>
-<span id="cb270-8"><a href="endogeneity-issues.html#cb270-8" tabindex="-1"></a>    <span class="do">## Compute New EQ</span></span>
-<span id="cb270-9"><a href="endogeneity-issues.html#cb270-9" tabindex="-1"></a>    eq_id <span class="ot">&lt;-</span> <span class="fu">which.min</span>( <span class="fu">abs</span>(demand<span class="sc">-</span>supply2) )</span>
-<span id="cb270-10"><a href="endogeneity-issues.html#cb270-10" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">P=</span>P[eq_id], <span class="at">Q=</span>demand[eq_id]) </span>
-<span id="cb270-11"><a href="endogeneity-issues.html#cb270-11" tabindex="-1"></a>    <span class="co">#points(eq[2], eq[1], col=rgb(0,0,1,.05), pch=16)</span></span>
-<span id="cb270-12"><a href="endogeneity-issues.html#cb270-12" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
-<span id="cb270-13"><a href="endogeneity-issues.html#cb270-13" tabindex="-1"></a>})</span>
-<span id="cb270-14"><a href="endogeneity-issues.html#cb270-14" tabindex="-1"></a></span>
-<span id="cb270-15"><a href="endogeneity-issues.html#cb270-15" tabindex="-1"></a><span class="do">## Market Data w/ Supply Shift</span></span>
-<span id="cb270-16"><a href="endogeneity-issues.html#cb270-16" tabindex="-1"></a>dat2 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">t</span>(EQ2), <span class="at">cost=</span><span class="st">&#39;2&#39;</span>)</span>
-<span id="cb270-17"><a href="endogeneity-issues.html#cb270-17" tabindex="-1"></a>dat2 <span class="ot">&lt;-</span> <span class="fu">rbind</span>(dat1, dat2)</span>
-<span id="cb270-18"><a href="endogeneity-issues.html#cb270-18" tabindex="-1"></a></span>
-<span id="cb270-19"><a href="endogeneity-issues.html#cb270-19" tabindex="-1"></a></span>
-<span id="cb270-20"><a href="endogeneity-issues.html#cb270-20" tabindex="-1"></a><span class="do">## Plot Market Data  w/ Supply Shift</span></span>
-<span id="cb270-21"><a href="endogeneity-issues.html#cb270-21" tabindex="-1"></a>cols <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">as.numeric</span>(dat2<span class="sc">$</span>cost)<span class="sc">==</span><span class="dv">2</span>, <span class="fu">rgb</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,.<span class="dv">2</span>), <span class="fu">rgb</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,.<span class="dv">2</span>))</span>
-<span id="cb270-22"><a href="endogeneity-issues.html#cb270-22" tabindex="-1"></a><span class="fu">plot.new</span>()</span>
-<span id="cb270-23"><a href="endogeneity-issues.html#cb270-23" tabindex="-1"></a><span class="fu">plot.window</span>(<span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">2</span>), <span class="at">ylim=</span>plm)</span>
-<span id="cb270-24"><a href="endogeneity-issues.html#cb270-24" tabindex="-1"></a><span class="fu">points</span>(dat2<span class="sc">$</span>Q, dat2<span class="sc">$</span>P, <span class="at">col=</span>cols, <span class="at">pch=</span><span class="dv">16</span>)</span>
-<span id="cb270-25"><a href="endogeneity-issues.html#cb270-25" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>)</span>
-<span id="cb270-26"><a href="endogeneity-issues.html#cb270-26" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>)</span>
-<span id="cb270-27"><a href="endogeneity-issues.html#cb270-27" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">&#39;Quantity&#39;</span>,<span class="dv">1</span>, <span class="at">line=</span><span class="dv">2</span>)</span>
-<span id="cb270-28"><a href="endogeneity-issues.html#cb270-28" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">&#39;Price&#39;</span>,<span class="dv">2</span>, <span class="at">line=</span><span class="dv">2</span>)</span></code></pre></div>
+So, absent any other changes, we could recover <span class="math inline">\(-B_{D}=d Q^{*}/d P^{*}\)</span>. In this case, the supply shock has identified the demand slope.<a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a></p>
+<div class="sourceCode" id="cb272"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb272-1"><a href="endogeneity-issues.html#cb272-1" tabindex="-1"></a><span class="do">## New Observations After Cost Change</span></span>
+<span id="cb272-2"><a href="endogeneity-issues.html#cb272-2" tabindex="-1"></a>EQ2 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>N, <span class="cf">function</span>(n){</span>
+<span id="cb272-3"><a href="endogeneity-issues.html#cb272-3" tabindex="-1"></a>    demand <span class="ot">&lt;-</span> <span class="fu">qd_fun</span>(P)</span>
+<span id="cb272-4"><a href="endogeneity-issues.html#cb272-4" tabindex="-1"></a>    supply2 <span class="ot">&lt;-</span> <span class="fu">qs_fun</span>(P, <span class="at">As=</span><span class="sc">-</span><span class="fl">6.5</span>) <span class="do">## More Supplied at Given Price</span></span>
+<span id="cb272-5"><a href="endogeneity-issues.html#cb272-5" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">eq_fun</span>(demand, supply2, P)</span>
+<span id="cb272-6"><a href="endogeneity-issues.html#cb272-6" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
+<span id="cb272-7"><a href="endogeneity-issues.html#cb272-7" tabindex="-1"></a>    <span class="do">## lines(supply2, P, col=rgb(0,0,1,.01))</span></span>
+<span id="cb272-8"><a href="endogeneity-issues.html#cb272-8" tabindex="-1"></a>    <span class="co">#points(eq[2], eq[1], col=rgb(0,0,1,.05), pch=16)   </span></span>
+<span id="cb272-9"><a href="endogeneity-issues.html#cb272-9" tabindex="-1"></a>})</span>
+<span id="cb272-10"><a href="endogeneity-issues.html#cb272-10" tabindex="-1"></a>dat2 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">t</span>(EQ2), <span class="at">cost=</span><span class="st">&#39;2&#39;</span>)</span>
+<span id="cb272-11"><a href="endogeneity-issues.html#cb272-11" tabindex="-1"></a></span>
+<span id="cb272-12"><a href="endogeneity-issues.html#cb272-12" tabindex="-1"></a></span>
+<span id="cb272-13"><a href="endogeneity-issues.html#cb272-13" tabindex="-1"></a><span class="do">## Plot Market Data </span></span>
+<span id="cb272-14"><a href="endogeneity-issues.html#cb272-14" tabindex="-1"></a>dat2 <span class="ot">&lt;-</span> <span class="fu">rbind</span>(dat1, dat2)</span>
+<span id="cb272-15"><a href="endogeneity-issues.html#cb272-15" tabindex="-1"></a>cols <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">as.numeric</span>(dat2<span class="sc">$</span>cost)<span class="sc">==</span><span class="dv">2</span>, <span class="fu">rgb</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,.<span class="dv">2</span>), <span class="fu">rgb</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,.<span class="dv">2</span>))</span>
+<span id="cb272-16"><a href="endogeneity-issues.html#cb272-16" tabindex="-1"></a><span class="fu">plot.new</span>()</span>
+<span id="cb272-17"><a href="endogeneity-issues.html#cb272-17" tabindex="-1"></a><span class="fu">plot.window</span>(<span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">2</span>), <span class="at">ylim=</span><span class="fu">range</span>(P))</span>
+<span id="cb272-18"><a href="endogeneity-issues.html#cb272-18" tabindex="-1"></a><span class="fu">points</span>(dat2<span class="sc">$</span>Q, dat2<span class="sc">$</span>P, <span class="at">col=</span>cols, <span class="at">pch=</span><span class="dv">16</span>)</span>
+<span id="cb272-19"><a href="endogeneity-issues.html#cb272-19" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>)</span>
+<span id="cb272-20"><a href="endogeneity-issues.html#cb272-20" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>)</span>
+<span id="cb272-21"><a href="endogeneity-issues.html#cb272-21" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">&#39;Quantity&#39;</span>,<span class="dv">1</span>, <span class="at">line=</span><span class="dv">2</span>)</span>
+<span id="cb272-22"><a href="endogeneity-issues.html#cb272-22" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">&#39;Price&#39;</span>,<span class="dv">2</span>, <span class="at">line=</span><span class="dv">2</span>)</span></code></pre></div>
 <p><img src="03-ROLS_files/figure-html/unnamed-chunk-41-1.png" width="672" /></p>
-<div class="sourceCode" id="cb271"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb271-1"><a href="endogeneity-issues.html#cb271-1" tabindex="-1"></a><span class="do">## Not exact, at least right sign</span></span>
-<span id="cb271-2"><a href="endogeneity-issues.html#cb271-2" tabindex="-1"></a>reg2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q<span class="sc">~</span>P, <span class="at">data=</span>dat2)</span>
-<span id="cb271-3"><a href="endogeneity-issues.html#cb271-3" tabindex="-1"></a><span class="fu">summary</span>(reg2)</span></code></pre></div>
+<p>We are not quite done yet. We have pooled two datasets that are seperately problematic, and the noisiness of the process within each group affects our OLS estimate: <span class="math inline">\(Cov(Q^{*}, P^{*}) / Var(P^{*})\)</span>.</p>
+<div class="sourceCode" id="cb273"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb273-1"><a href="endogeneity-issues.html#cb273-1" tabindex="-1"></a><span class="do">## Not exactly right, but at least right sign</span></span>
+<span id="cb273-2"><a href="endogeneity-issues.html#cb273-2" tabindex="-1"></a>reg2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q<span class="sc">~</span>P, <span class="at">data=</span>dat2)</span>
+<span id="cb273-3"><a href="endogeneity-issues.html#cb273-3" tabindex="-1"></a><span class="fu">summary</span>(reg2)</span></code></pre></div>
 <pre><code>## 
 ## Call:
 ## lm(formula = Q ~ P, data = dat2)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.77479 -0.16930 -0.00141  0.16499  0.70712 
+## -0.79650 -0.14768  0.00225  0.15670  0.64187 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  6.36446    0.18035   35.29   &lt;2e-16 ***
-## P           -0.60762    0.02126  -28.58   &lt;2e-16 ***
+## (Intercept)  6.69826    0.18707   35.81   &lt;2e-16 ***
+## P           -0.64604    0.02205  -29.30   &lt;2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 0.2412 on 598 degrees of freedom
-## Multiple R-squared:  0.5774, Adjusted R-squared:  0.5767 
-## F-statistic:   817 on 1 and 598 DF,  p-value: &lt; 2.2e-16</code></pre>
-<div class="sourceCode" id="cb273"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb273-1"><a href="endogeneity-issues.html#cb273-1" tabindex="-1"></a><span class="do">## Instrumental Variables Estimates</span></span>
-<span id="cb273-2"><a href="endogeneity-issues.html#cb273-2" tabindex="-1"></a><span class="fu">library</span>(fixest)</span>
-<span id="cb273-3"><a href="endogeneity-issues.html#cb273-3" tabindex="-1"></a>reg2_iv <span class="ot">&lt;-</span> <span class="fu">feols</span>(Q<span class="sc">~</span><span class="dv">1</span><span class="sc">|</span>P<span class="sc">~</span>cost, <span class="at">data=</span>dat2)</span>
-<span id="cb273-4"><a href="endogeneity-issues.html#cb273-4" tabindex="-1"></a><span class="fu">summary</span>(reg2_iv)</span></code></pre></div>
+## Residual standard error: 0.2419 on 598 degrees of freedom
+## Multiple R-squared:  0.5894, Adjusted R-squared:  0.5887 
+## F-statistic: 858.4 on 1 and 598 DF,  p-value: &lt; 2.2e-16</code></pre>
+<p>Although the individual observations are noisy, we can compute the change in the expected values $ d [Q^{*}] / d [P^{*}] =-B_{D}$. Empirically, this is estimated via the change in average value.</p>
+<div class="sourceCode" id="cb275"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb275-1"><a href="endogeneity-issues.html#cb275-1" tabindex="-1"></a><span class="do">## Wald (1940) Estimate</span></span>
+<span id="cb275-2"><a href="endogeneity-issues.html#cb275-2" tabindex="-1"></a>dat_mean <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb275-3"><a href="endogeneity-issues.html#cb275-3" tabindex="-1"></a>    <span class="fu">colMeans</span>(dat2[dat2<span class="sc">$</span>cost<span class="sc">==</span><span class="dv">1</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]),</span>
+<span id="cb275-4"><a href="endogeneity-issues.html#cb275-4" tabindex="-1"></a>    <span class="fu">colMeans</span>(dat2[dat2<span class="sc">$</span>cost<span class="sc">==</span><span class="dv">2</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]))</span>
+<span id="cb275-5"><a href="endogeneity-issues.html#cb275-5" tabindex="-1"></a>dat_mean</span></code></pre></div>
+<pre><code>##             P         Q
+## [1,] 8.874267 0.8967609
+## [2,] 8.069567 1.5532858</code></pre>
+<div class="sourceCode" id="cb277"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb277-1"><a href="endogeneity-issues.html#cb277-1" tabindex="-1"></a>B_est <span class="ot">&lt;-</span> <span class="fu">diff</span>(dat_mean[,<span class="dv">2</span>])<span class="sc">/</span><span class="fu">diff</span>(dat_mean[,<span class="dv">1</span>])</span>
+<span id="cb277-2"><a href="endogeneity-issues.html#cb277-2" tabindex="-1"></a><span class="fu">round</span>(B_est, <span class="dv">2</span>)</span></code></pre></div>
+<pre><code>## [1] -0.82</code></pre>
+<p>We can also seperately recover <span class="math inline">\(\frac{d \mathbb{E}[Q^{*}]}{d \mathbb{E}[A_{S}]}\)</span> and <span class="math inline">\(\frac{d \mathbb{E}[P^{*}]}{d \mathbb{E}[A_{S}]}\)</span> from seperate regressions</p>
+<div class="sourceCode" id="cb279"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb279-1"><a href="endogeneity-issues.html#cb279-1" tabindex="-1"></a><span class="do">## Heckman (2000, p.58) Estimate</span></span>
+<span id="cb279-2"><a href="endogeneity-issues.html#cb279-2" tabindex="-1"></a>ols_1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(P<span class="sc">~</span>cost, <span class="at">data=</span>dat2)</span>
+<span id="cb279-3"><a href="endogeneity-issues.html#cb279-3" tabindex="-1"></a>ols_2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q<span class="sc">~</span>cost, <span class="at">data=</span>dat2)</span>
+<span id="cb279-4"><a href="endogeneity-issues.html#cb279-4" tabindex="-1"></a>B_est2 <span class="ot">&lt;-</span> <span class="fu">coef</span>(ols_2)<span class="sc">/</span><span class="fu">coef</span>(ols_1)</span>
+<span id="cb279-5"><a href="endogeneity-issues.html#cb279-5" tabindex="-1"></a><span class="fu">round</span>(B_est2[[<span class="dv">2</span>]],<span class="dv">2</span>)</span></code></pre></div>
+<pre><code>## [1] -0.82</code></pre>
+<p>Mathematically, we can also do this in a single step by exploiting linear algebra:
+<span class="math display">\[\begin{eqnarray}
+\frac{ Cov(Q^{*},A_{S})}{ V(A_{S}) } / \frac{ Cov(P^{*},A_{S})}{ V(A_{S}) } =  \frac{Cov(Q^{*},A_{S} )}{ Cov(P^{*},A_{S})}.
+\end{eqnarray}\]</span></p>
+<p>Alternatively, we can recover the same estimate using an instrumental variables regression that has two equations:
+<span class="math display">\[\begin{eqnarray}
+P &amp;=&amp; \alpha_{1} + A_{S} \beta_{1} + \epsilon_{1} \\
+Q &amp;=&amp; \alpha_{2} + \hat{P} \beta_{2} + \epsilon_{2}.
+\end{eqnarray}\]</span>
+In the first regression, we estimate the average effect of the cost shock on prices. In the second equation, we estimate how the average effect of prices <em>which are exogenous to demand</em> affect quantity demanded. To see this, first substitute the equilibrium condition into the supply equation: <span class="math inline">\(Q_{D}=Q_{S}=A_{S}+B_{S} P + E_{S}\)</span>, lets us rewrite <span class="math inline">\(P\)</span> as a function of <span class="math inline">\(Q_{D}\)</span>. This yields two theoretical equations
+<span class="math display">\[\begin{eqnarray}
+\label{eqn:linear_supply_iv}
+P &amp;=&amp; -\frac{A_{S}}{{B_{S}}} + \frac{Q_{D}}{B_{S}} - \frac{E_{S}}{B_{S}} \\
+\label{eqn:linear_demand_iv}
+Q_{D} &amp;=&amp;  A_{D} + B_{D} P  + E_{D}.
+\end{eqnarray}\]</span></p>
+<div class="sourceCode" id="cb281"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb281-1"><a href="endogeneity-issues.html#cb281-1" tabindex="-1"></a><span class="do">## Two Stage Least Squares Estimate</span></span>
+<span id="cb281-2"><a href="endogeneity-issues.html#cb281-2" tabindex="-1"></a>ols_1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(P<span class="sc">~</span>cost, <span class="at">data=</span>dat2)</span>
+<span id="cb281-3"><a href="endogeneity-issues.html#cb281-3" tabindex="-1"></a>dat2_new  <span class="ot">&lt;-</span> <span class="fu">cbind</span>(dat2, <span class="at">Phat=</span><span class="fu">predict</span>(ols_1))</span>
+<span id="cb281-4"><a href="endogeneity-issues.html#cb281-4" tabindex="-1"></a>reg_2sls <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q<span class="sc">~</span>Phat, <span class="at">data=</span>dat2_new)</span>
+<span id="cb281-5"><a href="endogeneity-issues.html#cb281-5" tabindex="-1"></a><span class="fu">summary</span>(reg_2sls)</span></code></pre></div>
+<pre><code>## 
+## Call:
+## lm(formula = Q ~ Phat, data = dat2_new)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -0.53352 -0.12181  0.00189  0.12370  0.50559 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  8.13695    0.15962   50.98   &lt;2e-16 ***
+## Phat        -0.81586    0.01882  -43.35   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.1855 on 598 degrees of freedom
+## Multiple R-squared:  0.7586, Adjusted R-squared:  0.7582 
+## F-statistic:  1879 on 1 and 598 DF,  p-value: &lt; 2.2e-16</code></pre>
+<div class="sourceCode" id="cb283"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb283-1"><a href="endogeneity-issues.html#cb283-1" tabindex="-1"></a><span class="do">## One Stage Instrumental Variables Estimate</span></span>
+<span id="cb283-2"><a href="endogeneity-issues.html#cb283-2" tabindex="-1"></a><span class="fu">library</span>(fixest)</span>
+<span id="cb283-3"><a href="endogeneity-issues.html#cb283-3" tabindex="-1"></a>reg2_iv <span class="ot">&lt;-</span> <span class="fu">feols</span>(Q<span class="sc">~</span><span class="dv">1</span><span class="sc">|</span>P<span class="sc">~</span>cost, <span class="at">data=</span>dat2)</span>
+<span id="cb283-4"><a href="endogeneity-issues.html#cb283-4" tabindex="-1"></a><span class="fu">summary</span>(reg2_iv)</span></code></pre></div>
 <pre><code>## TSLS estimation, Dep. Var.: Q, Endo.: P, Instr.: cost
 ## Second stage: Dep. Var.: Q
 ## Observations: 600 
 ## Standard-errors: IID 
 ##              Estimate Std. Error  t value  Pr(&gt;|t|)    
-## (Intercept)  7.673074   0.205947  37.2575 &lt; 2.2e-16 ***
-## fit_P       -0.762105   0.024282 -31.3859 &lt; 2.2e-16 ***
+## (Intercept)  8.136946   0.218258  37.2813 &lt; 2.2e-16 ***
+## fit_P       -0.815863   0.025734 -31.7043 &lt; 2.2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
-## RMSE: 0.251242   Adj. R2: 0.539284
-## F-test (1st stage), P: stat = 3,008.2, p &lt; 2.2e-16, on 1 and 598 DoF.
-##            Wu-Hausman: stat =   477.1, p &lt; 2.2e-16, on 1 and 597 DoF.</code></pre>
-<div class="sourceCode" id="cb275"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb275-1"><a href="endogeneity-issues.html#cb275-1" tabindex="-1"></a><span class="do">## Many alternative packages can do IV</span></span>
-<span id="cb275-2"><a href="endogeneity-issues.html#cb275-2" tabindex="-1"></a><span class="do">## library(ivreg)</span></span>
-<span id="cb275-3"><a href="endogeneity-issues.html#cb275-3" tabindex="-1"></a><span class="do">## summary( ivreg(Q~P|cost, data=dat2) )</span></span></code></pre></div>
-<p>If we had multiple alleged supply shifts and recorded their magnitudes, then we could recover more information about demand.</p>
-<p><strong>Caveat</strong> The coefficient interpretation rests on many assumptions, namely</p>
+## RMSE: 0.253194   Adj. R2: 0.54793
+## F-test (1st stage), P: stat = 2,500.9, p &lt; 2.2e-16, on 1 and 598 DoF.
+##            Wu-Hausman: stat =   423.2, p &lt; 2.2e-16, on 1 and 597 DoF.</code></pre>
+<p><strong>Within Group Variance</strong>
+You can experiment with the effect of different variances on both OLS and IV in the code below. And note that if we had multiple supply shifts and recorded their magnitudes, then we could recover more information about demand, perhaps tracing it out entirely.</p>
+<div class="sourceCode" id="cb285"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb285-1"><a href="endogeneity-issues.html#cb285-1" tabindex="-1"></a><span class="do">## Examine</span></span>
+<span id="cb285-2"><a href="endogeneity-issues.html#cb285-2" tabindex="-1"></a>Egrid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">Ed_sigma=</span><span class="fu">c</span>(.<span class="dv">001</span>, .<span class="dv">25</span>, <span class="dv">1</span>), <span class="at">Es_sigma=</span><span class="fu">c</span>(.<span class="dv">001</span>, .<span class="dv">25</span>, <span class="dv">1</span>))</span>
+<span id="cb285-3"><a href="endogeneity-issues.html#cb285-3" tabindex="-1"></a></span>
+<span id="cb285-4"><a href="endogeneity-issues.html#cb285-4" tabindex="-1"></a>Egrid_regs <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(Egrid), <span class="cf">function</span>(i){</span>
+<span id="cb285-5"><a href="endogeneity-issues.html#cb285-5" tabindex="-1"></a>    Ed_sigma <span class="ot">&lt;-</span> Egrid[i,<span class="dv">1</span>]</span>
+<span id="cb285-6"><a href="endogeneity-issues.html#cb285-6" tabindex="-1"></a>    Es_sigma <span class="ot">&lt;-</span> Egrid[i,<span class="dv">2</span>]    </span>
+<span id="cb285-7"><a href="endogeneity-issues.html#cb285-7" tabindex="-1"></a>    EQ1 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>N, <span class="cf">function</span>(n){</span>
+<span id="cb285-8"><a href="endogeneity-issues.html#cb285-8" tabindex="-1"></a>        demand <span class="ot">&lt;-</span> <span class="fu">qd_fun</span>(P, <span class="at">Ed_sigma=</span>Ed_sigma)</span>
+<span id="cb285-9"><a href="endogeneity-issues.html#cb285-9" tabindex="-1"></a>        supply <span class="ot">&lt;-</span> <span class="fu">qs_fun</span>(P, <span class="at">Es_sigma=</span>Es_sigma)</span>
+<span id="cb285-10"><a href="endogeneity-issues.html#cb285-10" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">eq_fun</span>(demand, supply, P))</span>
+<span id="cb285-11"><a href="endogeneity-issues.html#cb285-11" tabindex="-1"></a>    })</span>
+<span id="cb285-12"><a href="endogeneity-issues.html#cb285-12" tabindex="-1"></a>    EQ2 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>N, <span class="cf">function</span>(n){</span>
+<span id="cb285-13"><a href="endogeneity-issues.html#cb285-13" tabindex="-1"></a>        demand <span class="ot">&lt;-</span> <span class="fu">qd_fun</span>(P,<span class="at">Ed_sigma=</span>Ed_sigma)</span>
+<span id="cb285-14"><a href="endogeneity-issues.html#cb285-14" tabindex="-1"></a>        supply2 <span class="ot">&lt;-</span> <span class="fu">qs_fun</span>(P, <span class="at">As=</span><span class="sc">-</span><span class="fl">6.5</span>,<span class="at">Es_sigma=</span>Es_sigma)</span>
+<span id="cb285-15"><a href="endogeneity-issues.html#cb285-15" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">eq_fun</span>(demand, supply2, P))</span>
+<span id="cb285-16"><a href="endogeneity-issues.html#cb285-16" tabindex="-1"></a>    })</span>
+<span id="cb285-17"><a href="endogeneity-issues.html#cb285-17" tabindex="-1"></a>    dat <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb285-18"><a href="endogeneity-issues.html#cb285-18" tabindex="-1"></a>        <span class="fu">data.frame</span>(<span class="fu">t</span>(EQ1), <span class="at">cost=</span><span class="st">&#39;1&#39;</span>),</span>
+<span id="cb285-19"><a href="endogeneity-issues.html#cb285-19" tabindex="-1"></a>        <span class="fu">data.frame</span>(<span class="fu">t</span>(EQ2), <span class="at">cost=</span><span class="st">&#39;2&#39;</span>))</span>
+<span id="cb285-20"><a href="endogeneity-issues.html#cb285-20" tabindex="-1"></a>    <span class="fu">return</span>(dat)</span>
+<span id="cb285-21"><a href="endogeneity-issues.html#cb285-21" tabindex="-1"></a>})</span>
+<span id="cb285-22"><a href="endogeneity-issues.html#cb285-22" tabindex="-1"></a>Egrid_OLS <span class="ot">&lt;-</span> <span class="fu">sapply</span>(Egrid_regs, <span class="cf">function</span>(dat) <span class="fu">coef</span>( <span class="fu">lm</span>(Q<span class="sc">~</span>P, <span class="at">data=</span>dat)))</span>
+<span id="cb285-23"><a href="endogeneity-issues.html#cb285-23" tabindex="-1"></a>Egrid_IV <span class="ot">&lt;-</span> <span class="fu">sapply</span>(Egrid_regs, <span class="cf">function</span>(dat) <span class="fu">coef</span>( <span class="fu">feols</span>(Q<span class="sc">~</span><span class="dv">1</span><span class="sc">|</span>P<span class="sc">~</span>cost, <span class="at">data=</span>dat)))</span>
+<span id="cb285-24"><a href="endogeneity-issues.html#cb285-24" tabindex="-1"></a></span>
+<span id="cb285-25"><a href="endogeneity-issues.html#cb285-25" tabindex="-1"></a><span class="co">#cbind(Egrid, coef_OLS=t(Egrid_OLS)[,2], coef_IV=t(Egrid_IV)[,2])</span></span>
+<span id="cb285-26"><a href="endogeneity-issues.html#cb285-26" tabindex="-1"></a><span class="fu">lapply</span>( <span class="fu">list</span>(Egrid_OLS, Egrid_IV), <span class="cf">function</span>(ei){</span>
+<span id="cb285-27"><a href="endogeneity-issues.html#cb285-27" tabindex="-1"></a>    Emat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(ei[<span class="dv">2</span>,],<span class="dv">3</span>,<span class="dv">3</span>)</span>
+<span id="cb285-28"><a href="endogeneity-issues.html#cb285-28" tabindex="-1"></a>    <span class="fu">rownames</span>(Emat) <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&#39;Ed_sigma.&#39;</span>,<span class="fu">c</span>(.<span class="dv">001</span>, .<span class="dv">25</span>, <span class="dv">1</span>))</span>
+<span id="cb285-29"><a href="endogeneity-issues.html#cb285-29" tabindex="-1"></a>    <span class="fu">colnames</span>(Emat) <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&#39;Es_sigma.&#39;</span>,<span class="fu">c</span>(.<span class="dv">001</span>, .<span class="dv">25</span>, <span class="dv">1</span>))</span>
+<span id="cb285-30"><a href="endogeneity-issues.html#cb285-30" tabindex="-1"></a>    <span class="fu">return</span>( <span class="fu">round</span>(Emat,<span class="dv">2</span>))</span>
+<span id="cb285-31"><a href="endogeneity-issues.html#cb285-31" tabindex="-1"></a>})</span></code></pre></div>
+<pre><code>## [[1]]
+##                Es_sigma.0.001 Es_sigma.0.25 Es_sigma.1
+## Ed_sigma.0.001          -0.80         -0.80      -0.80
+## Ed_sigma.0.25           -0.61         -0.65      -0.73
+## Ed_sigma.1               0.34          0.35      -0.08
+## 
+## [[2]]
+##                Es_sigma.0.001 Es_sigma.0.25 Es_sigma.1
+## Ed_sigma.0.001          -0.80         -0.80      -0.80
+## Ed_sigma.0.25           -0.79         -0.82      -0.82
+## Ed_sigma.1              -0.69         -0.82      -0.86</code></pre>
+<p><strong>Caveat</strong> We always get coefficients back when running <code>feols</code>, and sometimes they are statistically significant. The coefficient interpretation rests on many assumptions, namely</p>
 <ul>
 <li>supply and demand are linear and additively seperable. (Functional form)</li>
 <li>only supply was affected. (Instrument exogeneity)</li>
 <li>the shock is large enough to be picked up statistically. (Instrument relevance)</li>
 </ul>
-<p>We always get coefficients back when running <code>feols</code>, and sometimes they are statistically significant. But we are rarely sure that all of these assumptions hold, and this is one reason why researchers often also report their OLS results.</p>
+<p>We are rarely sure that all of these assumptions hold, and this is one reason why researchers often also report their OLS results.</p>
 </div>
 </div>
 <div id="regression-discontinuitieskink-rdrk" class="section level2 hasAnchor" number="9.2">
@@ -567,64 +654,64 @@ Q(P) &amp;=&amp;  A^{S}  + \epsilon^{S} +  B^{S} P .
 <li><a href="https://theeffectbook.net/ch-RegressionDiscontinuity.html" class="uri">https://theeffectbook.net/ch-RegressionDiscontinuity.html</a></li>
 </ul>
 <p>The Regression Discontinuities estimate of the cost shock is the difference in the outcome variable just before and just after the shock. We now turn to our canonical competitive market example. The RD estimate is the difference between the red and blue lines at <span class="math inline">\(T=300\)</span>.</p>
-<div class="sourceCode" id="cb276"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb276-1"><a href="endogeneity-issues.html#cb276-1" tabindex="-1"></a>dat2<span class="sc">$</span>T <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(dat2)</span>
-<span id="cb276-2"><a href="endogeneity-issues.html#cb276-2" tabindex="-1"></a></span>
-<span id="cb276-3"><a href="endogeneity-issues.html#cb276-3" tabindex="-1"></a><span class="fu">plot</span>(P<span class="sc">~</span>T, dat2, <span class="at">main=</span><span class="st">&#39;Effect of Cost Shock on Price&#39;</span>, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>,.<span class="dv">5</span>))</span>
-<span id="cb276-4"><a href="endogeneity-issues.html#cb276-4" tabindex="-1"></a>regP1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(P<span class="sc">~</span>T, dat2[dat2<span class="sc">$</span>cost<span class="sc">==</span><span class="dv">1</span>,]) </span>
-<span id="cb276-5"><a href="endogeneity-issues.html#cb276-5" tabindex="-1"></a><span class="fu">lines</span>(regP1<span class="sc">$</span>model<span class="sc">$</span>T, <span class="fu">predict</span>(regP1), <span class="at">col=</span><span class="dv">2</span>)</span>
-<span id="cb276-6"><a href="endogeneity-issues.html#cb276-6" tabindex="-1"></a>regP2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(P<span class="sc">~</span>T, dat2[dat2<span class="sc">$</span>cost<span class="sc">==</span><span class="dv">2</span>,]) </span>
-<span id="cb276-7"><a href="endogeneity-issues.html#cb276-7" tabindex="-1"></a><span class="fu">lines</span>(regP2<span class="sc">$</span>model<span class="sc">$</span>T, <span class="fu">predict</span>(regP2), <span class="at">col=</span><span class="dv">4</span>)</span></code></pre></div>
-<p><img src="03-ROLS_files/figure-html/unnamed-chunk-44-1.png" width="672" /></p>
-<div class="sourceCode" id="cb277"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb277-1"><a href="endogeneity-issues.html#cb277-1" tabindex="-1"></a>regP <span class="ot">&lt;-</span> <span class="fu">lm</span>(P<span class="sc">~</span>T<span class="sc">*</span>cost, dat2)</span>
-<span id="cb277-2"><a href="endogeneity-issues.html#cb277-2" tabindex="-1"></a><span class="fu">summary</span>(regP)</span></code></pre></div>
+<div class="sourceCode" id="cb287"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb287-1"><a href="endogeneity-issues.html#cb287-1" tabindex="-1"></a>dat2<span class="sc">$</span>T <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(dat2)</span>
+<span id="cb287-2"><a href="endogeneity-issues.html#cb287-2" tabindex="-1"></a></span>
+<span id="cb287-3"><a href="endogeneity-issues.html#cb287-3" tabindex="-1"></a><span class="fu">plot</span>(P<span class="sc">~</span>T, dat2, <span class="at">main=</span><span class="st">&#39;Effect of Cost Shock on Price&#39;</span>, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>,.<span class="dv">5</span>))</span>
+<span id="cb287-4"><a href="endogeneity-issues.html#cb287-4" tabindex="-1"></a>regP1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(P<span class="sc">~</span>T, dat2[dat2<span class="sc">$</span>cost<span class="sc">==</span><span class="dv">1</span>,]) </span>
+<span id="cb287-5"><a href="endogeneity-issues.html#cb287-5" tabindex="-1"></a><span class="fu">lines</span>(regP1<span class="sc">$</span>model<span class="sc">$</span>T, <span class="fu">predict</span>(regP1), <span class="at">col=</span><span class="dv">2</span>)</span>
+<span id="cb287-6"><a href="endogeneity-issues.html#cb287-6" tabindex="-1"></a>regP2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(P<span class="sc">~</span>T, dat2[dat2<span class="sc">$</span>cost<span class="sc">==</span><span class="dv">2</span>,]) </span>
+<span id="cb287-7"><a href="endogeneity-issues.html#cb287-7" tabindex="-1"></a><span class="fu">lines</span>(regP2<span class="sc">$</span>model<span class="sc">$</span>T, <span class="fu">predict</span>(regP2), <span class="at">col=</span><span class="dv">4</span>)</span></code></pre></div>
+<p><img src="03-ROLS_files/figure-html/unnamed-chunk-48-1.png" width="672" /></p>
+<div class="sourceCode" id="cb288"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb288-1"><a href="endogeneity-issues.html#cb288-1" tabindex="-1"></a>regP <span class="ot">&lt;-</span> <span class="fu">lm</span>(P<span class="sc">~</span>T<span class="sc">*</span>cost, dat2)</span>
+<span id="cb288-2"><a href="endogeneity-issues.html#cb288-2" tabindex="-1"></a><span class="fu">summary</span>(regP)</span></code></pre></div>
 <pre><code>## 
 ## Call:
 ## lm(formula = P ~ T * cost, data = dat2)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.53675 -0.13929 -0.00111  0.12260  0.61748 
+## -0.79338 -0.12064  0.00002  0.13089  0.53059 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  8.896e+00  2.190e-02 406.130   &lt;2e-16 ***
-## T           -1.228e-05  1.262e-04  -0.097    0.922    
-## cost2       -8.133e-01  6.188e-02 -13.144   &lt;2e-16 ***
-## T:cost2     -6.495e-05  1.784e-04  -0.364    0.716    
+## (Intercept)  8.8476366  0.0228168 387.769   &lt;2e-16 ***
+## T            0.0001769  0.0001314   1.347    0.179    
+## cost2       -0.7755981  0.0644551 -12.033   &lt;2e-16 ***
+## T:cost2     -0.0001824  0.0001858  -0.982    0.327    
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 0.1892 on 596 degrees of freedom
-## Multiple R-squared:  0.8343, Adjusted R-squared:  0.8334 
-## F-statistic:  1000 on 3 and 596 DF,  p-value: &lt; 2.2e-16</code></pre>
-<div class="sourceCode" id="cb279"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb279-1"><a href="endogeneity-issues.html#cb279-1" tabindex="-1"></a><span class="fu">plot</span>(Q<span class="sc">~</span>T, dat2, <span class="at">main=</span><span class="st">&#39;Effect of Cost Shock on Quantity&#39;</span>, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>,.<span class="dv">5</span>))</span>
-<span id="cb279-2"><a href="endogeneity-issues.html#cb279-2" tabindex="-1"></a>regQ1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q<span class="sc">~</span>T, dat2[dat2<span class="sc">$</span>cost<span class="sc">==</span><span class="dv">1</span>,]) </span>
-<span id="cb279-3"><a href="endogeneity-issues.html#cb279-3" tabindex="-1"></a><span class="fu">lines</span>(regQ1<span class="sc">$</span>model<span class="sc">$</span>T, <span class="fu">predict</span>(regQ1), <span class="at">col=</span><span class="dv">2</span>)</span>
-<span id="cb279-4"><a href="endogeneity-issues.html#cb279-4" tabindex="-1"></a>regQ2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q<span class="sc">~</span>T, dat2[dat2<span class="sc">$</span>cost<span class="sc">==</span><span class="dv">2</span>,]) </span>
-<span id="cb279-5"><a href="endogeneity-issues.html#cb279-5" tabindex="-1"></a><span class="fu">lines</span>(regQ2<span class="sc">$</span>model<span class="sc">$</span>T, <span class="fu">predict</span>(regQ2), <span class="at">col=</span><span class="dv">4</span>)</span></code></pre></div>
-<p><img src="03-ROLS_files/figure-html/unnamed-chunk-45-1.png" width="672" /></p>
-<div class="sourceCode" id="cb280"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb280-1"><a href="endogeneity-issues.html#cb280-1" tabindex="-1"></a>regQ <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q<span class="sc">~</span>T<span class="sc">*</span>cost, dat2)</span>
-<span id="cb280-2"><a href="endogeneity-issues.html#cb280-2" tabindex="-1"></a><span class="fu">summary</span>(regQ)</span></code></pre></div>
+## Residual standard error: 0.1971 on 596 degrees of freedom
+## Multiple R-squared:  0.8076, Adjusted R-squared:  0.8066 
+## F-statistic:   834 on 3 and 596 DF,  p-value: &lt; 2.2e-16</code></pre>
+<div class="sourceCode" id="cb290"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb290-1"><a href="endogeneity-issues.html#cb290-1" tabindex="-1"></a><span class="fu">plot</span>(Q<span class="sc">~</span>T, dat2, <span class="at">main=</span><span class="st">&#39;Effect of Cost Shock on Quantity&#39;</span>, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>,.<span class="dv">5</span>))</span>
+<span id="cb290-2"><a href="endogeneity-issues.html#cb290-2" tabindex="-1"></a>regQ1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q<span class="sc">~</span>T, dat2[dat2<span class="sc">$</span>cost<span class="sc">==</span><span class="dv">1</span>,]) </span>
+<span id="cb290-3"><a href="endogeneity-issues.html#cb290-3" tabindex="-1"></a><span class="fu">lines</span>(regQ1<span class="sc">$</span>model<span class="sc">$</span>T, <span class="fu">predict</span>(regQ1), <span class="at">col=</span><span class="dv">2</span>)</span>
+<span id="cb290-4"><a href="endogeneity-issues.html#cb290-4" tabindex="-1"></a>regQ2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q<span class="sc">~</span>T, dat2[dat2<span class="sc">$</span>cost<span class="sc">==</span><span class="dv">2</span>,]) </span>
+<span id="cb290-5"><a href="endogeneity-issues.html#cb290-5" tabindex="-1"></a><span class="fu">lines</span>(regQ2<span class="sc">$</span>model<span class="sc">$</span>T, <span class="fu">predict</span>(regQ2), <span class="at">col=</span><span class="dv">4</span>)</span></code></pre></div>
+<p><img src="03-ROLS_files/figure-html/unnamed-chunk-49-1.png" width="672" /></p>
+<div class="sourceCode" id="cb291"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb291-1"><a href="endogeneity-issues.html#cb291-1" tabindex="-1"></a>regQ <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q<span class="sc">~</span>T<span class="sc">*</span>cost, dat2)</span>
+<span id="cb291-2"><a href="endogeneity-issues.html#cb291-2" tabindex="-1"></a><span class="fu">summary</span>(regQ)</span></code></pre></div>
 <pre><code>## 
 ## Call:
 ## lm(formula = Q ~ T * cost, data = dat2)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.61600 -0.12168 -0.00185  0.11471  0.49921 
+## -0.53328 -0.12484 -0.00412  0.12891  0.50572 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  9.110e-01  2.117e-02  43.037   &lt;2e-16 ***
-## T           -1.073e-04  1.219e-04  -0.881    0.379    
-## cost2        6.369e-01  5.980e-02  10.652   &lt;2e-16 ***
-## T:cost2      8.918e-05  1.724e-04   0.517    0.605    
+## (Intercept)  8.987e-01  2.144e-02  41.912   &lt;2e-16 ***
+## T           -1.311e-05  1.235e-04  -0.106    0.916    
+## cost2        5.496e-01  6.057e-02   9.073   &lt;2e-16 ***
+## T:cost2      2.461e-04  1.746e-04   1.409    0.159    
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 0.1829 on 596 degrees of freedom
-## Multiple R-squared:  0.758,  Adjusted R-squared:  0.7568 
-## F-statistic: 622.2 on 3 and 596 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 0.1852 on 596 degrees of freedom
+## Multiple R-squared:   0.76,  Adjusted R-squared:  0.7588 
+## F-statistic: 629.3 on 3 and 596 DF,  p-value: &lt; 2.2e-16</code></pre>
 <p>Remember that this is effect is <em>local</em>: different magnitudes of the cost shock or different demand curves generally yeild different estimates.</p>
 </div>
 <div id="difference-in-differences-did" class="section level2 hasAnchor" number="9.3">
@@ -635,76 +722,83 @@ Q(P) &amp;=&amp;  A^{S}  + \epsilon^{S} +  B^{S} P .
 <li><a href="https://theeffectbook.net/ch-DifferenceinDifference.html" class="uri">https://theeffectbook.net/ch-DifferenceinDifference.html</a></li>
 <li><a href="http://www.urfie.net/read/index.html#page/226" class="uri">http://www.urfie.net/read/index.html#page/226</a></li>
 </ul>
-<div class="sourceCode" id="cb282"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb282-1"><a href="endogeneity-issues.html#cb282-1" tabindex="-1"></a>EQ3 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>(<span class="dv">2</span><span class="sc">*</span>N), <span class="cf">function</span>(n){</span>
-<span id="cb282-2"><a href="endogeneity-issues.html#cb282-2" tabindex="-1"></a></span>
-<span id="cb282-3"><a href="endogeneity-issues.html#cb282-3" tabindex="-1"></a>    <span class="do">## Market Mechanisms</span></span>
-<span id="cb282-4"><a href="endogeneity-issues.html#cb282-4" tabindex="-1"></a>    demand <span class="ot">&lt;-</span> <span class="fu">qd_fun</span>(P)</span>
-<span id="cb282-5"><a href="endogeneity-issues.html#cb282-5" tabindex="-1"></a>    supply <span class="ot">&lt;-</span> <span class="fu">qs_fun</span>(P)</span>
-<span id="cb282-6"><a href="endogeneity-issues.html#cb282-6" tabindex="-1"></a></span>
-<span id="cb282-7"><a href="endogeneity-issues.html#cb282-7" tabindex="-1"></a>    <span class="do">## Compute EQ (what we observe)</span></span>
-<span id="cb282-8"><a href="endogeneity-issues.html#cb282-8" tabindex="-1"></a>    eq_id <span class="ot">&lt;-</span> <span class="fu">which.min</span>( <span class="fu">abs</span>(demand<span class="sc">-</span>supply) )</span>
-<span id="cb282-9"><a href="endogeneity-issues.html#cb282-9" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">P=</span>P[eq_id], <span class="at">Q=</span>demand[eq_id]) </span>
-<span id="cb282-10"><a href="endogeneity-issues.html#cb282-10" tabindex="-1"></a></span>
-<span id="cb282-11"><a href="endogeneity-issues.html#cb282-11" tabindex="-1"></a>    <span class="do">## Return Equilibrium Observations</span></span>
-<span id="cb282-12"><a href="endogeneity-issues.html#cb282-12" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
-<span id="cb282-13"><a href="endogeneity-issues.html#cb282-13" tabindex="-1"></a>})</span>
-<span id="cb282-14"><a href="endogeneity-issues.html#cb282-14" tabindex="-1"></a>dat3 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">t</span>(EQ3), <span class="at">cost=</span><span class="st">&#39;1&#39;</span>, <span class="at">T=</span><span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(EQ3))</span>
-<span id="cb282-15"><a href="endogeneity-issues.html#cb282-15" tabindex="-1"></a></span>
-<span id="cb282-16"><a href="endogeneity-issues.html#cb282-16" tabindex="-1"></a></span>
-<span id="cb282-17"><a href="endogeneity-issues.html#cb282-17" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
-<span id="cb282-18"><a href="endogeneity-issues.html#cb282-18" tabindex="-1"></a><span class="fu">plot</span>(P<span class="sc">~</span>T, dat2, <span class="at">main=</span><span class="st">&#39;Effect of Cost Shock on Price&#39;</span>, <span class="at">pch=</span><span class="dv">17</span>,<span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,.<span class="dv">25</span>))</span>
-<span id="cb282-19"><a href="endogeneity-issues.html#cb282-19" tabindex="-1"></a><span class="fu">points</span>(P<span class="sc">~</span>T, dat3, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,.<span class="dv">25</span>))</span>
-<span id="cb282-20"><a href="endogeneity-issues.html#cb282-20" tabindex="-1"></a></span>
-<span id="cb282-21"><a href="endogeneity-issues.html#cb282-21" tabindex="-1"></a><span class="fu">plot</span>(Q<span class="sc">~</span>T, dat2, <span class="at">main=</span><span class="st">&#39;Effect of Cost Shock on Quantity&#39;</span>, <span class="at">pch=</span><span class="dv">17</span>,<span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,.<span class="dv">25</span>))</span>
-<span id="cb282-22"><a href="endogeneity-issues.html#cb282-22" tabindex="-1"></a><span class="fu">points</span>(Q<span class="sc">~</span>T, dat3, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,.<span class="dv">25</span>))</span></code></pre></div>
-<p><img src="03-ROLS_files/figure-html/unnamed-chunk-46-1.png" width="672" /></p>
-<div class="sourceCode" id="cb283"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb283-1"><a href="endogeneity-issues.html#cb283-1" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">rbind</span>(dat2, dat3)</span>
-<span id="cb283-2"><a href="endogeneity-issues.html#cb283-2" tabindex="-1"></a>regP <span class="ot">&lt;-</span> <span class="fu">lm</span>(P<span class="sc">~</span>T<span class="sc">*</span>cost, dat)</span>
-<span id="cb283-3"><a href="endogeneity-issues.html#cb283-3" tabindex="-1"></a><span class="fu">summary</span>(regP)</span></code></pre></div>
+<div class="sourceCode" id="cb293"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb293-1"><a href="endogeneity-issues.html#cb293-1" tabindex="-1"></a>EQ3 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>(<span class="dv">2</span><span class="sc">*</span>N), <span class="cf">function</span>(n){</span>
+<span id="cb293-2"><a href="endogeneity-issues.html#cb293-2" tabindex="-1"></a></span>
+<span id="cb293-3"><a href="endogeneity-issues.html#cb293-3" tabindex="-1"></a>    <span class="do">## Market Mechanisms</span></span>
+<span id="cb293-4"><a href="endogeneity-issues.html#cb293-4" tabindex="-1"></a>    demand <span class="ot">&lt;-</span> <span class="fu">qd_fun</span>(P)</span>
+<span id="cb293-5"><a href="endogeneity-issues.html#cb293-5" tabindex="-1"></a>    supply <span class="ot">&lt;-</span> <span class="fu">qs_fun</span>(P)</span>
+<span id="cb293-6"><a href="endogeneity-issues.html#cb293-6" tabindex="-1"></a></span>
+<span id="cb293-7"><a href="endogeneity-issues.html#cb293-7" tabindex="-1"></a>    <span class="do">## Compute EQ (what we observe)</span></span>
+<span id="cb293-8"><a href="endogeneity-issues.html#cb293-8" tabindex="-1"></a>    eq_id <span class="ot">&lt;-</span> <span class="fu">which.min</span>( <span class="fu">abs</span>(demand<span class="sc">-</span>supply) )</span>
+<span id="cb293-9"><a href="endogeneity-issues.html#cb293-9" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">P=</span>P[eq_id], <span class="at">Q=</span>demand[eq_id]) </span>
+<span id="cb293-10"><a href="endogeneity-issues.html#cb293-10" tabindex="-1"></a></span>
+<span id="cb293-11"><a href="endogeneity-issues.html#cb293-11" tabindex="-1"></a>    <span class="do">## Return Equilibrium Observations</span></span>
+<span id="cb293-12"><a href="endogeneity-issues.html#cb293-12" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
+<span id="cb293-13"><a href="endogeneity-issues.html#cb293-13" tabindex="-1"></a>})</span>
+<span id="cb293-14"><a href="endogeneity-issues.html#cb293-14" tabindex="-1"></a>dat3 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">t</span>(EQ3), <span class="at">cost=</span><span class="st">&#39;1&#39;</span>, <span class="at">T=</span><span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(EQ3))</span>
+<span id="cb293-15"><a href="endogeneity-issues.html#cb293-15" tabindex="-1"></a></span>
+<span id="cb293-16"><a href="endogeneity-issues.html#cb293-16" tabindex="-1"></a></span>
+<span id="cb293-17"><a href="endogeneity-issues.html#cb293-17" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb293-18"><a href="endogeneity-issues.html#cb293-18" tabindex="-1"></a><span class="fu">plot</span>(P<span class="sc">~</span>T, dat2, <span class="at">main=</span><span class="st">&#39;Effect of Cost Shock on Price&#39;</span>, <span class="at">pch=</span><span class="dv">17</span>,<span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,.<span class="dv">25</span>))</span>
+<span id="cb293-19"><a href="endogeneity-issues.html#cb293-19" tabindex="-1"></a><span class="fu">points</span>(P<span class="sc">~</span>T, dat3, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,.<span class="dv">25</span>))</span>
+<span id="cb293-20"><a href="endogeneity-issues.html#cb293-20" tabindex="-1"></a></span>
+<span id="cb293-21"><a href="endogeneity-issues.html#cb293-21" tabindex="-1"></a><span class="fu">plot</span>(Q<span class="sc">~</span>T, dat2, <span class="at">main=</span><span class="st">&#39;Effect of Cost Shock on Quantity&#39;</span>, <span class="at">pch=</span><span class="dv">17</span>,<span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,.<span class="dv">25</span>))</span>
+<span id="cb293-22"><a href="endogeneity-issues.html#cb293-22" tabindex="-1"></a><span class="fu">points</span>(Q<span class="sc">~</span>T, dat3, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,.<span class="dv">25</span>))</span></code></pre></div>
+<p><img src="03-ROLS_files/figure-html/unnamed-chunk-50-1.png" width="672" /></p>
+<div class="sourceCode" id="cb294"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb294-1"><a href="endogeneity-issues.html#cb294-1" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">rbind</span>(dat2, dat3)</span>
+<span id="cb294-2"><a href="endogeneity-issues.html#cb294-2" tabindex="-1"></a>regP <span class="ot">&lt;-</span> <span class="fu">lm</span>(P<span class="sc">~</span>T<span class="sc">*</span>cost, dat)</span>
+<span id="cb294-3"><a href="endogeneity-issues.html#cb294-3" tabindex="-1"></a><span class="fu">summary</span>(regP)</span></code></pre></div>
 <pre><code>## 
 ## Call:
 ## lm(formula = P ~ T * cost, data = dat)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.68996 -0.13913  0.00086  0.12874  0.62133 
+## -0.80539 -0.12111 -0.00326  0.13089  0.61953 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  8.897e+00  1.179e-02 754.720   &lt;2e-16 ***
-## T           -3.119e-05  3.924e-05  -0.795    0.427    
-## cost2       -8.147e-01  6.086e-02 -13.387   &lt;2e-16 ***
-## T:cost2     -4.603e-05  1.359e-04  -0.339    0.735    
+## (Intercept)  8.873e+00  1.190e-02 745.853   &lt;2e-16 ***
+## T            2.475e-05  3.960e-05   0.625    0.532    
+## cost2       -8.011e-01  6.142e-02 -13.045   &lt;2e-16 ***
+## T:cost2     -3.024e-05  1.372e-04  -0.220    0.826    
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 0.1952 on 1196 degrees of freedom
-## Multiple R-squared:  0.7777, Adjusted R-squared:  0.7771 
-## F-statistic:  1394 on 3 and 1196 DF,  p-value: &lt; 2.2e-16</code></pre>
-<div class="sourceCode" id="cb285"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb285-1"><a href="endogeneity-issues.html#cb285-1" tabindex="-1"></a>regQ <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q<span class="sc">~</span>T<span class="sc">*</span>cost, dat)</span>
-<span id="cb285-2"><a href="endogeneity-issues.html#cb285-2" tabindex="-1"></a><span class="fu">summary</span>(regQ)</span></code></pre></div>
+## Residual standard error: 0.197 on 1196 degrees of freedom
+## Multiple R-squared:  0.7607, Adjusted R-squared:  0.7601 
+## F-statistic:  1267 on 3 and 1196 DF,  p-value: &lt; 2.2e-16</code></pre>
+<div class="sourceCode" id="cb296"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb296-1"><a href="endogeneity-issues.html#cb296-1" tabindex="-1"></a>regQ <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q<span class="sc">~</span>T<span class="sc">*</span>cost, dat)</span>
+<span id="cb296-2"><a href="endogeneity-issues.html#cb296-2" tabindex="-1"></a><span class="fu">summary</span>(regQ)</span></code></pre></div>
 <pre><code>## 
 ## Call:
 ## lm(formula = Q ~ T * cost, data = dat)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.61600 -0.12112 -0.00124  0.12235  0.49921 
+## -0.53140 -0.12412  0.00554  0.12230  0.54208 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)  9.044e-01  1.079e-02  83.842   &lt;2e-16 ***
-## T           -4.657e-05  3.590e-05  -1.297    0.195    
-## cost2        6.436e-01  5.568e-02  11.558   &lt;2e-16 ***
-## T:cost2      2.841e-05  1.244e-04   0.228    0.819    
+## (Intercept)  8.968e-01  1.107e-02  80.985   &lt;2e-16 ***
+## T           -1.301e-05  3.686e-05  -0.353   0.7243    
+## cost2        5.515e-01  5.717e-02   9.647   &lt;2e-16 ***
+## T:cost2      2.460e-04  1.277e-04   1.926   0.0543 .  
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 0.1786 on 1196 degrees of freedom
-## Multiple R-squared:  0.7118, Adjusted R-squared:  0.7111 
-## F-statistic: 984.8 on 3 and 1196 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 0.1834 on 1196 degrees of freedom
+## Multiple R-squared:  0.7091, Adjusted R-squared:  0.7084 
+## F-statistic: 971.8 on 3 and 1196 DF,  p-value: &lt; 2.2e-16</code></pre>
 <p>Again, the effects are local.</p>
 </div>
+</div>
+<div class="footnotes">
+<hr />
+<ol start="4">
+<li id="fn4"><p>Although there are many ways this simultaneity can happen, economic theorists have made great strides in analyzing the simultaneity problem as it arises from market relationships. In fact, the 2SLS statistical approach arose to understand the equilibrium of a single competitive agricultural market.<a href="endogeneity-issues.html#fnref4" class="footnote-back">↩︎</a></p></li>
+<li id="fn5"><p>Notice that even in this linear model, however, all effects are conditional: <em>The</em> effect of a cost change on quantity or price depends on the demand curve. A change in costs affects quantity supplied but not quantity demanded (which then affects equilibrium price) but the demand side of the market still matters! The change in price from a change in costs depends on the elasticity of demand.<a href="endogeneity-issues.html#fnref5" class="footnote-back">↩︎</a></p></li>
+</ol>
 </div>
             </section>
 
