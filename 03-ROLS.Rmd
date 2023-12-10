@@ -1002,11 +1002,9 @@ Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity
 
 ## Two Stage Least Squares (2SLS)
 
-There are many approaches to 2SLS, but I will focus on the seminal example in economics. Suppose we ask "what is the effect of price on quantity?" You can simply run a regression of one variable on another, but you will need much luck to correctly intepret the resulting coefficient. The reason is simultaneity: price and quantity mutually cause one another in markets.^[Although there are many ways this simultaneity can happen, economic theorists have made great strides in analyzing the simultaneity problem as it arises from market relationships. In fact, the 2SLS statistical approach arose to understand the equilibrium of a single competitive agricultural market.]
+There are many approaches to 2SLS, but I will focus on the seminal example in economics. Suppose we ask "what is the effect of price on quantity?" You can simply run a regression of one variable on another, but you will need much luck to correctly intepret the resulting coefficient. The reason is simultaneity: price and quantity mutually cause one another in markets.^[Although there are many ways this simultaneity can happen, economic theorists have made great strides in analyzing the simultaneity problem as it arises from market relationships. In fact, the 2SLS statistical approach arose to understand the equilibrium of competitive agricultural markets.]
 
-### Competitive Market Equilibrium
-
-which has three structural relationships: (1) market supply is the sum of quantities supplied by individual firms at a given price, (2) market demand is the sum of quantities demanded by individual people at a given price, and (3) market supply equals market demand in equilibrium. Assuming market supply and demand are linear, we can write these three "structural equations" as
+**Competitive Market Equilibrium** has three structural relationships: (1) market supply is the sum of quantities supplied by individual firms at a given price, (2) market demand is the sum of quantities demanded by individual people at a given price, and (3) market supply equals market demand in equilibrium. Assuming market supply and demand are linear, we can write these three "structural equations" as
 \begin{eqnarray}
 Q_{S}(P) &=& A_{S} + B_{S} P + E_{S},\\
 Q_{D}(P) &=& A_{D} - B_{D} P + E_{D},\\
@@ -1051,7 +1049,6 @@ eq_fun <- function(demand, supply, P){
 N <- 300 ## Number of Market Interactions
 P <- seq(5,10,by=.01) ## Price Range to Consider
 
-
 ## Generate Data from Competitive Market  
 ## Plot Underlying Process
 plot.new()
@@ -1074,7 +1071,7 @@ mtext('Quantity',1, line=2)
 mtext('Price',2, line=2)
 ```
 
-Now regress quantity ("Y") on price ("X"): $\beta_{OLS} = \frac{Cov(Q^{*}, P^{*})}{ Var(P^{*})}$. You get a number back, but it is hard to interpret meaningfully. 
+Now regress quantity ("Y") on price ("X"): $\widehat{\beta}_{OLS} = Cov(Q^{*}, P^{*}) / Var(P^{*})$. You get a number back, but it is hard to interpret meaningfully. 
 ```{r}
 ## Analyze Market Data
 dat1 <- data.frame(t(EQ1), cost='1')
@@ -1117,13 +1114,13 @@ mtext('Quantity',1, line=2)
 mtext('Price',2, line=2)
 ```
 
-We are not quite done yet. We have pooled two datasets that are seperately problematic, and the noisiness of the process within each group affects our OLS estimate: $Cov(Q^{*}, P^{*}) / Var(P^{*})$.
+We are not quite done yet, however. We have pooled two datasets that are seperately problematic, and the noisiness of the process within each group affects our OLS estimate: $\widehat{\beta}_{OLS}=Cov(Q^{*}, P^{*}) / Var(P^{*})$.
 ```{r}
 ## Not exactly right, but at least right sign
 reg2 <- lm(Q~P, data=dat2)
 summary(reg2)
 ```
-Although the individual observations are noisy, we can compute the change in the expected values $ d \mathbb{E}[Q^{*}] / d \mathbb{E}[P^{*}] =-B_{D}$. Empirically, this is estimated via the change in average value.
+Although the individual observations are noisy, we can compute the change in the expected values $d \mathbb{E}[Q^{*}] / d \mathbb{E}[P^{*}] =-B_{D}$. Empirically, this is estimated via the change in average value.
 ```{r}
 ## Wald (1940) Estimate
 dat_mean <- rbind(
@@ -1133,7 +1130,7 @@ dat_mean
 B_est <- diff(dat_mean[,2])/diff(dat_mean[,1])
 round(B_est, 2)
 ```
-We can also seperately recover $\frac{d \mathbb{E}[Q^{*}]}{d \mathbb{E}[A_{S}]}$ and $\frac{d \mathbb{E}[P^{*}]}{d \mathbb{E}[A_{S}]}$ from seperate regressions
+We can also seperately recover $d \mathbb{E}[Q^{*}] / d \mathbb{E}[A_{S}]$ and $d \mathbb{E}[P^{*}] / d \mathbb{E}[A_{S}]$ from seperate regressions
 ```{r}
 ## Heckman (2000, p.58) Estimate
 ols_1 <- lm(P~cost, data=dat2)
@@ -1143,7 +1140,8 @@ round(B_est2[[2]],2)
 ```
 Mathematically, we can also do this in a single step by exploiting linear algebra: 
 \begin{eqnarray}
-\frac{ Cov(Q^{*},A_{S})}{ V(A_{S}) } / \frac{ Cov(P^{*},A_{S})}{ V(A_{S}) } =  \frac{Cov(Q^{*},A_{S} )}{ Cov(P^{*},A_{S})}.
+\frac{\frac{ Cov(Q^{*},A_{S})}{ V(A_{S}) } }{\frac{ Cov(P^{*},A_{S})}{ V(A_{S}) }}
+&=& \frac{Cov(Q^{*},A_{S} )}{ Cov(P^{*},A_{S})}.
 \end{eqnarray}
 
 
