@@ -997,32 +997,12 @@ You paid special attention in your research design to find a case where $x_{1}$ 
 The magnitude of the bias for $x_{1}$ thus depends on the correlations between $x_{1}$ and $x_{2}$ as well as $x_{2}$ and $\epsilon$.
 
 
-Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels of technical detail, they are not covered extensively in this notebook. You are directed to the following resources which discusses endogeneity in more detail and how it applies generally.
+Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels of technical detail, they are not covered extensively in this notebook. 
 
-* Causal Inference for Statistics, Social, and Biomedical Sciences: An Introduction
-* https://www.mostlyharmlesseconometrics.com/
-* https://www.econometrics-with-r.org
-* https://bookdown.org/paul/applied-causal-analysis/
-* https://mixtape.scunning.com/
-* https://theeffectbook.net/
-* https://www.r-causal.org/
-* https://matheusfacure.github.io/python-causality-handbook/landing-page.html
 
 ## Two Stage Least Squares (2SLS)
 
-There are many "Applied Statistics" approaches to 2SLS, and I encourage you to read up on them here
-
-* https://cameron.econ.ucdavis.edu/e240a/ch04iv.pdf
-* https://mru.org/courses/mastering-econometrics/introduction-instrumental-variables-part-one
-* https://www.econometrics-with-r.org/12-ivr.html
-* https://bookdown.org/paul/applied-causal-analysis/estimation-2.html
-* https://mixtape.scunning.com/07-instrumental_variables
-* https://theeffectbook.net/ch-InstrumentalVariables.html
-* http://www.urfie.net/read/index.html#page/247
-
-I will focus on the seminal case in economics, which is complementary and hopefully provides much intuition. 
-
-Suppose we ask "what is the effect of price on quantity?" You can simply run a regression of one variable on another, but you will need much luck to correctly intepret the resulting coefficient. The reason is simultaneity: price and quantity mutually cause one another in markets.^[Although there are many ways this simultaneity can happen, economic theorists have made great strides in analyzing the simultaneity problem as it arises from market relationships. In fact, the 2SLS statistical approach arose to understand the equilibrium of a single competitive agricultural market.]
+There are many approaches to 2SLS, but I will focus on the seminal example in economics. Suppose we ask "what is the effect of price on quantity?" You can simply run a regression of one variable on another, but you will need much luck to correctly intepret the resulting coefficient. The reason is simultaneity: price and quantity mutually cause one another in markets.^[Although there are many ways this simultaneity can happen, economic theorists have made great strides in analyzing the simultaneity problem as it arises from market relationships. In fact, the 2SLS statistical approach arose to understand the equilibrium of a single competitive agricultural market.]
 
 ### Competitive Market Equilibrium
 
@@ -1053,9 +1033,8 @@ qs_fun <- function(p, As=-8, Bs=1, Es_sigma=.25){
     return(Qs)
 }
 
-
+## Quantity Supplied and Demanded at 3 Prices
 cbind(P=8:10, D=qd_fun(8:10), S=qs_fun(8:10))
-
 
 ## Market Equilibrium Finder
 eq_fun <- function(demand, supply, P){
@@ -1078,17 +1057,15 @@ P <- seq(5,10,by=.01) ## Price Range to Consider
 plot.new()
 plot.window(xlim=c(0,2), ylim=range(P))
 EQ1 <- sapply(1:N, function(n){
-
-    ## Market Curves
+    ## Market Data Generating Process
     demand <- qd_fun(P)
     supply <- qs_fun(P)
-    eq <- eq_fun(demand, supply, P)
-    
-    ## Plot Theoretical Supply and Demand behind EQ
+    eq <- eq_fun(demand, supply, P)    
+    ## Plot Theoretical Supply and Demand
 	lines(demand, P, col=grey(0,.01))
 	lines(supply, P, col=grey(0,.01))
     points(eq[2], eq[1], col=grey(0,.05), pch=16)
-    
+    ## Save Data
     return(eq)
 })
 axis(1)
@@ -1127,7 +1104,6 @@ EQ2 <- sapply(1:N, function(n){
     #points(eq[2], eq[1], col=rgb(0,0,1,.05), pch=16)	
 })
 dat2 <- data.frame(t(EQ2), cost='2')
-
 
 ## Plot Market Data 
 dat2 <- rbind(dat1, dat2)
@@ -1169,8 +1145,6 @@ Mathematically, we can also do this in a single step by exploiting linear algebr
 \begin{eqnarray}
 \frac{ Cov(Q^{*},A_{S})}{ V(A_{S}) } / \frac{ Cov(P^{*},A_{S})}{ V(A_{S}) } =  \frac{Cov(Q^{*},A_{S} )}{ Cov(P^{*},A_{S})}.
 \end{eqnarray}
-
-
 
 
 Alternatively, we can recover the same estimate using an instrumental variables regression that has two equations:
@@ -1236,13 +1210,22 @@ lapply( list(Egrid_OLS, Egrid_IV), function(ei){
 ```
 
 
-**Caveat** We always get coefficients back when running `feols`, and sometimes they are statistically significant. The coefficient interpretation rests on many assumptions, namely
 
-* supply and demand are linear and additively seperable. (Functional form)
+
+**Caveats** 
+Regression analysis with instrumental variables can be very insightful and is applied to many different areas. But I also want to stress some caveats about using IV in practice.
+
+We always get coefficients back when running `feols`, and sometimes the computed p-values are very small. The interpretation of those numbers rests on many assumptions:
+
 * only supply was affected. (Instrument exogeneity)
 * the shock is large enough to be picked up statistically. (Instrument relevance)
+* supply and demand are linear and additively seperable. (Functional form)
+* we were not cycling through different IV's. (Multiple hypotheses)
 
-We are rarely sure that all of these assumptions hold, and this is one reason why researchers often also report their OLS results.
+We are rarely sure that all of these assumptions hold, and this is one reason why researchers often also report their OLS results. In practice, it is hard to find a good instrument. For example, suppose we asked "what is the effect of wages on police demanded?" and examined a policy which lowered the educational requirements from 4 years to 2 to become an officer. This increases the labour supply, but it also affects the demand curve through ``general equilibrium'': as some of the new officers were potentially criminals. With fewer criminals, the demand for likely police shifts down.
+
+In practice, it is also easy to find a bad instrument. As you search for good instruments, sometimes random noise will appear like a good instrument (Spurious Instruments). Worse, if you search for a good instrument for too long, you can also be led astray from important questions (Spurious Research).
+
 
 ```{r, eval=F, results='hide', echo=F}
 We could also use a nonparametric estimator to diagnose linearity at each stage.
@@ -1255,15 +1238,11 @@ We could also use a nonparametric estimator to diagnose linearity at each stage.
 ## ivreg::ivreg(Q~P|cost, data=dat2)
 ```
 
+
+
 ## Regression Discontinuities/Kink (RD/RK)
 
-The basic idea here is to examine how a variable changes in response to an exogenous shock. Again, there is a large "Applied Statistics" literature I direct you to first
-
-* https://bookdown.org/paul/applied-causal-analysis/rdd-regression-discontinuity-design.html
-* https://mixtape.scunning.com/06-regression_discontinuity
-* https://theeffectbook.net/ch-RegressionDiscontinuity.html
-
-The Regression Discontinuities estimate of the cost shock is the difference in the outcome variable just before and just after the shock. We now turn to our canonical competitive market example. The RD estimate is the difference between the red and blue lines at $T=300$.
+The basic idea here is to examine how a variable changes in response to an exogenous shock. The Regression Discontinuities estimate of the cost shock is the difference in the outcome variable just before and just after the shock. We now turn to our canonical competitive market example. The RD estimate is the difference between the lines at $T=300$.
 
 ```{r}
 dat2$T <- 1:nrow(dat2)
@@ -1293,11 +1272,7 @@ Remember that this is effect is *local*: different magnitudes of the cost shock 
 
 ## Difference in Differences (DID)
 
-The basic idea here is to examine how a variable changes in response to an exogenous shock, *compared to a control group*. Again, there is a large "Applied Statistics" literature I direct you to first
-
-* https://mixtape.scunning.com/09-difference_in_differences
-* https://theeffectbook.net/ch-DifferenceinDifference.html
-* http://www.urfie.net/read/index.html#page/226
+The basic idea here is to examine how a variable changes in response to an exogenous shock, *compared to a control group*. 
 
 ```{r}
 EQ3 <- sapply(1:(2*N), function(n){
@@ -1330,8 +1305,39 @@ regQ <- lm(Q~T*cost, dat)
 summary(regQ)
 ```
 
-Again, the effects are local. 
 
+## More Literature
+
+You are directed to the following resources which discusses endogeneity in more detail and how it applies generally.
+
+* Causal Inference for Statistics, Social, and Biomedical Sciences: An Introduction
+* https://www.mostlyharmlesseconometrics.com/
+* https://www.econometrics-with-r.org
+* https://bookdown.org/paul/applied-causal-analysis/
+* https://mixtape.scunning.com/
+* https://theeffectbook.net/
+* https://www.r-causal.org/
+* https://matheusfacure.github.io/python-causality-handbook/landing-page.html
+
+For IV, 
+
+* https://cameron.econ.ucdavis.edu/e240a/ch04iv.pdf
+* https://mru.org/courses/mastering-econometrics/introduction-instrumental-variables-part-one
+* https://www.econometrics-with-r.org/12-ivr.html
+* https://bookdown.org/paul/applied-causal-analysis/estimation-2.html
+* https://mixtape.scunning.com/07-instrumental_variables
+* https://theeffectbook.net/ch-InstrumentalVariables.html
+* http://www.urfie.net/read/index.html#page/247
+
+For RDD and DID, 
+
+* https://bookdown.org/paul/applied-causal-analysis/rdd-regression-discontinuity-design.html
+* https://mixtape.scunning.com/06-regression_discontinuity
+* https://theeffectbook.net/ch-RegressionDiscontinuity.html
+* https://mixtape.scunning.com/09-difference_in_differences
+* https://theeffectbook.net/ch-DifferenceinDifference.html
+* http://www.urfie.net/read/index.html#page/226
+    
 
 # Data Scientism
 ***
@@ -1577,9 +1583,9 @@ while(p >= .05){
 summary(ivreg_i)
 ```
 
-## Causal Impacts *without theory*
+## Random Causal Impacts
 
-We simply apply ``credible methods'' to a couple of random walks; finding a treatment that fits mold and adding various robustness checks that make the treatment appear robust. The analysis sounds scientific, and you could probably be convinced if it were not just random noise. 
+We simply apply the three major credible methods (IV, RDD, DID) to random walks. We find a result that fits mold and add various extensions that make it appear robust. The analysis sounds scientific, and you could probably be convinced if it were not just random noise.
 
 
 ```{r, message=F, warning=F}
@@ -1593,8 +1599,10 @@ set.seed(2)
 random_walk2 <- cumsum(runif(n,-1,1))
 
 par(mfrow=c(1,2))
-plot(random_walk1, pch=16, col=grey(.5,.5))
-plot(random_walk2, pch=16, col=grey(.5,.5))
+plot(random_walk1, pch=16, col=rgb(1,0,0,.25),
+    xlab='Time', ylab='Random Value')
+plot(random_walk2, pch=16, col=rgb(0,0,1,.25),
+    xlab='Time', ylab='Random Value')
 ```
 
 
@@ -1641,10 +1649,11 @@ reg0 <- lm(y~t, data=dat1_sub[dat1_sub$d==0,])
 reg1 <- lm(y~t, data=dat1_sub[dat1_sub$d==1,])
 
 ## The evidence should show openly (it's just science)
-plot(random_walk1, pch=16, col=grey(.5,.5), xlim=wind1)
+plot(random_walk1, pch=16, col=rgb(0,0,1,.25),
+    xlim=wind1, xlab='Time', ylab='Random Value')
 abline(v=n1, lty=2)
-lines(reg0$model$t, reg0$fitted.values, col=2)
-lines(reg1$model$t, reg1$fitted.values, col=4)
+lines(reg0$model$t, reg0$fitted.values, col=1)
+lines(reg1$model$t, reg1$fitted.values, col=1)
 ```
 
 ```{r, message=F, warning=F, results='asis'}
@@ -1668,8 +1677,9 @@ stargazer::stargazer(rdd_sub, rdd_full,
 ## (A good story always goes well with a nice pre-trend)
 n2 <- 318
 wind2 <- c(n2-20,n2+20)
-plot(random_walk2, pch=16, col=4, xlim=wind2, ylim=c(-15,15))
-points(random_walk1, pch=16, col=2)
+plot(random_walk2, pch=16, col=rgb(0,0,1,.5),
+    xlim=wind2, ylim=c(-15,15), xlab='Time', ylab='Random Value')
+points(random_walk1, pch=16, col=rgb(1,0,0,.5))
 abline(v=n2, lty=2)
 ```
 
@@ -1698,6 +1708,4 @@ stargazer::stargazer(did_fe1, did_fe2, did_fe3,
      'Fixed effects control for most of your concerns.',
      'Anything else creates a bias in the opposite direction.'))
 ```
-
-
 
