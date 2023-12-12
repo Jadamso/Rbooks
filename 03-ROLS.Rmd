@@ -1362,15 +1362,44 @@ There is currently a boom in empirical research centered around linear regressio
 
 
 
-The OLS examples are familiar are subject to current research. At the end are two simple examples of scientism with the ''latest and greatest'' empirical recipes---we don't have many theoretical results yet but I think you can understand the issue with the numerical example. 
+In this age of big data, we are getting more and more data. Perhaps surprisingly, this makes it easier to make false disoveries. We consider three main ways for these to arise. After that, there are examples of scientism with the ''latest and greatest'' empirical recipes---we don't have so many theoretical results yet but I think you can understand the issue with the numerical example. 
 
+## Programming Errors
 
-## The age of big data
+A huge amount of data normally means a huge amount of data cleaning/merging/aggregating. Some spurious results are driven by errors in this process, so be careful.
 
-We are getting more and more data, and this makes it easier to make false disoveries. We consider three main ways for these to arise.
+```{r}
+## Function to Create Sample Datasets
+make_noisy_data <- function(n, b=0){
+    x <- seq(1,10, length.out=n)
+    e <- rnorm(length(x), mean=0, sd=10)
+    y <- b*x + e
+    xy_mat <- data.frame(ID=seq(x), x=x, y=y)
+    return(xy_mat)
+}
 
+## Two sample datasets
+dat1 <- make_noisy_data(6)
+dat2 <- make_noisy_data(6)
 
-### Randomly (Spurious Correlation)
+## Merging data in wide format
+dat_merged_wide <- merge(dat1, dat2,
+    by='ID', suffixes=c('.1','.2'))
+
+## merging data in long format and reshaping to wide
+dat_merged_long <- rbind( cbind(dat1,DF=1),cbind(dat2,DF=2))
+library(reshape2)
+dat_melted <- melt(dat_merged_long, id.vars=c('ID', 'DF'))
+dat_merged_wide2 <- dcast(dat_melted, ID~DF+variable)
+
+## CHECK they are the same.
+dat_merged_wide == dat_merged_wide2
+```
+
+Nevertheless, data transformation is often necessary before regression analysis. For downloading tips, see https://raw.githubusercontent.com/rstudio/cheatsheets/main/data-import.pdf
+<!--\url{https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf}-->
+
+## Randomly (Spurious Correlation)
 
 We begin with a motivating empirical example of "US Gov't Spending on Science". Get and inspect some data from https://tylervigen.com/spurious-correlations
 
@@ -1484,42 +1513,7 @@ head(pdat)
 For more intuition on spurious correlations, try http://shiny.calpoly.sh/Corr_Reg_Game/
 
 
-### Programming Errors
-
-A huge amount of data normally means a huge amount of data cleaning/merging/aggregating. Some spurious results are driven by errors in this process, so be careful.
-
-```{r}
-## Function to Create Sample Datasets
-make_noisy_data <- function(n, b=0){
-    x <- seq(1,10, length.out=n)
-    e <- rnorm(length(x), mean=0, sd=10)
-    y <- b*x + e
-    xy_mat <- data.frame(ID=seq(x), x=x, y=y)
-    return(xy_mat)
-}
-
-## Two sample datasets
-dat1 <- make_noisy_data(6)
-dat2 <- make_noisy_data(6)
-
-## Merging data in wide format
-dat_merged_wide <- merge(dat1, dat2,
-    by='ID', suffixes=c('.1','.2'))
-
-## merging data in long format and reshaping to wide
-dat_merged_long <- rbind( cbind(dat1,DF=1),cbind(dat2,DF=2))
-library(reshape2)
-dat_melted <- melt(dat_merged_long, id.vars=c('ID', 'DF'))
-dat_merged_wide2 <- dcast(dat_melted, ID~DF+variable)
-
-## CHECK they are the same.
-dat_merged_wide == dat_merged_wide2
-```
-
-Nevertheless, data transformation is often necessary before regression analysis. For downloading tips, see https://raw.githubusercontent.com/rstudio/cheatsheets/main/data-import.pdf
-<!--\url{https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf}-->
-
-### P-Hacking
+## P-Hacking
 
 Another class of errors pertains to P-hacking (and it's various synonyms) 
 
@@ -1529,7 +1523,7 @@ n <- 50
 X1 <- runif(n)
 
 ## Regression Machine:
-## repeatebdly finds covariate, runs regression
+## repeatedly finds covariate, runs regression
 ## stops when statistically significant at .1\% 
 
 p <- 1
@@ -1581,9 +1575,10 @@ while(p >= .05){
 summary(ivreg_i)
 ```
 
-## Random Causal Impacts
 
-We simply apply the three major credible methods (IV, RDD, DID) to random walks. We find a result that fits mold and add various extensions that make it appear robust. The analysis sounds scientific, and you could probably be convinced if it were not just random noise.
+## Spurious Causal Impacts
+
+We apply the three major credible methods (IV, RDD, DID) to random walks. Each time, we find a result that fits mold and add various extensions that make it appear robust. One could tell a story about how $X_{2}$ affects $X_{1}$ but $X_{1}$ might also affect $X_{2}$, and how they discovered an instrument $X_{3}$ to provide the first causal estimate of $X_{2}$ on $X_{1}$. The analysis looks scientific and the story sounds plausible, so you could probably be convinced *if it were not just random noise.*
 
 
 ```{r, message=F, warning=F}
@@ -1604,35 +1599,40 @@ plot(random_walk2, pch=16, col=rgb(0,0,1,.25),
 ```
 
 
-### IV
-
+**IV**
+First, find an instrument that satisfy various statistical criterion to provide a causal estimate of $X_{2}$ on $X_{1}$.
 ```{r}
-## Searching for a valid instrument
+## "Find" "valid" ingredients
 library(fixest)
 p <- 1
 ii <- 0
 set.seed(3)
 while(p >= .001){
-    ## Get Random Covariates
+    ## Experiment with different combinations
     random_walk3 <- cumsum(runif(n,-1,1))
-    ## Merge and `Analyze'
     dat_i <- data.frame(
         X1=random_walk1,
         X2=random_walk2,
         X3=random_walk3)
     ivreg_i <- feols(X1~1|X2~X3, data=dat_i)
-    ## Update results in global environment
+    ## keep what works
     ptab <- summary(ivreg_i)$coeftable
     if( nrow(ptab)==2){
         p <- ptab[2,4]
         ii <- ii+1
     }
 }
+
+## it doesn't very long at all
+message(paste0('IV Regression: ',ii))
+
 summary(ivreg_i)
 ```
 
 
-### RDD
+**RDD**
+Second, find a large discrete change in the data that you can associate with a policy. You can use this as an instrument too, also providing a causal estimate of $X_{2}$ on $X_{1}$.
+
 
 ```{r, message=F, warning=F}
 ## Let the data take shape
@@ -1668,7 +1668,8 @@ stargazer::stargazer(rdd_sub, rdd_full,
 ```
 
 
-### DID
+**DID**
+Third, find a change in the data that you can associate with a policy where the control group has parallel trends. This also provides a causal estimate of $X_{2}$ on $X_{1}$.
 
 ```{r, message=F, warning=F}
 ## Find a reversal of fortune
