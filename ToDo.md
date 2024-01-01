@@ -2,6 +2,8 @@
 
 Add title page
 
+knitr::include_url("https://sites.google.com/view/jordan-adamson/")
+
 <!--
 The compilation instructions are in 'index.Rmd' 
 To Create from scratch, use a template ``bookdown::create_gitbook('index.Rmd')``
@@ -19,7 +21,8 @@ https://bookdown.org/yihui/bookdown/github.html
 
 ## R Programming
 
-https://plotly-r.com/
+Make plots interactive via https://plotly-r.com/
+
 
 #### Statistics 
 
@@ -42,6 +45,8 @@ tstat <- twosam(data$male, data$female); tstat
 
 
 #### Data Analysis
+
+Add styling to interactive plots
 
 
 The & and | operators
@@ -193,8 +198,10 @@ Update packages after new install,
 
 #### RReproducible
 
-- edit /DataScientism_Poster
-- links [RandRstudio](https://jadamso.github.io/Rbooks/01-RandRstudio.md)
+- fill in /DataScientism_Poster
+- default /DataScientism_Slides to `output: ioslides_presentation`
+- remove dependance on "reshape2" package in all files
+- update links [RandRstudio](https://jadamso.github.io/Rbooks/01-RandRstudio.md)
 
 Add 
  - Screenshot of Rmarkdown

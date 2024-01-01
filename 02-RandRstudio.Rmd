@@ -416,7 +416,8 @@ l5
 Reading in
 
 ```{r, eval=FALSE}
-## Load in from R packages
+## Install R Data Package and Load in
+install.packages('wooldridge')
 library(wooldridge)
 data('crime2')
 data('crime4')
@@ -446,36 +447,23 @@ summary(USArrests)
 ```
 
 
-## Plots
+## Static Plots
 
 ### Histograms 
 
-Histograms Summarize Distributions. Easy to show data splits
-```{r}
-## Urban Population above/below mean
-u <- mean(USArrests$UrbanPop)
-m1 <- USArrests[USArrests$UrbanPop<u,'Murder']
-m2 <- USArrests[USArrests$UrbanPop>=u,'Murder']
-
-xbks <-  seq(min(m1,m2), max(m1,m2), length.out=10)
-hist(m1, col=rgb(0,0,1,.5), breaks=xbks, xlab='Murder Arrests', main='')
-hist(m2, add=T, col=rgb(1,0,0,.5), breaks=xbks)
-cols <- c(rgb(0,0,1,.5), rgb(1,0,0,.5))
-legend('topright', col=cols, pch=15,
-    title='% Urban Pop.', legend=c('Above Mean', 'Below Mean'))
-title('Arrests per 100,000 across 50 US states in 1973')
-```
-
-
-**Glue together** to convey more information all at once
+Histograms Summarize Distributions. Easy to show data splits. Can glue together to convey more information all at once
 
 ```{r}
 par(mfrow=c(1,2))
-## All Data
-hist(USArrests$Murder, main='All Data', xlab='Murder Arrests')
 
-## Split Data
-xbks <-  seq(min(m1,m2), max(m1,m2), length.out=10)
+## All Data
+xbks <-  seq(min(USArrests$Murder), max(USArrests$Murder), length.out=10)
+hist(USArrests$Murder, main='All Data', xlab='Murder Arrests',  breaks=xbks)
+
+## Split Data by Urban Population above/below mean
+u <- mean(USArrests$UrbanPop)
+m1 <- USArrests[USArrests$UrbanPop<u,'Murder']
+m2 <- USArrests[USArrests$UrbanPop>=u,'Murder']
 cols <- c(rgb(0,0,1,.5), rgb(1,0,0,.5))
 hist(m1, col=cols[1], breaks=xbks, xlab='Murder Arrests', main='Split Data')
 hist(m2, add=T, col=cols[2], breaks=xbks)
@@ -483,7 +471,7 @@ legend('topright', col=cols, pch=15, bty='n',
     title='% Urban Pop.', legend=c('Above Mean', 'Below Mean'))
 ```
 
-
+Sometimes it is better to make separate figures for each data split
 ```{r}
 par(fig=c(0,1,0,0.5), new=F)
 hist(USArrests$Murder, breaks=xbks, main='All Data', xlab='Murder Arrests')
@@ -500,82 +488,80 @@ For more histogram visuals, see https://r-graph-gallery.com/histogram.html
 
 ### Boxplots
 
-All Data
+Boxplots show median, interquartile range, and outliers. As with histograms, you can also split data into groups and glue together
 ```{r}
-boxplot(USArrests$Murder, main='All Data', ylab='Murder Arrests')
-```
+layout( t(c(1,2,2)))
+boxplot(USArrests$Murder, main='',
+    xlab='All Data', ylab='Murder Arrests')
 
-
-Split data into groups and glue together
-```{r}
-## Two Groups: cut(USArrests$UrbanPop,2)
-USArrests$UrbanPop_cut <- cut(USArrests$UrbanPop,4) ## 4 Groups
-
-par(mfrow=c(1,2))
-boxplot(USArrests$Murder, main='All Data', ylab='Murder Arrests')
+## 3 Groups with even spacing
+USArrests$UrbanPop_cut <- cut(USArrests$UrbanPop,3)
 boxplot(Murder~UrbanPop_cut, USArrests,
-    main='Split Data', col=hcl.colors(4,alpha=.5),
-    xlab='Urban Population', ylab='Murder Arrests')
+    main='', col=hcl.colors(3,alpha=.5),
+    xlab='Urban Population', ylab='')
+    
+## 4 Groups with equal observations
+#qcuts <- c(
+#    '0%'=min(USArrests$UrbanPop)-10*.Machine$double.eps,
+#    quantile(USArrests$UrbanPop, probs=c(.25,.5,.75,1)))
+#USArrests$UrbanPop_cut <- cut(USArrests$UrbanPop, qcuts)
 ```
 
 ### Scatterplots
 
-```{r}
-plot(Murder~UrbanPop, USArrests, pch=16, col=rgb(0,0,0,.5))
-```
+Scatterplots are used frequently to summarize the relationship between two variables. They can be enhanced in several ways.
+
+
+**Fit Lines and Color** You can add regression lines (and confidence intervals). As a default, use semi-transparent points to see where your observations are concentrated. You can also use color to distinguish subsets.
 
 ```{r}
-par(fig=c(0,0.8,0,0.8), new=F)
-plot(Murder~UrbanPop, USArrests, pch=16, col=rgb(0,0,0,.5))
-par(fig=c(0,0.8,0.55,1), new=TRUE)
-boxplot(USArrests$Murder, horizontal=TRUE, axes=FALSE)
-par(fig=c(0.65,1,0,0.8),new=TRUE)
-boxplot(USArrests$UrbanPop, axes=FALSE)
-```
 
+## High Assault Areas
+cols <- ifelse(USArrests$Assault>median(USArrests$Assault), rgb(1,0,0,.5), rgb(0,0,1,.5))
 
-Another example with a larger (simulated) dataset
-```{r}
-## Data Generating Process
-x <- seq(1, 10, by=.0002)
-e <- rnorm(length(x), mean=0, sd=1)
-y <- .25*x + e 
+## Scatterplot
+plot(Murder~UrbanPop, USArrests, pch=16, col=cols)
 
-xy_dat <- data.frame(x=x, y=y)
-head(xy_dat)
-```
-
-Plot the data and the line of best fit
-```{r}
-## Data
-plot(y~x, xy_dat, pch=16, col=rgb(0,0,0,.1), cex=.5)
-
-## OLS Regression
-reg <- lm(y~x, data=xy_dat)
-## Add the line of best fit
-abline(reg)
+## Add the line of best fit for pooled data
+## Could also do separately for each data split
+reg <- lm(Murder~UrbanPop, data=USArrests)
+abline(reg, lty=2)
 
 ## Can Also Add Confidence Intervals
 ## https://rpubs.com/aaronsc32/regression-confidence-prediction-intervals
 ```
 
 
-Polish the plot
-
+Your first plot is typically standard. For others to easily comprehend your work, you must polish the plot.
 ```{r}
-## your first plot is pretty standard
-## plot(y~x, xy_dat)
+## Data Generating Process
+x <- seq(1, 10, by=.0002)
+e <- rnorm(length(x), mean=0, sd=1)
+y <- .25*x + e 
+xy_dat <- data.frame(x=x, y=y)
 
-
-plot(y~x, xy_dat, pch=16, col=rgb(0,0,0,.1), cex=.5,
+## Plot
+par(fig=c(0,1,0,0.9), new=F)
+plot(y~x, xy_dat, pch=16, col=rgb(0,0,0,.05), cex=.5,
     xlab='', ylab='') ## Format Axis Labels Seperately
-mtext( 'y=0.25 x + e\n e ~ standard-normal', 2, line=2)
-mtext( expression(x%in%~'[0,10]'), 1, line=2)
-abline(reg)
-title('Plot with good features and excessive notation')
-legend('topleft', legend='single data point',
+mtext( 'y=0.25 x + e\n e ~ standard-normal', 2, line=2.2)
+mtext( expression(x%in%~'[0,10]'), 1, line=2.2)
+
+abline( lm(y~x, data=xy_dat), lty=2)
+
+title('Plot with good features and excessive notation', adj=0)
+
+## Outer Legend (https://stackoverflow.com/questions/3932038/)
+outer_legend <- function(...) {
+  opar <- par(fig=c(0, 1, 0, 1), oma=c(0, 0, 0, 0), 
+    mar=c(0, 0, 0, 0), new=TRUE)
+  on.exit(par(opar))
+  plot(0, 0, type='n', bty='n', xaxt='n', yaxt='n')
+  legend(...)
+}
+outer_legend('topright', legend='single data point',
     title='do you see the normal distribution?',
-    pch=16, col=rgb(0,0,0,.1), cex=.5)
+    pch=16, col=rgb(0,0,0,.1), cex=1, bty='n')
 ```
 
 
@@ -594,13 +580,132 @@ For exporting options, see `?pdf`.
 For saving other types of files, see `png("*.png")`, `tiff("*.tiff")`, and  `jpeg("*.jpg")`
 
 
+
+**Marginal distributions**
+
+```{r}
+par(fig=c(0,0.8,0,0.8), new=F)
+plot(Murder~UrbanPop, USArrests, pch=16, col=rgb(0,0,0,.5))
+par(fig=c(0,0.8,0.55,1), new=TRUE)
+boxplot(USArrests$Murder, horizontal=TRUE, axes=FALSE)
+par(fig=c(0.65,1,0,0.8),new=TRUE)
+boxplot(USArrests$UrbanPop, axes=FALSE)
+```
+
+```{r}
+## https://www.r-bloggers.com/2011/06/example-8-41-scatterplot-with-marginal-histograms/
+
+## Setup Plot
+layout( matrix(c(2,0,1,3), ncol=2, byrow=TRUE),
+    widths=c(4/5,1/5), heights=c(1/5,4/5))
+
+## Scatterplot
+par(mar=c(4,4,1,1))
+plot(Murder~UrbanPop, USArrests, pch=16, col=rgb(0,0,0,.5))
+
+## Add Marginals
+par(mar=c(0,4,1,1))
+xhist <- hist(USArrests$UrbanPop, plot=FALSE)
+barplot(xhist$counts, axes=FALSE, space=0)
+
+par(mar=c(4,0,1,1))
+yhist <- hist(USArrests$Murder, plot=FALSE)
+barplot(yhist$counts, axes=FALSE, space=0, horiz=TRUE)
+```
+
+For plotting marginals, see https://r-graph-gallery.com/74-margin-and-oma-cheatsheet.html and https://jtr13.github.io/cc21fall2/tutorial-for-scatter-plot-with-marginal-distribution.html
+
+
+## Interactive Plots
+
+
+Especially for data exploration, your plots can also be [interactive](https://r-graph-gallery.com/interactive-charts.html) via https://plotly.com/r/. For more details, see https://plotly-r.com/
+
+```{r, message=FALSE, warning=FALSE}
+#install.packages("plotly")
+library(plotly)
+```
+
+
+**Histograms**  https://plotly.com/r/histograms/
+```{r, message=FALSE, warning=FALSE}
+u <- mean(USArrests$UrbanPop)
+m1 <- USArrests[USArrests$UrbanPop<u,'Murder']
+m2 <- USArrests[USArrests$UrbanPop>=u,'Murder']
+
+fig <- plot_ly(alpha=0.6, 
+    hovertemplate="%{y}")
+fig <- fig %>% add_histogram(m1, name='< Mean')
+fig <- fig %>% add_histogram(m2, name='>= Mean')
+fig <- fig %>% layout(barmode="stack") ## barmode="overlay"
+fig <- fig %>% layout(
+    title="Crime and Urbanization in America 1975",
+    xaxis = list(title='Murders Arrests per 100,000 People'),
+    yaxis = list(title='Number of States'),
+    legend=list(title=list(text='<b> Urban Pop. </b>'))
+)
+fig
+```
+
+**Boxplots** https://plotly.com/r/box-plots/
+```{r, message=FALSE, warning=FALSE}
+USArrests$ID <- rownames(USArrests)
+fig <- plot_ly(USArrests, y=~Murder, color=~cut(UrbanPop,4),
+    alpha=0.6, type="box",
+    pointpos=0, boxpoints = 'all',
+    hoverinfo='text',    
+    text = ~paste('<b>', ID, '</b>',
+        "<br>Urban  :", UrbanPop,
+        "<br>Assault:", Assault,
+        "<br>Murder :", Murder))    
+fig <- plotly::layout(fig,
+    showlegend=FALSE,
+    title='Crime and Urbanization in America 1975',
+    xaxis = list(title = 'Percent of People in an Urban Area'),
+    yaxis = list(title = 'Murders Arrests per 100,000 People'))
+fig
+```
+
+**Scatterplots**  https://plotly.com/r/bubble-charts/
+
+```{r, message=FALSE, warning=FALSE}
+## Simple Scatter Plot
+#plot(Assault~UrbanPop, USArrests, col=grey(0,.5), pch=16,
+#    cex=USArrests$Murder/diff(range(USArrests$Murder))*2,
+#    main='US Murder arrests (per 100,000)')
+
+# Scatter Plot
+USArrests$ID <- rownames(USArrests)
+fig <- plotly::plot_ly(
+    USArrests, x = ~UrbanPop, y = ~Assault,
+    mode='markers',
+    type='scatter',
+    hoverinfo='text',
+    text = ~paste('<b>', ID, '</b>',
+        "<br>Urban  :", UrbanPop,
+        "<br>Assault:", Assault,
+        "<br>Murder :", Murder),
+    color=~Murder,
+    marker=list(
+        size=~Murder,
+        opacity=0.5,
+        showscale=T,  
+        colorbar = list(title='Murder Arrests (per 100,000)')))
+fig <- plotly::layout(fig,
+    showlegend=F,
+    title='Crime and Urbanization in America 1975',
+    xaxis = list(title = 'Percent of People in an Urban Area'),
+    yaxis = list(title = 'Assault Arrests per 100,000 People'))
+fig
+```
+
 # Beyond Basics
 ***
 
 
 ## Introductions to R
 
-Some coding examples are copied from https://r4ds.had.co.nz/ but also other sources I have found online and elsewhere over the years.
+Some of my examples are originally from https://r4ds.had.co.nz/, as well also other sources I have found online and elsewhere over the years.
 
 There are many good yet free programming books online. I recommend https://intro2r.com. But see also 
 
@@ -624,40 +729,45 @@ There are also many good yet free-online tutorials and courses.
 What we cover in this primer should be enough to get you going. But other resources should be used if needed. 
 
 
+
 ## The R Ecosystem
+
+Use expansion "packages" for common procedures and more functionality
 
 ### Packages
 
-Use expansion "packages" for common procedures and more functionality
+**CRAN**
+Most packages can be found on CRAN and can be easily installed
 ```{r, eval=FALSE}
-## Other packages commonly used
+## commonly used packages
 install.packages("stargazer")
 install.packages("purrr")
 ## install.packages("reshape2")
 ```
 
-The most common tasks have [cheatsheets](https://www.rstudio.com/resources/cheatsheets/) you can use. E.g., 
+The most common tasks also have [cheatsheets](https://www.rstudio.com/resources/cheatsheets/) you can use. E.g., https://github.com/rstudio/cheatsheets/blob/main/rstudio-ide.pdf
 
-* https://github.com/rstudio/cheatsheets/blob/main/rstudio-ide.pdf
 
+**Github**
 Sometimes you will want to install a package from GitHub. For this, you can use [devtools](https://devtools.r-lib.org/) or the lighter [remotes](https://remotes.r-lib.org/)
 ```{r, eval=FALSE}
 install.packages("devtools")
 install.packages("remotes")
 ```
 
-For devtools, you need to have developer tools installed on your pc. If you have not, try
+For devtools, you need to have developer tools installed on your computer.
 
 * Windows: [Rtools](https://cran.r-project.org/bin/windows/Rtools/rtools42/rtools.html)
 * Mac: [Xcode](https://apps.apple.com/us/app/xcode/id497799835?mt=12)
 
 
-For example, to color terminal output on Linux you can 
+To color terminal output on Linux systems, you can use the colorout package
 ```{r, eval=FALSE}
 library(remotes)
 # Install https://github.com/jalvesaq/colorout
 # to .libPaths()[1]
 install_github('jalvesaq/colorout')
+library(colorout)
 ```
 
 
@@ -701,13 +811,12 @@ you might have to dig a little to know precisely what you want
 * your data are fundamentally numbers, strings, etc...
 You only have to figure out how to read it in.
 
-But remember that many of the best plots are custom made (see https://www.r-graph-gallery.com/), and can also be interactive or animated
-
-* https://plotly.com/r/
-* https://shiny.rstudio.com/gallery/
 
 
-## Custom figures
+
+## Custom Figures
+
+Many of the best plots are custom made (see https://www.r-graph-gallery.com/). Here are some ones that I have made over the years.
 
 <!-- ## CONVERT IMAGES
 for pdfile in *.pdf ; do 
