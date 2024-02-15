@@ -70,7 +70,7 @@ Suppose you decided to code what you did beginning with Step 2.
 
 * You see the exact steps you took and found an error
   * glad you found it before publication! See https://retractionwatch.com/ and https://econjwatch.org/
-  * Google "worst excell errors" and note the frequency they arise from copy/paste via the "point-and-click" approach.
+  * Google "worst excell errors" and note the frequency they arise from copy/paste via the "point-and-click" approach. Future economists should also read https://core.ac.uk/download/pdf/300464894.pdf.
 * You try out a new plot you found in *The Visual Display of Quantitative Information*, by Edward Tufte.
   * It's not a standard plot, but google answers most of your questions.
   * Tutorials help avoid bad practices, such as plotting 2D data as a 3D object (see e.g., https://clauswilke.com/dataviz/no-3d.html).
@@ -386,15 +386,14 @@ Project
             └── Proposal.pdf
 ```
 
-
 There are two main meta-files
 
 * `README.txt` overviews the project structure and what the codes are doing
-* `MAKEFILE` explicitly describes and executes all codes. 
+* `MAKEFILE` explicitly describes and executes all codes (and typically logs the output).
 
-## MAKEFILE
+**MAKEFILE**
 
-If all code is written with the same program, the makefile can be written in that programs code: `MAKEFILE.R`, which looks like
+If all code is written with the same program (such as R) the makefile can be written in a single language. For us, this looks like
 ```{r, eval=FALSE}
 
 ### Project Structure
@@ -418,7 +417,7 @@ source( "RBLOCK_003_ModelsTests.R" )
 source( "RBLOCK_004_Robust.R" )
 ```
 
-Notice there are a lot of documentation `### like this`, which is crucial for large projects. Also notice that anyone should be able to replicate the entire project by downloading a zip file and simply changing `home_dir`.
+Notice there is a lot of documentation `### like this`, which is crucial for large projects. Also notice that anyone should be able to replicate the entire project by downloading a zip file and simply changing `home_dir`.
 
 
 If some folders or files need to be created, you can do this within R
@@ -431,9 +430,9 @@ dir.create('Data')
 
 ## Logging/Sinking
 
-You can then execute the makefile within R and log the output. Either by 
+When executing the makefile, you can also log the output. Either by 
 
-1. Inserting some code that logs/sinks the output 
+1. Inserting some code into the makefile that logs/sinks the output 
 ```{r, eval=FALSE}
 
 ### Project Structure
@@ -506,20 +505,17 @@ For larger scale projects, use scripts
 
 ## Debugging 
 
-In R, you use multiple functions on different types of data objects. Moreover, ``typically solve complex problems by decomposing them into simple functions, not simple objects.'' (H. Wickham)
+In R, you use multiple functions on different types of data objects. Moreover, you "typically solve complex problems by decomposing them into simple functions, not simple objects." (H. Wickham)
 
 
 We can use the following packages to help deal with various problems that may arise
 ```{r}
+library(microbenchmark)
+library(compiler)
 library(profvis)
-library(bench)
 library(parallel)
 library(Rcpp)
-library(compiler)
 ```
-
-(Note that many of the examples are taken from https://adv-r.hadley.nz/).
-
 
 Problems print to the console
 ```{r, error=TRUE}
@@ -530,22 +526,15 @@ warning("This is what a warning looks like")
 stop("This is what an error looks like")
 ```
 
-
 Nonproblems also print to the console
 ```{r, error=TRUE}
 cat('cat\n')
 print('print')
 ```
 
-###  Tracing Errors
+###  Tracing 
 
-First, use garbage cleanup to "cleanup" memory leaks
-```{r}
-gc()
-```
-Then trace the error process. 
-
-Example of error process
+Consider this example of an error process (originally taken from https://adv-r.hadley.nz/ ).
 ```{r, error=TRUE}
 ## Let i() check if its argument is numeric
 i <- function(i0) {
@@ -564,12 +553,7 @@ f <- function(g0) g(g0)
 f("a")
 ```
 
-Traceback debugging
-```{r, error=TRUE}
-traceback()
-```
-
-Simple print debugging
+First try simple print debugging
 ```{r, error=TRUE}
 f2 <- function(g0) {
   cat("f2 calls g2()\n")
@@ -588,7 +572,12 @@ h2 <- function(i0) {
 f2("a")
 ```
 
-Interactive approach
+If that fails, try traceback debugging
+```{r, error=TRUE}
+traceback()
+```
+
+And if that fails, try an Interactive approach
 ```{r, error=TRUE}
 g3 <- function(h0) {
   browser()
@@ -601,7 +590,8 @@ f3("a")
 ```
 
 
-###  Checking problems 
+
+###  Isolating
 
 To inspect objects
 ```{r, eval=FALSE}
@@ -652,83 +642,85 @@ rowAny <- function(x) rowSums(x) > 0
 rowAll <- function(x) rowSums(x) == ncol(x)
 ```
 
+### Handling
 
-## Being Proactive
-
-Supressing errors is possible but a bad idea
-```{r, error=TRUE}
-try(1+2, silent=T)
-try(warning('warning'), silent=T)
-try(error('error'), silent=T)
-```
-```{r, error=TRUE}
-try(1+2, silent=F)
-try(warning('warning'), silent=F)
-try(error('error'), silent=F)
-```
-
-Try to handle errors
+Simplest Example
 ```{r, eval=F}
+x <- 'A'
 tryCatch(
+  expr = log(x),
   error = function(e) {
-    # code to run when error is thrown
-  },
-  code_to_run_while_handlers_are_active
-)
+        message('Caught an error but did not break')
+        print(e)
+        return(NA)
+})
 ```
 
 Simple Example
 ```{r}
+x <- -2
 tryCatch(
-    expr = {
-        message( log(-Inf) )
-        message("Successfully executed the log(x) call.")
-    },
-    error = function(e){
-        message('Caught an error!')
+  expr = log(x),
+  error = function(e) {
+        message('Caught an error but did not break')
         print(e)
+        return(NA)
     },
     warning = function(w){
-        message('Caught an warning!')
+        message('Caught a warning!')
         print(w)
+        return(NA)        
     },
     finally = {
-        message('All done, quitting.')
+        message("Returned log(x) if successfull or NA if Error or Warning")
     }
 )
 ```
 
-<!--## Ignore warnings/messages-->
-<!--#suppressWarnings()-->
-<!--#suppressMessages()-->
+<!--## Ignore warnings/messages
+    Supressing errors is possible but a bad idea
+    ```{r, error=TRUE}
+    try(1+2, silent=T)
+    try(warning('warning'), silent=T)
+    try(error('error'), silent=T)
+
+    try(1+2, silent=F)
+    try(warning('warning'), silent=F)
+    try(error('error'), silent=F)
+    
+    #suppressMessages()    
+    ```
+-->
 
 Safe Functions
 ```{r, error=TRUE}
 ## Define
 log_safe <- function(x){
-    tryCatch(
-        expr = {
-            message( log(x) )
-            message("Successfully executed the log(x) call.")
-        },
+    lnx <- tryCatch(
+        expr = log(x),
         error = function(e){
-            message('Caught an error!')
+            cat('Error Caught: \n\t')        
             print(e)
+            return(NA)            
         },
         warning = function(w){
-            message('Caught an warning!')
+            cat('Warning Caught: \n\t')
             print(w)
-        },
-        finally = {
-            message('All done, quitting.')
-        }
-    )
+            return(NA)            
+        })
+    return(lnx)
 }
 
 ## Test 
-log_safe( 10)
-log_safe(-10)
+log_safe( 1)
+log_safe(-1)
 log_safe(' ')
+
+
+## Further Tests
+s <- sapply(list("A",Inf, -Inf, NA, NaN, 0, -1, 1), log_safe)
+
+s
 ```
 
 
@@ -755,8 +747,7 @@ In General: Clean code is often faster and less error prone
 
 ###  Benchmarking
 
-The simplest approach
-
+The simplest approach is to time how long a code-chunk runs
 ```{r, error=TRUE}
 system.time({
     x <- runif(1e5)
@@ -784,8 +775,7 @@ profvis::profvis({
 ## for loop is not the slowest, but the ugliest.
 ```
 
-
-For easily comparing solutions to specific bottlenecks
+For more systematic speed comparisons, use the `microbenchmark` package
 ```{r, error=TRUE}
 ## 3 Equivalent calculations of the mean of a vector
 mean1 <- function(x,p=1) mean(x^p)
@@ -794,14 +784,27 @@ mean3 <- function(x,p=1) mean.default(x^p)
 
 ## Time them
 x <- runif(1e6)
-bench::mark(
+microbenchmark::microbenchmark(
   mean1(x,.5),
   mean2(x,.5),
   mean3(x,.5)
 )
 ```
 
-Check for easy speed-ups before creating your own program
+
+For memory leaks, first free up space and use the `bench` package for timing
+```{r, eval=F}
+gc() ## garbage cleanup
+
+bench::mark(
+  mean1(x,.5),
+  mean2(x,.5),
+  mean3(x,.5))
+```
+
+### Speed-Ups
+
+Before creating your own program, check if there is a faster or more memory efficient version. E.g., [data.table](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html) or [Rfast2](https://cran.r-project.org/web/packages/Rfast2/index.html) for basic data manipulation.
 ```{r, error=TRUE}
 X <- cbind(1, runif(1e6))
 Y <- X %*% c(1,2) + rnorm(1e6)
@@ -809,14 +812,13 @@ DAT <- as.data.frame(cbind(Y,X))
 
 system.time({.lm.fit(X, Y) })
 system.time({ lm(Y~X, data=DAT) })
-
-## But note that quicker codes 
-## tend to have fewer checks
-## and return less information
 ```
+Note that quicker codes tend to have fewer checks and return less information. So you must know exactly what you are putting in and getting out.
 
 
-**Vectors are generally faster and easier to read than loops**
+**vectorize**
+
+Vector operations are generally faster and easier to read than loops
 ```{r, error=TRUE}
 x <- runif(1e6)
 
@@ -842,11 +844,13 @@ ma2 <- function(y){
 
 all.equal(ma1(y),ma2(y))
 
-bench::mark(
+microbenchmark::microbenchmark(
   ma1(y),
   ma2(y)
 )
 ```
+Likewise, matrix operations are often faster than vector operations.
+
 
 ###  Bottlenecks
 
@@ -863,7 +867,6 @@ x <- c(10,20,30,40,50)
 f <- function(element) { element^element } 
 parallel::mclapply( x, mc.cores=2, FUN=f)
 ```
-
 
 More power is often not the solution
 
@@ -910,6 +913,7 @@ If you still are stuck, you can
 * try [Amazon Web Server](https://aws.amazon.com/ec2/) for more brute-power 
 * rewrite bottlenecks with a working C++ compiler or Fortran compiler.
 
+Before doing that, however, look into https://cran.r-project.org/web/views/HighPerformanceComputing.html
 
 ##### Compiled Code
 
@@ -941,11 +945,13 @@ First try to use C++ (or Fortran) code that others have written
 For a tutorial, see https://masuday.github.io/fortran_tutorial/r.html
 
 
-## Advanced Programming 
+## More Literature
 
-https://rmd4sci.njtierney.com/
-https://smac-group.github.io/ds/high-performance-computing.html
-https://www.stat.umn.edu/geyer/3701/notes/arithmetic.Rmd
+Advanced Programming 
+
+* https://rmd4sci.njtierney.com/
+* https://smac-group.github.io/ds/high-performance-computing.html
+* https://www.stat.umn.edu/geyer/3701/notes/arithmetic.Rmd
 
 For debugging tips
 
@@ -966,7 +972,7 @@ For optimization tips
 * https://cran.r-project.org/doc/manuals/R-exts.html#System-and-foreign-language-interfaces
  https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/profiling.html
 * https://adv-r.hadley.nz/rcpp.html
-
+* https://bookdown.dongzhuoer.com/hadley/adv-r/
 
 For parallel programming 
 
@@ -1068,6 +1074,20 @@ set_names(.libPaths()) %>%
         })
   })
 ## https://stackoverflow.com/questions/31935516/installing-r-packages-error-in-readrdsfile-error-reading-from-connection/55997765
+```
+
+To remove packages duplicated in multiple libraries
+```{r,  eval=FALSE}
+## Libraries
+i <- installed.packages()
+libs <- .libPaths()
+## Find Duplicated Packages
+i1 <- i[ i[,'LibPath']==libs[1], ]
+i2 <- i[ i[,'LibPath']==libs[2], ]
+dups <- i2[,'Package'] %in% i1[,'Package']
+all( dups )
+## Remove
+remove.packages(  i2[,'Package'], libs[2] )
 ```
 
 
