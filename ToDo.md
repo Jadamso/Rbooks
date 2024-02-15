@@ -44,6 +44,7 @@ tstat <- twosam(data$male, data$female); tstat
 
 
 
+
 #### Data Analysis
 
 Add styling to interactive plots
@@ -76,7 +77,7 @@ gsub("([[:alpha:]]{3,})ing\\b", "\\1", kingText)
 
 ## Linear Regression
 
-
+```{r}
 library(AER)
 data(CASchools)
 CASchools$score <- (CASchools$read + CASchools$math) / 2)
@@ -84,12 +85,46 @@ reg <- lm(score ~ income, data = CASchools)
 hvec <- lm.influence(reg)$hat
 iplot <- car::influencePlot(reg)
 CASchools[rownames(iplot),]
-
+```
 
 Section 7: Derive Simple OLS
 
 * "Introduction to Econometrics with R" by Hanck, Arnold, Gerber, and Schmelzer, https://www.econometrics-with-r.org/
 (taking seriously Greene's "Model Building--A General to Simple Strategy")
+
+
+
+Parametric P values and Power Analysis
+```{r}
+xy <- USArrests[,c('Murder','UrbanPop')]
+colnames(xy) <- c('y','x')
+
+reg <- lm(y~x, dat=xy)
+
+## T-values
+b <- coef(reg)
+se_b <- sqrt(diag(vcov(reg)))
+t_b <- b/se_b
+
+## P-values
+k <- reg$df.residual
+p <- (1-pt(abs(t_b), k))*2
+p <- pt(-t_b, k) + (1-pt(t_b, k))
+
+## Power
+https://osf.io/zqphw/download
+The Essential Guide to Effect Sizes: Statistical Power, Meta-Analysis, and the Interpretation of Research Results
+https://online.stat.psu.edu/statprogram/reviews/statistical-concepts/power-analysis
+https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/power.html
+https://peopleanalytics-regression-book.org/power-tests.html
+
+#PT_r <- pwrss::power.t.test(T_r, df=k, plot=FALSE, alpha=0.05)
+PT_r <- 1 -
+    pt( qt(alpha/2, df=k), df=k, ncp=abs(T_r), lower.tail=F) +
+    pt( qt(alpha/2, df=k, lower.tail=F), df=k, ncp=abs(T_r), lower.tail=F)
+1 - pt( qt(1-alpha/2, df=k)-abs(T_r), df=k) + pt( qt(alpha/2, df=k)-abs(T_r), df=k)
+``` 
+
 
 
 #### Parametric Variability Estimates and Hypothesis Tests [Under Construction]
@@ -177,24 +212,119 @@ summary(reg)$fstatistic
 summary(reg)
 ```
 
+#### Data Scientism
+Measurement Error
+
+#### Endogeneity
+
+```{r}
+## Theoretical Relationship
+x <- c(-1,1)/2
+y <- c(0,0)
+plot.new()
+plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1))
+s <- seq(length(x)-1)
+arrows(x[1], y[1], x[2], y[2], code=2, lwd=2)
+text(c(-1,1), y, c("X","Y"), cex=2)
+```
+
+```{r}
+### Reverse Causation
+x <- c(-1,1)/2
+y <- c(0,0)
+plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1))
+arrows(x[1], y[1], x[2], y[2], code=1, lwd=2)
+text(c(-1,1), y, c("X","Y"), cex=2)
+```
+
+```{r}
+### Lurking/Confounding Variable
+x <- c(-1,0,1)/2
+y <- c(0,-1,0)/2
+plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1), ylim=c(-1,.2))
+arrows(x[1], y[1], x[2], y[2], code=1, lwd=2)
+arrows(x[3], y[3], x[2], y[2], code=1, lwd=2)
+text(c(-2/3,0,2/3), c(1/5,-2/3,1/5), c("X","Z","Y"), cex=2)
+```
+
+*Example 1:* Supose you want to know how taxes affect economic prosperity.
+What are the issue with interpretting an empirical finding that higher $Taxes$ do not affect $GDP$ with data from Canada and Germany? Or across all countries for that matter?
+
+```{r}
+x <- c(-1,0,1)/2
+y <- c(0,-1,0)/2
+plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1), ylim=c(-1,.25))
+arrows(x[1], y[1], x[2]-.1, y[2], code=3, lwd=2)
+arrows(x[3], y[3], x[2]+.1, y[2], code=3, lwd=2)
+arrows(x[3], y[3]+.2, x[1], y[1]+.2, code=3, lwd=2)
+text(c(-2/3,0,2/3), c(1/5,-2/3,1/5), 
+    c("Taxes","Culture, Laws, Record Keeping","GDP"), cex=1.3)
+```
+
+*Example 2:* What do you think about this plot from (https://ourworldindata.org/grapher/share-of-population-with-cancer-vs-gdp)? Is money the root of all evil; our focus on wealth literally a cancer to society?
+
+*Example 3:* This map of cocaine (https://www.unodc.org/wdr2016/field/1.2.3._Prevalence_cocaine.pdf) usage looks a lot like GDP. Could it be that cocaine causes people to become rich, or rather that people in richer countries use more cocaine?
 
 
 ## Intermediate R
 
 For and while loops
 
-
-showDot = function(...){
+```{r}
+add2 = function(x, ...){
+  y <- x+2
   dots = list(...)
   print(dots)
+  return(y)
 }
-showDot(arg1 = 1:5, "test stuff", 
-        b = "another", list(test_still = 2))
-        
-Add Fortran Code, https://masuday.github.io/fortran_tutorial/r.html
+add2(1:4,
+    arg1=1:5,
+    "test stuff",
+    b="another", list(test_still=2))
+```
 
 Update packages after new install, 
     for loop checks for old packages and installs if not already installed. not from source
+
+
+#### RCPP
+https://teuder.github.io/rcpp4everyone_en/
+http://adv-r.had.co.nz/Rcpp.html
+http://dirk.eddelbuettel.com/code/rcpp.examples.html (https://gallery.rcpp.org/)
+
+```{r}
+library(Rcpp)
+cppFunction('int add(int x, int y, int z) {
+  int sum = x + y + z;
+  return sum;
+}')
+add(1, 2, 3)
+```
+
+```{r}
+library(Rcpp)
+cppFunction('
+double rcpp_sum(NumericVector v){
+    double sum = 0;
+    for(int i=0; i<v.length(); ++i){
+        sum += v[i];
+    }
+    return(sum);
+}
+')
+rcpp_sum(1:3)
+```
+
+
+Random Numbers
+https://teuder.github.io/rcpp4everyone_en/220_dpqr_functions.html
+https://en.cppreference.com/w/cpp/numeric/random
+
+Particle Filter
+https://dirk.eddelbuettel.com/code/rcpp.kalman.html
+https://dirk.eddelbuettel.com/code/rcpp.smc.html
+
+
 
 #### RReproducible
 
