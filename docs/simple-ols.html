@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title> 7 Simple OLS | index</title>
   <meta name="description" content="" />
-  <meta name="generator" content="bookdown 0.37 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.38 and GitBook 2.6.7" />
 
   <meta property="og:title" content=" 7 Simple OLS | index" />
   <meta property="og:type" content="book" />
@@ -50,6 +50,7 @@
 <link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
 <link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
 <script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
+<link href="libs/htmltools-fill-0.5.8/fill.css" rel="stylesheet" />
 <script src="libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
 <script src="libs/plotly-binding-4.10.4/plotly.js"></script>
 <script src="libs/typedarray-0.1/typedarray.min.js"></script>
@@ -205,6 +206,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="7.2" data-path="simple-ols.html"><a href="simple-ols.html#hypothesis-tests"><i class="fa fa-check"></i><b>7.2</b> Hypothesis Tests</a></li>
 <li class="chapter" data-level="7.3" data-path="simple-ols.html"><a href="simple-ols.html#prediction-intervals"><i class="fa fa-check"></i><b>7.3</b> Prediction Intervals</a></li>
 <li class="chapter" data-level="7.4" data-path="simple-ols.html"><a href="simple-ols.html#value-of-more-data-1"><i class="fa fa-check"></i><b>7.4</b> Value of More Data</a></li>
+<li class="chapter" data-level="7.5" data-path="simple-ols.html"><a href="simple-ols.html#locally-linear"><i class="fa fa-check"></i><b>7.5</b> Locally Linear</a></li>
 </ul></li>
 <li class="chapter" data-level="8" data-path="ols-multiple-linear-regression.html"><a href="ols-multiple-linear-regression.html"><i class="fa fa-check"></i><b>8</b> OLS (multiple linear regression)</a>
 <ul>
@@ -505,7 +507,7 @@ We can also compute a null distribution using <em>data-driven</em> methods that 
 <p><img src="03-ROLS_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
 <div class="sourceCode" id="cb221"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb221-1"><a href="simple-ols.html#cb221-1" tabindex="-1"></a>Phat2  <span class="ot">&lt;-</span>  <span class="dv">1</span><span class="sc">-</span><span class="fu">That_NullDist2</span>(boot_t)</span>
 <span id="cb221-2"><a href="simple-ols.html#cb221-2" tabindex="-1"></a>Phat2</span></code></pre></div>
-<pre><code>## [1] 0.6390977</code></pre>
+<pre><code>## [1] 0.6240602</code></pre>
 <p>Under some assumptions, the null distribution is distributed <span class="math inline">\(t_{n-2}\)</span>. (For more on parametric t-testing based on statistical theory, see <a href="https://www.econometrics-with-r.org/4-lrwor.html" class="uri">https://www.econometrics-with-r.org/4-lrwor.html</a>.)</p>
 </div>
 <div id="prediction-intervals" class="section level2 hasAnchor" number="7.3">
@@ -583,6 +585,147 @@ We can also compute a null distribution using <em>data-driven</em> methods that 
 <span id="cb225-18"><a href="simple-ols.html#cb225-18" tabindex="-1"></a><span class="fu">plot</span>(Nseq[<span class="sc">-</span><span class="dv">1</span>], <span class="fu">abs</span>(<span class="fu">diff</span>(SE)), <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>,.<span class="dv">5</span>), <span class="at">main=</span><span class="st">&#39;Marginal Gain&#39;</span>, </span>
 <span id="cb225-19"><a href="simple-ols.html#cb225-19" tabindex="-1"></a>    <span class="at">ylab=</span><span class="st">&#39;decrease in standard error&#39;</span>, <span class="at">xlab=</span><span class="st">&#39;sample size&#39;</span>)</span></code></pre></div>
 <p><img src="03-ROLS_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+</div>
+<div id="locally-linear" class="section level2 hasAnchor" number="7.5">
+<h2><span class="header-section-number">7.5</span> Locally Linear<a href="simple-ols.html#locally-linear" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Segmented/piecewise regression</p>
+<div class="sourceCode" id="cb226"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb226-1"><a href="simple-ols.html#cb226-1" tabindex="-1"></a><span class="fu">library</span>(AER)</span></code></pre></div>
+<pre><code>## Loading required package: car</code></pre>
+<pre><code>## Loading required package: carData</code></pre>
+<pre><code>## Loading required package: lmtest</code></pre>
+<pre><code>## Loading required package: zoo</code></pre>
+<pre><code>## 
+## Attaching package: &#39;zoo&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     as.Date, as.Date.numeric</code></pre>
+<pre><code>## Loading required package: sandwich</code></pre>
+<pre><code>## Loading required package: survival</code></pre>
+<div class="sourceCode" id="cb235"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb235-1"><a href="simple-ols.html#cb235-1" tabindex="-1"></a><span class="fu">data</span>(CASchools)</span>
+<span id="cb235-2"><a href="simple-ols.html#cb235-2" tabindex="-1"></a>CASchools<span class="sc">$</span>score <span class="ot">&lt;-</span> (CASchools<span class="sc">$</span>read <span class="sc">+</span> CASchools<span class="sc">$</span>math) <span class="sc">/</span> <span class="dv">2</span></span>
+<span id="cb235-3"><a href="simple-ols.html#cb235-3" tabindex="-1"></a>reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(score <span class="sc">~</span> income, <span class="at">data =</span> CASchools)</span>
+<span id="cb235-4"><a href="simple-ols.html#cb235-4" tabindex="-1"></a><span class="fu">plot</span>( CASchools<span class="sc">$</span>income, <span class="fu">resid</span>(reg), <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>,.<span class="dv">5</span>))</span></code></pre></div>
+<p><img src="03-ROLS_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<div class="sourceCode" id="cb236"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb236-1"><a href="simple-ols.html#cb236-1" tabindex="-1"></a><span class="do">## Add Piecewise Term</span></span>
+<span id="cb236-2"><a href="simple-ols.html#cb236-2" tabindex="-1"></a>CASchools<span class="sc">$</span>IncomeCut <span class="ot">&lt;-</span> <span class="fu">cut</span>(CASchools<span class="sc">$</span>income,<span class="dv">2</span>)</span>
+<span id="cb236-3"><a href="simple-ols.html#cb236-3" tabindex="-1"></a>reg2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(score <span class="sc">~</span> income<span class="sc">*</span>IncomeCut, <span class="at">data=</span>CASchools)</span>
+<span id="cb236-4"><a href="simple-ols.html#cb236-4" tabindex="-1"></a><span class="fu">summary</span>(reg2)</span></code></pre></div>
+<pre><code>## 
+## Call:
+## lm(formula = score ~ income * IncomeCut, data = CASchools)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -44.710  -8.897   0.730   8.210  32.445 
+## 
+## Coefficients:
+##                             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)                 617.4010     2.1013 293.821  &lt; 2e-16 ***
+## income                        2.4732     0.1426  17.338  &lt; 2e-16 ***
+## IncomeCut(30.3,55.4]         59.6336    16.9170   3.525  0.00047 ***
+## income:IncomeCut(30.3,55.4]  -2.0904     0.4499  -4.646 4.55e-06 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 12.88 on 416 degrees of freedom
+## Multiple R-squared:  0.5462, Adjusted R-squared:  0.5429 
+## F-statistic: 166.9 on 3 and 416 DF,  p-value: &lt; 2.2e-16</code></pre>
+<div class="sourceCode" id="cb238"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb238-1"><a href="simple-ols.html#cb238-1" tabindex="-1"></a><span class="do">## F Test for Break</span></span>
+<span id="cb238-2"><a href="simple-ols.html#cb238-2" tabindex="-1"></a><span class="fu">anova</span>(reg, reg2)</span></code></pre></div>
+<pre><code>## Analysis of Variance Table
+## 
+## Model 1: score ~ income
+## Model 2: score ~ income * IncomeCut
+##   Res.Df   RSS Df Sum of Sq      F    Pr(&gt;F)    
+## 1    418 74905                                  
+## 2    416 69033  2    5871.7 17.692 4.226e-08 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<div class="sourceCode" id="cb240"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb240-1"><a href="simple-ols.html#cb240-1" tabindex="-1"></a><span class="do">## Chow Test for Break</span></span>
+<span id="cb240-2"><a href="simple-ols.html#cb240-2" tabindex="-1"></a>data_splits <span class="ot">&lt;-</span> <span class="fu">split</span>(CASchools, CASchools<span class="sc">$</span>IncomeCut)</span>
+<span id="cb240-3"><a href="simple-ols.html#cb240-3" tabindex="-1"></a>resids <span class="ot">&lt;-</span> <span class="fu">sapply</span>(data_splits, <span class="cf">function</span>(dat){</span>
+<span id="cb240-4"><a href="simple-ols.html#cb240-4" tabindex="-1"></a>    reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(score <span class="sc">~</span> income, <span class="at">data=</span>dat)</span>
+<span id="cb240-5"><a href="simple-ols.html#cb240-5" tabindex="-1"></a>    <span class="fu">sum</span>( <span class="fu">resid</span>(reg)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb240-6"><a href="simple-ols.html#cb240-6" tabindex="-1"></a>})</span>
+<span id="cb240-7"><a href="simple-ols.html#cb240-7" tabindex="-1"></a>Ns <span class="ot">&lt;-</span>  <span class="fu">sapply</span>(data_splits, <span class="cf">function</span>(dat){ <span class="fu">nrow</span>(dat)})</span>
+<span id="cb240-8"><a href="simple-ols.html#cb240-8" tabindex="-1"></a>Rt <span class="ot">&lt;-</span> (<span class="fu">sum</span>(<span class="fu">resid</span>(reg)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">-</span> <span class="fu">sum</span>(resids))<span class="sc">/</span><span class="fu">sum</span>(resids)</span>
+<span id="cb240-9"><a href="simple-ols.html#cb240-9" tabindex="-1"></a>Rb <span class="ot">&lt;-</span> (<span class="fu">sum</span>(Ns)<span class="sc">-</span><span class="dv">2</span><span class="sc">*</span>reg<span class="sc">$</span>rank)<span class="sc">/</span>reg<span class="sc">$</span>rank</span>
+<span id="cb240-10"><a href="simple-ols.html#cb240-10" tabindex="-1"></a>Ft <span class="ot">&lt;-</span> Rt<span class="sc">*</span>Rb</span>
+<span id="cb240-11"><a href="simple-ols.html#cb240-11" tabindex="-1"></a><span class="fu">pf</span>(Ft,reg<span class="sc">$</span>rank, <span class="fu">sum</span>(Ns)<span class="sc">-</span><span class="dv">2</span><span class="sc">*</span>reg<span class="sc">$</span>rank,<span class="at">lower.tail=</span>F)</span></code></pre></div>
+<pre><code>## [1] 4.225896e-08</code></pre>
+<p>Multiple Breaks</p>
+<div class="sourceCode" id="cb242"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb242-1"><a href="simple-ols.html#cb242-1" tabindex="-1"></a>CASchools<span class="sc">$</span>IncomeCut2 <span class="ot">&lt;-</span> <span class="fu">cut</span>(CASchools<span class="sc">$</span>income, <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">60</span>,<span class="at">by=</span><span class="dv">20</span>)) <span class="do">## Finer Bins</span></span>
+<span id="cb242-2"><a href="simple-ols.html#cb242-2" tabindex="-1"></a>reg3 <span class="ot">&lt;-</span> <span class="fu">lm</span>(score <span class="sc">~</span> income<span class="sc">*</span>IncomeCut2, <span class="at">data=</span>CASchools)</span>
+<span id="cb242-3"><a href="simple-ols.html#cb242-3" tabindex="-1"></a><span class="fu">summary</span>(reg3)</span></code></pre></div>
+<pre><code>## 
+## Call:
+## lm(formula = score ~ income * IncomeCut2, data = CASchools)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -42.323  -9.048   0.258   8.279  31.702 
+## 
+## Coefficients:
+##                          Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)              612.0820     2.7523 222.386  &lt; 2e-16 ***
+## income                     2.9200     0.2073  14.089  &lt; 2e-16 ***
+## IncomeCut2(20,40]         23.0794     8.7824   2.628 0.008910 ** 
+## IncomeCut2(40,60]         89.1941    37.6356   2.370 0.018249 *  
+## income:IncomeCut2(20,40]  -1.3601     0.3805  -3.574 0.000393 ***
+## income:IncomeCut2(40,60]  -3.0429     0.8525  -3.570 0.000400 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 12.78 on 414 degrees of freedom
+## Multiple R-squared:  0.5553, Adjusted R-squared:  0.5499 
+## F-statistic: 103.4 on 5 and 414 DF,  p-value: &lt; 2.2e-16</code></pre>
+<div class="sourceCode" id="cb244"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb244-1"><a href="simple-ols.html#cb244-1" tabindex="-1"></a><span class="do">## Make Predictions</span></span>
+<span id="cb244-2"><a href="simple-ols.html#cb244-2" tabindex="-1"></a>income <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">min</span>(CASchools<span class="sc">$</span>income), <span class="fu">max</span>(CASchools<span class="sc">$</span>income), <span class="at">length.out=</span><span class="dv">1001</span>)</span>
+<span id="cb244-3"><a href="simple-ols.html#cb244-3" tabindex="-1"></a>newdata <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(income,</span>
+<span id="cb244-4"><a href="simple-ols.html#cb244-4" tabindex="-1"></a>    <span class="at">IncomeCut=</span><span class="fu">cut</span>(income,<span class="dv">2</span>),</span>
+<span id="cb244-5"><a href="simple-ols.html#cb244-5" tabindex="-1"></a>    <span class="at">IncomeCut2=</span><span class="fu">cut</span>(income,<span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">60</span>,<span class="at">by=</span><span class="dv">20</span>)))</span>
+<span id="cb244-6"><a href="simple-ols.html#cb244-6" tabindex="-1"></a>pred1 <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg, <span class="at">newdata=</span>newdata)</span>
+<span id="cb244-7"><a href="simple-ols.html#cb244-7" tabindex="-1"></a>pred2 <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg2, <span class="at">newdata=</span>newdata)</span>
+<span id="cb244-8"><a href="simple-ols.html#cb244-8" tabindex="-1"></a>pred3 <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg3,<span class="at">newdata=</span>newdata)</span>
+<span id="cb244-9"><a href="simple-ols.html#cb244-9" tabindex="-1"></a></span>
+<span id="cb244-10"><a href="simple-ols.html#cb244-10" tabindex="-1"></a><span class="do">## Compare Predictions</span></span>
+<span id="cb244-11"><a href="simple-ols.html#cb244-11" tabindex="-1"></a><span class="fu">plot</span>(score <span class="sc">~</span> income, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>,.<span class="dv">5</span>), <span class="at">dat=</span>CASchools)</span>
+<span id="cb244-12"><a href="simple-ols.html#cb244-12" tabindex="-1"></a><span class="fu">lines</span>(income, pred1, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">2</span>)</span>
+<span id="cb244-13"><a href="simple-ols.html#cb244-13" tabindex="-1"></a><span class="fu">lines</span>(income, pred2, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">4</span>)</span>
+<span id="cb244-14"><a href="simple-ols.html#cb244-14" tabindex="-1"></a><span class="fu">lines</span>(income, pred3, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">3</span>)</span>
+<span id="cb244-15"><a href="simple-ols.html#cb244-15" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">&#39;topleft&#39;</span>,</span>
+<span id="cb244-16"><a href="simple-ols.html#cb244-16" tabindex="-1"></a>    <span class="at">legend=</span><span class="fu">c</span>(<span class="st">&#39;OLS&#39;</span>,<span class="st">&#39;Peicewise Linear (2)&#39;</span>,<span class="st">&#39;Peicewise Linear (3)&#39;</span>),</span>
+<span id="cb244-17"><a href="simple-ols.html#cb244-17" tabindex="-1"></a>    <span class="at">lty=</span><span class="dv">1</span>, <span class="at">col=</span><span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">4</span>,<span class="dv">3</span>), <span class="at">cex=</span>.<span class="dv">8</span>)</span></code></pre></div>
+<p><img src="03-ROLS_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<div class="sourceCode" id="cb245"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb245-1"><a href="simple-ols.html#cb245-1" tabindex="-1"></a><span class="do">## To Test for Any Break</span></span>
+<span id="cb245-2"><a href="simple-ols.html#cb245-2" tabindex="-1"></a><span class="do">## strucchange::sctest(score ~ income, data=CASchools, type=&quot;Chow&quot;, point=.5)</span></span>
+<span id="cb245-3"><a href="simple-ols.html#cb245-3" tabindex="-1"></a><span class="do">## strucchange::Fstats(score ~ income, data=CASchools)</span></span>
+<span id="cb245-4"><a href="simple-ols.html#cb245-4" tabindex="-1"></a></span>
+<span id="cb245-5"><a href="simple-ols.html#cb245-5" tabindex="-1"></a><span class="do">## To Find Changes</span></span>
+<span id="cb245-6"><a href="simple-ols.html#cb245-6" tabindex="-1"></a><span class="do">## segmented::segmented(reg)</span></span></code></pre></div>
+<p>Smoothing (Linear Regression using subsample around each data point)</p>
+<div class="sourceCode" id="cb246"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb246-1"><a href="simple-ols.html#cb246-1" tabindex="-1"></a><span class="fu">plot</span>(score <span class="sc">~</span> income, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>,.<span class="dv">5</span>), <span class="at">dat=</span>CASchools)</span>
+<span id="cb246-2"><a href="simple-ols.html#cb246-2" tabindex="-1"></a></span>
+<span id="cb246-3"><a href="simple-ols.html#cb246-3" tabindex="-1"></a><span class="do">## design points</span></span>
+<span id="cb246-4"><a href="simple-ols.html#cb246-4" tabindex="-1"></a>CASchoolsO <span class="ot">&lt;-</span> CASchools[<span class="fu">order</span>(CASchools<span class="sc">$</span>income),]</span>
+<span id="cb246-5"><a href="simple-ols.html#cb246-5" tabindex="-1"></a></span>
+<span id="cb246-6"><a href="simple-ols.html#cb246-6" tabindex="-1"></a><span class="do">## Loess (adaptive subsamples)</span></span>
+<span id="cb246-7"><a href="simple-ols.html#cb246-7" tabindex="-1"></a>reg_lo <span class="ot">&lt;-</span> <span class="fu">loess</span>(score <span class="sc">~</span> income, <span class="at">data=</span>CASchoolsO, </span>
+<span id="cb246-8"><a href="simple-ols.html#cb246-8" tabindex="-1"></a>    <span class="at">span=</span>.<span class="dv">8</span>)</span>
+<span id="cb246-9"><a href="simple-ols.html#cb246-9" tabindex="-1"></a><span class="fu">lines</span>(CASchoolsO<span class="sc">$</span>income, <span class="fu">predict</span>(reg_lo),</span>
+<span id="cb246-10"><a href="simple-ols.html#cb246-10" tabindex="-1"></a>    <span class="at">col=</span><span class="st">&#39;orange&#39;</span>, <span class="at">type=</span><span class="st">&#39;o&#39;</span>, <span class="at">pch=</span><span class="dv">8</span>)</span>
+<span id="cb246-11"><a href="simple-ols.html#cb246-11" tabindex="-1"></a></span>
+<span id="cb246-12"><a href="simple-ols.html#cb246-12" tabindex="-1"></a><span class="do">## llls (fixed width subsamples)</span></span>
+<span id="cb246-13"><a href="simple-ols.html#cb246-13" tabindex="-1"></a><span class="fu">library</span>(np)</span></code></pre></div>
+<pre><code>## Nonparametric Kernel Methods for Mixed Datatypes (version 0.60-17)
+## [vignette(&quot;np_faq&quot;,package=&quot;np&quot;) provides answers to frequently asked questions]
+## [vignette(&quot;np&quot;,package=&quot;np&quot;) an overview]
+## [vignette(&quot;entropy_np&quot;,package=&quot;np&quot;) an overview of entropy-based methods]</code></pre>
+<div class="sourceCode" id="cb248"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb248-1"><a href="simple-ols.html#cb248-1" tabindex="-1"></a>reg_np <span class="ot">&lt;-</span> <span class="fu">npreg</span>(score <span class="sc">~</span> income, <span class="at">data=</span>CASchoolsO,</span>
+<span id="cb248-2"><a href="simple-ols.html#cb248-2" tabindex="-1"></a>    <span class="at">bws=</span><span class="dv">2</span>, <span class="at">bandwidth.compute=</span>F)</span>
+<span id="cb248-3"><a href="simple-ols.html#cb248-3" tabindex="-1"></a><span class="fu">lines</span>(CASchoolsO<span class="sc">$</span>income, <span class="fu">predict</span>(reg_np), </span>
+<span id="cb248-4"><a href="simple-ols.html#cb248-4" tabindex="-1"></a>    <span class="at">col=</span><span class="st">&#39;purple&#39;</span>, <span class="at">type=</span><span class="st">&#39;o&#39;</span>, <span class="at">pch=</span><span class="dv">12</span>)</span></code></pre></div>
+<p><img src="03-ROLS_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
 </div>
 </div>
 <div class="footnotes">

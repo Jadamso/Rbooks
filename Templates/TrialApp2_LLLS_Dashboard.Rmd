@@ -1,0 +1,122 @@
+---
+title: "LLLS Exploration"
+author: "Dr. J. Adamson"
+date: "`r format(Sys.time(), '%d.%m.%Y')`"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    source_code: embed
+runtime: shiny
+---
+
+
+
+
+```{r, echo=FALSE}
+## Wage and Education Data
+library(wooldridge)
+```
+
+
+```{r, echo=FALSE}
+## Global Functions
+library(flexdashboard)
+library(shiny)
+library(plotly)
+
+
+## Kernel Regression Functions
+kfun_unif <- function(Xi,x,h){
+    dunif( Xi-x,-h,h)
+}
+kfun_norm <- function(Xi,x,h){
+    dnorm(Xi,x,h)
+}
+kfun_tri <- function(Xi,x,h){
+    extraDistr::dtriang(Xi-x,-h,h)
+}
+kfun_tricub <- function(Xi,x,h){
+    u <- abs(Xi-x)/h
+    70/81*(1-u^3)^3/h*(u <= 1)
+}
+
+#kfun_qnorm <- function(Xi,x,h,hq=1){
+#  u <- abs(Xi-x)/h
+#  qGaussian::dqgauss(u,hq)
+#}
+
+#kfun_lambda <- function(Xi,x,h){
+#    u <- abs(Xi-x)/h
+#    extraDistr::qtlambda
+#}
+
+#kfun_tnorm <- function(Xi,x,h){
+#extraDistr::TruncNormal
+#}
+
+## LLLS is WLS reapplied to each Xi
+#llls_fun <- function(kfun, h){
+#    yhat <- sapply(Xi, function(x){
+#        lm(Yi~Xi, weights=kfun(Xi,x,h))
+#    })
+#    return(yhat)
+#}
+```
+
+Column {.sidebar}
+-------------------------------------------------------------------
+```{r, echo=FALSE}
+selectInput("yname", "Y:", names(wage1), selected='wage')
+selectInput("xname", "X:", names(wage1), selected='educ')
+selectInput("kernel", "Kernel:",
+            c("Uniform" = "Uniform",
+              "Triangle" = "Triangle",
+              "Tricubic" = "Tricubic",
+              "Normal" = "Normal"))
+sliderInput("h",
+        "Bandwidth:",
+        min=0, max=20, value=10, step=.001)
+```
+
+Column
+-------------------------------------------------------------------
+
+This flexdashboard visually shows how the kernel weights for the LLLS estimates are affected by both the kernel and bandwidth.
+
+```{r, echo=FALSE}
+renderPlotly({
+     
+    dat <- wage1[,c(input$yname, input$xname)]
+    names(dat) <- c('y','x')
+    xi0 <- unique(sort(dat$x))
+
+     if( input$kernel=='Uniform' ){
+        kfun <- kfun_unif
+    } else if( input$kernel=='Triangle' ){
+        kfun <- kfun_tri
+    } else if( input$kernel=='Tricubic' ){
+        kfun <- kfun_tricub
+    } else if ( input$kernel=='Normal' ){
+        kfun <- kfun_norm
+    }
+
+    yi0 <- sapply(xi0, function(x){
+        ki   <- kfun(dat$x, x, input$h)
+        llls <- lm(y~x, data=dat, weights=ki)
+        yhat <- predict(llls, newdata=data.frame(x=x))
+    })
+
+    plot_ly(data=dat, x=~x, y=~y, showlegend=FALSE) %>%
+      add_lines(y=yi0, x=xi0, name='Kernel Prediction') %>% 
+      add_markers(y=dat$y, x=dat$x, name='Raw Data',
+        marker=list(color='rgba(1, 1, 1, 0.1)')) %>%
+      layout(title = paste0(input$kernel, " (h=", input$h,")" ))
+})
+```
+
+
+
+<!-- ## COMPILE FROM CLI
+    Rscript -e "rmarkdown::run('TrialApp2_LLLS_Dashboard.Rmd')"
+-->

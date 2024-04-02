@@ -22,4 +22,4 @@ Much material was originally copied from elsewhere and then modified over the ye
 
 Although any interested reader may find it useful, it is being primarily developed for my students. Please report any errors or issues at https://github.com/Jadamso/Rbooks/issues.
 
-Last updated: 15.02.2024
+Last updated: 02.04.2024
