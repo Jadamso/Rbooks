@@ -23,6 +23,8 @@ https://bookdown.org/yihui/bookdown/github.html
 
 Make plots interactive via https://plotly-r.com/
 
+https://easystats.github.io/report/
+
 
 #### Statistics 
 
@@ -46,6 +48,8 @@ tstat <- twosam(data$male, data$female); tstat
 
 
 #### Data Analysis
+
+https://onlinelibrary.wiley.com/doi/10.1002/%28SICI%291099-1255%28199709/10%2912%3A5%3C533%3A%3AAID-JAE454%3E3.0.CO%3B2-V
 
 Add styling to interactive plots
 
@@ -74,24 +78,13 @@ gsub("([[:alpha:]]{3,})ing\\b", "\\1", kingText)
 
 
 
-
 ## Linear Regression
 
-```{r}
-library(AER)
-data(CASchools)
-CASchools$score <- (CASchools$read + CASchools$math) / 2)
-reg <- lm(score ~ income, data = CASchools)
-hvec <- lm.influence(reg)$hat
-iplot <- car::influencePlot(reg)
-CASchools[rownames(iplot),]
-```
 
 Section 7: Derive Simple OLS
 
 * "Introduction to Econometrics with R" by Hanck, Arnold, Gerber, and Schmelzer, https://www.econometrics-with-r.org/
 (taking seriously Greene's "Model Building--A General to Simple Strategy")
-
 
 
 Parametric P values and Power Analysis
@@ -212,8 +205,12 @@ summary(reg)$fstatistic
 summary(reg)
 ```
 
+
 #### Data Scientism
+
 Measurement Error
+
+https://www.aeaweb.org/articles?id=10.1257/aer.p20171031
 
 #### Endogeneity
 
@@ -247,8 +244,8 @@ arrows(x[3], y[3], x[2], y[2], code=1, lwd=2)
 text(c(-2/3,0,2/3), c(1/5,-2/3,1/5), c("X","Z","Y"), cex=2)
 ```
 
-*Example 1:* Supose you want to know how taxes affect economic prosperity.
-What are the issue with interpretting an empirical finding that higher $Taxes$ do not affect $GDP$ with data from Canada and Germany? Or across all countries for that matter?
+*Example 1:* Suppose you want to know how taxes affect economic prosperity.
+What are the issue with interpreting an empirical finding that higher $Taxes$ do not affect $GDP$ with data from Canada and Germany? Or across all countries for that matter?
 
 ```{r}
 x <- c(-1,0,1)/2

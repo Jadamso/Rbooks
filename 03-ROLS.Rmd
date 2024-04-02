@@ -321,6 +321,95 @@ plot(Nseq[-1], abs(diff(SE)), pch=16, col=grey(0,.5), main='Marginal Gain',
     ylab='decrease in standard error', xlab='sample size')
 ```
 
+## Locally Linear
+
+
+Segmented/piecewise regression
+```{r}
+library(AER)
+data(CASchools)
+CASchools$score <- (CASchools$read + CASchools$math) / 2
+reg <- lm(score ~ income, data = CASchools)
+plot( CASchools$income, resid(reg), pch=16, col=grey(0,.5))
+
+## Add Piecewise Term
+CASchools$IncomeCut <- cut(CASchools$income,2)
+reg2 <- lm(score ~ income*IncomeCut, data=CASchools)
+summary(reg2)
+
+## F Test for Break
+anova(reg, reg2)
+
+## Chow Test for Break
+data_splits <- split(CASchools, CASchools$IncomeCut)
+resids <- sapply(data_splits, function(dat){
+    reg <- lm(score ~ income, data=dat)
+    sum( resid(reg)^2)
+})
+Ns <-  sapply(data_splits, function(dat){ nrow(dat)})
+Rt <- (sum(resid(reg)^2) - sum(resids))/sum(resids)
+Rb <- (sum(Ns)-2*reg$rank)/reg$rank
+Ft <- Rt*Rb
+pf(Ft,reg$rank, sum(Ns)-2*reg$rank,lower.tail=F)
+```
+
+
+Multiple Breaks
+```{r}
+CASchools$IncomeCut2 <- cut(CASchools$income, seq(0,60,by=20)) ## Finer Bins
+reg3 <- lm(score ~ income*IncomeCut2, data=CASchools)
+summary(reg3)
+
+## Make Predictions
+income <- seq(min(CASchools$income), max(CASchools$income), length.out=1001)
+newdata <- data.frame(income,
+    IncomeCut=cut(income,2),
+    IncomeCut2=cut(income,seq(0,60,by=20)))
+pred1 <- predict(reg, newdata=newdata)
+pred2 <- predict(reg2, newdata=newdata)
+pred3 <- predict(reg3,newdata=newdata)
+
+## Compare Predictions
+plot(score ~ income, pch=16, col=grey(0,.5), dat=CASchools)
+lines(income, pred1, lwd=2, col=2)
+lines(income, pred2, lwd=2, col=4)
+lines(income, pred3, lwd=2, col=3)
+legend('topleft',
+    legend=c('OLS','Peicewise Linear (2)','Peicewise Linear (3)'),
+    lty=1, col=c(2,4,3), cex=.8)
+```
+
+```{r}
+## To Test for Any Break
+## strucchange::sctest(score ~ income, data=CASchools, type="Chow", point=.5)
+## strucchange::Fstats(score ~ income, data=CASchools)
+
+## To Find Changes
+## segmented::segmented(reg)
+```
+
+
+Smoothing (Linear Regression using subsample around each data point)
+```{r}
+plot(score ~ income, pch=16, col=grey(0,.5), dat=CASchools)
+
+## design points
+CASchoolsO <- CASchools[order(CASchools$income),]
+
+## Loess (adaptive subsamples)
+reg_lo <- loess(score ~ income, data=CASchoolsO, 
+    span=.8)
+lines(CASchoolsO$income, predict(reg_lo),
+    col='orange', type='o', pch=8)
+
+## llls (fixed width subsamples)
+library(np)
+reg_np <- npreg(score ~ income, data=CASchoolsO,
+    bws=2, bandwidth.compute=F)
+lines(CASchoolsO$income, predict(reg_np), 
+    col='purple', type='o', pch=12)
+```
+
 
 # OLS (multiple linear regression)
 ***
@@ -1367,7 +1456,9 @@ In this age of big data, we are getting more and more data. Perhaps surprisingly
 
 ## Data Errors
 
-A huge amount of data normally means a huge amount of data cleaning/merging/aggregating. This avoids many copy-paste errors, which are a recipe for [disaster](https://blog.hurree.co/8-of-the-biggest-excel-mistakes-of-all-time), but may also introduce other types of errors. Some spurious results are driven by honest errors in data cleaning (responsible for around one fifth of all medical science retractions, according to one [estimate](https://www.pnas.org/doi/10.1073/pnas.1212247109)). So be careful. One reason to plot your data is to help spot such errors.
+A huge amount of data normally means a huge amount of data cleaning/merging/aggregating. This avoids many copy-paste errors, which are a recipe for [disaster](https://blog.hurree.co/8-of-the-biggest-excel-mistakes-of-all-time), but may also introduce other types of errors. Some spurious results are driven by honest errors in data cleaning. According to one [estimate](https://www.pnas.org/doi/10.1073/pnas.1212247109), this is responsible for around one fifth of all medical science retractions (there is even a whole [book](https://www.amazon.de/Much-Cost-Coding-Errors-Implementation/dp/1543772994) about this!). Although there are not similar meta-analysis in economics, there are some high-profile examples. This includes papers that are highly influential, like [Lott, Levitt](https://scienceblogs.com/deltoid/2005/12/02/lott-levitt-and-coding-errors) and [Reinhart and Rogoff](https://blogs.lse.ac.uk/impactofsocialsciences/2013/04/24/reinhart-rogoff-revisited-why-we-need-open-data-in-economics/) as well as others the top economics journals, like the [RESTUD](https://academic.oup.com/restud/article/90/2/1009/6982752) and [AER](https://www.aeaweb.org/articles?id=10.1257/aer.113.7.2053). There are some reasons to think such errors are more widespread across the social sciences; e.g., in [Census data](https://www2.census.gov/ces/tp/tp-2002-17.pdf) and [Aid data](https://www.sciencedirect.com/science/article/abs/pii/S0305750X11001951). So be careful!
+
+Note: one reason to plot your data is to help spot such errors.
 
 
 ## P-Hacking
