@@ -81,6 +81,32 @@ gsub("([[:alpha:]]{3,})ing\\b", "\\1", kingText)
 ## Linear Regression
 
 
+Value of More Data: Just as before, there are diminishing returns to larger sample sizes with simple OLS.
+
+```{r}
+B <- 300
+Nseq <- seq(3,100, by=1)
+SE <- sapply(Nseq, function(n){
+    sample_statistics <- sapply(1:B, function(b){
+        x <- rnorm(n)
+        e <- rnorm(n)        
+        y <- x*2 + e
+        reg <- lm(y~x)
+        coef(reg)
+        #se <- sqrt(diag(vcov(vcov)))
+    })
+    sd(sample_statistics)
+})
+
+par(mfrow=c(1,2))
+plot(Nseq, SE, pch=16, col=grey(0,.5), main='Absolute Gain',
+    ylab='standard error', xlab='sample size')
+plot(Nseq[-1], abs(diff(SE)), pch=16, col=grey(0,.5), main='Marginal Gain', 
+    ylab='decrease in standard error', xlab='sample size')
+```
+
+
+
 Section 7: Derive Simple OLS
 
 * "Introduction to Econometrics with R" by Hanck, Arnold, Gerber, and Schmelzer, https://www.econometrics-with-r.org/
