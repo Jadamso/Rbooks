@@ -1,36 +1,40 @@
-
 # (PART) Linear Regression in R {-} 
 
 This section is a quick overview of linear regression models from the perspective that ``all models are wrong, but some are useful''. All models are estimated via  Ordinary Least Squares (OLS). For more in-depth introductions, which typically begin by assuming the true data generating process is linear, see https://jadamso.github.io/Rbooks/ordinary-least-squares.html#more-literature. 
 
+```{r}
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
+```
 
-# Simple OLS
+# Simple Linear Regression
 ***
-Model and objective
+
+Simple Linear Regression refers to fitting a linear model to bivariate data.
+```{r}
+## Bivariate Data from USArrests
+xy <- USArrests[,c('Murder','UrbanPop')]
+colnames(xy) <- c('y','x')
+```
+Before fitting the model, inspect your data (as in Part I)
+```{r}
+# Inspect Dataset
+# head(xy); summary(xy)
+#plot(y~x, xy, col=grey(.5,.5), pch=16)
+```
+
+The model and objective function is
 $$
 y_i=\alpha+\beta x_i+\epsilon_{i} \\
 \epsilon_{i} = y_i - [\alpha+\beta x_i]\\
 min_{\beta} \sum_{i=1}^{n} (\epsilon_{i})^2
 $$
-
-Point Estimates
+which yields point estimates
 $$
 \hat{\alpha}=\bar{y}-\hat{\beta}\bar{x} = \widehat{\mathbb{E}}[Y] - \hat{\beta} \widehat{\mathbb{E}}[X] \\
 \hat{\beta}=\frac{\sum_{i}^{}(x_i-\bar{x})(y_i-\bar{y})}{\sum_{i}^{}(x_i-\bar{x})^2} = \frac{\widehat{Cov}[X,Y]}{\widehat{\mathbb{V}}[X]}\\
 \hat{y}_i=\hat{\alpha}+\hat{\beta}x_i\\
 \hat{\epsilon}_i=y_i-\hat{y}_i\\
 $$
-
-
-Before fitting the model to your data, explore your data (as in Part I)
-```{r}
-## Inspect Dataset
-xy <- USArrests[,c('Murder','UrbanPop')]
-colnames(xy) <- c('y','x')
-## head(xy)
-## Plot Data
-plot(y~x, xy, col=grey(.5,.5), pch=16)
-```
 
 
 ```{r}
@@ -42,8 +46,29 @@ reg
 coef(reg)
 ```
 
-
-To measure the ''Goodness of fit'', we analyze sums of squared errors (Total, Explained, and Residual) as
+To qualitatively analyze the ''Goodness of fit'', we plot our predictions.
+```{r}
+## Plot Data
+library(plotly)
+USArrests$ID <- rownames(USArrests)
+fig <- plotly::plot_ly(
+  USArrests, x=~UrbanPop, y=~Murder,
+  mode='markers',
+  type='scatter',
+  hoverinfo='text',
+  text=~paste('<b>', ID, '</b>',
+              '<br>Urban  :', UrbanPop,
+              '<br>Murder :', Murder))
+## Add Legend
+fig <- plotly::layout(fig,
+          showlegend=F,
+          title='Crime and Urbanization in America 1975',
+          xaxis = list(title='Percent of People in an Urban Area'),
+          yaxis = list(title='Homicide Arrests per 100,000 People'))
+## Plot Model Predictions
+add_lines(fig, x=~UrbanPop, y=fitted(reg), hoverinfo='none')
+```
+To quantitatively analyze GoF, we compute $R^2$ using the sums of squared errors (Total, Explained, and Residual)
 $$
 \underbrace{\sum_{i}(y_i-\bar{y})^2}_\text{TSS}=\underbrace{\sum_{i}(\hat{y}_i-\bar{y})^2}_\text{ESS}+\underbrace{\sum_{i}\hat{\epsilon_{i}}^2}_\text{RSS}\\
 R^2 = \frac{ESS}{TSS}=1-\frac{RSS}{TSS}
@@ -64,8 +89,6 @@ summary(reg)$r.squared
 ```
 
 
-
-
 ## Variability Estimates
 
 A regression coefficient is a statistic. And, just like all statistics, we can calculate 
@@ -76,7 +99,7 @@ A regression coefficient is a statistic. And, just like all statistics, we can c
 * *null distribution*: the sampling distribution of the statistic under the null hypothesis (assuming your null hypothesis was true).
 * *p-value* the probability you would see something as extreme as your statistic when sampling from the null distribution.
 
-To calculate these variability statistics, we will estimate variabilty using *data-driven* methods.^[For some technical background, see, e.g., https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf. Also note that we can compute  classic estimates for variability: denoting the Standard Error of the Regression as $\hat{\sigma}$, and the Standard Error of the Coefficient Estimates as $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\beta}}~~$ (or simply Standard Errors).
+Note that values reported by your computer do not necessarily satisfy this definition. To calculate these statistics, we will estimate variability using *data-driven* methods.^[For some technical background, see, e.g., https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf. Also note that we can compute  classic estimates for variability: denoting the Standard Error of the Regression as $\hat{\sigma}$, and the Standard Error of the Coefficient Estimates as $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\beta}}~~$ (or simply Standard Errors).
 $$
 \hat{\sigma}^2 = \frac{1}{n-2}\sum_{i}\hat{\epsilon_{i}}^2\\
 \hat{\sigma}^2_{\hat{\alpha}}=\hat{\sigma}^2\left[\frac{1}{n}+\frac{\bar{x}^2}{\sum_{i}(x_i-\bar{x})^2}\right]\\
@@ -84,159 +107,148 @@ $$
 $$
 These equations are motivated by particular data generating proceses, which you can read more about this at https://www.econometrics-with-r.org/4-lrwor.html.]
 
-We first consider the simplest, the jackknife. In this procedure, we loop through each row of the dataset. And, in each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''.
+We first consider the simplest, the jackknife. In this procedure, we loop through each row of the dataset. And, in each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``subsamples''.
 
 ```{r}
-## Example 1 Continued
-
-## Jackknife Standard Errors for Beta
+## Jackknife Standard Errors for OLS Coefficient
 jack_regs <- lapply(1:nrow(xy), function(i){
     xy_i <- xy[-i,]
     reg_i <- lm(y~x, dat=xy_i)
 })
 jack_coefs <- sapply(jack_regs, coef)['x',]
-jack_mean <- mean(jack_coefs)
 jack_se <- sd(jack_coefs)
 
-## Jackknife Confidence Intervals
-jack_ci_percentile <- quantile(jack_coefs, probs=c(.025,.975))
+## Jackknife Sampling Distribution
 hist(jack_coefs, breaks=25,
     main=paste0('SE est. = ', round(jack_se,4)),
     xlab=expression(beta[-i]))
-abline(v=jack_mean, col="red", lwd=2)
+## Original Estimate
+abline(v=coef(reg)['x'], col="red", lwd=2)
+## Jackknife Confidence Intervals
+jack_ci_percentile <- quantile(jack_coefs, probs=c(.025,.975))
 abline(v=jack_ci_percentile, col="red", lty=2)
 
-## Plot Full-Sample Estimate
-## abline(v=coef(reg)['x'], lty=1, col='blue', lwd=2)
 
 ## Plot Normal Approximation
 ## jack_ci_normal <- jack_mean+c(-1.96, +1.96)*jack_se
 ## abline(v=jack_ci_normal, col="red", lty=3)
 ```
 
-There are several other resampling techniques. We consider the other main one, the bootstrap, which resamples with *replacement* for an *arbitrary* number of iterations. When bootstrapping a dataset with $n$ observations, you randomly resample all $n$ rows in your data set $B$ times. 
+There are several resampling techniques. The other main one is the bootstrap, which resamples with *replacement* for an *arbitrary* number of iterations. When bootstrapping a dataset with $n$ observations, you randomly resample all $n$ rows in your data set $B$ times. Random subsampling is one of many hybrid approaches that tries to combine the best of both worlds.
 
 | | Sample Size per Iteration | Number of Iterations | Resample |
 | -------- | ------- | ------- | ------- |
 Bootstrap | $n$     | $B$  | With Replacement |
 Jackknife | $n-1$   | $n$  | Without Replacement |
+Random Subsample | $m < n$ | $B$  | Without Replacement |
 
 ```{r}
-## Bootstrap Standard Errors for Beta
-boots <- 1:399
-boot_regs <- lapply(boots, function(b){
+## Bootstrap
+boot_regs <- lapply(1:399, function(b){
     b_id <- sample( nrow(xy), replace=T)
     xy_b <- xy[b_id,]
     reg_b <- lm(y~x, dat=xy_b)
 })
 boot_coefs <- sapply(boot_regs, coef)['x',]
-boot_mean <- mean(boot_coefs)
 boot_se <- sd(boot_coefs)
 
-## Bootstrap Confidence Intervals
-boot_ci_percentile <- quantile(boot_coefs, probs=c(.025,.975))
 hist(boot_coefs, breaks=25,
     main=paste0('SE est. = ', round(boot_se,4)),
     xlab=expression(beta[b]))
-abline(v=boot_mean, col="red", lwd=2)
-abline(v=boot_ci_percentile, col="red", lty=2)
-
-
-## Normal Approximation
-## boot_ci_normal <- boot_mean+c(-1.96, +1.96)*boot
-
-## Parametric CI
-## x <- data.frame(x=quantile(xy$x,probs=seq(0,1,by=.1)))
-## ci <- predict(reg, interval='confidence', newdata=data.frame(x))
-## polygon( c(x, rev(x)), c(ci[,'lwr'], rev(ci[,'upr'])), col=grey(0,.2), border=0)
-```
-
-We can also bootstrap other statistics, such as a t-statistic or $R^2$. We do such things to test a null hypothesis, which is often ``no relationship''. We are rarely interested in computing standard errrors and conducting hypothesis tests for two variables. However, we work through the ideas in the two-variable case to better understand the multi-variable case.
-
-## Hypothesis Tests
-
-There are two main ways to conduct a hypothesis test.
- 
-**Invert a CI**
-One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. Often, this is $0$.
-```{r}
-## Example 1 Continued Yet Again
-
-## Bootstrap Distribution
 boot_ci_percentile <- quantile(boot_coefs, probs=c(.025,.975))
-hist(boot_coefs, breaks=25,
-    main=paste0('SE est. = ', round(boot_se,4)),
-    xlab=expression(beta[b]), 
-    xlim=range(c(0, boot_coefs)) )
-abline(v=boot_ci_percentile, lty=2, col="red")
-abline(v=0, col="red", lwd=2)
-```
-
-**Impose the Null**
-We can also compute a null distribution using *data-driven* methods that assume much less about the data generating process. We focus on the simplest, the bootstrap, where loop through a large number of simulations. In each iteration of the loop, we drop impose the null hypothesis and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''.
-
-```{r}
-## Example 1 Continued Again
-
-## Null Distribution for Beta
-boots <- 1:399
-boot_regs0 <- lapply(boots, function(b){
-    xy_b <- xy
-    xy_b$y <- sample( xy_b$y, replace=T)
-    reg_b <- lm(y~x, dat=xy_b)
-})
-boot_coefs0 <- sapply(boot_regs0, coef)['x',]
-
-## Null Bootstrap Distribution
-boot_ci_percentile0 <- quantile(boot_coefs0, probs=c(.025,.975))
-hist(boot_coefs0, breaks=25, main='',
-    xlab=expression(beta[b]),
-    xlim=range(c(boot_coefs0, coef(reg)['x'])))
-abline(v=boot_ci_percentile0, col="red", lty=2)
+abline(v=boot_ci_percentile, col="red", lty=2)
 abline(v=coef(reg)['x'], col="red", lwd=2)
 ```
 
-Regardless of how we calculate standard errors, we can use them to conduct a t-test. We also compute the distribution of t-values under the null hypothesis, and compare how extreme the oberved value is.
-$$ \hat{t} = \frac{\hat{\beta} - \beta_{0} }{\hat{\sigma}_{\hat{\beta}}} $$
-
 ```{r}
-## T Test
-B0 <- 0
-boot_t  <- (coef(reg)['x']-B0)/boot_se
-
-## Compute Bootstrap T-Values (without refinement)
-boot_t_boot0 <- sapply(boot_regs0, function(reg_b){
-    beta_b <- coef(reg_b)[['x']]
-    t_hat_b <- (beta_b)/boot_se
-    return(t_hat_b)
+## Random Subsamples
+rs_regs <- lapply(1:399, function(b){
+    b_id <- sample( nrow(xy), nrow(xy)-10, replace=F)
+    xy_b <- xy[b_id,]
+    reg_b <- lm(y~x, dat=xy_b)
 })
-hist(boot_t_boot0, breaks=100,
-    main='Bootstrapped t values', xlab='t',
-    xlim=range(c(boot_t_boot0, boot_t)) )
-abline(v=boot_t, lwd=2, col='red')
+rs_coefs <- sapply(rs_regs, coef)['x',]
+rs_se <- sd(rs_coefs)
+
+hist(rs_coefs, breaks=25,
+    main=paste0('SE est. = ', round(rs_se,4)),
+    xlab=expression(beta[b]))
+abline(v=coef(reg)['x'], col="red", lwd=2)
+rs_ci_percentile <- quantile(rs_coefs, probs=c(.025,.975))
+abline(v=rs_ci_percentile, col="red", lty=2)
 ```
 
-From this, we can calculate a *p-value*: the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true). Note that the $p$ reported by your computer does not necessarily satisfy this definition. We can always calcuate a p-value from an explicit null distribution.
+We can also bootstrap other statistics, such as a t-statistic or $R^2$. We do such things to test a null hypothesis, which is often ``no relationship''. We are rarely interested in computing standard errors and conducting hypothesis tests for two variables. However, we work through the ideas in the two-variable case to better understand the multi-variable case.
+
+## Hypothesis Tests
+
+There are two main ways to conduct a hypothesis test. We do this using *data-driven* methods that assume much less about the data generating process.
+
+**Invert a CI**
+One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. Does the slope coefficient equal $0$? For reasons we won't go into in this class, we typically normalize the coefficient by its standard error: $$ \hat{t} = \frac{\hat{\beta}}{\hat{\sigma}_{\hat{\beta}}} $$
+```{r}
+tvalue <- coef(reg)['x']/ sqrt(diag(vcov(reg)))[['x']]
+
+boot_t <- sapply(boot_regs, function(reg_b){
+    beta_b <- coef(reg_b)[['x']]
+    se_b <- sqrt(diag(vcov(reg_b)))[['x']]
+    t_hat_b <- (beta_b)/se_b
+    return(t_hat_b)
+})
+
+## Bootstrap Distribution
+hist(boot_t, breaks=25,
+    xlab=expression(t[b]), 
+    xlim=range(c(0, boot_t)) )
+abline(v=quantile(boot_t, probs=c(.025,.975)),
+    lty=2, col="red")
+abline(v=tvalue, col="red", lwd=2)
+```
+
+**Impose the Null**
+We can also compute a null distribution. We focus on the simplest, the bootstrap, where loop through a large number of simulations. In each iteration of the loop, we drop impose the null hypothesis and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''. Specifically, we compute the distribution of t-values on data with randomly reshuffled outcomes (imposing the null), and compare how extreme the observed value is.
+```{r}
+## Null Distribution for Beta
+boot_t0 <- sapply( 1:399, function(b){
+    xy_b <- xy
+    xy_b$y <- sample( xy_b$y, replace=T)
+    reg_b <- lm(y~x, dat=xy_b)
+    beta_b <- coef(reg_b)[['x']]
+    se_b <- sqrt(diag(vcov(reg_b)))[['x']]
+    t_hat_b <- (beta_b)/se_b
+})
+
+## Null Bootstrap Distribution
+boot_ci_percentile0 <- quantile(boot_t0, probs=c(.025,.975))
+hist(boot_t0, breaks=25, main='',
+    xlab=expression(beta[b]),
+    xlim=range(boot_t0))
+abline(v=boot_ci_percentile0, col="red", lty=2)
+abline(v=tvalue, col="red", lwd=2)
+```
+Alternatively, you can impose the null by recentering the sampling distribution around the theoretical value; $$ \hat{t} = \frac{\hat{\beta} - \beta_{0} }{\hat{\sigma}_{\hat{\beta}}} $$. Under some assumptions, the null distribution is t-distributed; $\sim t_{n-2}$. (For more on parametric t-testing based on statistical theory, see https://www.econometrics-with-r.org/4-lrwor.html.)
+
+
+In any case, we can calculate a *p-value*: the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true). We can always calculate a p-value from an explicit null distribution.
 ```{r}
 ## One Sided Test for P(t > boot_t | Null)=1- P(t < boot_t | Null)
-That_NullDist1 <- ecdf(boot_t_boot0)
+That_NullDist1 <- ecdf(boot_t0)
 Phat1  <- 1-That_NullDist1(boot_t)
 
 ## Two Sided Test for P(t > jack_t or  t < -jack_t | Null)
-That_NullDist2 <- ecdf(abs(boot_t_boot0))
-plot(That_NullDist2, xlim=range(boot_t_boot0, boot_t))
+That_NullDist2 <- ecdf(abs(boot_t0))
+plot(That_NullDist2, xlim=range(boot_t0, boot_t))
 abline(v=quantile(That_NullDist2,probs=.95), lty=3)
-abline(v=boot_t, col='red')
+abline(v=tvalue, col='red')
 
-Phat2  <-  1-That_NullDist2(boot_t)
+Phat2  <-  1-That_NullDist2(tvalue)
 Phat2
 ```
-Under some assumptions, the null distribution is distributed $t_{n-2}$. (For more on parametric t-testing based on statistical theory, see https://www.econometrics-with-r.org/4-lrwor.html.)
 
 
 ## Prediction Intervals
 
-In addition to confidence intervales, we can also compute a *prediction interval* which estimates the range of variability across different samples for the outcomes. These intervals also take into account the residuals--- the variability of individuals around the mean. 
+In addition to confidence intervals, we can also compute a *prediction interval* which estimates the range of variability across different samples for the outcomes. These intervals also take into account the residuals--- the variability of individuals around the mean. 
 
 
 ```{r}
@@ -291,127 +303,85 @@ polygon( c(boot_x, rev(boot_x)), c(boot_pi[,1], rev(boot_pi[,2])),
 rug(boot_x)
 ```
 
+For a nice overview of different types of intervals, see https://www.jstor.org/stable/2685212. For an in-depth view, see "Statistical Intervals: A Guide for Practitioners and Researchers" or "Statistical Tolerance Regions: Theory, Applications, and Computation". See https://robjhyndman.com/hyndsight/intervals/ for constructing intervals for future observations in a time-series context. See Davison and Hinkley, chapters 5 and 6 (also Efron and Tibshirani, or Wehrens et al.)
 
-For a nice overview of different types of intervals, see https://www.jstor.org/stable/2685212. For an indepth view, see "Statistical Intervals: A Guide for Practitioners and Researchers" or "Statistical Tolerance Regions: Theory, Applications, and Computation". See https://robjhyndman.com/hyndsight/intervals/ for constructing intervals for future observations in a time-series context. See Davison and Hinkley, chapters 5 and 6 (also Efron and Tibshirani, or Wehrens et al.)
-
-
-## Value of More Data
-
-Just as before, there are diminishing returns to larger sample sizes with simple OLS.
-
-```{r}
-B <- 300
-Nseq <- seq(3,100, by=1)
-SE <- sapply(Nseq, function(n){
-    sample_statistics <- sapply(1:B, function(b){
-        x <- rnorm(n)
-        e <- rnorm(n)        
-        y <- x*2 + e
-        reg <- lm(y~x)
-        coef(reg)
-        #se <- sqrt(diag(vcov(vcov)))
-    })
-    sd(sample_statistics)
-})
-
-par(mfrow=c(1,2))
-plot(Nseq, SE, pch=16, col=grey(0,.5), main='Absolute Gain',
-    ylab='standard error', xlab='sample size')
-plot(Nseq[-1], abs(diff(SE)), pch=16, col=grey(0,.5), main='Marginal Gain', 
-    ylab='decrease in standard error', xlab='sample size')
-```
 
 ## Locally Linear
 
-
 Segmented/piecewise regression
 ```{r}
-library(AER)
-data(CASchools)
-CASchools$score <- (CASchools$read + CASchools$math) / 2
-reg <- lm(score ~ income, data = CASchools)
-plot( CASchools$income, resid(reg), pch=16, col=grey(0,.5))
+reg <- lm(y~x, data=xy)
+#plot( fitted(reg), resid(reg), pch=16, col=grey(0,.5))
+plot( xy$x, resid(reg), pch=16, col=grey(0,.5))
 
-## Add Piecewise Term
-CASchools$IncomeCut <- cut(CASchools$income,2)
-reg2 <- lm(score ~ income*IncomeCut, data=CASchools)
-summary(reg2)
-
-## F Test for Break
-anova(reg, reg2)
-
-## Chow Test for Break
-data_splits <- split(CASchools, CASchools$IncomeCut)
-resids <- sapply(data_splits, function(dat){
-    reg <- lm(score ~ income, data=dat)
-    sum( resid(reg)^2)
+## Piecewise Regression
+xcut2 <- cut(xy$x,2)
+xy_list2 <- split(xy, xcut2)
+regs2 <- lapply(xy_list2, function(xy_s){
+    lm(y~x, data=xy_s)
 })
-Ns <-  sapply(data_splits, function(dat){ nrow(dat)})
-Rt <- (sum(resid(reg)^2) - sum(resids))/sum(resids)
-Rb <- (sum(Ns)-2*reg$rank)/reg$rank
-Ft <- Rt*Rb
-pf(Ft,reg$rank, sum(Ns)-2*reg$rank,lower.tail=F)
+sapply(regs2, coef)
 ```
 
-
-Multiple Breaks
+Multiple breaks
 ```{r}
-CASchools$IncomeCut2 <- cut(CASchools$income, seq(0,60,by=20)) ## Finer Bins
-reg3 <- lm(score ~ income*IncomeCut2, data=CASchools)
-summary(reg3)
+xcut3 <- cut(xy$x, seq(32,92,by=20)) ## Finer Bins
+xy_list3 <- split(xy, xcut3)
+regs3 <- lapply(xy_list3, function(xy_s){
+    lm(y~x, data=xy_s)
+})
+sapply(regs3, coef)
+```
 
-## Make Predictions
-income <- seq(min(CASchools$income), max(CASchools$income), length.out=1001)
-newdata <- data.frame(income,
-    IncomeCut=cut(income,2),
-    IncomeCut2=cut(income,seq(0,60,by=20)))
-pred1 <- predict(reg, newdata=newdata)
-pred2 <- predict(reg2, newdata=newdata)
-pred3 <- predict(reg3,newdata=newdata)
+Compare Predictions
+```{r}
+pred1 <- data.frame(yhat=predict(reg), x=reg$model$x)
+pred1 <- pred1[order(pred1$x),]
+
+pred2 <- lapply(regs2, function(reg){
+    data.frame(yhat=predict(reg), x=reg$model$x)
+})
+pred2 <- do.call(rbind,pred2)
+pred2 <- pred2[order(pred2$x),]
+
+pred3 <- lapply(regs3, function(reg){
+    data.frame(yhat=predict(reg), x=reg$model$x)
+})
+pred3 <- do.call(rbind,pred3)
+pred3 <- pred3[order(pred3$x),]
 
 ## Compare Predictions
-plot(score ~ income, pch=16, col=grey(0,.5), dat=CASchools)
-lines(income, pred1, lwd=2, col=2)
-lines(income, pred2, lwd=2, col=4)
-lines(income, pred3, lwd=2, col=3)
+plot(y ~ x, pch=16, col=grey(0,.5), dat=xy)
+lines(yhat~x, pred1, lwd=2, col=2)
+lines(yhat~x, pred2, lwd=2, col=4)
+lines(yhat~x, pred3, lwd=2, col=3)
 legend('topleft',
     legend=c('OLS','Peicewise Linear (2)','Peicewise Linear (3)'),
     lty=1, col=c(2,4,3), cex=.8)
 ```
 
-```{r}
-## To Test for Any Break
-## strucchange::sctest(score ~ income, data=CASchools, type="Chow", point=.5)
-## strucchange::Fstats(score ~ income, data=CASchools)
-
-## To Find Changes
-## segmented::segmented(reg)
-```
-
 
 Smoothing (Linear Regression using subsample around each data point)
 ```{r}
-plot(score ~ income, pch=16, col=grey(0,.5), dat=CASchools)
+xy0 <- xy[order(xy$x),]
+plot(y~x, pch=16, col=grey(0,.5), dat=xy0)
 
-## design points
-CASchoolsO <- CASchools[order(CASchools$income),]
-
-## Loess (adaptive subsamples)
-reg_lo <- loess(score ~ income, data=CASchoolsO, 
-    span=.8)
-lines(CASchoolsO$income, predict(reg_lo),
+## Adaptive-width subsamples
+reg_lo <- loess(y~x, data=xy0, span=.8)
+lines(xy0$x, predict(reg_lo),
     col='orange', type='o', pch=8)
 
-## llls (fixed width subsamples)
+## Fixed-width subsamples
 library(np)
-reg_np <- npreg(score ~ income, data=CASchoolsO,
-    bws=2, bandwidth.compute=F)
-lines(CASchoolsO$income, predict(reg_np), 
+reg_np <- npreg(y~x, data=xy0,
+    ckertype='epanechnikov',
+    bws=4, bandwidth.compute=F)
+lines(xy0$x, predict(reg_np), 
     col='purple', type='o', pch=12)
 ```
 
 
-# OLS (multiple linear regression)
+# Multiple Linear Regression
 ***
 
 Model and objective
@@ -429,13 +399,6 @@ Point Estimates
 $$
 \hat{\beta}=(\textbf{X}'\textbf{X})^{-1}\textbf{X}'y
 $$
-
-^[
-To derive OLS coefficients in Matrix form, see
-* https://jrnold.github.io/intro-methods-notes/ols-in-matrix-form.html
-* https://www.fsb.miamioh.edu/lij14/411_note_matrix.pdf
-* https://web.stanford.edu/~mrosenfe/soc_meth_proj3/matrix_OLS_NYU_notes.pdf
-]
 
 Before fitting the model, summarize your data (as in Part I)
 
@@ -466,7 +429,7 @@ reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 coef(reg)
 ```
 
-To measure the ``Goodness of fit'' of the model, we can again compute sums of squared srrors. Adding random data may sometimes improve the fit, however, so we adjust the $R^2$ by the number of covariates $K$.
+To measure the ``Goodness of fit'' of the model, we can again compute sums of squared errors. Adding random data may sometimes improve the fit, however, so we adjust the $R^2$ by the number of covariates $K$.
 $$
 R^2 = \frac{ESS}{TSS}=1-\frac{RSS}{TSS}\\
 R^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-R^2)
@@ -498,9 +461,9 @@ legend('topleft', horiz=T,
 ```
 
 
-## Variability Estimates and Hypothesis Tests
+## Variability and Hypothesis Tests
 
-To estimate the variability of our estimates, we can use the same *data-driven* methods introduced with simple OLS.
+To estimate the variability of our estimates, we can use the same *data-driven* methods introduced in the last section.
 
 ```{r}
 ## Bootstrap SE's
@@ -514,8 +477,7 @@ boot_coefs <- sapply(boot_regs, coef)
 boot_mean <- apply(boot_coefs,1, mean)
 boot_se <- apply(boot_coefs,1, sd)
 ```
-
-Also as before, we can conduct independant hypothesis tests.^[This is done using t-values $$\hat{t}_{j} = \frac{\hat{\beta}_j - \beta_{0} }{\hat{\sigma}_{\hat{\beta}_j}}$$. Under some additional assumptions $\hat{t}_{j} \sim t_{n-K}$.] We can conduct joint tests, such as whether two coefficients are equal, by looking at the their joint distribution.
+As before, we can conduct independant hypothesis tests using t-values. We can also conduct joint tests, such as whether two coefficients are equal, by looking at the their joint distribution.
 ```{r}
 boot_coef_df <- as.data.frame(cbind(ID=boots, t(boot_coefs)))
 fig <- plotly::plot_ly(boot_coef_df,
@@ -525,28 +487,19 @@ fig <- plotly::plot_ly(boot_coef_df,
     hoverinfo='text',
     showlegend=F,
     marker=list( color='rgba(0, 0, 0, 0.5)'))
+fig <- plotly::layout(fig,
+          showlegend=F,
+          title='Joint Distribution of Coefficients',
+          xaxis = list(title='UrbanPop Coefficient'),
+          yaxis = list(title='Homicide Coefficient'))
 fig
-
-## Show Histogram of Coefficients
-## plotly::add_histogram2d(fig, nbinsx=20, nbinsy=20)
-
-## Show 95% Contour
-## plotly::add_histogram2dcontour(fig)
-## fig <- layout(fig,
-##    yaxis = list(title=expression(beta[3])),
-##    xaxis = list(title=expression(beta[2])))
 ```
 
-```{r, eval=F, results='hide', echo=F}
-## fBjoint <- ks::histde( t(boot_coefs[2:3,]))
-## ks::plot(fBjoint, xlab=expression(beta[2]), ylab=expression(beta[3]))
-```
-
-We can also use an $F$ test for $q$ hypotheses;
+We can also use an $F$ test for any $q$ hypotheses;
 $$
-\hat{F}_{q} = \frac{(ESS_{restricted}-ESS_{unrestricted})/q}{ESS_{unrestricted}/(n-K)},
+\hat{F}_{q} = \frac{(ESS_{restricted}-ESS_{unrestricted})/q}{ESS_{unrestricted}/(n-q)}=\frac{R^2}{(1-R^2)}\frac{n-q}{q},
 $$
-and $\hat{F}$ can be written in terms of unrestricted and restricted $R^2$. Under some additional assumptions $\hat{F}_{q}  \sim F_{q,n-K}$. For some inuition, we will examine how the $R^2$ statistic varies with bootstrap samples. Specifically, compute a null $R^2$ distribution by randomly reshuffling the outcomes and compare it to the observed $R^2$.
+which can also be written in terms of adjusted $R^2$. Under some additional assumptions $\hat{F}_{q} \sim F_{q,n-q}$. For some intuition, we will examine how the $R^2$ statistic varies with bootstrap samples. Specifically, compute a null $R^2$ distribution by randomly reshuffling the outcomes and compare it to the observed $R^2$.
 ```{r}
 ## Bootstrap NULL
 boots <- 1:399
@@ -570,8 +523,6 @@ abline(v=summary(reg)$adj.r.squared, col="red", lwd=2)
 ```
 
 *Hypothesis Testing is not to be done routinely* and additional complications arise when testing multiple hypothesis.
-
-
 
 ## Factor Variables
 
@@ -643,11 +594,45 @@ summary(reg2)
 ```
 
 
-With *Random Effects*, the factor variable is modelled as coming from a distribution that is uncorrelated with the regressors. This is rarely used in economics today, and mostly included for historical reasons and a few cases where fixed effects cannot be estimates.
+With *Random Effects*, the factor variable is modeled as coming from a distribution that is uncorrelated with the regressors. This is rarely used in economics today, and mostly included for historical reasons and a few cases where fixed effects cannot be estimates.
 
 <!-- 
 > The labels "random effects" and "fixed effects" are misleading. These are labels which arose in the early literature and we are stuck with these labels today. In a previous era regressors were viewed as "fixed". Viewing the individual effect as an unobserved regressor leads to the label of the individual effect as "fixed". Today, we rarely refer to regressors as "fixed" when dealing with observational data. We view all variables as random. Consequently describing u i as "fixed" does not make much sense and it is hardly a contrast with the "random effect" label since under either assumption u i is treated as random. Once again, the labels are unfortunate but the key difference is whether u i is correlated with the regressors.
 -->
+
+
+**Test for Break Points**
+
+```{r, eval=F}
+
+#library(AER); data(CASchools)
+#CASchools$score <- (CASchools$read + CASchools$math) / 2
+#reg <- lm(score ~ income, data = CASchools)
+#xy <- CASchools[,c('Score','Income'),]
+#colnames(xy) <- c('y','x')
+
+## F Test for Break
+anova(reg, reg2)
+
+## Chow Test for Break
+data_splits <- split(xy, xy$xcut)
+resids <- sapply(data_splits, function(dat){
+    reg <- lm(score ~ income, data=dat)
+    sum( resid(reg)^2)
+})
+Ns <-  sapply(data_splits, function(dat){ nrow(dat)})
+Rt <- (sum(resid(reg)^2) - sum(resids))/sum(resids)
+Rb <- (sum(Ns)-2*reg$rank)/reg$rank
+Ft <- Rt*Rb
+pf(Ft,reg$rank, sum(Ns)-2*reg$rank,lower.tail=F)
+
+## To Test for Any Break
+## strucchange::sctest(y~x, data=xy, type="Chow", point=.5)
+## strucchange::Fstats(y~x, data=xy)
+
+## To Find Changes
+## segmented::segmented(reg)
+```
 
 
 ## Coefficient Interpretation
@@ -1017,6 +1002,13 @@ For OLS, see
 * Verbeek (2004), A Guide to Modern Econometrics, 2nd ed., Wiley, S. 51ff.
 * Asteriou & Hall (2011), Applied Econometrics, 2nd ed., Palgrave MacMillan, S. 177ff.
 * https://online.stat.psu.edu/stat485/lesson/11/
+
+
+To derive OLS coefficients in Matrix form, see
+
+* https://jrnold.github.io/intro-methods-notes/ols-in-matrix-form.html
+* https://www.fsb.miamioh.edu/lij14/411_note_matrix.pdf
+* https://web.stanford.edu/~mrosenfe/soc_meth_proj3/matrix_OLS_NYU_notes.pdf
 
 
 For fixed effects, see
