@@ -50,15 +50,19 @@ To qualitatively analyze the ''Goodness of fit'', we plot our predictions.
 ```{r}
 ## Plot Data
 library(plotly)
-USArrests$ID <- rownames(USArrests)
+xy$ID <- rownames(USArrests)
+xy$pred <- predict(reg)
+xy$resid <- resid(reg)
 fig <- plotly::plot_ly(
-  USArrests, x=~UrbanPop, y=~Murder,
+  xy, x=~x, y=~y,
   mode='markers',
   type='scatter',
   hoverinfo='text',
   text=~paste('<b>', ID, '</b>',
-              '<br>Urban  :', UrbanPop,
-              '<br>Murder :', Murder))
+              '<br>Urban  :', x,
+              '<br>Murder :', y,
+              '<br>Predicted Murder :', round(pred,2),
+              '<br>Residual :', round(resid,2)))              
 ## Add Legend
 fig <- plotly::layout(fig,
           showlegend=F,
@@ -66,7 +70,7 @@ fig <- plotly::layout(fig,
           xaxis = list(title='Percent of People in an Urban Area'),
           yaxis = list(title='Homicide Arrests per 100,000 People'))
 ## Plot Model Predictions
-add_lines(fig, x=~UrbanPop, y=fitted(reg), hoverinfo='none')
+add_lines(fig, x=~x, y=fitted(reg), hoverinfo='none')
 ```
 To quantitatively analyze GoF, we compute $R^2$ using the sums of squared errors (Total, Explained, and Residual)
 $$
@@ -99,13 +103,8 @@ A regression coefficient is a statistic. And, just like all statistics, we can c
 * *null distribution*: the sampling distribution of the statistic under the null hypothesis (assuming your null hypothesis was true).
 * *p-value* the probability you would see something as extreme as your statistic when sampling from the null distribution.
 
-Note that values reported by your computer do not necessarily satisfy this definition. To calculate these statistics, we will estimate variability using *data-driven* methods.^[For some technical background, see, e.g., https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf. Also note that we can compute  classic estimates for variability: denoting the Standard Error of the Regression as $\hat{\sigma}$, and the Standard Error of the Coefficient Estimates as $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\beta}}~~$ (or simply Standard Errors).
-$$
-\hat{\sigma}^2 = \frac{1}{n-2}\sum_{i}\hat{\epsilon_{i}}^2\\
-\hat{\sigma}^2_{\hat{\alpha}}=\hat{\sigma}^2\left[\frac{1}{n}+\frac{\bar{x}^2}{\sum_{i}(x_i-\bar{x})^2}\right]\\
-\hat{\sigma}^2_{\hat{\beta}}=\frac{\hat{\sigma}^2}{\sum_{i}(x_i-\bar{x})^2}.
-$$
-These equations are motivated by particular data generating proceses, which you can read more about this at https://www.econometrics-with-r.org/4-lrwor.html.]
+Note that values reported by your computer do not necessarily satisfy this definition. To calculate these statistics, we will estimate variability using *data-driven* methods. (For some theoretical background, see, e.g., https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf.)
+
 
 We first consider the simplest, the jackknife. In this procedure, we loop through each row of the dataset. And, in each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``subsamples''.
 
@@ -117,6 +116,8 @@ jack_regs <- lapply(1:nrow(xy), function(i){
 })
 jack_coefs <- sapply(jack_regs, coef)['x',]
 jack_se <- sd(jack_coefs)
+### classic_se <- sqrt(diag(vcov(reg)))[['x']]
+
 
 ## Jackknife Sampling Distribution
 hist(jack_coefs, breaks=25,
@@ -187,20 +188,21 @@ There are two main ways to conduct a hypothesis test. We do this using *data-dri
 **Invert a CI**
 One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. Does the slope coefficient equal $0$? For reasons we won't go into in this class, we typically normalize the coefficient by its standard error: $$ \hat{t} = \frac{\hat{\beta}}{\hat{\sigma}_{\hat{\beta}}} $$
 ```{r}
-tvalue <- coef(reg)['x']/ sqrt(diag(vcov(reg)))[['x']]
+tvalue <- coef(reg)['x']/jack_se
 
-boot_t <- sapply(boot_regs, function(reg_b){
+jack_t <- sapply(jack_regs, function(reg_b){
+    ## Data
+    xy_b <- reg_b$model
+    ## Coefficient
     beta_b <- coef(reg_b)[['x']]
-    se_b <- sqrt(diag(vcov(reg_b)))[['x']]
-    t_hat_b <- (beta_b)/se_b
+    t_hat_b <- beta_b/jack_se
     return(t_hat_b)
 })
 
-## Bootstrap Distribution
-hist(boot_t, breaks=25,
+hist(jack_t, breaks=25,
     xlab=expression(t[b]), 
-    xlim=range(c(0, boot_t)) )
-abline(v=quantile(boot_t, probs=c(.025,.975)),
+    xlim=range(c(0, jack_t)) )
+abline(v=quantile(jack_t, probs=c(.025,.975)),
     lty=2, col="red")
 abline(v=tvalue, col="red", lwd=2)
 ```
@@ -214,18 +216,19 @@ boot_t0 <- sapply( 1:399, function(b){
     xy_b$y <- sample( xy_b$y, replace=T)
     reg_b <- lm(y~x, dat=xy_b)
     beta_b <- coef(reg_b)[['x']]
-    se_b <- sqrt(diag(vcov(reg_b)))[['x']]
-    t_hat_b <- (beta_b)/se_b
+    t_hat_b <- beta_b/jack_se
+    return(t_hat_b)
 })
 
 ## Null Bootstrap Distribution
 boot_ci_percentile0 <- quantile(boot_t0, probs=c(.025,.975))
 hist(boot_t0, breaks=25, main='',
-    xlab=expression(beta[b]),
+    xlab=expression(t[b]),
     xlim=range(boot_t0))
 abline(v=boot_ci_percentile0, col="red", lty=2)
 abline(v=tvalue, col="red", lwd=2)
 ```
+
 Alternatively, you can impose the null by recentering the sampling distribution around the theoretical value; $$ \hat{t} = \frac{\hat{\beta} - \beta_{0} }{\hat{\sigma}_{\hat{\beta}}} $$. Under some assumptions, the null distribution is t-distributed; $\sim t_{n-2}$. (For more on parametric t-testing based on statistical theory, see https://www.econometrics-with-r.org/4-lrwor.html.)
 
 
@@ -233,11 +236,11 @@ In any case, we can calculate a *p-value*: the probability you would see somethi
 ```{r}
 ## One Sided Test for P(t > boot_t | Null)=1- P(t < boot_t | Null)
 That_NullDist1 <- ecdf(boot_t0)
-Phat1  <- 1-That_NullDist1(boot_t)
+Phat1  <- 1-That_NullDist1(jack_t)
 
 ## Two Sided Test for P(t > jack_t or  t < -jack_t | Null)
 That_NullDist2 <- ecdf(abs(boot_t0))
-plot(That_NullDist2, xlim=range(boot_t0, boot_t))
+plot(That_NullDist2, xlim=range(boot_t0, jack_t))
 abline(v=quantile(That_NullDist2,probs=.95), lty=3)
 abline(v=tvalue, col='red')
 
@@ -308,23 +311,24 @@ For a nice overview of different types of intervals, see https://www.jstor.org/s
 
 ## Locally Linear
 
-Segmented/piecewise regression
+Segmented/piecewise regressions
 ```{r}
+## Globally Linear
 reg <- lm(y~x, data=xy)
-#plot( fitted(reg), resid(reg), pch=16, col=grey(0,.5))
-plot( xy$x, resid(reg), pch=16, col=grey(0,.5))
 
-## Piecewise Regression
+# Diagnose Fit
+#plot( fitted(reg), resid(reg), pch=16, col=grey(0,.5))
+#plot( xy$x, resid(reg), pch=16, col=grey(0,.5))
+
+## Linear in 2 Pieces (subsets)
 xcut2 <- cut(xy$x,2)
 xy_list2 <- split(xy, xcut2)
 regs2 <- lapply(xy_list2, function(xy_s){
     lm(y~x, data=xy_s)
 })
 sapply(regs2, coef)
-```
 
-Multiple breaks
-```{r}
+## Linear in 3 Pieces (subsets)
 xcut3 <- cut(xy$x, seq(32,92,by=20)) ## Finer Bins
 xy_list3 <- split(xy, xcut3)
 regs3 <- lapply(xy_list3, function(xy_s){
@@ -356,28 +360,74 @@ lines(yhat~x, pred1, lwd=2, col=2)
 lines(yhat~x, pred2, lwd=2, col=4)
 lines(yhat~x, pred3, lwd=2, col=3)
 legend('topleft',
-    legend=c('OLS','Peicewise Linear (2)','Peicewise Linear (3)'),
+    legend=c('Globally Linear', 'Peicewise Linear (2)','Peicewise Linear (3)'),
     lty=1, col=c(2,4,3), cex=.8)
 ```
 
 
 Smoothing (Linear Regression using subsample around each data point)
 ```{r}
+## ``Naive" Smoother
+pred_fun <- function(x0, h, xy){
+    ## Assign equal weight to observations within h distance to x0
+    ## 0 weight for all other observations
+    ki   <- dunif(xy$x, x0-h, x0+h) 
+    llls <- lm(y~x, data=xy, weights=ki)
+    yhat_i <- predict(llls, newdata=data.frame(x=x0))
+}
+
+X0 <- sort(unique(xy$x))
+pred_lo1 <- sapply(X0, pred_fun, h=2, xy=xy)
+pred_lo2 <- sapply(X0, pred_fun, h=20, xy=xy)
+
+plot(y~x, pch=16, data=xy, col=grey(.5,.5),
+    ylab='Murder Rate', xlab='Population Density')
+lines(X0, pred_lo1, col=2, lwd=1, type='o')
+lines(X0, pred_lo2, col=4, lwd=2, type='o')
+legend('topleft', title='Locally Linear',
+    legend=c('h=2 ', 'h=20'),
+    lty=1, col=c(2,4), cex=.8)
+```
+
+```{r}
+## More Advanced Smoothers
 xy0 <- xy[order(xy$x),]
 plot(y~x, pch=16, col=grey(0,.5), dat=xy0)
 
-## Adaptive-width subsamples
-reg_lo <- loess(y~x, data=xy0, span=.8)
-lines(xy0$x, predict(reg_lo),
-    col='orange', type='o', pch=8)
-
-## Fixed-width subsamples
+## Fixed-width subsamples with non-uniform weights
 library(np)
 reg_np <- npreg(y~x, data=xy0,
     ckertype='epanechnikov',
     bws=4, bandwidth.compute=F)
 lines(xy0$x, predict(reg_np), 
     col='purple', type='o', pch=12)
+
+## Adaptive-width subsamples with non-uniform weights
+reg_lo <- loess(y~x, data=xy0, span=.8)
+lines(xy0$x, predict(reg_lo),
+    col='orange', type='o', pch=8)
+```
+
+The smoothed predicted values estimate the local means, and we can also construct confidence bands. 
+```{r}
+xy0 <- xy[order(xy$x),]
+X0 <- unique(xy0$x)
+reg_lo <- loess(y~x, data=xy0, span=.8)
+jack_lo <- sapply(1:nrow(xy), function(i){
+    xy_i <- xy[-i,]
+    reg_i <- loess(y~x, dat=xy_i, span=.8)
+    predict(reg_i,  newdata=data.frame(x=X0))
+})
+jack_cb <- apply(jack_lo,1, quantile,
+    probs=c(.025,.975), na.rm=T)
+
+plot(y~x, pch=16, col=grey(0,.5), dat=xy0)
+polygon(
+    c(X0, rev(X0)),
+    c(jack_cb[1,], rev(jack_cb[2,])),
+    col=grey(0,.25), border=NA)
+lines(xy0$x, predict(reg_lo),
+    col='orange', type='o', pch=8)
 ```
 
 
@@ -497,9 +547,9 @@ fig
 
 We can also use an $F$ test for any $q$ hypotheses;
 $$
-\hat{F}_{q} = \frac{(ESS_{restricted}-ESS_{unrestricted})/q}{ESS_{unrestricted}/(n-q)}=\frac{R^2}{(1-R^2)}\frac{n-q}{q},
+\widehat{F}_{q} = \frac{(ESS_{restricted}-ESS_{unrestricted})/q}{ESS_{unrestricted}/(n-q)}=\frac{R^2}{(1-R^2)}\frac{n-q}{q},
 $$
-which can also be written in terms of adjusted $R^2$. Under some additional assumptions $\hat{F}_{q} \sim F_{q,n-q}$. For some intuition, we will examine how the $R^2$ statistic varies with bootstrap samples. Specifically, compute a null $R^2$ distribution by randomly reshuffling the outcomes and compare it to the observed $R^2$.
+which can also be written in terms of adjusted $R^2$. For some intuition on hypothesis testing, we examine how the $R^2$ statistic varies with bootstrap samples. Specifically, compute a null $R^2$ distribution by randomly reshuffling the outcomes and compare it to the observed $R^2$.
 ```{r}
 ## Bootstrap NULL
 boots <- 1:399
@@ -522,7 +572,7 @@ hist(R2adj_sim0, xlim=c(0,1), breaks=25,
 abline(v=summary(reg)$adj.r.squared, col="red", lwd=2)
 ```
 
-*Hypothesis Testing is not to be done routinely* and additional complications arise when testing multiple hypothesis.
+Under some additional assumptions $\widehat{F}_{q} \sim F_{q,n-q}$. Note that *hypothesis testing is not to be done routinely*, as complications arise when testing multiple hypothesis. 
 
 ## Factor Variables
 
