@@ -238,6 +238,44 @@ summary(reg)$fstatistic
 summary(reg)
 ```
 
+## Diagnostics 
+
+Note that we can also calculate the leverage vector $H = [h_{1}, h_{2}, ...., h_{N}]$  directly from our OLS projection matrix $\hat{P}$, since $H=diag(\hat{P})$ and
+$$
+\hat{P}=X(X'X)^{-1}X'\\
+\hat{\epsilon}=y-X\hat{\beta}=y-X(X'X)^{-1}X'y=y-\hat{P}y\\
+\hat{P}y=X(X'X)^{-1}X'y=y-(y-X(X'X)^{-1}X'y)=y-\hat{\epsilon}=\hat{y}\\
+$$
+```{r}
+Ehat <- Y - X%*% Bhat
+## Ehat
+## resid(reg)
+
+Pmat <- X%*%XtXi%*%t(X)
+Yhat <- Pmat%*%Y
+## Yhat
+## predict(reg)
+```
+
+
+```{r}
+# Sall, J. (1990) Leverage plots for general linear hypotheses. American Statistician *44*, 308-315.
+# car::leveragePlots(reg)
+```
+
+(Welsch and Kuh. 1977; Belsley, Kuh, and Welsch. 1980) attempt to summarize the information in the leverage versus residual-squared plot into one DFITS statistic where $DFITS > 2\sqrt{{k}/{n}}$ should be examined. 
+$$
+\text{DFITS}_i=r_i\sqrt{\frac{h_i}{1-h_i}}\\
+$$
+
+See also "dfbetas" and "covratio"
+```{r}
+#dfbetas(reg)
+#dffits(reg)
+#covratio(reg)
+#hatvalues(reg)
+head(influence.measures(reg)$infmat)
+```
 
 #### Data Scientism
 
