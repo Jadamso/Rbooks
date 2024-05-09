@@ -65,6 +65,7 @@ fig <- plotly::plot_ly(
   mode='markers',
   type='scatter',
   hoverinfo='text',
+  marker = list(color=grey(0,.25)),
   text=~paste('<b>', ID, '</b>',
               '<br>Urban  :', x,
               '<br>Murder :', y,
@@ -77,7 +78,9 @@ fig <- plotly::layout(fig,
           xaxis = list(title='Percent of People in an Urban Area'),
           yaxis = list(title='Homicide Arrests per 100,000 People'))
 ## Plot Model Predictions
-add_lines(fig, x=~x, y=fitted(reg), hoverinfo='none')
+add_lines(fig, x=~x, y=fitted(reg),
+    hoverinfo='none',
+    line=list(color='grey(0,1)', lwd=2))
 ```
 To quantitatively analyze GoF, we compute $R^2$ using the sums of squared errors (Total, Explained, and Residual)
 $$
@@ -286,31 +289,6 @@ lines( x, pi[,'lwr'], lty=2)
 lines( x, pi[,'upr'], lty=2)
 ```
 
-There are many ways to improve upon the prediction intervals you just created. Probably the most basic way is to allow the residuals to be heteroskedastic. 
-
-```{r}
-## Estimate Residual Quantiles seperately around X points
-boot_resid_list <- split(boot_resids,
-    cut(boot_resids$x_b, x) )
-boot_resid_est <- lapply(boot_resid_list, function(res_b) {
-    if( nrow(res_b)==0){ ## If Empty, Return Nothing
-        ehat <- c(NA,NA)
-    } else{ ## Estimate Quantiles of Residuals
-        ehat <- quantile(res_b$e_b, probs=c(.025, .975))
-    }
-    return(ehat)
-    })
-boot_resid_est <- do.call(rbind, boot_resid_est)
-## Construct PI at x points
-boot_x <- x[-1] - diff(x)/2
-boot_pi <- coef(reg)[1] + boot_x*coef(reg)['x']
-boot_pi <- cbind(boot_pi + boot_resid_est[,1], boot_pi + boot_resid_est[,2])
-
-plot(y~x, dat=xy, pch=16, main='Heteroskedastic P.I.')
-polygon( c(boot_x, rev(boot_x)), c(boot_pi[,1], rev(boot_pi[,2])),
-    col=grey(0,.2), border=NA)
-rug(boot_x)
-```
 
 For a nice overview of different types of intervals, see https://www.jstor.org/stable/2685212. For an in-depth view, see "Statistical Intervals: A Guide for Practitioners and Researchers" or "Statistical Tolerance Regions: Theory, Applications, and Computation". See https://robjhyndman.com/hyndsight/intervals/ for constructing intervals for future observations in a time-series context. See Davison and Hinkley, chapters 5 and 6 (also Efron and Tibshirani, or Wehrens et al.)
 
@@ -370,7 +348,8 @@ legend('topleft',
     lty=1, col=c(2,4,3), cex=.8)
 ```
 
-Local lhttps://shinyserv.es/shiny/kreg/inear regressions conduct a linear regresssion for each data point using a subsample of data around it. 
+
+Local linear regressions conduct a linear regresssion for each data point using a subsample of data around it. 
 ```{r}
 ## ``Naive" Smoother
 pred_fun <- function(x0, h, xy){
@@ -387,11 +366,12 @@ pred_lo2 <- sapply(X0, pred_fun, h=20, xy=xy)
 
 plot(y~x, pch=16, data=xy, col=grey(.5,.5),
     ylab='Murder Rate', xlab='Population Density')
-lines(X0, pred_lo1, col=2, lwd=1, type='o')
-lines(X0, pred_lo2, col=4, lwd=1, type='o')
+cols <- c(rgb(.8,0,0,.5), rgb(0,0,.8,.5))
+lines(X0, pred_lo1, col=cols[1], lwd=1, type='o')
+lines(X0, pred_lo2, col=cols[2], lwd=1, type='o')
 legend('topleft', title='Locally Linear',
     legend=c('h=2 ', 'h=20'),
-    lty=1, col=c(2,4), cex=.8)
+    lty=1, col=cols, cex=.8)
 ```
 See https://shinyserv.es/shiny/kreg/ for a nice illustration. Also note that you can use adaptive bandwidths to have a similar number of data points in each subsample (especially useful when $X$ is not uniform.)
 
@@ -400,39 +380,101 @@ See https://shinyserv.es/shiny/kreg/ for a nice illustration. Also note that you
 xy0 <- xy[order(xy$x),]
 plot(y~x, pch=16, col=grey(0,.5), dat=xy0)
 
-reg_lo <- loess(y~x, data=xy0, span=.4)
-lines(xy0$x, predict(reg_lo),
-    col='orange', type='o', pch=2)
+reg_lo4 <- loess(y~x, data=xy0, span=.4)
+reg_lo8 <- loess(y~x, data=xy0, span=.8)
 
-reg_lo <- loess(y~x, data=xy0, span=.8)
-lines(xy0$x, predict(reg_lo),
-    col='purple', type='o', pch=2)
+cols <- hcl.colors(3,alpha=.75)[-3]
+lines(xy0$x, predict(reg_lo4),
+    col=cols[1], type='o', pch=2)
+lines(xy0$x, predict(reg_lo8),
+    col=cols[2], type='o', pch=2)
 
 legend('topleft', title='Span',
     legend=c('h=.4 ', 'h=.8'),
-    lty=1, col=c('orange','purple'), cex=.8)
+    lty=1, col=cols, cex=.8)
 ```
 
-The smoothed predicted values estimate the local means, and we can also construct confidence bands. 
+The smoothed predicted values estimate the local means. So we can also construct confidence bands
 ```{r}
+## Loess
 xy0 <- xy[order(xy$x),]
 X0 <- unique(xy0$x)
 reg_lo <- loess(y~x, data=xy0, span=.8)
+
+## Jackknife CI
 jack_lo <- sapply(1:nrow(xy), function(i){
     xy_i <- xy[-i,]
     reg_i <- loess(y~x, dat=xy_i, span=.8)
-    predict(reg_i,  newdata=data.frame(x=X0))
+    predict(reg_i, newdata=data.frame(x=X0))
 })
 jack_cb <- apply(jack_lo,1, quantile,
     probs=c(.025,.975), na.rm=T)
 
+## Plot
 plot(y~x, pch=16, col=grey(0,.5), dat=xy0)
+preds_lo <- predict(reg_lo, newdata=data.frame(x=X0))
+lines(X0, preds_lo,
+    col=hcl.colors(3,alpha=.75)[2],
+    type='o', pch=2)
+## Plot CI
 polygon(
     c(X0, rev(X0)),
     c(jack_cb[1,], rev(jack_cb[2,])),
-    col=grey(0,.25), border=NA)
-lines(xy0$x, predict(reg_lo),
-    col='orange', type='o', pch=2)
+    col=hcl.colors(3,alpha=.25)[2],
+    border=NA)
+
+```
+
+
+You can also construct prediction bands
+```{r}
+plot(y~x, pch=16, col=grey(0,.5),
+    dat=xy0, ylim=c(0, 20))
+lines(X0, preds_lo,
+    col=hcl.colors(3,alpha=.75)[2],
+    type='o', pch=2)
+
+## Estimate Residuals CI at design points
+res_lo <- sapply(1:nrow(xy), function(i){
+    y_i <- xy[i,'y']
+    preds_i <- jack_lo[,i]
+    resids_i <- y_i - preds_i
+})
+res_cb <- apply(res_lo, 1, quantile,
+    probs=c(.025,.975), na.rm=T)
+## Plot
+lines( X0, preds_lo +res_cb[1,],
+    col=hcl.colors(3,alpha=.75)[2], lt=2)
+lines( X0, preds_lo +res_cb[2,],
+    col=hcl.colors(3,alpha=.75)[2], lty=2)
+
+
+
+
+## Smooth estimates 
+res_lo <- lapply(1:nrow(xy), function(i){
+    y_i <- xy[i,'y']
+    x_i <- xy[i,'x']
+    preds_i <- jack_lo[,i]
+    resids_i <- y_i - preds_i
+    cbind(e=resids_i, x=x_i)
+})
+res_lo <- as.data.frame(do.call(rbind, res_lo))
+
+res_fun <- function(x0, h, res_lo){
+    ## Assign equal weight to observations within h distance to x0
+    ## 0 weight for all other observations
+    ki <- dunif(res_lo$x, x0-h, x0+h) 
+    ei <- res_lo[ki!=0,'e']
+    res_i <- quantile(ei, probs=c(.025,.975), na.rm=T)
+}
+X0 <- sort(unique(xy$x))
+res_lo2 <- sapply(X0, res_fun, h=15, res_lo=res_lo)
+
+lines( X0, preds_lo +res_lo2[1,],
+    col=hcl.colors(3,alpha=.75)[2], lty=1, lwd=2)
+lines( X0, preds_lo +res_lo2[2,],
+    col=hcl.colors(3,alpha=.75)[2], lty=1, lwd=2)
 ```
 
 
@@ -488,6 +530,7 @@ coef(reg)
 To measure the ``Goodness of fit'' of the model, we can again plot our predictions
 ```{r}
 plot(USArrests$Murder, predict(reg), pch=16, col=grey(0,.5))
+abline(a=0,b=1, lty=2)
 ```
 and compute sums of squared errors. Adding random data may sometimes improve the fit, however, so we adjust the $R^2$ by the number of covariates $K$.
 $$
@@ -917,6 +960,7 @@ points(x[1],y[1], pch=16, col=rgb(1,0,0,.5))
 abline(lm(y~x), col=2, lty=2)
 abline(lm(y[-1]~x[-1]))
 ```
+See [AEJ-leverage](https://www.rwi-essen.de/fileadmin/user_upload/RWI/Publikationen/I4R_Discussion_Paper_Series/032_I4R_Haddad_Kattan_Wochner-updateJune28.pdf) for an example of leverage in economics.
 
 Standardized residuals are
 $$

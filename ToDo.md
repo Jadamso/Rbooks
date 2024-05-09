@@ -120,37 +120,6 @@ $$
 These equations are motivated by particular data generating proceses, which you can read more about this at https://www.econometrics-with-r.org/4-lrwor.html.]
 
 
-Parametric P values and Power Analysis
-```{r}
-xy <- USArrests[,c('Murder','UrbanPop')]
-colnames(xy) <- c('y','x')
-
-reg <- lm(y~x, dat=xy)
-
-## T-values
-b <- coef(reg)
-se_b <- sqrt(diag(vcov(reg)))
-t_b <- b/se_b
-
-## P-values
-k <- reg$df.residual
-p <- (1-pt(abs(t_b), k))*2
-p <- pt(-t_b, k) + (1-pt(t_b, k))
-
-## Power
-https://osf.io/zqphw/download
-The Essential Guide to Effect Sizes: Statistical Power, Meta-Analysis, and the Interpretation of Research Results
-https://online.stat.psu.edu/statprogram/reviews/statistical-concepts/power-analysis
-https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/power.html
-https://peopleanalytics-regression-book.org/power-tests.html
-
-#PT_r <- pwrss::power.t.test(T_r, df=k, plot=FALSE, alpha=0.05)
-PT_r <- 1 -
-    pt( qt(alpha/2, df=k), df=k, ncp=abs(T_r), lower.tail=F) +
-    pt( qt(alpha/2, df=k, lower.tail=F), df=k, ncp=abs(T_r), lower.tail=F)
-1 - pt( qt(1-alpha/2, df=k)-abs(T_r), df=k) + pt( qt(alpha/2, df=k)-abs(T_r), df=k)
-``` 
-
 
 
 #### Parametric Variability Estimates and Hypothesis Tests [Under Construction]
@@ -282,6 +251,40 @@ head(influence.measures(reg)$infmat)
 Measurement Error
 
 https://www.aeaweb.org/articles?id=10.1257/aer.p20171031
+
+
+Parametric P values and Power Analysis
+```{r}
+xy <- USArrests[,c('Murder','UrbanPop')]
+colnames(xy) <- c('y','x')
+
+reg <- lm(y~x, dat=xy)
+
+## T-values
+b <- coef(reg)
+se_b <- sqrt(diag(vcov(reg)))
+t_b <- b/se_b
+
+## P-values
+k <- reg$df.residual
+p <- (1-pt(abs(t_b), k))*2
+p <- pt(-t_b, k) + (1-pt(t_b, k))
+
+#PT_r <- pwrss::power.t.test(T_r, df=k, plot=FALSE, alpha=0.05)
+PT_r <- 1 -
+    pt( qt(alpha/2, df=k), df=k, ncp=abs(T_r), lower.tail=F) +
+    pt( qt(alpha/2, df=k, lower.tail=F), df=k, ncp=abs(T_r), lower.tail=F)
+1 - pt( qt(1-alpha/2, df=k)-abs(T_r), df=k) + pt( qt(alpha/2, df=k)-abs(T_r), df=k)
+``` 
+
+## Power
+https://osf.io/zqphw/download
+The Essential Guide to Effect Sizes: Statistical Power, Meta-Analysis, and the Interpretation of Research Results
+https://online.stat.psu.edu/statprogram/reviews/statistical-concepts/power-analysis
+https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/power.html
+https://peopleanalytics-regression-book.org/power-tests.html
+
+
 
 #### Endogeneity
 
