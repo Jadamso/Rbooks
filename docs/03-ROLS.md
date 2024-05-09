@@ -89,6 +89,7 @@ fig <- plotly::plot_ly(
   mode='markers',
   type='scatter',
   hoverinfo='text',
+  marker = list(color=grey(0,.25)),
   text=~paste('<b>', ID, '</b>',
               '<br>Urban  :', x,
               '<br>Murder :', y,
@@ -101,12 +102,14 @@ fig <- plotly::layout(fig,
           xaxis = list(title='Percent of People in an Urban Area'),
           yaxis = list(title='Homicide Arrests per 100,000 People'))
 ## Plot Model Predictions
-add_lines(fig, x=~x, y=fitted(reg), hoverinfo='none')
+add_lines(fig, x=~x, y=fitted(reg),
+    hoverinfo='none',
+    line=list(color='grey(0,1)', lwd=2))
 ```
 
 ```{=html}
-<div class="plotly html-widget html-fill-item" id="htmlwidget-b8790bc9e5ce2449e100" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-b8790bc9e5ce2449e100">{"x":{"visdat":{"3441109d996c":["function () ","plotlyVisDat"]},"cur_data":"3441109d996c","attrs":{"3441109d996c":{"x":{},"y":{},"mode":"markers","hoverinfo":"text","text":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter"},"3441109d996c.1":{"x":{},"y":[7.6301526724992756,7.4208060843020238,8.0907151665332222,7.4626754019414747,8.3209964135501959,8.0488458488937731,8.0279111900740467,7.9232378959754231,8.0907151665332222,7.6720219901387221,8.1535191429923977,7.5464140372203747,8.1535191429923977,7.7766952842373485,7.6092180136795484,7.7976299430570739,7.5045447195809238,7.7976299430570721,7.4836100607611993,7.8185646018767976,8.1953884606318468,7.9651072136148731,7.7976299430570721,7.3370674490231238,7.881368578335973,7.5254793784006493,7.7138913077781739,8.1116498253529485,7.5882833548598239,8.2791270959107468,7.881368578335973,8.2163231194515713,7.3580021078428492,7.3370674490231247,7.9860418724345976,7.839499260696523,7.8185646018767976,7.9232378959754231,8.2372577782712959,7.4208060843020238,7.3580021078428492,7.6510873313189984,8.0907151665332222,8.0907151665332222,7.0858515431864255,7.7348259665978985,7.9441725547951467,7.2323941549245001,7.797629943057073,7.672021990138723],"mode":"lines","hoverinfo":"none","text":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter","inherit":true}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Percent of People in an Urban Area"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Homicide Arrests per 100,000 People"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[58,48,80,50,91,78,77,72,80,60,83,54,83,65,57,66,52,66,51,67,85,74,66,44,70,53,62,81,56,89,70,86,45,44,75,68,67,72,87,48,45,59,80,80,32,63,73,39,66,60],"y":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"mode":"markers","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Alabama <\/b> <br>Urban  : 58 <br>Murder : 13.2 <br>Predicted Murder : 7.63 <br>Residual : 5.57","<b> Alaska <\/b> <br>Urban  : 48 <br>Murder : 10 <br>Predicted Murder : 7.42 <br>Residual : 2.58","<b> Arizona <\/b> <br>Urban  : 80 <br>Murder : 8.1 <br>Predicted Murder : 8.09 <br>Residual : 0.01","<b> Arkansas <\/b> <br>Urban  : 50 <br>Murder : 8.8 <br>Predicted Murder : 7.46 <br>Residual : 1.34","<b> California <\/b> <br>Urban  : 91 <br>Murder : 9 <br>Predicted Murder : 8.32 <br>Residual : 0.68","<b> Colorado <\/b> <br>Urban  : 78 <br>Murder : 7.9 <br>Predicted Murder : 8.05 <br>Residual : -0.15","<b> Connecticut <\/b> <br>Urban  : 77 <br>Murder : 3.3 <br>Predicted Murder : 8.03 <br>Residual : -4.73","<b> Delaware <\/b> <br>Urban  : 72 <br>Murder : 5.9 <br>Predicted Murder : 7.92 <br>Residual : -2.02","<b> Florida <\/b> <br>Urban  : 80 <br>Murder : 15.4 <br>Predicted Murder : 8.09 <br>Residual : 7.31","<b> Georgia <\/b> <br>Urban  : 60 <br>Murder : 17.4 <br>Predicted Murder : 7.67 <br>Residual : 9.73","<b> Hawaii <\/b> <br>Urban  : 83 <br>Murder : 5.3 <br>Predicted Murder : 8.15 <br>Residual : -2.85","<b> Idaho <\/b> <br>Urban  : 54 <br>Murder : 2.6 <br>Predicted Murder : 7.55 <br>Residual : -4.95","<b> Illinois <\/b> <br>Urban  : 83 <br>Murder : 10.4 <br>Predicted Murder : 8.15 <br>Residual : 2.25","<b> Indiana <\/b> <br>Urban  : 65 <br>Murder : 7.2 <br>Predicted Murder : 7.78 <br>Residual : -0.58","<b> Iowa <\/b> <br>Urban  : 57 <br>Murder : 2.2 <br>Predicted Murder : 7.61 <br>Residual : -5.41","<b> Kansas <\/b> <br>Urban  : 66 <br>Murder : 6 <br>Predicted Murder : 7.8 <br>Residual : -1.8","<b> Kentucky <\/b> <br>Urban  : 52 <br>Murder : 9.7 <br>Predicted Murder : 7.5 <br>Residual : 2.2","<b> Louisiana <\/b> <br>Urban  : 66 <br>Murder : 15.4 <br>Predicted Murder : 7.8 <br>Residual : 7.6","<b> Maine <\/b> <br>Urban  : 51 <br>Murder : 2.1 <br>Predicted Murder : 7.48 <br>Residual : -5.38","<b> Maryland <\/b> <br>Urban  : 67 <br>Murder : 11.3 <br>Predicted Murder : 7.82 <br>Residual : 3.48","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Murder : 4.4 <br>Predicted Murder : 8.2 <br>Residual : -3.8","<b> Michigan <\/b> <br>Urban  : 74 <br>Murder : 12.1 <br>Predicted Murder : 7.97 <br>Residual : 4.13","<b> Minnesota <\/b> <br>Urban  : 66 <br>Murder : 2.7 <br>Predicted Murder : 7.8 <br>Residual : -5.1","<b> Mississippi <\/b> <br>Urban  : 44 <br>Murder : 16.1 <br>Predicted Murder : 7.34 <br>Residual : 8.76","<b> Missouri <\/b> <br>Urban  : 70 <br>Murder : 9 <br>Predicted Murder : 7.88 <br>Residual : 1.12","<b> Montana <\/b> <br>Urban  : 53 <br>Murder : 6 <br>Predicted Murder : 7.53 <br>Residual : -1.53","<b> Nebraska <\/b> <br>Urban  : 62 <br>Murder : 4.3 <br>Predicted Murder : 7.71 <br>Residual : -3.41","<b> Nevada <\/b> <br>Urban  : 81 <br>Murder : 12.2 <br>Predicted Murder : 8.11 <br>Residual : 4.09","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Murder : 2.1 <br>Predicted Murder : 7.59 <br>Residual : -5.49","<b> New Jersey <\/b> <br>Urban  : 89 <br>Murder : 7.4 <br>Predicted Murder : 8.28 <br>Residual : -0.88","<b> New Mexico <\/b> <br>Urban  : 70 <br>Murder : 11.4 <br>Predicted Murder : 7.88 <br>Residual : 3.52","<b> New York <\/b> <br>Urban  : 86 <br>Murder : 11.1 <br>Predicted Murder : 8.22 <br>Residual : 2.88","<b> North Carolina <\/b> <br>Urban  : 45 <br>Murder : 13 <br>Predicted Murder : 7.36 <br>Residual : 5.64","<b> North Dakota <\/b> <br>Urban  : 44 <br>Murder : 0.8 <br>Predicted Murder : 7.34 <br>Residual : -6.54","<b> Ohio <\/b> <br>Urban  : 75 <br>Murder : 7.3 <br>Predicted Murder : 7.99 <br>Residual : -0.69","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Murder : 6.6 <br>Predicted Murder : 7.84 <br>Residual : -1.24","<b> Oregon <\/b> <br>Urban  : 67 <br>Murder : 4.9 <br>Predicted Murder : 7.82 <br>Residual : -2.92","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Murder : 6.3 <br>Predicted Murder : 7.92 <br>Residual : -1.62","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Murder : 3.4 <br>Predicted Murder : 8.24 <br>Residual : -4.84","<b> South Carolina <\/b> <br>Urban  : 48 <br>Murder : 14.4 <br>Predicted Murder : 7.42 <br>Residual : 6.98","<b> South Dakota <\/b> <br>Urban  : 45 <br>Murder : 3.8 <br>Predicted Murder : 7.36 <br>Residual : -3.56","<b> Tennessee <\/b> <br>Urban  : 59 <br>Murder : 13.2 <br>Predicted Murder : 7.65 <br>Residual : 5.55","<b> Texas <\/b> <br>Urban  : 80 <br>Murder : 12.7 <br>Predicted Murder : 8.09 <br>Residual : 4.61","<b> Utah <\/b> <br>Urban  : 80 <br>Murder : 3.2 <br>Predicted Murder : 8.09 <br>Residual : -4.89","<b> Vermont <\/b> <br>Urban  : 32 <br>Murder : 2.2 <br>Predicted Murder : 7.09 <br>Residual : -4.89","<b> Virginia <\/b> <br>Urban  : 63 <br>Murder : 8.5 <br>Predicted Murder : 7.73 <br>Residual : 0.77","<b> Washington <\/b> <br>Urban  : 73 <br>Murder : 4 <br>Predicted Murder : 7.94 <br>Residual : -3.94","<b> West Virginia <\/b> <br>Urban  : 39 <br>Murder : 5.7 <br>Predicted Murder : 7.23 <br>Residual : -1.53","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Murder : 2.6 <br>Predicted Murder : 7.8 <br>Residual : -5.2","<b> Wyoming <\/b> <br>Urban  : 60 <br>Murder : 6.8 <br>Predicted Murder : 7.67 <br>Residual : -0.87"],"type":"scatter","marker":{"color":"rgba(31,119,180,1)","line":{"color":"rgba(31,119,180,1)"}},"error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"line":{"color":"rgba(31,119,180,1)"},"xaxis":"x","yaxis":"y","frame":null},{"x":[32,39,44,44,45,45,48,48,50,51,52,53,54,56,57,58,59,60,60,62,63,65,66,66,66,66,67,67,68,70,70,72,72,73,74,75,77,78,80,80,80,80,81,83,83,85,86,87,89,91],"y":[7.0858515431864255,7.2323941549245001,7.3370674490231238,7.3370674490231247,7.3580021078428492,7.3580021078428492,7.4208060843020238,7.4208060843020238,7.4626754019414747,7.4836100607611993,7.5045447195809238,7.5254793784006493,7.5464140372203747,7.5882833548598239,7.6092180136795484,7.6301526724992756,7.6510873313189984,7.6720219901387221,7.672021990138723,7.7138913077781739,7.7348259665978985,7.7766952842373485,7.7976299430570739,7.7976299430570721,7.7976299430570721,7.797629943057073,7.8185646018767976,7.8185646018767976,7.839499260696523,7.881368578335973,7.881368578335973,7.9232378959754231,7.9232378959754231,7.9441725547951467,7.9651072136148731,7.9860418724345976,8.0279111900740467,8.0488458488937731,8.0907151665332222,8.0907151665332222,8.0907151665332222,8.0907151665332222,8.1116498253529485,8.1535191429923977,8.1535191429923977,8.1953884606318468,8.2163231194515713,8.2372577782712959,8.2791270959107468,8.3209964135501959],"mode":"lines","hoverinfo":["none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none"],"text":["<b> Vermont <\/b> <br>Urban  : 32 <br>Murder : 2.2 <br>Predicted Murder : 7.09 <br>Residual : -4.89","<b> West Virginia <\/b> <br>Urban  : 39 <br>Murder : 5.7 <br>Predicted Murder : 7.23 <br>Residual : -1.53","<b> Mississippi <\/b> <br>Urban  : 44 <br>Murder : 16.1 <br>Predicted Murder : 7.34 <br>Residual : 8.76","<b> North Dakota <\/b> <br>Urban  : 44 <br>Murder : 0.8 <br>Predicted Murder : 7.34 <br>Residual : -6.54","<b> North Carolina <\/b> <br>Urban  : 45 <br>Murder : 13 <br>Predicted Murder : 7.36 <br>Residual : 5.64","<b> South Dakota <\/b> <br>Urban  : 45 <br>Murder : 3.8 <br>Predicted Murder : 7.36 <br>Residual : -3.56","<b> Alaska <\/b> <br>Urban  : 48 <br>Murder : 10 <br>Predicted Murder : 7.42 <br>Residual : 2.58","<b> South Carolina <\/b> <br>Urban  : 48 <br>Murder : 14.4 <br>Predicted Murder : 7.42 <br>Residual : 6.98","<b> Arkansas <\/b> <br>Urban  : 50 <br>Murder : 8.8 <br>Predicted Murder : 7.46 <br>Residual : 1.34","<b> Maine <\/b> <br>Urban  : 51 <br>Murder : 2.1 <br>Predicted Murder : 7.48 <br>Residual : -5.38","<b> Kentucky <\/b> <br>Urban  : 52 <br>Murder : 9.7 <br>Predicted Murder : 7.5 <br>Residual : 2.2","<b> Montana <\/b> <br>Urban  : 53 <br>Murder : 6 <br>Predicted Murder : 7.53 <br>Residual : -1.53","<b> Idaho <\/b> <br>Urban  : 54 <br>Murder : 2.6 <br>Predicted Murder : 7.55 <br>Residual : -4.95","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Murder : 2.1 <br>Predicted Murder : 7.59 <br>Residual : -5.49","<b> Iowa <\/b> <br>Urban  : 57 <br>Murder : 2.2 <br>Predicted Murder : 7.61 <br>Residual : -5.41","<b> Alabama <\/b> <br>Urban  : 58 <br>Murder : 13.2 <br>Predicted Murder : 7.63 <br>Residual : 5.57","<b> Tennessee <\/b> <br>Urban  : 59 <br>Murder : 13.2 <br>Predicted Murder : 7.65 <br>Residual : 5.55","<b> Georgia <\/b> <br>Urban  : 60 <br>Murder : 17.4 <br>Predicted Murder : 7.67 <br>Residual : 9.73","<b> Wyoming <\/b> <br>Urban  : 60 <br>Murder : 6.8 <br>Predicted Murder : 7.67 <br>Residual : -0.87","<b> Nebraska <\/b> <br>Urban  : 62 <br>Murder : 4.3 <br>Predicted Murder : 7.71 <br>Residual : -3.41","<b> Virginia <\/b> <br>Urban  : 63 <br>Murder : 8.5 <br>Predicted Murder : 7.73 <br>Residual : 0.77","<b> Indiana <\/b> <br>Urban  : 65 <br>Murder : 7.2 <br>Predicted Murder : 7.78 <br>Residual : -0.58","<b> Kansas <\/b> <br>Urban  : 66 <br>Murder : 6 <br>Predicted Murder : 7.8 <br>Residual : -1.8","<b> Louisiana <\/b> <br>Urban  : 66 <br>Murder : 15.4 <br>Predicted Murder : 7.8 <br>Residual : 7.6","<b> Minnesota <\/b> <br>Urban  : 66 <br>Murder : 2.7 <br>Predicted Murder : 7.8 <br>Residual : -5.1","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Murder : 2.6 <br>Predicted Murder : 7.8 <br>Residual : -5.2","<b> Maryland <\/b> <br>Urban  : 67 <br>Murder : 11.3 <br>Predicted Murder : 7.82 <br>Residual : 3.48","<b> Oregon <\/b> <br>Urban  : 67 <br>Murder : 4.9 <br>Predicted Murder : 7.82 <br>Residual : -2.92","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Murder : 6.6 <br>Predicted Murder : 7.84 <br>Residual : -1.24","<b> Missouri <\/b> <br>Urban  : 70 <br>Murder : 9 <br>Predicted Murder : 7.88 <br>Residual : 1.12","<b> New Mexico <\/b> <br>Urban  : 70 <br>Murder : 11.4 <br>Predicted Murder : 7.88 <br>Residual : 3.52","<b> Delaware <\/b> <br>Urban  : 72 <br>Murder : 5.9 <br>Predicted Murder : 7.92 <br>Residual : -2.02","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Murder : 6.3 <br>Predicted Murder : 7.92 <br>Residual : -1.62","<b> Washington <\/b> <br>Urban  : 73 <br>Murder : 4 <br>Predicted Murder : 7.94 <br>Residual : -3.94","<b> Michigan <\/b> <br>Urban  : 74 <br>Murder : 12.1 <br>Predicted Murder : 7.97 <br>Residual : 4.13","<b> Ohio <\/b> <br>Urban  : 75 <br>Murder : 7.3 <br>Predicted Murder : 7.99 <br>Residual : -0.69","<b> Connecticut <\/b> <br>Urban  : 77 <br>Murder : 3.3 <br>Predicted Murder : 8.03 <br>Residual : -4.73","<b> Colorado <\/b> <br>Urban  : 78 <br>Murder : 7.9 <br>Predicted Murder : 8.05 <br>Residual : -0.15","<b> Arizona <\/b> <br>Urban  : 80 <br>Murder : 8.1 <br>Predicted Murder : 8.09 <br>Residual : 0.01","<b> Florida <\/b> <br>Urban  : 80 <br>Murder : 15.4 <br>Predicted Murder : 8.09 <br>Residual : 7.31","<b> Texas <\/b> <br>Urban  : 80 <br>Murder : 12.7 <br>Predicted Murder : 8.09 <br>Residual : 4.61","<b> Utah <\/b> <br>Urban  : 80 <br>Murder : 3.2 <br>Predicted Murder : 8.09 <br>Residual : -4.89","<b> Nevada <\/b> <br>Urban  : 81 <br>Murder : 12.2 <br>Predicted Murder : 8.11 <br>Residual : 4.09","<b> Hawaii <\/b> <br>Urban  : 83 <br>Murder : 5.3 <br>Predicted Murder : 8.15 <br>Residual : -2.85","<b> Illinois <\/b> <br>Urban  : 83 <br>Murder : 10.4 <br>Predicted Murder : 8.15 <br>Residual : 2.25","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Murder : 4.4 <br>Predicted Murder : 8.2 <br>Residual : -3.8","<b> New York <\/b> <br>Urban  : 86 <br>Murder : 11.1 <br>Predicted Murder : 8.22 <br>Residual : 2.88","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Murder : 3.4 <br>Predicted Murder : 8.24 <br>Residual : -4.84","<b> New Jersey <\/b> <br>Urban  : 89 <br>Murder : 7.4 <br>Predicted Murder : 8.28 <br>Residual : -0.88","<b> California <\/b> <br>Urban  : 91 <br>Murder : 9 <br>Predicted Murder : 8.32 <br>Residual : 0.68"],"type":"scatter","marker":{"color":"rgba(255,127,14,1)","line":{"color":"rgba(255,127,14,1)"}},"error_y":{"color":"rgba(255,127,14,1)"},"error_x":{"color":"rgba(255,127,14,1)"},"line":{"color":"rgba(255,127,14,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<div class="plotly html-widget html-fill-item" id="htmlwidget-29bcc4462a2ed5562e08" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-29bcc4462a2ed5562e08">{"x":{"visdat":{"38d5430ed5e6":["function () ","plotlyVisDat"]},"cur_data":"38d5430ed5e6","attrs":{"38d5430ed5e6":{"x":{},"y":{},"mode":"markers","hoverinfo":"text","marker":{"color":"#00000040"},"text":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter"},"38d5430ed5e6.1":{"x":{},"y":[7.6301526724992756,7.4208060843020238,8.0907151665332222,7.4626754019414747,8.3209964135501959,8.0488458488937731,8.0279111900740467,7.9232378959754231,8.0907151665332222,7.6720219901387221,8.1535191429923977,7.5464140372203747,8.1535191429923977,7.7766952842373485,7.6092180136795484,7.7976299430570739,7.5045447195809238,7.7976299430570721,7.4836100607611993,7.8185646018767976,8.1953884606318468,7.9651072136148731,7.7976299430570721,7.3370674490231238,7.881368578335973,7.5254793784006493,7.7138913077781739,8.1116498253529485,7.5882833548598239,8.2791270959107468,7.881368578335973,8.2163231194515713,7.3580021078428492,7.3370674490231247,7.9860418724345976,7.839499260696523,7.8185646018767976,7.9232378959754231,8.2372577782712959,7.4208060843020238,7.3580021078428492,7.6510873313189984,8.0907151665332222,8.0907151665332222,7.0858515431864255,7.7348259665978985,7.9441725547951467,7.2323941549245001,7.797629943057073,7.672021990138723],"mode":"lines","hoverinfo":"none","marker":{"color":"#00000040"},"text":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter","line":{"color":"grey(0,1)","lwd":2},"inherit":true}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Percent of People in an Urban Area"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Homicide Arrests per 100,000 People"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[58,48,80,50,91,78,77,72,80,60,83,54,83,65,57,66,52,66,51,67,85,74,66,44,70,53,62,81,56,89,70,86,45,44,75,68,67,72,87,48,45,59,80,80,32,63,73,39,66,60],"y":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"mode":"markers","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"marker":{"color":"#00000040","line":{"color":"rgba(31,119,180,1)"}},"text":["<b> Alabama <\/b> <br>Urban  : 58 <br>Murder : 13.2 <br>Predicted Murder : 7.63 <br>Residual : 5.57","<b> Alaska <\/b> <br>Urban  : 48 <br>Murder : 10 <br>Predicted Murder : 7.42 <br>Residual : 2.58","<b> Arizona <\/b> <br>Urban  : 80 <br>Murder : 8.1 <br>Predicted Murder : 8.09 <br>Residual : 0.01","<b> Arkansas <\/b> <br>Urban  : 50 <br>Murder : 8.8 <br>Predicted Murder : 7.46 <br>Residual : 1.34","<b> California <\/b> <br>Urban  : 91 <br>Murder : 9 <br>Predicted Murder : 8.32 <br>Residual : 0.68","<b> Colorado <\/b> <br>Urban  : 78 <br>Murder : 7.9 <br>Predicted Murder : 8.05 <br>Residual : -0.15","<b> Connecticut <\/b> <br>Urban  : 77 <br>Murder : 3.3 <br>Predicted Murder : 8.03 <br>Residual : -4.73","<b> Delaware <\/b> <br>Urban  : 72 <br>Murder : 5.9 <br>Predicted Murder : 7.92 <br>Residual : -2.02","<b> Florida <\/b> <br>Urban  : 80 <br>Murder : 15.4 <br>Predicted Murder : 8.09 <br>Residual : 7.31","<b> Georgia <\/b> <br>Urban  : 60 <br>Murder : 17.4 <br>Predicted Murder : 7.67 <br>Residual : 9.73","<b> Hawaii <\/b> <br>Urban  : 83 <br>Murder : 5.3 <br>Predicted Murder : 8.15 <br>Residual : -2.85","<b> Idaho <\/b> <br>Urban  : 54 <br>Murder : 2.6 <br>Predicted Murder : 7.55 <br>Residual : -4.95","<b> Illinois <\/b> <br>Urban  : 83 <br>Murder : 10.4 <br>Predicted Murder : 8.15 <br>Residual : 2.25","<b> Indiana <\/b> <br>Urban  : 65 <br>Murder : 7.2 <br>Predicted Murder : 7.78 <br>Residual : -0.58","<b> Iowa <\/b> <br>Urban  : 57 <br>Murder : 2.2 <br>Predicted Murder : 7.61 <br>Residual : -5.41","<b> Kansas <\/b> <br>Urban  : 66 <br>Murder : 6 <br>Predicted Murder : 7.8 <br>Residual : -1.8","<b> Kentucky <\/b> <br>Urban  : 52 <br>Murder : 9.7 <br>Predicted Murder : 7.5 <br>Residual : 2.2","<b> Louisiana <\/b> <br>Urban  : 66 <br>Murder : 15.4 <br>Predicted Murder : 7.8 <br>Residual : 7.6","<b> Maine <\/b> <br>Urban  : 51 <br>Murder : 2.1 <br>Predicted Murder : 7.48 <br>Residual : -5.38","<b> Maryland <\/b> <br>Urban  : 67 <br>Murder : 11.3 <br>Predicted Murder : 7.82 <br>Residual : 3.48","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Murder : 4.4 <br>Predicted Murder : 8.2 <br>Residual : -3.8","<b> Michigan <\/b> <br>Urban  : 74 <br>Murder : 12.1 <br>Predicted Murder : 7.97 <br>Residual : 4.13","<b> Minnesota <\/b> <br>Urban  : 66 <br>Murder : 2.7 <br>Predicted Murder : 7.8 <br>Residual : -5.1","<b> Mississippi <\/b> <br>Urban  : 44 <br>Murder : 16.1 <br>Predicted Murder : 7.34 <br>Residual : 8.76","<b> Missouri <\/b> <br>Urban  : 70 <br>Murder : 9 <br>Predicted Murder : 7.88 <br>Residual : 1.12","<b> Montana <\/b> <br>Urban  : 53 <br>Murder : 6 <br>Predicted Murder : 7.53 <br>Residual : -1.53","<b> Nebraska <\/b> <br>Urban  : 62 <br>Murder : 4.3 <br>Predicted Murder : 7.71 <br>Residual : -3.41","<b> Nevada <\/b> <br>Urban  : 81 <br>Murder : 12.2 <br>Predicted Murder : 8.11 <br>Residual : 4.09","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Murder : 2.1 <br>Predicted Murder : 7.59 <br>Residual : -5.49","<b> New Jersey <\/b> <br>Urban  : 89 <br>Murder : 7.4 <br>Predicted Murder : 8.28 <br>Residual : -0.88","<b> New Mexico <\/b> <br>Urban  : 70 <br>Murder : 11.4 <br>Predicted Murder : 7.88 <br>Residual : 3.52","<b> New York <\/b> <br>Urban  : 86 <br>Murder : 11.1 <br>Predicted Murder : 8.22 <br>Residual : 2.88","<b> North Carolina <\/b> <br>Urban  : 45 <br>Murder : 13 <br>Predicted Murder : 7.36 <br>Residual : 5.64","<b> North Dakota <\/b> <br>Urban  : 44 <br>Murder : 0.8 <br>Predicted Murder : 7.34 <br>Residual : -6.54","<b> Ohio <\/b> <br>Urban  : 75 <br>Murder : 7.3 <br>Predicted Murder : 7.99 <br>Residual : -0.69","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Murder : 6.6 <br>Predicted Murder : 7.84 <br>Residual : -1.24","<b> Oregon <\/b> <br>Urban  : 67 <br>Murder : 4.9 <br>Predicted Murder : 7.82 <br>Residual : -2.92","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Murder : 6.3 <br>Predicted Murder : 7.92 <br>Residual : -1.62","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Murder : 3.4 <br>Predicted Murder : 8.24 <br>Residual : -4.84","<b> South Carolina <\/b> <br>Urban  : 48 <br>Murder : 14.4 <br>Predicted Murder : 7.42 <br>Residual : 6.98","<b> South Dakota <\/b> <br>Urban  : 45 <br>Murder : 3.8 <br>Predicted Murder : 7.36 <br>Residual : -3.56","<b> Tennessee <\/b> <br>Urban  : 59 <br>Murder : 13.2 <br>Predicted Murder : 7.65 <br>Residual : 5.55","<b> Texas <\/b> <br>Urban  : 80 <br>Murder : 12.7 <br>Predicted Murder : 8.09 <br>Residual : 4.61","<b> Utah <\/b> <br>Urban  : 80 <br>Murder : 3.2 <br>Predicted Murder : 8.09 <br>Residual : -4.89","<b> Vermont <\/b> <br>Urban  : 32 <br>Murder : 2.2 <br>Predicted Murder : 7.09 <br>Residual : -4.89","<b> Virginia <\/b> <br>Urban  : 63 <br>Murder : 8.5 <br>Predicted Murder : 7.73 <br>Residual : 0.77","<b> Washington <\/b> <br>Urban  : 73 <br>Murder : 4 <br>Predicted Murder : 7.94 <br>Residual : -3.94","<b> West Virginia <\/b> <br>Urban  : 39 <br>Murder : 5.7 <br>Predicted Murder : 7.23 <br>Residual : -1.53","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Murder : 2.6 <br>Predicted Murder : 7.8 <br>Residual : -5.2","<b> Wyoming <\/b> <br>Urban  : 60 <br>Murder : 6.8 <br>Predicted Murder : 7.67 <br>Residual : -0.87"],"type":"scatter","error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"line":{"color":"rgba(31,119,180,1)"},"xaxis":"x","yaxis":"y","frame":null},{"x":[32,39,44,44,45,45,48,48,50,51,52,53,54,56,57,58,59,60,60,62,63,65,66,66,66,66,67,67,68,70,70,72,72,73,74,75,77,78,80,80,80,80,81,83,83,85,86,87,89,91],"y":[7.0858515431864255,7.2323941549245001,7.3370674490231238,7.3370674490231247,7.3580021078428492,7.3580021078428492,7.4208060843020238,7.4208060843020238,7.4626754019414747,7.4836100607611993,7.5045447195809238,7.5254793784006493,7.5464140372203747,7.5882833548598239,7.6092180136795484,7.6301526724992756,7.6510873313189984,7.6720219901387221,7.672021990138723,7.7138913077781739,7.7348259665978985,7.7766952842373485,7.7976299430570739,7.7976299430570721,7.7976299430570721,7.797629943057073,7.8185646018767976,7.8185646018767976,7.839499260696523,7.881368578335973,7.881368578335973,7.9232378959754231,7.9232378959754231,7.9441725547951467,7.9651072136148731,7.9860418724345976,8.0279111900740467,8.0488458488937731,8.0907151665332222,8.0907151665332222,8.0907151665332222,8.0907151665332222,8.1116498253529485,8.1535191429923977,8.1535191429923977,8.1953884606318468,8.2163231194515713,8.2372577782712959,8.2791270959107468,8.3209964135501959],"mode":"lines+markers","hoverinfo":["none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none"],"marker":{"color":"#00000040","line":{"color":"rgba(255,127,14,1)"}},"text":["<b> Vermont <\/b> <br>Urban  : 32 <br>Murder : 2.2 <br>Predicted Murder : 7.09 <br>Residual : -4.89","<b> West Virginia <\/b> <br>Urban  : 39 <br>Murder : 5.7 <br>Predicted Murder : 7.23 <br>Residual : -1.53","<b> Mississippi <\/b> <br>Urban  : 44 <br>Murder : 16.1 <br>Predicted Murder : 7.34 <br>Residual : 8.76","<b> North Dakota <\/b> <br>Urban  : 44 <br>Murder : 0.8 <br>Predicted Murder : 7.34 <br>Residual : -6.54","<b> North Carolina <\/b> <br>Urban  : 45 <br>Murder : 13 <br>Predicted Murder : 7.36 <br>Residual : 5.64","<b> South Dakota <\/b> <br>Urban  : 45 <br>Murder : 3.8 <br>Predicted Murder : 7.36 <br>Residual : -3.56","<b> Alaska <\/b> <br>Urban  : 48 <br>Murder : 10 <br>Predicted Murder : 7.42 <br>Residual : 2.58","<b> South Carolina <\/b> <br>Urban  : 48 <br>Murder : 14.4 <br>Predicted Murder : 7.42 <br>Residual : 6.98","<b> Arkansas <\/b> <br>Urban  : 50 <br>Murder : 8.8 <br>Predicted Murder : 7.46 <br>Residual : 1.34","<b> Maine <\/b> <br>Urban  : 51 <br>Murder : 2.1 <br>Predicted Murder : 7.48 <br>Residual : -5.38","<b> Kentucky <\/b> <br>Urban  : 52 <br>Murder : 9.7 <br>Predicted Murder : 7.5 <br>Residual : 2.2","<b> Montana <\/b> <br>Urban  : 53 <br>Murder : 6 <br>Predicted Murder : 7.53 <br>Residual : -1.53","<b> Idaho <\/b> <br>Urban  : 54 <br>Murder : 2.6 <br>Predicted Murder : 7.55 <br>Residual : -4.95","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Murder : 2.1 <br>Predicted Murder : 7.59 <br>Residual : -5.49","<b> Iowa <\/b> <br>Urban  : 57 <br>Murder : 2.2 <br>Predicted Murder : 7.61 <br>Residual : -5.41","<b> Alabama <\/b> <br>Urban  : 58 <br>Murder : 13.2 <br>Predicted Murder : 7.63 <br>Residual : 5.57","<b> Tennessee <\/b> <br>Urban  : 59 <br>Murder : 13.2 <br>Predicted Murder : 7.65 <br>Residual : 5.55","<b> Georgia <\/b> <br>Urban  : 60 <br>Murder : 17.4 <br>Predicted Murder : 7.67 <br>Residual : 9.73","<b> Wyoming <\/b> <br>Urban  : 60 <br>Murder : 6.8 <br>Predicted Murder : 7.67 <br>Residual : -0.87","<b> Nebraska <\/b> <br>Urban  : 62 <br>Murder : 4.3 <br>Predicted Murder : 7.71 <br>Residual : -3.41","<b> Virginia <\/b> <br>Urban  : 63 <br>Murder : 8.5 <br>Predicted Murder : 7.73 <br>Residual : 0.77","<b> Indiana <\/b> <br>Urban  : 65 <br>Murder : 7.2 <br>Predicted Murder : 7.78 <br>Residual : -0.58","<b> Kansas <\/b> <br>Urban  : 66 <br>Murder : 6 <br>Predicted Murder : 7.8 <br>Residual : -1.8","<b> Louisiana <\/b> <br>Urban  : 66 <br>Murder : 15.4 <br>Predicted Murder : 7.8 <br>Residual : 7.6","<b> Minnesota <\/b> <br>Urban  : 66 <br>Murder : 2.7 <br>Predicted Murder : 7.8 <br>Residual : -5.1","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Murder : 2.6 <br>Predicted Murder : 7.8 <br>Residual : -5.2","<b> Maryland <\/b> <br>Urban  : 67 <br>Murder : 11.3 <br>Predicted Murder : 7.82 <br>Residual : 3.48","<b> Oregon <\/b> <br>Urban  : 67 <br>Murder : 4.9 <br>Predicted Murder : 7.82 <br>Residual : -2.92","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Murder : 6.6 <br>Predicted Murder : 7.84 <br>Residual : -1.24","<b> Missouri <\/b> <br>Urban  : 70 <br>Murder : 9 <br>Predicted Murder : 7.88 <br>Residual : 1.12","<b> New Mexico <\/b> <br>Urban  : 70 <br>Murder : 11.4 <br>Predicted Murder : 7.88 <br>Residual : 3.52","<b> Delaware <\/b> <br>Urban  : 72 <br>Murder : 5.9 <br>Predicted Murder : 7.92 <br>Residual : -2.02","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Murder : 6.3 <br>Predicted Murder : 7.92 <br>Residual : -1.62","<b> Washington <\/b> <br>Urban  : 73 <br>Murder : 4 <br>Predicted Murder : 7.94 <br>Residual : -3.94","<b> Michigan <\/b> <br>Urban  : 74 <br>Murder : 12.1 <br>Predicted Murder : 7.97 <br>Residual : 4.13","<b> Ohio <\/b> <br>Urban  : 75 <br>Murder : 7.3 <br>Predicted Murder : 7.99 <br>Residual : -0.69","<b> Connecticut <\/b> <br>Urban  : 77 <br>Murder : 3.3 <br>Predicted Murder : 8.03 <br>Residual : -4.73","<b> Colorado <\/b> <br>Urban  : 78 <br>Murder : 7.9 <br>Predicted Murder : 8.05 <br>Residual : -0.15","<b> Arizona <\/b> <br>Urban  : 80 <br>Murder : 8.1 <br>Predicted Murder : 8.09 <br>Residual : 0.01","<b> Florida <\/b> <br>Urban  : 80 <br>Murder : 15.4 <br>Predicted Murder : 8.09 <br>Residual : 7.31","<b> Texas <\/b> <br>Urban  : 80 <br>Murder : 12.7 <br>Predicted Murder : 8.09 <br>Residual : 4.61","<b> Utah <\/b> <br>Urban  : 80 <br>Murder : 3.2 <br>Predicted Murder : 8.09 <br>Residual : -4.89","<b> Nevada <\/b> <br>Urban  : 81 <br>Murder : 12.2 <br>Predicted Murder : 8.11 <br>Residual : 4.09","<b> Hawaii <\/b> <br>Urban  : 83 <br>Murder : 5.3 <br>Predicted Murder : 8.15 <br>Residual : -2.85","<b> Illinois <\/b> <br>Urban  : 83 <br>Murder : 10.4 <br>Predicted Murder : 8.15 <br>Residual : 2.25","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Murder : 4.4 <br>Predicted Murder : 8.2 <br>Residual : -3.8","<b> New York <\/b> <br>Urban  : 86 <br>Murder : 11.1 <br>Predicted Murder : 8.22 <br>Residual : 2.88","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Murder : 3.4 <br>Predicted Murder : 8.24 <br>Residual : -4.84","<b> New Jersey <\/b> <br>Urban  : 89 <br>Murder : 7.4 <br>Predicted Murder : 8.28 <br>Residual : -0.88","<b> California <\/b> <br>Urban  : 91 <br>Murder : 9 <br>Predicted Murder : 8.32 <br>Residual : 0.68"],"type":"scatter","line":{"color":"grey(0,1)","lwd":2},"error_y":{"color":"rgba(255,127,14,1)"},"error_x":{"color":"rgba(255,127,14,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 To quantitatively analyze GoF, we compute $R^2$ using the sums of squared errors (Total, Explained, and Residual)
 $$
@@ -316,7 +319,7 @@ Phat2
 ```
 
 ```
-## [1] 0.6065163
+## [1] 0.5789474
 ```
 
 
@@ -354,34 +357,6 @@ lines( x, pi[,'upr'], lty=2)
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-13-1.png" width="672" />
 
-There are many ways to improve upon the prediction intervals you just created. Probably the most basic way is to allow the residuals to be heteroskedastic. 
-
-
-```r
-## Estimate Residual Quantiles seperately around X points
-boot_resid_list <- split(boot_resids,
-    cut(boot_resids$x_b, x) )
-boot_resid_est <- lapply(boot_resid_list, function(res_b) {
-    if( nrow(res_b)==0){ ## If Empty, Return Nothing
-        ehat <- c(NA,NA)
-    } else{ ## Estimate Quantiles of Residuals
-        ehat <- quantile(res_b$e_b, probs=c(.025, .975))
-    }
-    return(ehat)
-    })
-boot_resid_est <- do.call(rbind, boot_resid_est)
-## Construct PI at x points
-boot_x <- x[-1] - diff(x)/2
-boot_pi <- coef(reg)[1] + boot_x*coef(reg)['x']
-boot_pi <- cbind(boot_pi + boot_resid_est[,1], boot_pi + boot_resid_est[,2])
-
-plot(y~x, dat=xy, pch=16, main='Heteroskedastic P.I.')
-polygon( c(boot_x, rev(boot_x)), c(boot_pi[,1], rev(boot_pi[,2])),
-    col=grey(0,.2), border=NA)
-rug(boot_x)
-```
-
-<img src="03-ROLS_files/figure-html/unnamed-chunk-14-1.png" width="672" />
 
 For a nice overview of different types of intervals, see https://www.jstor.org/stable/2685212. For an in-depth view, see "Statistical Intervals: A Guide for Practitioners and Researchers" or "Statistical Tolerance Regions: Theory, Applications, and Computation". See https://robjhyndman.com/hyndsight/intervals/ for constructing intervals for future observations in a time-series context. See Davison and Hinkley, chapters 5 and 6 (also Efron and Tibshirani, or Wehrens et al.)
 
@@ -457,9 +432,10 @@ legend('topleft',
     lty=1, col=c(2,4,3), cex=.8)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-16-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-15-1.png" width="672" />
 
-Local lhttps://shinyserv.es/shiny/kreg/inear regressions conduct a linear regresssion for each data point using a subsample of data around it. 
+
+Local linear regressions conduct a linear regresssion for each data point using a subsample of data around it. 
 
 ```r
 ## ``Naive" Smoother
@@ -477,14 +453,15 @@ pred_lo2 <- sapply(X0, pred_fun, h=20, xy=xy)
 
 plot(y~x, pch=16, data=xy, col=grey(.5,.5),
     ylab='Murder Rate', xlab='Population Density')
-lines(X0, pred_lo1, col=2, lwd=1, type='o')
-lines(X0, pred_lo2, col=4, lwd=1, type='o')
+cols <- c(rgb(.8,0,0,.5), rgb(0,0,.8,.5))
+lines(X0, pred_lo1, col=cols[1], lwd=1, type='o')
+lines(X0, pred_lo2, col=cols[2], lwd=1, type='o')
 legend('topleft', title='Locally Linear',
     legend=c('h=2 ', 'h=20'),
-    lty=1, col=c(2,4), cex=.8)
+    lty=1, col=cols, cex=.8)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-17-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-16-1.png" width="672" />
 See https://shinyserv.es/shiny/kreg/ for a nice illustration. Also note that you can use adaptive bandwidths to have a similar number of data points in each subsample (especially useful when $X$ is not uniform.)
 
 
@@ -493,42 +470,106 @@ See https://shinyserv.es/shiny/kreg/ for a nice illustration. Also note that you
 xy0 <- xy[order(xy$x),]
 plot(y~x, pch=16, col=grey(0,.5), dat=xy0)
 
-reg_lo <- loess(y~x, data=xy0, span=.4)
-lines(xy0$x, predict(reg_lo),
-    col='orange', type='o', pch=2)
+reg_lo4 <- loess(y~x, data=xy0, span=.4)
+reg_lo8 <- loess(y~x, data=xy0, span=.8)
 
-reg_lo <- loess(y~x, data=xy0, span=.8)
-lines(xy0$x, predict(reg_lo),
-    col='purple', type='o', pch=2)
+cols <- hcl.colors(3,alpha=.75)[-3]
+lines(xy0$x, predict(reg_lo4),
+    col=cols[1], type='o', pch=2)
+lines(xy0$x, predict(reg_lo8),
+    col=cols[2], type='o', pch=2)
 
 legend('topleft', title='Span',
     legend=c('h=.4 ', 'h=.8'),
-    lty=1, col=c('orange','purple'), cex=.8)
+    lty=1, col=cols, cex=.8)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-18-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-17-1.png" width="672" />
 
-The smoothed predicted values estimate the local means, and we can also construct confidence bands. 
+The smoothed predicted values estimate the local means. So we can also construct confidence bands
 
 ```r
+## Loess
 xy0 <- xy[order(xy$x),]
 X0 <- unique(xy0$x)
 reg_lo <- loess(y~x, data=xy0, span=.8)
+
+## Jackknife CI
 jack_lo <- sapply(1:nrow(xy), function(i){
     xy_i <- xy[-i,]
     reg_i <- loess(y~x, dat=xy_i, span=.8)
-    predict(reg_i,  newdata=data.frame(x=X0))
+    predict(reg_i, newdata=data.frame(x=X0))
 })
 jack_cb <- apply(jack_lo,1, quantile,
     probs=c(.025,.975), na.rm=T)
 
+## Plot
 plot(y~x, pch=16, col=grey(0,.5), dat=xy0)
+preds_lo <- predict(reg_lo, newdata=data.frame(x=X0))
+lines(X0, preds_lo,
+    col=hcl.colors(3,alpha=.75)[2],
+    type='o', pch=2)
+## Plot CI
 polygon(
     c(X0, rev(X0)),
     c(jack_cb[1,], rev(jack_cb[2,])),
-    col=grey(0,.25), border=NA)
-lines(xy0$x, predict(reg_lo),
-    col='orange', type='o', pch=2)
+    col=hcl.colors(3,alpha=.25)[2],
+    border=NA)
+```
+
+<img src="03-ROLS_files/figure-html/unnamed-chunk-18-1.png" width="672" />
+
+
+You can also construct prediction bands
+
+```r
+plot(y~x, pch=16, col=grey(0,.5),
+    dat=xy0, ylim=c(0, 20))
+lines(X0, preds_lo,
+    col=hcl.colors(3,alpha=.75)[2],
+    type='o', pch=2)
+
+## Estimate Residuals CI at design points
+res_lo <- sapply(1:nrow(xy), function(i){
+    y_i <- xy[i,'y']
+    preds_i <- jack_lo[,i]
+    resids_i <- y_i - preds_i
+})
+res_cb <- apply(res_lo, 1, quantile,
+    probs=c(.025,.975), na.rm=T)
+## Plot
+lines( X0, preds_lo +res_cb[1,],
+    col=hcl.colors(3,alpha=.75)[2], lt=2)
+lines( X0, preds_lo +res_cb[2,],
+    col=hcl.colors(3,alpha=.75)[2], lty=2)
+
+
+
+
+## Smooth estimates 
+res_lo <- lapply(1:nrow(xy), function(i){
+    y_i <- xy[i,'y']
+    x_i <- xy[i,'x']
+    preds_i <- jack_lo[,i]
+    resids_i <- y_i - preds_i
+    cbind(e=resids_i, x=x_i)
+})
+res_lo <- as.data.frame(do.call(rbind, res_lo))
+
+res_fun <- function(x0, h, res_lo){
+    ## Assign equal weight to observations within h distance to x0
+    ## 0 weight for all other observations
+    ki <- dunif(res_lo$x, x0-h, x0+h) 
+    ei <- res_lo[ki!=0,'e']
+    res_i <- quantile(ei, probs=c(.025,.975), na.rm=T)
+}
+X0 <- sort(unique(xy$x))
+res_lo2 <- sapply(X0, res_fun, h=15, res_lo=res_lo)
+
+lines( X0, preds_lo +res_lo2[1,],
+    col=hcl.colors(3,alpha=.75)[2], lty=1, lwd=2)
+lines( X0, preds_lo +res_lo2[2,],
+    col=hcl.colors(3,alpha=.75)[2], lty=1, lwd=2)
 ```
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-19-1.png" width="672" />
@@ -614,6 +655,7 @@ To measure the ``Goodness of fit'' of the model, we can again plot our predictio
 
 ```r
 plot(USArrests$Murder, predict(reg), pch=16, col=grey(0,.5))
+abline(a=0,b=1, lty=2)
 ```
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-22-1.png" width="672" />
@@ -689,8 +731,8 @@ fig
 ```
 
 ```{=html}
-<div class="plotly html-widget html-fill-item" id="htmlwidget-ecd3d90f35a2a9ac80b8" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-ecd3d90f35a2a9ac80b8">{"x":{"visdat":{"3441225d4184":["function () ","plotlyVisDat"]},"cur_data":"3441225d4184","attrs":{"3441225d4184":{"mode":"markers","x":{},"y":{},"text":{},"hoverinfo":"text","showlegend":false,"marker":{"color":"rgba(0, 0, 0, 0.5)"},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Joint Distribution of Coefficients","xaxis":{"domain":[0,1],"automargin":true,"title":"UrbanPop Coefficient"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Homicide Coefficient"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"mode":"markers","x":[-0.057092042747763236,-0.048036723921568991,-0.028487115439568909,-0.046962154007143292,-0.049948324961182407,-0.016673054217582403,-0.018507573991887263,-0.025349122455230758,-0.036166867636164036,-0.081259875911808291,-0.052898591521003388,-0.019099177028545838,-0.040290869844768956,-0.054281255054538825,-0.047599305981085673,-0.083776047357302957,-0.02370205801367577,-0.043246574678407632,-0.013414628252635204,-0.052341082394857533,-0.021582618352590177,-0.032438292659301808,-0.043024073745048366,-0.025828416314922963,-0.03324451367095882,-0.091070729536250436,-0.038488752490974075,-0.054135952163324057,-0.080615620421048501,-0.05811990487751667,-0.050814521224081519,-0.016179707272943895,-0.037720620815927808,-0.06023229713837587,-0.099883958275476803,-0.044370222671001096,-0.026533221202993486,-0.039910224468510155,-0.089099786900526626,-0.03111272231586559,-0.037766306995516384,-0.011139273335938863,-0.024934871877220502,-0.023585492157598874,0.0036434330327466593,-0.024714234667048366,-0.01673492765639914,-0.053352862906915613,-0.027953402641448601,-0.04379233145964756,-0.025851632657159784,-0.065441195585324033,-0.060544221562370805,-0.057582663736762817,-0.030260186434241606,0.0027371958610787708,-0.069006586956461211,-0.04273335430857364,-0.063193148930696413,-0.081319272557204531,-0.058059034898818453,-0.080705911053581922,-0.044512341137499661,-0.034838527191363114,-0.050779545054153288,-0.040238507905886102,0.014048389652919512,-0.054942227601851551,-0.051122977274607656,-0.048576284912683808,-0.061739557286274609,-0.060674725776701931,-0.11168791588967973,-0.013390770687904764,-0.0430548056080374,-0.072003351276662311,-0.038665468803953676,-0.061187849911094022,-0.10244623364684789,-0.026924433624124756,-0.027462805058111533,-0.038203604744639692,-0.045003585860021261,-0.051902977085785174,-0.014080112677150725,-0.072338850891989423,-0.056709057624015145,-0.035292040065257851,-0.050498984424510264,-0.043603203493138849,-0.031294995916050457,-0.01564512809451921,-0.027533080419328206,-0.056194604722710657,-0.047777287767151497,-0.019294323964783092,-0.059482028764845318,-0.032294566319254175,-0.072201605927164292,-0.025187604959478062,-0.03933496371733098,-0.048424946134968568,-0.034594490087413936,-0.022614359371769269,-0.072293927020029347,-0.040153235688782603,-0.055368178029796579,-0.065589841616658706,-0.077470938661512015,-0.024458670771164141,-0.073286387200697564,-0.07306496939156483,-0.030403538055634234,-0.029533256516646896,-0.03753458900921583,-0.061242380493109871,-0.069905339570774008,-0.028883924730570398,-0.0040034724461339901,-0.1112556255773514,-0.018002855092123092,-0.046613939013357017,-0.03765503862193284,-0.051522026136386789,-0.0039195661191882636,-0.039089827572607039,0.0086545404188035496,-0.055380033428236004,-0.10348954066244599,-0.029275240043667286,-0.058613745796521254,-0.04605511559200904,-0.060796004221542001,-0.054188959039672586,-0.044233311561160213,-0.067571109966729923,-0.08177759522082638,-0.014196247491276398,-0.027225114388297719,-0.025354248275324887,-0.019677532743763455,-0.015710313971426287,-0.017692128076657189,0.00035464736667661207,-0.056357659236030852,-0.031315937863698705,-0.029537261592861287,-0.022628109376237125,-0.028387142358185777,-0.041222478012787347,-0.016934004299469094,-0.068916699340355714,-0.054421486239366337,-0.072259756107747014,-0.047393223946515489,-0.0035189579086015482,-0.0097404289765846523,-0.020749225501011992,-0.046459822738861838,-0.022345842748143014,-0.043727148885692332,-0.036261298745645223,-0.05824267441181695,-0.031698216294010519,-0.054151938785099003,-0.025500212052537958,-0.055325824392769139,-0.034889534830643318,-0.035305130828161044,-0.020206177371920622,-0.05480659873431943,-0.049028098883700459,-0.080321965995116568,-0.047196451768549919,-0.068703129224756229,-0.066463954121445235,-0.030636558494741187,-0.025379905257979139,-0.057287722644012599,-0.018662674196687566,-0.029161655577271725,-0.011568421949176172,-0.01732363369145155,-0.030075523152472753,-0.02899806559053527,-0.083915395261737816,-0.028403583375749952,-0.033863831433767991,-0.031261266023946847,-0.041170387517548798,-0.041688460314654063,-0.068142137353938773,-0.043231758470127897,-0.0095530446690624306,-0.0032077248029298198,-0.063750957136803149,-0.026702608577035616,-0.070421154199655778,-0.037103635373926573,-0.017591592274850309,-0.062074012116289594,-0.044152212331264651,-0.073031683071936221,-0.017564966653964911,-0.024741914146256715,-0.064369850181324031,-0.020175300442565193,-0.02102382712648165,0.01616106628811247,-0.065946183239431716,-0.022001524444776134,-0.019128623646161951,-0.017707307299603552,-0.073232284129111522,-0.049212116728404511,-0.10857614791858851,-0.07977174455077729,-0.043808547956117237,-0.081887676103227017,-0.014897979951357897,-0.015819517430741871,-0.075328191439191242,-0.082479279923660165,-0.065650339254714418,-0.079855596044406341,-0.056154563934570717,-0.047703125477643708,-0.0038662348388388661,-0.020700170516364885,-0.028329646998617123,-0.070900035625377458,-0.060362450181864286,-0.056510113879998762,-0.030506194913768769,-0.048106377283309479,-0.016183050729203313,-0.034463590214957943,-0.026715730675249263,-0.043943963626018608,-0.090393332455200912,-0.051742489618996884,-0.0058945302406029805,-0.079312237016517989,-0.062611460132316443,-0.065519213882205052,-0.067708677502968537,-0.037621519389162542,-0.020015958172660362,-0.053178780009236301,-0.026311507086990669,-0.051406260363658703,-0.0035226779527729002,-0.021839214756297149,-0.052937936180265911,-0.035642085955946853,-0.038756923214909256,-0.075528752171322502,-0.053421111300607178,-0.064276450088048859,-0.031227907296806065,-0.032576927960191855,-0.051500906578816751,-0.069074650871337323,-0.051523963766103319,-0.10571916516198793,-0.042493632113033593,-0.067353784340414447,-0.061871342230711286,-0.019270094418313049,-0.025428914980426598,-0.071207008806623173,-0.014497597045220342,-0.034471207611876449,-0.022138116247563955,-0.074948476809593767,-0.065273889279108502,-0.038941191757113788,-0.014717702555787899,-0.028205381022834968,-0.082871236032191625,-0.034772614647067372,-0.02982042276736083,-0.06484561605012451,-0.047097682247030662,-0.047386793986277327,-0.052544908263770472,-0.031222436363846577,-0.030381604800253075,-0.067546337650445445,-0.011663371031099427,-0.075050794713008157,0.0098210025867037851,-0.050508645062852471,-0.025245915084740323,-0.01238550573857636,-0.087633865233639155,-0.03953366425670464,0.013552800210532729,-0.072364771323612825,-0.068793044755769653,-0.037241641621510384,-0.059566528099663139,-0.03051078087096009,-0.070506685914793837,-0.018539370499817839,-0.045657149216050998,-0.067206183957220583,-0.043560889240664473,-0.039582690604559968,-0.075017281413985754,-0.039865164354023631,-0.044148642909958971,-0.056555593548164751,-0.080551411729602576,-0.013354775050199757,-0.049061911622440425,-0.033690406323093142,-0.026404009148871869,-0.048073594531663037,-0.070459432586577289,-0.030225301339441426,-0.024157692958922512,-0.038612613815681429,-0.03152319498949601,-0.077828861886319323,-0.018351583972139259,-0.049762366298434786,-0.024603754141338027,-0.044752671611393263,-0.029578507773380527,-0.048144970168371201,-0.076477408299245028,-0.018207388981466135,-0.063468705395390124,-0.044571555245685041,-0.076159648174013897,-0.070621119590821665,-0.064081302191910203,-0.048698588626030742,-0.08358259835784114,-0.043741186856405247,-0.049713283671220986,-0.042763428466776283,-0.0079472344227760772,-0.019532285611949151,-0.028164673631396409,-0.034587440803898507,-0.041354431765924654,-0.028993842353466151,-0.038997569862415843,-0.019249258590567517,-0.00057398491437283834,-0.046934607898691701,0.026673739674181192,-0.06631917412928412,-0.010435693798421089,-0.084326325359346088,-0.077875192050253006,-0.094253498716681053,-0.041366038745961918,-0.072678035425719281,-0.1040047846939659,0.0035676887016106466,-0.065189719891113912,-0.036826405683147968,-0.060314967656779683,-0.025611958844243915,-0.027395499167208456,-0.046755032245696063,-0.042887257648592171,-0.037033168403429205,-0.058886662214250748,-0.051839549482764827,-0.026678384361312545,-0.051952024218999214,-0.00016606769778701165,-0.022972560515014843,-0.046315527000610687,-0.028138863993922791,-0.043960703157803052,-0.043101118256511431,-0.0720946970631966,-0.045353190559808583,0.0035060837456135125,-0.043984981326722371,-0.014007725503679227,-0.052622139523659898,-0.013384304933896203,0.0023967578186778753,-0.032358959481769867,-0.029898358145105591,-0.059060906958776374,-0.0339079087016649,-0.044559710143549217,-0.0485016098178346,-0.053239118543698359,-0.054633378699671477,-0.059867538249382971,-0.028599811949097075],"y":[0.046433496851444052,0.043295639539758492,0.037235336462718691,0.044883160331744838,0.048472721191171658,0.041593143061177076,0.043116443908839196,0.042706891758934044,0.045524177795943699,0.035971705998703071,0.040244895472534875,0.038585267805585195,0.042832085399266528,0.044015045664175689,0.04636224707014841,0.045881617398123575,0.041573141094768416,0.039633763404693205,0.038998084276429458,0.041431270497207261,0.0342328965292742,0.04318886298331169,0.049798515903425572,0.042495625258735278,0.042691846829421502,0.047148666781353529,0.045466724312836118,0.040648752787889382,0.042699178968425067,0.04905925682634385,0.052727750130374756,0.040049629814203937,0.044828625211837649,0.046689815061305852,0.043246082216971134,0.045322451188157691,0.047188782895756613,0.038033114945270889,0.053587204371423246,0.043489882853034928,0.050365009108362106,0.047178601983631274,0.038573963365032701,0.043761972625950094,0.047405262470086647,0.045248570779162015,0.045617621030994662,0.042162348046118306,0.050633578851401129,0.044519504680977519,0.045640521752657273,0.044356613275952791,0.051902995768672265,0.051338098217320313,0.048926941334976062,0.036679409888390954,0.045957352149243708,0.042792293872506937,0.042560357878319709,0.044173899699819955,0.055981146182440669,0.051553467471573584,0.041059572992906336,0.041056509615696617,0.042864583067149305,0.045427724509102284,0.039369648883627407,0.046760058366806065,0.045747930505881274,0.036627143444099848,0.04053645263626187,0.048739033812778769,0.045859520874995584,0.043246608214074979,0.04145167853797433,0.045750311453937723,0.044363517750769771,0.047439948503776926,0.05489808561961828,0.031696247103933574,0.046955888700204458,0.040920218847970036,0.038134296308759176,0.047980784155659074,0.046372543721909118,0.047877500501577547,0.038956698322488402,0.045060224500612221,0.044723487484339831,0.045499190773319979,0.04611662168708195,0.043675055589393823,0.043752152550641528,0.046074302972837454,0.046888781216415557,0.042967775173490673,0.044036263571559688,0.046027087641322857,0.050860356489187408,0.039873749925158894,0.041485596741939357,0.049730988541520076,0.037487149035950296,0.04060531257592085,0.041520195109187322,0.047744086734976141,0.039835228673362776,0.045653471312464861,0.048143278310171622,0.042157352782992617,0.048597596111147369,0.044731472513809448,0.043875471955030547,0.044310208575168361,0.042522055613688138,0.048612527254465902,0.047365444324461346,0.04305098946963376,0.041191342471785741,0.043342875745033198,0.045985032382888084,0.050651469108247131,0.043493830203603617,0.045287433565499136,0.041587601542553088,0.044366347856174763,0.038638357078094064,0.03972928165868949,0.04788487194611691,0.043881634059676454,0.042155759683412911,0.042677864487841631,0.047697410872743283,0.043239517444523277,0.042297128932503182,0.041026028927285192,0.049133271036707914,0.042367973066052021,0.050529664760357765,0.03999906083018194,0.038856564590280987,0.034080199563599499,0.040998717454811644,0.042424459653353168,0.042313861610900033,0.044152019538149526,0.041959804214878015,0.040972946054051627,0.044688236789365093,0.045524252622668668,0.043836852988940689,0.053611998309260681,0.048863191347718833,0.045386947874732818,0.045789336289243171,0.045606084483294222,0.035321497799072253,0.042865169262136564,0.047462162282751304,0.050520433687289985,0.043085229870048064,0.043712340057790559,0.043277631023768179,0.045823526072588709,0.044355280397768398,0.049546676355982706,0.04389691955764969,0.037875587715577509,0.040057217206207127,0.041906464380146259,0.042424764834833879,0.043286791895021215,0.051697446035631353,0.039359730789236352,0.046885135497351661,0.043107233192407161,0.045852632420326563,0.042803740496156366,0.046003802350949502,0.048735455318843386,0.041236469967062019,0.037221900424795944,0.041737869360818212,0.045646722754154191,0.042081104834852147,0.044541476631911617,0.041489755423955221,0.044863204162510981,0.039875705703738516,0.042022316211943238,0.045015346323780257,0.043994303422570061,0.041793227156415466,0.036569746664966749,0.041775831033375274,0.040138702890211181,0.040734168458771813,0.044213020612954394,0.041181839219786305,0.042457627335432541,0.053784898054489674,0.051376210138302514,0.030056866380731746,0.045232257337282838,0.044605600662177072,0.052503558938689771,0.032800167346554027,0.039517204995442194,0.036863299933126203,0.049287417628031835,0.046144943625032131,0.040690565531714531,0.043004116821344349,0.046759724339090647,0.031383621825490253,0.052946902145377589,0.054432464787995051,0.04174249956637717,0.051176377995519329,0.040096134835877505,0.046212862684508423,0.054993614444197085,0.051373960984059462,0.04870345721516256,0.050161070993189359,0.043672460897476249,0.039987627163780085,0.047506099548260801,0.03986846047565485,0.043878632766510453,0.051754197928434845,0.043727208747391021,0.043918511460658852,0.042408623177269414,0.045008004007606878,0.03638086837125875,0.03754274177079147,0.043992601579092849,0.037946551023867521,0.047513762368530034,0.039750863938332805,0.035219731890047956,0.046448625864096073,0.038444681247572679,0.045942895407981271,0.042830192995888458,0.043682592204333827,0.046620232295042911,0.043717707459217686,0.040943366701185951,0.044731592802497534,0.041677692367206837,0.03619858047334637,0.044192123021562071,0.039237730033291035,0.042657851382656591,0.04839185354895522,0.039967128513121154,0.047144679139421351,0.044339227521334762,0.037777170927007386,0.038392066981115289,0.055358031561897898,0.042929174709061088,0.044919471687578032,0.043818210404470891,0.044365821736827633,0.043228542313942166,0.041865554745464419,0.041534892567381479,0.047547998313629949,0.039494578216556858,0.043520056352852839,0.043996041150570077,0.048566998202226472,0.04529443238596189,0.036116017804066321,0.042619316549246812,0.042705106951697581,0.040736337211603281,0.042811009117640714,0.046198684249671391,0.044861389241155972,0.037145605820014117,0.046624902161027111,0.047349369362900205,0.046360556811121882,0.044819318627515731,0.049015573385079329,0.040631518894315037,0.042113078996909435,0.040038456129630286,0.039997988715000661,0.047020031982973443,0.041295310759140245,0.050976934243639971,0.035920592810510958,0.041546761663646972,0.039941567340026518,0.050608333303341101,0.04428943991619072,0.044630654346557899,0.036607840981137139,0.047793483957265646,0.03832180709657846,0.042109759068891195,0.042432838319118128,0.047508100001204395,0.043442105629276744,0.04477612494779043,0.043006504302165974,0.045279808665346907,0.054227144226997807,0.042793081118851932,0.046937825037823705,0.049299717452668347,0.036809819870311115,0.045757637658222682,0.038440628709374099,0.046522362148877144,0.050820165138061965,0.041837077427374518,0.033414446668846721,0.042817777093185329,0.038676835433038979,0.042899596931113101,0.041109788020480792,0.038863257635310185,0.057809916219563801,0.040563200081854427,0.047750999198976816,0.046231606506153648,0.03951993920434764,0.042439186330688113,0.041319444749197007,0.048432382559806905,0.043139719782315067,0.043519921033671513,0.046635963146311965,0.049998990862121687,0.042509390939721885,0.045127295527244732,0.0372662549631868,0.037266237888822135,0.046024120578109631,0.038139569990791537,0.049166902031726044,0.044161712832896341,0.041570541823861752,0.041930558171247821,0.046454351256718214,0.042458911479086682,0.048290276548869152,0.039918233786296838,0.049420050080741691,0.042222506766098192,0.051706695095151717,0.045931068281021545,0.045177934030664571,0.047511321048204137,0.04807700119687261,0.059289452842968798,0.039733842479960389,0.043440208247137659,0.046329438017453088,0.052006547811209038,0.037390040154001887,0.043643346507267672,0.042393631655520271,0.038366813127099005,0.045359867820380068,0.04541827664678897,0.047937758076462521,0.0408798357467616,0.046650875262314921,0.042732935054155853,0.042337186557902987,0.044222243695139739,0.048100980356141347,0.044043166695656409,0.039799856065673593,0.047739457846184212,0.041789415550470985,0.036804749553592322,0.04202599308299846,0.040448586359351328,0.043421643544378732,0.041096898954749397,0.038215298060132123,0.04388604561839126,0.040027489729926639,0.05459484291557487,0.044098578734215223,0.046102752818950959,0.047755072797065472,0.044822260651316795,0.04163079987989457,0.048279988284308316,0.041464951884827232],"text":["<b> boot:  1 <\/b>","<b> boot:  2 <\/b>","<b> boot:  3 <\/b>","<b> boot:  4 <\/b>","<b> boot:  5 <\/b>","<b> boot:  6 <\/b>","<b> boot:  7 <\/b>","<b> boot:  8 <\/b>","<b> boot:  9 <\/b>","<b> boot:  10 <\/b>","<b> boot:  11 <\/b>","<b> boot:  12 <\/b>","<b> boot:  13 <\/b>","<b> boot:  14 <\/b>","<b> boot:  15 <\/b>","<b> boot:  16 <\/b>","<b> boot:  17 <\/b>","<b> boot:  18 <\/b>","<b> boot:  19 <\/b>","<b> boot:  20 <\/b>","<b> boot:  21 <\/b>","<b> boot:  22 <\/b>","<b> boot:  23 <\/b>","<b> boot:  24 <\/b>","<b> boot:  25 <\/b>","<b> boot:  26 <\/b>","<b> boot:  27 <\/b>","<b> boot:  28 <\/b>","<b> boot:  29 <\/b>","<b> boot:  30 <\/b>","<b> boot:  31 <\/b>","<b> boot:  32 <\/b>","<b> boot:  33 <\/b>","<b> boot:  34 <\/b>","<b> boot:  35 <\/b>","<b> boot:  36 <\/b>","<b> boot:  37 <\/b>","<b> boot:  38 <\/b>","<b> boot:  39 <\/b>","<b> boot:  40 <\/b>","<b> boot:  41 <\/b>","<b> boot:  42 <\/b>","<b> boot:  43 <\/b>","<b> boot:  44 <\/b>","<b> boot:  45 <\/b>","<b> boot:  46 <\/b>","<b> boot:  47 <\/b>","<b> boot:  48 <\/b>","<b> boot:  49 <\/b>","<b> boot:  50 <\/b>","<b> boot:  51 <\/b>","<b> boot:  52 <\/b>","<b> boot:  53 <\/b>","<b> boot:  54 <\/b>","<b> boot:  55 <\/b>","<b> boot:  56 <\/b>","<b> boot:  57 <\/b>","<b> boot:  58 <\/b>","<b> boot:  59 <\/b>","<b> boot:  60 <\/b>","<b> boot:  61 <\/b>","<b> boot:  62 <\/b>","<b> boot:  63 <\/b>","<b> boot:  64 <\/b>","<b> boot:  65 <\/b>","<b> boot:  66 <\/b>","<b> boot:  67 <\/b>","<b> boot:  68 <\/b>","<b> boot:  69 <\/b>","<b> boot:  70 <\/b>","<b> boot:  71 <\/b>","<b> boot:  72 <\/b>","<b> boot:  73 <\/b>","<b> boot:  74 <\/b>","<b> boot:  75 <\/b>","<b> boot:  76 <\/b>","<b> boot:  77 <\/b>","<b> boot:  78 <\/b>","<b> boot:  79 <\/b>","<b> boot:  80 <\/b>","<b> boot:  81 <\/b>","<b> boot:  82 <\/b>","<b> boot:  83 <\/b>","<b> boot:  84 <\/b>","<b> boot:  85 <\/b>","<b> boot:  86 <\/b>","<b> boot:  87 <\/b>","<b> boot:  88 <\/b>","<b> boot:  89 <\/b>","<b> boot:  90 <\/b>","<b> boot:  91 <\/b>","<b> boot:  92 <\/b>","<b> boot:  93 <\/b>","<b> boot:  94 <\/b>","<b> boot:  95 <\/b>","<b> boot:  96 <\/b>","<b> boot:  97 <\/b>","<b> boot:  98 <\/b>","<b> boot:  99 <\/b>","<b> boot:  100 <\/b>","<b> boot:  101 <\/b>","<b> boot:  102 <\/b>","<b> boot:  103 <\/b>","<b> boot:  104 <\/b>","<b> boot:  105 <\/b>","<b> boot:  106 <\/b>","<b> boot:  107 <\/b>","<b> boot:  108 <\/b>","<b> boot:  109 <\/b>","<b> boot:  110 <\/b>","<b> boot:  111 <\/b>","<b> boot:  112 <\/b>","<b> boot:  113 <\/b>","<b> boot:  114 <\/b>","<b> boot:  115 <\/b>","<b> boot:  116 <\/b>","<b> boot:  117 <\/b>","<b> boot:  118 <\/b>","<b> boot:  119 <\/b>","<b> boot:  120 <\/b>","<b> boot:  121 <\/b>","<b> boot:  122 <\/b>","<b> boot:  123 <\/b>","<b> boot:  124 <\/b>","<b> boot:  125 <\/b>","<b> boot:  126 <\/b>","<b> boot:  127 <\/b>","<b> boot:  128 <\/b>","<b> boot:  129 <\/b>","<b> boot:  130 <\/b>","<b> boot:  131 <\/b>","<b> boot:  132 <\/b>","<b> boot:  133 <\/b>","<b> boot:  134 <\/b>","<b> boot:  135 <\/b>","<b> boot:  136 <\/b>","<b> boot:  137 <\/b>","<b> boot:  138 <\/b>","<b> boot:  139 <\/b>","<b> boot:  140 <\/b>","<b> boot:  141 <\/b>","<b> boot:  142 <\/b>","<b> boot:  143 <\/b>","<b> boot:  144 <\/b>","<b> boot:  145 <\/b>","<b> boot:  146 <\/b>","<b> boot:  147 <\/b>","<b> boot:  148 <\/b>","<b> boot:  149 <\/b>","<b> boot:  150 <\/b>","<b> boot:  151 <\/b>","<b> boot:  152 <\/b>","<b> boot:  153 <\/b>","<b> boot:  154 <\/b>","<b> boot:  155 <\/b>","<b> boot:  156 <\/b>","<b> boot:  157 <\/b>","<b> boot:  158 <\/b>","<b> boot:  159 <\/b>","<b> boot:  160 <\/b>","<b> boot:  161 <\/b>","<b> boot:  162 <\/b>","<b> boot:  163 <\/b>","<b> boot:  164 <\/b>","<b> boot:  165 <\/b>","<b> boot:  166 <\/b>","<b> boot:  167 <\/b>","<b> boot:  168 <\/b>","<b> boot:  169 <\/b>","<b> boot:  170 <\/b>","<b> boot:  171 <\/b>","<b> boot:  172 <\/b>","<b> boot:  173 <\/b>","<b> boot:  174 <\/b>","<b> boot:  175 <\/b>","<b> boot:  176 <\/b>","<b> boot:  177 <\/b>","<b> boot:  178 <\/b>","<b> boot:  179 <\/b>","<b> boot:  180 <\/b>","<b> boot:  181 <\/b>","<b> boot:  182 <\/b>","<b> boot:  183 <\/b>","<b> boot:  184 <\/b>","<b> boot:  185 <\/b>","<b> boot:  186 <\/b>","<b> boot:  187 <\/b>","<b> boot:  188 <\/b>","<b> boot:  189 <\/b>","<b> boot:  190 <\/b>","<b> boot:  191 <\/b>","<b> boot:  192 <\/b>","<b> boot:  193 <\/b>","<b> boot:  194 <\/b>","<b> boot:  195 <\/b>","<b> boot:  196 <\/b>","<b> boot:  197 <\/b>","<b> boot:  198 <\/b>","<b> boot:  199 <\/b>","<b> boot:  200 <\/b>","<b> boot:  201 <\/b>","<b> boot:  202 <\/b>","<b> boot:  203 <\/b>","<b> boot:  204 <\/b>","<b> boot:  205 <\/b>","<b> boot:  206 <\/b>","<b> boot:  207 <\/b>","<b> boot:  208 <\/b>","<b> boot:  209 <\/b>","<b> boot:  210 <\/b>","<b> boot:  211 <\/b>","<b> boot:  212 <\/b>","<b> boot:  213 <\/b>","<b> boot:  214 <\/b>","<b> boot:  215 <\/b>","<b> boot:  216 <\/b>","<b> boot:  217 <\/b>","<b> boot:  218 <\/b>","<b> boot:  219 <\/b>","<b> boot:  220 <\/b>","<b> boot:  221 <\/b>","<b> boot:  222 <\/b>","<b> boot:  223 <\/b>","<b> boot:  224 <\/b>","<b> boot:  225 <\/b>","<b> boot:  226 <\/b>","<b> boot:  227 <\/b>","<b> boot:  228 <\/b>","<b> boot:  229 <\/b>","<b> boot:  230 <\/b>","<b> boot:  231 <\/b>","<b> boot:  232 <\/b>","<b> boot:  233 <\/b>","<b> boot:  234 <\/b>","<b> boot:  235 <\/b>","<b> boot:  236 <\/b>","<b> boot:  237 <\/b>","<b> boot:  238 <\/b>","<b> boot:  239 <\/b>","<b> boot:  240 <\/b>","<b> boot:  241 <\/b>","<b> boot:  242 <\/b>","<b> boot:  243 <\/b>","<b> boot:  244 <\/b>","<b> boot:  245 <\/b>","<b> boot:  246 <\/b>","<b> boot:  247 <\/b>","<b> boot:  248 <\/b>","<b> boot:  249 <\/b>","<b> boot:  250 <\/b>","<b> boot:  251 <\/b>","<b> boot:  252 <\/b>","<b> boot:  253 <\/b>","<b> boot:  254 <\/b>","<b> boot:  255 <\/b>","<b> boot:  256 <\/b>","<b> boot:  257 <\/b>","<b> boot:  258 <\/b>","<b> boot:  259 <\/b>","<b> boot:  260 <\/b>","<b> boot:  261 <\/b>","<b> boot:  262 <\/b>","<b> boot:  263 <\/b>","<b> boot:  264 <\/b>","<b> boot:  265 <\/b>","<b> boot:  266 <\/b>","<b> boot:  267 <\/b>","<b> boot:  268 <\/b>","<b> boot:  269 <\/b>","<b> boot:  270 <\/b>","<b> boot:  271 <\/b>","<b> boot:  272 <\/b>","<b> boot:  273 <\/b>","<b> boot:  274 <\/b>","<b> boot:  275 <\/b>","<b> boot:  276 <\/b>","<b> boot:  277 <\/b>","<b> boot:  278 <\/b>","<b> boot:  279 <\/b>","<b> boot:  280 <\/b>","<b> boot:  281 <\/b>","<b> boot:  282 <\/b>","<b> boot:  283 <\/b>","<b> boot:  284 <\/b>","<b> boot:  285 <\/b>","<b> boot:  286 <\/b>","<b> boot:  287 <\/b>","<b> boot:  288 <\/b>","<b> boot:  289 <\/b>","<b> boot:  290 <\/b>","<b> boot:  291 <\/b>","<b> boot:  292 <\/b>","<b> boot:  293 <\/b>","<b> boot:  294 <\/b>","<b> boot:  295 <\/b>","<b> boot:  296 <\/b>","<b> boot:  297 <\/b>","<b> boot:  298 <\/b>","<b> boot:  299 <\/b>","<b> boot:  300 <\/b>","<b> boot:  301 <\/b>","<b> boot:  302 <\/b>","<b> boot:  303 <\/b>","<b> boot:  304 <\/b>","<b> boot:  305 <\/b>","<b> boot:  306 <\/b>","<b> boot:  307 <\/b>","<b> boot:  308 <\/b>","<b> boot:  309 <\/b>","<b> boot:  310 <\/b>","<b> boot:  311 <\/b>","<b> boot:  312 <\/b>","<b> boot:  313 <\/b>","<b> boot:  314 <\/b>","<b> boot:  315 <\/b>","<b> boot:  316 <\/b>","<b> boot:  317 <\/b>","<b> boot:  318 <\/b>","<b> boot:  319 <\/b>","<b> boot:  320 <\/b>","<b> boot:  321 <\/b>","<b> boot:  322 <\/b>","<b> boot:  323 <\/b>","<b> boot:  324 <\/b>","<b> boot:  325 <\/b>","<b> boot:  326 <\/b>","<b> boot:  327 <\/b>","<b> boot:  328 <\/b>","<b> boot:  329 <\/b>","<b> boot:  330 <\/b>","<b> boot:  331 <\/b>","<b> boot:  332 <\/b>","<b> boot:  333 <\/b>","<b> boot:  334 <\/b>","<b> boot:  335 <\/b>","<b> boot:  336 <\/b>","<b> boot:  337 <\/b>","<b> boot:  338 <\/b>","<b> boot:  339 <\/b>","<b> boot:  340 <\/b>","<b> boot:  341 <\/b>","<b> boot:  342 <\/b>","<b> boot:  343 <\/b>","<b> boot:  344 <\/b>","<b> boot:  345 <\/b>","<b> boot:  346 <\/b>","<b> boot:  347 <\/b>","<b> boot:  348 <\/b>","<b> boot:  349 <\/b>","<b> boot:  350 <\/b>","<b> boot:  351 <\/b>","<b> boot:  352 <\/b>","<b> boot:  353 <\/b>","<b> boot:  354 <\/b>","<b> boot:  355 <\/b>","<b> boot:  356 <\/b>","<b> boot:  357 <\/b>","<b> boot:  358 <\/b>","<b> boot:  359 <\/b>","<b> boot:  360 <\/b>","<b> boot:  361 <\/b>","<b> boot:  362 <\/b>","<b> boot:  363 <\/b>","<b> boot:  364 <\/b>","<b> boot:  365 <\/b>","<b> boot:  366 <\/b>","<b> boot:  367 <\/b>","<b> boot:  368 <\/b>","<b> boot:  369 <\/b>","<b> boot:  370 <\/b>","<b> boot:  371 <\/b>","<b> boot:  372 <\/b>","<b> boot:  373 <\/b>","<b> boot:  374 <\/b>","<b> boot:  375 <\/b>","<b> boot:  376 <\/b>","<b> boot:  377 <\/b>","<b> boot:  378 <\/b>","<b> boot:  379 <\/b>","<b> boot:  380 <\/b>","<b> boot:  381 <\/b>","<b> boot:  382 <\/b>","<b> boot:  383 <\/b>","<b> boot:  384 <\/b>","<b> boot:  385 <\/b>","<b> boot:  386 <\/b>","<b> boot:  387 <\/b>","<b> boot:  388 <\/b>","<b> boot:  389 <\/b>","<b> boot:  390 <\/b>","<b> boot:  391 <\/b>","<b> boot:  392 <\/b>","<b> boot:  393 <\/b>","<b> boot:  394 <\/b>","<b> boot:  395 <\/b>","<b> boot:  396 <\/b>","<b> boot:  397 <\/b>","<b> boot:  398 <\/b>","<b> boot:  399 <\/b>"],"hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"showlegend":false,"marker":{"color":"rgba(0, 0, 0, 0.5)","line":{"color":"rgba(31,119,180,1)"}},"type":"scatter","error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"line":{"color":"rgba(31,119,180,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<div class="plotly html-widget html-fill-item" id="htmlwidget-cff2c8275b2b58adfc6b" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-cff2c8275b2b58adfc6b">{"x":{"visdat":{"38d526922e10":["function () ","plotlyVisDat"]},"cur_data":"38d526922e10","attrs":{"38d526922e10":{"mode":"markers","x":{},"y":{},"text":{},"hoverinfo":"text","showlegend":false,"marker":{"color":"rgba(0, 0, 0, 0.5)"},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Joint Distribution of Coefficients","xaxis":{"domain":[0,1],"automargin":true,"title":"UrbanPop Coefficient"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Homicide Coefficient"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"mode":"markers","x":[-0.040193020830040872,-0.027386790746881825,-0.045047189916925266,-0.092654529701866703,-0.038502855067274917,-0.077466845478544988,-0.008610235922455545,-0.011146710032571741,-0.039797905309251397,-0.0058943569268025877,-0.037401549925277847,-0.035478539064781343,-0.039763519227104367,-0.079536671027560735,-0.017586621051960898,-0.069133837578642457,-0.028980180455292381,-0.057908949690622477,-0.060386519479757893,-0.060390212150867574,-0.055257274425807676,-0.00071359496488616631,-0.055277067268379464,-0.053418610318362196,-0.07672026275019514,-0.079119811028808107,-0.022296112398301798,-0.091843632756019838,-0.017754154804092103,-0.061187664250804394,-0.019418367113352718,-0.0954052198865179,-0.065594698046742186,-0.030842589619165764,-0.03887336524149336,-0.078269924000696572,-0.041819318059981972,-0.041904110699244761,-0.05390253619742754,-0.017671174525582867,-0.034252402263643629,-0.088226088867718794,-0.085059758082130635,-0.0065647457192761381,-0.044190596820122767,-0.030505866732420769,-0.049249186461567077,-0.043943647484264881,-0.038348766064495519,-0.06799542815182967,-0.10501258655719972,-0.070189693441108258,-0.019319521990969261,-0.047520023036364371,-0.029369823083539397,-0.015934370297757884,-0.075439256315490144,-0.043885567661085832,-0.050161176965922961,-0.079712777988735689,-0.029838021155962964,-0.040794263895202819,-0.071151338855001869,-0.043843521907060735,-0.02381962863101679,-0.014404978753344231,-0.022328815977913152,-0.076594066950741668,-0.082443495860834076,-0.062383066937123054,-0.066403551227724525,-0.02802970500535391,-0.057074353427979951,-0.039045427341219928,-0.011841456796442319,-0.035603194835809301,-0.034353343498650192,-0.04590426720127256,-0.07346295479679156,-0.029356978792692008,-0.084907334471286094,-0.021069056352314187,-0.037421808187965977,-0.036121987092788181,-0.069320933131356441,-0.050335886256409522,-0.027984663937951088,-0.089947233393285614,-0.051940685758657443,-0.014677739045934442,-0.05664180381462338,-0.021326523115059497,-0.050797882091404442,-0.062696771311386124,-0.044709719824531091,-0.10607951152290779,-0.039079147653493386,-0.013912150879941508,-0.048727282298627737,-0.028455826488739989,-0.046077927228022897,-0.019760571926679339,-0.034284657099580867,-0.048408267609443355,-0.018985302848824059,-0.01084968131368663,-0.05788749858662897,-0.068958025078806801,-0.070672480615128902,0.0010098855274141222,-0.079913102981712947,-0.039068153425987261,-0.046752099312421878,-0.07717202622248448,-0.089333685986363848,-0.040999651960244368,-0.088813972210187553,-0.019907520729649096,-0.031406537077977283,-0.082349491979073097,-0.058509515589256135,-0.010064542263028902,-0.039285205240513363,-0.040219751185887609,-0.0472267533773197,-0.039363195353582653,-0.0041637519706656627,-0.034091334518228808,-0.066105286416425837,-0.074070796210466458,-0.062038149368383498,-0.06772888387494326,-0.028936134442392177,-0.028037971885911468,-0.091411804488832821,-0.012442050532195277,-0.030812386358261678,-0.068314041780011034,-0.025023629270342903,-0.099746612415696795,-0.048771542249223108,-0.062029945487129333,-0.035902113624421861,-0.0039887854622830295,-0.052413728815032,-0.093813796482048489,-0.071525526666091771,-0.057720873350926433,-0.037477325121361947,-0.04376642642591011,-0.058561470944086286,-0.032238816970002512,-0.0075131838747682783,-0.012740313729119105,-0.00063607212286248115,-0.009827829605683595,-0.066499569583271773,-0.070870959337504355,-0.0041884616665173154,-0.034428791774719567,-0.10334477552719548,-0.0081821998788910739,-0.043711310124627638,-0.067646885787336075,-0.03312739950484582,-0.074040779013718486,-0.035946985731613812,-0.062242290041769406,-0.049908272014181958,0.010235215697730584,-0.056649773510727641,-0.026612091136427891,-0.013452749753620713,-0.04330061211371982,-0.046008478722420601,-0.013696511246171727,-0.052438019743450442,0.021785136642719572,-0.068543765265140388,-0.072202872101483948,-0.012724259834623617,-0.079538475539715423,-0.050639924763553501,-0.081272674781477275,-0.033172411809500618,-0.046770795858197926,-0.014555372999314566,-0.059627157470365122,-0.096549457257976812,-0.024479989250540523,-0.038440997213682562,-0.040390740478573252,-0.0033319855945306517,-0.021950033103219319,-0.033145891585083409,-0.086247397551492813,-0.064827140693598739,-0.08155651199784987,-0.065946335976441964,-0.037840888477445406,-0.073123573041485923,-0.022105743087986521,-0.056892328867376288,-0.040906657800958257,-0.029887724144680057,-0.070051192034899387,-0.059506100220002682,-0.032588875209296535,-0.064528452605117678,-0.049635475018838755,-0.066494260061983557,-0.080928222470363423,-0.070756730967115627,-0.066959620021426081,-0.037701521762597577,-0.068087097044957259,-0.032127879145062134,-0.0304371647748523,0.0078985590657301222,-0.048779428176853129,-0.034607574869354729,-0.085173987577484844,-0.054145763327663819,-0.020828377103792133,-0.043766007075213297,-0.056010292525776093,-0.087623579579015745,-0.014310799779834767,-0.021492149362075001,-0.095353358307665712,-0.0073434194935685336,-0.038665746103552397,-0.046848115240862361,-0.07733705419920528,-0.073749993349329898,-0.058232664567550801,-0.043407105898626987,-0.071075912081231776,-0.059433209023564644,-0.027233683369791109,-0.049049349930300509,-0.056900663710299358,-0.037006664727024123,-0.061698858642246487,-0.019798733697329866,-0.033977172499255637,-0.040009561957980833,-0.025178494964705832,-0.041020501370475089,-0.043072359665994445,-0.072379136450040849,-0.047833833946095021,-0.026336927362515136,-0.02897104301944977,-0.057297125099660347,-0.038486872889985174,-0.082711906747906863,-0.057890179089685009,-0.016545819477234335,-0.018595499429725659,-0.045996537513439351,-0.021383661446558965,-0.092219876843408599,-0.071477575350694017,-0.012627828162917945,-0.03775136900711596,0.0032797880704274751,-0.059205200451207682,-0.054524740579046715,-0.10573533217946687,-0.034883678872574139,-0.049546309086785326,-0.064479037157251076,-0.051201356048254196,-0.087759341514821357,-0.045721295404829825,-0.022325564599567808,-0.035757052654811959,-0.046263947260162766,-0.052917719337009388,-0.029405868636891621,-0.06029146079859285,-0.082920526842185774,-0.052977275168691711,-0.056465330896342453,-0.08388989889244293,-0.034733244965223606,-0.04312267264466077,-0.015032650034642561,-0.020398396646808013,-0.050405541595032903,-0.080237380027066069,-0.069132718403308091,-0.065201598576962783,-0.0084594779870548666,-0.019426319574241565,-0.021086472867785422,0.012828274662188381,-0.03889796259630348,-0.067842430859138367,-0.04660835114602728,-0.038939006918378198,-0.031087998144817514,-0.096750579668061235,-0.071160552564413407,-0.022529351887562381,-0.097332031513932049,-0.06845579402311372,-0.037624844606935604,-0.034948488748673165,-0.054313984371505662,-0.089751532911037504,-0.041904231462963189,-0.044187809116305717,-0.11377663500134898,-0.048132353359938235,-0.035560336254633049,-0.055723959612107181,-0.022970116670342565,-0.02481717135235156,-0.0070918155123949368,-0.034953705699873168,-0.040991113655273595,-0.071514957068441423,-0.00948796501627127,-0.028861840199302588,-0.086609966001744754,-0.014893390749701077,-0.089742361921217761,-0.039202442922841294,-0.092091061471030924,-0.056173756348694932,-0.063474740955448833,-0.0084960150894890247,-0.024420916419814576,-0.054604801225881565,-0.070961429223899766,-0.046714342479148636,-0.038680484726951785,-0.022595377169306503,-0.036812138752091023,-0.025060679604437482,-0.0089440329935252753,-0.079927340072477329,-0.078736956155745205,-0.0099557971824410334,-0.027549539930795178,-0.078504567785331519,-0.0032831074105998969,-0.03107873845241307,-0.052445828763384598,-0.076309727466780081,-0.068701483576577349,-0.013891750042848811,-0.033533198559542642,-0.13671828435642774,-0.055048060286485533,-0.048840667066859099,-0.037575307997180493,-0.046815035110535148,-0.017916662367624472,-0.05641380348936139,-0.0088062668335684834,-0.072694834403252279,-0.053756667434090154,-0.12070856820086025,-0.05165143090798914,-0.065178898685136322,-0.05273420372320986,0.00042152201956314952,-0.045705736599483335,-0.034268637338635846,-0.061230903695610496,-0.068938817375344005,-0.0068949965171070434,-0.061756988345229594,-0.073532323041905476,-0.011670389152780306,-0.088969275276023524,-0.048429940145727546,-0.019593050370520289,-0.10956826341621077,-0.029003524503378689,-0.060211777137939446,-0.098423121184551488,-0.057066082235234183,-0.024329951584131988,-0.0098633661404701409,-0.076566742479101002,-0.032615196216947154,-0.0647467894318213,-0.021071123071329877,-0.048488767478548842,-0.10537309649314254,-0.040735685472419271,-0.044679453262209907,-0.016467782904541109,-0.066030073896549329,-0.036805746439371359],"y":[0.045157816449505964,0.042813802556285821,0.042909230420497768,0.047434471858155608,0.041007607901323843,0.049113435069360632,0.042998328637712822,0.042308297781687716,0.053684177803573215,0.041369267678289558,0.040579951067429211,0.041115127013696511,0.049375622093110139,0.04995285963071365,0.048987363386093462,0.049014304231734175,0.041088477416359862,0.047933417240494554,0.050752954335083408,0.038538337604710669,0.047722661291005899,0.042456821142578677,0.04570513082980171,0.047587416307652786,0.050486961164037981,0.048820099501337012,0.036954153267653694,0.03933378411758981,0.043138084826529297,0.045901997915155451,0.042472741499279515,0.044949708441432236,0.043005644777104807,0.051483173197551843,0.050201274842564182,0.048495174950879662,0.046203785629014421,0.047825215979302935,0.040349441762382962,0.040855334292246283,0.042537959958623008,0.044820491137566351,0.053099320388967433,0.038860814297720543,0.044017498077639432,0.042147034735667423,0.053009954207451207,0.045144079976735918,0.041443977471697514,0.055392833058138906,0.049641186254663051,0.040438718087472514,0.048783183896332745,0.043196313296014664,0.043651116347153712,0.032762784899805983,0.047799615523188087,0.052965245162318549,0.039181917658976217,0.04933510398757962,0.042742653993098498,0.047483698887129888,0.043652727122357342,0.039373913811940719,0.042225329427375849,0.045856485589984938,0.037578248292509678,0.050406927302923767,0.049676064701539228,0.041375076025069561,0.049088413141940464,0.039870288511061586,0.043016946772286103,0.040144917055006314,0.043620234308725636,0.041929551616065798,0.04063017778113074,0.044654391948904866,0.043582254731605957,0.045065795940296388,0.044646894735438536,0.042358260400651833,0.044721273610734531,0.043382819649968471,0.039635445107650026,0.04667445537035974,0.040507132254600009,0.04303916571096638,0.046657175468562399,0.041040328430059517,0.04667486210009697,0.042953889091389676,0.048860023765398157,0.046055814331031383,0.044553420134997787,0.052651606428733545,0.045313410140272424,0.041343627573217565,0.048614162608152538,0.040247385453011486,0.050152507686135786,0.044436711762917254,0.041403143819306952,0.040251106241295818,0.046995159286631734,0.039677672736269098,0.04424081667365698,0.052596142823883918,0.039651962277657438,0.039033164334990059,0.046057376486046006,0.045268306513908466,0.042721326296026194,0.049257091451356372,0.054453934434646058,0.042463416280061297,0.041557922027935464,0.049551961549695801,0.037861208267560974,0.037347294768385733,0.042876754215740977,0.043611948266651983,0.038443064629742299,0.046497985610511265,0.039361298145060668,0.049174688908920468,0.039659437616001651,0.047896228673435806,0.041586504683736085,0.048622573283503119,0.046387316711536938,0.043286539632532817,0.042154382442260378,0.042532862369508269,0.039257627848050272,0.04202267427119491,0.042861109472782592,0.045777501107714808,0.040377615620032281,0.044326849647943097,0.042204841712867591,0.046626432140547874,0.036527341635003707,0.037535499758298195,0.038451512780180594,0.045434093472233705,0.050536745970542127,0.046062474119766342,0.041046131525233884,0.045370375436247855,0.050092983709880218,0.044634216641506325,0.042509961485269136,0.044161328124011641,0.042873156901544147,0.044964357109377538,0.047374625631861948,0.051951634132645169,0.039871340456222523,0.045397568917127352,0.049086764409387494,0.043162222541335983,0.039560565570240132,0.038810906415346486,0.044708154216474491,0.043380012369407021,0.04239136772856273,0.046696264854303615,0.048932077865318294,0.034842798309392804,0.049144936936452506,0.045087768356335656,0.047455605996342125,0.05134435356583586,0.045966794291013482,0.042700511796688753,0.047873852666176733,0.04105365097131821,0.038502003520598745,0.047177444382075932,0.040669256162089454,0.046688303260840142,0.037903332105787425,0.052484751261477912,0.037632116310837148,0.043477123849395095,0.041407803204436516,0.045194906916265924,0.04579904169708917,0.042903426720881807,0.044941422954848737,0.042503071944201561,0.043018877332975089,0.045428418271284278,0.041781876798122244,0.048561594034803965,0.047005351021064068,0.044685632725205829,0.039462673206583983,0.044745509065417535,0.048912861702200425,0.044200373680384437,0.037595535611903215,0.044975983497203838,0.041892821439346119,0.050513083537954251,0.043466842655132579,0.04372284881715819,0.050503780642928063,0.039988373232960409,0.050851849961096159,0.044324986448386734,0.03618409450294139,0.039390557657749965,0.041856893301907852,0.048019907430902189,0.047378865591397631,0.037852611651472585,0.040421994419899826,0.043414445073649527,0.042857442748784745,0.039575197247111893,0.046906604750821188,0.04589163166419763,0.046637685949190551,0.04633690541024648,0.051232204680814575,0.045342958575204852,0.034898507271491852,0.046927003044169857,0.04524740748530106,0.042240363172179538,0.039295420724018391,0.039179773838959653,0.047700749105687307,0.049621049376465956,0.036753964973305131,0.04594160546731782,0.046027768593747298,0.044596889012818559,0.040607942690824253,0.045016408955489542,0.046704075282884193,0.044266855844660134,0.050831585071964364,0.030998672377863579,0.044529970262666585,0.043588126116785454,0.046829551643813673,0.041896323124739322,0.048771759915671856,0.044390907758868912,0.047560107534677522,0.037063445282481074,0.05394711067996473,0.041386660475446195,0.044281266907427529,0.042204496776763641,0.045787132898112329,0.044755656919653136,0.045941589464864069,0.03558060158542023,0.049433579163756167,0.040790410053761161,0.046178013228728283,0.049054872051265935,0.040474137053108872,0.047646484835156828,0.041061033791959058,0.052945128910841958,0.040560334749912635,0.041822957004195145,0.048929840875110424,0.044187829186463481,0.048386509641428405,0.040791009952669592,0.045033552141845658,0.038887764796339153,0.044524885761427574,0.046701231982501666,0.041726527691286777,0.049749458194231787,0.05515353974437489,0.04478361394609847,0.043157479130498763,0.045458633814172318,0.044333157880375486,0.040258202593723452,0.038689942978575399,0.046696973688019394,0.04250584285368731,0.048493024061396918,0.04716991120673255,0.048731398625167663,0.040552670304760625,0.041376991868194303,0.048888260182233439,0.041284084295159694,0.048858384696974393,0.043031060199932428,0.040857976894912967,0.049730152353268581,0.045255944502208205,0.056123498606428075,0.041771749678308136,0.04747547929735537,0.053107549467901957,0.041943168110907585,0.036744048114379063,0.04037778733449314,0.042699406770194084,0.041512501306707666,0.04330887032811756,0.040167383708979938,0.048427234679403068,0.044411171316803562,0.043953216896512555,0.044476522788276705,0.04181626498307834,0.041402755293024868,0.039222115899977823,0.045566903538254704,0.04336566902452145,0.042472032807646359,0.041233956589293297,0.04076096919833716,0.045659333930601273,0.04230724683241522,0.045893020993373251,0.042720202077351999,0.049083306396535964,0.045278922223879033,0.040455196809459422,0.038382650933048774,0.038740170996294641,0.044614052760254271,0.044471718073313585,0.044247840411482525,0.04908583649463092,0.044351977956501656,0.037603815794449026,0.046461267458632216,0.04585803268954991,0.054589956465022307,0.044092662580446695,0.039808819003301119,0.044683316990286881,0.054581161151833847,0.031902307864733734,0.045239257938356772,0.054214861268125587,0.049957221004315634,0.045871722752776685,0.04102650670571522,0.044311520388317198,0.049818690959775917,0.040801464056951578,0.041460467060403981,0.040791857727526547,0.046194934533161619,0.041751957332674311,0.044306666244700199,0.03939065005533568,0.039611486546661419,0.045798322531299597,0.058290841094282321,0.03906183779377085,0.041266299954830173,0.04375287651034284,0.039887890752629988,0.03680010540512596,0.041599896719450545,0.045386961637659373,0.046641945549775847,0.045396728322517545,0.042061930562856883,0.054363323251017469,0.037806303653130098,0.054241088647452057,0.042094045984110678,0.040562975276726733,0.053414394842939097,0.050978082493246736,0.047755469559089381,0.05447109007593548,0.049264459337012095,0.043574346977383237,0.047120969674103841,0.048226000600766046,0.044590218513119548,0.043694475379640149,0.042400151655374599,0.044017775991583442,0.051652580387913309,0.047484262764682116,0.046368819320893054,0.043049498256818364,0.040397470377166629,0.043801005042067291],"text":["<b> boot:  1 <\/b>","<b> boot:  2 <\/b>","<b> boot:  3 <\/b>","<b> boot:  4 <\/b>","<b> boot:  5 <\/b>","<b> boot:  6 <\/b>","<b> boot:  7 <\/b>","<b> boot:  8 <\/b>","<b> boot:  9 <\/b>","<b> boot:  10 <\/b>","<b> boot:  11 <\/b>","<b> boot:  12 <\/b>","<b> boot:  13 <\/b>","<b> boot:  14 <\/b>","<b> boot:  15 <\/b>","<b> boot:  16 <\/b>","<b> boot:  17 <\/b>","<b> boot:  18 <\/b>","<b> boot:  19 <\/b>","<b> boot:  20 <\/b>","<b> boot:  21 <\/b>","<b> boot:  22 <\/b>","<b> boot:  23 <\/b>","<b> boot:  24 <\/b>","<b> boot:  25 <\/b>","<b> boot:  26 <\/b>","<b> boot:  27 <\/b>","<b> boot:  28 <\/b>","<b> boot:  29 <\/b>","<b> boot:  30 <\/b>","<b> boot:  31 <\/b>","<b> boot:  32 <\/b>","<b> boot:  33 <\/b>","<b> boot:  34 <\/b>","<b> boot:  35 <\/b>","<b> boot:  36 <\/b>","<b> boot:  37 <\/b>","<b> boot:  38 <\/b>","<b> boot:  39 <\/b>","<b> boot:  40 <\/b>","<b> boot:  41 <\/b>","<b> boot:  42 <\/b>","<b> boot:  43 <\/b>","<b> boot:  44 <\/b>","<b> boot:  45 <\/b>","<b> boot:  46 <\/b>","<b> boot:  47 <\/b>","<b> boot:  48 <\/b>","<b> boot:  49 <\/b>","<b> boot:  50 <\/b>","<b> boot:  51 <\/b>","<b> boot:  52 <\/b>","<b> boot:  53 <\/b>","<b> boot:  54 <\/b>","<b> boot:  55 <\/b>","<b> boot:  56 <\/b>","<b> boot:  57 <\/b>","<b> boot:  58 <\/b>","<b> boot:  59 <\/b>","<b> boot:  60 <\/b>","<b> boot:  61 <\/b>","<b> boot:  62 <\/b>","<b> boot:  63 <\/b>","<b> boot:  64 <\/b>","<b> boot:  65 <\/b>","<b> boot:  66 <\/b>","<b> boot:  67 <\/b>","<b> boot:  68 <\/b>","<b> boot:  69 <\/b>","<b> boot:  70 <\/b>","<b> boot:  71 <\/b>","<b> boot:  72 <\/b>","<b> boot:  73 <\/b>","<b> boot:  74 <\/b>","<b> boot:  75 <\/b>","<b> boot:  76 <\/b>","<b> boot:  77 <\/b>","<b> boot:  78 <\/b>","<b> boot:  79 <\/b>","<b> boot:  80 <\/b>","<b> boot:  81 <\/b>","<b> boot:  82 <\/b>","<b> boot:  83 <\/b>","<b> boot:  84 <\/b>","<b> boot:  85 <\/b>","<b> boot:  86 <\/b>","<b> boot:  87 <\/b>","<b> boot:  88 <\/b>","<b> boot:  89 <\/b>","<b> boot:  90 <\/b>","<b> boot:  91 <\/b>","<b> boot:  92 <\/b>","<b> boot:  93 <\/b>","<b> boot:  94 <\/b>","<b> boot:  95 <\/b>","<b> boot:  96 <\/b>","<b> boot:  97 <\/b>","<b> boot:  98 <\/b>","<b> boot:  99 <\/b>","<b> boot:  100 <\/b>","<b> boot:  101 <\/b>","<b> boot:  102 <\/b>","<b> boot:  103 <\/b>","<b> boot:  104 <\/b>","<b> boot:  105 <\/b>","<b> boot:  106 <\/b>","<b> boot:  107 <\/b>","<b> boot:  108 <\/b>","<b> boot:  109 <\/b>","<b> boot:  110 <\/b>","<b> boot:  111 <\/b>","<b> boot:  112 <\/b>","<b> boot:  113 <\/b>","<b> boot:  114 <\/b>","<b> boot:  115 <\/b>","<b> boot:  116 <\/b>","<b> boot:  117 <\/b>","<b> boot:  118 <\/b>","<b> boot:  119 <\/b>","<b> boot:  120 <\/b>","<b> boot:  121 <\/b>","<b> boot:  122 <\/b>","<b> boot:  123 <\/b>","<b> boot:  124 <\/b>","<b> boot:  125 <\/b>","<b> boot:  126 <\/b>","<b> boot:  127 <\/b>","<b> boot:  128 <\/b>","<b> boot:  129 <\/b>","<b> boot:  130 <\/b>","<b> boot:  131 <\/b>","<b> boot:  132 <\/b>","<b> boot:  133 <\/b>","<b> boot:  134 <\/b>","<b> boot:  135 <\/b>","<b> boot:  136 <\/b>","<b> boot:  137 <\/b>","<b> boot:  138 <\/b>","<b> boot:  139 <\/b>","<b> boot:  140 <\/b>","<b> boot:  141 <\/b>","<b> boot:  142 <\/b>","<b> boot:  143 <\/b>","<b> boot:  144 <\/b>","<b> boot:  145 <\/b>","<b> boot:  146 <\/b>","<b> boot:  147 <\/b>","<b> boot:  148 <\/b>","<b> boot:  149 <\/b>","<b> boot:  150 <\/b>","<b> boot:  151 <\/b>","<b> boot:  152 <\/b>","<b> boot:  153 <\/b>","<b> boot:  154 <\/b>","<b> boot:  155 <\/b>","<b> boot:  156 <\/b>","<b> boot:  157 <\/b>","<b> boot:  158 <\/b>","<b> boot:  159 <\/b>","<b> boot:  160 <\/b>","<b> boot:  161 <\/b>","<b> boot:  162 <\/b>","<b> boot:  163 <\/b>","<b> boot:  164 <\/b>","<b> boot:  165 <\/b>","<b> boot:  166 <\/b>","<b> boot:  167 <\/b>","<b> boot:  168 <\/b>","<b> boot:  169 <\/b>","<b> boot:  170 <\/b>","<b> boot:  171 <\/b>","<b> boot:  172 <\/b>","<b> boot:  173 <\/b>","<b> boot:  174 <\/b>","<b> boot:  175 <\/b>","<b> boot:  176 <\/b>","<b> boot:  177 <\/b>","<b> boot:  178 <\/b>","<b> boot:  179 <\/b>","<b> boot:  180 <\/b>","<b> boot:  181 <\/b>","<b> boot:  182 <\/b>","<b> boot:  183 <\/b>","<b> boot:  184 <\/b>","<b> boot:  185 <\/b>","<b> boot:  186 <\/b>","<b> boot:  187 <\/b>","<b> boot:  188 <\/b>","<b> boot:  189 <\/b>","<b> boot:  190 <\/b>","<b> boot:  191 <\/b>","<b> boot:  192 <\/b>","<b> boot:  193 <\/b>","<b> boot:  194 <\/b>","<b> boot:  195 <\/b>","<b> boot:  196 <\/b>","<b> boot:  197 <\/b>","<b> boot:  198 <\/b>","<b> boot:  199 <\/b>","<b> boot:  200 <\/b>","<b> boot:  201 <\/b>","<b> boot:  202 <\/b>","<b> boot:  203 <\/b>","<b> boot:  204 <\/b>","<b> boot:  205 <\/b>","<b> boot:  206 <\/b>","<b> boot:  207 <\/b>","<b> boot:  208 <\/b>","<b> boot:  209 <\/b>","<b> boot:  210 <\/b>","<b> boot:  211 <\/b>","<b> boot:  212 <\/b>","<b> boot:  213 <\/b>","<b> boot:  214 <\/b>","<b> boot:  215 <\/b>","<b> boot:  216 <\/b>","<b> boot:  217 <\/b>","<b> boot:  218 <\/b>","<b> boot:  219 <\/b>","<b> boot:  220 <\/b>","<b> boot:  221 <\/b>","<b> boot:  222 <\/b>","<b> boot:  223 <\/b>","<b> boot:  224 <\/b>","<b> boot:  225 <\/b>","<b> boot:  226 <\/b>","<b> boot:  227 <\/b>","<b> boot:  228 <\/b>","<b> boot:  229 <\/b>","<b> boot:  230 <\/b>","<b> boot:  231 <\/b>","<b> boot:  232 <\/b>","<b> boot:  233 <\/b>","<b> boot:  234 <\/b>","<b> boot:  235 <\/b>","<b> boot:  236 <\/b>","<b> boot:  237 <\/b>","<b> boot:  238 <\/b>","<b> boot:  239 <\/b>","<b> boot:  240 <\/b>","<b> boot:  241 <\/b>","<b> boot:  242 <\/b>","<b> boot:  243 <\/b>","<b> boot:  244 <\/b>","<b> boot:  245 <\/b>","<b> boot:  246 <\/b>","<b> boot:  247 <\/b>","<b> boot:  248 <\/b>","<b> boot:  249 <\/b>","<b> boot:  250 <\/b>","<b> boot:  251 <\/b>","<b> boot:  252 <\/b>","<b> boot:  253 <\/b>","<b> boot:  254 <\/b>","<b> boot:  255 <\/b>","<b> boot:  256 <\/b>","<b> boot:  257 <\/b>","<b> boot:  258 <\/b>","<b> boot:  259 <\/b>","<b> boot:  260 <\/b>","<b> boot:  261 <\/b>","<b> boot:  262 <\/b>","<b> boot:  263 <\/b>","<b> boot:  264 <\/b>","<b> boot:  265 <\/b>","<b> boot:  266 <\/b>","<b> boot:  267 <\/b>","<b> boot:  268 <\/b>","<b> boot:  269 <\/b>","<b> boot:  270 <\/b>","<b> boot:  271 <\/b>","<b> boot:  272 <\/b>","<b> boot:  273 <\/b>","<b> boot:  274 <\/b>","<b> boot:  275 <\/b>","<b> boot:  276 <\/b>","<b> boot:  277 <\/b>","<b> boot:  278 <\/b>","<b> boot:  279 <\/b>","<b> boot:  280 <\/b>","<b> boot:  281 <\/b>","<b> boot:  282 <\/b>","<b> boot:  283 <\/b>","<b> boot:  284 <\/b>","<b> boot:  285 <\/b>","<b> boot:  286 <\/b>","<b> boot:  287 <\/b>","<b> boot:  288 <\/b>","<b> boot:  289 <\/b>","<b> boot:  290 <\/b>","<b> boot:  291 <\/b>","<b> boot:  292 <\/b>","<b> boot:  293 <\/b>","<b> boot:  294 <\/b>","<b> boot:  295 <\/b>","<b> boot:  296 <\/b>","<b> boot:  297 <\/b>","<b> boot:  298 <\/b>","<b> boot:  299 <\/b>","<b> boot:  300 <\/b>","<b> boot:  301 <\/b>","<b> boot:  302 <\/b>","<b> boot:  303 <\/b>","<b> boot:  304 <\/b>","<b> boot:  305 <\/b>","<b> boot:  306 <\/b>","<b> boot:  307 <\/b>","<b> boot:  308 <\/b>","<b> boot:  309 <\/b>","<b> boot:  310 <\/b>","<b> boot:  311 <\/b>","<b> boot:  312 <\/b>","<b> boot:  313 <\/b>","<b> boot:  314 <\/b>","<b> boot:  315 <\/b>","<b> boot:  316 <\/b>","<b> boot:  317 <\/b>","<b> boot:  318 <\/b>","<b> boot:  319 <\/b>","<b> boot:  320 <\/b>","<b> boot:  321 <\/b>","<b> boot:  322 <\/b>","<b> boot:  323 <\/b>","<b> boot:  324 <\/b>","<b> boot:  325 <\/b>","<b> boot:  326 <\/b>","<b> boot:  327 <\/b>","<b> boot:  328 <\/b>","<b> boot:  329 <\/b>","<b> boot:  330 <\/b>","<b> boot:  331 <\/b>","<b> boot:  332 <\/b>","<b> boot:  333 <\/b>","<b> boot:  334 <\/b>","<b> boot:  335 <\/b>","<b> boot:  336 <\/b>","<b> boot:  337 <\/b>","<b> boot:  338 <\/b>","<b> boot:  339 <\/b>","<b> boot:  340 <\/b>","<b> boot:  341 <\/b>","<b> boot:  342 <\/b>","<b> boot:  343 <\/b>","<b> boot:  344 <\/b>","<b> boot:  345 <\/b>","<b> boot:  346 <\/b>","<b> boot:  347 <\/b>","<b> boot:  348 <\/b>","<b> boot:  349 <\/b>","<b> boot:  350 <\/b>","<b> boot:  351 <\/b>","<b> boot:  352 <\/b>","<b> boot:  353 <\/b>","<b> boot:  354 <\/b>","<b> boot:  355 <\/b>","<b> boot:  356 <\/b>","<b> boot:  357 <\/b>","<b> boot:  358 <\/b>","<b> boot:  359 <\/b>","<b> boot:  360 <\/b>","<b> boot:  361 <\/b>","<b> boot:  362 <\/b>","<b> boot:  363 <\/b>","<b> boot:  364 <\/b>","<b> boot:  365 <\/b>","<b> boot:  366 <\/b>","<b> boot:  367 <\/b>","<b> boot:  368 <\/b>","<b> boot:  369 <\/b>","<b> boot:  370 <\/b>","<b> boot:  371 <\/b>","<b> boot:  372 <\/b>","<b> boot:  373 <\/b>","<b> boot:  374 <\/b>","<b> boot:  375 <\/b>","<b> boot:  376 <\/b>","<b> boot:  377 <\/b>","<b> boot:  378 <\/b>","<b> boot:  379 <\/b>","<b> boot:  380 <\/b>","<b> boot:  381 <\/b>","<b> boot:  382 <\/b>","<b> boot:  383 <\/b>","<b> boot:  384 <\/b>","<b> boot:  385 <\/b>","<b> boot:  386 <\/b>","<b> boot:  387 <\/b>","<b> boot:  388 <\/b>","<b> boot:  389 <\/b>","<b> boot:  390 <\/b>","<b> boot:  391 <\/b>","<b> boot:  392 <\/b>","<b> boot:  393 <\/b>","<b> boot:  394 <\/b>","<b> boot:  395 <\/b>","<b> boot:  396 <\/b>","<b> boot:  397 <\/b>","<b> boot:  398 <\/b>","<b> boot:  399 <\/b>"],"hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"showlegend":false,"marker":{"color":"rgba(0, 0, 0, 0.5)","line":{"color":"rgba(31,119,180,1)"}},"type":"scatter","error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"line":{"color":"rgba(31,119,180,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 
 We can also use an $F$ test for any $q$ hypotheses;
@@ -768,23 +810,23 @@ summary(fe_reg0)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -37.499  -6.299   0.072   6.274  42.436 
+## -35.608  -5.749  -0.362   5.865  43.600 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  22.9411     1.2762  17.977  < 2e-16 ***
-## x             0.7481     0.2146   3.486 0.000512 ***
-## fo.L         27.0185     1.0694  25.265  < 2e-16 ***
-## fo.Q         11.4331     0.9442  12.108  < 2e-16 ***
-## fo.C          3.0665     0.7581   4.045 5.64e-05 ***
-## fo^4          0.6379     0.5908   1.080 0.280566    
-## fuB         -24.5121     0.6170 -39.727  < 2e-16 ***
+## (Intercept)  21.0393     1.2696  16.571  < 2e-16 ***
+## x             0.9702     0.2115   4.588 5.06e-06 ***
+## fo.L         26.0856     1.0649  24.496  < 2e-16 ***
+## fo.Q         10.3414     0.9392  11.011  < 2e-16 ***
+## fo.C          1.4610     0.7515   1.944   0.0522 .  
+## fo^4          0.4336     0.5839   0.743   0.4579    
+## fuB         -23.9744     0.6095 -39.335  < 2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 9.733 on 993 degrees of freedom
-## Multiple R-squared:  0.7209,	Adjusted R-squared:  0.7192 
-## F-statistic: 427.5 on 6 and 993 DF,  p-value: < 2.2e-16
+## Residual standard error: 9.622 on 993 degrees of freedom
+## Multiple R-squared:  0.7037,	Adjusted R-squared:  0.702 
+## F-statistic: 393.1 on 6 and 993 DF,  p-value: < 2.2e-16
 ```
 We can also compute averages for each group and construct a "between estimator"
 $$
@@ -809,11 +851,11 @@ summary(fe_reg1)
 ## Fixed-effects: fo: 5,  fu: 2
 ## Standard-errors: Clustered (fo) 
 ##   Estimate Std. Error t value Pr(>|t|)    
-## x 0.748097   0.214218 3.49222 0.025072 *  
+## x 0.970241   0.421964 2.29934 0.082999 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 9.69926     Adj. R2: 0.719222
-##                 Within R2: 0.012089
+## RMSE: 9.58828     Adj. R2: 0.701953
+##                 Within R2: 0.020754
 ```
 
 ```r
@@ -823,9 +865,9 @@ coef( lm(y~-1+x+fo+fu, dat_f) )
 
 ```
 ##           x         fo0         fo1         fo2         fo3         fo4 
-##   0.7480966  11.0708386  12.9759248  17.2872650  26.1850707  47.1862431 
+##   0.9702411   9.6587536  10.7431705  15.8225261  25.3930868  43.5788135 
 ##         fuB 
-## -24.5121167
+## -23.9743705
 ```
 
 ```r
@@ -834,12 +876,12 @@ fixef(fe_reg1)
 
 ```
 ## $fo
-##        0        1        2        3        4 
-## 11.07084 12.97592 17.28726 26.18507 47.18624 
+##         0         1         2         3         4 
+##  9.658754 10.743170 15.822526 25.393087 43.578813 
 ## 
 ## $fu
 ##         A         B 
-##   0.00000 -24.51212 
+##   0.00000 -23.97437 
 ## 
 ## attr(,"class")
 ## [1] "fixest.fixef" "list"        
@@ -868,11 +910,11 @@ summary(reg1)
 ## Fixed-effects: fo^fu: 10
 ## Standard-errors: Clustered (fo^fu) 
 ##   Estimate Std. Error t value Pr(>|t|)    
-## x  1.14127   0.478482 2.38519 0.040879 *  
+## x  0.93383   0.451132 2.06997 0.068367 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 3.59696     Adj. R2: 0.961229
-##                 Within R2: 0.170657
+## RMSE: 3.29026     Adj. R2: 0.964762
+##                 Within R2: 0.142197
 ```
 
 ```r
@@ -886,37 +928,37 @@ summary(reg2)
 ## lm(formula = y ~ x * fo * fu, data = dat_f)
 ## 
 ## Residuals:
-##    Min     1Q Median     3Q    Max 
-## -9.018 -1.549 -0.083  1.460 14.912 
+##      Min       1Q   Median       3Q      Max 
+## -13.0462  -1.3649   0.0173   1.4556   8.7829 
 ## 
 ## Coefficients:
-##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  14.38371    0.58188  24.719  < 2e-16 ***
-## x             2.63799    0.10465  25.207  < 2e-16 ***
-## fo.L         26.48405    1.57418  16.824  < 2e-16 ***
-## fo.Q          9.52540    1.39734   6.817 1.62e-11 ***
-## fo.C          1.13331    1.19784   0.946  0.34432    
-## fo^4          0.10400    0.95197   0.109  0.91303    
-## fuB         -14.07908    0.87386 -16.111  < 2e-16 ***
-## x:fo.L        4.84291    0.28601  16.933  < 2e-16 ***
-## x:fo.Q        1.85301    0.25282   7.330 4.83e-13 ***
-## x:fo.C        0.58970    0.21331   2.765  0.00581 ** 
-## x:fo^4        0.02992    0.16682   0.179  0.85768    
-## x:fuB        -2.70055    0.15509 -17.413  < 2e-16 ***
-## fo.L:fuB    -23.51951    2.43637  -9.654  < 2e-16 ***
-## fo.Q:fuB     -6.57269    2.15019  -3.057  0.00230 ** 
-## fo.C:fuB      1.30518    1.71421   0.761  0.44661    
-## fo^4:fuB     -0.24133    1.33222  -0.181  0.85629    
-## x:fo.L:fuB   -5.39415    0.43372 -12.437  < 2e-16 ***
-## x:fo.Q:fuB   -2.37807    0.38263  -6.215 7.58e-10 ***
-## x:fo.C:fuB   -0.98591    0.30243  -3.260  0.00115 ** 
-## x:fo^4:fuB   -0.01543    0.23463  -0.066  0.94757    
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  14.9269     0.6202  24.068  < 2e-16 ***
+## x             2.5551     0.1068  23.926  < 2e-16 ***
+## fo.L         26.4577     1.7804  14.860  < 2e-16 ***
+## fo.Q          9.6800     1.5510   6.241 6.45e-10 ***
+## fo.C          1.4457     1.1794   1.226 0.220602    
+## fo^4          0.9846     0.8523   1.155 0.248317    
+## fuB         -13.4693     0.8215 -16.396  < 2e-16 ***
+## x:fo.L        4.8300     0.3049  15.840  < 2e-16 ***
+## x:fo.Q        1.8959     0.2658   7.132 1.91e-12 ***
+## x:fo.C        0.4986     0.2053   2.429 0.015326 *  
+## x:fo^4       -0.1031     0.1493  -0.690 0.490213    
+## x:fuB        -2.7954     0.1423 -19.649  < 2e-16 ***
+## fo.L:fuB    -21.4639     2.3152  -9.271  < 2e-16 ***
+## fo.Q:fuB     -6.8130     2.0327  -3.352 0.000834 ***
+## fo.C:fuB     -1.4625     1.5952  -0.917 0.359454    
+## fo^4:fuB     -1.2694     1.2083  -1.051 0.293729    
+## x:fo.L:fuB   -5.6904     0.4000 -14.227  < 2e-16 ***
+## x:fo.Q:fuB   -2.4289     0.3507  -6.925 7.87e-12 ***
+## x:fo.C:fuB   -0.5821     0.2788  -2.088 0.037059 *  
+## x:fo^4:fuB    0.1098     0.2100   0.523 0.601240    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 2.744 on 980 degrees of freedom
-## Multiple R-squared:  0.9781,	Adjusted R-squared:  0.9777 
-## F-statistic:  2305 on 19 and 980 DF,  p-value: < 2.2e-16
+## Residual standard error: 2.478 on 980 degrees of freedom
+## Multiple R-squared:  0.9806,	Adjusted R-squared:  0.9802 
+## F-statistic:  2609 on 19 and 980 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -998,7 +1040,7 @@ coef(lm(Y~x1+x2, data=dat))
 
 ```
 ## (Intercept)          x1          x2 
-##  10.0459791   1.9774922  -0.7019085
+##   7.0330700   2.8547785  -0.0956195
 ```
 
 Simulate the distribution of coefficients under a correctly specified model. Interpret the average.
@@ -1213,6 +1255,7 @@ abline(lm(y[-1]~x[-1]))
 ```
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-37-1.png" width="672" />
+See [AEJ-leverage](https://www.rwi-essen.de/fileadmin/user_upload/RWI/Publikationen/I4R_Discussion_Paper_Series/032_I4R_Haddad_Kattan_Wochner-updateJune28.pdf) for an example of leverage in economics.
 
 Standardized residuals are
 $$
@@ -1403,10 +1446,10 @@ cbind(P=8:10, D=qd_fun(8:10), S=qs_fun(8:10))
 ```
 
 ```
-##       P          D          S
-## [1,]  8  1.0705781 0.07161367
-## [2,]  9  0.2705781 1.07161367
-## [3,] 10 -0.5294219 2.07161367
+##       P        D          S
+## [1,]  8  1.07873 -0.1359937
+## [2,]  9  0.27873  0.8640063
+## [3,] 10 -0.52127  1.8640063
 ```
 
 ```r
@@ -1465,19 +1508,19 @@ summary(reg1)
 ## lm(formula = Q ~ P, data = dat1)
 ## 
 ## Residuals:
-##     Min      1Q  Median      3Q     Max 
-## -0.5119 -0.1172  0.0036  0.1109  0.4350 
+##      Min       1Q   Median       3Q      Max 
+## -0.46414 -0.11607  0.00069  0.10635  0.56842 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)  
-## (Intercept) -0.14708    0.46719  -0.315   0.7531  
-## P            0.11591    0.05258   2.204   0.0283 *
+##             Estimate Std. Error t value Pr(>|t|)   
+## (Intercept)  -0.1940     0.4079  -0.475  0.63479   
+## P             0.1189     0.0457   2.602  0.00974 **
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.1723 on 298 degrees of freedom
-## Multiple R-squared:  0.01605,	Adjusted R-squared:  0.01274 
-## F-statistic:  4.86 on 1 and 298 DF,  p-value: 0.02826
+## Residual standard error: 0.1714 on 298 degrees of freedom
+## Multiple R-squared:  0.02221,	Adjusted R-squared:  0.01893 
+## F-statistic: 6.769 on 1 and 298 DF,  p-value: 0.00974
 ```
 This simple derivation has a profound insight: price-quantity data does not generally tell you how price affects quantity (or vice-versa). Moreover, it also clarifies that our initial question "what is the effect of price on quantity?" is misguided. We could more sensibly ask  "what is the effect of price on quantity supplied?" or "what is the effect of price on quantity demanded?"
 
@@ -1533,18 +1576,18 @@ summary(reg2)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.71339 -0.13646 -0.00309  0.14454  0.71259 
+## -0.62033 -0.16876  0.00772  0.16901  0.66367 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  6.66760    0.17085   39.03   <2e-16 ***
-## P           -0.64482    0.02016  -31.98   <2e-16 ***
+## (Intercept)  6.51583    0.17259   37.75   <2e-16 ***
+## P           -0.62520    0.02031  -30.79   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.2264 on 598 degrees of freedom
-## Multiple R-squared:  0.6311,	Adjusted R-squared:  0.6304 
-## F-statistic:  1023 on 1 and 598 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.2405 on 598 degrees of freedom
+## Multiple R-squared:  0.6131,	Adjusted R-squared:  0.6125 
+## F-statistic: 947.7 on 1 and 598 DF,  p-value: < 2.2e-16
 ```
 Although the individual observations are noisy, we can compute the change in the expected values $d \mathbb{E}[Q^{*}] / d \mathbb{E}[P^{*}] =-B_{D}$. Empirically, this is estimated via the change in average value.
 
@@ -1558,8 +1601,8 @@ dat_mean
 
 ```
 ##             P         Q
-## [1,] 8.882967 0.8825784
-## [2,] 8.039333 1.5408092
+## [1,] 8.924267 0.8670709
+## [2,] 8.044933 1.5555289
 ```
 
 ```r
@@ -1619,18 +1662,18 @@ summary(reg_2sls)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.55984 -0.11487 -0.00445  0.11379  0.47102 
+## -0.46475 -0.11396  0.00236  0.11833  0.55365 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  7.81336    0.14255   54.81   <2e-16 ***
-## Phat        -0.78023    0.01683  -46.37   <2e-16 ***
+## (Intercept)  7.85416    0.13789   56.96   <2e-16 ***
+## Phat        -0.78293    0.01623  -48.24   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.1739 on 598 degrees of freedom
-## Multiple R-squared:  0.7824,	Adjusted R-squared:  0.782 
-## F-statistic:  2150 on 1 and 598 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.1748 on 598 degrees of freedom
+## Multiple R-squared:  0.7956,	Adjusted R-squared:  0.7952 
+## F-statistic:  2327 on 1 and 598 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -1648,13 +1691,13 @@ summary(reg2_iv)
 ## Observations: 600
 ## Standard-errors: IID 
 ##              Estimate Std. Error  t value  Pr(>|t|)    
-## (Intercept)  7.813365   0.192489  40.5911 < 2.2e-16 ***
-## fit_P       -0.780233   0.022722 -34.3389 < 2.2e-16 ***
+## (Intercept)  7.854163   0.199026  39.4629 < 2.2e-16 ***
+## fit_P       -0.782932   0.023426 -33.4216 < 2.2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 0.234376   Adj. R2: 0.602556
-## F-test (1st stage), P: stat = 3,305.5, p < 2.2e-16, on 1 and 598 DoF.
-##            Wu-Hausman: stat =   426.9, p < 2.2e-16, on 1 and 597 DoF.
+## RMSE: 0.251867   Adj. R2: 0.573381
+## F-test (1st stage), P: stat = 2,866.2, p < 2.2e-16, on 1 and 598 DoF.
+##            Wu-Hausman: stat =   558.9, p < 2.2e-16, on 1 and 597 DoF.
 ```
 
 **Within Group Variance**
@@ -1698,14 +1741,14 @@ lapply( list(Egrid_OLS, Egrid_IV), function(ei){
 ## [[1]]
 ##                Es_sigma.0.001 Es_sigma.0.25 Es_sigma.1
 ## Ed_sigma.0.001          -0.80         -0.80      -0.80
-## Ed_sigma.0.25           -0.61         -0.62      -0.70
-## Ed_sigma.1               0.35          0.33      -0.06
+## Ed_sigma.0.25           -0.62         -0.62      -0.70
+## Ed_sigma.1               0.34          0.34      -0.07
 ## 
 ## [[2]]
 ##                Es_sigma.0.001 Es_sigma.0.25 Es_sigma.1
 ## Ed_sigma.0.001          -0.80         -0.80      -0.80
-## Ed_sigma.0.25           -0.78         -0.79      -0.74
-## Ed_sigma.1              -0.80         -0.78      -1.07
+## Ed_sigma.0.25           -0.80         -0.77      -0.75
+## Ed_sigma.1              -0.82         -0.78      -0.87
 ```
 
 
@@ -1759,20 +1802,20 @@ summary(regP)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.60663 -0.11839 -0.00439  0.11537  0.68864 
+## -0.62928 -0.13934  0.00819  0.13923  0.66851 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  8.898e+00  2.082e-02 427.335   <2e-16 ***
-## T           -1.029e-04  1.199e-04  -0.858    0.391    
-## cost2       -8.393e-01  5.882e-02 -14.269   <2e-16 ***
-## T:cost2      5.902e-05  1.696e-04   0.348    0.728    
+## (Intercept)  8.907e+00  2.330e-02 382.273   <2e-16 ***
+## T            1.179e-04  1.342e-04   0.879    0.380    
+## cost2       -9.076e-01  6.582e-02 -13.790   <2e-16 ***
+## T:cost2     -1.579e-05  1.898e-04  -0.083    0.934    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.1799 on 596 degrees of freedom
-## Multiple R-squared:  0.847,	Adjusted R-squared:  0.8463 
-## F-statistic:  1100 on 3 and 596 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.2013 on 596 degrees of freedom
+## Multiple R-squared:  0.8278,	Adjusted R-squared:  0.8269 
+## F-statistic: 954.8 on 3 and 596 DF,  p-value: < 2.2e-16
 ```
 
 
@@ -1798,20 +1841,20 @@ summary(regQ)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.55028 -0.11696 -0.00335  0.11406  0.46866 
+## -0.46361 -0.11395  0.00155  0.12062  0.54570 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  8.604e-01  2.013e-02  42.751   <2e-16 ***
-## T            1.471e-04  1.159e-04   1.269    0.205    
-## cost2        6.486e-01  5.686e-02  11.408   <2e-16 ***
-## T:cost2     -7.663e-05  1.639e-04  -0.467    0.640    
+## (Intercept)  8.792e-01  2.026e-02  43.402   <2e-16 ***
+## T           -8.073e-05  1.167e-04  -0.692    0.489    
+## cost2        6.973e-01  5.723e-02  12.184   <2e-16 ***
+## T:cost2      3.423e-05  1.650e-04   0.207    0.836    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.1739 on 596 degrees of freedom
-## Multiple R-squared:  0.7831,	Adjusted R-squared:  0.782 
-## F-statistic: 717.3 on 3 and 596 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.175 on 596 degrees of freedom
+## Multiple R-squared:  0.7958,	Adjusted R-squared:  0.7947 
+## F-statistic: 774.1 on 3 and 596 DF,  p-value: < 2.2e-16
 ```
 
 Remember that this is effect is *local*: different magnitudes of the cost shock or different demand curves generally yeild different estimates.
@@ -1861,20 +1904,20 @@ summary(regP)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.60663 -0.12381  0.00372  0.12108  0.69085 
+## -0.65189 -0.13192  0.00789  0.13785  0.67804 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  8.891e+00  1.132e-02 785.180   <2e-16 ***
-## T           -3.185e-05  3.769e-05  -0.845    0.398    
-## cost2       -8.322e-01  5.846e-02 -14.236   <2e-16 ***
-## T:cost2     -1.208e-05  1.306e-04  -0.092    0.926    
+## (Intercept)  8.912e+00  1.178e-02 756.709   <2e-16 ***
+## T           -2.749e-06  3.921e-05  -0.070    0.944    
+## cost2       -9.134e-01  6.080e-02 -15.023   <2e-16 ***
+## T:cost2      1.049e-04  1.358e-04   0.772    0.440    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.1875 on 1196 degrees of freedom
-## Multiple R-squared:  0.7922,	Adjusted R-squared:  0.7917 
-## F-statistic:  1520 on 3 and 1196 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.195 on 1196 degrees of freedom
+## Multiple R-squared:  0.7879,	Adjusted R-squared:  0.7874 
+## F-statistic:  1481 on 3 and 1196 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -1889,20 +1932,20 @@ summary(regQ)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.56115 -0.12135 -0.00683  0.12201  0.68255 
+## -0.55630 -0.11981  0.00086  0.11797  0.54950 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  8.875e-01  1.071e-02  82.839   <2e-16 ***
-## T           -2.201e-05  3.566e-05  -0.617    0.537    
-## cost2        6.215e-01  5.531e-02  11.237   <2e-16 ***
-## T:cost2      9.251e-05  1.235e-04   0.749    0.454    
+## (Intercept)  8.734e-01  1.074e-02  81.349   <2e-16 ***
+## T            6.415e-05  3.574e-05   1.795   0.0729 .  
+## cost2        7.031e-01  5.543e-02  12.684   <2e-16 ***
+## T:cost2     -1.107e-04  1.238e-04  -0.894   0.3716    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.1774 on 1196 degrees of freedom
-## Multiple R-squared:  0.7218,	Adjusted R-squared:  0.7211 
-## F-statistic:  1034 on 3 and 1196 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.1778 on 1196 degrees of freedom
+## Multiple R-squared:  0.7255,	Adjusted R-squared:  0.7248 
+## F-statistic:  1054 on 3 and 1196 DF,  p-value: < 2.2e-16
 ```
 
 
