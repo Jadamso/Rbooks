@@ -80,7 +80,7 @@ fig <- plotly::layout(fig,
 ## Plot Model Predictions
 add_lines(fig, x=~x, y=fitted(reg),
     hoverinfo='none',
-    line=list(color='grey(0,1)', lwd=2))
+    line=list(color='grey(0,1)', width=2))
 ```
 To quantitatively analyze GoF, we compute $R^2$ using the sums of squared errors (Total, Explained, and Residual)
 $$
@@ -131,12 +131,13 @@ jack_se <- sd(jack_coefs)
 ## Jackknife Sampling Distribution
 hist(jack_coefs, breaks=25,
     main=paste0('SE est. = ', round(jack_se,4)),
+    font.main=1, border=NA,
     xlab=expression(beta[-i]))
 ## Original Estimate
-abline(v=coef(reg)['x'], col="red", lwd=2)
+abline(v=coef(reg)['x'], lwd=2)
 ## Jackknife Confidence Intervals
 jack_ci_percentile <- quantile(jack_coefs, probs=c(.025,.975))
-abline(v=jack_ci_percentile, col="red", lty=2)
+abline(v=jack_ci_percentile, lty=2)
 
 
 ## Plot Normal Approximation
@@ -164,10 +165,11 @@ boot_se <- sd(boot_coefs)
 
 hist(boot_coefs, breaks=25,
     main=paste0('SE est. = ', round(boot_se,4)),
+    font.main=1, border=NA,
     xlab=expression(beta[b]))
 boot_ci_percentile <- quantile(boot_coefs, probs=c(.025,.975))
-abline(v=boot_ci_percentile, col="red", lty=2)
-abline(v=coef(reg)['x'], col="red", lwd=2)
+abline(v=boot_ci_percentile, lty=2)
+abline(v=coef(reg)['x'], lwd=2)
 ```
 
 ```{r}
@@ -182,10 +184,11 @@ rs_se <- sd(rs_coefs)
 
 hist(rs_coefs, breaks=25,
     main=paste0('SE est. = ', round(rs_se,4)),
+    font.main=1, border=NA,
     xlab=expression(beta[b]))
-abline(v=coef(reg)['x'], col="red", lwd=2)
+abline(v=coef(reg)['x'], lwd=2)
 rs_ci_percentile <- quantile(rs_coefs, probs=c(.025,.975))
-abline(v=rs_ci_percentile, col="red", lty=2)
+abline(v=rs_ci_percentile, lty=2)
 ```
 
 We can also bootstrap other statistics, such as a t-statistic or $R^2$. We do such things to test a null hypothesis, which is often ``no relationship''. We are rarely interested in computing standard errors and conducting hypothesis tests for two variables. However, we work through the ideas in the two-variable case to better understand the multi-variable case.
@@ -209,11 +212,13 @@ jack_t <- sapply(jack_regs, function(reg_b){
 })
 
 hist(jack_t, breaks=25,
-    xlab=expression(t[b]), 
+    main='Jackknife t Density',
+    font.main=1, border=NA,
+    xlab=expression(hat(t)[b]), 
     xlim=range(c(0, jack_t)) )
-abline(v=quantile(jack_t, probs=c(.025,.975)),
-    lty=2, col="red")
-abline(v=tvalue, col="red", lwd=2)
+abline(v=quantile(jack_t, probs=c(.025,.975)), lty=2)
+abline(v=tvalue, lwd=2)
+abline(v=0, col="red", lwd=2)
 ```
 
 **Impose the Null**
@@ -231,10 +236,12 @@ boot_t0 <- sapply( 1:399, function(b){
 
 ## Null Bootstrap Distribution
 boot_ci_percentile0 <- quantile(boot_t0, probs=c(.025,.975))
-hist(boot_t0, breaks=25, main='',
-    xlab=expression(t[b]),
+hist(boot_t0, breaks=25,
+    main='Null Bootstrap Density',
+    font.main=1, border=NA,
+    xlab=expression(hat(t)[b]),
     xlim=range(boot_t0))
-abline(v=boot_ci_percentile0, col="red", lty=2)
+abline(v=boot_ci_percentile0, lty=2)
 abline(v=tvalue, col="red", lwd=2)
 ```
 
@@ -249,7 +256,9 @@ Phat1  <- 1-That_NullDist1(jack_t)
 
 ## Two Sided Test for P(t > jack_t or  t < -jack_t | Null)
 That_NullDist2 <- ecdf(abs(boot_t0))
-plot(That_NullDist2, xlim=range(boot_t0, jack_t))
+plot(That_NullDist2, xlim=range(boot_t0, jack_t),
+    xlab=expression(hat(t)[b]),
+    main='Null Bootstrap Distribution', font.main=1)
 abline(v=quantile(That_NullDist2,probs=.95), lty=3)
 abline(v=tvalue, col='red')
 
@@ -279,7 +288,7 @@ boot_pi <- cbind(boot_pi + ehat[1], boot_pi + ehat[2])
 
 ## Plot Bootstrap PI
 plot(y~x, dat=xy, pch=16, main='Prediction Intervals',
-ylim=c(-5,20))
+    ylim=c(-5,20), font.main=1)
 polygon( c(x, rev(x)), c(boot_pi[,1], rev(boot_pi[,2])),
     col=grey(0,.2), border=NA)
 
@@ -389,8 +398,8 @@ lines(xy0$x, predict(reg_lo4),
 lines(xy0$x, predict(reg_lo8),
     col=cols[2], type='o', pch=2)
 
-legend('topleft', title='Span',
-    legend=c('h=.4 ', 'h=.8'),
+legend('topleft', title='Loess',
+    legend=c('span=.4 ', 'span=.8'),
     lty=1, col=cols, cex=.8)
 ```
 
@@ -489,7 +498,7 @@ head(USArrests)
 
 library(psych)
 pairs.panels( USArrests[,c('Murder','Assault','UrbanPop')],
-    hist.col=grey(0,.25), breaks=30, density=F, ## Diagonal
+    hist.col=grey(0,.25), breaks=30, density=F, hist.border=NA, ## Diagonal
     ellipses=F, rug=F, smoother=F, pch=16, col=grey(0,.5) ## Lower Triangle
     )
 ```
@@ -623,9 +632,9 @@ R2_sim0 <- sapply(boot_regs0, function(reg_k){
 R2adj_sim0 <- sapply(boot_regs0, function(reg_k){
     summary(reg_k)$adj.r.squared })
 
-hist(R2adj_sim0, xlim=c(0,1), breaks=25,
+hist(R2adj_sim0, xlim=c(0,1), breaks=25, border=NA,
     main='', xlab=expression('adj.'~R[b]^2))
-abline(v=summary(reg)$adj.r.squared, col="red", lwd=2)
+abline(v=summary(reg)$adj.r.squared, lwd=2)
 ```
 
 Under some additional assumptions $F_{q}$ follows an F-distribution. Note that *hypothesis testing is not to be done routinely*, as complications arise when testing multiple hypothesis sequentially. See https://online.stat.psu.edu/stat501/lesson/6/6.2
@@ -771,7 +780,6 @@ coef(lm(Y~x1+x2, data=dat))
 
 Simulate the distribution of coefficients under a correctly specified model. Interpret the average.
 ```{r}
-
 N <- 30
 B <- c(10, 2, -1)
 
@@ -787,9 +795,9 @@ Coefs <- sapply(1:400, function(sim){
 
 par(mfrow=c(1,2))
 for(i in 2:3){
-    hist(Coefs[i,], xlab=bquote(beta[.(i)]), main='')
-    abline(v=mean(Coefs[i,]), col=1, lty=2)
-    abline(v=B[i], col=2)
+    hist(Coefs[i,], xlab=bquote(beta[.(i)]), main='', border=NA)
+    abline(v=mean(Coefs[i,]), lwd=2)
+    abline(v=B[i], col=rgb(1,0,0))
 }
 ```
 
@@ -809,8 +817,8 @@ Coefs <- sapply(1:600, function(sim){
 
 par(mfrow=c(1,2))
 for(i in 2:3){
-    hist(Coefs[i,],  xlab=bquote(beta[.(i)]), main='')
-    abline(v=mean(Coefs[i,]), col=1, lty=2)
+    hist(Coefs[i,],  xlab=bquote(beta[.(i)]), main='', border=NA)
+    abline(v=mean(Coefs[i,]), col=1)
 }
 ```
 
@@ -932,8 +940,10 @@ Predr <- bxcx_inv(predict(Regr),rl0[[2]])
 cols <- c(rgb(1,0,0,.5), col=rgb(0,0,1,.5))
 plot(Y, Predr, pch=16, col=cols[1], ylab='Prediction')
 points(Y, predict(reg), pch=16, col=cols[2])
-legend('topleft', pch=c(16), col=cols, title='Rho,Lambda',
-    legend=c(  paste0(rl0, collapse=','),'1,1') )
+legend('topleft', pch=c(16), col=cols,
+    title=expression(Rho~', '~Lambda),
+    legend=c(  paste0(rl0, collapse=', '),'1, 1') )
+abline(a=0,b=1, lty=2)
 ```
 
 Note that the default hypothesis testing procedures do not account for you trying out different transformations. Specification searches deflate standard errors and are a major source for false discoveries.
@@ -1354,7 +1364,8 @@ The basic idea here is to examine how a variable changes in response to an exoge
 ```{r}
 dat2$T <- 1:nrow(dat2)
 
-plot(P~T, dat2, main='Effect of Cost Shock on Price', pch=16, col=grey(0,.5))
+plot(P~T, dat2, main='Effect of Cost Shock on Price', 
+    font.main=1, pch=16, col=grey(0,.25))
 regP1 <- lm(P~T, dat2[dat2$cost==1,]) 
 lines(regP1$model$T, predict(regP1), col=2)
 regP2 <- lm(P~T, dat2[dat2$cost==2,]) 
@@ -1365,7 +1376,8 @@ summary(regP)
 ```
 
 ```{r}
-plot(Q~T, dat2, main='Effect of Cost Shock on Quantity', pch=16, col=grey(0,.5))
+plot(Q~T, dat2, main='Effect of Cost Shock on Quantity',
+    font.main=1, pch=16, col=grey(0,.15))
 regQ1 <- lm(Q~T, dat2[dat2$cost==1,]) 
 lines(regQ1$model$T, predict(regQ1), col=2)
 regQ2 <- lm(Q~T, dat2[dat2$cost==2,]) 
@@ -1399,10 +1411,12 @@ dat3 <- data.frame(t(EQ3), cost='1', T=1:ncol(EQ3))
 
 
 par(mfrow=c(1,2))
-plot(P~T, dat2, main='Effect of Cost Shock on Price', pch=17,col=rgb(0,0,1,.25))
+plot(P~T, dat2, main='Effect of Cost Shock on Price',
+    font.main=1, pch=17,col=rgb(0,0,1,.25))
 points(P~T, dat3, pch=16, col=rgb(1,0,0,.25))
 
-plot(Q~T, dat2, main='Effect of Cost Shock on Quantity', pch=17,col=rgb(0,0,1,.25))
+plot(Q~T, dat2, main='Effect of Cost Shock on Quantity',
+    font.main=1, pch=17,col=rgb(0,0,1,.25))
 points(Q~T, dat3, pch=16, col=rgb(1,0,0,.25))
 
 dat <- rbind(dat2, dat3)
@@ -1511,8 +1525,9 @@ while(p >= .001){
 }
 
 plot(X1~X2, data=dat_i,
-    pch=16, col=grey(.5,.5),
-    main=paste0('Random Dataset ', i,":   p=", formatC(p,digits=2, format='fg')))
+    pch=16, col=grey(.5,.5), font.main=1,
+    main=paste0('Random Dataset ', i,":   p=",
+        formatC(p,digits=2, format='fg')))
 abline(reg_i)
 #summary(reg_i)
 ```
@@ -1648,7 +1663,8 @@ for( k3 in setdiff(knames,c(k1,k2)) ){
 }}}
 pvals <- sapply(ivreg_list, function(ivreg_i){ivreg_i[[1]]$coeftable[2,4]})
 
-plot(ecdf(pvals), xlab='p-value', ylab='CDF', main='Frequency IV is Statistically Significant')
+plot(ecdf(pvals), xlab='p-value', ylab='CDF', font.main=1,
+    main='Frequency IV is Statistically Significant')
 abline(v=c(.01,.05), col=c(2,4))
 
 ## Most Significant Spurious Combinations

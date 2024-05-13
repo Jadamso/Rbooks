@@ -18,5 +18,5 @@ Notably, this Rbook covers linear models only from a "minimum distance" perspect
 
 Although any interested reader may find it useful, it is being primarily developed for my students. Please report any errors or issues at https://github.com/Jadamso/Rbooks/issues.
 
-Last updated: 09.05.2024
+Last updated: 13.05.2024
 
