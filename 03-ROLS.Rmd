@@ -65,7 +65,7 @@ fig <- plotly::plot_ly(
   mode='markers',
   type='scatter',
   hoverinfo='text',
-  marker = list(color=grey(0,.25)),
+  marker=list(color=grey(0,.25), size=10),
   text=~paste('<b>', ID, '</b>',
               '<br>Urban  :', x,
               '<br>Murder :', y,
@@ -78,9 +78,12 @@ fig <- plotly::layout(fig,
           xaxis = list(title='Percent of People in an Urban Area'),
           yaxis = list(title='Homicide Arrests per 100,000 People'))
 ## Plot Model Predictions
-add_lines(fig, x=~x, y=fitted(reg),
-    hoverinfo='none',
-    line=list(color='grey(0,1)', width=2))
+add_trace(fig, x=~x, y=~pred,
+    inherit=F, hoverinfo='none',
+    mode='lines+markers', type='scatter',
+    color=I('black'),
+    line=list(width=1/2),
+    marker=list(symbol=134, size=5))
 ```
 To quantitatively analyze GoF, we compute $R^2$ using the sums of squared errors (Total, Explained, and Residual)
 $$
@@ -217,7 +220,6 @@ hist(jack_t, breaks=25,
     xlab=expression(hat(t)[b]), 
     xlim=range(c(0, jack_t)) )
 abline(v=quantile(jack_t, probs=c(.025,.975)), lty=2)
-abline(v=tvalue, lwd=2)
 abline(v=0, col="red", lwd=2)
 ```
 
@@ -257,12 +259,11 @@ Phat1  <- 1-That_NullDist1(jack_t)
 ## Two Sided Test for P(t > jack_t or  t < -jack_t | Null)
 That_NullDist2 <- ecdf(abs(boot_t0))
 plot(That_NullDist2, xlim=range(boot_t0, jack_t),
-    xlab=expression(hat(t)[b]),
+    xlab=expression( abs(hat(t)[b]) ),
     main='Null Bootstrap Distribution', font.main=1)
-abline(v=quantile(That_NullDist2,probs=.95), lty=3)
 abline(v=tvalue, col='red')
 
-Phat2  <-  1-That_NullDist2(tvalue)
+Phat2  <-  1-That_NullDist2( abs(tvalue))
 Phat2
 ```
 
@@ -595,7 +596,10 @@ boot_coef_df <- as.data.frame(cbind(ID=boots, t(boot_coefs)))
 fig <- plotly::plot_ly(boot_coef_df,
     type = 'scatter', mode = 'markers',
     x = ~UrbanPop, y = ~Assault,
-    text = ~paste('<b> boot: ', ID, '</b>'),
+    text = ~paste('<b> bootstrap dataset: ', ID, '</b>',
+            '<br>Coef. Urban  :', round(UrbanPop,3),
+            '<br>Coef. Murder :', round(Assault,3),
+            '<br>Coef. Intercept :', round(`(Intercept)`,3)),
     hoverinfo='text',
     showlegend=F,
     marker=list( color='rgba(0, 0, 0, 0.5)'))
@@ -603,18 +607,16 @@ fig <- plotly::layout(fig,
     showlegend=F,
     title='Joint Distribution of Coefficients',
     xaxis = list(title='UrbanPop Coefficient'),
-    yaxis = list(title='Homicide Coefficient'))
+    yaxis = list(title='Assualt Coefficient'))
 fig
 ```
 
 **Hypothesis Testing**
-We can also use an $F$ test for any $q$ hypotheses. Specifically, when $q$ hypotheses *restrict* a model, the degrees of freedom drop from $k_{u}$ to $k_{r}$ and the residual sum of squares $\sum_{i}(y_{y}-\widehat{y}_{i})^2$ typically increases. We compute the statistic
+We can also use an $F$ test for any $q$ hypotheses. Specifically, when $q$ hypotheses *restrict* a model, the degrees of freedom drop from $k_{u}$ to $k_{r}$ and the residual sum of squares $RSS=\sum_{i}(y_{i}-\widehat{y}_{i})^2$ typically increases. We compute the statistic
 $$
-F_{q} = \frac{(RSS_{r}-RSS_{u})/([N-k_{r}]-[N-k_{u}])}{RSS_{u}/(N-k_{u})}
-=\frac{R^2}{(1-R^2)}\frac{N-K_{u}}{k_{u}-k_{r}},
-=\frac{R^2}{(1-R^2)}\frac{n-q}{q},
+F_{q} = \frac{(RSS_{r}-RSS_{u})/(k_{u}-k_{r})}{RSS_{u}/(N-k_{u})}.
 $$
-which can also be written in terms of adjusted $R^2$. For some intuition on hypothesis testing, we examine how the $R^2$ statistic varies with bootstrap samples. Specifically, compute a null $R^2$ distribution by randomly reshuffling the outcomes and compare it to the observed $R^2$.
+When the restricted model is a simple intercept, $F_{q}$ can also be written in terms of $R^2$ or adjusted $R^2$. For some intuition on hypothesis testing, we examine how the $R^2$ statistic varies with bootstrap samples. Specifically, compute a null $R^2$ distribution by randomly reshuffling the outcomes and compare it to the observed $R^2$.
 ```{r}
 ## Bootstrap NULL
 boots <- 1:399
@@ -632,9 +634,9 @@ R2_sim0 <- sapply(boot_regs0, function(reg_k){
 R2adj_sim0 <- sapply(boot_regs0, function(reg_k){
     summary(reg_k)$adj.r.squared })
 
-hist(R2adj_sim0, xlim=c(0,1), breaks=25, border=NA,
+hist(R2adj_sim0, xlim=c(-.1,1), breaks=25, border=NA,
     main='', xlab=expression('adj.'~R[b]^2))
-abline(v=summary(reg)$adj.r.squared, lwd=2)
+abline(v=summary(reg)$adj.r.squared, lwd=2, col=2)
 ```
 
 Under some additional assumptions $F_{q}$ follows an F-distribution. Note that *hypothesis testing is not to be done routinely*, as complications arise when testing multiple hypothesis sequentially. See https://online.stat.psu.edu/stat501/lesson/6/6.2
@@ -663,47 +665,35 @@ dat_f <- data.frame(y,x,fo,fu)
 
 With factors, you can still include them in the design matrix of an OLS regression
 $$
-y_{it} = x_{it} \beta_{x} + d_{c}\beta_{c}
+y_{it} = x_{it} \beta_{x} + d_{t}\beta_{t}
 $$
-When, as commonly done, the factors are modeled as being additively seperable, they are modelled as either "fixed" or "random" effects.
+When, as commonly done, the factors are modeled as being additively seperable, they are modeled as either "fixed" or "random" effects.
 
 Simply including the factors into the OLS regression yields a "dummy variable" fixed effects estimator.
 ```{r}
 fe_reg0 <- lm(y~x+fo+fu, dat_f)
-summary(fe_reg0)
 ```
-We can also compute averages for each group and construct a "between estimator"
-$$
-\overline{y}_i = \alpha + \overline{x}_i \beta
-$$
-Or we can subtract the average from each group to construct a "within estimator", 
-$$
-(y_{it} - \overline{y}_i) = (x_{it}-\overline{x}_i)\beta\\
-$$
-that tends to be more computationally efficient, has corrections for standard errors, and has additional summary statistics.
-
-```{r}
-library(fixest)
-fe_reg1 <- feols(y~x|fo+fu, dat_f)
-summary(fe_reg1)
-
-## Compare Coefficients
-coef( lm(y~-1+x+fo+fu, dat_f) )
-fixef(fe_reg1)
-```
-
 **Hansen Econometrics, Theorem 17.1:** The fixed effects estimator of $\beta$ algebraically equals the dummy variable estimator of $\beta$. The two estimators have the same residuals.
 <!--
 In fact, if the fixed effect is ``fully unstructured then the only way to consistently estimate the coefficient $\beta$ is by an estimator which is invariant'' (Hansen Econometrics, p). 
 -->
-
-Many factor variables have effects that are not additively seperable.
 ```{r}
-reg1 <- feols(y~x|fo^fu, dat_f)
-summary(reg1)
-reg2 <- lm(y~x*fo*fu, dat_f)
-summary(reg2)
-#reg2 <- feols(y~x*fo*fu|fo^fu, dat_f)
+library(fixest)
+fe_reg1 <- feols(y~x|fo+fu, dat_f)
+coef(fe_reg1)
+fixef(fe_reg1)[1:2]
+
+## Compare Coefficients
+coef( lm(y~-1+x+fo+fu, dat_f) )
+```
+
+With fixed effects, we can also compute averages for each group and construct a "between estimator" $\overline{y}_i = \alpha + \overline{x}_i \beta$. Or we can subtract the average from each group to construct a "within estimator", $(y_{it} - \overline{y}_i) = (x_{it}-\overline{x}_i)\beta$. 
+
+But note that many factors are not additively separable. This is easy to check with an F-test;
+```{r}
+reg1 <- lm(y~-1+x+fo*fu, dat_f)
+reg2 <- lm(y~-1+x*fo*fu, dat_f)
+anova(reg1, reg2)
 ```
 
 
@@ -717,18 +707,16 @@ With *Random Effects*, the factor variable is modeled as coming from a distribut
 **Test for Break Points**
 
 ```{r, eval=F}
-
-#library(AER); data(CASchools)
-#CASchools$score <- (CASchools$read + CASchools$math) / 2
-#reg <- lm(score ~ income, data = CASchools)
-#xy <- CASchools[,c('Score','Income'),]
-#colnames(xy) <- c('y','x')
+library(AER); data(CASchools)
+CASchools$score <- (CASchools$read + CASchools$math) / 2
+reg <- lm(score~income, data=CASchools)
 
 ## F Test for Break
+reg2 <- lm(score ~ income*I(income>15), data=CASchools)
 anova(reg, reg2)
 
 ## Chow Test for Break
-data_splits <- split(xy, xy$xcut)
+data_splits <- split(CASchools, CASchools$income <= 15)
 resids <- sapply(data_splits, function(dat){
     reg <- lm(score ~ income, data=dat)
     sum( resid(reg)^2)
@@ -739,7 +727,7 @@ Rb <- (sum(Ns)-2*reg$rank)/reg$rank
 Ft <- Rt*Rb
 pf(Ft,reg$rank, sum(Ns)-2*reg$rank,lower.tail=F)
 
-## To Test for Any Break
+## See also
 ## strucchange::sctest(y~x, data=xy, type="Chow", point=.5)
 ## strucchange::Fstats(y~x, data=xy)
 
@@ -802,17 +790,17 @@ for(i in 2:3){
 ```
 
 
-Many economic phenomena are nonlinear, even when including potential transforms of $Y$ and $X$. Sometimes the linear model may still be a good or even great approximation (how good depends on the research question). In any case, you are safe to interpret your OLS coefficients as "conditional correlations". For example, examine the distribution of coefficients under this mispecified model. Interpret the average.
+Many economic phenomena are nonlinear, even when including potential transforms of $Y$ and $X$. Sometimes the linear model may still be a good or even great approximation. But sometimes not, and it is hard to know ex-ante. Examine the distribution of coefficients under this mispecified model and try to interpret the average.
 ```{r}
 N <- 30
 
 Coefs <- sapply(1:600, function(sim){
-    x1 <- runif(N, 0, 5)
-    x2 <- rbinom(N,1,.7)
+    x2 <- runif(N, 0, 5)
+    x3 <- rbinom(N,1,.7)
     e <- rnorm(N,0,3)
-    Y <- 10*x2 + 2*log(x1)^x2 + e
-    dat <- data.frame(Y,x1,x2)
-    coef(lm(Y~x1+x2, data=dat))
+    Y <- 10*x3 + 2*log(x2)^x3 + e
+    dat <- data.frame(Y,x2,x3)
+    coef(lm(Y~x2+x3, data=dat))
 })
 
 par(mfrow=c(1,2))
@@ -821,7 +809,7 @@ for(i in 2:3){
     abline(v=mean(Coefs[i,]), col=1)
 }
 ```
-
+In general, you can interpret your OLS coefficients as "conditional correlations". If further hypothesis testing suggests the relationships are actually additively separable and linear, then you also have the structural interpretation of "marginal effect".
 
 
 ## Transformations
@@ -875,7 +863,7 @@ $$
 
 
 It is easiest to optimize parameters in a 2-step procedure called  `concentrated optimization'. We first solve for $\widehat{\beta}(\rho,\lambda)$ and compute the mean squared error $MSE(\rho,\lambda)$. We then find the $(\rho,\lambda)$ which minimizes $MSE$.
-```{r}
+```{r, fig.height=10, fig.width=10, fig.align="center"}
 ## Box-Cox Transformation Function
 bxcx <- function( xy, rho){
     if (rho == 0L) {
@@ -920,17 +908,27 @@ rl_df$mse <- colMeans(errors^2)
 
 ## Want Small MSE and Interpretable
 ## (-1,0,1,2 are Easy to interpretable)
-library(ggplot2)
-ggplot(rl_df, aes(rho, lambda, fill=log(mse) )) +
-    geom_tile() + ggtitle('Mean Squared Error') 
-    
+layout(matrix(1:2,ncol=2), width=c(3,1), height=c(1,1))
+par(mar=c(4,4,2,0))
+plot(lambda~rho,rl_df, cex=8, pch=15,
+    xlab=expression(rho),
+    ylab=expression(lambda),
+    col=hcl.colors(25)[cut(1/rl_df$mse,25)])
 ## Which min
 rl0 <- rl_df[which.min(rl_df$mse),c('rho','lambda')]
+points(rl0$rho, rl0$lambda, pch=0, col=1, cex=8, lwd=2)
+## Legend
+plot(c(0,2),c(0,1), type='n', axes=F,
+    xlab='',ylab='', cex.main=.8,
+    main=expression(frac(1,'Mean Square Error')))
+rasterImage(as.raster(matrix(hcl.colors(25), ncol=1)), 0, 0, 1,1)
+text(x=1.5, y=seq(0,1,l=10), cex=.5,
+    labels=levels(cut(1/rl_df$mse,10, right=F)))
+```
 
-## Which give NA?
-## which(is.na(errors), arr.ind=T)
 
-## Plot
+```{r}
+## Plot for Specific Comparisons
 Xr <- bxcx(X,rl0[[1]])
 Yr <- bxcx(Y,rl0[[2]])
 Datr <- cbind(Murder=Yr,Xr)
@@ -941,7 +939,7 @@ cols <- c(rgb(1,0,0,.5), col=rgb(0,0,1,.5))
 plot(Y, Predr, pch=16, col=cols[1], ylab='Prediction')
 points(Y, predict(reg), pch=16, col=cols[2])
 legend('topleft', pch=c(16), col=cols,
-    title=expression(Rho~', '~Lambda),
+    title=expression(rho~', '~lambda),
     legend=c(  paste0(rl0, collapse=', '),'1, 1') )
 abline(a=0,b=1, lty=2)
 ```

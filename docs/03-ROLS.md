@@ -3,7 +3,7 @@
 This section is a quick overview of linear regression models from the perspective that ``all models are wrong, but some are useful''. All models are estimated via  Ordinary Least Squares (OLS). For more in-depth introductions, which typically begin by assuming the true data generating process is linear, see https://jadamso.github.io/Rbooks/ordinary-least-squares.html#more-literature. 
 
 
-```r
+``` r
 knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
 ```
 
@@ -12,14 +12,14 @@ knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
 
 Given some data
 
-```r
+``` r
 ## Bivariate Data from USArrests
 xy <- USArrests[,c('Murder','UrbanPop')]
 colnames(xy) <- c('y','x')
 ```
 first inspect it, as in Part I.
 
-```r
+``` r
 # Inspect Dataset
 # head(xy)
 # summary(xy)
@@ -50,7 +50,7 @@ $$
 
 
 
-```r
+``` r
 ## Estimate Regression Coefficients
 reg <- lm(y~x, dat=xy)
 reg 
@@ -66,7 +66,7 @@ reg
 ##     6.41594      0.02093
 ```
 
-```r
+``` r
 ## Point Estimates
 coef(reg)
 ```
@@ -78,7 +78,7 @@ coef(reg)
 
 To qualitatively analyze the ''Goodness of fit'', we plot our predictions.
 
-```r
+``` r
 ## Plot Data and Predictions
 library(plotly)
 xy$ID <- rownames(USArrests)
@@ -89,7 +89,7 @@ fig <- plotly::plot_ly(
   mode='markers',
   type='scatter',
   hoverinfo='text',
-  marker = list(color=grey(0,.25)),
+  marker=list(color=grey(0,.25), size=10),
   text=~paste('<b>', ID, '</b>',
               '<br>Urban  :', x,
               '<br>Murder :', y,
@@ -102,14 +102,17 @@ fig <- plotly::layout(fig,
           xaxis = list(title='Percent of People in an Urban Area'),
           yaxis = list(title='Homicide Arrests per 100,000 People'))
 ## Plot Model Predictions
-add_lines(fig, x=~x, y=fitted(reg),
-    hoverinfo='none',
-    line=list(color='grey(0,1)', width=2))
+add_trace(fig, x=~x, y=~pred,
+    inherit=F, hoverinfo='none',
+    mode='lines+markers', type='scatter',
+    color=I('black'),
+    line=list(width=1/2),
+    marker=list(symbol=134, size=5))
 ```
 
 ```{=html}
-<div class="plotly html-widget html-fill-item" id="htmlwidget-d103a169c658d9130b6f" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-d103a169c658d9130b6f">{"x":{"visdat":{"20441978aec1":["function () ","plotlyVisDat"]},"cur_data":"20441978aec1","attrs":{"20441978aec1":{"x":{},"y":{},"mode":"markers","hoverinfo":"text","marker":{"color":"#00000040"},"text":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter"},"20441978aec1.1":{"x":{},"y":[7.6301526724992756,7.4208060843020238,8.0907151665332222,7.4626754019414747,8.3209964135501959,8.0488458488937731,8.0279111900740467,7.9232378959754231,8.0907151665332222,7.6720219901387221,8.1535191429923977,7.5464140372203747,8.1535191429923977,7.7766952842373485,7.6092180136795484,7.7976299430570739,7.5045447195809238,7.7976299430570721,7.4836100607611993,7.8185646018767976,8.1953884606318468,7.9651072136148731,7.7976299430570721,7.3370674490231238,7.881368578335973,7.5254793784006493,7.7138913077781739,8.1116498253529485,7.5882833548598239,8.2791270959107468,7.881368578335973,8.2163231194515713,7.3580021078428492,7.3370674490231247,7.9860418724345976,7.839499260696523,7.8185646018767976,7.9232378959754231,8.2372577782712959,7.4208060843020238,7.3580021078428492,7.6510873313189984,8.0907151665332222,8.0907151665332222,7.0858515431864255,7.7348259665978985,7.9441725547951467,7.2323941549245001,7.797629943057073,7.672021990138723],"mode":"lines","hoverinfo":"none","marker":{"color":"#00000040"},"text":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter","line":{"color":"grey(0,1)","width":2},"inherit":true}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Percent of People in an Urban Area"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Homicide Arrests per 100,000 People"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[58,48,80,50,91,78,77,72,80,60,83,54,83,65,57,66,52,66,51,67,85,74,66,44,70,53,62,81,56,89,70,86,45,44,75,68,67,72,87,48,45,59,80,80,32,63,73,39,66,60],"y":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"mode":"markers","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"marker":{"color":"#00000040","line":{"color":"rgba(31,119,180,1)"}},"text":["<b> Alabama <\/b> <br>Urban  : 58 <br>Murder : 13.2 <br>Predicted Murder : 7.63 <br>Residual : 5.57","<b> Alaska <\/b> <br>Urban  : 48 <br>Murder : 10 <br>Predicted Murder : 7.42 <br>Residual : 2.58","<b> Arizona <\/b> <br>Urban  : 80 <br>Murder : 8.1 <br>Predicted Murder : 8.09 <br>Residual : 0.01","<b> Arkansas <\/b> <br>Urban  : 50 <br>Murder : 8.8 <br>Predicted Murder : 7.46 <br>Residual : 1.34","<b> California <\/b> <br>Urban  : 91 <br>Murder : 9 <br>Predicted Murder : 8.32 <br>Residual : 0.68","<b> Colorado <\/b> <br>Urban  : 78 <br>Murder : 7.9 <br>Predicted Murder : 8.05 <br>Residual : -0.15","<b> Connecticut <\/b> <br>Urban  : 77 <br>Murder : 3.3 <br>Predicted Murder : 8.03 <br>Residual : -4.73","<b> Delaware <\/b> <br>Urban  : 72 <br>Murder : 5.9 <br>Predicted Murder : 7.92 <br>Residual : -2.02","<b> Florida <\/b> <br>Urban  : 80 <br>Murder : 15.4 <br>Predicted Murder : 8.09 <br>Residual : 7.31","<b> Georgia <\/b> <br>Urban  : 60 <br>Murder : 17.4 <br>Predicted Murder : 7.67 <br>Residual : 9.73","<b> Hawaii <\/b> <br>Urban  : 83 <br>Murder : 5.3 <br>Predicted Murder : 8.15 <br>Residual : -2.85","<b> Idaho <\/b> <br>Urban  : 54 <br>Murder : 2.6 <br>Predicted Murder : 7.55 <br>Residual : -4.95","<b> Illinois <\/b> <br>Urban  : 83 <br>Murder : 10.4 <br>Predicted Murder : 8.15 <br>Residual : 2.25","<b> Indiana <\/b> <br>Urban  : 65 <br>Murder : 7.2 <br>Predicted Murder : 7.78 <br>Residual : -0.58","<b> Iowa <\/b> <br>Urban  : 57 <br>Murder : 2.2 <br>Predicted Murder : 7.61 <br>Residual : -5.41","<b> Kansas <\/b> <br>Urban  : 66 <br>Murder : 6 <br>Predicted Murder : 7.8 <br>Residual : -1.8","<b> Kentucky <\/b> <br>Urban  : 52 <br>Murder : 9.7 <br>Predicted Murder : 7.5 <br>Residual : 2.2","<b> Louisiana <\/b> <br>Urban  : 66 <br>Murder : 15.4 <br>Predicted Murder : 7.8 <br>Residual : 7.6","<b> Maine <\/b> <br>Urban  : 51 <br>Murder : 2.1 <br>Predicted Murder : 7.48 <br>Residual : -5.38","<b> Maryland <\/b> <br>Urban  : 67 <br>Murder : 11.3 <br>Predicted Murder : 7.82 <br>Residual : 3.48","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Murder : 4.4 <br>Predicted Murder : 8.2 <br>Residual : -3.8","<b> Michigan <\/b> <br>Urban  : 74 <br>Murder : 12.1 <br>Predicted Murder : 7.97 <br>Residual : 4.13","<b> Minnesota <\/b> <br>Urban  : 66 <br>Murder : 2.7 <br>Predicted Murder : 7.8 <br>Residual : -5.1","<b> Mississippi <\/b> <br>Urban  : 44 <br>Murder : 16.1 <br>Predicted Murder : 7.34 <br>Residual : 8.76","<b> Missouri <\/b> <br>Urban  : 70 <br>Murder : 9 <br>Predicted Murder : 7.88 <br>Residual : 1.12","<b> Montana <\/b> <br>Urban  : 53 <br>Murder : 6 <br>Predicted Murder : 7.53 <br>Residual : -1.53","<b> Nebraska <\/b> <br>Urban  : 62 <br>Murder : 4.3 <br>Predicted Murder : 7.71 <br>Residual : -3.41","<b> Nevada <\/b> <br>Urban  : 81 <br>Murder : 12.2 <br>Predicted Murder : 8.11 <br>Residual : 4.09","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Murder : 2.1 <br>Predicted Murder : 7.59 <br>Residual : -5.49","<b> New Jersey <\/b> <br>Urban  : 89 <br>Murder : 7.4 <br>Predicted Murder : 8.28 <br>Residual : -0.88","<b> New Mexico <\/b> <br>Urban  : 70 <br>Murder : 11.4 <br>Predicted Murder : 7.88 <br>Residual : 3.52","<b> New York <\/b> <br>Urban  : 86 <br>Murder : 11.1 <br>Predicted Murder : 8.22 <br>Residual : 2.88","<b> North Carolina <\/b> <br>Urban  : 45 <br>Murder : 13 <br>Predicted Murder : 7.36 <br>Residual : 5.64","<b> North Dakota <\/b> <br>Urban  : 44 <br>Murder : 0.8 <br>Predicted Murder : 7.34 <br>Residual : -6.54","<b> Ohio <\/b> <br>Urban  : 75 <br>Murder : 7.3 <br>Predicted Murder : 7.99 <br>Residual : -0.69","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Murder : 6.6 <br>Predicted Murder : 7.84 <br>Residual : -1.24","<b> Oregon <\/b> <br>Urban  : 67 <br>Murder : 4.9 <br>Predicted Murder : 7.82 <br>Residual : -2.92","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Murder : 6.3 <br>Predicted Murder : 7.92 <br>Residual : -1.62","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Murder : 3.4 <br>Predicted Murder : 8.24 <br>Residual : -4.84","<b> South Carolina <\/b> <br>Urban  : 48 <br>Murder : 14.4 <br>Predicted Murder : 7.42 <br>Residual : 6.98","<b> South Dakota <\/b> <br>Urban  : 45 <br>Murder : 3.8 <br>Predicted Murder : 7.36 <br>Residual : -3.56","<b> Tennessee <\/b> <br>Urban  : 59 <br>Murder : 13.2 <br>Predicted Murder : 7.65 <br>Residual : 5.55","<b> Texas <\/b> <br>Urban  : 80 <br>Murder : 12.7 <br>Predicted Murder : 8.09 <br>Residual : 4.61","<b> Utah <\/b> <br>Urban  : 80 <br>Murder : 3.2 <br>Predicted Murder : 8.09 <br>Residual : -4.89","<b> Vermont <\/b> <br>Urban  : 32 <br>Murder : 2.2 <br>Predicted Murder : 7.09 <br>Residual : -4.89","<b> Virginia <\/b> <br>Urban  : 63 <br>Murder : 8.5 <br>Predicted Murder : 7.73 <br>Residual : 0.77","<b> Washington <\/b> <br>Urban  : 73 <br>Murder : 4 <br>Predicted Murder : 7.94 <br>Residual : -3.94","<b> West Virginia <\/b> <br>Urban  : 39 <br>Murder : 5.7 <br>Predicted Murder : 7.23 <br>Residual : -1.53","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Murder : 2.6 <br>Predicted Murder : 7.8 <br>Residual : -5.2","<b> Wyoming <\/b> <br>Urban  : 60 <br>Murder : 6.8 <br>Predicted Murder : 7.67 <br>Residual : -0.87"],"type":"scatter","error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"line":{"color":"rgba(31,119,180,1)"},"xaxis":"x","yaxis":"y","frame":null},{"x":[32,39,44,44,45,45,48,48,50,51,52,53,54,56,57,58,59,60,60,62,63,65,66,66,66,66,67,67,68,70,70,72,72,73,74,75,77,78,80,80,80,80,81,83,83,85,86,87,89,91],"y":[7.0858515431864255,7.2323941549245001,7.3370674490231238,7.3370674490231247,7.3580021078428492,7.3580021078428492,7.4208060843020238,7.4208060843020238,7.4626754019414747,7.4836100607611993,7.5045447195809238,7.5254793784006493,7.5464140372203747,7.5882833548598239,7.6092180136795484,7.6301526724992756,7.6510873313189984,7.6720219901387221,7.672021990138723,7.7138913077781739,7.7348259665978985,7.7766952842373485,7.7976299430570739,7.7976299430570721,7.7976299430570721,7.797629943057073,7.8185646018767976,7.8185646018767976,7.839499260696523,7.881368578335973,7.881368578335973,7.9232378959754231,7.9232378959754231,7.9441725547951467,7.9651072136148731,7.9860418724345976,8.0279111900740467,8.0488458488937731,8.0907151665332222,8.0907151665332222,8.0907151665332222,8.0907151665332222,8.1116498253529485,8.1535191429923977,8.1535191429923977,8.1953884606318468,8.2163231194515713,8.2372577782712959,8.2791270959107468,8.3209964135501959],"mode":"lines+markers","hoverinfo":["none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none"],"marker":{"color":"#00000040","line":{"color":"rgba(255,127,14,1)"}},"text":["<b> Vermont <\/b> <br>Urban  : 32 <br>Murder : 2.2 <br>Predicted Murder : 7.09 <br>Residual : -4.89","<b> West Virginia <\/b> <br>Urban  : 39 <br>Murder : 5.7 <br>Predicted Murder : 7.23 <br>Residual : -1.53","<b> Mississippi <\/b> <br>Urban  : 44 <br>Murder : 16.1 <br>Predicted Murder : 7.34 <br>Residual : 8.76","<b> North Dakota <\/b> <br>Urban  : 44 <br>Murder : 0.8 <br>Predicted Murder : 7.34 <br>Residual : -6.54","<b> North Carolina <\/b> <br>Urban  : 45 <br>Murder : 13 <br>Predicted Murder : 7.36 <br>Residual : 5.64","<b> South Dakota <\/b> <br>Urban  : 45 <br>Murder : 3.8 <br>Predicted Murder : 7.36 <br>Residual : -3.56","<b> Alaska <\/b> <br>Urban  : 48 <br>Murder : 10 <br>Predicted Murder : 7.42 <br>Residual : 2.58","<b> South Carolina <\/b> <br>Urban  : 48 <br>Murder : 14.4 <br>Predicted Murder : 7.42 <br>Residual : 6.98","<b> Arkansas <\/b> <br>Urban  : 50 <br>Murder : 8.8 <br>Predicted Murder : 7.46 <br>Residual : 1.34","<b> Maine <\/b> <br>Urban  : 51 <br>Murder : 2.1 <br>Predicted Murder : 7.48 <br>Residual : -5.38","<b> Kentucky <\/b> <br>Urban  : 52 <br>Murder : 9.7 <br>Predicted Murder : 7.5 <br>Residual : 2.2","<b> Montana <\/b> <br>Urban  : 53 <br>Murder : 6 <br>Predicted Murder : 7.53 <br>Residual : -1.53","<b> Idaho <\/b> <br>Urban  : 54 <br>Murder : 2.6 <br>Predicted Murder : 7.55 <br>Residual : -4.95","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Murder : 2.1 <br>Predicted Murder : 7.59 <br>Residual : -5.49","<b> Iowa <\/b> <br>Urban  : 57 <br>Murder : 2.2 <br>Predicted Murder : 7.61 <br>Residual : -5.41","<b> Alabama <\/b> <br>Urban  : 58 <br>Murder : 13.2 <br>Predicted Murder : 7.63 <br>Residual : 5.57","<b> Tennessee <\/b> <br>Urban  : 59 <br>Murder : 13.2 <br>Predicted Murder : 7.65 <br>Residual : 5.55","<b> Georgia <\/b> <br>Urban  : 60 <br>Murder : 17.4 <br>Predicted Murder : 7.67 <br>Residual : 9.73","<b> Wyoming <\/b> <br>Urban  : 60 <br>Murder : 6.8 <br>Predicted Murder : 7.67 <br>Residual : -0.87","<b> Nebraska <\/b> <br>Urban  : 62 <br>Murder : 4.3 <br>Predicted Murder : 7.71 <br>Residual : -3.41","<b> Virginia <\/b> <br>Urban  : 63 <br>Murder : 8.5 <br>Predicted Murder : 7.73 <br>Residual : 0.77","<b> Indiana <\/b> <br>Urban  : 65 <br>Murder : 7.2 <br>Predicted Murder : 7.78 <br>Residual : -0.58","<b> Kansas <\/b> <br>Urban  : 66 <br>Murder : 6 <br>Predicted Murder : 7.8 <br>Residual : -1.8","<b> Louisiana <\/b> <br>Urban  : 66 <br>Murder : 15.4 <br>Predicted Murder : 7.8 <br>Residual : 7.6","<b> Minnesota <\/b> <br>Urban  : 66 <br>Murder : 2.7 <br>Predicted Murder : 7.8 <br>Residual : -5.1","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Murder : 2.6 <br>Predicted Murder : 7.8 <br>Residual : -5.2","<b> Maryland <\/b> <br>Urban  : 67 <br>Murder : 11.3 <br>Predicted Murder : 7.82 <br>Residual : 3.48","<b> Oregon <\/b> <br>Urban  : 67 <br>Murder : 4.9 <br>Predicted Murder : 7.82 <br>Residual : -2.92","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Murder : 6.6 <br>Predicted Murder : 7.84 <br>Residual : -1.24","<b> Missouri <\/b> <br>Urban  : 70 <br>Murder : 9 <br>Predicted Murder : 7.88 <br>Residual : 1.12","<b> New Mexico <\/b> <br>Urban  : 70 <br>Murder : 11.4 <br>Predicted Murder : 7.88 <br>Residual : 3.52","<b> Delaware <\/b> <br>Urban  : 72 <br>Murder : 5.9 <br>Predicted Murder : 7.92 <br>Residual : -2.02","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Murder : 6.3 <br>Predicted Murder : 7.92 <br>Residual : -1.62","<b> Washington <\/b> <br>Urban  : 73 <br>Murder : 4 <br>Predicted Murder : 7.94 <br>Residual : -3.94","<b> Michigan <\/b> <br>Urban  : 74 <br>Murder : 12.1 <br>Predicted Murder : 7.97 <br>Residual : 4.13","<b> Ohio <\/b> <br>Urban  : 75 <br>Murder : 7.3 <br>Predicted Murder : 7.99 <br>Residual : -0.69","<b> Connecticut <\/b> <br>Urban  : 77 <br>Murder : 3.3 <br>Predicted Murder : 8.03 <br>Residual : -4.73","<b> Colorado <\/b> <br>Urban  : 78 <br>Murder : 7.9 <br>Predicted Murder : 8.05 <br>Residual : -0.15","<b> Arizona <\/b> <br>Urban  : 80 <br>Murder : 8.1 <br>Predicted Murder : 8.09 <br>Residual : 0.01","<b> Florida <\/b> <br>Urban  : 80 <br>Murder : 15.4 <br>Predicted Murder : 8.09 <br>Residual : 7.31","<b> Texas <\/b> <br>Urban  : 80 <br>Murder : 12.7 <br>Predicted Murder : 8.09 <br>Residual : 4.61","<b> Utah <\/b> <br>Urban  : 80 <br>Murder : 3.2 <br>Predicted Murder : 8.09 <br>Residual : -4.89","<b> Nevada <\/b> <br>Urban  : 81 <br>Murder : 12.2 <br>Predicted Murder : 8.11 <br>Residual : 4.09","<b> Hawaii <\/b> <br>Urban  : 83 <br>Murder : 5.3 <br>Predicted Murder : 8.15 <br>Residual : -2.85","<b> Illinois <\/b> <br>Urban  : 83 <br>Murder : 10.4 <br>Predicted Murder : 8.15 <br>Residual : 2.25","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Murder : 4.4 <br>Predicted Murder : 8.2 <br>Residual : -3.8","<b> New York <\/b> <br>Urban  : 86 <br>Murder : 11.1 <br>Predicted Murder : 8.22 <br>Residual : 2.88","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Murder : 3.4 <br>Predicted Murder : 8.24 <br>Residual : -4.84","<b> New Jersey <\/b> <br>Urban  : 89 <br>Murder : 7.4 <br>Predicted Murder : 8.28 <br>Residual : -0.88","<b> California <\/b> <br>Urban  : 91 <br>Murder : 9 <br>Predicted Murder : 8.32 <br>Residual : 0.68"],"type":"scatter","line":{"color":"grey(0,1)","width":2},"error_y":{"color":"rgba(255,127,14,1)"},"error_x":{"color":"rgba(255,127,14,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<div class="plotly html-widget html-fill-item" id="htmlwidget-46f1dfd8fd88dfe6c27e" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-46f1dfd8fd88dfe6c27e">{"x":{"visdat":{"94704918b360":["function () ","plotlyVisDat"]},"cur_data":"94704918b360","attrs":{"94704918b360":{"x":{},"y":{},"mode":"markers","hoverinfo":"text","marker":{"color":"#00000040","size":10},"text":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter"},"94704918b360.1":{"x":{},"y":{},"hoverinfo":"none","mode":"lines+markers","type":"scatter","color":["black"],"line":{"width":0.5},"marker":{"symbol":134,"size":5},"inherit":false}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Percent of People in an Urban Area"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Homicide Arrests per 100,000 People"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[58,48,80,50,91,78,77,72,80,60,83,54,83,65,57,66,52,66,51,67,85,74,66,44,70,53,62,81,56,89,70,86,45,44,75,68,67,72,87,48,45,59,80,80,32,63,73,39,66,60],"y":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"mode":"markers","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"marker":{"color":"#00000040","size":10,"line":{"color":"rgba(31,119,180,1)"}},"text":["<b> Alabama <\/b> <br>Urban  : 58 <br>Murder : 13.2 <br>Predicted Murder : 7.63 <br>Residual : 5.57","<b> Alaska <\/b> <br>Urban  : 48 <br>Murder : 10 <br>Predicted Murder : 7.42 <br>Residual : 2.58","<b> Arizona <\/b> <br>Urban  : 80 <br>Murder : 8.1 <br>Predicted Murder : 8.09 <br>Residual : 0.01","<b> Arkansas <\/b> <br>Urban  : 50 <br>Murder : 8.8 <br>Predicted Murder : 7.46 <br>Residual : 1.34","<b> California <\/b> <br>Urban  : 91 <br>Murder : 9 <br>Predicted Murder : 8.32 <br>Residual : 0.68","<b> Colorado <\/b> <br>Urban  : 78 <br>Murder : 7.9 <br>Predicted Murder : 8.05 <br>Residual : -0.15","<b> Connecticut <\/b> <br>Urban  : 77 <br>Murder : 3.3 <br>Predicted Murder : 8.03 <br>Residual : -4.73","<b> Delaware <\/b> <br>Urban  : 72 <br>Murder : 5.9 <br>Predicted Murder : 7.92 <br>Residual : -2.02","<b> Florida <\/b> <br>Urban  : 80 <br>Murder : 15.4 <br>Predicted Murder : 8.09 <br>Residual : 7.31","<b> Georgia <\/b> <br>Urban  : 60 <br>Murder : 17.4 <br>Predicted Murder : 7.67 <br>Residual : 9.73","<b> Hawaii <\/b> <br>Urban  : 83 <br>Murder : 5.3 <br>Predicted Murder : 8.15 <br>Residual : -2.85","<b> Idaho <\/b> <br>Urban  : 54 <br>Murder : 2.6 <br>Predicted Murder : 7.55 <br>Residual : -4.95","<b> Illinois <\/b> <br>Urban  : 83 <br>Murder : 10.4 <br>Predicted Murder : 8.15 <br>Residual : 2.25","<b> Indiana <\/b> <br>Urban  : 65 <br>Murder : 7.2 <br>Predicted Murder : 7.78 <br>Residual : -0.58","<b> Iowa <\/b> <br>Urban  : 57 <br>Murder : 2.2 <br>Predicted Murder : 7.61 <br>Residual : -5.41","<b> Kansas <\/b> <br>Urban  : 66 <br>Murder : 6 <br>Predicted Murder : 7.8 <br>Residual : -1.8","<b> Kentucky <\/b> <br>Urban  : 52 <br>Murder : 9.7 <br>Predicted Murder : 7.5 <br>Residual : 2.2","<b> Louisiana <\/b> <br>Urban  : 66 <br>Murder : 15.4 <br>Predicted Murder : 7.8 <br>Residual : 7.6","<b> Maine <\/b> <br>Urban  : 51 <br>Murder : 2.1 <br>Predicted Murder : 7.48 <br>Residual : -5.38","<b> Maryland <\/b> <br>Urban  : 67 <br>Murder : 11.3 <br>Predicted Murder : 7.82 <br>Residual : 3.48","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Murder : 4.4 <br>Predicted Murder : 8.2 <br>Residual : -3.8","<b> Michigan <\/b> <br>Urban  : 74 <br>Murder : 12.1 <br>Predicted Murder : 7.97 <br>Residual : 4.13","<b> Minnesota <\/b> <br>Urban  : 66 <br>Murder : 2.7 <br>Predicted Murder : 7.8 <br>Residual : -5.1","<b> Mississippi <\/b> <br>Urban  : 44 <br>Murder : 16.1 <br>Predicted Murder : 7.34 <br>Residual : 8.76","<b> Missouri <\/b> <br>Urban  : 70 <br>Murder : 9 <br>Predicted Murder : 7.88 <br>Residual : 1.12","<b> Montana <\/b> <br>Urban  : 53 <br>Murder : 6 <br>Predicted Murder : 7.53 <br>Residual : -1.53","<b> Nebraska <\/b> <br>Urban  : 62 <br>Murder : 4.3 <br>Predicted Murder : 7.71 <br>Residual : -3.41","<b> Nevada <\/b> <br>Urban  : 81 <br>Murder : 12.2 <br>Predicted Murder : 8.11 <br>Residual : 4.09","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Murder : 2.1 <br>Predicted Murder : 7.59 <br>Residual : -5.49","<b> New Jersey <\/b> <br>Urban  : 89 <br>Murder : 7.4 <br>Predicted Murder : 8.28 <br>Residual : -0.88","<b> New Mexico <\/b> <br>Urban  : 70 <br>Murder : 11.4 <br>Predicted Murder : 7.88 <br>Residual : 3.52","<b> New York <\/b> <br>Urban  : 86 <br>Murder : 11.1 <br>Predicted Murder : 8.22 <br>Residual : 2.88","<b> North Carolina <\/b> <br>Urban  : 45 <br>Murder : 13 <br>Predicted Murder : 7.36 <br>Residual : 5.64","<b> North Dakota <\/b> <br>Urban  : 44 <br>Murder : 0.8 <br>Predicted Murder : 7.34 <br>Residual : -6.54","<b> Ohio <\/b> <br>Urban  : 75 <br>Murder : 7.3 <br>Predicted Murder : 7.99 <br>Residual : -0.69","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Murder : 6.6 <br>Predicted Murder : 7.84 <br>Residual : -1.24","<b> Oregon <\/b> <br>Urban  : 67 <br>Murder : 4.9 <br>Predicted Murder : 7.82 <br>Residual : -2.92","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Murder : 6.3 <br>Predicted Murder : 7.92 <br>Residual : -1.62","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Murder : 3.4 <br>Predicted Murder : 8.24 <br>Residual : -4.84","<b> South Carolina <\/b> <br>Urban  : 48 <br>Murder : 14.4 <br>Predicted Murder : 7.42 <br>Residual : 6.98","<b> South Dakota <\/b> <br>Urban  : 45 <br>Murder : 3.8 <br>Predicted Murder : 7.36 <br>Residual : -3.56","<b> Tennessee <\/b> <br>Urban  : 59 <br>Murder : 13.2 <br>Predicted Murder : 7.65 <br>Residual : 5.55","<b> Texas <\/b> <br>Urban  : 80 <br>Murder : 12.7 <br>Predicted Murder : 8.09 <br>Residual : 4.61","<b> Utah <\/b> <br>Urban  : 80 <br>Murder : 3.2 <br>Predicted Murder : 8.09 <br>Residual : -4.89","<b> Vermont <\/b> <br>Urban  : 32 <br>Murder : 2.2 <br>Predicted Murder : 7.09 <br>Residual : -4.89","<b> Virginia <\/b> <br>Urban  : 63 <br>Murder : 8.5 <br>Predicted Murder : 7.73 <br>Residual : 0.77","<b> Washington <\/b> <br>Urban  : 73 <br>Murder : 4 <br>Predicted Murder : 7.94 <br>Residual : -3.94","<b> West Virginia <\/b> <br>Urban  : 39 <br>Murder : 5.7 <br>Predicted Murder : 7.23 <br>Residual : -1.53","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Murder : 2.6 <br>Predicted Murder : 7.8 <br>Residual : -5.2","<b> Wyoming <\/b> <br>Urban  : 60 <br>Murder : 6.8 <br>Predicted Murder : 7.67 <br>Residual : -0.87"],"type":"scatter","error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"line":{"color":"rgba(31,119,180,1)"},"xaxis":"x","yaxis":"y","frame":null},{"x":[58,48,80,50,91,78,77,72,80,60,83,54,83,65,57,66,52,66,51,67,85,74,66,44,70,53,62,81,56,89,70,86,45,44,75,68,67,72,87,48,45,59,80,80,32,63,73,39,66,60],"y":[7.630152672499273,7.4208060843020238,8.0907151665332222,7.4626754019414738,8.3209964135501959,8.0488458488937713,8.0279111900740467,7.9232378959754222,8.0907151665332222,7.672021990138723,8.1535191429923959,7.546414037220373,8.1535191429923959,7.7766952842373476,7.6092180136795484,7.7976299430570721,7.5045447195809238,7.7976299430570721,7.4836100607611984,7.8185646018767976,8.1953884606318468,7.9651072136148722,7.7976299430570721,7.3370674490231238,7.8813685783359722,7.5254793784006484,7.713891307778173,8.1116498253529468,7.588283354859823,8.279127095910745,7.8813685783359722,8.2163231194515713,7.3580021078428492,7.3370674490231238,7.9860418724345967,7.8394992606965221,7.8185646018767976,7.9232378959754222,8.2372577782712959,7.4208060843020238,7.3580021078428492,7.6510873313189975,8.0907151665332222,8.0907151665332222,7.0858515431864246,7.7348259665978976,7.9441725547951467,7.2323941549244992,7.7976299430570721,7.672021990138723],"hoverinfo":["none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none","none"],"mode":"lines+markers","type":"scatter","line":{"color":"rgba(0,0,0,1)","width":0.5},"marker":{"color":"rgba(0,0,0,1)","symbol":134,"size":5,"line":{"color":"rgba(0,0,0,1)"}},"textfont":{"color":"rgba(0,0,0,1)"},"error_y":{"color":"rgba(0,0,0,1)"},"error_x":{"color":"rgba(0,0,0,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 To quantitatively analyze GoF, we compute $R^2$ using the sums of squared errors (Total, Explained, and Residual)
 $$
@@ -118,7 +121,7 @@ R^2 = \frac{ESS}{TSS}=1-\frac{RSS}{TSS}
 $$
 Note that $R^2$ is also called the coefficient of determination.
 
-```r
+``` r
 ## Manually Compute Goodness of Fit
 Ehat <- resid(reg)
 RSS  <- sum(Ehat^2)
@@ -132,7 +135,7 @@ R2
 ## [1] 0.00484035
 ```
 
-```r
+``` r
 ## Check R2
 summary(reg)$r.squared
 ```
@@ -158,7 +161,7 @@ Note that values reported by your computer do not necessarily satisfy this defin
 We first consider the simplest, the jackknife. In this procedure, we loop through each row of the dataset. And, in each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``subsamples''.
 
 
-```r
+``` r
 ## Jackknife Standard Errors for OLS Coefficient
 jack_regs <- lapply(1:nrow(xy), function(i){
     xy_i <- xy[-i,]
@@ -183,7 +186,7 @@ abline(v=jack_ci_percentile, lty=2)
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-7-1.png" width="672" />
 
-```r
+``` r
 ## Plot Normal Approximation
 ## jack_ci_normal <- jack_mean+c(-1.96, +1.96)*jack_se
 ## abline(v=jack_ci_normal, col="red", lty=3)
@@ -198,7 +201,7 @@ Jackknife | $n-1$   | $n$  | Without Replacement |
 Random Subsample | $m < n$ | $B$  | Without Replacement |
 
 
-```r
+``` r
 ## Bootstrap
 boot_regs <- lapply(1:399, function(b){
     b_id <- sample( nrow(xy), replace=T)
@@ -220,7 +223,7 @@ abline(v=coef(reg)['x'], lwd=2)
 <img src="03-ROLS_files/figure-html/unnamed-chunk-8-1.png" width="672" />
 
 
-```r
+``` r
 ## Random Subsamples
 rs_regs <- lapply(1:399, function(b){
     b_id <- sample( nrow(xy), nrow(xy)-10, replace=F)
@@ -250,7 +253,7 @@ There are two main ways to conduct a hypothesis test. We do this using *data-dri
 **Invert a CI**
 One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. Does the slope coefficient equal $0$? For reasons we won't go into in this class, we typically normalize the coefficient by its standard error: $$ \hat{t} = \frac{\hat{\beta}}{\hat{\sigma}_{\hat{\beta}}} $$
 
-```r
+``` r
 tvalue <- coef(reg)['x']/jack_se
 
 jack_t <- sapply(jack_regs, function(reg_b){
@@ -268,7 +271,6 @@ hist(jack_t, breaks=25,
     xlab=expression(hat(t)[b]), 
     xlim=range(c(0, jack_t)) )
 abline(v=quantile(jack_t, probs=c(.025,.975)), lty=2)
-abline(v=tvalue, lwd=2)
 abline(v=0, col="red", lwd=2)
 ```
 
@@ -277,7 +279,7 @@ abline(v=0, col="red", lwd=2)
 **Impose the Null**
 We can also compute a null distribution. We focus on the simplest, the bootstrap, where loop through a large number of simulations. In each iteration of the loop, we drop impose the null hypothesis and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''. Specifically, we compute the distribution of t-values on data with randomly reshuffled outcomes (imposing the null), and compare how extreme the observed value is.
 
-```r
+``` r
 ## Null Distribution for Beta
 boot_t0 <- sapply( 1:399, function(b){
     xy_b <- xy
@@ -306,7 +308,7 @@ Alternatively, you can impose the null by recentering the sampling distribution 
 
 In any case, we can calculate a *p-value*: the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true). We can always calculate a p-value from an explicit null distribution.
 
-```r
+``` r
 ## One Sided Test for P(t > boot_t | Null)=1- P(t < boot_t | Null)
 That_NullDist1 <- ecdf(boot_t0)
 Phat1  <- 1-That_NullDist1(jack_t)
@@ -314,21 +316,20 @@ Phat1  <- 1-That_NullDist1(jack_t)
 ## Two Sided Test for P(t > jack_t or  t < -jack_t | Null)
 That_NullDist2 <- ecdf(abs(boot_t0))
 plot(That_NullDist2, xlim=range(boot_t0, jack_t),
-    xlab=expression(hat(t)[b]),
+    xlab=expression( abs(hat(t)[b]) ),
     main='Null Bootstrap Distribution', font.main=1)
-abline(v=quantile(That_NullDist2,probs=.95), lty=3)
 abline(v=tvalue, col='red')
 ```
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-12-1.png" width="672" />
 
-```r
-Phat2  <-  1-That_NullDist2(tvalue)
+``` r
+Phat2  <-  1-That_NullDist2( abs(tvalue))
 Phat2
 ```
 
 ```
-## [1] 0.6340852
+## [1] 0.6641604
 ```
 
 
@@ -338,7 +339,7 @@ In addition to confidence intervals, we can also compute a *prediction interval*
 
 
 
-```r
+``` r
 ## Bootstrap Prediction Interval
 boot_resids <- lapply(boot_regs, function(reg_b){
     e_b <- resid(reg_b)
@@ -374,7 +375,7 @@ For a nice overview of different types of intervals, see https://www.jstor.org/s
 
 Segmented/piecewise regressions
 
-```r
+``` r
 ## Globally Linear
 reg <- lm(y~x, data=xy)
 
@@ -397,7 +398,7 @@ sapply(regs2, coef)
 ## x             0.1628157  0.04760783
 ```
 
-```r
+``` r
 ## Linear in 3 Pieces (subsets)
 xcut3 <- cut(xy$x, seq(32,92,by=20)) ## Finer Bins
 xy_list3 <- split(xy, xcut3)
@@ -415,7 +416,7 @@ sapply(regs3, coef)
 
 Compare Predictions
 
-```r
+``` r
 pred1 <- data.frame(yhat=predict(reg), x=reg$model$x)
 pred1 <- pred1[order(pred1$x),]
 
@@ -446,7 +447,7 @@ legend('topleft',
 
 Local linear regressions conduct a linear regresssion for each data point using a subsample of data around it. 
 
-```r
+``` r
 ## ``Naive" Smoother
 pred_fun <- function(x0, h, xy){
     ## Assign equal weight to observations within h distance to x0
@@ -474,7 +475,7 @@ legend('topleft', title='Locally Linear',
 See https://shinyserv.es/shiny/kreg/ for a nice illustration. Also note that you can use adaptive bandwidths to have a similar number of data points in each subsample (especially useful when $X$ is not uniform.)
 
 
-```r
+``` r
 ## Adaptive-width subsamples with non-uniform weights
 xy0 <- xy[order(xy$x),]
 plot(y~x, pch=16, col=grey(0,.5), dat=xy0)
@@ -497,7 +498,7 @@ legend('topleft', title='Loess',
 
 The smoothed predicted values estimate the local means. So we can also construct confidence bands
 
-```r
+``` r
 ## Loess
 xy0 <- xy[order(xy$x),]
 X0 <- unique(xy0$x)
@@ -531,7 +532,7 @@ polygon(
 
 You can also construct prediction bands
 
-```r
+``` r
 plot(y~x, pch=16, col=grey(0,.5),
     dat=xy0, ylim=c(0, 20))
 lines(X0, preds_lo,
@@ -590,7 +591,7 @@ lines( X0, preds_lo +res_lo2[2,],
 Given a dataset, you can summarize it using the previous tools.
 
 
-```r
+``` r
 ## Inspect Dataset on police arrests for the USA in 1973
 head(USArrests)
 ```
@@ -605,7 +606,7 @@ head(USArrests)
 ## Colorado      7.9     204       78 38.7
 ```
 
-```r
+``` r
 library(psych)
 pairs.panels( USArrests[,c('Murder','Assault','UrbanPop')],
     hist.col=grey(0,.25), breaks=30, density=F, hist.border=NA, ## Diagonal
@@ -634,7 +635,7 @@ $$
 $$
 
 
-```r
+``` r
 ## Manually Compute
 Y <- USArrests[,'Murder']
 X <- USArrests[,c('Assault','UrbanPop')]
@@ -649,7 +650,7 @@ c(Bhat)
 ## [1]  3.20715340  0.04390995 -0.04451047
 ```
 
-```r
+``` r
 ## Check
 reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 coef(reg)
@@ -662,7 +663,7 @@ coef(reg)
 
 To measure the ``Goodness of fit'' of the model, we can again plot our predictions
 
-```r
+``` r
 plot(USArrests$Murder, predict(reg), pch=16, col=grey(0,.5))
 abline(a=0,b=1, lty=2)
 ```
@@ -675,7 +676,7 @@ R^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-R^2)
 $$
 
 
-```r
+``` r
 ksims <- 1:30
 for(k in ksims){ 
     USArrests[,paste0('R',k)] <- runif(nrow(USArrests),0,20)
@@ -708,7 +709,7 @@ legend('topleft', horiz=T,
 To estimate the variability of our estimates, we can use the same *data-driven* methods introduced in the last section.
 
 
-```r
+``` r
 ## Bootstrap SE's
 boots <- 1:399
 boot_regs <- lapply(boots, function(b){
@@ -722,12 +723,15 @@ boot_se <- apply(boot_coefs,1, sd)
 ```
 As before, we can conduct independent hypothesis tests using t-values. We can also conduct joint tests, such as whether two coefficients are equal, by looking at the their joint distribution.
 
-```r
+``` r
 boot_coef_df <- as.data.frame(cbind(ID=boots, t(boot_coefs)))
 fig <- plotly::plot_ly(boot_coef_df,
     type = 'scatter', mode = 'markers',
     x = ~UrbanPop, y = ~Assault,
-    text = ~paste('<b> boot: ', ID, '</b>'),
+    text = ~paste('<b> bootstrap dataset: ', ID, '</b>',
+            '<br>Coef. Urban  :', round(UrbanPop,3),
+            '<br>Coef. Murder :', round(Assault,3),
+            '<br>Coef. Intercept :', round(`(Intercept)`,3)),
     hoverinfo='text',
     showlegend=F,
     marker=list( color='rgba(0, 0, 0, 0.5)'))
@@ -735,25 +739,23 @@ fig <- plotly::layout(fig,
     showlegend=F,
     title='Joint Distribution of Coefficients',
     xaxis = list(title='UrbanPop Coefficient'),
-    yaxis = list(title='Homicide Coefficient'))
+    yaxis = list(title='Assualt Coefficient'))
 fig
 ```
 
 ```{=html}
-<div class="plotly html-widget html-fill-item" id="htmlwidget-c6347c6763e946754788" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-c6347c6763e946754788">{"x":{"visdat":{"20445d269adc":["function () ","plotlyVisDat"]},"cur_data":"20445d269adc","attrs":{"20445d269adc":{"mode":"markers","x":{},"y":{},"text":{},"hoverinfo":"text","showlegend":false,"marker":{"color":"rgba(0, 0, 0, 0.5)"},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Joint Distribution of Coefficients","xaxis":{"domain":[0,1],"automargin":true,"title":"UrbanPop Coefficient"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Homicide Coefficient"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"mode":"markers","x":[-0.083218795183934782,-0.039447883427329578,-0.029598424234843212,-0.06049736455923526,-0.021194310501804661,-0.025692163922184468,-0.048961167257846612,-0.022723099172198606,-0.071230097961620983,-0.034595278568010375,-0.024887099436245761,-0.017338242326022421,-0.053280169434926361,-0.04082269983027368,-0.022303029004494299,-0.060419818710905661,-0.090251940256421428,-0.012433323084884795,-0.03867081635709519,-0.073995828282163958,-0.0074350971131620812,-0.054332345016784814,0.020361110475025427,-0.044030939391827228,-0.060614524945775621,-0.022643153641524669,-0.050557299611580633,-0.083569532506127864,-0.027655147761853151,-0.08608941454782805,-0.016728012253678932,-0.020258329418732336,-0.052125549001412183,-0.04748621020868813,-0.064281803445995628,-0.062341792277724156,-0.079399300443788901,-0.04356970616769143,-0.024432871578157829,-0.067483737592126794,-0.10355951367990375,-0.074499677428834524,-0.0190655541675748,-0.071794683583577532,-0.046183080900933829,-0.0050990826753383725,-0.022463266015674617,-0.011211519857219658,-0.070670128245456293,-0.093903438086222354,-0.024734149720650161,-0.042395552030116246,-0.025133757220895024,-0.031591108926735924,-0.052269402588424274,-0.062079680099488471,-0.022736373360402837,-0.0080160300735771829,-0.053523221656410852,-0.010707285607499142,-0.078315315239608274,-0.026403540578168679,-0.054064543261283411,-0.064502213950028864,-0.066101081044055515,-0.11861759117427205,-0.083418170770043182,-0.029898177104922791,0.006781624759286552,-0.067472060387254534,-0.079431783385488314,-0.074531885180054103,-0.050429552089486129,-0.00037362223148611499,-0.025709199216579697,-0.053723229677672062,-0.078870970130132154,-0.031042892713830247,-0.079433980126342021,-0.053371211336807896,-0.076403650496663048,-0.018166991620630735,-0.035388980455316715,-0.021335858081188711,-0.056586141298275092,-0.061869118411496955,-0.018993121601013824,-0.034546306913423384,-0.064992815290683362,-0.10044641169123318,-0.059691087817598215,-0.045215530054514223,-0.083829706235191051,-0.11478825537819634,-0.03689291342287157,-0.029670839904745998,-0.069379854758571988,-0.012279525450603377,-0.02607632649100915,-0.047378026694738264,-0.087696762084036164,-0.11350540980188956,-0.031538942853839812,-0.014147242976577958,-0.042543600948921227,-0.058751582419353708,-0.088315762321007032,-0.028312712805314149,-0.063459265812558507,-0.033185008156396106,-0.042298494970756682,-0.059481968101868656,-0.079762032019338291,-0.019271364662519618,-0.060414109256463948,-0.04602154752281893,-0.069524789662911687,-0.03645936118652978,-0.019004284783446325,-0.10674644153024659,0.00074596003813458451,-0.024789426992624194,-0.038064452725581052,-0.028903942148438472,-0.049009298331284631,-0.028764789412210553,-0.08536600514605823,-0.041531617268690951,-0.087492623071212,-0.04744684154263084,-0.049909404879192064,0.0201931827695313,-0.047610209567375765,-0.059003526856773611,-0.058460201068052241,-0.063730072654050965,0.0073820048012380977,-0.089793339128708169,-0.062170742003919893,-0.045177321063650133,-0.016619791305673336,-0.00040970915140055178,-0.066867103796202434,-0.04406376923129765,-0.050587197796714403,-0.037170904166082035,-0.033015542303222366,-0.10594000575454991,-0.072476027082164066,-0.061469689691017716,-0.12239985945944581,-0.0083784276794890266,-0.040219814943691402,-0.082074352972426254,-0.058226287816572062,-0.080108531687767229,-0.043563438411305604,-0.011817700709541886,-0.039965138114218132,-0.014783895967022311,-0.058625045332290057,-0.049763691150923009,-0.04079291711664567,-0.0093959220497867452,-0.10312415768012301,-0.080217434284933858,-0.021582851004910922,-0.024048969296049515,-0.038872262424717384,-0.014928209229516079,-0.043726315779747338,-0.08012918099384686,-0.070146063637520129,-0.14185195516676041,-0.10109203727184714,-0.065947661631544252,-0.064692008983362317,-0.026641047649147931,-0.04650276566619873,-0.067899760092808403,-0.033482363678398151,-0.036491861088038029,-0.073464337276071184,-0.0092634210170608605,-0.029189058539515478,-0.056269582500226872,-0.072001004072722641,-0.049517630724333253,-0.056862820267913644,-0.043383679862537119,-0.093411791068753844,-0.055684671065412132,-0.034073421396900325,-0.11829938453814801,-0.037391755257691672,-0.088821055813038369,-0.020593857325453966,-0.045363665514683904,-0.034822594369356745,-0.033964140032871105,-0.033789398017720476,-0.015779693302676708,-0.042006726669447929,-0.074429859035282903,-0.10097608715285251,-0.018889887005842255,-0.0075477080545324152,-0.040928869485507738,-0.027274194317164217,-0.068895756971454086,-0.0035261532784110166,-0.058073737878398195,-0.082441732742890572,-0.038731267189368521,-0.015275618509092103,-0.020703059694254101,-0.092715591684883317,-0.043862664085600127,-0.071829796612439337,-0.075089527080771198,-0.012568760569859255,-0.069559992222730335,-0.057656334875574373,-0.042677788234684939,-0.10386646437162163,-0.018135130441672791,-0.054694829474934169,-0.045616878491762387,-0.062235496893475309,-0.052979407551423836,-0.08720201760639848,-0.003818039292786987,-0.066580754969023687,-0.028140320573269831,-0.044554943543626081,-0.03786506321143631,-0.05875641486633823,-0.039399729284938304,-0.022457038064936558,-0.046167185033955692,-0.034309154717862909,-0.038080261017440213,-0.042894795544701214,-0.041361902665269512,-0.056171781496699831,-0.053678249689469063,-0.029973257578514413,-0.071937960986946117,-0.050852109421965844,-0.021927971138743604,-0.047860271970343649,-0.095712761406011954,0.010403087823182803,-0.040010098795447223,-0.011427232986149847,-0.048067287334136392,-0.042800775296103544,-0.064511897463082252,-0.067166487803188332,-0.0030577769121056687,-0.054322186766146717,-0.088207316622437845,-0.033876453828891713,-0.003696972345285095,-0.073047055647525436,-0.052158918609165529,-0.028406055117625638,0.0096696733185551009,-0.047317554370395823,-0.065625180526681343,-0.021660148674520908,-0.00083149579577663829,-0.050685337049240213,-0.010541483216947863,-0.065884822148900984,-5.7974717420991366e-05,-0.034027147266919369,-0.078464457107950553,-0.066994718062530378,-0.033671116145571139,-0.11742562211588312,-0.12315489390471285,-0.081763476645072816,-0.041913907368279116,-0.018597911666074812,-0.045796249587900642,-0.079020861590916411,-0.021856708642946015,-0.030451552621085155,-0.061641419043578845,-0.067311150641212708,-0.023765683880081899,-0.030814922959986783,-0.053775919766806735,-0.059480358307624777,-0.055555000269331085,-0.034518869663415844,-0.019476334702883808,-0.022172402191934931,-0.11263885962696592,-0.027521091976693321,-0.028584643426183606,-0.010593903366306912,-0.048458291827991523,-0.067246227916623158,-0.036105245279231493,-0.050998659795562895,-0.07256258386839233,-0.045765877724183023,-0.052922038605845718,-0.078363168677739625,-0.047436775595556209,-0.093050274349691847,-0.039668905509391478,-0.04493615854940293,-0.044866115080902755,-0.026162451467543042,0.016785383140298777,0.014584864559599222,-0.034110398928090695,-0.059085880198860831,-0.1136977346781337,-0.034188923840455764,-0.034498107664721542,-0.036077499416733605,-0.039982737246694426,-0.092038834417628973,-0.053240634660200875,-0.049186814520292187,-0.033979565068327416,-0.038823267157363707,-0.053818448067397891,-0.02630862244255034,-0.05295925710676283,-0.051548675837057356,-0.014101075089801376,-0.069491251209743893,-0.044271881750696594,-0.074844271929130166,-0.0095693732881882588,-0.10743452709240542,-0.050964697801104117,-0.008391872803620342,-0.026066792914388327,-0.0048219124941184096,-0.024584297836096499,-0.077759601103606302,-0.031543795904539013,-0.050443057762169029,-0.033784739366749389,-0.0042336722924480189,-0.059352891991495169,-0.0084576417493251593,-0.024787570658119543,-0.037991346300467674,-0.094235915082965652,-0.058347449482307322,-0.050256521259724775,-0.10126076727213927,-0.010899875209278626,-0.030048837252662015,-0.094560805053196556,-0.047085868197489798,-0.054832340460821478,-0.060632693625154575,-0.055861334807308691,-0.11665445835359943,-0.036338740933260151,-0.063360117186049586,-0.021823549123198779,-0.070466750596394984,-0.053856153065081444,-0.073713866760385716,-0.027166882602633571,-0.024389121011243232,-0.09142046112215696,-0.034075614670365899,-0.047998602642176265,-0.020692687459810746,-0.034399494324373676,-0.051380401762149634,-0.063358652209277819,-0.079371951306173194,-0.037384929181779242,-0.02293544042798212,-0.056870923996894827,-0.027364323879359196,-0.074031443548925283,-0.019266686617820546,-0.069878041856095099,-0.071507337055629297,-0.073709576267954727,-0.067493000298168182,-0.031633035331826015,-0.045264939201730317,-0.0025209073014880851,-0.056594901929171028,-0.016768364307002199,-0.052207228374391602],"y":[0.051391357636410909,0.039187114688831515,0.03961924701816194,0.054033692818883226,0.034890954843731205,0.036649206929658222,0.045227918173832364,0.037194072635841575,0.043201325011693083,0.040078397840429117,0.045059172177509071,0.040495647647440791,0.043996816203326378,0.048653875631000446,0.03832969425978848,0.043567135415386385,0.043056540481236263,0.037112264459190504,0.042459641047614335,0.058099374938789264,0.044723116964009345,0.035217656154966616,0.039934459805224372,0.044413487387697639,0.048052341702988909,0.044238520179447106,0.048330877705226524,0.046282046097842991,0.033736915425794246,0.04250575503371417,0.039887158576314946,0.043050728920670286,0.042896064957684839,0.038645166495928272,0.045805009288149096,0.047091865414825344,0.045491722274292233,0.040218231856839572,0.04575555712715422,0.05041931413472199,0.045890619518095352,0.052621701667759938,0.040217707958218399,0.054162892602076476,0.044527309608663537,0.043281855943188847,0.047089062558962454,0.04049530985867645,0.046627038980082115,0.055746120937088015,0.038760431451034423,0.042305969410116093,0.042123460274227607,0.044743172448797969,0.0433430641818391,0.044852011306963958,0.044027571281307715,0.034934991325116668,0.046973373439247929,0.046192469696218874,0.0448683550207883,0.041380143816976599,0.042772550401209711,0.043239139959144156,0.052344302736030066,0.041494274381588259,0.051944596749445342,0.040686519699539812,0.041188538734341799,0.048451035796880489,0.049170185836948398,0.057451938016178219,0.042907043307852312,0.039418193140565189,0.043620215805347119,0.043090136290441707,0.044771731933471788,0.041203452936248032,0.041040072987512971,0.047682238537866142,0.04617854579042642,0.040016089789027293,0.044058053025300678,0.044823238819019597,0.03894509087598054,0.044416692672471628,0.040402652019596239,0.0438770417258195,0.053270933763136755,0.05896422938878474,0.04688817201992642,0.036883405386080786,0.050711219651610802,0.043576728944587459,0.043830033164266945,0.047853164886263046,0.049655479616327339,0.0380784558684307,0.043346154394397984,0.045295986673541115,0.053767611210163144,0.055646085892323817,0.04456149194248351,0.045929279769124719,0.043896795649527622,0.052647970715997285,0.041015575678066678,0.043002613506054305,0.041467416373195447,0.040584072418947757,0.040447294023683238,0.041733582217097838,0.046314949066640174,0.041251676743391745,0.047168874286267586,0.046358323789774343,0.041601742387424485,0.039658996661958316,0.040415442941765641,0.046176989309065268,0.034046227662212603,0.041666493022196043,0.043955485395713589,0.043890878268088164,0.042611833270396082,0.041627182028289737,0.051780409002524737,0.043556877481938074,0.039896273751678916,0.054723244083956124,0.040235624109852798,0.035462004739999484,0.045572827983578743,0.053180850502758371,0.040828241785208955,0.043953559005458796,0.039326362059431338,0.047640626864575188,0.046302254792566382,0.034087849473176578,0.039217706541663441,0.042766374457295309,0.049687079974788377,0.039868050575472075,0.047408237664581826,0.046282422339719291,0.046169597047596531,0.054448486924589597,0.05248322982910001,0.045629363052086314,0.046323389460454764,0.041053413723640658,0.043990347621464768,0.039846020893071384,0.044546630648683361,0.051308971424717562,0.041872569940991117,0.047734834941471342,0.04095395044132772,0.040408042494004176,0.038710129188439857,0.038691876569422044,0.039128160196142257,0.040359116914606336,0.050453687299263514,0.057595022573794348,0.034066509615441248,0.03974822168410385,0.044111845286250367,0.034895320273263135,0.041420296114221093,0.0481633994396048,0.043057102061939634,0.052500598810466509,0.052662366804742976,0.045548846330438222,0.042913571068480504,0.042192565667038176,0.050548244719520193,0.047689540665094898,0.04335648937256243,0.043726294684540229,0.035252355361294306,0.040421577227927573,0.044935437102818034,0.048807655334570037,0.049240664055129106,0.045652180010830934,0.043665842786997276,0.041228597891526095,0.043053507699626459,0.051094608423363642,0.043567629918094174,0.040825984414059414,0.043796161382056498,0.037060878725021354,0.040640392174508586,0.046379538757569595,0.043313981694792142,0.043481660984492555,0.048191867704295725,0.043035354363112406,0.044565611171917818,0.042974669613458999,0.051330762926034341,0.037956343181726977,0.0408676892679746,0.037198778150453152,0.042016446632249287,0.053240886598628662,0.044551548402724739,0.040749659218554883,0.04869191299854897,0.044825144692667275,0.036768834632624391,0.041159970915375092,0.058911435282456993,0.037620321702192393,0.039796295233399052,0.040377709923960184,0.047419343987936784,0.034274155199512935,0.043575355819085664,0.039542156890687671,0.052172139511795869,0.040522320888716115,0.036548861774725501,0.039211799444215566,0.046847139204536162,0.048155005040698057,0.049037677813422345,0.039735249651186182,0.049313085111903389,0.044430373732608622,0.049214496638042254,0.042780490846808836,0.041710032043649731,0.047612266046661279,0.041842791914723648,0.047225331485228977,0.036912468575235322,0.042802959045220967,0.038250747151912137,0.037493956887045828,0.043786055338524532,0.048693055008400932,0.047170202491478019,0.047899413263257209,0.04488982155111413,0.047304147668015661,0.040667821950270959,0.055607158783163239,0.037668093686423897,0.035844686817738614,0.038921524848659413,0.045796423380572576,0.045800517352398304,0.052441412607525217,0.054097642727396554,0.04189928449359092,0.041465475173626594,0.048151734816720616,0.037170119904059641,0.036584462045746453,0.044938872188023053,0.045691122890167857,0.048265170026422929,0.040307544060952917,0.042357077721162206,0.050977970795472505,0.043329921199985709,0.042910018736621418,0.040381456454179655,0.046700734605486079,0.042157755446595432,0.041458520598358854,0.038062811632252398,0.042390723888641763,0.045898679091372234,0.044001939221632355,0.05079022181106449,0.054366781068859719,0.040947570029056572,0.046217609403391403,0.047121143048217622,0.044609056674686065,0.048715179645654846,0.04151172661496589,0.040640798149721692,0.046109255975138798,0.046027378974544501,0.043534830022600786,0.040896763432094009,0.047933395661632641,0.041773725290130681,0.049948557988740448,0.048261767374003547,0.043003353134344578,0.047924709733496239,0.056201715931832499,0.040296709428192731,0.038352744820694777,0.041012355592224166,0.047010752244548086,0.042972739438508198,0.047051348071024825,0.045520873382418676,0.043395028666308219,0.044422587175888366,0.043573219695319805,0.041463111596339072,0.041119188856535767,0.050422328465751204,0.043123023571510419,0.04372245686951199,0.039942170442205015,0.036394731252468747,0.038229727970608703,0.036038185594085233,0.044149664399124364,0.03998694319670059,0.042658696007927051,0.046433718490179451,0.047679514726133396,0.049204627418502921,0.04051921241572512,0.051734570200176411,0.04517129038122418,0.04219353989797113,0.042905525021466738,0.042333296161948579,0.040283188230733763,0.044167710228418103,0.044436281845278418,0.049129015892845587,0.049421209157266541,0.051926674155657028,0.054755896628945561,0.054751220132603778,0.040202852820666629,0.044699162305336569,0.047944560989153583,0.047678296861374959,0.042811253852956983,0.043918277754828934,0.035927538598547089,0.041010953428144661,0.03509292521217678,0.047019298035730461,0.044443017087270116,0.040091850179115048,0.045820607074346029,0.04086028370303614,0.045709646955226058,0.043247971723982294,0.048304738879434553,0.045796306794495673,0.048476040608174252,0.051412947810856237,0.037103555383722321,0.043138884102686174,0.045662958573715488,0.042414463509406697,0.050234980904050736,0.046596124505545629,0.04781334495127397,0.04921888654505855,0.042438236256852259,0.04811357741326313,0.048465121646297592,0.05211304252615271,0.045629283492567584,0.04951465657188283,0.038029709387751319,0.038711712570401617,0.047401717591241593,0.048120998693562206,0.04390812579452337,0.044192004725412758,0.043899657911856259,0.043336805441574811,0.045043570782108307,0.046862795720549855,0.040645982749574969,0.045537763404720911,0.041517834271167155,0.044728865789801432,0.044858972085937587,0.049696824953194975,0.0429868648705196,0.043427860016427018,0.048897260723326404,0.043993542300080707,0.048743157106514216,0.041425793768101578,0.039578819925001334,0.052844900457710967,0.047911879300195179,0.043681740395474906],"text":["<b> boot:  1 <\/b>","<b> boot:  2 <\/b>","<b> boot:  3 <\/b>","<b> boot:  4 <\/b>","<b> boot:  5 <\/b>","<b> boot:  6 <\/b>","<b> boot:  7 <\/b>","<b> boot:  8 <\/b>","<b> boot:  9 <\/b>","<b> boot:  10 <\/b>","<b> boot:  11 <\/b>","<b> boot:  12 <\/b>","<b> boot:  13 <\/b>","<b> boot:  14 <\/b>","<b> boot:  15 <\/b>","<b> boot:  16 <\/b>","<b> boot:  17 <\/b>","<b> boot:  18 <\/b>","<b> boot:  19 <\/b>","<b> boot:  20 <\/b>","<b> boot:  21 <\/b>","<b> boot:  22 <\/b>","<b> boot:  23 <\/b>","<b> boot:  24 <\/b>","<b> boot:  25 <\/b>","<b> boot:  26 <\/b>","<b> boot:  27 <\/b>","<b> boot:  28 <\/b>","<b> boot:  29 <\/b>","<b> boot:  30 <\/b>","<b> boot:  31 <\/b>","<b> boot:  32 <\/b>","<b> boot:  33 <\/b>","<b> boot:  34 <\/b>","<b> boot:  35 <\/b>","<b> boot:  36 <\/b>","<b> boot:  37 <\/b>","<b> boot:  38 <\/b>","<b> boot:  39 <\/b>","<b> boot:  40 <\/b>","<b> boot:  41 <\/b>","<b> boot:  42 <\/b>","<b> boot:  43 <\/b>","<b> boot:  44 <\/b>","<b> boot:  45 <\/b>","<b> boot:  46 <\/b>","<b> boot:  47 <\/b>","<b> boot:  48 <\/b>","<b> boot:  49 <\/b>","<b> boot:  50 <\/b>","<b> boot:  51 <\/b>","<b> boot:  52 <\/b>","<b> boot:  53 <\/b>","<b> boot:  54 <\/b>","<b> boot:  55 <\/b>","<b> boot:  56 <\/b>","<b> boot:  57 <\/b>","<b> boot:  58 <\/b>","<b> boot:  59 <\/b>","<b> boot:  60 <\/b>","<b> boot:  61 <\/b>","<b> boot:  62 <\/b>","<b> boot:  63 <\/b>","<b> boot:  64 <\/b>","<b> boot:  65 <\/b>","<b> boot:  66 <\/b>","<b> boot:  67 <\/b>","<b> boot:  68 <\/b>","<b> boot:  69 <\/b>","<b> boot:  70 <\/b>","<b> boot:  71 <\/b>","<b> boot:  72 <\/b>","<b> boot:  73 <\/b>","<b> boot:  74 <\/b>","<b> boot:  75 <\/b>","<b> boot:  76 <\/b>","<b> boot:  77 <\/b>","<b> boot:  78 <\/b>","<b> boot:  79 <\/b>","<b> boot:  80 <\/b>","<b> boot:  81 <\/b>","<b> boot:  82 <\/b>","<b> boot:  83 <\/b>","<b> boot:  84 <\/b>","<b> boot:  85 <\/b>","<b> boot:  86 <\/b>","<b> boot:  87 <\/b>","<b> boot:  88 <\/b>","<b> boot:  89 <\/b>","<b> boot:  90 <\/b>","<b> boot:  91 <\/b>","<b> boot:  92 <\/b>","<b> boot:  93 <\/b>","<b> boot:  94 <\/b>","<b> boot:  95 <\/b>","<b> boot:  96 <\/b>","<b> boot:  97 <\/b>","<b> boot:  98 <\/b>","<b> boot:  99 <\/b>","<b> boot:  100 <\/b>","<b> boot:  101 <\/b>","<b> boot:  102 <\/b>","<b> boot:  103 <\/b>","<b> boot:  104 <\/b>","<b> boot:  105 <\/b>","<b> boot:  106 <\/b>","<b> boot:  107 <\/b>","<b> boot:  108 <\/b>","<b> boot:  109 <\/b>","<b> boot:  110 <\/b>","<b> boot:  111 <\/b>","<b> boot:  112 <\/b>","<b> boot:  113 <\/b>","<b> boot:  114 <\/b>","<b> boot:  115 <\/b>","<b> boot:  116 <\/b>","<b> boot:  117 <\/b>","<b> boot:  118 <\/b>","<b> boot:  119 <\/b>","<b> boot:  120 <\/b>","<b> boot:  121 <\/b>","<b> boot:  122 <\/b>","<b> boot:  123 <\/b>","<b> boot:  124 <\/b>","<b> boot:  125 <\/b>","<b> boot:  126 <\/b>","<b> boot:  127 <\/b>","<b> boot:  128 <\/b>","<b> boot:  129 <\/b>","<b> boot:  130 <\/b>","<b> boot:  131 <\/b>","<b> boot:  132 <\/b>","<b> boot:  133 <\/b>","<b> boot:  134 <\/b>","<b> boot:  135 <\/b>","<b> boot:  136 <\/b>","<b> boot:  137 <\/b>","<b> boot:  138 <\/b>","<b> boot:  139 <\/b>","<b> boot:  140 <\/b>","<b> boot:  141 <\/b>","<b> boot:  142 <\/b>","<b> boot:  143 <\/b>","<b> boot:  144 <\/b>","<b> boot:  145 <\/b>","<b> boot:  146 <\/b>","<b> boot:  147 <\/b>","<b> boot:  148 <\/b>","<b> boot:  149 <\/b>","<b> boot:  150 <\/b>","<b> boot:  151 <\/b>","<b> boot:  152 <\/b>","<b> boot:  153 <\/b>","<b> boot:  154 <\/b>","<b> boot:  155 <\/b>","<b> boot:  156 <\/b>","<b> boot:  157 <\/b>","<b> boot:  158 <\/b>","<b> boot:  159 <\/b>","<b> boot:  160 <\/b>","<b> boot:  161 <\/b>","<b> boot:  162 <\/b>","<b> boot:  163 <\/b>","<b> boot:  164 <\/b>","<b> boot:  165 <\/b>","<b> boot:  166 <\/b>","<b> boot:  167 <\/b>","<b> boot:  168 <\/b>","<b> boot:  169 <\/b>","<b> boot:  170 <\/b>","<b> boot:  171 <\/b>","<b> boot:  172 <\/b>","<b> boot:  173 <\/b>","<b> boot:  174 <\/b>","<b> boot:  175 <\/b>","<b> boot:  176 <\/b>","<b> boot:  177 <\/b>","<b> boot:  178 <\/b>","<b> boot:  179 <\/b>","<b> boot:  180 <\/b>","<b> boot:  181 <\/b>","<b> boot:  182 <\/b>","<b> boot:  183 <\/b>","<b> boot:  184 <\/b>","<b> boot:  185 <\/b>","<b> boot:  186 <\/b>","<b> boot:  187 <\/b>","<b> boot:  188 <\/b>","<b> boot:  189 <\/b>","<b> boot:  190 <\/b>","<b> boot:  191 <\/b>","<b> boot:  192 <\/b>","<b> boot:  193 <\/b>","<b> boot:  194 <\/b>","<b> boot:  195 <\/b>","<b> boot:  196 <\/b>","<b> boot:  197 <\/b>","<b> boot:  198 <\/b>","<b> boot:  199 <\/b>","<b> boot:  200 <\/b>","<b> boot:  201 <\/b>","<b> boot:  202 <\/b>","<b> boot:  203 <\/b>","<b> boot:  204 <\/b>","<b> boot:  205 <\/b>","<b> boot:  206 <\/b>","<b> boot:  207 <\/b>","<b> boot:  208 <\/b>","<b> boot:  209 <\/b>","<b> boot:  210 <\/b>","<b> boot:  211 <\/b>","<b> boot:  212 <\/b>","<b> boot:  213 <\/b>","<b> boot:  214 <\/b>","<b> boot:  215 <\/b>","<b> boot:  216 <\/b>","<b> boot:  217 <\/b>","<b> boot:  218 <\/b>","<b> boot:  219 <\/b>","<b> boot:  220 <\/b>","<b> boot:  221 <\/b>","<b> boot:  222 <\/b>","<b> boot:  223 <\/b>","<b> boot:  224 <\/b>","<b> boot:  225 <\/b>","<b> boot:  226 <\/b>","<b> boot:  227 <\/b>","<b> boot:  228 <\/b>","<b> boot:  229 <\/b>","<b> boot:  230 <\/b>","<b> boot:  231 <\/b>","<b> boot:  232 <\/b>","<b> boot:  233 <\/b>","<b> boot:  234 <\/b>","<b> boot:  235 <\/b>","<b> boot:  236 <\/b>","<b> boot:  237 <\/b>","<b> boot:  238 <\/b>","<b> boot:  239 <\/b>","<b> boot:  240 <\/b>","<b> boot:  241 <\/b>","<b> boot:  242 <\/b>","<b> boot:  243 <\/b>","<b> boot:  244 <\/b>","<b> boot:  245 <\/b>","<b> boot:  246 <\/b>","<b> boot:  247 <\/b>","<b> boot:  248 <\/b>","<b> boot:  249 <\/b>","<b> boot:  250 <\/b>","<b> boot:  251 <\/b>","<b> boot:  252 <\/b>","<b> boot:  253 <\/b>","<b> boot:  254 <\/b>","<b> boot:  255 <\/b>","<b> boot:  256 <\/b>","<b> boot:  257 <\/b>","<b> boot:  258 <\/b>","<b> boot:  259 <\/b>","<b> boot:  260 <\/b>","<b> boot:  261 <\/b>","<b> boot:  262 <\/b>","<b> boot:  263 <\/b>","<b> boot:  264 <\/b>","<b> boot:  265 <\/b>","<b> boot:  266 <\/b>","<b> boot:  267 <\/b>","<b> boot:  268 <\/b>","<b> boot:  269 <\/b>","<b> boot:  270 <\/b>","<b> boot:  271 <\/b>","<b> boot:  272 <\/b>","<b> boot:  273 <\/b>","<b> boot:  274 <\/b>","<b> boot:  275 <\/b>","<b> boot:  276 <\/b>","<b> boot:  277 <\/b>","<b> boot:  278 <\/b>","<b> boot:  279 <\/b>","<b> boot:  280 <\/b>","<b> boot:  281 <\/b>","<b> boot:  282 <\/b>","<b> boot:  283 <\/b>","<b> boot:  284 <\/b>","<b> boot:  285 <\/b>","<b> boot:  286 <\/b>","<b> boot:  287 <\/b>","<b> boot:  288 <\/b>","<b> boot:  289 <\/b>","<b> boot:  290 <\/b>","<b> boot:  291 <\/b>","<b> boot:  292 <\/b>","<b> boot:  293 <\/b>","<b> boot:  294 <\/b>","<b> boot:  295 <\/b>","<b> boot:  296 <\/b>","<b> boot:  297 <\/b>","<b> boot:  298 <\/b>","<b> boot:  299 <\/b>","<b> boot:  300 <\/b>","<b> boot:  301 <\/b>","<b> boot:  302 <\/b>","<b> boot:  303 <\/b>","<b> boot:  304 <\/b>","<b> boot:  305 <\/b>","<b> boot:  306 <\/b>","<b> boot:  307 <\/b>","<b> boot:  308 <\/b>","<b> boot:  309 <\/b>","<b> boot:  310 <\/b>","<b> boot:  311 <\/b>","<b> boot:  312 <\/b>","<b> boot:  313 <\/b>","<b> boot:  314 <\/b>","<b> boot:  315 <\/b>","<b> boot:  316 <\/b>","<b> boot:  317 <\/b>","<b> boot:  318 <\/b>","<b> boot:  319 <\/b>","<b> boot:  320 <\/b>","<b> boot:  321 <\/b>","<b> boot:  322 <\/b>","<b> boot:  323 <\/b>","<b> boot:  324 <\/b>","<b> boot:  325 <\/b>","<b> boot:  326 <\/b>","<b> boot:  327 <\/b>","<b> boot:  328 <\/b>","<b> boot:  329 <\/b>","<b> boot:  330 <\/b>","<b> boot:  331 <\/b>","<b> boot:  332 <\/b>","<b> boot:  333 <\/b>","<b> boot:  334 <\/b>","<b> boot:  335 <\/b>","<b> boot:  336 <\/b>","<b> boot:  337 <\/b>","<b> boot:  338 <\/b>","<b> boot:  339 <\/b>","<b> boot:  340 <\/b>","<b> boot:  341 <\/b>","<b> boot:  342 <\/b>","<b> boot:  343 <\/b>","<b> boot:  344 <\/b>","<b> boot:  345 <\/b>","<b> boot:  346 <\/b>","<b> boot:  347 <\/b>","<b> boot:  348 <\/b>","<b> boot:  349 <\/b>","<b> boot:  350 <\/b>","<b> boot:  351 <\/b>","<b> boot:  352 <\/b>","<b> boot:  353 <\/b>","<b> boot:  354 <\/b>","<b> boot:  355 <\/b>","<b> boot:  356 <\/b>","<b> boot:  357 <\/b>","<b> boot:  358 <\/b>","<b> boot:  359 <\/b>","<b> boot:  360 <\/b>","<b> boot:  361 <\/b>","<b> boot:  362 <\/b>","<b> boot:  363 <\/b>","<b> boot:  364 <\/b>","<b> boot:  365 <\/b>","<b> boot:  366 <\/b>","<b> boot:  367 <\/b>","<b> boot:  368 <\/b>","<b> boot:  369 <\/b>","<b> boot:  370 <\/b>","<b> boot:  371 <\/b>","<b> boot:  372 <\/b>","<b> boot:  373 <\/b>","<b> boot:  374 <\/b>","<b> boot:  375 <\/b>","<b> boot:  376 <\/b>","<b> boot:  377 <\/b>","<b> boot:  378 <\/b>","<b> boot:  379 <\/b>","<b> boot:  380 <\/b>","<b> boot:  381 <\/b>","<b> boot:  382 <\/b>","<b> boot:  383 <\/b>","<b> boot:  384 <\/b>","<b> boot:  385 <\/b>","<b> boot:  386 <\/b>","<b> boot:  387 <\/b>","<b> boot:  388 <\/b>","<b> boot:  389 <\/b>","<b> boot:  390 <\/b>","<b> boot:  391 <\/b>","<b> boot:  392 <\/b>","<b> boot:  393 <\/b>","<b> boot:  394 <\/b>","<b> boot:  395 <\/b>","<b> boot:  396 <\/b>","<b> boot:  397 <\/b>","<b> boot:  398 <\/b>","<b> boot:  399 <\/b>"],"hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"showlegend":false,"marker":{"color":"rgba(0, 0, 0, 0.5)","line":{"color":"rgba(31,119,180,1)"}},"type":"scatter","error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"line":{"color":"rgba(31,119,180,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<div class="plotly html-widget html-fill-item" id="htmlwidget-e5f9fc7b0e3f7b9b5db7" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-e5f9fc7b0e3f7b9b5db7">{"x":{"visdat":{"947079470370":["function () ","plotlyVisDat"]},"cur_data":"947079470370","attrs":{"947079470370":{"mode":"markers","x":{},"y":{},"text":{},"hoverinfo":"text","showlegend":false,"marker":{"color":"rgba(0, 0, 0, 0.5)"},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Joint Distribution of Coefficients","xaxis":{"domain":[0,1],"automargin":true,"title":"UrbanPop Coefficient"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Assualt Coefficient"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"mode":"markers","x":[-0.063130296674725903,0.0050404843699919672,-0.046789014238759051,-0.094541931108383201,-0.036104663822894678,-0.010335517606006593,-0.033588153032380497,-0.019100013009570396,-0.058099579093503093,-0.05437224478291898,-0.046352711451702361,-0.029285580349734323,-0.047785251045663023,-0.02929959922122137,-0.073195786830080073,-0.085684881608951477,-0.034495621629866705,-0.015810654610590641,-0.038370407048179039,0.013649277295414651,-0.01966554254408415,-0.063148368359774359,0.0052277397453867648,-0.035050330515034034,-0.048959633535054746,-0.036888406041231073,-0.088643950519559672,-0.024149874722646042,-0.062488007958127381,0.0055750875898641361,-0.0031893885656458019,-0.0109264281867945,-0.046609179098099564,-0.037062498071477518,-0.09595550810271844,-0.044518254979911229,-0.012364261519608085,-0.022432343883536786,-0.074046888079856682,-0.052078170325964075,-0.036412506528408287,-0.054532642359788663,-0.048735129673674188,-0.026372773787119122,-0.03784907932671578,-0.055342977784253615,-0.049818052008526716,-0.017558286352361809,-0.057627272652065256,-0.042455671146072203,-0.032327926931529638,-0.074935495712137631,-0.067208141833517407,-0.028627902084978646,-0.077734073760599126,-0.066047514593922871,-0.10978592532702827,-0.073775432643580857,-0.057943804903565259,-0.0332574127056183,-0.056472305619578229,-0.05436900249822655,-0.079347051491676521,-0.0055330766388281046,-0.047748112856563427,-0.05735128112118025,-0.062173222024769381,-0.011904858850772068,-0.049350814829689692,-0.099985880185121667,-0.055292045107661898,-0.072073961430924149,-0.058230808703650071,-0.043321904855114578,-0.043792840694001557,-0.0063061243660120512,-0.048127354181485511,-0.053442589966235118,-0.024129300585707916,-0.054835551689890537,-0.054885906617976009,-0.060129094462276135,-0.13949722208940188,-0.024465048582957311,-0.050944378691442097,-0.042877253363378456,-0.05148636379053214,-0.059500147558094664,-0.059757365166178376,-0.035207446542572969,-0.041970365578068193,-0.035623616135891843,-0.031459038277279042,-0.073327537686719485,-0.026595084917471416,-0.061649614836267866,-0.071450154604491362,-0.04452499410938493,-0.037121598360626486,-0.091783171666202104,-0.069504869572176567,-0.010573650765565476,-0.042482672462567581,-0.053506965136070755,-0.089160765943622239,-0.037578707335888833,-0.0255476709973937,-0.051314057957231672,-0.046393377583705479,-0.035244683588217224,-0.045851525262929016,-0.061637526001309922,-0.00078474915390739481,-0.0070554548704968674,-0.043187938694686234,0.014834221974382302,-0.046529062845115897,-0.098603486442710886,-0.019293203883342467,-0.054141168772900906,-0.032695731791066149,0.0221517938093778,-0.074341733759592507,0.0034252174029938335,-0.073777374067257581,-0.051355431160975448,-0.046498152684854063,-0.026603768821146099,-0.033111946572315233,-0.063752423672278138,-0.038322802709532873,-0.026674185429039876,-0.029657452155187281,0.016074417856024044,-0.10842464044740639,-0.07213624671137589,-0.045875279387783817,-0.059791154738731013,-0.024844553543526032,-0.056407916738127728,-0.040514634382228062,-0.094221147044100714,-0.036613379626471459,-0.053025950142938073,-0.0025989269486884738,-0.059382013207309167,-0.061307421689865527,-0.048355888727933262,-0.046171786772787084,-0.0350644152717711,-0.028774041928542823,-0.045141029130795846,-0.089323135091998421,-0.039746332798468932,-0.0077240991815177417,-0.037452284573241887,-0.058501390518556268,-0.019569982961683663,-0.059943058342086776,-0.045597516126704665,-0.022698934426491568,-0.035552086068646016,-0.034786181959905745,-0.07381181334099364,-0.049968004833770396,-0.041644778615388268,-0.060066849303968571,0.0032437210269557369,-0.05248345992157006,-0.059921537624210007,-0.018419406646280587,-0.080095780705781175,-0.066756890233168914,-0.052699186312091612,0.0083014531109792487,-0.066654671464909471,-0.09729559576230401,-0.033464621516213405,-0.061176582576040084,-0.030261843902050979,-0.050279271066498772,-0.046413773415320742,-0.015895665257200393,-0.058338634278761098,-0.098208083660053652,-0.062482694264599618,-0.016002169757393516,-0.030943483280270453,-0.046836191247155309,-0.12445876405731207,-0.032184779431255368,-0.046395314369451844,-0.014703075752098048,-0.042096868963115174,-0.029388642465233514,-0.016939566215413329,-0.010093530924818506,-0.051026712204036741,-0.0086662728773900938,-0.067693891658680699,-0.049475610211030426,-0.057162369876943148,-0.049233518529263554,-0.042781026731981683,-0.055103053609401841,-0.036036543427656234,-0.03499719858541378,-0.0040450063145867346,-0.01017842281855454,0.012990742423785241,-0.035745955617487356,-0.018919295875893544,-0.037505424359202989,-0.0090864022199720774,-0.014412781690369077,-0.033190102678949278,-0.032405463925759784,-0.028988933580659595,-0.065374873882140916,-0.068332864280603714,-0.030901751912715977,-0.01397030781240719,-0.077878596240995746,-0.05267164341508547,-0.0507965525425529,-0.031288207318957165,-0.040231613468588744,-0.04282587754508508,-0.052989211654128288,-0.045279619240237427,-0.049293111923387131,-0.015132383319830321,-0.020543279567912836,-0.11866799543700096,-0.065063752283415974,-0.029257914180862019,-0.035532227267113595,-0.022181987853072491,-0.02073978384039208,-0.098724927867558043,-0.0094507594097516714,-0.048823604666712074,-0.028506864905272791,-0.012784870734233327,-0.040483858138575551,-0.020263123844474339,-0.049118645610859518,-0.061313934840581862,-0.10515967693016226,-0.12593025453737869,-0.031473864290179988,-0.074531341477402577,-0.068395680961423302,-0.060087281348944109,-0.040071108064446817,-0.036534853497621922,-0.050259680024438314,-0.053567910313082757,-0.090248567588390657,-0.095712003255214562,-0.025756454508684905,-0.092350273528810228,-0.065117863726241135,-0.020734027687277917,-0.032659263923709166,-0.092818342014891517,-0.055614532342250209,-0.060222209494244477,-0.053751987134547985,-0.04469870248391869,-0.069745036771375279,-0.066423092659688945,-0.032727121760109786,-0.040913984626375702,-0.039400381742873351,-0.068058809091319214,-0.013668605958144125,-0.021213083517407194,-0.083880601059233395,-0.043784710128913745,-0.031452221809244091,-0.066705728371389036,-0.098444880712481683,-0.025947422302107538,-0.011527942530583892,-0.025523827299366517,-0.056605887836463191,-0.052541542776762935,-0.037949840587162768,-0.033994405177493553,-0.069259750667797687,-0.050048306410820947,-0.016632933810229438,-0.0014748090480355639,-0.037782096661809435,-0.08007529699105255,-0.036698062903973004,-0.064435927318200914,-0.021059042420947739,-0.037287154291280877,-0.050735360270372579,-0.052027640505121153,-0.074891935043355909,-0.037356749837125412,-0.068373287804009947,-0.062764174565816483,-0.063047150001206836,-0.014251878807510302,-0.035059719684335758,-0.038408602417327409,-0.10738573844574574,-0.016561314401071555,-0.054294484109673635,-0.038508240340617429,-0.077303811905355721,-0.046982663507260838,-0.021584585135031253,-0.042353045432326389,-0.029524473011744618,-0.067290865650236245,-0.015911140782154262,-0.088022741369402482,-0.042253752894664785,-0.04154019084131623,-0.056727596809878655,-0.085323305389312279,-0.10079488119784043,-0.075423591733241924,-0.0057405659529929376,-0.036076179206495362,-0.091201713789507477,-0.028146370046073364,-0.060664245819566531,-0.023450626840143547,-0.04614294382493541,-0.056788051483554709,-0.092323788020530137,-0.048568942952656083,-0.010915866715110693,-0.06557039127612603,-0.025909659236658666,-0.047164600978491962,-0.053398216313252395,-0.0524430697030734,-0.038604740611209047,-0.0097596355663800271,-0.042143732934254899,-0.071080581066814974,-0.03328856190153158,-0.011891504976103317,0.0078577321794874727,-0.055774212189349782,-0.062373629881121641,0.0021443568142803676,-0.026498123857134598,-0.018353821099647328,-0.052694738030324817,-0.10920070641833769,-0.067346110892777172,-0.042021231266928333,-0.021356118009258962,-0.061305054999661317,-0.011863280986327444,-0.035180182516389692,-0.06597299322602343,-0.026145647284438165,-0.015025095037099185,-0.033603927855324303,-0.055209507188218619,-0.019549321175229895,-0.068774644134025772,-0.016457222514850999,-0.068193263243961133,-0.045381844295451189,-0.068233804790328381,-0.044960808743084064,-0.056656610428873815,-0.067671994058465468,-0.083854205978655033,-0.012330388868707708,-0.067063664650600457,-0.0068097760636334275,-0.062727879596499503,-0.059695582739226781,-0.010128664028402982,-0.062530426544103165,-0.03960993435703529,-0.067277531168389595,-0.053495451068373237,-0.03601841305469531,-0.056522911164676358,-0.028513506307523591,-0.053507468093055656,0.0084320873607060132,-0.014042739786258461,0.0036682606085600036,-0.030479470285668119,-0.028493752751853701,-0.031238806951682675],"y":[0.042783659685044599,0.043587684522159616,0.047910904901233155,0.048513291810031688,0.045336144296378042,0.038822159480123776,0.037314108238743662,0.034489418894089456,0.042350830892657294,0.038860544362997303,0.04137018469020242,0.035968429348607153,0.047504073965477546,0.047674381903088182,0.064300469898846649,0.040886231902928338,0.045266597641847019,0.037469177578945703,0.04312325198316963,0.03968062491586543,0.040323811337838043,0.04623805123846321,0.039058595594379603,0.047972624577641544,0.047668554711972531,0.045008462677312351,0.051754938378547985,0.044502815571105227,0.038217003801528593,0.041517135314247076,0.045462817353102689,0.043891512750252819,0.044822789246587072,0.043822130492260476,0.05804493501733881,0.039245200625984515,0.039360571735446825,0.04121272010941146,0.047840299927911861,0.045305779890302836,0.044731824961077159,0.048331447795467948,0.043417876434444114,0.036264371731331423,0.04574102767879859,0.041665177210236652,0.038877654000079809,0.035824065379915331,0.038494478703033845,0.052608394362397219,0.04568669043206143,0.057032774027170746,0.043516302212625604,0.043821918583050998,0.04984119776518478,0.050055395755578498,0.054960640179376755,0.041282851729104342,0.049392814942253664,0.043748520218643824,0.043599685564114012,0.043715189527337571,0.046727112597641722,0.044116900797962773,0.038751910237187145,0.042236118013369503,0.047926678790635814,0.039168741789108966,0.04230334162438535,0.058147183369764328,0.047327205263458051,0.047007242610381202,0.038349413956367907,0.047289732644342101,0.033264705420851366,0.047784408969000526,0.051990418829794091,0.048731344567721435,0.04913443680454186,0.045988067404841702,0.056172556244409755,0.046812758638423338,0.053261539284621282,0.04605159340275411,0.045090426999369937,0.046285648682393279,0.045536700884824491,0.044405621816986547,0.047075520927409069,0.03918979773272066,0.044299331686615151,0.040638067500566116,0.04517042480103365,0.052932120190026327,0.041422430634683864,0.041855134169391371,0.050383520373513548,0.047291049983575341,0.045232398058548284,0.043634545811708947,0.044650508385621367,0.042703498555922287,0.041838828440285886,0.045718562839127008,0.048445373791921133,0.03920069288102538,0.042631915725323266,0.046920656833325726,0.049382179814046821,0.046603309520355025,0.051148560672367269,0.037870208401484022,0.040550227143121689,0.03492891061689702,0.045411267677858101,0.037498418667794881,0.033782236268735048,0.051951900425464062,0.039790681101805725,0.041659522771969423,0.03728989656760031,0.039758040861900372,0.047749700683395582,0.043146319370635046,0.042571763937505697,0.043710546938338375,0.044572933391926348,0.042277871499024823,0.046793169807746449,0.05099564842023304,0.038612759233877733,0.033185107849562946,0.045524073390090639,0.038068499014040622,0.045522946360488592,0.051437550424274413,0.048480139155719172,0.047655745538517161,0.041886999896382227,0.039965956630470562,0.044836510363025252,0.048578257352225034,0.037467072762213595,0.050551506242756269,0.040339531308068693,0.048681909661034702,0.046183291082021329,0.037830059698279496,0.040365524890784973,0.046148858270410813,0.042577494339452467,0.04471693426244807,0.053878843767449988,0.044245664473617767,0.03743516763001855,0.043652787860999534,0.03820633695476406,0.043012539381156262,0.04326825400867431,0.043080286550281156,0.039757455876496588,0.045498983898973902,0.039823629208506836,0.038743728209927275,0.041047780814736264,0.044842851558855749,0.053533529219173703,0.049325789438373478,0.050450060464615094,0.046731474080350562,0.05079983541059728,0.048095935274074603,0.047756756097803929,0.044567620619125052,0.039923207829608218,0.043703109659491021,0.048655932538650304,0.046733923955462033,0.043779837156490711,0.037844905053611488,0.044469066479975845,0.038516997055735053,0.038873443123489955,0.041947984363105817,0.048879004747033092,0.051235138409422259,0.039208254586746913,0.048913382540172128,0.04112305633440802,0.044407797998125602,0.048177995970622743,0.055846707838082654,0.045083770799924906,0.045126023519783273,0.036593405276330482,0.046494314890849646,0.045499824984786219,0.043625724606266403,0.038371192100363757,0.04326558822974963,0.046489843574428327,0.049162985038588798,0.041628462179570981,0.044417899465815092,0.045737963486099882,0.043369046377497472,0.046270132267446321,0.044716545123187179,0.041806556167047031,0.043701646840656458,0.04397721806387251,0.044023078949226052,0.047242420617342573,0.038076587530364164,0.035844399573741262,0.03995609327019934,0.03961031840516397,0.048296245622245569,0.048728372057661083,0.040298026302876599,0.040374781102944388,0.051335459114793258,0.047224787928873344,0.041516542858673844,0.047914592334838739,0.039979456892924925,0.04620662032503111,0.044577971885579361,0.040648762362243865,0.046080325523376119,0.046354486179815996,0.038232283788215186,0.043291744246650443,0.049914634746130081,0.041007149572221867,0.043209986215527969,0.048182949333212918,0.03577628827867798,0.042929714521320946,0.04570738900172637,0.038019023418841294,0.050777710217227094,0.04973421459739643,0.03822270700880067,0.053950270544628136,0.039736756537713282,0.05690070554779586,0.041381633387068621,0.050440285570407487,0.050291596845815772,0.043275354156749657,0.047601554538016795,0.061968407105388271,0.042948567101912,0.038530448283546515,0.040078260915136728,0.039810004951469156,0.039752663878333039,0.0524721820575113,0.044515752288525189,0.039366170982198412,0.052014262932840873,0.038876342069957798,0.044545947130280886,0.041107933990924751,0.043257766947701913,0.042599333889295786,0.058178957775560494,0.047332538691558956,0.04048674649699778,0.052062365324295458,0.046309249974987657,0.038051397096870873,0.05506196185627775,0.047172387970999444,0.050540506602256896,0.040153139294078384,0.039599098359640705,0.04004557438465503,0.045540197203511663,0.040446748624838387,0.046673360249443713,0.050641727332721612,0.040363033918835771,0.038197013137113829,0.038973470147380548,0.041006358068157722,0.051571249823267544,0.03427279529804584,0.043343147375811908,0.048165190415764669,0.044867962222141108,0.039316529731338028,0.036804995086614382,0.04316395282198731,0.043187595650423308,0.046474462557036744,0.047879487163983159,0.045201924292606145,0.041287851746199748,0.04351906030559137,0.047565956151273035,0.044097028196843038,0.045101749369622315,0.054480902766490154,0.052009268777603548,0.043256852058125586,0.037989286491149223,0.054142665821480564,0.041478617819043891,0.045775822853838084,0.037878704675115116,0.045287833833597253,0.046455809733881755,0.048592744552828311,0.040084641004782193,0.040897268017298836,0.042474488068815652,0.046282821849705065,0.041741680805970093,0.03518564735404494,0.049912520567488711,0.051202599874080656,0.042762546006013973,0.042479982402472381,0.040407708283171279,0.062580396040608249,0.04127439702290861,0.041749236302131419,0.044083992691215317,0.046131182426509119,0.040390836056190822,0.038515298411098062,0.041694774532187208,0.044826077959664458,0.044614779956866843,0.047468224274783616,0.046282731309633597,0.037593674044691119,0.047150893123519631,0.04386101110230408,0.045629834319054742,0.049221255186161973,0.04639236520913978,0.049764148686547688,0.046321474032514638,0.048259832751470472,0.043646572982025574,0.046397533675276464,0.05067566982441804,0.044731364892763463,0.046163062786774303,0.047279980682231076,0.040140671172221851,0.04020180155708649,0.044483195137584093,0.036439995392886199,0.045160199114883511,0.048665321347289521,0.047043021233258611,0.040930552937481685,0.041504128498788345,0.044534953255436875,0.041064568890280796,0.046984619388666563,0.042749078515306613,0.047869957998199174,0.043135751899353252,0.048886035999915534,0.042930314436975099,0.041981877444069317,0.041583243295138919,0.044633712774001515,0.040163473664528611,0.049293329748316121,0.049888010386092758,0.046952088597410666,0.043060365353878333,0.03969489419546407,0.044235942749862249,0.049639880784562378,0.04154098449657586,0.042769930080564678,0.046489053696046938,0.040196808167846605,0.041487288271121206,0.045198705684516796,0.049494733014272256,0.042807775727883614,0.044218936625586493,0.041874223076110398,0.044319660427953531,0.048023992153541278,0.048585880095437725,0.045768493039374969,0.038239199515062487,0.043422141671804936,0.049286360143699484,0.038707089597623021],"text":["<b> bootstrap dataset:  1 <\/b> <br>Coef. Urban  : -0.063 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 5.438","<b> bootstrap dataset:  2 <\/b> <br>Coef. Urban  : 0.005 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 0.422","<b> bootstrap dataset:  3 <\/b> <br>Coef. Urban  : -0.047 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 2.802","<b> bootstrap dataset:  4 <\/b> <br>Coef. Urban  : -0.095 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 5.696","<b> bootstrap dataset:  5 <\/b> <br>Coef. Urban  : -0.036 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 2.571","<b> bootstrap dataset:  6 <\/b> <br>Coef. Urban  : -0.01 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 2.281","<b> bootstrap dataset:  7 <\/b> <br>Coef. Urban  : -0.034 <br>Coef. Murder : 0.037 <br>Coef. Intercept : 3.2","<b> bootstrap dataset:  8 <\/b> <br>Coef. Urban  : -0.019 <br>Coef. Murder : 0.034 <br>Coef. Intercept : 3.251","<b> bootstrap dataset:  9 <\/b> <br>Coef. Urban  : -0.058 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 3.792","<b> bootstrap dataset:  10 <\/b> <br>Coef. Urban  : -0.054 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 3.859","<b> bootstrap dataset:  11 <\/b> <br>Coef. Urban  : -0.046 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 3.566","<b> bootstrap dataset:  12 <\/b> <br>Coef. Urban  : -0.029 <br>Coef. Murder : 0.036 <br>Coef. Intercept : 3.567","<b> bootstrap dataset:  13 <\/b> <br>Coef. Urban  : -0.048 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 2.391","<b> bootstrap dataset:  14 <\/b> <br>Coef. Urban  : -0.029 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 1.336","<b> bootstrap dataset:  15 <\/b> <br>Coef. Urban  : -0.073 <br>Coef. Murder : 0.064 <br>Coef. Intercept : 2.318","<b> bootstrap dataset:  16 <\/b> <br>Coef. Urban  : -0.086 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 6.516","<b> bootstrap dataset:  17 <\/b> <br>Coef. Urban  : -0.034 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 2.682","<b> bootstrap dataset:  18 <\/b> <br>Coef. Urban  : -0.016 <br>Coef. Murder : 0.037 <br>Coef. Intercept : 1.925","<b> bootstrap dataset:  19 <\/b> <br>Coef. Urban  : -0.038 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 3","<b> bootstrap dataset:  20 <\/b> <br>Coef. Urban  : 0.014 <br>Coef. Murder : 0.04 <br>Coef. Intercept : -0.204","<b> bootstrap dataset:  21 <\/b> <br>Coef. Urban  : -0.02 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 1.485","<b> bootstrap dataset:  22 <\/b> <br>Coef. Urban  : -0.063 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 4.009","<b> bootstrap dataset:  23 <\/b> <br>Coef. Urban  : 0.005 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 0.869","<b> bootstrap dataset:  24 <\/b> <br>Coef. Urban  : -0.035 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 2.382","<b> bootstrap dataset:  25 <\/b> <br>Coef. Urban  : -0.049 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 2.984","<b> bootstrap dataset:  26 <\/b> <br>Coef. Urban  : -0.037 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 2.744","<b> bootstrap dataset:  27 <\/b> <br>Coef. Urban  : -0.089 <br>Coef. Murder : 0.052 <br>Coef. Intercept : 4.459","<b> bootstrap dataset:  28 <\/b> <br>Coef. Urban  : -0.024 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 1.777","<b> bootstrap dataset:  29 <\/b> <br>Coef. Urban  : -0.062 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 5.488","<b> bootstrap dataset:  30 <\/b> <br>Coef. Urban  : 0.006 <br>Coef. Murder : 0.042 <br>Coef. Intercept : -0.117","<b> bootstrap dataset:  31 <\/b> <br>Coef. Urban  : -0.003 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 0.835","<b> bootstrap dataset:  32 <\/b> <br>Coef. Urban  : -0.011 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 1.589","<b> bootstrap dataset:  33 <\/b> <br>Coef. Urban  : -0.047 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 3.444","<b> bootstrap dataset:  34 <\/b> <br>Coef. Urban  : -0.037 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 2.763","<b> bootstrap dataset:  35 <\/b> <br>Coef. Urban  : -0.096 <br>Coef. Murder : 0.058 <br>Coef. Intercept : 4.525","<b> bootstrap dataset:  36 <\/b> <br>Coef. Urban  : -0.045 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 3.722","<b> bootstrap dataset:  37 <\/b> <br>Coef. Urban  : -0.012 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 1.826","<b> bootstrap dataset:  38 <\/b> <br>Coef. Urban  : -0.022 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 1.975","<b> bootstrap dataset:  39 <\/b> <br>Coef. Urban  : -0.074 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 4.501","<b> bootstrap dataset:  40 <\/b> <br>Coef. Urban  : -0.052 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 3.858","<b> bootstrap dataset:  41 <\/b> <br>Coef. Urban  : -0.036 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 2.093","<b> bootstrap dataset:  42 <\/b> <br>Coef. Urban  : -0.055 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 2.662","<b> bootstrap dataset:  43 <\/b> <br>Coef. Urban  : -0.049 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 3.753","<b> bootstrap dataset:  44 <\/b> <br>Coef. Urban  : -0.026 <br>Coef. Murder : 0.036 <br>Coef. Intercept : 3.036","<b> bootstrap dataset:  45 <\/b> <br>Coef. Urban  : -0.038 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 3.354","<b> bootstrap dataset:  46 <\/b> <br>Coef. Urban  : -0.055 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 4.236","<b> bootstrap dataset:  47 <\/b> <br>Coef. Urban  : -0.05 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 4.028","<b> bootstrap dataset:  48 <\/b> <br>Coef. Urban  : -0.018 <br>Coef. Murder : 0.036 <br>Coef. Intercept : 2.362","<b> bootstrap dataset:  49 <\/b> <br>Coef. Urban  : -0.058 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 5.182","<b> bootstrap dataset:  50 <\/b> <br>Coef. Urban  : -0.042 <br>Coef. Murder : 0.053 <br>Coef. Intercept : 2.319","<b> bootstrap dataset:  51 <\/b> <br>Coef. Urban  : -0.032 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 2.007","<b> bootstrap dataset:  52 <\/b> <br>Coef. Urban  : -0.075 <br>Coef. Murder : 0.057 <br>Coef. Intercept : 3.289","<b> bootstrap dataset:  53 <\/b> <br>Coef. Urban  : -0.067 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 5.047","<b> bootstrap dataset:  54 <\/b> <br>Coef. Urban  : -0.029 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 2.384","<b> bootstrap dataset:  55 <\/b> <br>Coef. Urban  : -0.078 <br>Coef. Murder : 0.05 <br>Coef. Intercept : 4.377","<b> bootstrap dataset:  56 <\/b> <br>Coef. Urban  : -0.066 <br>Coef. Murder : 0.05 <br>Coef. Intercept : 3.482","<b> bootstrap dataset:  57 <\/b> <br>Coef. Urban  : -0.11 <br>Coef. Murder : 0.055 <br>Coef. Intercept : 5.692","<b> bootstrap dataset:  58 <\/b> <br>Coef. Urban  : -0.074 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 5.37","<b> bootstrap dataset:  59 <\/b> <br>Coef. Urban  : -0.058 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 3.36","<b> bootstrap dataset:  60 <\/b> <br>Coef. Urban  : -0.033 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 2.894","<b> bootstrap dataset:  61 <\/b> <br>Coef. Urban  : -0.056 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 3.821","<b> bootstrap dataset:  62 <\/b> <br>Coef. Urban  : -0.054 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 3.651","<b> bootstrap dataset:  63 <\/b> <br>Coef. Urban  : -0.079 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 5.31","<b> bootstrap dataset:  64 <\/b> <br>Coef. Urban  : -0.006 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 0.097","<b> bootstrap dataset:  65 <\/b> <br>Coef. Urban  : -0.048 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 4.489","<b> bootstrap dataset:  66 <\/b> <br>Coef. Urban  : -0.057 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 4.38","<b> bootstrap dataset:  67 <\/b> <br>Coef. Urban  : -0.062 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 3.786","<b> bootstrap dataset:  68 <\/b> <br>Coef. Urban  : -0.012 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 2.003","<b> bootstrap dataset:  69 <\/b> <br>Coef. Urban  : -0.049 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 3.526","<b> bootstrap dataset:  70 <\/b> <br>Coef. Urban  : -0.1 <br>Coef. Murder : 0.058 <br>Coef. Intercept : 4.368","<b> bootstrap dataset:  71 <\/b> <br>Coef. Urban  : -0.055 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 3.208","<b> bootstrap dataset:  72 <\/b> <br>Coef. Urban  : -0.072 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 4.432","<b> bootstrap dataset:  73 <\/b> <br>Coef. Urban  : -0.058 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 4.788","<b> bootstrap dataset:  74 <\/b> <br>Coef. Urban  : -0.043 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 3.049","<b> bootstrap dataset:  75 <\/b> <br>Coef. Urban  : -0.044 <br>Coef. Murder : 0.033 <br>Coef. Intercept : 5.022","<b> bootstrap dataset:  76 <\/b> <br>Coef. Urban  : -0.006 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 0.3","<b> bootstrap dataset:  77 <\/b> <br>Coef. Urban  : -0.048 <br>Coef. Murder : 0.052 <br>Coef. Intercept : 2.63","<b> bootstrap dataset:  78 <\/b> <br>Coef. Urban  : -0.053 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 3.041","<b> bootstrap dataset:  79 <\/b> <br>Coef. Urban  : -0.024 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 1.37","<b> bootstrap dataset:  80 <\/b> <br>Coef. Urban  : -0.055 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 3.846","<b> bootstrap dataset:  81 <\/b> <br>Coef. Urban  : -0.055 <br>Coef. Murder : 0.056 <br>Coef. Intercept : 1.939","<b> bootstrap dataset:  82 <\/b> <br>Coef. Urban  : -0.06 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 4.346","<b> bootstrap dataset:  83 <\/b> <br>Coef. Urban  : -0.139 <br>Coef. Murder : 0.053 <br>Coef. Intercept : 8.273","<b> bootstrap dataset:  84 <\/b> <br>Coef. Urban  : -0.024 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 0.868","<b> bootstrap dataset:  85 <\/b> <br>Coef. Urban  : -0.051 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 3.861","<b> bootstrap dataset:  86 <\/b> <br>Coef. Urban  : -0.043 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 2.322","<b> bootstrap dataset:  87 <\/b> <br>Coef. Urban  : -0.051 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 3.472","<b> bootstrap dataset:  88 <\/b> <br>Coef. Urban  : -0.06 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 4.351","<b> bootstrap dataset:  89 <\/b> <br>Coef. Urban  : -0.06 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 4.311","<b> bootstrap dataset:  90 <\/b> <br>Coef. Urban  : -0.035 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 3.697","<b> bootstrap dataset:  91 <\/b> <br>Coef. Urban  : -0.042 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 2.981","<b> bootstrap dataset:  92 <\/b> <br>Coef. Urban  : -0.036 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 3.468","<b> bootstrap dataset:  93 <\/b> <br>Coef. Urban  : -0.031 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 2.343","<b> bootstrap dataset:  94 <\/b> <br>Coef. Urban  : -0.073 <br>Coef. Murder : 0.053 <br>Coef. Intercept : 3.074","<b> bootstrap dataset:  95 <\/b> <br>Coef. Urban  : -0.027 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 2.959","<b> bootstrap dataset:  96 <\/b> <br>Coef. Urban  : -0.062 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 5.034","<b> bootstrap dataset:  97 <\/b> <br>Coef. Urban  : -0.071 <br>Coef. Murder : 0.05 <br>Coef. Intercept : 4.03","<b> bootstrap dataset:  98 <\/b> <br>Coef. Urban  : -0.045 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 2.681","<b> bootstrap dataset:  99 <\/b> <br>Coef. Urban  : -0.037 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 2.721","<b> bootstrap dataset:  100 <\/b> <br>Coef. Urban  : -0.092 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 6.573","<b> bootstrap dataset:  101 <\/b> <br>Coef. Urban  : -0.07 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 4.805","<b> bootstrap dataset:  102 <\/b> <br>Coef. Urban  : -0.011 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 0.686","<b> bootstrap dataset:  103 <\/b> <br>Coef. Urban  : -0.042 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 3.398","<b> bootstrap dataset:  104 <\/b> <br>Coef. Urban  : -0.054 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 3.868","<b> bootstrap dataset:  105 <\/b> <br>Coef. Urban  : -0.089 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 5.526","<b> bootstrap dataset:  106 <\/b> <br>Coef. Urban  : -0.038 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 3.227","<b> bootstrap dataset:  107 <\/b> <br>Coef. Urban  : -0.026 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 1.658","<b> bootstrap dataset:  108 <\/b> <br>Coef. Urban  : -0.051 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 3.801","<b> bootstrap dataset:  109 <\/b> <br>Coef. Urban  : -0.046 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 2.163","<b> bootstrap dataset:  110 <\/b> <br>Coef. Urban  : -0.035 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 1.908","<b> bootstrap dataset:  111 <\/b> <br>Coef. Urban  : -0.046 <br>Coef. Murder : 0.051 <br>Coef. Intercept : 1.488","<b> bootstrap dataset:  112 <\/b> <br>Coef. Urban  : -0.062 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 5.329","<b> bootstrap dataset:  113 <\/b> <br>Coef. Urban  : -0.001 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 1.03","<b> bootstrap dataset:  114 <\/b> <br>Coef. Urban  : -0.007 <br>Coef. Murder : 0.035 <br>Coef. Intercept : 1.786","<b> bootstrap dataset:  115 <\/b> <br>Coef. Urban  : -0.043 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 3.009","<b> bootstrap dataset:  116 <\/b> <br>Coef. Urban  : 0.015 <br>Coef. Murder : 0.037 <br>Coef. Intercept : -0.429","<b> bootstrap dataset:  117 <\/b> <br>Coef. Urban  : -0.047 <br>Coef. Murder : 0.034 <br>Coef. Intercept : 5.049","<b> bootstrap dataset:  118 <\/b> <br>Coef. Urban  : -0.099 <br>Coef. Murder : 0.052 <br>Coef. Intercept : 6.105","<b> bootstrap dataset:  119 <\/b> <br>Coef. Urban  : -0.019 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 2.205","<b> bootstrap dataset:  120 <\/b> <br>Coef. Urban  : -0.054 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 4.623","<b> bootstrap dataset:  121 <\/b> <br>Coef. Urban  : -0.033 <br>Coef. Murder : 0.037 <br>Coef. Intercept : 3.116","<b> bootstrap dataset:  122 <\/b> <br>Coef. Urban  : 0.022 <br>Coef. Murder : 0.04 <br>Coef. Intercept : -0.855","<b> bootstrap dataset:  123 <\/b> <br>Coef. Urban  : -0.074 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 4.542","<b> bootstrap dataset:  124 <\/b> <br>Coef. Urban  : 0.003 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 0.376","<b> bootstrap dataset:  125 <\/b> <br>Coef. Urban  : -0.074 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 5.575","<b> bootstrap dataset:  126 <\/b> <br>Coef. Urban  : -0.051 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 3.875","<b> bootstrap dataset:  127 <\/b> <br>Coef. Urban  : -0.046 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 2.902","<b> bootstrap dataset:  128 <\/b> <br>Coef. Urban  : -0.027 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 2.807","<b> bootstrap dataset:  129 <\/b> <br>Coef. Urban  : -0.033 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 2.031","<b> bootstrap dataset:  130 <\/b> <br>Coef. Urban  : -0.064 <br>Coef. Murder : 0.051 <br>Coef. Intercept : 3.139","<b> bootstrap dataset:  131 <\/b> <br>Coef. Urban  : -0.038 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 3.744","<b> bootstrap dataset:  132 <\/b> <br>Coef. Urban  : -0.027 <br>Coef. Murder : 0.033 <br>Coef. Intercept : 3.749","<b> bootstrap dataset:  133 <\/b> <br>Coef. Urban  : -0.03 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 2.292","<b> bootstrap dataset:  134 <\/b> <br>Coef. Urban  : 0.016 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 0.122","<b> bootstrap dataset:  135 <\/b> <br>Coef. Urban  : -0.108 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 6.746","<b> bootstrap dataset:  136 <\/b> <br>Coef. Urban  : -0.072 <br>Coef. Murder : 0.051 <br>Coef. Intercept : 3.986","<b> bootstrap dataset:  137 <\/b> <br>Coef. Urban  : -0.046 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 2.801","<b> bootstrap dataset:  138 <\/b> <br>Coef. Urban  : -0.06 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 3.113","<b> bootstrap dataset:  139 <\/b> <br>Coef. Urban  : -0.025 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 2.403","<b> bootstrap dataset:  140 <\/b> <br>Coef. Urban  : -0.056 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 4.895","<b> bootstrap dataset:  141 <\/b> <br>Coef. Urban  : -0.041 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 2.365","<b> bootstrap dataset:  142 <\/b> <br>Coef. Urban  : -0.094 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 6.351","<b> bootstrap dataset:  143 <\/b> <br>Coef. Urban  : -0.037 <br>Coef. Murder : 0.037 <br>Coef. Intercept : 2.694","<b> bootstrap dataset:  144 <\/b> <br>Coef. Urban  : -0.053 <br>Coef. Murder : 0.051 <br>Coef. Intercept : 2.815","<b> bootstrap dataset:  145 <\/b> <br>Coef. Urban  : -0.003 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 0.842","<b> bootstrap dataset:  146 <\/b> <br>Coef. Urban  : -0.059 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 3.546","<b> bootstrap dataset:  147 <\/b> <br>Coef. Urban  : -0.061 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 4.177","<b> bootstrap dataset:  148 <\/b> <br>Coef. Urban  : -0.048 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 4.572","<b> bootstrap dataset:  149 <\/b> <br>Coef. Urban  : -0.046 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 3.836","<b> bootstrap dataset:  150 <\/b> <br>Coef. Urban  : -0.035 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 2.476","<b> bootstrap dataset:  151 <\/b> <br>Coef. Urban  : -0.029 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 2.567","<b> bootstrap dataset:  152 <\/b> <br>Coef. Urban  : -0.045 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 3.293","<b> bootstrap dataset:  153 <\/b> <br>Coef. Urban  : -0.089 <br>Coef. Murder : 0.054 <br>Coef. Intercept : 4.339","<b> bootstrap dataset:  154 <\/b> <br>Coef. Urban  : -0.04 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 2.743","<b> bootstrap dataset:  155 <\/b> <br>Coef. Urban  : -0.008 <br>Coef. Murder : 0.037 <br>Coef. Intercept : 2.241","<b> bootstrap dataset:  156 <\/b> <br>Coef. Urban  : -0.037 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 2.062","<b> bootstrap dataset:  157 <\/b> <br>Coef. Urban  : -0.059 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 5.39","<b> bootstrap dataset:  158 <\/b> <br>Coef. Urban  : -0.02 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 1.589","<b> bootstrap dataset:  159 <\/b> <br>Coef. Urban  : -0.06 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 3.999","<b> bootstrap dataset:  160 <\/b> <br>Coef. Urban  : -0.046 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 3.516","<b> bootstrap dataset:  161 <\/b> <br>Coef. Urban  : -0.023 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 2.459","<b> bootstrap dataset:  162 <\/b> <br>Coef. Urban  : -0.036 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 2.269","<b> bootstrap dataset:  163 <\/b> <br>Coef. Urban  : -0.035 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 3.133","<b> bootstrap dataset:  164 <\/b> <br>Coef. Urban  : -0.074 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 6.196","<b> bootstrap dataset:  165 <\/b> <br>Coef. Urban  : -0.05 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 4.72","<b> bootstrap dataset:  166 <\/b> <br>Coef. Urban  : -0.042 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 3.315","<b> bootstrap dataset:  167 <\/b> <br>Coef. Urban  : -0.06 <br>Coef. Murder : 0.054 <br>Coef. Intercept : 3.041","<b> bootstrap dataset:  168 <\/b> <br>Coef. Urban  : 0.003 <br>Coef. Murder : 0.049 <br>Coef. Intercept : -0.843","<b> bootstrap dataset:  169 <\/b> <br>Coef. Urban  : -0.052 <br>Coef. Murder : 0.05 <br>Coef. Intercept : 2.939","<b> bootstrap dataset:  170 <\/b> <br>Coef. Urban  : -0.06 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 3.457","<b> bootstrap dataset:  171 <\/b> <br>Coef. Urban  : -0.018 <br>Coef. Murder : 0.051 <br>Coef. Intercept : 0.454","<b> bootstrap dataset:  172 <\/b> <br>Coef. Urban  : -0.08 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 4.97","<b> bootstrap dataset:  173 <\/b> <br>Coef. Urban  : -0.067 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 3.812","<b> bootstrap dataset:  174 <\/b> <br>Coef. Urban  : -0.053 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 4.029","<b> bootstrap dataset:  175 <\/b> <br>Coef. Urban  : 0.008 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 0.321","<b> bootstrap dataset:  176 <\/b> <br>Coef. Urban  : -0.067 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 4.947","<b> bootstrap dataset:  177 <\/b> <br>Coef. Urban  : -0.097 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 5.785","<b> bootstrap dataset:  178 <\/b> <br>Coef. Urban  : -0.033 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 2.284","<b> bootstrap dataset:  179 <\/b> <br>Coef. Urban  : -0.061 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 4.593","<b> bootstrap dataset:  180 <\/b> <br>Coef. Urban  : -0.03 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 2.462","<b> bootstrap dataset:  181 <\/b> <br>Coef. Urban  : -0.05 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 3.137","<b> bootstrap dataset:  182 <\/b> <br>Coef. Urban  : -0.046 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 3.647","<b> bootstrap dataset:  183 <\/b> <br>Coef. Urban  : -0.016 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 2.657","<b> bootstrap dataset:  184 <\/b> <br>Coef. Urban  : -0.058 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 3.886","<b> bootstrap dataset:  185 <\/b> <br>Coef. Urban  : -0.098 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 6.099","<b> bootstrap dataset:  186 <\/b> <br>Coef. Urban  : -0.062 <br>Coef. Murder : 0.051 <br>Coef. Intercept : 3.568","<b> bootstrap dataset:  187 <\/b> <br>Coef. Urban  : -0.016 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 2.021","<b> bootstrap dataset:  188 <\/b> <br>Coef. Urban  : -0.031 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 1.876","<b> bootstrap dataset:  189 <\/b> <br>Coef. Urban  : -0.047 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 3.999","<b> bootstrap dataset:  190 <\/b> <br>Coef. Urban  : -0.124 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 9.141","<b> bootstrap dataset:  191 <\/b> <br>Coef. Urban  : -0.032 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 1.729","<b> bootstrap dataset:  192 <\/b> <br>Coef. Urban  : -0.046 <br>Coef. Murder : 0.056 <br>Coef. Intercept : 1.518","<b> bootstrap dataset:  193 <\/b> <br>Coef. Urban  : -0.015 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 0.938","<b> bootstrap dataset:  194 <\/b> <br>Coef. Urban  : -0.042 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 2.926","<b> bootstrap dataset:  195 <\/b> <br>Coef. Urban  : -0.029 <br>Coef. Murder : 0.037 <br>Coef. Intercept : 3.449","<b> bootstrap dataset:  196 <\/b> <br>Coef. Urban  : -0.017 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 0.934","<b> bootstrap dataset:  197 <\/b> <br>Coef. Urban  : -0.01 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 0.817","<b> bootstrap dataset:  198 <\/b> <br>Coef. Urban  : -0.051 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 3.431","<b> bootstrap dataset:  199 <\/b> <br>Coef. Urban  : -0.009 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 1.909","<b> bootstrap dataset:  200 <\/b> <br>Coef. Urban  : -0.068 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 4.586","<b> bootstrap dataset:  201 <\/b> <br>Coef. Urban  : -0.049 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 2.884","<b> bootstrap dataset:  202 <\/b> <br>Coef. Urban  : -0.057 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 3.404","<b> bootstrap dataset:  203 <\/b> <br>Coef. Urban  : -0.049 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 3.645","<b> bootstrap dataset:  204 <\/b> <br>Coef. Urban  : -0.043 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 3.161","<b> bootstrap dataset:  205 <\/b> <br>Coef. Urban  : -0.055 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 3.725","<b> bootstrap dataset:  206 <\/b> <br>Coef. Urban  : -0.036 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 2.415","<b> bootstrap dataset:  207 <\/b> <br>Coef. Urban  : -0.035 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 2.673","<b> bootstrap dataset:  208 <\/b> <br>Coef. Urban  : -0.004 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 1.124","<b> bootstrap dataset:  209 <\/b> <br>Coef. Urban  : -0.01 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 0.691","<b> bootstrap dataset:  210 <\/b> <br>Coef. Urban  : 0.013 <br>Coef. Murder : 0.044 <br>Coef. Intercept : -1.027","<b> bootstrap dataset:  211 <\/b> <br>Coef. Urban  : -0.036 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 2.635","<b> bootstrap dataset:  212 <\/b> <br>Coef. Urban  : -0.019 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 1.337","<b> bootstrap dataset:  213 <\/b> <br>Coef. Urban  : -0.038 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 2.191","<b> bootstrap dataset:  214 <\/b> <br>Coef. Urban  : -0.009 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 1.644","<b> bootstrap dataset:  215 <\/b> <br>Coef. Urban  : -0.014 <br>Coef. Murder : 0.036 <br>Coef. Intercept : 3.517","<b> bootstrap dataset:  216 <\/b> <br>Coef. Urban  : -0.033 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 3.006","<b> bootstrap dataset:  217 <\/b> <br>Coef. Urban  : -0.032 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 3.423","<b> bootstrap dataset:  218 <\/b> <br>Coef. Urban  : -0.029 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 1.172","<b> bootstrap dataset:  219 <\/b> <br>Coef. Urban  : -0.065 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 4.001","<b> bootstrap dataset:  220 <\/b> <br>Coef. Urban  : -0.068 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 5.491","<b> bootstrap dataset:  221 <\/b> <br>Coef. Urban  : -0.031 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 2.557","<b> bootstrap dataset:  222 <\/b> <br>Coef. Urban  : -0.014 <br>Coef. Murder : 0.051 <br>Coef. Intercept : -0.453","<b> bootstrap dataset:  223 <\/b> <br>Coef. Urban  : -0.078 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 5.277","<b> bootstrap dataset:  224 <\/b> <br>Coef. Urban  : -0.053 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 3.942","<b> bootstrap dataset:  225 <\/b> <br>Coef. Urban  : -0.051 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 3.093","<b> bootstrap dataset:  226 <\/b> <br>Coef. Urban  : -0.031 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 2.724","<b> bootstrap dataset:  227 <\/b> <br>Coef. Urban  : -0.04 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 2.658","<b> bootstrap dataset:  228 <\/b> <br>Coef. Urban  : -0.043 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 2.396","<b> bootstrap dataset:  229 <\/b> <br>Coef. Urban  : -0.053 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 3.658","<b> bootstrap dataset:  230 <\/b> <br>Coef. Urban  : -0.045 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 2.061","<b> bootstrap dataset:  231 <\/b> <br>Coef. Urban  : -0.049 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 2.938","<b> bootstrap dataset:  232 <\/b> <br>Coef. Urban  : -0.015 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 2.061","<b> bootstrap dataset:  233 <\/b> <br>Coef. Urban  : -0.021 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 1.184","<b> bootstrap dataset:  234 <\/b> <br>Coef. Urban  : -0.119 <br>Coef. Murder : 0.05 <br>Coef. Intercept : 7.053","<b> bootstrap dataset:  235 <\/b> <br>Coef. Urban  : -0.065 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 6.118","<b> bootstrap dataset:  236 <\/b> <br>Coef. Urban  : -0.029 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 3.281","<b> bootstrap dataset:  237 <\/b> <br>Coef. Urban  : -0.036 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 1.589","<b> bootstrap dataset:  238 <\/b> <br>Coef. Urban  : -0.022 <br>Coef. Murder : 0.036 <br>Coef. Intercept : 2.495","<b> bootstrap dataset:  239 <\/b> <br>Coef. Urban  : -0.021 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 2.284","<b> bootstrap dataset:  240 <\/b> <br>Coef. Urban  : -0.099 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 6.524","<b> bootstrap dataset:  241 <\/b> <br>Coef. Urban  : -0.009 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 1.213","<b> bootstrap dataset:  242 <\/b> <br>Coef. Urban  : -0.049 <br>Coef. Murder : 0.051 <br>Coef. Intercept : 2.189","<b> bootstrap dataset:  243 <\/b> <br>Coef. Urban  : -0.029 <br>Coef. Murder : 0.05 <br>Coef. Intercept : 1.401","<b> bootstrap dataset:  244 <\/b> <br>Coef. Urban  : -0.013 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 1.575","<b> bootstrap dataset:  245 <\/b> <br>Coef. Urban  : -0.04 <br>Coef. Murder : 0.054 <br>Coef. Intercept : 1.712","<b> bootstrap dataset:  246 <\/b> <br>Coef. Urban  : -0.02 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 1.778","<b> bootstrap dataset:  247 <\/b> <br>Coef. Urban  : -0.049 <br>Coef. Murder : 0.057 <br>Coef. Intercept : 2.44","<b> bootstrap dataset:  248 <\/b> <br>Coef. Urban  : -0.061 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 4.201","<b> bootstrap dataset:  249 <\/b> <br>Coef. Urban  : -0.105 <br>Coef. Murder : 0.05 <br>Coef. Intercept : 6.175","<b> bootstrap dataset:  250 <\/b> <br>Coef. Urban  : -0.126 <br>Coef. Murder : 0.05 <br>Coef. Intercept : 7.394","<b> bootstrap dataset:  251 <\/b> <br>Coef. Urban  : -0.031 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 1.814","<b> bootstrap dataset:  252 <\/b> <br>Coef. Urban  : -0.075 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 5.045","<b> bootstrap dataset:  253 <\/b> <br>Coef. Urban  : -0.068 <br>Coef. Murder : 0.062 <br>Coef. Intercept : 2.699","<b> bootstrap dataset:  254 <\/b> <br>Coef. Urban  : -0.06 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 4.581","<b> bootstrap dataset:  255 <\/b> <br>Coef. Urban  : -0.04 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 3.342","<b> bootstrap dataset:  256 <\/b> <br>Coef. Urban  : -0.037 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 3.241","<b> bootstrap dataset:  257 <\/b> <br>Coef. Urban  : -0.05 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 3.406","<b> bootstrap dataset:  258 <\/b> <br>Coef. Urban  : -0.054 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 5.017","<b> bootstrap dataset:  259 <\/b> <br>Coef. Urban  : -0.09 <br>Coef. Murder : 0.052 <br>Coef. Intercept : 5.142","<b> bootstrap dataset:  260 <\/b> <br>Coef. Urban  : -0.096 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 6.333","<b> bootstrap dataset:  261 <\/b> <br>Coef. Urban  : -0.026 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 2.643","<b> bootstrap dataset:  262 <\/b> <br>Coef. Urban  : -0.092 <br>Coef. Murder : 0.052 <br>Coef. Intercept : 4.922","<b> bootstrap dataset:  263 <\/b> <br>Coef. Urban  : -0.065 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 5.036","<b> bootstrap dataset:  264 <\/b> <br>Coef. Urban  : -0.021 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 1.978","<b> bootstrap dataset:  265 <\/b> <br>Coef. Urban  : -0.033 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 2.22","<b> bootstrap dataset:  266 <\/b> <br>Coef. Urban  : -0.093 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 6.653","<b> bootstrap dataset:  267 <\/b> <br>Coef. Urban  : -0.056 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 3.327","<b> bootstrap dataset:  268 <\/b> <br>Coef. Urban  : -0.06 <br>Coef. Murder : 0.058 <br>Coef. Intercept : 2.897","<b> bootstrap dataset:  269 <\/b> <br>Coef. Urban  : -0.054 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 4.244","<b> bootstrap dataset:  270 <\/b> <br>Coef. Urban  : -0.045 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 3.941","<b> bootstrap dataset:  271 <\/b> <br>Coef. Urban  : -0.07 <br>Coef. Murder : 0.052 <br>Coef. Intercept : 3.42","<b> bootstrap dataset:  272 <\/b> <br>Coef. Urban  : -0.066 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 4.891","<b> bootstrap dataset:  273 <\/b> <br>Coef. Urban  : -0.033 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 3.556","<b> bootstrap dataset:  274 <\/b> <br>Coef. Urban  : -0.041 <br>Coef. Murder : 0.055 <br>Coef. Intercept : 1.235","<b> bootstrap dataset:  275 <\/b> <br>Coef. Urban  : -0.039 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 2.322","<b> bootstrap dataset:  276 <\/b> <br>Coef. Urban  : -0.068 <br>Coef. Murder : 0.051 <br>Coef. Intercept : 4.117","<b> bootstrap dataset:  277 <\/b> <br>Coef. Urban  : -0.014 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 2.371","<b> bootstrap dataset:  278 <\/b> <br>Coef. Urban  : -0.021 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 2.299","<b> bootstrap dataset:  279 <\/b> <br>Coef. Urban  : -0.084 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 5.829","<b> bootstrap dataset:  280 <\/b> <br>Coef. Urban  : -0.044 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 2.965","<b> bootstrap dataset:  281 <\/b> <br>Coef. Urban  : -0.031 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 2.768","<b> bootstrap dataset:  282 <\/b> <br>Coef. Urban  : -0.067 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 4.112","<b> bootstrap dataset:  283 <\/b> <br>Coef. Urban  : -0.098 <br>Coef. Murder : 0.051 <br>Coef. Intercept : 5.386","<b> bootstrap dataset:  284 <\/b> <br>Coef. Urban  : -0.026 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 2.18","<b> bootstrap dataset:  285 <\/b> <br>Coef. Urban  : -0.012 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 1.527","<b> bootstrap dataset:  286 <\/b> <br>Coef. Urban  : -0.026 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 2.852","<b> bootstrap dataset:  287 <\/b> <br>Coef. Urban  : -0.057 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 4.67","<b> bootstrap dataset:  288 <\/b> <br>Coef. Urban  : -0.053 <br>Coef. Murder : 0.052 <br>Coef. Intercept : 2.303","<b> bootstrap dataset:  289 <\/b> <br>Coef. Urban  : -0.038 <br>Coef. Murder : 0.034 <br>Coef. Intercept : 4.424","<b> bootstrap dataset:  290 <\/b> <br>Coef. Urban  : -0.034 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 2.66","<b> bootstrap dataset:  291 <\/b> <br>Coef. Urban  : -0.069 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 4.211","<b> bootstrap dataset:  292 <\/b> <br>Coef. Urban  : -0.05 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 3.167","<b> bootstrap dataset:  293 <\/b> <br>Coef. Urban  : -0.017 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 1.814","<b> bootstrap dataset:  294 <\/b> <br>Coef. Urban  : -0.001 <br>Coef. Murder : 0.037 <br>Coef. Intercept : 1.603","<b> bootstrap dataset:  295 <\/b> <br>Coef. Urban  : -0.038 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 3.069","<b> bootstrap dataset:  296 <\/b> <br>Coef. Urban  : -0.08 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 5.458","<b> bootstrap dataset:  297 <\/b> <br>Coef. Urban  : -0.037 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 2.173","<b> bootstrap dataset:  298 <\/b> <br>Coef. Urban  : -0.064 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 3.776","<b> bootstrap dataset:  299 <\/b> <br>Coef. Urban  : -0.021 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 1.912","<b> bootstrap dataset:  300 <\/b> <br>Coef. Urban  : -0.037 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 3.428","<b> bootstrap dataset:  301 <\/b> <br>Coef. Urban  : -0.051 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 3.781","<b> bootstrap dataset:  302 <\/b> <br>Coef. Urban  : -0.052 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 2.999","<b> bootstrap dataset:  303 <\/b> <br>Coef. Urban  : -0.075 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 5.498","<b> bootstrap dataset:  304 <\/b> <br>Coef. Urban  : -0.037 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 2.349","<b> bootstrap dataset:  305 <\/b> <br>Coef. Urban  : -0.068 <br>Coef. Murder : 0.054 <br>Coef. Intercept : 3.055","<b> bootstrap dataset:  306 <\/b> <br>Coef. Urban  : -0.063 <br>Coef. Murder : 0.052 <br>Coef. Intercept : 2.708","<b> bootstrap dataset:  307 <\/b> <br>Coef. Urban  : -0.063 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 4.884","<b> bootstrap dataset:  308 <\/b> <br>Coef. Urban  : -0.014 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 2.768","<b> bootstrap dataset:  309 <\/b> <br>Coef. Urban  : -0.035 <br>Coef. Murder : 0.054 <br>Coef. Intercept : 1.534","<b> bootstrap dataset:  310 <\/b> <br>Coef. Urban  : -0.038 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 2.927","<b> bootstrap dataset:  311 <\/b> <br>Coef. Urban  : -0.107 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 6.973","<b> bootstrap dataset:  312 <\/b> <br>Coef. Urban  : -0.017 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 2.223","<b> bootstrap dataset:  313 <\/b> <br>Coef. Urban  : -0.054 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 3.179","<b> bootstrap dataset:  314 <\/b> <br>Coef. Urban  : -0.039 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 1.756","<b> bootstrap dataset:  315 <\/b> <br>Coef. Urban  : -0.077 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 3.885","<b> bootstrap dataset:  316 <\/b> <br>Coef. Urban  : -0.047 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 4.309","<b> bootstrap dataset:  317 <\/b> <br>Coef. Urban  : -0.022 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 2.327","<b> bootstrap dataset:  318 <\/b> <br>Coef. Urban  : -0.042 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 3.341","<b> bootstrap dataset:  319 <\/b> <br>Coef. Urban  : -0.03 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 2.068","<b> bootstrap dataset:  320 <\/b> <br>Coef. Urban  : -0.067 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 4.984","<b> bootstrap dataset:  321 <\/b> <br>Coef. Urban  : -0.016 <br>Coef. Murder : 0.035 <br>Coef. Intercept : 2.617","<b> bootstrap dataset:  322 <\/b> <br>Coef. Urban  : -0.088 <br>Coef. Murder : 0.05 <br>Coef. Intercept : 5.115","<b> bootstrap dataset:  323 <\/b> <br>Coef. Urban  : -0.042 <br>Coef. Murder : 0.051 <br>Coef. Intercept : 2.673","<b> bootstrap dataset:  324 <\/b> <br>Coef. Urban  : -0.042 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 3.292","<b> bootstrap dataset:  325 <\/b> <br>Coef. Urban  : -0.057 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 4.75","<b> bootstrap dataset:  326 <\/b> <br>Coef. Urban  : -0.085 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 6.376","<b> bootstrap dataset:  327 <\/b> <br>Coef. Urban  : -0.101 <br>Coef. Murder : 0.063 <br>Coef. Intercept : 4.505","<b> bootstrap dataset:  328 <\/b> <br>Coef. Urban  : -0.075 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 6","<b> bootstrap dataset:  329 <\/b> <br>Coef. Urban  : -0.006 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 1.064","<b> bootstrap dataset:  330 <\/b> <br>Coef. Urban  : -0.036 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 2.391","<b> bootstrap dataset:  331 <\/b> <br>Coef. Urban  : -0.091 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 5.32","<b> bootstrap dataset:  332 <\/b> <br>Coef. Urban  : -0.028 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 3.008","<b> bootstrap dataset:  333 <\/b> <br>Coef. Urban  : -0.061 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 5.573","<b> bootstrap dataset:  334 <\/b> <br>Coef. Urban  : -0.023 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 2.21","<b> bootstrap dataset:  335 <\/b> <br>Coef. Urban  : -0.046 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 3.074","<b> bootstrap dataset:  336 <\/b> <br>Coef. Urban  : -0.057 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 3.274","<b> bootstrap dataset:  337 <\/b> <br>Coef. Urban  : -0.092 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 5.632","<b> bootstrap dataset:  338 <\/b> <br>Coef. Urban  : -0.049 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 2.606","<b> bootstrap dataset:  339 <\/b> <br>Coef. Urban  : -0.011 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 2.248","<b> bootstrap dataset:  340 <\/b> <br>Coef. Urban  : -0.066 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 3.738","<b> bootstrap dataset:  341 <\/b> <br>Coef. Urban  : -0.026 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 1.791","<b> bootstrap dataset:  342 <\/b> <br>Coef. Urban  : -0.047 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 3.072","<b> bootstrap dataset:  343 <\/b> <br>Coef. Urban  : -0.053 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 3.578","<b> bootstrap dataset:  344 <\/b> <br>Coef. Urban  : -0.052 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 3.38","<b> bootstrap dataset:  345 <\/b> <br>Coef. Urban  : -0.039 <br>Coef. Murder : 0.05 <br>Coef. Intercept : 2.23","<b> bootstrap dataset:  346 <\/b> <br>Coef. Urban  : -0.01 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 0.65","<b> bootstrap dataset:  347 <\/b> <br>Coef. Urban  : -0.042 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 2.129","<b> bootstrap dataset:  348 <\/b> <br>Coef. Urban  : -0.071 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 4.888","<b> bootstrap dataset:  349 <\/b> <br>Coef. Urban  : -0.033 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 2.95","<b> bootstrap dataset:  350 <\/b> <br>Coef. Urban  : -0.012 <br>Coef. Murder : 0.051 <br>Coef. Intercept : 0.497","<b> bootstrap dataset:  351 <\/b> <br>Coef. Urban  : 0.008 <br>Coef. Murder : 0.045 <br>Coef. Intercept : -0.795","<b> bootstrap dataset:  352 <\/b> <br>Coef. Urban  : -0.056 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 3.844","<b> bootstrap dataset:  353 <\/b> <br>Coef. Urban  : -0.062 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 3.586","<b> bootstrap dataset:  354 <\/b> <br>Coef. Urban  : 0.002 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 0.541","<b> bootstrap dataset:  355 <\/b> <br>Coef. Urban  : -0.026 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 2.364","<b> bootstrap dataset:  356 <\/b> <br>Coef. Urban  : -0.018 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 1.578","<b> bootstrap dataset:  357 <\/b> <br>Coef. Urban  : -0.053 <br>Coef. Murder : 0.036 <br>Coef. Intercept : 5.471","<b> bootstrap dataset:  358 <\/b> <br>Coef. Urban  : -0.109 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 7.271","<b> bootstrap dataset:  359 <\/b> <br>Coef. Urban  : -0.067 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 4.087","<b> bootstrap dataset:  360 <\/b> <br>Coef. Urban  : -0.042 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 2.347","<b> bootstrap dataset:  361 <\/b> <br>Coef. Urban  : -0.021 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 2.477","<b> bootstrap dataset:  362 <\/b> <br>Coef. Urban  : -0.061 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 4.866","<b> bootstrap dataset:  363 <\/b> <br>Coef. Urban  : -0.012 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 1.455","<b> bootstrap dataset:  364 <\/b> <br>Coef. Urban  : -0.035 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 2.987","<b> bootstrap dataset:  365 <\/b> <br>Coef. Urban  : -0.066 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 3.848","<b> bootstrap dataset:  366 <\/b> <br>Coef. Urban  : -0.026 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 2.241","<b> bootstrap dataset:  367 <\/b> <br>Coef. Urban  : -0.015 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 0.958","<b> bootstrap dataset:  368 <\/b> <br>Coef. Urban  : -0.034 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 2.082","<b> bootstrap dataset:  369 <\/b> <br>Coef. Urban  : -0.055 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 3.021","<b> bootstrap dataset:  370 <\/b> <br>Coef. Urban  : -0.02 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 1.842","<b> bootstrap dataset:  371 <\/b> <br>Coef. Urban  : -0.069 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 4.5","<b> bootstrap dataset:  372 <\/b> <br>Coef. Urban  : -0.016 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 1.401","<b> bootstrap dataset:  373 <\/b> <br>Coef. Urban  : -0.068 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 5.023","<b> bootstrap dataset:  374 <\/b> <br>Coef. Urban  : -0.045 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 4.346","<b> bootstrap dataset:  375 <\/b> <br>Coef. Urban  : -0.068 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 3.75","<b> bootstrap dataset:  376 <\/b> <br>Coef. Urban  : -0.045 <br>Coef. Murder : 0.05 <br>Coef. Intercept : 2.207","<b> bootstrap dataset:  377 <\/b> <br>Coef. Urban  : -0.057 <br>Coef. Murder : 0.047 <br>Coef. Intercept : 3.047","<b> bootstrap dataset:  378 <\/b> <br>Coef. Urban  : -0.068 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 5.258","<b> bootstrap dataset:  379 <\/b> <br>Coef. Urban  : -0.084 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 6.106","<b> bootstrap dataset:  380 <\/b> <br>Coef. Urban  : -0.012 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 0.693","<b> bootstrap dataset:  381 <\/b> <br>Coef. Urban  : -0.067 <br>Coef. Murder : 0.05 <br>Coef. Intercept : 4.343","<b> bootstrap dataset:  382 <\/b> <br>Coef. Urban  : -0.007 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 1.272","<b> bootstrap dataset:  383 <\/b> <br>Coef. Urban  : -0.063 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 3.838","<b> bootstrap dataset:  384 <\/b> <br>Coef. Urban  : -0.06 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 3.702","<b> bootstrap dataset:  385 <\/b> <br>Coef. Urban  : -0.01 <br>Coef. Murder : 0.04 <br>Coef. Intercept : 1.77","<b> bootstrap dataset:  386 <\/b> <br>Coef. Urban  : -0.063 <br>Coef. Murder : 0.041 <br>Coef. Intercept : 4.212","<b> bootstrap dataset:  387 <\/b> <br>Coef. Urban  : -0.04 <br>Coef. Murder : 0.045 <br>Coef. Intercept : 2.611","<b> bootstrap dataset:  388 <\/b> <br>Coef. Urban  : -0.067 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 3.794","<b> bootstrap dataset:  389 <\/b> <br>Coef. Urban  : -0.053 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 4.228","<b> bootstrap dataset:  390 <\/b> <br>Coef. Urban  : -0.036 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 2.298","<b> bootstrap dataset:  391 <\/b> <br>Coef. Urban  : -0.057 <br>Coef. Murder : 0.042 <br>Coef. Intercept : 4.239","<b> bootstrap dataset:  392 <\/b> <br>Coef. Urban  : -0.029 <br>Coef. Murder : 0.044 <br>Coef. Intercept : 2.382","<b> bootstrap dataset:  393 <\/b> <br>Coef. Urban  : -0.054 <br>Coef. Murder : 0.048 <br>Coef. Intercept : 2.889","<b> bootstrap dataset:  394 <\/b> <br>Coef. Urban  : 0.008 <br>Coef. Murder : 0.049 <br>Coef. Intercept : -0.336","<b> bootstrap dataset:  395 <\/b> <br>Coef. Urban  : -0.014 <br>Coef. Murder : 0.046 <br>Coef. Intercept : 0.815","<b> bootstrap dataset:  396 <\/b> <br>Coef. Urban  : 0.004 <br>Coef. Murder : 0.038 <br>Coef. Intercept : 0.947","<b> bootstrap dataset:  397 <\/b> <br>Coef. Urban  : -0.03 <br>Coef. Murder : 0.043 <br>Coef. Intercept : 2.108","<b> bootstrap dataset:  398 <\/b> <br>Coef. Urban  : -0.028 <br>Coef. Murder : 0.049 <br>Coef. Intercept : 1.302","<b> bootstrap dataset:  399 <\/b> <br>Coef. Urban  : -0.031 <br>Coef. Murder : 0.039 <br>Coef. Intercept : 3.377"],"hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"showlegend":false,"marker":{"color":"rgba(0, 0, 0, 0.5)","line":{"color":"rgba(31,119,180,1)"}},"type":"scatter","error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"line":{"color":"rgba(31,119,180,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 
 **Hypothesis Testing**
-We can also use an $F$ test for any $q$ hypotheses. Specifically, when $q$ hypotheses *restrict* a model, the degrees of freedom drop from $k_{u}$ to $k_{r}$ and the residual sum of squares $\sum_{i}(y_{y}-\widehat{y}_{i})^2$ typically increases. We compute the statistic
+We can also use an $F$ test for any $q$ hypotheses. Specifically, when $q$ hypotheses *restrict* a model, the degrees of freedom drop from $k_{u}$ to $k_{r}$ and the residual sum of squares $RSS=\sum_{i}(y_{i}-\widehat{y}_{i})^2$ typically increases. We compute the statistic
 $$
-F_{q} = \frac{(RSS_{r}-RSS_{u})/([N-k_{r}]-[N-k_{u}])}{RSS_{u}/(N-k_{u})}
-=\frac{R^2}{(1-R^2)}\frac{N-K_{u}}{k_{u}-k_{r}},
-=\frac{R^2}{(1-R^2)}\frac{n-q}{q},
+F_{q} = \frac{(RSS_{r}-RSS_{u})/(k_{u}-k_{r})}{RSS_{u}/(N-k_{u})}.
 $$
-which can also be written in terms of adjusted $R^2$. For some intuition on hypothesis testing, we examine how the $R^2$ statistic varies with bootstrap samples. Specifically, compute a null $R^2$ distribution by randomly reshuffling the outcomes and compare it to the observed $R^2$.
+When the restricted model is a simple intercept, $F_{q}$ can also be written in terms of $R^2$ or adjusted $R^2$. For some intuition on hypothesis testing, we examine how the $R^2$ statistic varies with bootstrap samples. Specifically, compute a null $R^2$ distribution by randomly reshuffling the outcomes and compare it to the observed $R^2$.
 
-```r
+``` r
 ## Bootstrap NULL
 boots <- 1:399
 boot_regs0 <- lapply(boots, function(b){
@@ -770,9 +772,9 @@ R2_sim0 <- sapply(boot_regs0, function(reg_k){
 R2adj_sim0 <- sapply(boot_regs0, function(reg_k){
     summary(reg_k)$adj.r.squared })
 
-hist(R2adj_sim0, xlim=c(0,1), breaks=25, border=NA,
+hist(R2adj_sim0, xlim=c(-.1,1), breaks=25, border=NA,
     main='', xlab=expression('adj.'~R[b]^2))
-abline(v=summary(reg)$adj.r.squared, lwd=2)
+abline(v=summary(reg)$adj.r.squared, lwd=2, col=2)
 ```
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-26-1.png" width="672" />
@@ -791,7 +793,7 @@ To analyze either factor, we often convert them into indicator variables or dumm
 Be careful not to handle categorical data as if they were cardinal. E.g., generate city data with Leipzig=1, Lausanne=2, LosAngeles=3, ... and then include city as if it were a cardinal number (that's a big no-no). The same applied to ordinal data; PopulationLeipzig=2, PopulationLausanne=3, PopulationLosAngeles=1.
 
 
-```r
+``` r
 N <- 1000
 x <- runif(N,3,8)
 e <- rnorm(N,0,0.4)
@@ -804,175 +806,75 @@ dat_f <- data.frame(y,x,fo,fu)
 
 With factors, you can still include them in the design matrix of an OLS regression
 $$
-y_{it} = x_{it} \beta_{x} + d_{c}\beta_{c}
+y_{it} = x_{it} \beta_{x} + d_{t}\beta_{t}
 $$
-When, as commonly done, the factors are modeled as being additively seperable, they are modelled as either "fixed" or "random" effects.
+When, as commonly done, the factors are modeled as being additively seperable, they are modeled as either "fixed" or "random" effects.
 
 Simply including the factors into the OLS regression yields a "dummy variable" fixed effects estimator.
 
-```r
+``` r
 fe_reg0 <- lm(y~x+fo+fu, dat_f)
-summary(fe_reg0)
 ```
+**Hansen Econometrics, Theorem 17.1:** The fixed effects estimator of $\beta$ algebraically equals the dummy variable estimator of $\beta$. The two estimators have the same residuals.
+<!--
+In fact, if the fixed effect is ``fully unstructured then the only way to consistently estimate the coefficient $\beta$ is by an estimator which is invariant'' (Hansen Econometrics, p). 
+-->
 
-```
-## 
-## Call:
-## lm(formula = y ~ x + fo + fu, data = dat_f)
-## 
-## Residuals:
-##     Min      1Q  Median      3Q     Max 
-## -31.270  -5.439  -0.493   5.020  43.948 
-## 
-## Coefficients:
-##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  20.12337    1.18496  16.982  < 2e-16 ***
-## x             0.99756    0.19927   5.006 6.57e-07 ***
-## fo.L         26.37372    1.10214  23.929  < 2e-16 ***
-## fo.Q          8.62908    0.96041   8.985  < 2e-16 ***
-## fo.C          2.15260    0.74596   2.886  0.00399 ** 
-## fo^4          0.01681    0.54402   0.031  0.97536    
-## fuB         -23.42677    0.56598 -41.392  < 2e-16 ***
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Residual standard error: 8.944 on 993 degrees of freedom
-## Multiple R-squared:  0.7152,	Adjusted R-squared:  0.7135 
-## F-statistic: 415.7 on 6 and 993 DF,  p-value: < 2.2e-16
-```
-We can also compute averages for each group and construct a "between estimator"
-$$
-\overline{y}_i = \alpha + \overline{x}_i \beta
-$$
-Or we can subtract the average from each group to construct a "within estimator", 
-$$
-(y_{it} - \overline{y}_i) = (x_{it}-\overline{x}_i)\beta\\
-$$
-that tends to be more computationally efficient, has corrections for standard errors, and has additional summary statistics.
-
-
-```r
+``` r
 library(fixest)
 fe_reg1 <- feols(y~x|fo+fu, dat_f)
-summary(fe_reg1)
+coef(fe_reg1)
 ```
 
 ```
-## OLS estimation, Dep. Var.: y
-## Observations: 1,000
-## Fixed-effects: fo: 5,  fu: 2
-## Standard-errors: Clustered (fo) 
-##   Estimate Std. Error t value Pr(>|t|)    
-## x 0.997563    0.32867 3.03515 0.038585 *  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 8.91255     Adj. R2: 0.713499
-##                 Within R2: 0.024617
+##        x 
+## 1.094665
 ```
 
-```r
+``` r
+fixef(fe_reg1)[1:2]
+```
+
+```
+## $fo
+##         0         1         2         3         4 
+##  7.431314 10.108692 14.842376 23.437463 43.811157 
+## 
+## $fu
+##         A         B 
+##   0.00000 -22.99464
+```
+
+``` r
 ## Compare Coefficients
 coef( lm(y~-1+x+fo+fu, dat_f) )
 ```
 
 ```
 ##          x        fo0        fo1        fo2        fo3        fo4        fuB 
-##   0.997563   7.376902  10.830436  15.522985  24.787796  42.098732 -23.426771
+##   1.094665   7.431314  10.108692  14.842376  23.437463  43.811157 -22.994641
 ```
 
-```r
-fixef(fe_reg1)
+With fixed effects, we can also compute averages for each group and construct a "between estimator" $\overline{y}_i = \alpha + \overline{x}_i \beta$. Or we can subtract the average from each group to construct a "within estimator", $(y_{it} - \overline{y}_i) = (x_{it}-\overline{x}_i)\beta$. 
+
+But note that many factors are not additively separable. This is easy to check with an F-test;
+
+``` r
+reg1 <- lm(y~-1+x+fo*fu, dat_f)
+reg2 <- lm(y~-1+x*fo*fu, dat_f)
+anova(reg1, reg2)
 ```
 
 ```
-## $fo
-##         0         1         2         3         4 
-##  7.376902 10.830436 15.522985 24.787796 42.098732 
+## Analysis of Variance Table
 ## 
-## $fu
-##         A         B 
-##   0.00000 -23.42677 
-## 
-## attr(,"class")
-## [1] "fixest.fixef" "list"        
-## attr(,"references")
-## fo fu 
-##  0  1 
-## attr(,"exponential")
-## [1] FALSE
-```
-
-**Hansen Econometrics, Theorem 17.1:** The fixed effects estimator of $\beta$ algebraically equals the dummy variable estimator of $\beta$. The two estimators have the same residuals.
-<!--
-In fact, if the fixed effect is ``fully unstructured then the only way to consistently estimate the coefficient $\beta$ is by an estimator which is invariant'' (Hansen Econometrics, p). 
--->
-
-Many factor variables have effects that are not additively seperable.
-
-```r
-reg1 <- feols(y~x|fo^fu, dat_f)
-summary(reg1)
-```
-
-```
-## OLS estimation, Dep. Var.: y
-## Observations: 1,000
-## Fixed-effects: fo^fu: 10
-## Standard-errors: Clustered (fo^fu) 
-##   Estimate Std. Error t value Pr(>|t|)    
-## x  1.03532   0.449517 2.30319 0.046755 *  
+## Model 1: y ~ -1 + x + fo * fu
+## Model 2: y ~ -1 + x * fo * fu
+##   Res.Df     RSS Df Sum of Sq      F    Pr(>F)    
+## 1    989 10151.6                                  
+## 2    980  6305.8  9    3845.8 66.409 < 2.2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 3.14145     Adj. R2: 0.964262
-##                 Within R2: 0.179258
-```
-
-```r
-reg2 <- lm(y~x*fo*fu, dat_f)
-summary(reg2)
-```
-
-```
-## 
-## Call:
-## lm(formula = y ~ x * fo * fu, data = dat_f)
-## 
-## Residuals:
-##     Min      1Q  Median      3Q     Max 
-## -8.8497 -1.5462 -0.0103  1.5601  8.8527 
-## 
-## Coefficients:
-##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  14.97767    0.62237  24.065  < 2e-16 ***
-## x             2.56353    0.10876  23.571  < 2e-16 ***
-## fo.L         29.86158    1.78830  16.698  < 2e-16 ***
-## fo.Q         12.27780    1.55622   7.890 8.07e-15 ***
-## fo.C          3.43359    1.18456   2.899 0.003832 ** 
-## fo^4          1.19198    0.85086   1.401 0.161558    
-## fuB         -15.10333    0.85564 -17.651  < 2e-16 ***
-## x:fo.L        4.42130    0.31065  14.232  < 2e-16 ***
-## x:fo.Q        1.44985    0.27063   5.357 1.05e-07 ***
-## x:fo.C        0.27497    0.20932   1.314 0.189269    
-## x:fo^4       -0.08699    0.15171  -0.573 0.566527    
-## x:fuB        -2.54026    0.15145 -16.773  < 2e-16 ***
-## fo.L:fuB    -30.60244    2.44823 -12.500  < 2e-16 ***
-## fo.Q:fuB    -12.45083    2.13806  -5.823 7.81e-09 ***
-## fo.C:fuB     -2.64423    1.62793  -1.624 0.104636    
-## fo^4:fuB     -1.71557    1.19462  -1.436 0.151298    
-## x:fo.L:fuB   -4.23462    0.43185  -9.806  < 2e-16 ***
-## x:fo.Q:fuB   -1.44438    0.37705  -3.831 0.000136 ***
-## x:fo.C:fuB   -0.46239    0.29075  -1.590 0.112081    
-## x:fo^4:fuB    0.14261    0.21337   0.668 0.504058    
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Residual standard error: 2.491 on 980 degrees of freedom
-## Multiple R-squared:  0.9782,	Adjusted R-squared:  0.9778 
-## F-statistic:  2314 on 19 and 980 DF,  p-value: < 2.2e-16
-```
-
-```r
-#reg2 <- feols(y~x*fo*fu|fo^fu, dat_f)
 ```
 
 
@@ -986,18 +888,17 @@ With *Random Effects*, the factor variable is modeled as coming from a distribut
 **Test for Break Points**
 
 
-```r
-#library(AER); data(CASchools)
-#CASchools$score <- (CASchools$read + CASchools$math) / 2
-#reg <- lm(score ~ income, data = CASchools)
-#xy <- CASchools[,c('Score','Income'),]
-#colnames(xy) <- c('y','x')
+``` r
+library(AER); data(CASchools)
+CASchools$score <- (CASchools$read + CASchools$math) / 2
+reg <- lm(score~income, data=CASchools)
 
 ## F Test for Break
+reg2 <- lm(score ~ income*I(income>15), data=CASchools)
 anova(reg, reg2)
 
 ## Chow Test for Break
-data_splits <- split(xy, xy$xcut)
+data_splits <- split(CASchools, CASchools$income <= 15)
 resids <- sapply(data_splits, function(dat){
     reg <- lm(score ~ income, data=dat)
     sum( resid(reg)^2)
@@ -1008,7 +909,7 @@ Rb <- (sum(Ns)-2*reg$rank)/reg$rank
 Ft <- Rt*Rb
 pf(Ft,reg$rank, sum(Ns)-2*reg$rank,lower.tail=F)
 
-## To Test for Any Break
+## See also
 ## strucchange::sctest(y~x, data=xy, type="Chow", point=.5)
 ## strucchange::Fstats(y~x, data=xy)
 
@@ -1035,7 +936,7 @@ $$
 
 Generate a simulated dataset with 30 observations and two exogenous variables. Assume the following relationship: $y_{i} = \beta_0 + \beta_1 x_{1,i} + \beta_2 x_{2,i} + \epsilon_i$ where the variables and the error term are realizations of the following data generating processes (DGP):
 
-```r
+``` r
 N <- 30
 B <- c(10, 2, -1)
 
@@ -1050,12 +951,12 @@ coef(lm(Y~x1+x2, data=dat))
 
 ```
 ## (Intercept)          x1          x2 
-##   9.6995799   1.9006834  -0.8430505
+##    7.621302    2.255451    1.106616
 ```
 
 Simulate the distribution of coefficients under a correctly specified model. Interpret the average.
 
-```r
+``` r
 N <- 30
 B <- c(10, 2, -1)
 
@@ -1080,18 +981,18 @@ for(i in 2:3){
 <img src="03-ROLS_files/figure-html/unnamed-chunk-33-1.png" width="672" />
 
 
-Many economic phenomena are nonlinear, even when including potential transforms of $Y$ and $X$. Sometimes the linear model may still be a good or even great approximation (how good depends on the research question). In any case, you are safe to interpret your OLS coefficients as "conditional correlations". For example, examine the distribution of coefficients under this mispecified model. Interpret the average.
+Many economic phenomena are nonlinear, even when including potential transforms of $Y$ and $X$. Sometimes the linear model may still be a good or even great approximation. But sometimes not, and it is hard to know ex-ante. Examine the distribution of coefficients under this mispecified model and try to interpret the average.
 
-```r
+``` r
 N <- 30
 
 Coefs <- sapply(1:600, function(sim){
-    x1 <- runif(N, 0, 5)
-    x2 <- rbinom(N,1,.7)
+    x2 <- runif(N, 0, 5)
+    x3 <- rbinom(N,1,.7)
     e <- rnorm(N,0,3)
-    Y <- 10*x2 + 2*log(x1)^x2 + e
-    dat <- data.frame(Y,x1,x2)
-    coef(lm(Y~x1+x2, data=dat))
+    Y <- 10*x3 + 2*log(x2)^x3 + e
+    dat <- data.frame(Y,x2,x3)
+    coef(lm(Y~x2+x3, data=dat))
 })
 
 par(mfrow=c(1,2))
@@ -1102,7 +1003,7 @@ for(i in 2:3){
 ```
 
 <img src="03-ROLS_files/figure-html/unnamed-chunk-34-1.png" width="672" />
-
+In general, you can interpret your OLS coefficients as "conditional correlations". If further hypothesis testing suggests the relationships are actually additively separable and linear, then you also have the structural interpretation of "marginal effect".
 
 
 ## Transformations
@@ -1157,7 +1058,7 @@ $$
 
 It is easiest to optimize parameters in a 2-step procedure called  `concentrated optimization'. We first solve for $\widehat{\beta}(\rho,\lambda)$ and compute the mean squared error $MSE(\rho,\lambda)$. We then find the $(\rho,\lambda)$ which minimizes $MSE$.
 
-```r
+``` r
 ## Box-Cox Transformation Function
 bxcx <- function( xy, rho){
     if (rho == 0L) {
@@ -1202,21 +1103,30 @@ rl_df$mse <- colMeans(errors^2)
 
 ## Want Small MSE and Interpretable
 ## (-1,0,1,2 are Easy to interpretable)
-library(ggplot2)
-ggplot(rl_df, aes(rho, lambda, fill=log(mse) )) +
-    geom_tile() + ggtitle('Mean Squared Error') 
-```
-
-<img src="03-ROLS_files/figure-html/unnamed-chunk-35-1.png" width="672" />
-
-```r
+layout(matrix(1:2,ncol=2), width=c(3,1), height=c(1,1))
+par(mar=c(4,4,2,0))
+plot(lambda~rho,rl_df, cex=8, pch=15,
+    xlab=expression(rho),
+    ylab=expression(lambda),
+    col=hcl.colors(25)[cut(1/rl_df$mse,25)])
 ## Which min
 rl0 <- rl_df[which.min(rl_df$mse),c('rho','lambda')]
+points(rl0$rho, rl0$lambda, pch=0, col=1, cex=8, lwd=2)
+## Legend
+plot(c(0,2),c(0,1), type='n', axes=F,
+    xlab='',ylab='', cex.main=.8,
+    main=expression(frac(1,'Mean Square Error')))
+rasterImage(as.raster(matrix(hcl.colors(25), ncol=1)), 0, 0, 1,1)
+text(x=1.5, y=seq(0,1,l=10), cex=.5,
+    labels=levels(cut(1/rl_df$mse,10, right=F)))
+```
 
-## Which give NA?
-## which(is.na(errors), arr.ind=T)
+<img src="03-ROLS_files/figure-html/unnamed-chunk-35-1.png" width="960" style="display: block; margin: auto;" />
 
-## Plot
+
+
+``` r
+## Plot for Specific Comparisons
 Xr <- bxcx(X,rl0[[1]])
 Yr <- bxcx(Y,rl0[[2]])
 Datr <- cbind(Murder=Yr,Xr)
@@ -1227,12 +1137,12 @@ cols <- c(rgb(1,0,0,.5), col=rgb(0,0,1,.5))
 plot(Y, Predr, pch=16, col=cols[1], ylab='Prediction')
 points(Y, predict(reg), pch=16, col=cols[2])
 legend('topleft', pch=c(16), col=cols,
-    title=expression(Rho~', '~Lambda),
+    title=expression(rho~', '~lambda),
     legend=c(  paste0(rl0, collapse=', '),'1, 1') )
 abline(a=0,b=1, lty=2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-35-2.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-36-1.png" width="672" />
 
 Note that the default hypothesis testing procedures do not account for you trying out different transformations. Specification searches deflate standard errors and are a major source for false discoveries.
 
@@ -1240,13 +1150,13 @@ Note that the default hypothesis testing procedures do not account for you tryin
 
 There's little sense in getting great standard errors for a terrible model. Plotting your regression object a simple and easy step to help diagnose whether your model is in some way bad.
 
-```r
+``` r
 #reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 par(mfrow=c(2,2))
 plot(reg)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-36-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-37-1.png" width="672" />
 We now go through what these figures show, and then some additional
 
 **Outliers** 
@@ -1254,7 +1164,7 @@ The first diagnostic plot examines outliers in terms the outcome $y_i$ being far
 
 The third diagnostic plot examines another type of outlier, where an observation with the explanatory variable $x_i$ is far from the center of mass of the other $x$'s. A point has high *leverage* if the estimates change dramatically when you estimate the model without that data point.
 
-```r
+``` r
 N <- 40
 x <- c(25, runif(N-1,3,8))
 e <- rnorm(N,0,0.4)
@@ -1266,7 +1176,7 @@ abline(lm(y~x), col=2, lty=2)
 abline(lm(y[-1]~x[-1]))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-37-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-38-1.png" width="672" />
 See [AEJ-leverage](https://www.rwi-essen.de/fileadmin/user_upload/RWI/Publikationen/I4R_Discussion_Paper_Series/032_I4R_Haddad_Kattan_Wochner-updateJune28.pdf) for an example of leverage in economics.
 
 Standardized residuals are
@@ -1275,7 +1185,7 @@ r_i=\frac{\hat{\epsilon}_i}{s_{[i]}\sqrt{1-h_i}},
 $$
 where $s_{[i]}$ is the root mean squared error of a regression with the $i$th observation removed and $h_i$ is the leverage of residual $\hat{\epsilon_i}$. 
 
-```r
+``` r
 which.max(hatvalues(reg))
 which.max(rstandard(reg))
 ```
@@ -1286,7 +1196,7 @@ $$
 D_{i} = \frac{\sum_{j} \left( \hat{y_j} - \hat{y_j}_{[i]} \right)^2 }{ p s^2 }
 = \frac{[e_{i}]^2}{p s^2 } \frac{h_i}{(1-h_i)^2}$$
 
-```r
+``` r
 which.max(cooks.distance(reg))
 car::influencePlot(reg)
 ```
@@ -1295,7 +1205,7 @@ car::influencePlot(reg)
 **Normality**
 The second plot examines whether the residuals are normally distributed. OLS point estimates do not depend on the normality of the residuals. (Good thing, because there's no reason the residuals of economic phenomena should be so well behaved.) Many hypothesis tests are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality 
 
-```r
+``` r
 par(mfrow=c(1,2))
 hist(resid(reg), main='Histogram of Residuals',
     font.main=1, border=NA)
@@ -1308,7 +1218,7 @@ qqline(resid(reg), col=1, lty=2)
 ```
 Heterskedasticity may also matters for variability estimates. This is not shown in the plot, but you can conduct a simple test
 
-```r
+``` r
 library(lmtest)
 lmtest::bptest(reg)
 ```
@@ -1320,7 +1230,7 @@ VIF_{k}=\frac{1}{1-R^2_k},
 $$
 where $R^2_k$ is the $R^2$ for the regression of $X_k$ on the other covariates $X_{-k}$ (a regression that does not involve the response variable Y)
 
-```r
+``` r
 car::vif(reg) 
 sqrt(car::vif(reg)) > 2 # problem?
 ```
@@ -1382,7 +1292,7 @@ Just like many economic relationships are nonlinear, many economic variables are
 These endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a barrier to interpreting OLS estimates causally. ($X$ and $\epsilon$ may be correlated for other reasons too, such as when $X$ is measured with error.)
 
 
-```r
+``` r
 ## Simulate data with an endogeneity issue
 n <- 300
 z <- rbinom(n,1,.5)
@@ -1396,7 +1306,7 @@ plot(y~x, data=xy, pch=16, col=grey(.5,.5))
 abline(lm(y~x,data=xy))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-43-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-44-1.png" width="672" />
 
 With multiple linear regression, note that endogeneity biases are not just a problem your main variable. Suppose your interested in how $x_{1}$ affects $y$, conditional on $x_{2}$. Letting $X=[x_{1}, x_{2}]$, you estimate 
 \begin{eqnarray}
@@ -1440,7 +1350,7 @@ Q^{*} &=& \frac{A_{S}B_{D}+ A_{D}B_{S}}{B_{D}+B_{S}} + \frac{E_{S}B_{D}+ E_{D}B_
 
 
 
-```r
+``` r
 ## Demand Curve Simulator
 qd_fun <- function(p, Ad=8, Bd=-.8, Ed_sigma=.25){
     Qd <- Ad + Bd*p + rnorm(1,0,Ed_sigma)
@@ -1458,13 +1368,13 @@ cbind(P=8:10, D=qd_fun(8:10), S=qs_fun(8:10))
 ```
 
 ```
-##       P          D         S
-## [1,]  8  1.4624737 0.2196428
-## [2,]  9  0.6624737 1.2196428
-## [3,] 10 -0.1375263 2.2196428
+##       P           D        S
+## [1,]  8  1.51844954 0.254882
+## [2,]  9  0.71844954 1.254882
+## [3,] 10 -0.08155046 2.254882
 ```
 
-```r
+``` r
 ## Market Equilibrium Finder
 eq_fun <- function(demand, supply, P){
     ## Compute EQ (what we observe)
@@ -1476,7 +1386,7 @@ eq_fun <- function(demand, supply, P){
 
 
 
-```r
+``` r
 ## Simulations Parameters
 N <- 300 ## Number of Market Interactions
 P <- seq(5,10,by=.01) ## Price Range to Consider
@@ -1503,11 +1413,11 @@ mtext('Quantity',1, line=2)
 mtext('Price',2, line=2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-45-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-46-1.png" width="672" />
 
 Now regress quantity ("Y") on price ("X"): $\widehat{\beta}_{OLS} = Cov(Q^{*}, P^{*}) / Var(P^{*})$. You get a number back, but it is hard to interpret meaningfully. 
 
-```r
+``` r
 ## Analyze Market Data
 dat1 <- data.frame(t(EQ1), cost='1')
 reg1 <- lm(Q~P, data=dat1)
@@ -1521,18 +1431,16 @@ summary(reg1)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.49125 -0.11828 -0.00683  0.11770  0.49550 
+## -0.47598 -0.12771  0.00999  0.12593  0.51622 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)   
-## (Intercept) -0.47751    0.44844  -1.065   0.2878   
-## P            0.15328    0.05046   3.037   0.0026 **
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+##             Estimate Std. Error t value Pr(>|t|)
+## (Intercept)  0.31875    0.46982   0.678    0.498
+## P            0.06226    0.05281   1.179    0.239
 ## 
-## Residual standard error: 0.1703 on 298 degrees of freedom
-## Multiple R-squared:  0.03003,	Adjusted R-squared:  0.02678 
-## F-statistic: 9.226 on 1 and 298 DF,  p-value: 0.002597
+## Residual standard error: 0.175 on 298 degrees of freedom
+## Multiple R-squared:  0.004642,	Adjusted R-squared:  0.001302 
+## F-statistic:  1.39 on 1 and 298 DF,  p-value: 0.2394
 ```
 This simple derivation has a profound insight: price-quantity data does not generally tell you how price affects quantity (or vice-versa). Moreover, it also clarifies that our initial question "what is the effect of price on quantity?" is misguided. We could more sensibly ask  "what is the effect of price on quantity supplied?" or "what is the effect of price on quantity demanded?"
 
@@ -1547,7 +1455,7 @@ Experimental manipulation of $A_{S}$ leads to
 So, absent any other changes, we could recover $-B_{D}=d Q^{*}/d P^{*}$. In this case, the supply shock has identified the demand slope.^[Notice that even in this linear model, however, all effects are conditional: *The* effect of a cost change on quantity or price depends on the demand curve. A change in costs affects quantity supplied but not quantity demanded (which then affects equilibrium price) but the demand side of the market still matters! The change in price from a change in costs depends on the elasticity of demand.]
 
 
-```r
+``` r
 ## New Observations After Cost Change
 EQ2 <- sapply(1:N, function(n){
     demand <- qd_fun(P)
@@ -1571,11 +1479,11 @@ mtext('Quantity',1, line=2)
 mtext('Price',2, line=2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-47-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-48-1.png" width="672" />
 
 We are not quite done yet, however. We have pooled two datasets that are seperately problematic, and the noisiness of the process within each group affects our OLS estimate: $\widehat{\beta}_{OLS}=Cov(Q^{*}, P^{*}) / Var(P^{*})$.
 
-```r
+``` r
 ## Not exactly right, but at least right sign
 reg2 <- lm(Q~P, data=dat2)
 summary(reg2)
@@ -1588,22 +1496,22 @@ summary(reg2)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.74848 -0.17304  0.00237  0.16787  0.69816 
+## -0.65576 -0.15985  0.00242  0.15741  0.78770 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  6.66735    0.19408   34.35   <2e-16 ***
-## P           -0.64246    0.02285  -28.11   <2e-16 ***
+## (Intercept)  6.60725    0.17631   37.48   <2e-16 ***
+## P           -0.63705    0.02077  -30.67   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.2499 on 598 degrees of freedom
-## Multiple R-squared:  0.5693,	Adjusted R-squared:  0.5686 
-## F-statistic: 790.4 on 1 and 598 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.2355 on 598 degrees of freedom
+## Multiple R-squared:  0.6114,	Adjusted R-squared:  0.6107 
+## F-statistic: 940.7 on 1 and 598 DF,  p-value: < 2.2e-16
 ```
 Although the individual observations are noisy, we can compute the change in the expected values $d \mathbb{E}[Q^{*}] / d \mathbb{E}[P^{*}] =-B_{D}$. Empirically, this is estimated via the change in average value.
 
-```r
+``` r
 ## Wald (1940) Estimate
 dat_mean <- rbind(
     colMeans(dat2[dat2$cost==1,1:2]),
@@ -1613,21 +1521,21 @@ dat_mean
 
 ```
 ##             P         Q
-## [1,] 8.884367 0.8842979
-## [2,] 8.078667 1.5524113
+## [1,] 8.894567 0.8725129
+## [2,] 8.057467 1.5426295
 ```
 
-```r
+``` r
 B_est <- diff(dat_mean[,2])/diff(dat_mean[,1])
 round(B_est, 2)
 ```
 
 ```
-## [1] -0.83
+## [1] -0.8
 ```
 We can also seperately recover $d \mathbb{E}[Q^{*}] / d \mathbb{E}[A_{S}]$ and $d \mathbb{E}[P^{*}] / d \mathbb{E}[A_{S}]$ from seperate regressions
 
-```r
+``` r
 ## Heckman (2000, p.58) Estimate
 ols_1 <- lm(P~cost, data=dat2)
 ols_2 <- lm(Q~cost, data=dat2)
@@ -1636,7 +1544,7 @@ round(B_est2[[2]],2)
 ```
 
 ```
-## [1] -0.83
+## [1] -0.8
 ```
 Mathematically, we can also do this in a single step by exploiting linear algebra: 
 \begin{eqnarray}
@@ -1659,7 +1567,7 @@ Q_{D} &=&  A_{D} + B_{D} P  + E_{D}.
 \end{eqnarray}
 
 
-```r
+``` r
 ## Two Stage Least Squares Estimate
 ols_1 <- lm(P~cost, data=dat2)
 dat2_new  <- cbind(dat2, Phat=predict(ols_1))
@@ -1674,21 +1582,21 @@ summary(reg_2sls)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.68967 -0.12185 -0.00831  0.12123  0.53212 
+## -0.52640 -0.11388  0.00834  0.11960  0.51531 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  8.25151    0.15647   52.73   <2e-16 ***
-## Phat        -0.82923    0.01843  -45.00   <2e-16 ***
+## (Intercept)  7.99281    0.14355   55.68   <2e-16 ***
+## Phat        -0.80052    0.01692  -47.32   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.1818 on 598 degrees of freedom
-## Multiple R-squared:  0.772,	Adjusted R-squared:  0.7716 
-## F-statistic:  2025 on 1 and 598 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.1734 on 598 degrees of freedom
+## Multiple R-squared:  0.7893,	Adjusted R-squared:  0.7889 
+## F-statistic:  2240 on 1 and 598 DF,  p-value: < 2.2e-16
 ```
 
-```r
+``` r
 ## One Stage Instrumental Variables Estimate
 library(fixest)
 reg2_iv <- feols(Q~1|P~cost, data=dat2)
@@ -1703,19 +1611,19 @@ summary(reg2_iv)
 ## Observations: 600
 ## Standard-errors: IID 
 ##              Estimate Std. Error  t value  Pr(>|t|)    
-## (Intercept)  8.251512   0.226759  36.3889 < 2.2e-16 ***
-## fit_P       -0.829233   0.026706 -31.0510 < 2.2e-16 ***
+## (Intercept)  7.992805   0.204789  39.0296 < 2.2e-16 ***
+## fit_P       -0.800522   0.024132 -33.1732 < 2.2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## RMSE: 0.263085   Adj. R2: 0.520377
-## F-test (1st stage), P: stat = 2,616.9, p < 2.2e-16, on 1 and 598 DoF.
-##            Wu-Hausman: stat =   571.0, p < 2.2e-16, on 1 and 597 DoF.
+## RMSE: 0.246992   Adj. R2: 0.570394
+## F-test (1st stage), P: stat = 2,680.0, p < 2.2e-16, on 1 and 598 DoF.
+##            Wu-Hausman: stat =   517.2, p < 2.2e-16, on 1 and 597 DoF.
 ```
 
 **Within Group Variance**
 You can experiment with the effect of different variances on both OLS and IV in the code below. And note that if we had multiple supply shifts and recorded their magnitudes, then we could recover more information about demand, perhaps tracing it out entirely.
 
-```r
+``` r
 ## Examine
 Egrid <- expand.grid(Ed_sigma=c(.001, .25, 1), Es_sigma=c(.001, .25, 1))
 
@@ -1753,14 +1661,14 @@ lapply( list(Egrid_OLS, Egrid_IV), function(ei){
 ## [[1]]
 ##                Es_sigma.0.001 Es_sigma.0.25 Es_sigma.1
 ## Ed_sigma.0.001          -0.80         -0.80      -0.80
-## Ed_sigma.0.25           -0.59         -0.60      -0.74
-## Ed_sigma.1               0.33          0.33      -0.06
+## Ed_sigma.0.25           -0.64         -0.63      -0.74
+## Ed_sigma.1               0.34          0.39      -0.08
 ## 
 ## [[2]]
 ##                Es_sigma.0.001 Es_sigma.0.25 Es_sigma.1
 ## Ed_sigma.0.001          -0.80         -0.80      -0.80
-## Ed_sigma.0.25           -0.77         -0.76      -0.80
-## Ed_sigma.1              -0.87         -0.75      -0.86
+## Ed_sigma.0.25           -0.81         -0.82      -0.81
+## Ed_sigma.1              -0.75         -0.85      -0.82
 ```
 
 
@@ -1790,7 +1698,7 @@ In practice, it is also easy to find a bad instrument. As you search for good in
 The basic idea here is to examine how a variable changes in response to an exogenous shock. The Regression Discontinuities estimate of the cost shock is the difference in the outcome variable just before and just after the shock. We now turn to our canonical competitive market example. The RD estimate is the difference between the lines at $T=300$.
 
 
-```r
+``` r
 dat2$T <- 1:nrow(dat2)
 
 plot(P~T, dat2, main='Effect of Cost Shock on Price', 
@@ -1801,9 +1709,9 @@ regP2 <- lm(P~T, dat2[dat2$cost==2,])
 lines(regP2$model$T, predict(regP2), col=4)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-54-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-55-1.png" width="672" />
 
-```r
+``` r
 regP <- lm(P~T*cost, dat2)
 summary(regP)
 ```
@@ -1815,24 +1723,24 @@ summary(regP)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.53369 -0.12971  0.01011  0.13223  0.50993 
+## -0.72985 -0.12878 -0.00566  0.13415  0.54335 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  8.9135008  0.0223245 399.269   <2e-16 ***
-## T           -0.0001936  0.0001286  -1.506    0.133    
-## cost2       -0.8418820  0.0630646 -13.350   <2e-16 ***
-## T:cost2      0.0002092  0.0001818   1.151    0.250    
+## (Intercept)  8.888e+00  2.295e-02 387.246   <2e-16 ***
+## T            4.199e-05  1.322e-04   0.318    0.751    
+## cost2       -8.723e-01  6.484e-02 -13.453   <2e-16 ***
+## T:cost2      5.008e-05  1.869e-04   0.268    0.789    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.1929 on 596 degrees of freedom
-## Multiple R-squared:  0.8147,	Adjusted R-squared:  0.8138 
-## F-statistic: 873.5 on 3 and 596 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.1983 on 596 degrees of freedom
+## Multiple R-squared:  0.8177,	Adjusted R-squared:  0.8168 
+## F-statistic: 891.4 on 3 and 596 DF,  p-value: < 2.2e-16
 ```
 
 
-```r
+``` r
 plot(Q~T, dat2, main='Effect of Cost Shock on Quantity',
     font.main=1, pch=16, col=grey(0,.15))
 regQ1 <- lm(Q~T, dat2[dat2$cost==1,]) 
@@ -1841,9 +1749,9 @@ regQ2 <- lm(Q~T, dat2[dat2$cost==2,])
 lines(regQ2$model$T, predict(regQ2), col=4)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-55-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-56-1.png" width="672" />
 
-```r
+``` r
 regQ <- lm(Q~T*cost, dat2)
 summary(regQ)
 ```
@@ -1855,20 +1763,20 @@ summary(regQ)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.69002 -0.11811  0.00091  0.11862  0.53110 
+## -0.52762 -0.11690  0.00717  0.11822  0.51617 
 ## 
 ## Coefficients:
-##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  0.8539298  0.0210360  40.594   <2e-16 ***
-## T            0.0002018  0.0001211   1.666   0.0963 .  
-## cost2        0.6930673  0.0594245  11.663   <2e-16 ***
-## T:cost2     -0.0001898  0.0001713  -1.108   0.2685    
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) 8.715e-01  2.010e-02  43.353   <2e-16 ***
+## T           6.737e-06  1.158e-04   0.058    0.954    
+## cost2       6.377e-01  5.679e-02  11.230   <2e-16 ***
+## T:cost2     6.740e-05  1.637e-04   0.412    0.681    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.1817 on 596 degrees of freedom
-## Multiple R-squared:  0.7731,	Adjusted R-squared:  0.7719 
-## F-statistic: 676.8 on 3 and 596 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.1737 on 596 degrees of freedom
+## Multiple R-squared:  0.7894,	Adjusted R-squared:  0.7883 
+## F-statistic: 744.7 on 3 and 596 DF,  p-value: < 2.2e-16
 ```
 
 Remember that this is effect is *local*: different magnitudes of the cost shock or different demand curves generally yeild different estimates.
@@ -1878,7 +1786,7 @@ Remember that this is effect is *local*: different magnitudes of the cost shock 
 The basic idea here is to examine how a variable changes in response to an exogenous shock, *compared to a control group*. 
 
 
-```r
+``` r
 EQ3 <- sapply(1:(2*N), function(n){
 
     ## Market Mechanisms
@@ -1905,9 +1813,9 @@ plot(Q~T, dat2, main='Effect of Cost Shock on Quantity',
 points(Q~T, dat3, pch=16, col=rgb(1,0,0,.25))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-56-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-57-1.png" width="672" />
 
-```r
+``` r
 dat <- rbind(dat2, dat3)
 regP <- lm(P~T*cost, dat)
 summary(regP)
@@ -1920,23 +1828,23 @@ summary(regP)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.53718 -0.12767  0.00242  0.13539  0.56597 
+## -0.72985 -0.13572  0.00478  0.13477  0.54335 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  8.893e+00  1.155e-02 769.697   <2e-16 ***
-## T           -3.832e-05  3.846e-05  -0.996    0.319    
-## cost2       -8.215e-01  5.965e-02 -13.772   <2e-16 ***
-## T:cost2      5.397e-05  1.332e-04   0.405    0.685    
+## (Intercept)  8.896e+00  1.207e-02 737.086   <2e-16 ***
+## T           -5.354e-05  4.018e-05  -1.333    0.183    
+## cost2       -8.805e-01  6.231e-02 -14.130   <2e-16 ***
+## T:cost2      1.456e-04  1.392e-04   1.046    0.296    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.1913 on 1196 degrees of freedom
-## Multiple R-squared:  0.769,	Adjusted R-squared:  0.7684 
-## F-statistic:  1327 on 3 and 1196 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.1999 on 1196 degrees of freedom
+## Multiple R-squared:  0.7625,	Adjusted R-squared:  0.762 
+## F-statistic:  1280 on 3 and 1196 DF,  p-value: < 2.2e-16
 ```
 
-```r
+``` r
 regQ <- lm(Q~T*cost, dat)
 summary(regQ)
 ```
@@ -1948,20 +1856,20 @@ summary(regQ)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -0.69002 -0.12545 -0.00889  0.11969  0.67982 
+## -0.58969 -0.11421  0.00362  0.11478  0.58059 
 ## 
 ## Coefficients:
 ##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) 8.861e-01  1.101e-02  80.504   <2e-16 ***
-## T           2.807e-06  3.664e-05   0.077    0.939    
-## cost2       6.609e-01  5.682e-02  11.631   <2e-16 ***
-## T:cost2     9.211e-06  1.269e-04   0.073    0.942    
+## (Intercept) 8.784e-01  1.059e-02  82.961   <2e-16 ***
+## T           5.139e-05  3.524e-05   1.458    0.145    
+## cost2       6.308e-01  5.466e-02  11.541   <2e-16 ***
+## T:cost2     2.275e-05  1.221e-04   0.186    0.852    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.1823 on 1196 degrees of freedom
-## Multiple R-squared:  0.715,	Adjusted R-squared:  0.7143 
-## F-statistic:  1000 on 3 and 1196 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.1753 on 1196 degrees of freedom
+## Multiple R-squared:  0.7221,	Adjusted R-squared:  0.7214 
+## F-statistic:  1036 on 3 and 1196 DF,  p-value: < 2.2e-16
 ```
 
 
@@ -2041,7 +1949,7 @@ Note: one reason to plot your data is to help spot such errors.
 
 Another class of errors pertains to P-hacking (and it's various synonyms: data drudging, star mining,....). While there are cases of fraudulent data manipulation (which can be considered as a dishonest data error), P-hacking is a much more [pernicious](https://elephantinthelab.org/a-replication-crisis-in-the-making/) and [widespread](https://www.americanscientist.org/article/the-statistical-crisis-in-science)
 
-```r
+``` r
 set.seed(123)
 n <- 50
 X1 <- runif(n)
@@ -2070,15 +1978,15 @@ plot(X1~X2, data=dat_i,
 abline(reg_i)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-57-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-58-1.png" width="672" />
 
-```r
+``` r
 #summary(reg_i)
 ```
 
 
 
-```r
+``` r
 ## P-hacking 2SLS
 library(fixest)
 p <- 1
@@ -2130,7 +2038,7 @@ Even without any coding errors or p-hacking, you can sometimes make a false disc
 
 First, get and inspect some data from https://tylervigen.com/spurious-correlations
 
-```r
+``` r
 ## Your data is not made up in the computer (hopefully!)
 vigen_csv <- read.csv( paste0(
 'https://raw.githubusercontent.com/the-mad-statter/',
@@ -2142,7 +2050,7 @@ class(vigen_csv)
 ## [1] "data.frame"
 ```
 
-```r
+``` r
 names(vigen_csv)
 ```
 
@@ -2165,7 +2073,7 @@ names(vigen_csv)
 ## [31] "uranium"
 ```
 
-```r
+``` r
 vigen_csv[1:5,1:5]
 ```
 
@@ -2178,7 +2086,7 @@ vigen_csv[1:5,1:5]
 ## 5 2000            18594             5688                 102          2
 ```
 
-```r
+``` r
 ## similar `apply' functions
 lapply(vigen_csv[,1:5], class) ## like apply, but for lists
 ```
@@ -2200,7 +2108,7 @@ lapply(vigen_csv[,1:5], class) ## like apply, but for lists
 ## [1] "integer"
 ```
 
-```r
+``` r
 sapply(vigen_csv[,1:5], class) ## lapply, formatted to a vector
 ```
 
@@ -2215,7 +2123,7 @@ The US government spending on science is ruining cinema
 (p<.001)!?
 
 
-```r
+``` r
 ## Drop Data before 1999
 vigen_csv <- vigen_csv[vigen_csv$year >= 1999,] 
 
@@ -2249,7 +2157,7 @@ summary(reg1)
 It's not all bad, people in maine stay married longer?
 
 
-```r
+``` r
 plot.new()
 plot.window(xlim=c(1999, 2009), ylim=c(7,9))
 lines(log(maine_divorce_rate*1000)~year, data=vigen_csv)
@@ -2261,11 +2169,11 @@ legend('topright', lty=c(1,2), legend=c(
     'log(science_spending/10)'))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-61-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-62-1.png" width="672" />
 
 
 
-```r
+``` r
 par(mfrow=c(1,2), mar=c(2,2,2,1))
 plot.new()
 plot.window(xlim=c(1999, 2009), ylim=c(5,9)*1000)
@@ -2287,11 +2195,11 @@ axis(1)
 axis(2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-62-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-63-1.png" width="672" />
 
 
 
-```r
+``` r
 ## Include an intercept to regression 1
 #reg2 <-  lm(cage_films ~ science_spending, data=vigen_csv)
 #suppressMessages(library(stargazer))
@@ -2301,7 +2209,7 @@ axis(2)
 
 We now run IV regressions for different variable combinations in the dataset
 
-```r
+``` r
 knames <- names(vigen_csv)[2:11] ## First 10 Variables
 #knames <- names(vigen_csv)[-1] ## All Variables
 p <- 1
@@ -2328,9 +2236,9 @@ plot(ecdf(pvals), xlab='p-value', ylab='CDF', font.main=1,
 abline(v=c(.01,.05), col=c(2,4))
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-64-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-65-1.png" width="672" />
 
-```r
+``` r
 ## Most Significant Spurious Combinations
 pvars <- sapply(ivreg_list, function(ivreg_i){ivreg_i[[2]]})
 pdat <- data.frame(t(pvars), pvals)
@@ -2357,7 +2265,7 @@ We apply the three major credible methods (IV, RDD, DID) to random walks. Each t
 
 
 
-```r
+``` r
 n <- 1000
 n_index <- seq(n)
 
@@ -2374,13 +2282,13 @@ plot(random_walk2, pch=16, col=rgb(0,0,1,.25),
     xlab='Time', ylab='Random Value')
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-65-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-66-1.png" width="672" />
 
 
 **IV**
 First, find an instrument that satisfy various statistical criterion to provide a causal estimate of $X_{2}$ on $X_{1}$.
 
-```r
+``` r
 ## "Find" "valid" ingredients
 library(fixest)
 random_walk3 <- cumsum(runif(n,-1,1))
@@ -2409,7 +2317,7 @@ summary(ivreg_i)
 ##             Wu-Hausman: stat = 23.4, p = 1.518e-6, on 1 and 997 DoF.
 ```
 
-```r
+``` r
 ## After experimenting with different instruments
 ## you can find even stronger results!
 ```
@@ -2420,7 +2328,7 @@ Second, find a large discrete change in the data that you can associate with a p
 
 
 
-```r
+``` r
 ## Let the data take shape
 ## (around the large differences before and after)
 n1 <- 290
@@ -2440,10 +2348,10 @@ lines(reg0$model$t, reg0$fitted.values, col=1)
 lines(reg1$model$t, reg1$fitted.values, col=1)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-67-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-68-1.png" width="672" />
 
 
-```r
+``` r
 ## Dress with some statistics for added credibility
 rdd_sub <- lm(y~d+t+d*t, data=dat1_sub)
 rdd_full <- lm(y~d+t+d*t, data=dat1)
@@ -2486,7 +2394,7 @@ stargazer::stargazer(rdd_sub, rdd_full,
 Third, find a change in the data that you can associate with a policy where the control group has parallel trends. This also provides a causal estimate of $X_{2}$ on $X_{1}$.
 
 
-```r
+``` r
 ## Find a reversal of fortune
 ## (A good story always goes well with a nice pre-trend)
 n2 <- 318
@@ -2497,10 +2405,10 @@ points(random_walk1, pch=16, col=rgb(1,0,0,.5))
 abline(v=n2, lty=2)
 ```
 
-<img src="03-ROLS_files/figure-html/unnamed-chunk-69-1.png" width="672" />
+<img src="03-ROLS_files/figure-html/unnamed-chunk-70-1.png" width="672" />
 
 
-```r
+``` r
 ## Knead out any effects that are non-causal 
 ## (or even just correlation)
 dat2A <- data.frame(t=n_index, y=random_walk1, d=1*(n_index > n2), RWid=1)
