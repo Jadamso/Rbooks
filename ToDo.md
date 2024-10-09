@@ -26,7 +26,14 @@ Make plots interactive via https://plotly-r.com/
 https://easystats.github.io/report/
 
 
+* https://happygitwithr.com/classroom-overview.html
+* https://aeturrell.github.io/coding-for-economists/intro.html
+
+
+
+
 #### Statistics 
+
 
 ```{r}
 twosam <- function(y1, y2){
@@ -44,7 +51,7 @@ twosam <- function(y1, y2){
 tstat <- twosam(data$male, data$female); tstat
 ```
 
-
+Spearman Correlation
 
 
 #### Data Analysis
@@ -81,6 +88,12 @@ gsub("([[:alpha:]]{3,})ing\\b", "\\1", kingText)
 ## Linear Regression
 
 
+#### GoF
+https://statmodeling.stat.columbia.edu/2024/06/17/this-well-known-paradox-of-r-squared-is-still-buggin-me-can-you-help-me-out/
+
+Spearman Correlation
+
+#### Diminishing Returns
 Value of More Data: Just as before, there are diminishing returns to larger sample sizes with simple OLS.
 
 ```{r}
@@ -283,7 +296,6 @@ The Essential Guide to Effect Sizes: Statistical Power, Meta-Analysis, and the I
 https://online.stat.psu.edu/statprogram/reviews/statistical-concepts/power-analysis
 https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/power.html
 https://peopleanalytics-regression-book.org/power-tests.html
-
 
 
 #### Endogeneity
@@ -504,6 +516,3 @@ https://benborgy.wordpress.com/
 i.e. \footnotesize{\url{https://benborgy.files.wordpress.com/2014/08/spatializemap_2.jpg}} \\
 i.e. \footnotesize{\url{http://esdac.jrc.ec.europa.eu/themes/global-data-other-initiatives}} \\
 -->
-
-
-
