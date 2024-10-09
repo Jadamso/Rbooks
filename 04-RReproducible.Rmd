@@ -398,26 +398,23 @@ There are two main meta-files
 
 If all code is written with the same program (such as R) the makefile can be written in a single language. For us, this looks like
 ```{r, eval=FALSE}
-
 ### Project Structure
 home_dir    <- path.expand("~/Desktop/Project/")
-
-data_dir    <- paste0(home_dir, "Data/")
-data_dir_r  <- paste0(data_dir, "Raw/")
-data_dir_c  <- paste0(data_dir, "Clean/")
-
-out_dir  <- paste0(hdir, "Output/")
-
-code_dir  <- paste0(hdir, "Code/")
-
+data_dir_r  <- paste0(data_dir, "Data/Raw/")
+data_dir_c  <- paste0(data_dir, "Data/Clean/")
+out_dir     <- paste0(hdir, "Output/")
+code_dir    <- paste0(hdir, "Code/")
 
 ### Execute Codes
 ### libraries are loaded within each RBLOCK
-set.wd( code_dir )
+setwd( code_dir )
 source( "RBLOCK_001_DataClean.R" )
 source( "RBLOCK_002_Figures.R" )
 source( "RBLOCK_003_ModelsTests.R" )
 source( "RBLOCK_004_Robust.R" )
+
+### Report all information relevant for replication
+sessionInfo()
 ```
 
 Notice there is a lot of documentation `### like this`, which is crucial for large projects. Also notice that anyone should be able to replicate the entire project by downloading a zip file and simply changing `home_dir`.
@@ -433,21 +430,16 @@ dir.create('Data')
 
 ## Logging/Sinking
 
-When executing the makefile, you can also log the output. Either by 
+When executing the makefile, you can also log the output in three different ways: 
 
-1. Inserting some code into the makefile that logs/sinks the output 
+1. Inserting some code into the makefile that "sinks" the output 
 ```{r, eval=FALSE}
-
 ### Project Structure
 home_dir    <- path.expand("~/Desktop/Project/")
-
-data_dir    <- paste0(home_dir, "Data/")
-data_dir_r  <- paste0(data_dir, "Raw/")
-data_dir_c  <- paste0(data_dir, "Clean/")
-
-out_dir  <- paste0(hdir, "Output/")
-
-code_dir  <- paste0(hdir, "Code/")
+data_dir_r  <- paste0(data_dir, "Data/Raw/")
+data_dir_c  <- paste0(data_dir, "Data/Clean/")
+out_dir     <- paste0(hdir, "Output/")
+code_dir    <- paste0(hdir, "Code/")
 
 ### Log Output
 set.wd( code_dir )
@@ -458,12 +450,13 @@ source( "RBLOCK_001_DataClean.R" )
 source( "RBLOCK_002_Figures.R" )
 source( "RBLOCK_003_ModelsTests.R" )
 source( "RBLOCK_004_Robust.R" )
+sessionInfo()
 
 ### Stop Logging Output
 sink()
 ```
 
-2. Starting a session that logs/sinks you sourcing the makefile
+2. Starting a session that "sinks" the makefile
 ```{r, eval=FALSE}
 sink("MAKEFILE.Rout", append=TRUE, split=TRUE)
 source("MAKEFILE.R")
@@ -854,8 +847,9 @@ X <- cbind(1, runif(1e6))
 Y <- X %*% c(1,2) + rnorm(1e6)
 DAT <- as.data.frame(cbind(Y,X))
 
-system.time({.lm.fit(X, Y) })
 system.time({ lm(Y~X, data=DAT) })
+system.time({.lm.fit(X, Y) })
+system.time({ solve(t(X)%*%X) %*% (t(X)%*%Y)  })
 ```
 Note that quicker codes tend to have fewer checks and return less information. So you must know exactly what you are putting in and getting out.
 
@@ -1056,17 +1050,24 @@ More Help with Shiny Apps
 
 # Software {.tabset}
 
-
 ## Latest versions
+
+Make sure R is up to date. The current version of R (and any packages) used to make this document are
+```{r}
+sessionInfo()
+```
+With Rstudio, you can update both R and Rstudio.
+
 
 Make sure your packages are up to date
 ```{r,  eval=FALSE}
 update.packages()
 ```
 
-After reinstalling, you can update *all* packages stored in *all* `.libPaths()` with the following command
+After updating R, you can update *all* packages stored in *all* `.libPaths()` with the following command
 ```{r,  eval=FALSE}
-install.packages(old.packages(checkBuilt=T)[,"Package"])
+update.packages(checkBuilt=T)
+## install.packages(old.packages(checkBuilt=T)[,"Package"])
 ```
 
 To find broken packages after an update
@@ -1141,31 +1142,8 @@ To begin programming, see
 ## Sweave
 
 
-**Sweave:** is an alternative to Rmarkdown for integrating latex and R. While Rmarkdown "writes R and latex within markdown", Sweave "write R in latex". Sweave files end in ".Rnw" and can be called within R
-
-```{r, eval=FALSE}
-Sweave('Sweave_file.Rnw')
-```
-
-or directly from the command line
-
-```{bash, eval=FALSE}
-R CMD Sweave Sweave_file.Rnw 
-```
-
-In both cases, a latex file `Sweave_file.tex` is produced, which can then be converted to `Sweave_file.pdf`.
-
-
-
-For more on Sweave,
-
-* https://rpubs.com/YaRrr/SweaveIntro
-* https://support.rstudio.com/hc/en-us/articles/200552056-Using-Sweave-and-knitr
-* https://www.statistik.lmu.de/~leisch/Sweave/Sweave-manual.pdf
-
-
 **Knitr:** 
-You can also produce a pdf from an .Rnw file via `knitr`
+You can produce a pdf from an .Rnw file via `knitr`
 
 ```{bash, eval=FALSE}
 Rscript -e "knitr::Sweave2knitr('Sweave_file.Rnw')"
@@ -1177,6 +1155,29 @@ For background on knitr
 * https://yihui.org/knitr/
 * https://kbroman.org/knitr_knutshell/pages/latex.html
 * https://sachsmc.github.io/knit-git-markr-guide/knitr/knit.html
+
+
+**Sweave:** is an alternative to Rmarkdown for integrating latex and R. While Rmarkdown "writes R and latex within markdown", Sweave "write R in latex". Sweave files end in ".Rnw" and can be called within R
+
+```{r, eval=FALSE}
+Sweave('Sweavefile.Rnw')
+```
+
+or directly from the command line
+
+```{bash, eval=FALSE}
+R CMD Sweave Sweavefile.Rnw 
+```
+
+In both cases, a latex file `Sweavefile.tex` is produced, which can then be converted to `Sweavefile.pdf`.
+
+
+For more on Sweave,
+
+* https://rpubs.com/YaRrr/SweaveIntro
+* https://support.rstudio.com/hc/en-us/articles/200552056-Using-Sweave-and-knitr
+* https://www.statistik.lmu.de/~leisch/Sweave/Sweave-manual.pdf
+
 
 
 ## Stata
@@ -1215,4 +1216,6 @@ You can also use other software (such as Python) within R. You can also use R wi
 
 * https://cran.r-project.org/doc/manuals/R-data.html
 * https://raw.githubusercontent.com/rstudio/cheatsheets/main/data-import.pdf
+
+
 
