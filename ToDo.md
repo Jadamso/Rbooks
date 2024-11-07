@@ -265,6 +265,21 @@ Measurement Error
 
 https://www.aeaweb.org/articles?id=10.1257/aer.p20171031
 
+https://www.r-bloggers.com/2024/09/stepwise-selection-of-variables-in-regression-is-evil-by-ellis2013nz/
+
+https://www.tandfonline.com/doi/full/10.1080/26939169.2023.2276446#d1e1498
+
+Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)
+
+#### Power Analysis
+
+https://osf.io/zqphw/download
+The Essential Guide to Effect Sizes: Statistical Power, Meta-Analysis, and the Interpretation of Research Results
+https://online.stat.psu.edu/statprogram/reviews/statistical-concepts/power-analysis
+https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/power.html
+https://peopleanalytics-regression-book.org/power-tests.html
+
+https://aaroncaldwell.us/SuperpowerBook/
 
 Parametric P values and Power Analysis
 ```{r}
@@ -289,14 +304,6 @@ PT_r <- 1 -
     pt( qt(alpha/2, df=k, lower.tail=F), df=k, ncp=abs(T_r), lower.tail=F)
 1 - pt( qt(1-alpha/2, df=k)-abs(T_r), df=k) + pt( qt(alpha/2, df=k)-abs(T_r), df=k)
 ``` 
-
-## Power
-https://osf.io/zqphw/download
-The Essential Guide to Effect Sizes: Statistical Power, Meta-Analysis, and the Interpretation of Research Results
-https://online.stat.psu.edu/statprogram/reviews/statistical-concepts/power-analysis
-https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/power.html
-https://peopleanalytics-regression-book.org/power-tests.html
-
 
 #### Endogeneity
 
@@ -347,6 +354,7 @@ text(c(-2/3,0,2/3), c(1/5,-2/3,1/5),
 *Example 2:* What do you think about this plot from (https://ourworldindata.org/grapher/share-of-population-with-cancer-vs-gdp)? Is money the root of all evil; our focus on wealth literally a cancer to society?
 
 *Example 3:* This map of cocaine (https://www.unodc.org/wdr2016/field/1.2.3._Prevalence_cocaine.pdf) usage looks a lot like GDP. Could it be that cocaine causes people to become rich, or rather that people in richer countries use more cocaine?
+
 
 
 ## Intermediate R

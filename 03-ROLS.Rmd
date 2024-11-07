@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
 
 Given some data
 ```{r}
-## Bivariate Data from USArrests
+# Bivariate Data from USArrests
 xy <- USArrests[,c('Murder','UrbanPop')]
 colnames(xy) <- c('y','x')
 ```
@@ -45,17 +45,17 @@ $$
 
 
 ```{r}
-## Estimate Regression Coefficients
+# Estimate Regression Coefficients
 reg <- lm(y~x, dat=xy)
 reg 
 
-## Point Estimates
+# Point Estimates
 coef(reg)
 ```
 
 To qualitatively analyze the ''Goodness of fit'', we plot our predictions.
 ```{r}
-## Plot Data and Predictions
+# Plot Data and Predictions
 library(plotly)
 xy$ID <- rownames(USArrests)
 xy$pred <- predict(reg)
@@ -71,13 +71,13 @@ fig <- plotly::plot_ly(
               '<br>Murder :', y,
               '<br>Predicted Murder :', round(pred,2),
               '<br>Residual :', round(resid,2)))              
-## Add Legend
+# Add Legend
 fig <- plotly::layout(fig,
           showlegend=F,
           title='Crime and Urbanization in America 1975',
           xaxis = list(title='Percent of People in an Urban Area'),
           yaxis = list(title='Homicide Arrests per 100,000 People'))
-## Plot Model Predictions
+# Plot Model Predictions
 add_trace(fig, x=~x, y=~pred,
     inherit=F, hoverinfo='none',
     mode='lines+markers', type='scatter',
@@ -92,7 +92,7 @@ R^2 = \frac{ESS}{TSS}=1-\frac{RSS}{TSS}
 $$
 Note that $R^2$ is also called the coefficient of determination.
 ```{r}
-## Manually Compute Goodness of Fit
+# Manually Compute Goodness of Fit
 Ehat <- resid(reg)
 RSS  <- sum(Ehat^2)
 Y <- xy$y
@@ -100,7 +100,7 @@ TSS  <- sum((Y-mean(Y))^2)
 R2 <- 1 - RSS/TSS
 R2
 
-## Check R2
+# Check R2
 summary(reg)$r.squared
 ```
 
@@ -121,31 +121,31 @@ Note that values reported by your computer do not necessarily satisfy this defin
 We first consider the simplest, the jackknife. In this procedure, we loop through each row of the dataset. And, in each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``subsamples''.
 
 ```{r}
-## Jackknife Standard Errors for OLS Coefficient
+# Jackknife Standard Errors for OLS Coefficient
 jack_regs <- lapply(1:nrow(xy), function(i){
     xy_i <- xy[-i,]
     reg_i <- lm(y~x, dat=xy_i)
 })
 jack_coefs <- sapply(jack_regs, coef)['x',]
 jack_se <- sd(jack_coefs)
-### classic_se <- sqrt(diag(vcov(reg)))[['x']]
+# classic_se <- sqrt(diag(vcov(reg)))[['x']]
 
 
-## Jackknife Sampling Distribution
+# Jackknife Sampling Distribution
 hist(jack_coefs, breaks=25,
     main=paste0('SE est. = ', round(jack_se,4)),
     font.main=1, border=NA,
     xlab=expression(beta[-i]))
-## Original Estimate
+# Original Estimate
 abline(v=coef(reg)['x'], lwd=2)
-## Jackknife Confidence Intervals
+# Jackknife Confidence Intervals
 jack_ci_percentile <- quantile(jack_coefs, probs=c(.025,.975))
 abline(v=jack_ci_percentile, lty=2)
 
 
-## Plot Normal Approximation
-## jack_ci_normal <- jack_mean+c(-1.96, +1.96)*jack_se
-## abline(v=jack_ci_normal, col="red", lty=3)
+# Plot Normal Approximation
+# jack_ci_normal <- jack_mean+c(-1.96, +1.96)*jack_se
+# abline(v=jack_ci_normal, col="red", lty=3)
 ```
 
 There are several resampling techniques. The other main one is the bootstrap, which resamples with *replacement* for an *arbitrary* number of iterations. When bootstrapping a dataset with $n$ observations, you randomly resample all $n$ rows in your data set $B$ times. Random subsampling is one of many hybrid approaches that tries to combine the best of both worlds.
@@ -157,7 +157,7 @@ Jackknife | $n-1$   | $n$  | Without Replacement |
 Random Subsample | $m < n$ | $B$  | Without Replacement |
 
 ```{r}
-## Bootstrap
+# Bootstrap
 boot_regs <- lapply(1:399, function(b){
     b_id <- sample( nrow(xy), replace=T)
     xy_b <- xy[b_id,]
@@ -176,7 +176,7 @@ abline(v=coef(reg)['x'], lwd=2)
 ```
 
 ```{r}
-## Random Subsamples
+# Random Subsamples
 rs_regs <- lapply(1:399, function(b){
     b_id <- sample( nrow(xy), nrow(xy)-10, replace=F)
     xy_b <- xy[b_id,]
@@ -206,9 +206,9 @@ One main way to conduct hypothesis tests is to examine whether a confidence inte
 tvalue <- coef(reg)['x']/jack_se
 
 jack_t <- sapply(jack_regs, function(reg_b){
-    ## Data
+    # Data
     xy_b <- reg_b$model
-    ## Coefficient
+    # Coefficient
     beta_b <- coef(reg_b)[['x']]
     t_hat_b <- beta_b/jack_se
     return(t_hat_b)
@@ -226,7 +226,7 @@ abline(v=0, col="red", lwd=2)
 **Impose the Null**
 We can also compute a null distribution. We focus on the simplest, the bootstrap, where loop through a large number of simulations. In each iteration of the loop, we drop impose the null hypothesis and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''. Specifically, we compute the distribution of t-values on data with randomly reshuffled outcomes (imposing the null), and compare how extreme the observed value is.
 ```{r}
-## Null Distribution for Beta
+# Null Distribution for Beta
 boot_t0 <- sapply( 1:399, function(b){
     xy_b <- xy
     xy_b$y <- sample( xy_b$y, replace=T)
@@ -236,7 +236,7 @@ boot_t0 <- sapply( 1:399, function(b){
     return(t_hat_b)
 })
 
-## Null Bootstrap Distribution
+# Null Bootstrap Distribution
 boot_ci_percentile0 <- quantile(boot_t0, probs=c(.025,.975))
 hist(boot_t0, breaks=25,
     main='Null Bootstrap Density',
@@ -252,11 +252,11 @@ Alternatively, you can impose the null by recentering the sampling distribution 
 
 In any case, we can calculate a *p-value*: the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true). We can always calculate a p-value from an explicit null distribution.
 ```{r}
-## One Sided Test for P(t > boot_t | Null)=1- P(t < boot_t | Null)
+# One Sided Test for P(t > boot_t | Null)=1- P(t < boot_t | Null)
 That_NullDist1 <- ecdf(boot_t0)
 Phat1  <- 1-That_NullDist1(jack_t)
 
-## Two Sided Test for P(t > jack_t or  t < -jack_t | Null)
+# Two Sided Test for P(t > jack_t or  t < -jack_t | Null)
 That_NullDist2 <- ecdf(abs(boot_t0))
 plot(That_NullDist2, xlim=range(boot_t0, jack_t),
     xlab=expression( abs(hat(t)[b]) ),
@@ -274,26 +274,26 @@ In addition to confidence intervals, we can also compute a *prediction interval*
 
 
 ```{r}
-## Bootstrap Prediction Interval
+# Bootstrap Prediction Interval
 boot_resids <- lapply(boot_regs, function(reg_b){
     e_b <- resid(reg_b)
     x_b <- reg_b$model$x
     res_b <- cbind(e_b, x_b)
 })
 boot_resids <- as.data.frame(do.call(rbind, boot_resids))
-## Homoskedastic
+# Homoskedastic
 ehat <- quantile(boot_resids$e_b, probs=c(.025, .975))
 x <- quantile(xy$x,probs=seq(0,1,by=.1))
 boot_pi <- coef(reg)[1] + x*coef(reg)['x']
 boot_pi <- cbind(boot_pi + ehat[1], boot_pi + ehat[2])
 
-## Plot Bootstrap PI
+# Plot Bootstrap PI
 plot(y~x, dat=xy, pch=16, main='Prediction Intervals',
     ylim=c(-5,20), font.main=1)
 polygon( c(x, rev(x)), c(boot_pi[,1], rev(boot_pi[,2])),
     col=grey(0,.2), border=NA)
 
-## Parametric PI (For Comparison)
+# Parametric PI (For Comparison)
 pi <- predict(reg, interval='prediction', newdata=data.frame(x))
 lines( x, pi[,'lwr'], lty=2)
 lines( x, pi[,'upr'], lty=2)
@@ -307,14 +307,14 @@ For a nice overview of different types of intervals, see https://www.jstor.org/s
 
 Segmented/piecewise regressions
 ```{r}
-## Globally Linear
+# Globally Linear
 reg <- lm(y~x, data=xy)
 
 # Diagnose Fit
 #plot( fitted(reg), resid(reg), pch=16, col=grey(0,.5))
 #plot( xy$x, resid(reg), pch=16, col=grey(0,.5))
 
-## Linear in 2 Pieces (subsets)
+# Linear in 2 Pieces (subsets)
 xcut2 <- cut(xy$x,2)
 xy_list2 <- split(xy, xcut2)
 regs2 <- lapply(xy_list2, function(xy_s){
@@ -322,8 +322,8 @@ regs2 <- lapply(xy_list2, function(xy_s){
 })
 sapply(regs2, coef)
 
-## Linear in 3 Pieces (subsets)
-xcut3 <- cut(xy$x, seq(32,92,by=20)) ## Finer Bins
+# Linear in 3 Pieces (subsets or bins)
+xcut3 <- cut(xy$x, seq(32,92,by=20)) # Finer Bins
 xy_list3 <- split(xy, xcut3)
 regs3 <- lapply(xy_list3, function(xy_s){
     lm(y~x, data=xy_s)
@@ -348,7 +348,7 @@ pred3 <- lapply(regs3, function(reg){
 pred3 <- do.call(rbind,pred3)
 pred3 <- pred3[order(pred3$x),]
 
-## Compare Predictions
+# Compare Predictions
 plot(y ~ x, pch=16, col=grey(0,.5), dat=xy)
 lines(yhat~x, pred1, lwd=2, col=2)
 lines(yhat~x, pred2, lwd=2, col=4)
@@ -361,10 +361,10 @@ legend('topleft',
 
 Local linear regressions conduct a linear regresssion for each data point using a subsample of data around it. 
 ```{r}
-## ``Naive" Smoother
+# ``Naive" Smoother
 pred_fun <- function(x0, h, xy){
-    ## Assign equal weight to observations within h distance to x0
-    ## 0 weight for all other observations
+    # Assign equal weight to observations within h distance to x0
+    # 0 weight for all other observations
     ki   <- dunif(xy$x, x0-h, x0+h) 
     llls <- lm(y~x, data=xy, weights=ki)
     yhat_i <- predict(llls, newdata=data.frame(x=x0))
@@ -386,7 +386,7 @@ legend('topleft', title='Locally Linear',
 See https://shinyserv.es/shiny/kreg/ for a nice illustration. Also note that you can use adaptive bandwidths to have a similar number of data points in each subsample (especially useful when $X$ is not uniform.)
 
 ```{r}
-## Adaptive-width subsamples with non-uniform weights
+# Adaptive-width subsamples with non-uniform weights
 xy0 <- xy[order(xy$x),]
 plot(y~x, pch=16, col=grey(0,.5), dat=xy0)
 
@@ -406,12 +406,12 @@ legend('topleft', title='Loess',
 
 The smoothed predicted values estimate the local means. So we can also construct confidence bands
 ```{r}
-## Loess
+# Loess
 xy0 <- xy[order(xy$x),]
 X0 <- unique(xy0$x)
 reg_lo <- loess(y~x, data=xy0, span=.8)
 
-## Jackknife CI
+# Jackknife CI
 jack_lo <- sapply(1:nrow(xy), function(i){
     xy_i <- xy[-i,]
     reg_i <- loess(y~x, dat=xy_i, span=.8)
@@ -420,13 +420,13 @@ jack_lo <- sapply(1:nrow(xy), function(i){
 jack_cb <- apply(jack_lo,1, quantile,
     probs=c(.025,.975), na.rm=T)
 
-## Plot
+# Plot
 plot(y~x, pch=16, col=grey(0,.5), dat=xy0)
 preds_lo <- predict(reg_lo, newdata=data.frame(x=X0))
 lines(X0, preds_lo,
     col=hcl.colors(3,alpha=.75)[2],
     type='o', pch=2)
-## Plot CI
+# Plot CI
 polygon(
     c(X0, rev(X0)),
     c(jack_cb[1,], rev(jack_cb[2,])),
@@ -444,7 +444,7 @@ lines(X0, preds_lo,
     col=hcl.colors(3,alpha=.75)[2],
     type='o', pch=2)
 
-## Estimate Residuals CI at design points
+# Estimate Residuals CI at design points
 res_lo <- sapply(1:nrow(xy), function(i){
     y_i <- xy[i,'y']
     preds_i <- jack_lo[,i]
@@ -452,7 +452,8 @@ res_lo <- sapply(1:nrow(xy), function(i){
 })
 res_cb <- apply(res_lo, 1, quantile,
     probs=c(.025,.975), na.rm=T)
-## Plot
+
+# Plot
 lines( X0, preds_lo +res_cb[1,],
     col=hcl.colors(3,alpha=.75)[2], lt=2)
 lines( X0, preds_lo +res_cb[2,],
@@ -460,8 +461,7 @@ lines( X0, preds_lo +res_cb[2,],
 
 
 
-
-## Smooth estimates 
+# Smooth estimates 
 res_lo <- lapply(1:nrow(xy), function(i){
     y_i <- xy[i,'y']
     x_i <- xy[i,'x']
@@ -472,8 +472,8 @@ res_lo <- lapply(1:nrow(xy), function(i){
 res_lo <- as.data.frame(do.call(rbind, res_lo))
 
 res_fun <- function(x0, h, res_lo){
-    ## Assign equal weight to observations within h distance to x0
-    ## 0 weight for all other observations
+    # Assign equal weight to observations within h distance to x0
+    # 0 weight for all other observations
     ki <- dunif(res_lo$x, x0-h, x0+h) 
     ei <- res_lo[ki!=0,'e']
     res_i <- quantile(ei, probs=c(.025,.975), na.rm=T)
@@ -494,13 +494,13 @@ lines( X0, preds_lo +res_lo2[2,],
 Given a dataset, you can summarize it using the previous tools.
 
 ```{r}
-## Inspect Dataset on police arrests for the USA in 1973
+# Inspect Dataset on police arrests for the USA in 1973
 head(USArrests)
 
 library(psych)
 pairs.panels( USArrests[,c('Murder','Assault','UrbanPop')],
-    hist.col=grey(0,.25), breaks=30, density=F, hist.border=NA, ## Diagonal
-    ellipses=F, rug=F, smoother=F, pch=16, col=grey(0,.5) ## Lower Triangle
+    hist.col=grey(0,.25), breaks=30, density=F, hist.border=NA, # Diagonal
+    ellipses=F, rug=F, smoother=F, pch=16, col=grey(0,.5) # Lower Triangle
     )
 ```
 
@@ -528,7 +528,7 @@ $$
 $$
 
 ```{r}
-## Manually Compute
+# Manually Compute
 Y <- USArrests[,'Murder']
 X <- USArrests[,c('Assault','UrbanPop')]
 X <- as.matrix(cbind(1,X))
@@ -537,7 +537,7 @@ XtXi <- solve(t(X)%*%X)
 Bhat <- XtXi %*% (t(X)%*%Y)
 c(Bhat)
 
-## Check
+# Check
 reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 coef(reg)
 ```
@@ -584,7 +584,7 @@ legend('topleft', horiz=T,
 To estimate the variability of our estimates, we can use the same *data-driven* methods introduced in the last section.
 
 ```{r}
-## Bootstrap SE's
+# Bootstrap SE's
 boots <- 1:399
 boot_regs <- lapply(boots, function(b){
     b_id <- sample( nrow(USArrests), replace=T)
@@ -623,7 +623,7 @@ F_{q} = \frac{(RSS_{r}-RSS_{u})/(k_{u}-k_{r})}{RSS_{u}/(N-k_{u})}.
 $$
 When the restricted model is a simple intercept, $F_{q}$ can also be written in terms of $R^2$ or adjusted $R^2$. For some intuition on hypothesis testing, we examine how the $R^2$ statistic varies with bootstrap samples. Specifically, compute a null $R^2$ distribution by randomly reshuffling the outcomes and compare it to the observed $R^2$.
 ```{r}
-## Bootstrap NULL
+# Bootstrap NULL
 boots <- 1:399
 boot_regs0 <- lapply(boots, function(b){
   xy_b <- USArrests
@@ -686,7 +686,7 @@ fe_reg1 <- feols(y~x|fo+fu, dat_f)
 coef(fe_reg1)
 fixef(fe_reg1)[1:2]
 
-## Compare Coefficients
+# Compare Coefficients
 fe_reg0 <- lm(y~-1+x+fo+fu, dat_f)
 coef( fe_reg0 )
 ```
@@ -718,11 +718,11 @@ library(AER); data(CASchools)
 CASchools$score <- (CASchools$read + CASchools$math) / 2
 reg <- lm(score~income, data=CASchools)
 
-## F Test for Break
+# F Test for Break
 reg2 <- lm(score ~ income*I(income>15), data=CASchools)
 anova(reg, reg2)
 
-## Chow Test for Break
+# Chow Test for Break
 data_splits <- split(CASchools, CASchools$income <= 15)
 resids <- sapply(data_splits, function(dat){
     reg <- lm(score ~ income, data=dat)
@@ -734,12 +734,12 @@ Rb <- (sum(Ns)-2*reg$rank)/reg$rank
 Ft <- Rt*Rb
 pf(Ft,reg$rank, sum(Ns)-2*reg$rank,lower.tail=F)
 
-## See also
-## strucchange::sctest(y~x, data=xy, type="Chow", point=.5)
-## strucchange::Fstats(y~x, data=xy)
+# See also
+# strucchange::sctest(y~x, data=xy, type="Chow", point=.5)
+# strucchange::Fstats(y~x, data=xy)
 
-## To Find Changes
-## segmented::segmented(reg)
+# To Find Changes
+# segmented::segmented(reg)
 ```
 
 
@@ -871,7 +871,7 @@ $$
 
 It is easiest to optimize parameters in a 2-step procedure called  `concentrated optimization'. We first solve for $\widehat{\beta}(\rho,\lambda)$ and compute the mean squared error $MSE(\rho,\lambda)$. We then find the $(\rho,\lambda)$ which minimizes $MSE$.
 ```{r, fig.height=10, fig.width=10, fig.align="center"}
-## Box-Cox Transformation Function
+# Box-Cox Transformation Function
 bxcx <- function( xy, rho){
     if (rho == 0L) {
       log(xy+1)
@@ -891,17 +891,16 @@ bxcx_inv <- function( xy, rho){
     }
 }
 
-## Which Variables
+# Which Variables
 reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 X <- USArrests[,c('Assault','UrbanPop')]
 Y <- USArrests[,'Murder']
 
-## Simple Grid Search
-## Which potential (Rho,Lambda) 
+# Simple Grid Search over potential (Rho,Lambda) 
 rl_df <- expand.grid(rho=seq(-2,2,by=.5),lambda=seq(-2,2,by=.5))
 
-## Compute Mean Squared Error
-## from OLS on Transformed Data
+# Compute Mean Squared Error
+# from OLS on Transformed Data
 errors <- apply(rl_df,1,function(rl){
     Xr <- bxcx(X,rl[[1]])
     Yr <- bxcx(Y,rl[[2]])
@@ -913,17 +912,17 @@ errors <- apply(rl_df,1,function(rl){
 })
 rl_df$mse <- colMeans(errors^2)
 
-## Want Small MSE and Interpretable
+# Want Small MSE and Interpretable
 layout(matrix(1:2,ncol=2), width=c(3,1), height=c(1,1))
 par(mar=c(4,4,2,0))
 plot(lambda~rho,rl_df, cex=8, pch=15,
     xlab=expression(rho),
     ylab=expression(lambda),
     col=hcl.colors(25)[cut(1/rl_df$mse,25)])
-## Which min
+# Which min
 rl0 <- rl_df[which.min(rl_df$mse),c('rho','lambda')]
 points(rl0$rho, rl0$lambda, pch=0, col=1, cex=8, lwd=2)
-## Legend
+# Legend
 plot(c(0,2),c(0,1), type='n', axes=F,
     xlab='',ylab='', cex.main=.8,
     main=expression(frac(1,'Mean Square Error')))
@@ -935,7 +934,7 @@ text(x=1.5, y=seq(1,0,l=10), cex=.5,
 The parameters $-1,0,1,2$ are easy to interpret and might be selected instead if there is only a small loss in fit. (In the above example, we might choose $\lambda=0$ instead of the $\lambda$ which minimized the mean square error). You can also plot the specific predictions to better understand the effect of data  transformation beyond mean squared error.
 
 ```{r}
-## Plot for Specific Comparisons
+# Plot for Specific Comparisons
 Xr <- bxcx(X,rl0[[1]])
 Yr <- bxcx(Y,rl0[[2]])
 Datr <- cbind(Murder=Yr,Xr)
@@ -961,7 +960,6 @@ There's little sense in getting great standard errors for a terrible model. Plot
 reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 par(mfrow=c(2,2))
 plot(reg, pch=16, col=grey(0,.5))
-
 ```
 
 
@@ -1094,7 +1092,7 @@ Just like many economic relationships are nonlinear, many economic variables are
 These endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a barrier to interpreting OLS estimates causally. ($X$ and $\epsilon$ may be correlated for other reasons too, such as when $X$ is measured with error.)
 
 ```{r}
-## Simulate data with an endogeneity issue
+# Simulate data with an endogeneity issue
 n <- 300
 z <- rbinom(n,1,.5)
 xy <- sapply(z, function(zi){
@@ -1149,24 +1147,24 @@ Q^{*} &=& \frac{A_{S}B_{D}+ A_{D}B_{S}}{B_{D}+B_{S}} + \frac{E_{S}B_{D}+ E_{D}B_
 
 
 ```{r}
-## Demand Curve Simulator
+# Demand Curve Simulator
 qd_fun <- function(p, Ad=8, Bd=-.8, Ed_sigma=.25){
     Qd <- Ad + Bd*p + rnorm(1,0,Ed_sigma)
     return(Qd)
 }
 
-## Supply Curve Simulator
+# Supply Curve Simulator
 qs_fun <- function(p, As=-8, Bs=1, Es_sigma=.25){
     Qs <- As + Bs*p + rnorm(1,0,Es_sigma)
     return(Qs)
 }
 
-## Quantity Supplied and Demanded at 3 Prices
+# Quantity Supplied and Demanded at 3 Prices
 cbind(P=8:10, D=qd_fun(8:10), S=qs_fun(8:10))
 
-## Market Equilibrium Finder
+# Market Equilibrium Finder
 eq_fun <- function(demand, supply, P){
-    ## Compute EQ (what we observe)
+    # Compute EQ (what we observe)
     eq_id <- which.min( abs(demand-supply) )
     eq <- c(P=P[eq_id], Q=demand[eq_id]) 
     return(eq)
@@ -1175,24 +1173,24 @@ eq_fun <- function(demand, supply, P){
 
 
 ```{r}
-## Simulations Parameters
-N <- 300 ## Number of Market Interactions
-P <- seq(5,10,by=.01) ## Price Range to Consider
+# Simulations Parameters
+N <- 300 # Number of Market Interactions
+P <- seq(5,10,by=.01) # Price Range to Consider
 
-## Generate Data from Competitive Market  
-## Plot Underlying Process
+# Generate Data from Competitive Market  
+# Plot Underlying Process
 plot.new()
 plot.window(xlim=c(0,2), ylim=range(P))
 EQ1 <- sapply(1:N, function(n){
-    ## Market Data Generating Process
+    # Market Data Generating Process
     demand <- qd_fun(P)
     supply <- qs_fun(P)
     eq <- eq_fun(demand, supply, P)    
-    ## Plot Theoretical Supply and Demand
+    # Plot Theoretical Supply and Demand
 	lines(demand, P, col=grey(0,.01))
 	lines(supply, P, col=grey(0,.01))
     points(eq[2], eq[1], col=grey(0,.05), pch=16)
-    ## Save Data
+    # Save Data
     return(eq)
 })
 axis(1)
@@ -1203,7 +1201,7 @@ mtext('Price',2, line=2)
 
 Now regress quantity ("Y") on price ("X"): $\widehat{\beta}_{OLS} = Cov(Q^{*}, P^{*}) / Var(P^{*})$. You get a number back, but it is hard to interpret meaningfully. 
 ```{r}
-## Analyze Market Data
+# Analyze Market Data
 dat1 <- data.frame(t(EQ1), cost='1')
 reg1 <- lm(Q~P, data=dat1)
 summary(reg1)
@@ -1221,18 +1219,18 @@ Experimental manipulation of $A_{S}$ leads to
 So, absent any other changes, we could recover $-B_{D}=d Q^{*}/d P^{*}$. In this case, the supply shock has identified the demand slope.^[Notice that even in this linear model, however, all effects are conditional: *The* effect of a cost change on quantity or price depends on the demand curve. A change in costs affects quantity supplied but not quantity demanded (which then affects equilibrium price) but the demand side of the market still matters! The change in price from a change in costs depends on the elasticity of demand.]
 
 ```{r}
-## New Observations After Cost Change
+# New Observations After Cost Change
 EQ2 <- sapply(1:N, function(n){
     demand <- qd_fun(P)
-    supply2 <- qs_fun(P, As=-6.5) ## More Supplied at Given Price
+    supply2 <- qs_fun(P, As=-6.5) # More Supplied at Given Price
     eq <- eq_fun(demand, supply2, P)
     return(eq)
-	## lines(supply2, P, col=rgb(0,0,1,.01))
+	# lines(supply2, P, col=rgb(0,0,1,.01))
     #points(eq[2], eq[1], col=rgb(0,0,1,.05), pch=16)	
 })
 dat2 <- data.frame(t(EQ2), cost='2')
 
-## Plot Market Data 
+# Plot Market Data
 dat2 <- rbind(dat1, dat2)
 cols <- ifelse(as.numeric(dat2$cost)==2, rgb(0,0,1,.2), rgb(0,0,0,.2))
 plot.new()
@@ -1246,13 +1244,13 @@ mtext('Price',2, line=2)
 
 We are not quite done yet, however. We have pooled two datasets that are seperately problematic, and the noisiness of the process within each group affects our OLS estimate: $\widehat{\beta}_{OLS}=Cov(Q^{*}, P^{*}) / Var(P^{*})$.
 ```{r}
-## Not exactly right, but at least right sign
+# Not exactly right, but at least right sign
 reg2 <- lm(Q~P, data=dat2)
 summary(reg2)
 ```
 Although the individual observations are noisy, we can compute the change in the expected values $d \mathbb{E}[Q^{*}] / d \mathbb{E}[P^{*}] =-B_{D}$. Empirically, this is estimated via the change in average value.
 ```{r}
-## Wald (1940) Estimate
+# Wald (1940) Estimate
 dat_mean <- rbind(
     colMeans(dat2[dat2$cost==1,1:2]),
     colMeans(dat2[dat2$cost==2,1:2]))
@@ -1262,7 +1260,7 @@ round(B_est, 2)
 ```
 We can also seperately recover $d \mathbb{E}[Q^{*}] / d \mathbb{E}[A_{S}]$ and $d \mathbb{E}[P^{*}] / d \mathbb{E}[A_{S}]$ from seperate regressions
 ```{r}
-## Heckman (2000, p.58) Estimate
+# Heckman (2000, p.58) Estimate
 ols_1 <- lm(P~cost, data=dat2)
 ols_2 <- lm(Q~cost, data=dat2)
 B_est2 <- coef(ols_2)/coef(ols_1)
@@ -1289,13 +1287,13 @@ Q_{D} &=&  A_{D} + B_{D} P  + E_{D}.
 \end{eqnarray}
 
 ```{r}
-## Two Stage Least Squares Estimate
+# Two Stage Least Squares Estimate
 ols_1 <- lm(P~cost, data=dat2)
 dat2_new  <- cbind(dat2, Phat=predict(ols_1))
 reg_2sls <- lm(Q~Phat, data=dat2_new)
 summary(reg_2sls)
 
-## One Stage Instrumental Variables Estimate
+# One Stage Instrumental Variables Estimate
 library(fixest)
 reg2_iv <- feols(Q~1|P~cost, data=dat2)
 summary(reg2_iv)
@@ -1304,7 +1302,7 @@ summary(reg2_iv)
 **Within Group Variance**
 You can experiment with the effect of different variances on both OLS and IV in the code below. And note that if we had multiple supply shifts and recorded their magnitudes, then we could recover more information about demand, perhaps tracing it out entirely.
 ```{r}
-## Examine
+# Examine
 Egrid <- expand.grid(Ed_sigma=c(.001, .25, 1), Es_sigma=c(.001, .25, 1))
 
 Egrid_regs <- lapply(1:nrow(Egrid), function(i){
@@ -1345,14 +1343,16 @@ Regression analysis with instrumental variables can be very insightful and is ap
 
 We always get coefficients back when running `feols`, and sometimes the computed p-values are very small. The interpretation of those numbers rests on many assumptions:
 
-* only supply was affected. (Instrument exogeneity)
-* the shock is large enough to be picked up statistically. (Instrument relevance)
-* supply and demand are linear and additively seperable. (Functional form)
-* we were not cycling through different IV's. (Multiple hypotheses)
+* only supply was affected (Instrument exogeneity)
+* the shock is large enough to be picked up statistically (Instrument relevance)
+* supply and demand are linear and additively seperable (Functional form)
+* we were not cycling through different IV's (Multiple hypotheses)
 
-We are rarely sure that all of these assumptions hold, and this is one reason why researchers often also report their OLS results. In practice, it is hard to find a good instrument. For example, suppose we asked "what is the effect of wages on police demanded?" and examined a policy which lowered the educational requirements from 4 years to 2 to become an officer. This increases the labour supply, but it also affects the demand curve through ``general equilibrium'': as some of the new officers were potentially criminals. With fewer criminals, the demand for likely police shifts down.
+We are rarely sure that all of these assumptions hold, and this is one reason why researchers often also report their OLS results.
 
-In practice, it is also easy to find a bad instrument. As you search for good instruments, sometimes random noise will appear like a good instrument (Spurious Instruments). Worse, if you search for a good instrument for too long, you can also be led astray from important questions (Spurious Research).
+In practice, it is hard to find a good instrument. For example, suppose we asked "what is the effect of wages on police demanded?" and examined a policy which lowered the educational requirements from 4 years to 2 to become an officer. This increases the labour supply, but it also affects the demand curve through "general equilibrium": as some of the new officers were potentially criminals. With fewer criminals, the demand for likely police shifts down.
+
+In practice, it is also easy to find a bad instrument. Paradoxically, IV's are something you are supposed to find but never search for. As you search for good instruments, sometimes random noise will appear like a good instrument (Spurious instruments). Worse, if you search for a good instrument for too long, you can also be led astray from important questions.
 
 
 ```{r, eval=F, results='hide', echo=F}
@@ -1362,8 +1362,8 @@ We could also use a nonparametric estimator to diagnose linearity at each stage.
 #lo2_alt_fs <- loess(Q~cost, data=dat2)
 
 
-## Many packages can do IV
-## ivreg::ivreg(Q~P|cost, data=dat2)
+# Many packages can do IV
+# ivreg::ivreg(Q~P|cost, data=dat2)
 ```
 
 
@@ -1407,15 +1407,15 @@ The basic idea here is to examine how a variable changes in response to an exoge
 ```{r}
 EQ3 <- sapply(1:(2*N), function(n){
 
-    ## Market Mechanisms
+    # Market Mechanisms
     demand <- qd_fun(P)
     supply <- qs_fun(P)
 
-    ## Compute EQ (what we observe)
+    # Compute EQ (what we observe)
     eq_id <- which.min( abs(demand-supply) )
     eq <- c(P=P[eq_id], Q=demand[eq_id]) 
 
-    ## Return Equilibrium Observations
+    # Return Equilibrium Observations
     return(eq)
 })
 dat3 <- data.frame(t(EQ3), cost='1', T=1:ncol(EQ3))
@@ -1489,6 +1489,9 @@ There is currently a boom in empirical research centered around linear regressio
 >
 > --- R. Coase (Source Unknown)
 
+<!---
+''torture the data (to) confess'' (Coase,  Essays on economics and economists.  1995, p. 27)
+--->
 
 > the definition of a causal parameter is not always clearly stated, and formal statements of identifying conditions in terms of well-specified economic models are rarely presented. Moreover, the absence of explicit structural frameworks makes it difficult to cumulate knowledge across studies conducted within this framework. Many studies produced by this research program have a `stand alone' feature and neither inform nor are influenced by the general body of empirical knowledge in economics.
 >
@@ -1518,19 +1521,19 @@ set.seed(123)
 n <- 50
 X1 <- runif(n)
 
-## Regression Machine:
-## repeatedly finds covariate, runs regression
-## stops when statistically significant at .1\% 
+# Regression Machine:
+# repeatedly finds covariate, runs regression
+# stops when statistically significant at .1%
 
 p <- 1
 i <- 0
 while(p >= .001){ 
-    ## Get Random Covariate
+    # Get Random Covariate
     X2 <-  runif(n)
-    ## Merge and `Analyze'
+    # Merge and `Analyze'
     dat_i <- data.frame(X1,X2)
     reg_i <- lm(X1~X2, data=dat_i)
-    ## update results in global environment
+    # update results in global environment
     p <- summary(reg_i)$coefficients[2,4]
     i <- i+1
 }
@@ -1545,23 +1548,23 @@ abline(reg_i)
 
 
 ```{r}
-## P-hacking 2SLS
+# P-hacking 2SLS
 library(fixest)
 p <- 1
 ii <- 0
 set.seed(123)
 while(p >= .05){
-    ## Get Random Covariates
+    # Get Random Covariates
     X2 <-  runif(n)    
     X3 <-  runif(n)
-    ## Create Treatment Variable based on Cutoff
+    # Create Treatment Variable based on Cutoff
     cutoffs <- seq(0,1,length.out=11)[-c(1,11)]
     for(tau in cutoffs){
         T3 <- 1*(X3 > tau)
-        ## Merge and `Analyze'
+        # Merge and `Analyze'
         dat_i <- data.frame(X1,X2,T3)
         ivreg_i <- feols(X1~1|X2~T3, data=dat_i)
-        ## Update results in global environment
+        # Update results in global environment
         ptab <- summary(ivreg_i)$coeftable
         if( nrow(ptab)==2){
             p <- ptab[2,4]
@@ -1579,7 +1582,7 @@ Even without any coding errors or p-hacking, you can sometimes make a false disc
 
 First, get and inspect some data from https://tylervigen.com/spurious-correlations
 ```{r}
-## Your data is not made up in the computer (hopefully!)
+# Your data is not made up in the computer (hopefully!)
 vigen_csv <- read.csv( paste0(
 'https://raw.githubusercontent.com/the-mad-statter/',
 'whysospurious/master/data-raw/tylervigen.csv') ) 
@@ -1587,19 +1590,19 @@ class(vigen_csv)
 names(vigen_csv)
 vigen_csv[1:5,1:5]
 
-## similar `apply' functions
-lapply(vigen_csv[,1:5], class) ## like apply, but for lists
-sapply(vigen_csv[,1:5], class) ## lapply, formatted to a vector
+# similar `apply' functions
+lapply(vigen_csv[,1:5], class) # like apply, but for lists
+sapply(vigen_csv[,1:5], class) # lapply, formatted to a vector
 ```
 
 The US government spending on science is ruining cinema
 (p<.001)!?
 
 ```{r}
-## Drop Data before 1999
+# Drop Data before 1999
 vigen_csv <- vigen_csv[vigen_csv$year >= 1999,] 
 
-## Run OLS Regression $
+# Run OLS Regression
 reg1 <-  lm(cage_films ~ -1 + science_spending, data=vigen_csv)
 summary(reg1)
 ```
@@ -1619,7 +1622,7 @@ legend('topright', lty=c(1,2), legend=c(
     'log(science_spending/10)'))
 ```
 
-
+Some other great examples
 ```{r}
 par(mfrow=c(1,2), mar=c(2,2,2,1))
 plot.new()
@@ -1642,31 +1645,30 @@ axis(1)
 axis(2)
 ```
 
-
 ```{r, results='asis', eval=F}
-## Include an intercept to regression 1
+# Include an intercept to regression 1
 #reg2 <-  lm(cage_films ~ science_spending, data=vigen_csv)
 #suppressMessages(library(stargazer))
 #stargazer(reg1, reg2, type='html')
 ```
 
-
-We now run IV regressions for different variable combinations in the dataset
+**The same principles apply to regression-based approaches to endogeneity issues**
+For example, we now run IV regressions for different variable combinations in the dataset of spurious relationships
 ```{r}
-knames <- names(vigen_csv)[2:11] ## First 10 Variables
-#knames <- names(vigen_csv)[-1] ## All Variables
+knames <- names(vigen_csv)[2:11] # First 10 Variables
+#knames <- names(vigen_csv)[-1] # Try All Variables
 p <- 1
 ii <- 1
 ivreg_list <- vector("list", factorial(length(knames))/factorial(length(knames)-3))
 
-## Choose 3 variable
+# Choose 3 variable
 for( k1 in knames){
 for( k2 in setdiff(knames,k1)){
 for( k3 in setdiff(knames,c(k1,k2)) ){   
     X1 <- vigen_csv[,k1]
     X2 <- vigen_csv[,k2]
     X3 <- vigen_csv[,k3]
-    ## Merge and `Analyze'        
+    # Merge and `Analyze'        
     dat_i <- na.omit(data.frame(X1,X2,X3))
     ivreg_i <- feols(X1~1|X2~X3, data=dat_i)
     ivreg_list[[ii]] <- list(ivreg_i, c(k1,k2,k3))
@@ -1678,7 +1680,7 @@ plot(ecdf(pvals), xlab='p-value', ylab='CDF', font.main=1,
     main='Frequency IV is Statistically Significant')
 abline(v=c(.01,.05), col=c(2,4))
 
-## Most Significant Spurious Combinations
+# Most Significant Spurious Combinations
 pvars <- sapply(ivreg_list, function(ivreg_i){ivreg_i[[2]]})
 pdat <- data.frame(t(pvars), pvals)
 pdat <- pdat[order(pdat$pvals),]
@@ -1714,7 +1716,7 @@ plot(random_walk2, pch=16, col=rgb(0,0,1,.25),
 **IV**
 First, find an instrument that satisfy various statistical criterion to provide a causal estimate of $X_{2}$ on $X_{1}$.
 ```{r}
-## "Find" "valid" ingredients
+# "Find" "valid" ingredients
 library(fixest)
 random_walk3 <- cumsum(runif(n,-1,1))
 dat_i <- data.frame(
@@ -1724,8 +1726,8 @@ dat_i <- data.frame(
 ivreg_i <- feols(X1~1|X2~X3, data=dat_i)
 summary(ivreg_i)
 
-## After experimenting with different instruments
-## you can find even stronger results!
+# After experimenting with different instruments
+# you can find even stronger results!
 ```
 
 
@@ -1734,18 +1736,18 @@ Second, find a large discrete change in the data that you can associate with a p
 
 
 ```{r, message=F, warning=F}
-## Let the data take shape
-## (around the large differences before and after)
+# Let the data take shape
+# (around the large differences before and after)
 n1 <- 290
 wind1 <- c(n1-300,n1+300)
 dat1 <- data.frame(t=n_index, y=random_walk1, d=1*(n_index > n1))
 dat1_sub <- dat1[ n_index>wind1[1] & n_index < wind1[2],]
 
-## Then find your big break
+# Then find your big break
 reg0 <- lm(y~t, data=dat1_sub[dat1_sub$d==0,])
 reg1 <- lm(y~t, data=dat1_sub[dat1_sub$d==1,])
 
-## The evidence should show openly (it's just science)
+# The evidence should show openly (it's just science)
 plot(random_walk1, pch=16, col=rgb(0,0,1,.25),
     xlim=wind1, xlab='Time', ylab='Random Value')
 abline(v=n1, lty=2)
@@ -1754,7 +1756,7 @@ lines(reg1$model$t, reg1$fitted.values, col=1)
 ```
 
 ```{r, message=F, warning=F, results='asis'}
-## Dress with some statistics for added credibility
+# Dress with some statistics for added credibility
 rdd_sub <- lm(y~d+t+d*t, data=dat1_sub)
 rdd_full <- lm(y~d+t+d*t, data=dat1)
 stargazer::stargazer(rdd_sub, rdd_full, 
@@ -1771,8 +1773,8 @@ stargazer::stargazer(rdd_sub, rdd_full,
 Third, find a change in the data that you can associate with a policy where the control group has parallel trends. This also provides a causal estimate of $X_{2}$ on $X_{1}$.
 
 ```{r, message=F, warning=F}
-## Find a reversal of fortune
-## (A good story always goes well with a nice pre-trend)
+# Find a reversal of fortune
+# (A good story always goes well with a nice pre-trend)
 n2 <- 318
 wind2 <- c(n2-20,n2+20)
 plot(random_walk2, pch=16, col=rgb(0,0,1,.5),
@@ -1782,8 +1784,7 @@ abline(v=n2, lty=2)
 ```
 
 ```{r, message=F, warning=F, results='asis'}
-## Knead out any effects that are non-causal 
-## (or even just correlation)
+# Knead out any effects that are non-causal (aka correlation)
 dat2A <- data.frame(t=n_index, y=random_walk1, d=1*(n_index > n2), RWid=1)
 dat2B <- data.frame(t=n_index, y=random_walk2, d=0, RWid=2)
 dat2  <- rbind(dat2A, dat2B)
@@ -1791,9 +1792,9 @@ dat2$RWid <- as.factor(dat2$RWid)
 dat2$tid <- as.factor(dat2$t)
 dat2_sub <- dat2[ dat2$t>wind2[1] & dat2$t < wind2[2],]
 
-## Report the stars for all to enjoy
-## (what about the intercept?)
-## (stable coefficients are the good ones?)
+# Report the stars for all to enjoy
+# (what about the intercept?)
+# (stable coefficients are the good ones?)
 did_fe1 <- lm(y~d+tid, data=dat2_sub)
 did_fe2 <- lm(y~d+RWid, data=dat2_sub)
 did_fe3 <- lm(y~d*RWid+tid, data=dat2_sub)
@@ -1807,4 +1808,3 @@ stargazer::stargazer(did_fe1, did_fe2, did_fe3,
      'Fixed effects control for most of your concerns.',
      'Anything else creates a bias in the opposite direction.'))
 ```
-

@@ -19,5 +19,5 @@ Parts I and III synthesize a lot of programming guidance and examples now availa
 
 Although any interested reader may find it useful, this Rbook is primarily developed for my students. Please report any errors or issues at https://github.com/Jadamso/Rbooks/issues.
 
-Last updated: 09.10.2024
+Last updated: 07.11.2024
 
