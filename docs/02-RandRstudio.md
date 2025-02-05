@@ -1,9 +1,6 @@
 # (PART) Programming in R {-} 
 
 
-``` r
-knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
-```
 
 # First Steps
 ***
@@ -17,19 +14,17 @@ We focus on R because it is good for complex stats, concise figures, and coheren
 First Install [R](https://cloud.r-project.org/).
 Then Install [Rstudio](https://www.rstudio.com/products/rstudio/download/).
 
-For help setting up
+For help setting up, see any of the following links
 
 * https://learnr-examples.shinyapps.io/ex-setup-r/
 * https://rstudio-education.github.io/hopr/starting.html
 * https://a-little-book-of-r-for-bioinformatics.readthedocs.io/en/latest/src/installr.html
 * https://cran.r-project.org/doc/manuals/R-admin.html
-
 * https://courses.edx.org/courses/UTAustinX/UT.7.01x/3T2014/56c5437b88fa43cf828bff5371c6a924/
 * https://owi.usgs.gov/R/training-curriculum/installr/
 * https://www.earthdatascience.org/courses/earth-analytics/document-your-science/setup-r-rstudio/
 
-
-Make sure you have the latest version of R and Rstudio for class. If not, then reinstall. 
+*Make sure you have the latest version of R and Rstudio for class.* If not, then reinstall. 
 
 ## Interfacing with R
 
@@ -750,8 +745,8 @@ outer(x_mat2, x)
 The most commom types are
 
 ``` r
-l1 <- 1:3 # cardinal numbers
-l1
+d1 <- 1:3 # cardinal data
+d1
 ```
 
 ```
@@ -759,28 +754,8 @@ l1
 ```
 
 ``` r
-l2 <- factor(c('A','B','C'), ordered=T) # ordinal numbers
-l2
-```
-
-```
-## [1] A B C
-## Levels: A < B < C
-```
-
-``` r
-l3 <- factor(c('Leipzig','Los Angeles','Logan'), ordered=F) # categorical numbers
-l3
-```
-
-```
-## [1] Leipzig     Los Angeles Logan      
-## Levels: Leipzig Logan Los Angeles
-```
-
-``` r
-l4 <- c('hello world', 'hi mom')  # character strings
-l4
+d2 <- c('hello world', 'hi mom')  # character strings
+d2
 ```
 
 ```
@@ -788,8 +763,28 @@ l4
 ```
 
 ``` r
-l5 <- list(l1, l2, list(l3, list('...inception...'))) # lists
-l5
+d3 <- factor(c('A','B','C'), ordered=T) # ordinal data
+d3
+```
+
+```
+## [1] A B C
+## Levels: A < B < C
+```
+
+``` r
+d4 <- factor(c('Leipzig','Los Angeles','Logan'), ordered=F) # categorical data
+d4
+```
+
+```
+## [1] Leipzig     Los Angeles Logan      
+## Levels: Leipzig Logan Los Angeles
+```
+
+``` r
+d5 <- list(d1, d2, list(d3, list('...inception...'))) # lists
+d5
 ```
 
 ```
@@ -797,13 +792,12 @@ l5
 ## [1] 1 2 3
 ## 
 ## [[2]]
-## [1] A B C
-## Levels: A < B < C
+## [1] "hello world" "hi mom"     
 ## 
 ## [[3]]
 ## [[3]][[1]]
-## [1] Leipzig     Los Angeles Logan      
-## Levels: Leipzig Logan Los Angeles
+## [1] A B C
+## Levels: A < B < C
 ## 
 ## [[3]][[2]]
 ## [[3]][[2]][[1]]
@@ -814,15 +808,15 @@ l5
 # data.frames: your most common data type
     # matrix of different data-types
     # well-ordered lists
-l5 <- data.frame(x=l1, y=l2, z=l3)
-l5
+d0 <- data.frame(y=d1, x=d4)
+d0
 ```
 
 ```
-##   x y           z
-## 1 1 A     Leipzig
-## 2 2 B Los Angeles
-## 3 3 C       Logan
+##   y           x
+## 1 1     Leipzig
+## 2 2 Los Angeles
+## 3 3       Logan
 ```
 
 
@@ -845,7 +839,7 @@ rbinom(4, 1, 0.5) # 4 Flips in row
 ```
 
 ```
-## [1] 0 1 1 1
+## [1] 1 0 1 0
 ```
 
 ``` r
@@ -861,7 +855,7 @@ rnorm(4)
 ```
 
 ```
-## [1] -0.96071244  0.02464563 -0.13826732  1.18955050
+## [1] -0.3731743  1.1680266 -1.1113642 -0.6227684
 ```
 
 ``` r
@@ -877,7 +871,7 @@ runif(4)
 ```
 
 ```
-## [1] 0.021983493 0.982959045 0.435833373 0.009871146
+## [1] 0.58304825 0.03237704 0.59186274 0.56172962
 ```
 
 ``` r
@@ -900,9 +894,10 @@ The mean is a statistic
 ``` r
 # compute the mean of a random sample
 x <- runif(100)
-hist(x)
+hist(x, border=NA, main=NA)
 m <- mean(x)
-abline(v=m, col=2)
+abline(v=m, col=2, lwd=2)
+title(paste0('mean= ', round(m,2)))
 ```
 
 <img src="02-RandRstudio_files/figure-html/unnamed-chunk-22-1.png" width="672" />
@@ -922,9 +917,10 @@ sapply(1:3, function(i){
     x <- runif(100) 
     m <-  mean(x)
     hist(x,
-        main=paste0('mean= ', round(m,4)),
-        breaks=seq(0,1,by=.1), border=NA)
-    abline(v=m, col=2)
+        breaks=seq(0,1,by=.1), #for comparability
+        main=NA, border=NA)
+    abline(v=m, col=2, lwd=2)
+    title(paste0('mean= ', round(m,2)))
     return(m)
 })
 ```
@@ -932,7 +928,7 @@ sapply(1:3, function(i){
 <img src="02-RandRstudio_files/figure-html/unnamed-chunk-23-1.png" width="672" />
 
 ```
-## [1] 0.5465576 0.5167302 0.5009490
+## [1] 0.4924445 0.5253882 0.5129768
 ```
 
 examine the sampling distribution of the mean
@@ -956,7 +952,7 @@ three_sds
 ```
 
 ```
-## [1] 0.3008622 0.2760263 0.2959601
+## [1] 0.2802642 0.2832961 0.2909738
 ```
 
 ``` r
@@ -997,7 +993,8 @@ title('Sampling Distributions', outer=T, line=-1)
 <img src="02-RandRstudio_files/figure-html/unnamed-chunk-26-2.png" width="672" />
 
 Quantiles and coverage
-```
+
+``` r
 # Upper and Lower Quantiles
 xq <- apply(x,1,quantile, probs=c(.05,.95))
 bks <- seq(0,1,by=.01)
@@ -1005,7 +1002,11 @@ hist(xq[1,], border=NA, col=rgb(0,0,1,.5),
     main='quantile estimates', xlim=c(0,1), breaks=bks)
 hist(xq[2,], border=NA, col=rgb(1,0,0,.5),
     add=T, breaks=bks)
+```
 
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-27-1.png" width="672" />
+
+``` r
 # "Pointwise" Coverage
 xcov <- sapply(bks, function(b){
     bl <- b >= xq[1,]
@@ -1020,6 +1021,8 @@ axis(1)
 axis(2)
 ```
 
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-27-2.png" width="672" />
+
 Try any function!
 
 ``` r
@@ -1032,15 +1035,15 @@ fun_of_rv( f=mean )
 ```
 
 ```
-## [1] 0.4895194
+## [1] 0.5372232
 ```
 
 ``` r
-fun_of_rv( f=function(i){range(exp(i))} )
+fun_of_rv( f=function(i){ diff(range(exp(i))) } )
 ```
 
 ```
-## [1] 1.000452 2.709011
+## [1] 1.713471
 ```
 
 
@@ -1070,7 +1073,7 @@ plot(Nseq[-1], abs(diff(SE)), pch=16, col=grey(0,.5),
     ylab='decrease in standard error', xlab='sample size')
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-28-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-29-1.png" width="672" />
 
 
 ## Further Reading
@@ -1101,13 +1104,18 @@ library(wooldridge)
 data('crime2')
 data('crime4')
 
-# Read in csv from online
-dat_csv <- read.csv('http://www.stern.nyu.edu/~wgreene/Text/Edition7/TableF19-3.csv')
-dat_csv <- as.data.frame(dat_csv)
+# Read in csv (downloaded from online)
+# download source 'http://www.stern.nyu.edu/~wgreene/Text/Edition7/TableF19-3.csv'
+# download destination '~/TableF19-3.csv'
+read.csv('~/TableF19-3.csv')
+ 
+# Can read in csv (directly from online)
+# dat_csv <- read.csv('http://www.stern.nyu.edu/~wgreene/Text/Edition7/TableF19-3.csv')
 
-# Read in csv from online
-dat_stata <- haven::read_dta('https://www.ssc.wisc.edu/~bhansen/econometrics/DS2004.dta')
-dat_stata <- as.data.frame(dat_stata)
+# Read in stata data file from online
+#library(haven)
+#dat_stata <- read_dta('https://www.ssc.wisc.edu/~bhansen/econometrics/DS2004.dta')
+#dat_stata <- as.data.frame(dat_stata)
 
 # For More Introductory Econometrics Data, see 
 # https://www.ssc.wisc.edu/~bhansen/econometrics/Econometrics%20Data.zip
@@ -1175,7 +1183,7 @@ dat_merged_long <- rbind(
     cbind(dat1,DF=1),
     cbind(dat2,DF=2))
 ```
-Now suppose we want to transform into long format
+Now suppose we want to transform into wide format
 
 ``` r
 # Merging data in wide format, First Attempt
@@ -1195,35 +1203,32 @@ identical(dat_merged_wide, dat_merged_wide2)
 ```
 
 ``` r
-# Merging data in wide format, Third Attempt
-# more flexibility
-dat_melted <- reshape2::melt(dat_merged_long, id.vars=c('ID', 'DF'))
-dat_merged_wide3 <- reshape2::dcast(dat_melted, ID~DF+variable)
+# Inspect any differences
 
-# Merging data in wide format, Fourth Attempt
-# highest performance but with new type of object
+# Merging data in wide format, Third Attempt with dedicated package
+# (highest performance but with new type of object)
 library(data.table)
 dat_merged_longDT <- as.data.table(dat_merged_long)
-dat_melted <- data.table::melt(dat_merged_longDT, id.vars=c('ID', 'DF'))
-dat_merged_wide4 <- data.table::dcast(dat_melted, ID~DF+variable)
-# dat_merged_wide4 <- as.data.frame(dat_merged_wide4)
+dat_melted <- melt(dat_merged_longDT, id.vars=c('ID', 'DF'))
+dat_merged_wide3 <- dcast(dat_melted, ID~DF+variable)
 
 ## CHECK they are the same.
-identical(dat_merged_wide3, dat_merged_wide4)
+identical(dat_merged_wide, dat_merged_wide3)
 ```
 
 ```
 ## [1] FALSE
 ```
+
 Often, however, we ultimately want data in long format
 
 ``` r
-# Merging data in long format, Second Attempt 
-dat_melted2 <- data.table::melt(dat_merged_wide4, measure=c("1_x","1_y","2_x","2_y"))
+# Merging data in long format, Second Attempt with dedicated package 
+dat_melted2 <- melt(dat_merged_wide3, measure=c("1_x","1_y","2_x","2_y"))
 melt_vars <- strsplit(as.character(dat_melted2$variable),'_')
 dat_melted2$DF <- sapply(melt_vars, `[[`,1)
 dat_melted2$variable <- sapply(melt_vars, `[[`,2)
-dat_merged_long2 <- data.table::dcast(dat_melted2, DF+ID~variable)
+dat_merged_long2 <- dcast(dat_melted2, DF+ID~variable)
 dat_merged_long2 <- as.data.frame(dat_merged_long2)
 
 ## CHECK they are the same.
@@ -1257,12 +1262,12 @@ For more tips, see https://raw.githubusercontent.com/rstudio/cheatsheets/main/da
 
 
 ``` r
-# For Comparability
-xbks <-  seq(min(USArrests$Murder)-1, max(USArrests$Murder)+1, by=1)
-ylim <- c(0,8)
+#First glimpse
+#hist(USArrests$Murder)
 
-# All Data
-cols <- c(rgb(0,0,1,.5), rgb(1,0,0,.5))
+# Tailored Histogram 
+ylim <- c(0,8)
+xbks <-  seq(min(USArrests$Murder)-1, max(USArrests$Murder)+1, by=1)
 par(fig=c(0,1,0,0.5), new=F)
 hist(USArrests$Murder, breaks=xbks,
     main='All Data', font.main=1,
@@ -1270,42 +1275,58 @@ hist(USArrests$Murder, breaks=xbks,
     border=NA, ylim=ylim)
 rug(USArrests$Murder)
 
+# Also show more information
 # Split Data by Urban Population above/below mean
-u <- mean(USArrests$UrbanPop)
-m1 <- USArrests[USArrests$UrbanPop<u,'Murder']
-m2 <- USArrests[USArrests$UrbanPop>=u,'Murder']
+pop_mean <- mean(USArrests$UrbanPop)
+murder_lowpop <- USArrests[USArrests$UrbanPop< pop_mean,'Murder']
+murder_highpop <- USArrests[USArrests$UrbanPop>= pop_mean,'Murder']
+cols <- c(low=rgb(0,0,1,.75), high=rgb(1,0,0,.75))
 
 par(fig=c(0,.5,0.5,1), new=TRUE)
-hist(m1, breaks=xbks, col=rgb(0,0,1,.5),
+hist(murder_lowpop,
+    breaks=xbks, col=cols[1],
     main='Urban Pop >= Mean', font.main=1,
     xlab='Murder Arrests',
     border=NA, ylim=ylim)
-rug(m1, col=rgb(0,0,1,1))
+rug(murder_lowpop, col=cols[1])
 
 par(fig=c(0.5,1,0.5,1), new=TRUE)
-hist(m2,breaks=xbks, col=rgb(1,0,0,.5),
+hist(murder_highpop,
+    breaks=xbks, col=cols[2],
     main='Urban Pop < Mean', font.main=1,
     xlab='Murder Arrests',
     border=NA, ylim=ylim)
-rug(m2, col=rgb(1,0,0,1))
+rug(murder_highpop, col=cols[2])
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-35-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-36-1.png" width="672" />
 
 For more histogram visuals, see https://r-graph-gallery.com/histogram.html. Note that sometimes it is preferable to show the empirical cumulative distribution funtion (ECDF).
 
 ``` r
 par(mfrow=c(1,2))
-hist(USArrests$Murder, main='Density Function Estimate', font.main=1,
-    xlab='Murder Arrests', breaks=xbks, freq=F, border=NA)
-plot(ecdf(m1), col=cols[1], pch=16, xlab='Murder Arrests',
-    main='Distribution Function Estimates', font.main=1, bty='n')
-plot(ecdf(m2), add=T, col=cols[2], pch=16)
-legend('bottomright', col=cols, pch=16, bty='n', inset=c(0,.1),
-    title='% Urban Pop.', legend=c('Above Mean', 'Below Mean'))
+# Full Sample Density
+hist(USArrests$Murder, 
+    main='Density Function Estimate', font.main=1,
+    xlab='Murder Arrests',
+    breaks=xbks, freq=F, border=NA)
+
+# Split Sample Distribution Comparison
+F_lowpop <- ecdf(murder_lowpop)
+plot(F_lowpop, col=cols[1],
+    pch=16, xlab='Murder Arrests',
+    main='Distribution Function Estimates',
+    font.main=1, bty='n')
+F_highpop <- ecdf(murder_highpop)
+plot(F_highpop, add=T, col=cols[2], pch=16)
+
+legend('bottomright', col=cols,
+    pch=16, bty='n', inset=c(0,.1),
+    title='% Urban Pop.',
+    legend=c('Low (<= Mean)','High (>= Mean)'))
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-36-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-37-1.png" width="672" />
 
 
 **Boxplots** show median, interquartile range, and outliers. As with histograms, you can also split data into groups and glue together
@@ -1315,47 +1336,62 @@ layout( t(c(1,2,2)))
 boxplot(USArrests$Murder, main='',
     xlab='All Data', ylab='Murder Arrests')
 
-# 3 Groups with even spacing
-USArrests$UrbanPop_cut <- cut(USArrests$UrbanPop,3)
-boxplot(Murder~UrbanPop_cut, USArrests,
-    main='', col=hcl.colors(3,alpha=.5),
+# K Groups with even spacing
+K <- 3
+USArrests$UrbanPop_Kcut <- cut(USArrests$UrbanPop,K)
+Kcols <- hcl.colors(K,alpha=.5)
+boxplot(Murder~UrbanPop_Kcut, USArrests,
+    main='', col=Kcols,
     xlab='Urban Population', ylab='')
-```
-
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-37-1.png" width="672" />
-
-``` r
-## 4 Groups with equal observations
-#qcuts <- c(
-#    '0%'=min(USArrests$UrbanPop)-10*.Machine$double.eps,
-#    quantile(USArrests$UrbanPop, probs=c(.25,.5,.75,1)))
-#USArrests$UrbanPop_cut <- cut(USArrests$UrbanPop, qcuts)
-```
-
-### Joint Distributions
-
-Scatterplots are used frequently to summarize the joint relationship between two variables. They can be enhanced in several ways.
-
-**Fit Lines and Color** You can add regression lines (and confidence intervals). As a default, use semi-transparent points to see where your observations are concentrated. You can also use color to distinguish subsets.
-
-
-``` r
-# High Assault Areas
-cols <- ifelse(USArrests$Assault>median(USArrests$Assault), rgb(1,0,0,.5), rgb(0,0,1,.5))
-
-# Scatterplot
-plot(Murder~UrbanPop, USArrests, pch=16, col=cols)
-
-# Add the line of best fit for pooled data
-# Could also do separately for each data split
-reg <- lm(Murder~UrbanPop, data=USArrests)
-abline(reg, lty=2)
 ```
 
 <img src="02-RandRstudio_files/figure-html/unnamed-chunk-38-1.png" width="672" />
 
 ``` r
-# Can Also Add Confidence Intervals
+# 4 Groups with equal observations
+#Qcuts <- c(
+#    '0%'=min(USArrests$UrbanPop)-10*.Machine$double.eps,
+#    quantile(USArrests$UrbanPop, probs=c(.25,.5,.75,1)))
+#USArrests$UrbanPop_cut <- cut(USArrests$UrbanPop, Qcuts)
+```
+
+### Joint Distributions
+
+Scatterplots are used frequently to summarize the joint relationship between two variables. They can be enhanced in several ways. As a default, use semi-transparent points so as not to hide any points (and perhaps see if your observations are concentrated anywhere).
+
+
+``` r
+plot(Murder~UrbanPop, USArrests, pch=16, col=grey(0.,.5))
+```
+
+**Fit Lines, Size/Color/Shape** You can add regression lines (and confidence intervals). You can also use size, color, and shape to distinguish different subsets.
+
+
+``` r
+# High Assault Areas
+assault_high <- USArrests$Assault > median(USArrests$Assault)
+cols <- ifelse(assault_high, rgb(1,0,0,.5), rgb(0,0,1,.5))
+
+# Scatterplot
+plot(Murder~UrbanPop, USArrests, pch=16, col=cols)
+# Show High Assault Areas via 'cex='
+# Show High Assault Areas via 'pch='
+
+# Add the line of best fit for pooled data
+reg <- lm(Murder~UrbanPop, data=USArrests)
+abline(reg, lty=2)
+```
+
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-40-1.png" width="672" />
+
+``` r
+# Could also add regression lines y for each data split
+#reg_high <- lm(Murder~UrbanPop, data=USArrests[assault_high,])
+#abline(reg_high, lty=2, col=rgb(1,0,0,1))
+#reg_low <- lm(Murder~UrbanPop, data=USArrests[!assault_high,])
+#abline(reg_low, lty=2, col= rgb(0,0,1,1))
+
+# Could also add Confidence Intervals
 # https://rpubs.com/aaronsc32/regression-confidence-prediction-intervals
 ```
 
@@ -1393,7 +1429,7 @@ outer_legend('topright', legend='single data point',
     pch=16, col=rgb(0,0,0,.1), cex=1, bty='n')
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-39-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-41-1.png" width="672" />
 
 
 Can export figure with specific dimensions
@@ -1412,7 +1448,7 @@ For exporting options, see `?pdf`.
 For saving other types of files, see `png("*.png")`, `tiff("*.tiff")`, and  `jpeg("*.jpg")`
 
 
-**Marginal distributions**
+**Marginal distributions**.
 
 
 ``` r
@@ -1420,7 +1456,7 @@ For saving other types of files, see `png("*.png")`, `tiff("*.tiff")`, and  `jpe
 
 # Setup Plot
 layout( matrix(c(2,0,1,3), ncol=2, byrow=TRUE),
-    widths=c(4/5,1/5), heights=c(1/5,4/5))
+    widths=c(9/10,1/10), heights=c(1/10,9/10))
 
 # Scatterplot
 par(mar=c(4,4,1,1))
@@ -1436,7 +1472,7 @@ yhist <- hist(USArrests$Murder, plot=FALSE)
 barplot(yhist$counts, axes=FALSE, space=0, horiz=TRUE, border=NA)
 ```
 
-<img src="02-RandRstudio_files/figure-html/unnamed-chunk-41-1.png" width="672" />
+<img src="02-RandRstudio_files/figure-html/unnamed-chunk-43-1.png" width="672" />
 
 For plotting marginals, see https://r-graph-gallery.com/74-margin-and-oma-cheatsheet.html and https://jtr13.github.io/cc21fall2/tutorial-for-scatter-plot-with-marginal-distribution.html.
 
@@ -1457,34 +1493,36 @@ library(plotly)
 **Histograms**  https://plotly.com/r/histograms/
 
 ``` r
-u <- mean(USArrests$UrbanPop)
-m1 <- USArrests[USArrests$UrbanPop<u,'Murder']
-m2 <- USArrests[USArrests$UrbanPop>=u,'Murder']
+pop_mean <- mean(USArrests$UrbanPop)
+murder_lowpop <- USArrests[USArrests$UrbanPop< pop_mean,'Murder']
+murder_highpop <- USArrests[USArrests$UrbanPop>= pop_mean,'Murder']
+
 
 fig <- plot_ly(alpha=0.6, 
     hovertemplate="%{y}")
-fig <- fig %>% add_histogram(m1, name='< Mean')
-fig <- fig %>% add_histogram(m2, name='>= Mean')
+fig <- fig %>% add_histogram(murder_lowpop, name='Low Pop. (< Mean)')
+fig <- fig %>% add_histogram(murder_highpop, name='High Pop (>= Mean)')
 fig <- fig %>% layout(barmode="stack") # barmode="overlay"
 fig <- fig %>% layout(
     title="Crime and Urbanization in America 1975",
     xaxis = list(title='Murders Arrests per 100,000 People'),
     yaxis = list(title='Number of States'),
-    legend=list(title=list(text='<b> Urban Pop. </b>'))
+    legend=list(title=list(text='<b> % Urban Pop. </b>'))
 )
 fig
 ```
 
 ```{=html}
-<div class="plotly html-widget html-fill-item" id="htmlwidget-88831b552ab01e0a1991" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-88831b552ab01e0a1991">{"x":{"visdat":{"cdbb496fc45c":["function () ","plotlyVisDat"]},"cur_data":"cdbb496fc45c","attrs":{"cdbb496fc45c":{"hovertemplate":"%{y}","alpha":0.59999999999999998,"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"x":[13.199999999999999,10,8.8000000000000007,17.399999999999999,2.6000000000000001,7.2000000000000002,2.2000000000000002,9.6999999999999993,2.1000000000000001,16.100000000000001,6,4.2999999999999998,2.1000000000000001,13,0.80000000000000004,14.4,3.7999999999999998,13.199999999999999,2.2000000000000002,8.5,5.7000000000000002,6.7999999999999998],"type":"histogram","name":"< Mean","inherit":true},"cdbb496fc45c.1":{"hovertemplate":"%{y}","alpha":0.59999999999999998,"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"x":[8.0999999999999996,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,5.2999999999999998,10.4,6,15.4,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,9,12.199999999999999,7.4000000000000004,11.4,11.1,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,12.699999999999999,3.2000000000000002,4,2.6000000000000001],"type":"histogram","name":">= Mean","inherit":true}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"barmode":"stack","title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Murders Arrests per 100,000 People"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Number of States"},"legend":{"title":{"text":"<b> Urban Pop. <\/b>"}},"hovermode":"closest","showlegend":true},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"hovertemplate":["%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}"],"x":[13.199999999999999,10,8.8000000000000007,17.399999999999999,2.6000000000000001,7.2000000000000002,2.2000000000000002,9.6999999999999993,2.1000000000000001,16.100000000000001,6,4.2999999999999998,2.1000000000000001,13,0.80000000000000004,14.4,3.7999999999999998,13.199999999999999,2.2000000000000002,8.5,5.7000000000000002,6.7999999999999998],"type":"histogram","name":"< Mean","marker":{"color":"rgba(31,119,180,0.6)","line":{"color":"rgba(31,119,180,1)"}},"error_y":{"color":"rgba(31,119,180,0.6)"},"error_x":{"color":"rgba(31,119,180,0.6)"},"xaxis":"x","yaxis":"y","frame":null},{"hovertemplate":["%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}"],"x":[8.0999999999999996,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,5.2999999999999998,10.4,6,15.4,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,9,12.199999999999999,7.4000000000000004,11.4,11.1,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,12.699999999999999,3.2000000000000002,4,2.6000000000000001],"type":"histogram","name":">= Mean","marker":{"color":"rgba(255,127,14,0.6)","line":{"color":"rgba(255,127,14,1)"}},"error_y":{"color":"rgba(255,127,14,0.6)"},"error_x":{"color":"rgba(255,127,14,0.6)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<div class="plotly html-widget html-fill-item" id="htmlwidget-19b52de2594fc233291e" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-19b52de2594fc233291e">{"x":{"visdat":{"271f3e5805f2":["function () ","plotlyVisDat"]},"cur_data":"271f3e5805f2","attrs":{"271f3e5805f2":{"hovertemplate":"%{y}","alpha":0.59999999999999998,"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"x":[13.199999999999999,10,8.8000000000000007,17.399999999999999,2.6000000000000001,7.2000000000000002,2.2000000000000002,9.6999999999999993,2.1000000000000001,16.100000000000001,6,4.2999999999999998,2.1000000000000001,13,0.80000000000000004,14.4,3.7999999999999998,13.199999999999999,2.2000000000000002,8.5,5.7000000000000002,6.7999999999999998],"type":"histogram","name":"Low Pop. (< Mean)","inherit":true},"271f3e5805f2.1":{"hovertemplate":"%{y}","alpha":0.59999999999999998,"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"x":[8.0999999999999996,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,5.2999999999999998,10.4,6,15.4,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,9,12.199999999999999,7.4000000000000004,11.4,11.1,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,12.699999999999999,3.2000000000000002,4,2.6000000000000001],"type":"histogram","name":"High Pop (>= Mean)","inherit":true}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"barmode":"stack","title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Murders Arrests per 100,000 People"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Number of States"},"legend":{"title":{"text":"<b> % Urban Pop. <\/b>"}},"hovermode":"closest","showlegend":true},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"hovertemplate":["%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}"],"x":[13.199999999999999,10,8.8000000000000007,17.399999999999999,2.6000000000000001,7.2000000000000002,2.2000000000000002,9.6999999999999993,2.1000000000000001,16.100000000000001,6,4.2999999999999998,2.1000000000000001,13,0.80000000000000004,14.4,3.7999999999999998,13.199999999999999,2.2000000000000002,8.5,5.7000000000000002,6.7999999999999998],"type":"histogram","name":"Low Pop. (< Mean)","marker":{"color":"rgba(31,119,180,0.6)","line":{"color":"rgba(31,119,180,1)"}},"error_y":{"color":"rgba(31,119,180,0.6)"},"error_x":{"color":"rgba(31,119,180,0.6)"},"xaxis":"x","yaxis":"y","frame":null},{"hovertemplate":["%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}"],"x":[8.0999999999999996,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,5.2999999999999998,10.4,6,15.4,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,9,12.199999999999999,7.4000000000000004,11.4,11.1,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,12.699999999999999,3.2000000000000002,4,2.6000000000000001],"type":"histogram","name":"High Pop (>= Mean)","marker":{"color":"rgba(255,127,14,0.6)","line":{"color":"rgba(255,127,14,1)"}},"error_y":{"color":"rgba(255,127,14,0.6)"},"error_x":{"color":"rgba(255,127,14,0.6)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 
 **Boxplots** https://plotly.com/r/box-plots/
 
 ``` r
 USArrests$ID <- rownames(USArrests)
-fig <- plot_ly(USArrests, y=~Murder, color=~cut(UrbanPop,4),
+fig <- plot_ly(USArrests,
+    y=~Murder, color=~cut(UrbanPop,4),
     alpha=0.6, type="box",
     pointpos=0, boxpoints = 'all',
     hoverinfo='text',    
@@ -1492,7 +1530,7 @@ fig <- plot_ly(USArrests, y=~Murder, color=~cut(UrbanPop,4),
         "<br>Urban  :", UrbanPop,
         "<br>Assault:", Assault,
         "<br>Murder :", Murder))    
-fig <- plotly::layout(fig,
+fig <- layout(fig,
     showlegend=FALSE,
     title='Crime and Urbanization in America 1975',
     xaxis = list(title = 'Percent of People in an Urban Area'),
@@ -1501,12 +1539,11 @@ fig
 ```
 
 ```{=html}
-<div class="plotly html-widget html-fill-item" id="htmlwidget-6d231b6a1d93f8a3c663" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-6d231b6a1d93f8a3c663">{"x":{"visdat":{"cdbb6e20f05":["function () ","plotlyVisDat"]},"cur_data":"cdbb6e20f05","attrs":{"cdbb6e20f05":{"y":{},"pointpos":0,"boxpoints":"all","hoverinfo":"text","text":{},"color":{},"alpha":0.59999999999999998,"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"box"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Percent of People in an Urban Area"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Murders Arrests per 100,000 People"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"fillcolor":"rgba(102,194,165,0.6)","y":[16.100000000000001,13,0.80000000000000004,3.7999999999999998,2.2000000000000002,5.7000000000000002],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text"],"text":["<b> Mississippi <\/b> <br>Urban  : 44 <br>Assault: 259 <br>Murder : 16.1","<b> North Carolina <\/b> <br>Urban  : 45 <br>Assault: 337 <br>Murder : 13","<b> North Dakota <\/b> <br>Urban  : 44 <br>Assault: 45 <br>Murder : 0.8","<b> South Dakota <\/b> <br>Urban  : 45 <br>Assault: 86 <br>Murder : 3.8","<b> Vermont <\/b> <br>Urban  : 32 <br>Assault: 48 <br>Murder : 2.2","<b> West Virginia <\/b> <br>Urban  : 39 <br>Assault: 81 <br>Murder : 5.7"],"type":"box","name":"(31.9,46.8]","marker":{"color":"rgba(102,194,165,0.6)","line":{"color":"rgba(102,194,165,1)"}},"line":{"color":"rgba(102,194,165,1)"},"xaxis":"x","yaxis":"y","frame":null},{"fillcolor":"rgba(252,141,98,0.6)","y":[13.199999999999999,10,8.8000000000000007,17.399999999999999,2.6000000000000001,2.2000000000000002,9.6999999999999993,2.1000000000000001,6,2.1000000000000001,14.4,13.199999999999999,6.7999999999999998],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Alabama <\/b> <br>Urban  : 58 <br>Assault: 236 <br>Murder : 13.2","<b> Alaska <\/b> <br>Urban  : 48 <br>Assault: 263 <br>Murder : 10","<b> Arkansas <\/b> <br>Urban  : 50 <br>Assault: 190 <br>Murder : 8.8","<b> Georgia <\/b> <br>Urban  : 60 <br>Assault: 211 <br>Murder : 17.4","<b> Idaho <\/b> <br>Urban  : 54 <br>Assault: 120 <br>Murder : 2.6","<b> Iowa <\/b> <br>Urban  : 57 <br>Assault: 56 <br>Murder : 2.2","<b> Kentucky <\/b> <br>Urban  : 52 <br>Assault: 109 <br>Murder : 9.7","<b> Maine <\/b> <br>Urban  : 51 <br>Assault: 83 <br>Murder : 2.1","<b> Montana <\/b> <br>Urban  : 53 <br>Assault: 109 <br>Murder : 6","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Assault: 57 <br>Murder : 2.1","<b> South Carolina <\/b> <br>Urban  : 48 <br>Assault: 279 <br>Murder : 14.4","<b> Tennessee <\/b> <br>Urban  : 59 <br>Assault: 188 <br>Murder : 13.2","<b> Wyoming <\/b> <br>Urban  : 60 <br>Assault: 161 <br>Murder : 6.8"],"type":"box","name":"(46.8,61.5]","marker":{"color":"rgba(252,141,98,0.6)","line":{"color":"rgba(252,141,98,1)"}},"line":{"color":"rgba(252,141,98,1)"},"xaxis":"x","yaxis":"y","frame":null},{"fillcolor":"rgba(141,160,203,0.6)","y":[5.9000000000000004,7.2000000000000002,6,15.4,11.300000000000001,12.1,2.7000000000000002,9,4.2999999999999998,11.4,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,8.5,4,2.6000000000000001],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Delaware <\/b> <br>Urban  : 72 <br>Assault: 238 <br>Murder : 5.9","<b> Indiana <\/b> <br>Urban  : 65 <br>Assault: 113 <br>Murder : 7.2","<b> Kansas <\/b> <br>Urban  : 66 <br>Assault: 115 <br>Murder : 6","<b> Louisiana <\/b> <br>Urban  : 66 <br>Assault: 249 <br>Murder : 15.4","<b> Maryland <\/b> <br>Urban  : 67 <br>Assault: 300 <br>Murder : 11.3","<b> Michigan <\/b> <br>Urban  : 74 <br>Assault: 255 <br>Murder : 12.1","<b> Minnesota <\/b> <br>Urban  : 66 <br>Assault: 72 <br>Murder : 2.7","<b> Missouri <\/b> <br>Urban  : 70 <br>Assault: 178 <br>Murder : 9","<b> Nebraska <\/b> <br>Urban  : 62 <br>Assault: 102 <br>Murder : 4.3","<b> New Mexico <\/b> <br>Urban  : 70 <br>Assault: 285 <br>Murder : 11.4","<b> Ohio <\/b> <br>Urban  : 75 <br>Assault: 120 <br>Murder : 7.3","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Assault: 151 <br>Murder : 6.6","<b> Oregon <\/b> <br>Urban  : 67 <br>Assault: 159 <br>Murder : 4.9","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Assault: 106 <br>Murder : 6.3","<b> Virginia <\/b> <br>Urban  : 63 <br>Assault: 156 <br>Murder : 8.5","<b> Washington <\/b> <br>Urban  : 73 <br>Assault: 145 <br>Murder : 4","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Assault: 53 <br>Murder : 2.6"],"type":"box","name":"(61.5,76.2]","marker":{"color":"rgba(141,160,203,0.6)","line":{"color":"rgba(141,160,203,1)"}},"line":{"color":"rgba(141,160,203,1)"},"xaxis":"x","yaxis":"y","frame":null},{"fillcolor":"rgba(231,138,195,0.6)","y":[8.0999999999999996,9,7.9000000000000004,3.2999999999999998,15.4,5.2999999999999998,10.4,4.4000000000000004,12.199999999999999,7.4000000000000004,11.1,3.3999999999999999,12.699999999999999,3.2000000000000002],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Arizona <\/b> <br>Urban  : 80 <br>Assault: 294 <br>Murder : 8.1","<b> California <\/b> <br>Urban  : 91 <br>Assault: 276 <br>Murder : 9","<b> Colorado <\/b> <br>Urban  : 78 <br>Assault: 204 <br>Murder : 7.9","<b> Connecticut <\/b> <br>Urban  : 77 <br>Assault: 110 <br>Murder : 3.3","<b> Florida <\/b> <br>Urban  : 80 <br>Assault: 335 <br>Murder : 15.4","<b> Hawaii <\/b> <br>Urban  : 83 <br>Assault: 46 <br>Murder : 5.3","<b> Illinois <\/b> <br>Urban  : 83 <br>Assault: 249 <br>Murder : 10.4","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Assault: 149 <br>Murder : 4.4","<b> Nevada <\/b> <br>Urban  : 81 <br>Assault: 252 <br>Murder : 12.2","<b> New Jersey <\/b> <br>Urban  : 89 <br>Assault: 159 <br>Murder : 7.4","<b> New York <\/b> <br>Urban  : 86 <br>Assault: 254 <br>Murder : 11.1","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Assault: 174 <br>Murder : 3.4","<b> Texas <\/b> <br>Urban  : 80 <br>Assault: 201 <br>Murder : 12.7","<b> Utah <\/b> <br>Urban  : 80 <br>Assault: 120 <br>Murder : 3.2"],"type":"box","name":"(76.2,91.1]","marker":{"color":"rgba(231,138,195,0.6)","line":{"color":"rgba(231,138,195,1)"}},"line":{"color":"rgba(231,138,195,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<div class="plotly html-widget html-fill-item" id="htmlwidget-9eeb0402d27d5dc4580e" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-9eeb0402d27d5dc4580e">{"x":{"visdat":{"271f56e49ada":["function () ","plotlyVisDat"]},"cur_data":"271f56e49ada","attrs":{"271f56e49ada":{"y":{},"pointpos":0,"boxpoints":"all","hoverinfo":"text","text":{},"color":{},"alpha":0.59999999999999998,"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"box"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Percent of People in an Urban Area"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Murders Arrests per 100,000 People"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"fillcolor":"rgba(102,194,165,0.6)","y":[16.100000000000001,13,0.80000000000000004,3.7999999999999998,2.2000000000000002,5.7000000000000002],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text"],"text":["<b> Mississippi <\/b> <br>Urban  : 44 <br>Assault: 259 <br>Murder : 16.1","<b> North Carolina <\/b> <br>Urban  : 45 <br>Assault: 337 <br>Murder : 13","<b> North Dakota <\/b> <br>Urban  : 44 <br>Assault: 45 <br>Murder : 0.8","<b> South Dakota <\/b> <br>Urban  : 45 <br>Assault: 86 <br>Murder : 3.8","<b> Vermont <\/b> <br>Urban  : 32 <br>Assault: 48 <br>Murder : 2.2","<b> West Virginia <\/b> <br>Urban  : 39 <br>Assault: 81 <br>Murder : 5.7"],"type":"box","name":"(31.9,46.8]","marker":{"color":"rgba(102,194,165,0.6)","line":{"color":"rgba(102,194,165,1)"}},"line":{"color":"rgba(102,194,165,1)"},"xaxis":"x","yaxis":"y","frame":null},{"fillcolor":"rgba(252,141,98,0.6)","y":[13.199999999999999,10,8.8000000000000007,17.399999999999999,2.6000000000000001,2.2000000000000002,9.6999999999999993,2.1000000000000001,6,2.1000000000000001,14.4,13.199999999999999,6.7999999999999998],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Alabama <\/b> <br>Urban  : 58 <br>Assault: 236 <br>Murder : 13.2","<b> Alaska <\/b> <br>Urban  : 48 <br>Assault: 263 <br>Murder : 10","<b> Arkansas <\/b> <br>Urban  : 50 <br>Assault: 190 <br>Murder : 8.8","<b> Georgia <\/b> <br>Urban  : 60 <br>Assault: 211 <br>Murder : 17.4","<b> Idaho <\/b> <br>Urban  : 54 <br>Assault: 120 <br>Murder : 2.6","<b> Iowa <\/b> <br>Urban  : 57 <br>Assault: 56 <br>Murder : 2.2","<b> Kentucky <\/b> <br>Urban  : 52 <br>Assault: 109 <br>Murder : 9.7","<b> Maine <\/b> <br>Urban  : 51 <br>Assault: 83 <br>Murder : 2.1","<b> Montana <\/b> <br>Urban  : 53 <br>Assault: 109 <br>Murder : 6","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Assault: 57 <br>Murder : 2.1","<b> South Carolina <\/b> <br>Urban  : 48 <br>Assault: 279 <br>Murder : 14.4","<b> Tennessee <\/b> <br>Urban  : 59 <br>Assault: 188 <br>Murder : 13.2","<b> Wyoming <\/b> <br>Urban  : 60 <br>Assault: 161 <br>Murder : 6.8"],"type":"box","name":"(46.8,61.5]","marker":{"color":"rgba(252,141,98,0.6)","line":{"color":"rgba(252,141,98,1)"}},"line":{"color":"rgba(252,141,98,1)"},"xaxis":"x","yaxis":"y","frame":null},{"fillcolor":"rgba(141,160,203,0.6)","y":[5.9000000000000004,7.2000000000000002,6,15.4,11.300000000000001,12.1,2.7000000000000002,9,4.2999999999999998,11.4,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,8.5,4,2.6000000000000001],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Delaware <\/b> <br>Urban  : 72 <br>Assault: 238 <br>Murder : 5.9","<b> Indiana <\/b> <br>Urban  : 65 <br>Assault: 113 <br>Murder : 7.2","<b> Kansas <\/b> <br>Urban  : 66 <br>Assault: 115 <br>Murder : 6","<b> Louisiana <\/b> <br>Urban  : 66 <br>Assault: 249 <br>Murder : 15.4","<b> Maryland <\/b> <br>Urban  : 67 <br>Assault: 300 <br>Murder : 11.3","<b> Michigan <\/b> <br>Urban  : 74 <br>Assault: 255 <br>Murder : 12.1","<b> Minnesota <\/b> <br>Urban  : 66 <br>Assault: 72 <br>Murder : 2.7","<b> Missouri <\/b> <br>Urban  : 70 <br>Assault: 178 <br>Murder : 9","<b> Nebraska <\/b> <br>Urban  : 62 <br>Assault: 102 <br>Murder : 4.3","<b> New Mexico <\/b> <br>Urban  : 70 <br>Assault: 285 <br>Murder : 11.4","<b> Ohio <\/b> <br>Urban  : 75 <br>Assault: 120 <br>Murder : 7.3","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Assault: 151 <br>Murder : 6.6","<b> Oregon <\/b> <br>Urban  : 67 <br>Assault: 159 <br>Murder : 4.9","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Assault: 106 <br>Murder : 6.3","<b> Virginia <\/b> <br>Urban  : 63 <br>Assault: 156 <br>Murder : 8.5","<b> Washington <\/b> <br>Urban  : 73 <br>Assault: 145 <br>Murder : 4","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Assault: 53 <br>Murder : 2.6"],"type":"box","name":"(61.5,76.2]","marker":{"color":"rgba(141,160,203,0.6)","line":{"color":"rgba(141,160,203,1)"}},"line":{"color":"rgba(141,160,203,1)"},"xaxis":"x","yaxis":"y","frame":null},{"fillcolor":"rgba(231,138,195,0.6)","y":[8.0999999999999996,9,7.9000000000000004,3.2999999999999998,15.4,5.2999999999999998,10.4,4.4000000000000004,12.199999999999999,7.4000000000000004,11.1,3.3999999999999999,12.699999999999999,3.2000000000000002],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Arizona <\/b> <br>Urban  : 80 <br>Assault: 294 <br>Murder : 8.1","<b> California <\/b> <br>Urban  : 91 <br>Assault: 276 <br>Murder : 9","<b> Colorado <\/b> <br>Urban  : 78 <br>Assault: 204 <br>Murder : 7.9","<b> Connecticut <\/b> <br>Urban  : 77 <br>Assault: 110 <br>Murder : 3.3","<b> Florida <\/b> <br>Urban  : 80 <br>Assault: 335 <br>Murder : 15.4","<b> Hawaii <\/b> <br>Urban  : 83 <br>Assault: 46 <br>Murder : 5.3","<b> Illinois <\/b> <br>Urban  : 83 <br>Assault: 249 <br>Murder : 10.4","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Assault: 149 <br>Murder : 4.4","<b> Nevada <\/b> <br>Urban  : 81 <br>Assault: 252 <br>Murder : 12.2","<b> New Jersey <\/b> <br>Urban  : 89 <br>Assault: 159 <br>Murder : 7.4","<b> New York <\/b> <br>Urban  : 86 <br>Assault: 254 <br>Murder : 11.1","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Assault: 174 <br>Murder : 3.4","<b> Texas <\/b> <br>Urban  : 80 <br>Assault: 201 <br>Murder : 12.7","<b> Utah <\/b> <br>Urban  : 80 <br>Assault: 120 <br>Murder : 3.2"],"type":"box","name":"(76.2,91.1]","marker":{"color":"rgba(231,138,195,0.6)","line":{"color":"rgba(231,138,195,1)"}},"line":{"color":"rgba(231,138,195,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 
 **Scatterplots**  https://plotly.com/r/bubble-charts/
-
 
 ``` r
 # Simple Scatter Plot
@@ -1516,7 +1553,7 @@ fig
 
 # Scatter Plot
 USArrests$ID <- rownames(USArrests)
-fig <- plotly::plot_ly(
+fig <- plot_ly(
     USArrests, x = ~UrbanPop, y = ~Assault,
     mode='markers',
     type='scatter',
@@ -1531,7 +1568,7 @@ fig <- plotly::plot_ly(
         opacity=0.5,
         showscale=T,  
         colorbar = list(title='Murder Arrests (per 100,000)')))
-fig <- plotly::layout(fig,
+fig <- layout(fig,
     showlegend=F,
     title='Crime and Urbanization in America 1975',
     xaxis = list(title = 'Percent of People in an Urban Area'),
@@ -1540,8 +1577,8 @@ fig
 ```
 
 ```{=html}
-<div class="plotly html-widget html-fill-item" id="htmlwidget-29543ab8727c4229d025" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-29543ab8727c4229d025">{"x":{"visdat":{"cdbb7c95413d":["function () ","plotlyVisDat"]},"cur_data":"cdbb7c95413d","attrs":{"cdbb7c95413d":{"x":{},"y":{},"mode":"markers","hoverinfo":"text","text":{},"marker":{"size":{},"opacity":0.5,"showscale":true,"colorbar":{"title":"Murder Arrests (per 100,000)"}},"color":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Percent of People in an Urban Area"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Assault Arrests per 100,000 People"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[58,48,80,50,91,78,77,72,80,60,83,54,83,65,57,66,52,66,51,67,85,74,66,44,70,53,62,81,56,89,70,86,45,44,75,68,67,72,87,48,45,59,80,80,32,63,73,39,66,60],"y":[236,263,294,190,276,204,110,238,335,211,46,120,249,113,56,115,109,249,83,300,149,255,72,259,178,109,102,252,57,159,285,254,337,45,120,151,159,106,174,279,86,188,201,120,48,156,145,81,53,161],"mode":"markers","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Alabama <\/b> <br>Urban  : 58 <br>Assault: 236 <br>Murder : 13.2","<b> Alaska <\/b> <br>Urban  : 48 <br>Assault: 263 <br>Murder : 10","<b> Arizona <\/b> <br>Urban  : 80 <br>Assault: 294 <br>Murder : 8.1","<b> Arkansas <\/b> <br>Urban  : 50 <br>Assault: 190 <br>Murder : 8.8","<b> California <\/b> <br>Urban  : 91 <br>Assault: 276 <br>Murder : 9","<b> Colorado <\/b> <br>Urban  : 78 <br>Assault: 204 <br>Murder : 7.9","<b> Connecticut <\/b> <br>Urban  : 77 <br>Assault: 110 <br>Murder : 3.3","<b> Delaware <\/b> <br>Urban  : 72 <br>Assault: 238 <br>Murder : 5.9","<b> Florida <\/b> <br>Urban  : 80 <br>Assault: 335 <br>Murder : 15.4","<b> Georgia <\/b> <br>Urban  : 60 <br>Assault: 211 <br>Murder : 17.4","<b> Hawaii <\/b> <br>Urban  : 83 <br>Assault: 46 <br>Murder : 5.3","<b> Idaho <\/b> <br>Urban  : 54 <br>Assault: 120 <br>Murder : 2.6","<b> Illinois <\/b> <br>Urban  : 83 <br>Assault: 249 <br>Murder : 10.4","<b> Indiana <\/b> <br>Urban  : 65 <br>Assault: 113 <br>Murder : 7.2","<b> Iowa <\/b> <br>Urban  : 57 <br>Assault: 56 <br>Murder : 2.2","<b> Kansas <\/b> <br>Urban  : 66 <br>Assault: 115 <br>Murder : 6","<b> Kentucky <\/b> <br>Urban  : 52 <br>Assault: 109 <br>Murder : 9.7","<b> Louisiana <\/b> <br>Urban  : 66 <br>Assault: 249 <br>Murder : 15.4","<b> Maine <\/b> <br>Urban  : 51 <br>Assault: 83 <br>Murder : 2.1","<b> Maryland <\/b> <br>Urban  : 67 <br>Assault: 300 <br>Murder : 11.3","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Assault: 149 <br>Murder : 4.4","<b> Michigan <\/b> <br>Urban  : 74 <br>Assault: 255 <br>Murder : 12.1","<b> Minnesota <\/b> <br>Urban  : 66 <br>Assault: 72 <br>Murder : 2.7","<b> Mississippi <\/b> <br>Urban  : 44 <br>Assault: 259 <br>Murder : 16.1","<b> Missouri <\/b> <br>Urban  : 70 <br>Assault: 178 <br>Murder : 9","<b> Montana <\/b> <br>Urban  : 53 <br>Assault: 109 <br>Murder : 6","<b> Nebraska <\/b> <br>Urban  : 62 <br>Assault: 102 <br>Murder : 4.3","<b> Nevada <\/b> <br>Urban  : 81 <br>Assault: 252 <br>Murder : 12.2","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Assault: 57 <br>Murder : 2.1","<b> New Jersey <\/b> <br>Urban  : 89 <br>Assault: 159 <br>Murder : 7.4","<b> New Mexico <\/b> <br>Urban  : 70 <br>Assault: 285 <br>Murder : 11.4","<b> New York <\/b> <br>Urban  : 86 <br>Assault: 254 <br>Murder : 11.1","<b> North Carolina <\/b> <br>Urban  : 45 <br>Assault: 337 <br>Murder : 13","<b> North Dakota <\/b> <br>Urban  : 44 <br>Assault: 45 <br>Murder : 0.8","<b> Ohio <\/b> <br>Urban  : 75 <br>Assault: 120 <br>Murder : 7.3","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Assault: 151 <br>Murder : 6.6","<b> Oregon <\/b> <br>Urban  : 67 <br>Assault: 159 <br>Murder : 4.9","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Assault: 106 <br>Murder : 6.3","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Assault: 174 <br>Murder : 3.4","<b> South Carolina <\/b> <br>Urban  : 48 <br>Assault: 279 <br>Murder : 14.4","<b> South Dakota <\/b> <br>Urban  : 45 <br>Assault: 86 <br>Murder : 3.8","<b> Tennessee <\/b> <br>Urban  : 59 <br>Assault: 188 <br>Murder : 13.2","<b> Texas <\/b> <br>Urban  : 80 <br>Assault: 201 <br>Murder : 12.7","<b> Utah <\/b> <br>Urban  : 80 <br>Assault: 120 <br>Murder : 3.2","<b> Vermont <\/b> <br>Urban  : 32 <br>Assault: 48 <br>Murder : 2.2","<b> Virginia <\/b> <br>Urban  : 63 <br>Assault: 156 <br>Murder : 8.5","<b> Washington <\/b> <br>Urban  : 73 <br>Assault: 145 <br>Murder : 4","<b> West Virginia <\/b> <br>Urban  : 39 <br>Assault: 81 <br>Murder : 5.7","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Assault: 53 <br>Murder : 2.6","<b> Wyoming <\/b> <br>Urban  : 60 <br>Assault: 161 <br>Murder : 6.8"],"marker":{"colorbar":{"title":"Murder Arrests (per 100,000)","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"size":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"opacity":0.5,"line":{"colorbar":{"title":"","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":false,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998]}},"type":"scatter","xaxis":"x","yaxis":"y","frame":null},{"x":[32,91],"y":[45,337],"type":"scatter","mode":"markers","opacity":0,"hoverinfo":"none","showlegend":false,"marker":{"colorbar":{"title":"Murder","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"color":[0.80000000000000004,17.399999999999999],"line":{"color":"rgba(255,127,14,1)"}},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<div class="plotly html-widget html-fill-item" id="htmlwidget-5136650b85b349bb0c2e" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-5136650b85b349bb0c2e">{"x":{"visdat":{"271f334cc262":["function () ","plotlyVisDat"]},"cur_data":"271f334cc262","attrs":{"271f334cc262":{"x":{},"y":{},"mode":"markers","hoverinfo":"text","text":{},"marker":{"size":{},"opacity":0.5,"showscale":true,"colorbar":{"title":"Murder Arrests (per 100,000)"}},"color":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Percent of People in an Urban Area"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Assault Arrests per 100,000 People"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[58,48,80,50,91,78,77,72,80,60,83,54,83,65,57,66,52,66,51,67,85,74,66,44,70,53,62,81,56,89,70,86,45,44,75,68,67,72,87,48,45,59,80,80,32,63,73,39,66,60],"y":[236,263,294,190,276,204,110,238,335,211,46,120,249,113,56,115,109,249,83,300,149,255,72,259,178,109,102,252,57,159,285,254,337,45,120,151,159,106,174,279,86,188,201,120,48,156,145,81,53,161],"mode":"markers","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Alabama <\/b> <br>Urban  : 58 <br>Assault: 236 <br>Murder : 13.2","<b> Alaska <\/b> <br>Urban  : 48 <br>Assault: 263 <br>Murder : 10","<b> Arizona <\/b> <br>Urban  : 80 <br>Assault: 294 <br>Murder : 8.1","<b> Arkansas <\/b> <br>Urban  : 50 <br>Assault: 190 <br>Murder : 8.8","<b> California <\/b> <br>Urban  : 91 <br>Assault: 276 <br>Murder : 9","<b> Colorado <\/b> <br>Urban  : 78 <br>Assault: 204 <br>Murder : 7.9","<b> Connecticut <\/b> <br>Urban  : 77 <br>Assault: 110 <br>Murder : 3.3","<b> Delaware <\/b> <br>Urban  : 72 <br>Assault: 238 <br>Murder : 5.9","<b> Florida <\/b> <br>Urban  : 80 <br>Assault: 335 <br>Murder : 15.4","<b> Georgia <\/b> <br>Urban  : 60 <br>Assault: 211 <br>Murder : 17.4","<b> Hawaii <\/b> <br>Urban  : 83 <br>Assault: 46 <br>Murder : 5.3","<b> Idaho <\/b> <br>Urban  : 54 <br>Assault: 120 <br>Murder : 2.6","<b> Illinois <\/b> <br>Urban  : 83 <br>Assault: 249 <br>Murder : 10.4","<b> Indiana <\/b> <br>Urban  : 65 <br>Assault: 113 <br>Murder : 7.2","<b> Iowa <\/b> <br>Urban  : 57 <br>Assault: 56 <br>Murder : 2.2","<b> Kansas <\/b> <br>Urban  : 66 <br>Assault: 115 <br>Murder : 6","<b> Kentucky <\/b> <br>Urban  : 52 <br>Assault: 109 <br>Murder : 9.7","<b> Louisiana <\/b> <br>Urban  : 66 <br>Assault: 249 <br>Murder : 15.4","<b> Maine <\/b> <br>Urban  : 51 <br>Assault: 83 <br>Murder : 2.1","<b> Maryland <\/b> <br>Urban  : 67 <br>Assault: 300 <br>Murder : 11.3","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Assault: 149 <br>Murder : 4.4","<b> Michigan <\/b> <br>Urban  : 74 <br>Assault: 255 <br>Murder : 12.1","<b> Minnesota <\/b> <br>Urban  : 66 <br>Assault: 72 <br>Murder : 2.7","<b> Mississippi <\/b> <br>Urban  : 44 <br>Assault: 259 <br>Murder : 16.1","<b> Missouri <\/b> <br>Urban  : 70 <br>Assault: 178 <br>Murder : 9","<b> Montana <\/b> <br>Urban  : 53 <br>Assault: 109 <br>Murder : 6","<b> Nebraska <\/b> <br>Urban  : 62 <br>Assault: 102 <br>Murder : 4.3","<b> Nevada <\/b> <br>Urban  : 81 <br>Assault: 252 <br>Murder : 12.2","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Assault: 57 <br>Murder : 2.1","<b> New Jersey <\/b> <br>Urban  : 89 <br>Assault: 159 <br>Murder : 7.4","<b> New Mexico <\/b> <br>Urban  : 70 <br>Assault: 285 <br>Murder : 11.4","<b> New York <\/b> <br>Urban  : 86 <br>Assault: 254 <br>Murder : 11.1","<b> North Carolina <\/b> <br>Urban  : 45 <br>Assault: 337 <br>Murder : 13","<b> North Dakota <\/b> <br>Urban  : 44 <br>Assault: 45 <br>Murder : 0.8","<b> Ohio <\/b> <br>Urban  : 75 <br>Assault: 120 <br>Murder : 7.3","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Assault: 151 <br>Murder : 6.6","<b> Oregon <\/b> <br>Urban  : 67 <br>Assault: 159 <br>Murder : 4.9","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Assault: 106 <br>Murder : 6.3","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Assault: 174 <br>Murder : 3.4","<b> South Carolina <\/b> <br>Urban  : 48 <br>Assault: 279 <br>Murder : 14.4","<b> South Dakota <\/b> <br>Urban  : 45 <br>Assault: 86 <br>Murder : 3.8","<b> Tennessee <\/b> <br>Urban  : 59 <br>Assault: 188 <br>Murder : 13.2","<b> Texas <\/b> <br>Urban  : 80 <br>Assault: 201 <br>Murder : 12.7","<b> Utah <\/b> <br>Urban  : 80 <br>Assault: 120 <br>Murder : 3.2","<b> Vermont <\/b> <br>Urban  : 32 <br>Assault: 48 <br>Murder : 2.2","<b> Virginia <\/b> <br>Urban  : 63 <br>Assault: 156 <br>Murder : 8.5","<b> Washington <\/b> <br>Urban  : 73 <br>Assault: 145 <br>Murder : 4","<b> West Virginia <\/b> <br>Urban  : 39 <br>Assault: 81 <br>Murder : 5.7","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Assault: 53 <br>Murder : 2.6","<b> Wyoming <\/b> <br>Urban  : 60 <br>Assault: 161 <br>Murder : 6.8"],"marker":{"colorbar":{"title":"Murder Arrests (per 100,000)","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"size":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"opacity":0.5,"line":{"colorbar":{"title":"","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":false,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998]}},"type":"scatter","xaxis":"x","yaxis":"y","frame":null},{"x":[32,91],"y":[45,337],"type":"scatter","mode":"markers","opacity":0,"hoverinfo":"none","showlegend":false,"marker":{"colorbar":{"title":"Murder","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"color":[0.80000000000000004,17.399999999999999],"line":{"color":"rgba(255,127,14,1)"}},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 
 # Beyond Basics
@@ -1551,7 +1588,7 @@ fig
 
 Use expansion "packages" for common procedures and more functionality
 
-**CRAN**
+**CRAN**.
 Most packages can be found on CRAN and can be easily installed
 
 ``` r
@@ -1565,7 +1602,7 @@ install.packages("data.table")
 The most common tasks also have [cheatsheets](https://www.rstudio.com/resources/cheatsheets/) you can use. E.g., https://github.com/rstudio/cheatsheets/blob/main/rstudio-ide.pdf
 
 
-**Github**
+**Github**.
 Sometimes you will want to install a package from GitHub. For this, you can use [devtools](https://devtools.r-lib.org/) or its light-weight version [remotes](https://remotes.r-lib.org/)
 
 ``` r
@@ -1588,7 +1625,7 @@ install_github('jalvesaq/colorout')
 library(colorout)
 ```
 
-**Base**
+**Base**.
 While additional packages can make your code faster, they also create dependancies that can lead to problems. So learn base R well before becoming dependant on other packages
 
 * https://bitsofanalytics.org/posts/base-vs-tidy/
