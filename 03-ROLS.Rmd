@@ -1,10 +1,10 @@
 # (PART) Linear Regression in R {-} 
 
-This section is a quick overview of linear regression models from the perspective that ``all models are wrong, but some are useful''. All models are estimated via  Ordinary Least Squares (OLS). For more in-depth introductions, which typically begin by assuming the true data generating process is linear, see https://jadamso.github.io/Rbooks/ordinary-least-squares.html#more-literature. 
-
-```{r}
+```{r, echo=FALSE}
 knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
 ```
+
+This section overviews linear regression models from the perspective that ``all models are wrong, but some are useful''. All linear models are estimated via Ordinary Least Squares (OLS). For more in-depth introductions, which typically begin by assuming a linear data generating process, see https://jadamso.github.io/Rbooks/ordinary-least-squares.html#more-literature. 
 
 # Bivariate Data
 ***
@@ -20,40 +20,57 @@ first inspect it, as in Part I.
 # Inspect Dataset
 # head(xy)
 # summary(xy)
-plot(y~x, xy, col=grey(.5,.5), pch=16)
+plot(y~x, xy, col=grey(0,.5), pch=16)
+```
+
+## Linear Correlation
+
+To quantitatively describe the relationship between $Y$ and $X$, you can compute the covariance:
+$$
+\widehat{Cov}(X,Y) =  \sum_{i} [X_i - \bar{x}] [Y_i - \bar{y}]
+$$
+```{r}
+cov(xy)
+```
+Note that $\widehat{Cov}(X,X)=\widehat{Var}(X)$.
+For ease of interpretation, we rescale this statistic to always lay between $-1$ and $1$ 
+$$
+\widehat{Cor}(X,Y) = \frac{\widehat{Cov}(X,Y) }{ \sqrt{\widehat{Cov}(X,X)} \sqrt{\widehat{Cov}(Y,Y)}}
+$$
+```{r}
+cor(xy)
 ```
 
 ## Simple Linear Regression
 Simple Linear Regression refers to fitting a linear model to bivariate data. Specifically, the model is 
 $$
-y_i=\alpha+\beta x_i+\epsilon_{i}
+y_i=\beta_{0}+\beta_{1} x_i+\epsilon_{i}
 $$
-and objective function is
+and our objective function is
 $$
-min_{\alpha, \beta} \sum_{i=1}^{n} \left( \epsilon_{i} \right)^2 =  min_{\alpha, \beta} \sum_{i=1}^{n} \left( y_i - [\alpha+\beta x_i] \right).
+min_{\beta_{0}, \beta_{1}} \sum_{i=1}^{N} \left( \epsilon_{i} \right)^2 =  min_{\beta_{0}, \beta_{1}} \sum_{i=1} \left( y_i - [\beta_{0}+\beta_{1} x_i] \right).
 $$
-Minimizing the squared errors yields point estimates
+Minimizing the sum of squared errors yields parameter estimates
 $$
-\hat{\alpha}=\bar{y}-\hat{\beta}\bar{x} = \widehat{\mathbb{E}}[Y] - \hat{\beta} \widehat{\mathbb{E}}[X] \\
-\hat{\beta}=\frac{\sum_{i}^{}(x_i-\bar{x})(y_i-\bar{y})}{\sum_{i}^{}(x_i-\bar{x})^2} = \frac{\widehat{Cov}[X,Y]}{\widehat{\mathbb{V}}[X]}
+\hat{\beta_{0}}=\bar{y}-\hat{\beta_{1}}\bar{x} = \widehat{\mathbb{E}}[Y] - \hat{\beta_{1}} \widehat{\mathbb{E}}[X] \\
+\hat{\beta_{1}}=\frac{\sum_{i}^{}(x_i-\bar{x})(y_i-\bar{y})}{\sum_{i}^{}(x_i-\bar{x})^2} = \frac{\widehat{Cov}[X,Y]}{\widehat{Var}[X]}
 $$
 and predictions
 $$
-\hat{y}_i=\hat{\alpha}+\hat{\beta}x_i\\
+\hat{y}_i=\hat{\beta_{0}}+\hat{\beta}x_i\\
 \hat{\epsilon}_i=y_i-\hat{y}_i
 $$
-
 
 ```{r}
 # Estimate Regression Coefficients
 reg <- lm(y~x, dat=xy)
 reg 
 
-# Point Estimates
+# Coefficient Estimates
 coef(reg)
 ```
 
-To qualitatively analyze the ''Goodness of fit'', we plot our predictions.
+To qualitatively analyze the ''Goodness of fit'' of our model, we plot our predictions.
 ```{r}
 # Plot Data and Predictions
 library(plotly)
@@ -85,14 +102,17 @@ add_trace(fig, x=~x, y=~pred,
     line=list(width=1/2),
     marker=list(symbol=134, size=5))
 ```
-To quantitatively analyze GoF, we compute $R^2$ using the sums of squared errors (Total, Explained, and Residual)
+To quantitatively analyze Goodness of Fit, we can intuitively compute the linear correlation between the predictions and the data 
+$$
+R = Cor( \hat{y}_i, y)
+$$
+With linear models, we typically compute $R^2$, known as the "coefficient of determination", using the sums of squared errors (Total, Explained, and Residual)
 $$
 \underbrace{\sum_{i}(y_i-\bar{y})^2}_\text{TSS}=\underbrace{\sum_{i}(\hat{y}_i-\bar{y})^2}_\text{ESS}+\underbrace{\sum_{i}\hat{\epsilon_{i}}^2}_\text{RSS}\\
 R^2 = \frac{ESS}{TSS}=1-\frac{RSS}{TSS}
 $$
-Note that $R^2$ is also called the coefficient of determination.
 ```{r}
-# Manually Compute Goodness of Fit
+# Manually Compute R2
 Ehat <- resid(reg)
 RSS  <- sum(Ehat^2)
 Y <- xy$y
@@ -102,6 +122,10 @@ R2
 
 # Check R2
 summary(reg)$r.squared
+
+# Double Check R2
+R <- cor(xy$y, predict(reg))
+R^2
 ```
 
 
@@ -112,8 +136,7 @@ A regression coefficient is a statistic. And, just like all statistics, we can c
 * *standard deviation*: variability within a single sample.
 * *standard error*: variability across different samples.
 * *confidence interval:* range your statistic varies across different samples.
-* *null distribution*: the sampling distribution of the statistic under the null hypothesis (assuming your null hypothesis was true).
-* *p-value* the probability you would see something as extreme as your statistic when sampling from the null distribution.
+
 
 Note that values reported by your computer do not necessarily satisfy this definition. To calculate these statistics, we will estimate variability using *data-driven* methods. (For some theoretical background, see, e.g., https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf.)
 
@@ -198,9 +221,14 @@ We can also bootstrap other statistics, such as a t-statistic or $R^2$. We do su
 
 ## Hypothesis Tests
 
-There are two main ways to conduct a hypothesis test. We do this using *data-driven* methods that assume much less about the data generating process.
+In this section, we test hypotheses using *data-driven* methods that assume much less about the data generating process. There are two main ways to conduct a hypothesis test to do so: inverting a confidence interval and imposing the null. To discuss them, we need two additional definitions
 
-**Invert a CI**
+* *null distribution*: the sampling distribution of the statistic under the null hypothesis (assuming your null hypothesis was true).
+* *p-value* the probability you would see something as extreme as your statistic when sampling from the null distribution.
+
+
+
+**Invert a CI**.
 One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. Does the slope coefficient equal $0$? For reasons we won't go into in this class, we typically normalize the coefficient by its standard error: $$ \hat{t} = \frac{\hat{\beta}}{\hat{\sigma}_{\hat{\beta}}} $$
 ```{r}
 tvalue <- coef(reg)['x']/jack_se
@@ -223,7 +251,7 @@ abline(v=quantile(jack_t, probs=c(.025,.975)), lty=2)
 abline(v=0, col="red", lwd=2)
 ```
 
-**Impose the Null**
+**Impose the Null**.
 We can also compute a null distribution. We focus on the simplest, the bootstrap, where loop through a large number of simulations. In each iteration of the loop, we drop impose the null hypothesis and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''. Specifically, we compute the distribution of t-values on data with randomly reshuffled outcomes (imposing the null), and compare how extreme the observed value is.
 ```{r}
 # Null Distribution for Beta
@@ -305,7 +333,13 @@ For a nice overview of different types of intervals, see https://www.jstor.org/s
 
 ## Locally Linear
 
-Segmented/piecewise regressions
+It is generally safe to assume that you could be analyzing data with nonlinear relationships. Here, our model can be represented as
+\begin{eqnarray}
+y_{i} = m(x_{i}) + e_{i},
+\end{eqnarray}
+with $m$ being some unknown but smooth function. In such cases, linear regressions can still be useful.
+
+The simplest case is **segmented/piecewise regression**
 ```{r}
 # Globally Linear
 reg <- lm(y~x, data=xy)
@@ -358,8 +392,7 @@ legend('topleft',
     lty=1, col=c(2,4,3), cex=.8)
 ```
 
-
-Local linear regressions conduct a linear regresssion for each data point using a subsample of data around it. 
+A less simple case is a **local linear regression** which conducts a linear regression for each data point using a subsample of data around it. 
 ```{r}
 # ``Naive" Smoother
 pred_fun <- function(x0, h, xy){
@@ -374,7 +407,7 @@ X0 <- sort(unique(xy$x))
 pred_lo1 <- sapply(X0, pred_fun, h=2, xy=xy)
 pred_lo2 <- sapply(X0, pred_fun, h=20, xy=xy)
 
-plot(y~x, pch=16, data=xy, col=grey(.5,.5),
+plot(y~x, pch=16, data=xy, col=grey(0,.5),
     ylab='Murder Rate', xlab='Population Density')
 cols <- c(rgb(.8,0,0,.5), rgb(0,0,.8,.5))
 lines(X0, pred_lo1, col=cols[1], lwd=1, type='o')
@@ -383,7 +416,7 @@ legend('topleft', title='Locally Linear',
     legend=c('h=2 ', 'h=20'),
     lty=1, col=cols, cex=.8)
 ```
-See https://shinyserv.es/shiny/kreg/ for a nice illustration. Also note that you can use adaptive bandwidths to have a similar number of data points in each subsample (especially useful when $X$ is not uniform.)
+Note that there are more complex versions of local linear regressions (see https://shinyserv.es/shiny/kreg/ for a nice illustration.) An even more complex (and more powerful) version is **loess**, which uses adaptive bandwidths in order to have a similar number of data points in each subsample (especially useful when $X$ is not uniform.)
 
 ```{r}
 # Adaptive-width subsamples with non-uniform weights
@@ -435,8 +468,8 @@ polygon(
 
 ```
 
+You can also construct prediction bands, which estimate the variability of new data rather than a statistic (a range for $y_{i}(x)$ rather than for $m(x)$).
 
-You can also construct prediction bands
 ```{r}
 plot(y~x, pch=16, col=grey(0,.5),
     dat=xy0, ylim=c(0, 20))
@@ -500,24 +533,39 @@ head(USArrests)
 library(psych)
 pairs.panels( USArrests[,c('Murder','Assault','UrbanPop')],
     hist.col=grey(0,.25), breaks=30, density=F, hist.border=NA, # Diagonal
-    ellipses=F, rug=F, smoother=F, pch=16, col=grey(0,.5) # Lower Triangle
+    ellipses=F, rug=F, smoother=F, pch=16, col='red' # Lower Triangle
     )
 ```
 
 
 ## Multiple Linear Regression
-Model and objective
+With $K$ variables, the linear model is
 $$
-y_i=\beta_0+\beta_1x_{i1}+\beta_2x_{i2}+\ldots+\beta_kx_{ik}+\epsilon_i = X_{i}\beta +\epsilon_i \\
-min_{\beta} \sum_{i=1}^{n} (\epsilon_i)^2
+y_i=\beta_0+\beta_1 x_{i1}+\beta_2 x_{i2}+\ldots+\beta_K x_{iK}+\epsilon_i = [1~~  x_{i1} ~~...~~ x_{iK}] \beta + \epsilon_i
 $$
-Letting $y$ denote the vector $[y_{1},...y_{N}]$, we can also write the model and objective in matrix form
+and our objective is
+$$
+min_{\beta} \sum_{i=1}^{N} (\epsilon_i)^2.
+$$
+
+Denoting 
+$$
+y= \begin{pmatrix} 
+y_{1} \\ \vdots \\ y_{N}
+\end{pmatrix} \quad
+\textbf{X} = \begin{pmatrix} 
+1 & x_{11} & ... & x_{1K} \\
+& \vdots & & \\
+1 & x_{N1} & ... & x_{NK} 
+\end{pmatrix},
+$$
+we can also write the model and objective in matrix form
 $$
 y=\textbf{X}\beta+\epsilon\\
 min_{\beta} (\epsilon' \epsilon)
 $$
 
-Minimizing the squared errors yields point estimates yields point estimates 
+Minimizing the squared errors yields coefficient estimates
 $$
 \hat{\beta}=(\textbf{X}'\textbf{X})^{-1}\textbf{X}'y
 $$
@@ -550,7 +598,7 @@ abline(a=0,b=1, lty=2)
 and compute sums of squared errors. Adding random data may sometimes improve the fit, however, so we adjust the $R^2$ by the number of covariates $K$.
 $$
 R^2 = \frac{ESS}{TSS}=1-\frac{RSS}{TSS}\\
-R^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-R^2)
+R^2_{\text{adj.}} = 1-\frac{N-1}{N-K}(1-R^2)
 $$
 
 ```{r}
@@ -581,7 +629,9 @@ legend('topleft', horiz=T,
 
 ## Variability and Hypothesis Tests
 
-To estimate the variability of our estimates, we can use the same *data-driven* methods introduced in the last section.
+To estimate the variability of our estimates, we can use the same *data-driven* methods introduced in the last section. As before, we can conduct independent hypothesis tests using t-values.
+
+We can also conduct *joint* tests that account for interdependancies in our estimates. For example, to test whether two coefficients both equal $0$, we bootstrap the *joint* distribution of coefficients.
 
 ```{r}
 # Bootstrap SE's
@@ -592,10 +642,12 @@ boot_regs <- lapply(boots, function(b){
     reg_b <- lm(Murder~Assault+UrbanPop, dat=xy_b)
 })
 boot_coefs <- sapply(boot_regs, coef)
-boot_mean <- apply(boot_coefs,1, mean)
-boot_se <- apply(boot_coefs,1, sd)
+
+# Recenter at 0 to impose the null
+#boot_means <- rowMeans(boot_coefs)
+#boot_coefs0 <- sweep(boot_coefs, MARGIN=1, STATS=boot_means)
 ```
-As before, we can conduct independent hypothesis tests using t-values. We can also conduct joint tests, such as whether two coefficients are equal, by looking at the their joint distribution.
+
 ```{r}
 boot_coef_df <- as.data.frame(cbind(ID=boots, t(boot_coefs)))
 fig <- plotly::plot_ly(boot_coef_df,
@@ -610,43 +662,48 @@ fig <- plotly::plot_ly(boot_coef_df,
     marker=list( color='rgba(0, 0, 0, 0.5)'))
 fig <- plotly::layout(fig,
     showlegend=F,
-    title='Joint Distribution of Coefficients',
+    title='Joint Distribution of Coefficients (under the null)',
     xaxis = list(title='UrbanPop Coefficient'),
     yaxis = list(title='Assualt Coefficient'))
 fig
 ```
 
-**Hypothesis Testing**
+
+**F-statistic**.
+
 We can also use an $F$ test for any $q$ hypotheses. Specifically, when $q$ hypotheses *restrict* a model, the degrees of freedom drop from $k_{u}$ to $k_{r}$ and the residual sum of squares $RSS=\sum_{i}(y_{i}-\widehat{y}_{i})^2$ typically increases. We compute the statistic
 $$
-F_{q} = \frac{(RSS_{r}-RSS_{u})/(k_{u}-k_{r})}{RSS_{u}/(N-k_{u})}.
+F_{q} = \frac{(RSS_{r}-RSS_{u})/(k_{u}-k_{r})}{RSS_{u}/(N-k_{u})}
 $$
-When the restricted model is a simple intercept, $F_{q}$ can also be written in terms of $R^2$ or adjusted $R^2$. For some intuition on hypothesis testing, we examine how the $R^2$ statistic varies with bootstrap samples. Specifically, compute a null $R^2$ distribution by randomly reshuffling the outcomes and compare it to the observed $R^2$.
+
+If you test whether all $K$ variables are significant, the restricted model is a simple intercept and $RSS_{r}=TSS$, and $F_{q}$ can be written in terms of $R^2$: $F_{K} = \frac{R^2}{1-R^2} \frac{N-K}{K-1}$. The first fraction is the relative goodness of fit, and the second fraction is an adjustment for degrees of freedom (similar to how we  adjusted the $R^2$ term before). 
+
+To conduct a hypothesis test, first compute a null distribution by randomly reshuffling the outcomes and recompute the $F$ statistic, and then compare how often random data give something as extreme as your initial statistic. For some intuition on this F test, examine how the adjusted $R^2$ statistic varies with bootstrap samples. 
 ```{r}
-# Bootstrap NULL
+# Bootstrap under the null
 boots <- 1:399
 boot_regs0 <- lapply(boots, function(b){
+  # Generate bootstrap sample
   xy_b <- USArrests
   b_id <- sample( nrow(USArrests), replace=T)
+  # Impose the null
   xy_b$Murder <-  xy_b$Murder[b_id]
+  # Run regression
   reg_b <- lm(Murder~Assault+UrbanPop, dat=xy_b)
 })
-
-boot_coefs0 <- sapply(boot_regs0, function(reg_k){
-    coef(reg_k) })
-R2_sim0 <- sapply(boot_regs0, function(reg_k){
-    summary(reg_k)$r.squared })
+# Get null distribution for adjusted R2
 R2adj_sim0 <- sapply(boot_regs0, function(reg_k){
     summary(reg_k)$adj.r.squared })
-
 hist(R2adj_sim0, xlim=c(-.1,1), breaks=25, border=NA,
     main='', xlab=expression('adj.'~R[b]^2))
+
+# Compare to initial statistic
 abline(v=summary(reg)$adj.r.squared, lwd=2, col=2)
 ```
 
-Under some additional assumptions $F_{q}$ follows an F-distribution. Note that *hypothesis testing is not to be done routinely*, as complications arise when testing multiple hypothesis sequentially.
+Note that *hypothesis testing is not to be done routinely*, as additional complications arise when testing multiple hypothesis sequentially.
 
-For more about F-testing, see https://online.stat.psu.edu/stat501/lesson/6/6.2 and https://www.econometrics.blog/post/understanding-the-f-statistic/
+Under some additional assumptions $F_{q}$ follows an F-distribution. For more about F-testing, see https://online.stat.psu.edu/stat501/lesson/6/6.2 and https://www.econometrics.blog/post/understanding-the-f-statistic/
 
 ## Factor Variables
 
@@ -676,7 +733,7 @@ y_{it} = x_{it} \beta_{x} + d_{t}\beta_{t}
 $$
 When, as commonly done, the factors are modeled as being additively seperable, they are modeled "fixed effects".^[There are also *random effects*: the factor variable comes from a distribution that is uncorrelated with the regressors. This is rarely used in economics today, however, and are mostly included for historical reasons and special cases where fixed effects cannot be estimated due to data limitations.]
 Simply including the factors into the OLS regression yields a "dummy variable" fixed effects estimator.
-**Hansen Econometrics, Theorem 17.1:** The fixed effects estimator of $\beta$ algebraically equals the dummy variable estimator of $\beta$. The two estimators have the same residuals.
+**Hansen Econometrics, Theorem 17.1:** *The fixed effects estimator of $\beta$ algebraically equals the dummy variable estimator of $\beta$. The two estimators have the same residuals.*
 <!--
 In fact, if the fixed effect is ``fully unstructured then the only way to consistently estimate the coefficient $\beta$ is by an estimator which is invariant'' (Hansen Econometrics, p). 
 -->
@@ -691,7 +748,7 @@ fe_reg0 <- lm(y~-1+x+fo+fu, dat_f)
 coef( fe_reg0 )
 ```
 
-With fixed effects, we can also compute averages for each group and construct a *between estimator*: $\overline{y}_i = \alpha + \overline{x}_i \beta$. Or we can subtract the average from each group to construct a *within estimator*: $(y_{it} - \overline{y}_i) = (x_{it}-\overline{x}_i)\beta$. 
+With fixed effects, we can also compute averages for each group and construct a *between estimator*: $\bar{y}_i = \alpha + \bar{x}_i \beta$. Or we can subtract the average from each group to construct a *within estimator*: $(y_{it} - \bar{y}_i) = (x_{it}-\bar{x}_i)\beta$. 
 
 But note that many factors are not additively separable. This is easy to check with an F-test;
 ```{r}
@@ -711,7 +768,7 @@ anova(reg0, reg1, reg2)
 -->
 
 
-**Break Points**
+**Break Points**.
 Kinks and Discontinuities in $X$ can also be modeled using factor variables. As such, $F$-tests can be used to examine whether a breaks is statistically significant.
 ```{r, eval=F}
 library(AER); data(CASchools)
@@ -759,7 +816,7 @@ $$
 $$
 
 
-Generate a simulated dataset with 30 observations and two exogenous variables. Assume the following relationship: $y_{i} = \beta_0 + \beta_1 x_{1,i} + \beta_2 x_{2,i} + \epsilon_i$ where the variables and the error term are realizations of the following data generating processes (DGP):
+Generate a simulated dataset with 30 observations and two exogenous variables. Assume the following relationship: $y_{i} = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \epsilon_i$ where the variables and the error term are realizations of the following data generating processes (DGP):
 ```{r}
 N <- 30
 B <- c(10, 2, -1)
@@ -816,7 +873,8 @@ for(i in 2:3){
     abline(v=mean(Coefs[i,]), col=1, lwd=2)
 }
 ```
-In general, you can interpret your regression coefficients as "conditional correlations". If further hypothesis testing suggests the relationships are actually additively separable and linear, then you also have the structural interpretation of "marginal effect".
+
+In general, you can interpret your regression coefficients as "adjusted correlations". There are (many) tests for whether the relationships in your dataset are actually additively separable and linear.
 
 
 ## Transformations
@@ -832,7 +890,7 @@ Transforming variables can often improve your model fit while still allowing it 
 
 Now recall from micro theory that an additively seperable and linear production function is referred to as ``perfect substitutes''. With a linear model and untranformed data, you have implicitly modelled the different regressors $X$ as perfect substitutes. Further recall that the ''perfect substitutes'' model is a special case of the constant elasticity of substitution production function. Here, we will build on http://dx.doi.org/10.2139/ssrn.3917397, and consider box-cox transforming both $X$ and $y$. Specifically, apply the box-cox transform of $y$ using parameter $\lambda$ and apply another box-cox transform to each $x$ using the same parameter $\rho$ so that
 $$
-y^{(\lambda)}_{i} = \sum_{k}\beta_{k} x^{(\rho)}_{k,i} + \epsilon_{i}\\
+y^{(\lambda)}_{i} = \sum_{k=1}^{K}\beta_{k} x^{(\rho)}_{ik} + \epsilon_{i}\\
 y^{(\lambda)}_{i} =
 \begin{cases}
 \lambda^{-1}[ (y_i+1)^{\lambda}- 1] & \lambda \neq 0 \\
@@ -964,7 +1022,7 @@ plot(reg, pch=16, col=grey(0,.5))
 
 
 
-**Outliers** 
+**Outliers**.
 The first diagnostic plot examines outliers in terms the outcome $y_i$ being far from its prediction $\hat{y}_i$. You may be interested in such outliers because they can (but do not have to) unduly influence your estimates. 
 
 The third diagnostic plot examines another type of outlier, where an observation with the explanatory variable $x_i$ is far from the center of mass of the other $x$'s. A point has high *leverage* if the estimates change dramatically when you estimate the model without that data point.
@@ -973,7 +1031,7 @@ N <- 40
 x <- c(25, runif(N-1,3,8))
 e <- rnorm(N,0,0.4)
 y <- 3 + 0.6*sqrt(x) + e
-plot(y~x, pch=16, col=grey(.5,.5))
+plot(y~x, pch=16, col=grey(0,.5))
 points(x[1],y[1], pch=16, col=rgb(1,0,0,.5))
 
 abline(lm(y~x), col=2, lty=2)
@@ -1004,8 +1062,8 @@ car::influencePlot(reg)
 ```
 
 
-**Normality**
-The second plot examines whether the residuals are normally distributed. OLS point estimates do not depend on the normality of the residuals. (Good thing, because there's no reason the residuals of economic phenomena should be so well behaved.) Many hypothesis tests are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality 
+**Normality**.
+The second plot examines whether the residuals are normally distributed. Your OLS coefficient estimates do not depend on the normality of the residuals. (Good thing, because there's no reason the residuals of economic phenomena should be so well behaved.) Many hypothesis tests are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality 
 ```{r, eval=F}
 par(mfrow=c(1,2))
 hist(resid(reg), main='Histogram of Residuals',
@@ -1024,7 +1082,7 @@ library(lmtest)
 lmtest::bptest(reg)
 ```
 
-**Collinearity**
+**Collinearity**.
 This is when one explanatory variable in a multiple linear regression model can be linearly predicted from the others with a substantial degree of accuracy. Coefficient estimates may change erratically in response to small changes in the model or the data. (In the extreme case where there are more variables than observations $K>N$, the inverse of $X'X$ has an infinite number of solutions.) To diagnose collinearity, we can use the *Variance Inflation Factor*
 $$
 VIF_{k}=\frac{1}{1-R^2_k},
@@ -1101,7 +1159,7 @@ xy <- sapply(z, function(zi){
     c(x,y)
 })
 xy <- data.frame(x=xy[1,],y=xy[2,])
-plot(y~x, data=xy, pch=16, col=grey(.5,.5))
+plot(y~x, data=xy, pch=16, col=grey(0,.5))
 abline(lm(y~x,data=xy))
 ```
 
@@ -1125,14 +1183,10 @@ You paid special attention in your research design to find a case where $x_{1}$ 
 The magnitude of the bias for $x_{1}$ thus depends on the correlations between $x_{1}$ and $x_{2}$ as well as $x_{2}$ and $\epsilon$.
 
 
-Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels of technical detail, they are not covered extensively in this notebook. 
+Three statistical tools: 2SLS, RDD, and DID, are designed to address endogeneity issues. The elementary versions of these tools are linear regression. Because there are many textbooks and online notebooks that explain these methods at both high and low levels of technical detail, they are not covered extensively in this notebook. Instead, I will focus on the seminal economic example to provide some intuition.
 
 
-## Two Stage Least Squares (2SLS)
-
-There are many approaches to 2SLS, but I will focus on the seminal example in economics. Suppose we ask "what is the effect of price on quantity?" You can simply run a regression of one variable on another, but you will need much luck to correctly intepret the resulting coefficient. The reason is simultaneity: price and quantity mutually cause one another in markets.^[Although there are many ways this simultaneity can happen, economic theorists have made great strides in analyzing the simultaneity problem as it arises from market relationships. In fact, the 2SLS statistical approach arose to understand the equilibrium of competitive agricultural markets.]
-
-**Competitive Market Equilibrium** has three structural relationships: (1) market supply is the sum of quantities supplied by individual firms at a given price, (2) market demand is the sum of quantities demanded by individual people at a given price, and (3) market supply equals market demand in equilibrium. Assuming market supply and demand are linear, we can write these three "structural equations" as
+**Competitive Market Equilibrium**. This model has three structural relationships: (1) market supply is the sum of quantities supplied by individual firms at a given price, (2) market demand is the sum of quantities demanded by individual people at a given price, and (3) market supply equals market demand in equilibrium. Assuming market supply and demand are linear, we can write these three relationships as
 \begin{eqnarray}
 Q_{S}(P) &=& A_{S} + B_{S} P + E_{S},\\
 Q_{D}(P) &=& A_{D} - B_{D} P + E_{D},\\
@@ -1199,17 +1253,21 @@ mtext('Quantity',1, line=2)
 mtext('Price',2, line=2)
 ```
 
-Now regress quantity ("Y") on price ("X"): $\widehat{\beta}_{OLS} = Cov(Q^{*}, P^{*}) / Var(P^{*})$. You get a number back, but it is hard to interpret meaningfully. 
+Suppose we ask "what is the effect of price on quantity?" You can simply run a regression of quantity ("Y") on price ("X"): $\widehat{\beta}_{OLS} = Cov(Q^{*}, P^{*}) / Var(P^{*})$. You get a number back, but it is hard to interpret meaningfully. 
 ```{r}
 # Analyze Market Data
 dat1 <- data.frame(t(EQ1), cost='1')
 reg1 <- lm(Q~P, data=dat1)
 summary(reg1)
 ```
-This simple derivation has a profound insight: price-quantity data does not generally tell you how price affects quantity (or vice-versa). Moreover, it also clarifies that our initial question "what is the effect of price on quantity?" is misguided. We could more sensibly ask  "what is the effect of price on quantity supplied?" or "what is the effect of price on quantity demanded?"
+This simple derivation has a profound insight: price-quantity data does not generally tell you how price affects quantity (or vice-versa). The reason is simultaneity: price and quantity mutually cause one another in markets.^[Although there are many ways this simultaneity can happen, economic theorists have made great strides in analyzing the simultaneity problem as it arises from equilibrium market relationships. In fact, 2SLS arose to understand agricultural markets.]
+
+Moreover, this example also clarifies that our initial question "what is the effect of price on quantity?" is misguided. We could more sensibly ask  "what is the effect of price on quantity supplied?" or "what is the effect of price on quantity demanded?"
 
 
-If you have exogeneous variation on one side of the market, "shocks", you can get information on the other. For example, lower costs shift out supply (more is produced at given price), allowing you to trace out part of a demand curve.
+## Two Stage Least Squares (2SLS)
+
+If you have exogenous variation on one side of the market, "shocks", you can get information on the other. For example, lower costs shift out supply (more is produced at given price), allowing you to trace out part of a demand curve.
 Experimental manipulation of $A_{S}$ leads to 
 \begin{eqnarray}
 \label{eqn:comp_market_statics}
@@ -1299,7 +1357,7 @@ reg2_iv <- feols(Q~1|P~cost, data=dat2)
 summary(reg2_iv)
 ```
 
-**Within Group Variance**
+**Within Group Variance**.
 You can experiment with the effect of different variances on both OLS and IV in the code below. And note that if we had multiple supply shifts and recorded their magnitudes, then we could recover more information about demand, perhaps tracing it out entirely.
 ```{r}
 # Examine
@@ -1338,21 +1396,17 @@ lapply( list(Egrid_OLS, Egrid_IV), function(ei){
 
 
 
-**Caveats** 
+**Caveats**.
 Regression analysis with instrumental variables can be very insightful and is applied to many different areas. But I also want to stress some caveats about using IV in practice.
 
 We always get coefficients back when running `feols`, and sometimes the computed p-values are very small. The interpretation of those numbers rests on many assumptions:
 
 * only supply was affected (Instrument exogeneity)
 * the shock is large enough to be picked up statistically (Instrument relevance)
-* supply and demand are linear and additively seperable (Functional form)
+* supply and demand are linear and additively separable (Functional form)
 * we were not cycling through different IV's (Multiple hypotheses)
 
 We are rarely sure that all of these assumptions hold, and this is one reason why researchers often also report their OLS results.
-
-In practice, it is hard to find a good instrument. For example, suppose we asked "what is the effect of wages on police demanded?" and examined a policy which lowered the educational requirements from 4 years to 2 to become an officer. This increases the labour supply, but it also affects the demand curve through "general equilibrium": as some of the new officers were potentially criminals. With fewer criminals, the demand for likely police shifts down.
-
-In practice, it is also easy to find a bad instrument. Paradoxically, IV's are something you are supposed to find but never search for. As you search for good instruments, sometimes random noise will appear like a good instrument (Spurious instruments). Worse, if you search for a good instrument for too long, you can also be led astray from important questions.
 
 
 ```{r, eval=F, results='hide', echo=F}
@@ -1374,13 +1428,14 @@ The basic idea here is to examine how a variable changes in response to an exoge
 
 ```{r}
 dat2$T <- 1:nrow(dat2)
+cols <- ifelse(as.numeric(dat2$cost)==2, rgb(0,0,1,.5), rgb(0,0,0,.5))
 
 plot(P~T, dat2, main='Effect of Cost Shock on Price', 
-    font.main=1, pch=16, col=grey(0,.25))
+    font.main=1, pch=16, col=cols)
 regP1 <- lm(P~T, dat2[dat2$cost==1,]) 
-lines(regP1$model$T, predict(regP1), col=2)
+lines(regP1$model$T, predict(regP1), col=rgb(0,0,0), lwd=2)
 regP2 <- lm(P~T, dat2[dat2$cost==2,]) 
-lines(regP2$model$T, predict(regP2), col=4)
+lines(regP2$model$T, predict(regP2), col=rgb(0,0,1), lwd=2)
 
 regP <- lm(P~T*cost, dat2)
 summary(regP)
@@ -1388,17 +1443,17 @@ summary(regP)
 
 ```{r}
 plot(Q~T, dat2, main='Effect of Cost Shock on Quantity',
-    font.main=1, pch=16, col=grey(0,.15))
+    font.main=1, pch=16, col=cols)
 regQ1 <- lm(Q~T, dat2[dat2$cost==1,]) 
-lines(regQ1$model$T, predict(regQ1), col=2)
+lines(regQ1$model$T, predict(regQ1), col=rgb(0,0,0), lwd=2)
 regQ2 <- lm(Q~T, dat2[dat2$cost==2,]) 
-lines(regQ2$model$T, predict(regQ2), col=4)
+lines(regQ2$model$T, predict(regQ2), col=rgb(0,0,1), lwd=2)
 
 regQ <- lm(Q~T*cost, dat2)
 summary(regQ)
 ```
 
-Remember that this is effect is *local*: different magnitudes of the cost shock or different demand curves generally yeild different estimates.
+Remember that this is effect is *local*: different magnitudes of the cost shock or different demand curves generally yield different estimates.
 
 ## Difference in Differences (DID)
 
@@ -1419,21 +1474,45 @@ EQ3 <- sapply(1:(2*N), function(n){
     return(eq)
 })
 dat3 <- data.frame(t(EQ3), cost='1', T=1:ncol(EQ3))
+dat3$Pre <- dat3$T < N # Size of first treatment group
 
-
+# Plot Price Data
 par(mfrow=c(1,2))
-plot(P~T, dat2, main='Effect of Cost Shock on Price',
-    font.main=1, pch=17,col=rgb(0,0,1,.25))
-points(P~T, dat3, pch=16, col=rgb(1,0,0,.25))
+plot(P~T, dat2, main='Effect of Cost Shock on Price', 
+    font.main=1, pch=16, col=cols, cex=.5)
+lines(regP1$model$T, predict(regP1), col=rgb(0,0,0), lwd=2)
+lines(regP2$model$T, predict(regP2), col=rgb(0,0,1), lwd=2)
+# W/ Control group
+points(P~T, dat3, pch=16, col=rgb(1,0,0,.5), cex=.5)
+regP3a <- lm(P~T, dat3[dat3$Pre,]) 
+lines(regP3a$model$T, predict(regP3a), col=rgb(1,0,0), lwd=2)
+regP3b <- lm(P~T, dat3[!dat3$Pre,]) 
+lines(regP3b$model$T, predict(regP3b), col=rgb(1,0,0), lwd=2)
 
+
+# Plot Quantity Data
 plot(Q~T, dat2, main='Effect of Cost Shock on Quantity',
-    font.main=1, pch=17,col=rgb(0,0,1,.25))
-points(Q~T, dat3, pch=16, col=rgb(1,0,0,.25))
+    font.main=1, pch=17, col=cols, cex=.5)
+lines(regQ1$model$T, predict(regQ1), col=rgb(0,0,0), lwd=2)
+lines(regQ2$model$T, predict(regQ2), col=rgb(0,0,1), lwd=2)
+# W/ Control group
+points(Q~T, dat3, pch=16, col=rgb(1,0,0,.5), cex=.5)
+regQ3a <- lm(Q~T, dat3[dat3$Pre,]) 
+lines(regQ3a$model$T, predict(regQ3a), col=rgb(1,0,0), lwd=2)
+regQ3b <- lm(Q~T, dat3[!dat3$Pre,]) 
+lines(regQ3b$model$T, predict(regQ3b), col=rgb(1,0,0), lwd=2)
 
+
+# Single Regression Estimates
+# Pool Data
+dat2$Pre <- dat2$T < N # Size of first treatment group
+dat2$EverTreat <- 1
+dat3$EverTreat <- 0
 dat <- rbind(dat2, dat3)
-regP <- lm(P~T*cost, dat)
+# Estimate Intercept Shifts
+regP <- lm(P~Pre*EverTreat, dat)
 summary(regP)
-regQ <- lm(Q~T*cost, dat)
+regQ <- lm(Q~Pre*EverTreat, dat)
 summary(regQ)
 ```
 
@@ -1474,7 +1553,11 @@ For RDD and DID,
 # Data Scientism
 ***
 
-There is currently a boom in empirical research centered around linear regression analysis. This is not for the first boom in empirical research, and we'd be wise to recall some earlier wisdom from economists on the matter.
+In practice, it is hard to find a good natural experiment. For example, suppose we asked "what is the effect of wages on police demanded?" and examined a policy which lowered the educational requirements from 4 years to 2 to become an officer. This increases the labour supply, but it also affects the demand curve through "general equilibrium": as some of the new officers were potentially criminals and, with fewer criminals, the demand for police shifts down.
+
+In practice, it is also easy to find a bad instrument. Paradoxically, natural experiments are something you are supposed to find but never search for. As you search for good instruments, for example, sometimes random noise will appear like a good instrument (spurious instruments). In this age of big data, we are getting increasingly more data and, perhaps surprisingly, this makes it easier to make false discoveries. 
+
+We will consider three classical ways for false discoveries to arise. After that, there are examples with the latest and greatest empirical recipes---we don't have so many theoretical results yet but I think you can understand the issue with the numerical example. Although it is difficult to express numerically, you must also know that if you search for a good natural experiment for too long, you can also be led astray from important questions. There are good reasons to be excited about empirical social science, but we would be wise to recall some earlier wisdom from economists on the matter.
 
 > The most reckless and treacherous of all theorists is he who professes to let facts and figures speak for themselves, who keeps in the background the part he has played, perhaps unconsciously, in selecting and grouping them
 >
@@ -1504,7 +1587,6 @@ There is currently a boom in empirical research centered around linear regressio
 
 
 
-In this age of big data, we are getting more and more data. Perhaps surprisingly, this makes it easier to make false discoveries. We consider three main ways for these to arise. After that, there are examples of scientism with the ''latest and greatest'' empirical recipes---we don't have so many theoretical results yet but I think you can understand the issue with the numerical example. 
 
 ## Data Errors
 
@@ -1539,7 +1621,7 @@ while(p >= .001){
 }
 
 plot(X1~X2, data=dat_i,
-    pch=16, col=grey(.5,.5), font.main=1,
+    pch=16, col=grey(0,.5), font.main=1,
     main=paste0('Random Dataset ', i,":   p=",
         formatC(p,digits=2, format='fg')))
 abline(reg_i)
@@ -1574,6 +1656,7 @@ while(p >= .05){
 }
 summary(ivreg_i)
 ```
+
 
 ## Spurious Regression 
  
@@ -1652,8 +1735,7 @@ axis(2)
 #stargazer(reg1, reg2, type='html')
 ```
 
-**The same principles apply to regression-based approaches to endogeneity issues**
-For example, we now run IV regressions for different variable combinations in the dataset of spurious relationships
+**The same principles apply to regression-based approaches to endogeneity issues**. For example, we now run IV regressions for different variable combinations in the dataset of spurious relationships
 ```{r}
 knames <- names(vigen_csv)[2:11] # First 10 Variables
 #knames <- names(vigen_csv)[-1] # Try All Variables
@@ -1692,6 +1774,11 @@ For more intuition on spurious correlations, try http://shiny.calpoly.sh/Corr_Re
 
 ## Spurious Causal Impacts
 
+In practice, it is hard to find a good natural experiment. For example, suppose we asked "what is the effect of wages on police demanded?" and examined a policy which lowered the educational requirements from 4 years to 2 to become an officer. This increases the labour supply, but it also affects the demand curve through "general equilibrium": as some of the new officers were potentially criminals. With fewer criminals, the demand for likely police shifts down.
+
+In practice, it is surprisingly easy to find a bad instrument. Paradoxically, natural experiments are something you are supposed to find but never search for. As you search for good instruments, for example, sometimes random noise will appear like a good instrument (Spurious instruments). Worse, if you search for a good instrument for too long, you can also be led astray from important questions.
+
+
 We apply the three major credible methods (IV, RDD, DID) to random walks. Each time, we find a result that fits mold and add various extensions that make it appear robust. One could tell a story about how $X_{2}$ affects $X_{1}$ but $X_{1}$ might also affect $X_{2}$, and how they discovered an instrument $X_{3}$ to provide the first causal estimate of $X_{2}$ on $X_{1}$. The analysis looks scientific and the story sounds plausible, so you could probably be convinced *if it were not just random noise.*
 
 
@@ -1713,7 +1800,7 @@ plot(random_walk2, pch=16, col=rgb(0,0,1,.25),
 ```
 
 
-**IV**
+**IV**.
 First, find an instrument that satisfy various statistical criterion to provide a causal estimate of $X_{2}$ on $X_{1}$.
 ```{r}
 # "Find" "valid" ingredients
@@ -1731,7 +1818,7 @@ summary(ivreg_i)
 ```
 
 
-**RDD**
+**RDD**.
 Second, find a large discrete change in the data that you can associate with a policy. You can use this as an instrument too, also providing a causal estimate of $X_{2}$ on $X_{1}$.
 
 
@@ -1769,7 +1856,7 @@ stargazer::stargazer(rdd_sub, rdd_full,
 ```
 
 
-**DID**
+**DID**.
 Third, find a change in the data that you can associate with a policy where the control group has parallel trends. This also provides a causal estimate of $X_{2}$ on $X_{1}$.
 
 ```{r, message=F, warning=F}

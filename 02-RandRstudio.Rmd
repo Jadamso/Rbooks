@@ -1,6 +1,6 @@
 # (PART) Programming in R {-} 
 
-```{r}
+```{r, echo=FALSE}
 knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
 ```
 
@@ -16,19 +16,17 @@ We focus on R because it is good for complex stats, concise figures, and coheren
 First Install [R](https://cloud.r-project.org/).
 Then Install [Rstudio](https://www.rstudio.com/products/rstudio/download/).
 
-For help setting up
+For help setting up, see any of the following links
 
 * https://learnr-examples.shinyapps.io/ex-setup-r/
 * https://rstudio-education.github.io/hopr/starting.html
 * https://a-little-book-of-r-for-bioinformatics.readthedocs.io/en/latest/src/installr.html
 * https://cran.r-project.org/doc/manuals/R-admin.html
-
 * https://courses.edx.org/courses/UTAustinX/UT.7.01x/3T2014/56c5437b88fa43cf828bff5371c6a924/
 * https://owi.usgs.gov/R/training-curriculum/installr/
 * https://www.earthdatascience.org/courses/earth-analytics/document-your-science/setup-r-rstudio/
 
-
-Make sure you have the latest version of R and Rstudio for class. If not, then reinstall. 
+*Make sure you have the latest version of R and Rstudio for class.* If not, then reinstall. 
 
 ## Interfacing with R
 
@@ -296,26 +294,26 @@ outer(x_mat2, x)
 
 The most commom types are
 ```{r}
-l1 <- 1:3 # cardinal numbers
-l1
+d1 <- 1:3 # cardinal data
+d1
 
-l2 <- factor(c('A','B','C'), ordered=T) # ordinal numbers
-l2
+d2 <- c('hello world', 'hi mom')  # character strings
+d2
 
-l3 <- factor(c('Leipzig','Los Angeles','Logan'), ordered=F) # categorical numbers
-l3
+d3 <- factor(c('A','B','C'), ordered=T) # ordinal data
+d3
 
-l4 <- c('hello world', 'hi mom')  # character strings
-l4
+d4 <- factor(c('Leipzig','Los Angeles','Logan'), ordered=F) # categorical data
+d4
 
-l5 <- list(l1, l2, list(l3, list('...inception...'))) # lists
-l5
+d5 <- list(d1, d2, list(d3, list('...inception...'))) # lists
+d5
 
 # data.frames: your most common data type
     # matrix of different data-types
     # well-ordered lists
-l5 <- data.frame(x=l1, y=l2, z=l3)
-l5
+d0 <- data.frame(y=d1, x=d4)
+d0
 ```
 
 
@@ -353,10 +351,11 @@ The mean is a statistic
 ```{r}
 # compute the mean of a random sample
 x <- runif(100)
-hist(x)
+hist(x, border=NA, main=NA)
 m <- mean(x)
-abline(v=m, col=2)
-
+abline(v=m, col=2, lwd=2)
+title(paste0('mean= ', round(m,2)))
+ 
 # is m close to it's true value (1-0)/2=.5?
 # what about mean(runif(1000)) ?
 # what about mean( rbinom(100, 1, 0.5) )?
@@ -370,9 +369,10 @@ sapply(1:3, function(i){
     x <- runif(100) 
     m <-  mean(x)
     hist(x,
-        main=paste0('mean= ', round(m,4)),
-        breaks=seq(0,1,by=.1), border=NA)
-    abline(v=m, col=2)
+        breaks=seq(0,1,by=.1), #for comparability
+        main=NA, border=NA)
+    abline(v=m, col=2, lwd=2)
+    title(paste0('mean= ', round(m,2)))
     return(m)
 })
 ```
@@ -420,7 +420,7 @@ title('Sampling Distributions', outer=T, line=-1)
 ```
 
 Quantiles and coverage
-```
+```{r}
 # Upper and Lower Quantiles
 xq <- apply(x,1,quantile, probs=c(.05,.95))
 bks <- seq(0,1,by=.01)
@@ -452,7 +452,7 @@ fun_of_rv <- function(f, n=100){
 }
 fun_of_rv( f=mean )
 
-fun_of_rv( f=function(i){range(exp(i))} )
+fun_of_rv( f=function(i){ diff(range(exp(i))) } )
 ```
 
 
@@ -509,13 +509,18 @@ library(wooldridge)
 data('crime2')
 data('crime4')
 
-# Read in csv from online
-dat_csv <- read.csv('http://www.stern.nyu.edu/~wgreene/Text/Edition7/TableF19-3.csv')
-dat_csv <- as.data.frame(dat_csv)
+# Read in csv (downloaded from online)
+# download source 'http://www.stern.nyu.edu/~wgreene/Text/Edition7/TableF19-3.csv'
+# download destination '~/TableF19-3.csv'
+read.csv('~/TableF19-3.csv')
+ 
+# Can read in csv (directly from online)
+# dat_csv <- read.csv('http://www.stern.nyu.edu/~wgreene/Text/Edition7/TableF19-3.csv')
 
-# Read in csv from online
-dat_stata <- haven::read_dta('https://www.ssc.wisc.edu/~bhansen/econometrics/DS2004.dta')
-dat_stata <- as.data.frame(dat_stata)
+# Read in stata data file from online
+#library(haven)
+#dat_stata <- read_dta('https://www.ssc.wisc.edu/~bhansen/econometrics/DS2004.dta')
+#dat_stata <- as.data.frame(dat_stata)
 
 # For More Introductory Econometrics Data, see 
 # https://www.ssc.wisc.edu/~bhansen/econometrics/Econometrics%20Data.zip
@@ -560,7 +565,7 @@ dat_merged_long <- rbind(
     cbind(dat1,DF=1),
     cbind(dat2,DF=2))
 ```
-Now suppose we want to transform into long format
+Now suppose we want to transform into wide format
 ```{r}
 # Merging data in wide format, First Attempt
 dat_merged_wide <- cbind( dat1, dat2)
@@ -572,31 +577,27 @@ dat_merged_wide2 <- merge(dat1, dat2,
     by='ID', suffixes=c('.1','.2'))
 ## CHECK they are the same.
 identical(dat_merged_wide, dat_merged_wide2)
+# Inspect any differences
 
-# Merging data in wide format, Third Attempt
-# more flexibility
-dat_melted <- reshape2::melt(dat_merged_long, id.vars=c('ID', 'DF'))
-dat_merged_wide3 <- reshape2::dcast(dat_melted, ID~DF+variable)
-
-# Merging data in wide format, Fourth Attempt
-# highest performance but with new type of object
+# Merging data in wide format, Third Attempt with dedicated package
+# (highest performance but with new type of object)
 library(data.table)
 dat_merged_longDT <- as.data.table(dat_merged_long)
-dat_melted <- data.table::melt(dat_merged_longDT, id.vars=c('ID', 'DF'))
-dat_merged_wide4 <- data.table::dcast(dat_melted, ID~DF+variable)
-# dat_merged_wide4 <- as.data.frame(dat_merged_wide4)
+dat_melted <- melt(dat_merged_longDT, id.vars=c('ID', 'DF'))
+dat_merged_wide3 <- dcast(dat_melted, ID~DF+variable)
 
 ## CHECK they are the same.
-identical(dat_merged_wide3, dat_merged_wide4)
+identical(dat_merged_wide, dat_merged_wide3)
 ```
+
 Often, however, we ultimately want data in long format
 ```{r}
-# Merging data in long format, Second Attempt 
-dat_melted2 <- data.table::melt(dat_merged_wide4, measure=c("1_x","1_y","2_x","2_y"))
+# Merging data in long format, Second Attempt with dedicated package 
+dat_melted2 <- melt(dat_merged_wide3, measure=c("1_x","1_y","2_x","2_y"))
 melt_vars <- strsplit(as.character(dat_melted2$variable),'_')
 dat_melted2$DF <- sapply(melt_vars, `[[`,1)
 dat_melted2$variable <- sapply(melt_vars, `[[`,2)
-dat_merged_long2 <- data.table::dcast(dat_melted2, DF+ID~variable)
+dat_merged_long2 <- dcast(dat_melted2, DF+ID~variable)
 dat_merged_long2 <- as.data.frame(dat_merged_long2)
 
 ## CHECK they are the same.
@@ -618,12 +619,12 @@ For more tips, see https://raw.githubusercontent.com/rstudio/cheatsheets/main/da
 **Histograms** summarize distributions very effectively. And it is easy to show how distributions change via data splits. You can glue them together to convey more information all at once
 
 ```{r}
-# For Comparability
-xbks <-  seq(min(USArrests$Murder)-1, max(USArrests$Murder)+1, by=1)
-ylim <- c(0,8)
+#First glimpse
+#hist(USArrests$Murder)
 
-# All Data
-cols <- c(rgb(0,0,1,.5), rgb(1,0,0,.5))
+# Tailored Histogram 
+ylim <- c(0,8)
+xbks <-  seq(min(USArrests$Murder)-1, max(USArrests$Murder)+1, by=1)
 par(fig=c(0,1,0,0.5), new=F)
 hist(USArrests$Murder, breaks=xbks,
     main='All Data', font.main=1,
@@ -631,36 +632,52 @@ hist(USArrests$Murder, breaks=xbks,
     border=NA, ylim=ylim)
 rug(USArrests$Murder)
 
+# Also show more information
 # Split Data by Urban Population above/below mean
-u <- mean(USArrests$UrbanPop)
-m1 <- USArrests[USArrests$UrbanPop<u,'Murder']
-m2 <- USArrests[USArrests$UrbanPop>=u,'Murder']
+pop_mean <- mean(USArrests$UrbanPop)
+murder_lowpop <- USArrests[USArrests$UrbanPop< pop_mean,'Murder']
+murder_highpop <- USArrests[USArrests$UrbanPop>= pop_mean,'Murder']
+cols <- c(low=rgb(0,0,1,.75), high=rgb(1,0,0,.75))
 
 par(fig=c(0,.5,0.5,1), new=TRUE)
-hist(m1, breaks=xbks, col=rgb(0,0,1,.5),
+hist(murder_lowpop,
+    breaks=xbks, col=cols[1],
     main='Urban Pop >= Mean', font.main=1,
     xlab='Murder Arrests',
     border=NA, ylim=ylim)
-rug(m1, col=rgb(0,0,1,1))
+rug(murder_lowpop, col=cols[1])
 
 par(fig=c(0.5,1,0.5,1), new=TRUE)
-hist(m2,breaks=xbks, col=rgb(1,0,0,.5),
+hist(murder_highpop,
+    breaks=xbks, col=cols[2],
     main='Urban Pop < Mean', font.main=1,
     xlab='Murder Arrests',
     border=NA, ylim=ylim)
-rug(m2, col=rgb(1,0,0,1))
+rug(murder_highpop, col=cols[2])
 ```
 
 For more histogram visuals, see https://r-graph-gallery.com/histogram.html. Note that sometimes it is preferable to show the empirical cumulative distribution funtion (ECDF).
 ```{r}
 par(mfrow=c(1,2))
-hist(USArrests$Murder, main='Density Function Estimate', font.main=1,
-    xlab='Murder Arrests', breaks=xbks, freq=F, border=NA)
-plot(ecdf(m1), col=cols[1], pch=16, xlab='Murder Arrests',
-    main='Distribution Function Estimates', font.main=1, bty='n')
-plot(ecdf(m2), add=T, col=cols[2], pch=16)
-legend('bottomright', col=cols, pch=16, bty='n', inset=c(0,.1),
-    title='% Urban Pop.', legend=c('Above Mean', 'Below Mean'))
+# Full Sample Density
+hist(USArrests$Murder, 
+    main='Density Function Estimate', font.main=1,
+    xlab='Murder Arrests',
+    breaks=xbks, freq=F, border=NA)
+
+# Split Sample Distribution Comparison
+F_lowpop <- ecdf(murder_lowpop)
+plot(F_lowpop, col=cols[1],
+    pch=16, xlab='Murder Arrests',
+    main='Distribution Function Estimates',
+    font.main=1, bty='n')
+F_highpop <- ecdf(murder_highpop)
+plot(F_highpop, add=T, col=cols[2], pch=16)
+
+legend('bottomright', col=cols,
+    pch=16, bty='n', inset=c(0,.1),
+    title='% Urban Pop.',
+    legend=c('Low (<= Mean)','High (>= Mean)'))
 ```
 
 
@@ -670,39 +687,54 @@ layout( t(c(1,2,2)))
 boxplot(USArrests$Murder, main='',
     xlab='All Data', ylab='Murder Arrests')
 
-# 3 Groups with even spacing
-USArrests$UrbanPop_cut <- cut(USArrests$UrbanPop,3)
-boxplot(Murder~UrbanPop_cut, USArrests,
-    main='', col=hcl.colors(3,alpha=.5),
+# K Groups with even spacing
+K <- 3
+USArrests$UrbanPop_Kcut <- cut(USArrests$UrbanPop,K)
+Kcols <- hcl.colors(K,alpha=.5)
+boxplot(Murder~UrbanPop_Kcut, USArrests,
+    main='', col=Kcols,
     xlab='Urban Population', ylab='')
-    
-## 4 Groups with equal observations
-#qcuts <- c(
+
+# 4 Groups with equal observations
+#Qcuts <- c(
 #    '0%'=min(USArrests$UrbanPop)-10*.Machine$double.eps,
 #    quantile(USArrests$UrbanPop, probs=c(.25,.5,.75,1)))
-#USArrests$UrbanPop_cut <- cut(USArrests$UrbanPop, qcuts)
+#USArrests$UrbanPop_cut <- cut(USArrests$UrbanPop, Qcuts)
 ```
 
 ### Joint Distributions
 
-Scatterplots are used frequently to summarize the joint relationship between two variables. They can be enhanced in several ways.
+Scatterplots are used frequently to summarize the joint relationship between two variables. They can be enhanced in several ways. As a default, use semi-transparent points so as not to hide any points (and perhaps see if your observations are concentrated anywhere).
 
-**Fit Lines and Color** You can add regression lines (and confidence intervals). As a default, use semi-transparent points to see where your observations are concentrated. You can also use color to distinguish subsets.
+```{r, eval=F}
+plot(Murder~UrbanPop, USArrests, pch=16, col=grey(0.,.5))
+```
+
+**Fit Lines, Size/Color/Shape** You can add regression lines (and confidence intervals). You can also use size, color, and shape to distinguish different subsets.
 
 ```{r}
 # High Assault Areas
-cols <- ifelse(USArrests$Assault>median(USArrests$Assault), rgb(1,0,0,.5), rgb(0,0,1,.5))
+assault_high <- USArrests$Assault > median(USArrests$Assault)
+cols <- ifelse(assault_high, rgb(1,0,0,.5), rgb(0,0,1,.5))
 
 # Scatterplot
 plot(Murder~UrbanPop, USArrests, pch=16, col=cols)
+# Show High Assault Areas via 'cex='
+# Show High Assault Areas via 'pch='
 
 # Add the line of best fit for pooled data
-# Could also do separately for each data split
 reg <- lm(Murder~UrbanPop, data=USArrests)
 abline(reg, lty=2)
 
-# Can Also Add Confidence Intervals
+# Could also add regression lines y for each data split
+#reg_high <- lm(Murder~UrbanPop, data=USArrests[assault_high,])
+#abline(reg_high, lty=2, col=rgb(1,0,0,1))
+#reg_low <- lm(Murder~UrbanPop, data=USArrests[!assault_high,])
+#abline(reg_low, lty=2, col= rgb(0,0,1,1))
+
+# Could also add Confidence Intervals
 # https://rpubs.com/aaronsc32/regression-confidence-prediction-intervals
+
 ```
 
 Your first plot is typically standard. For others to easily comprehend your work, you must polish the plot.
@@ -754,14 +786,14 @@ For exporting options, see `?pdf`.
 For saving other types of files, see `png("*.png")`, `tiff("*.tiff")`, and  `jpeg("*.jpg")`
 
 
-**Marginal distributions**
+**Marginal distributions**.
 
 ```{r}
 # https://www.r-bloggers.com/2011/06/example-8-41-scatterplot-with-marginal-histograms/
 
 # Setup Plot
 layout( matrix(c(2,0,1,3), ncol=2, byrow=TRUE),
-    widths=c(4/5,1/5), heights=c(1/5,4/5))
+    widths=c(9/10,1/10), heights=c(1/10,9/10))
 
 # Scatterplot
 par(mar=c(4,4,1,1))
@@ -794,20 +826,21 @@ library(plotly)
 
 **Histograms**  https://plotly.com/r/histograms/
 ```{r, message=FALSE, warning=FALSE}
-u <- mean(USArrests$UrbanPop)
-m1 <- USArrests[USArrests$UrbanPop<u,'Murder']
-m2 <- USArrests[USArrests$UrbanPop>=u,'Murder']
+pop_mean <- mean(USArrests$UrbanPop)
+murder_lowpop <- USArrests[USArrests$UrbanPop< pop_mean,'Murder']
+murder_highpop <- USArrests[USArrests$UrbanPop>= pop_mean,'Murder']
+
 
 fig <- plot_ly(alpha=0.6, 
     hovertemplate="%{y}")
-fig <- fig %>% add_histogram(m1, name='< Mean')
-fig <- fig %>% add_histogram(m2, name='>= Mean')
+fig <- fig %>% add_histogram(murder_lowpop, name='Low Pop. (< Mean)')
+fig <- fig %>% add_histogram(murder_highpop, name='High Pop (>= Mean)')
 fig <- fig %>% layout(barmode="stack") # barmode="overlay"
 fig <- fig %>% layout(
     title="Crime and Urbanization in America 1975",
     xaxis = list(title='Murders Arrests per 100,000 People'),
     yaxis = list(title='Number of States'),
-    legend=list(title=list(text='<b> Urban Pop. </b>'))
+    legend=list(title=list(text='<b> % Urban Pop. </b>'))
 )
 fig
 ```
@@ -815,7 +848,8 @@ fig
 **Boxplots** https://plotly.com/r/box-plots/
 ```{r, message=FALSE, warning=FALSE}
 USArrests$ID <- rownames(USArrests)
-fig <- plot_ly(USArrests, y=~Murder, color=~cut(UrbanPop,4),
+fig <- plot_ly(USArrests,
+    y=~Murder, color=~cut(UrbanPop,4),
     alpha=0.6, type="box",
     pointpos=0, boxpoints = 'all',
     hoverinfo='text',    
@@ -823,7 +857,7 @@ fig <- plot_ly(USArrests, y=~Murder, color=~cut(UrbanPop,4),
         "<br>Urban  :", UrbanPop,
         "<br>Assault:", Assault,
         "<br>Murder :", Murder))    
-fig <- plotly::layout(fig,
+fig <- layout(fig,
     showlegend=FALSE,
     title='Crime and Urbanization in America 1975',
     xaxis = list(title = 'Percent of People in an Urban Area'),
@@ -832,7 +866,6 @@ fig
 ```
 
 **Scatterplots**  https://plotly.com/r/bubble-charts/
-
 ```{r, message=FALSE, warning=FALSE}
 # Simple Scatter Plot
 #plot(Assault~UrbanPop, USArrests, col=grey(0,.5), pch=16,
@@ -841,7 +874,7 @@ fig
 
 # Scatter Plot
 USArrests$ID <- rownames(USArrests)
-fig <- plotly::plot_ly(
+fig <- plot_ly(
     USArrests, x = ~UrbanPop, y = ~Assault,
     mode='markers',
     type='scatter',
@@ -856,7 +889,7 @@ fig <- plotly::plot_ly(
         opacity=0.5,
         showscale=T,  
         colorbar = list(title='Murder Arrests (per 100,000)')))
-fig <- plotly::layout(fig,
+fig <- layout(fig,
     showlegend=F,
     title='Crime and Urbanization in America 1975',
     xaxis = list(title = 'Percent of People in an Urban Area'),
@@ -871,7 +904,7 @@ fig
 
 Use expansion "packages" for common procedures and more functionality
 
-**CRAN**
+**CRAN**.
 Most packages can be found on CRAN and can be easily installed
 ```{r, eval=FALSE}
 # commonly used packages
@@ -884,7 +917,7 @@ install.packages("data.table")
 The most common tasks also have [cheatsheets](https://www.rstudio.com/resources/cheatsheets/) you can use. E.g., https://github.com/rstudio/cheatsheets/blob/main/rstudio-ide.pdf
 
 
-**Github**
+**Github**.
 Sometimes you will want to install a package from GitHub. For this, you can use [devtools](https://devtools.r-lib.org/) or its light-weight version [remotes](https://remotes.r-lib.org/)
 ```{r, eval=FALSE}
 install.packages("devtools")
@@ -905,7 +938,7 @@ install_github('jalvesaq/colorout')
 library(colorout)
 ```
 
-**Base**
+**Base**.
 While additional packages can make your code faster, they also create dependancies that can lead to problems. So learn base R well before becoming dependant on other packages
 
 * https://bitsofanalytics.org/posts/base-vs-tidy/
