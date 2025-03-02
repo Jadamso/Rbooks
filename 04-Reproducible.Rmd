@@ -1,0 +1,1110 @@
+# (PART) Reproducible Research in R {-} 
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
+```
+
+
+
+# Why?
+***
+
+You should make your work reproducible, and we will cover some of the basics of how to do this in R. You also want your work to be replicable
+
+* Replicable: someone collecting new data comes to the same results.
+* Reproducibile: someone reusing your data comes to the same results.
+
+You can read more about the distinction in many places, including
+
+* https://www.annualreviews.org/doi/10.1146/annurev-psych-020821-114157
+* https://nceas.github.io/sasap-training/materials/reproducible_research_in_r_fairbanks/
+
+My main sell to you is that being reproducible is in your own self-interest.
+
+## An example workflow
+
+Taking First Steps ...
+
+**Step 1:** Some Ideas and Data
+
+$X_{1} \to Y_{1}$
+
+* You copy some data into a spreadsheet, manually aggregate
+* do some calculations and tables the same spreadsheet
+* some other analysis from here and there, using this software and that.
+
+**Step 2:** Pursuing the lead for a week or two
+
+* you extend your dataset with more observations
+* copy in a spreadsheet data, manually aggregate
+* do some more calculations and tables, same as before
+
+Then, a Little Way Down the Road ...
+
+**1 month later**, someone asks about another factor: $X_{2}$
+
+* you download some other type of data
+* You repeat **Step 2** with some data on $X_{2}$.
+* The details from your "point and click" method are a bit fuzzy.
+* It takes a little time, but you successfully redo the analysis.
+
+
+**4 months later**, someone asks about another factor: $X_{3}\to Y_{1}$
+
+* You again repeat **Step 2** with some data on $X_{3}$.
+* You're pretty sure none of tables your tried messed up the order of the rows or columns.
+* It takes more time and effort. The data processing was not transparent, but you eventually redo the analysis.
+
+
+
+**6 months later**, you want to explore: $X_{2} \to Y_{2}$.
+
+* You found out Excel had some bugs in it's statistical calculations (see e.g., https://biostat.app.vumc.org/wiki/pub/Main/TheresaScott/StatsInExcel.TAScot.handout.pdf). You now use a new version of the spreadsheet
+* You're not sure you merged everything correctly. After much time and effort, most (but not all) of the numbers match exactly.
+ 
+
+**2 years later**, you want to replicate: $\{ X_{1}, X_{2}, X_{3} \} \to Y_{1}$
+
+* A rival has proposed something new. Their idea doesn't actually make any sense, but their figures and statistics look better.
+* You don't even use that computer anymore and a collaborator who handled the data on $X_{2}$ has moved on.
+
+
+## An alternative workflow
+
+Suppose you decided to code what you did beginning with Step 2.
+
+**It does not take much time to update or replicate your results**.
+
+* Your computer runs for 2 hours and reproduces the figures and tables.
+* You also rewrote your big calculations to use multiple cores, this took two hours to do but saved 6 hours *each time* you rerun your code.
+* You add some more data. It adds almost no time to see whether much has changed.
+
+**Your results are transparent and easier to build on**.
+
+* You see the exact steps you took and found an error
+  * glad you found it before publication! See https://retractionwatch.com/ and https://econjwatch.org/
+  * Google "worst excell errors" and note the frequency they arise from copy/paste via the "point-and-click" approach. Future economists should also read https://core.ac.uk/download/pdf/300464894.pdf.
+* You try out a new plot you found in *The Visual Display of Quantitative Information*, by Edward Tufte.
+  * It's not a standard plot, but google answers most of your questions.
+  * Tutorials help avoid bad practices, such as plotting 2D data as a 3D object (see e.g., https://clauswilke.com/dataviz/no-3d.html).
+* You try out an obscure statistical approach that's hot in your field.
+  * it doesn't make the paper, but you have some confidence that candidate issue isn't a big problem
+
+
+
+
+
+Note that R (and Rmarkdown) is a good choice to address this issue
+
+* http://www.r-bloggers.com/the-reproducibility-crisis-in-science-and-prospects-for-r/
+* http://fmwww.bc.edu/GStat/docs/pointclick.html
+* https://github.com/qinwf/awesome-R\#reproducible-research
+* A Guide to Reproducible Code in Ecology and Evolution
+* https://biostat.app.vumc.org/wiki/pub/Main/TheresaScott/ReproducibleResearch.TAScott.handout.pdf
+
+## Task Views
+
+Task views list relevant packages. 
+
+For all students and early researchers, 
+
+* https://cran.r-project.org/web/views/ReproducibleResearch.html
+
+For microeconometrics,
+
+* https://cran.r-project.org/web/views/Econometrics.html
+
+For spatial econometrics 
+
+* https://cran.r-project.org/web/views/Spatial.html
+* https://cran.r-project.org/web/views/SpatioTemporal.html
+
+
+Multiple packages may have the same function name for different commands. In this case use the syntax ``package::function`` to specify the package. For example
+```{r, eval=FALSE}
+devtools::install_github
+remotes::install_github
+```
+
+
+**Don't fret** Sometimes there is not a specific package for your data.
+
+Odds are, you can do most of what you want with base code.
+
+* Packages just wrap base code in convient formats
+* see https://cran.r-project.org/web/views/ for topical overviews
+
+Statisticians might have different naming conventions
+
+* if the usual software just spits out a nice plot
+you might have to dig a little to know precisely what you want
+* your data are fundamentally numbers, strings, etc...
+You only have to figure out how to read it in.
+
+
+# Large Projects
+***
+
+As you scale up a project, then you will have to be more organized. 
+
+## Scripting
+
+Save the following code as `MyFirstScript.R`
+```{r, eval=F}
+# Define New Function
+sum_squared <- function(x1, x2) {
+	y <- (x1 + x2)^2
+	return(y)
+} 
+
+# Test New Function
+x <- c(0,1,3,10,6)
+sum_squared(x[1], x[3])
+sum_squared(x, x[2])
+sum_squared(x, x[7])
+sum_squared(x, x)
+
+message('Script Completed')
+```
+
+**Restart Rstudio**. Alternatively, **clean the workspace** by
+
+* clearing the environment and history (use the broom in top right panel)
+* clearing unsaved plots (use the broom in bottom right panel)
+
+**Replicate** in another tab *or directly in console on the bottom left) via
+```{r, eval=FALSE}
+source('MyFirstScript.R')
+```
+Note that you may first need to `setwd()` so your computer knows where you saved your code.^[You can also use *GUI: point-click* click 'Source > Source as a local job' on top right]
+
+
+After you get this working:
+
+* add a the line `print(sum_squared(y, y))` to the bottom of `MyFirstCode.R`. 
+* apply the function to a vectors specified outside of that script
+* record the session information
+
+```{r, eval=FALSE}
+# Pass Objects/Functions *to* Script
+y <- c(3,1,NA)
+source('MyFirstScript.R')
+
+# Pass Objects/Functions *from* Script
+z <- sqrt(y)/2
+sum_squared(z,z)
+
+# Report all information relevant for replication
+sessionInfo()
+```
+
+**CLI options** Note that there are also alternative ways to replicate via the command line interface (CLI) after opening a terminal.
+ 
+```{bash, eval=FALSE}
+# Method 1
+Rscript -e "source('MyFirstScript.R')"
+# Method 2
+Rscript MyFirstScript.R
+```
+
+Note that you can open a new terminal in RStudio in the top bar by
+clicking 'tools > terminal > new terminal'
+
+
+## Organization
+
+Large sized projects should have their own `Project` folder on your computer with files, subdirectories with files, and subsubdirectories with files. It should look like this
+```
+Project
+    └── README.txt
+    └── /Code
+        └── MAKEFILE.R
+        └── RBLOCK_001_DataClean.R
+        └── RBLOCK_002_Figures.R
+        └── RBLOCK_003_ModelsTests.R
+        └── RBLOCK_004_Robust.R
+        └── /Logs
+            └── MAKEFILE.Rout
+    └── /Data
+        └── /Raw
+            └── Source1.csv
+            └── Source2.shp
+            └── Source3.txt
+        └── /Clean
+            └── AllDatasets.Rdata
+            └── MainDataset1.Rds
+            └── MainDataset2.csv
+    └── /Output
+        └── MainFigure.pdf
+        └── AppendixFigure.pdf
+        └── MainTable.tex
+        └── AppendixTable.tex
+    └── /Writing
+        └── /TermPaper
+            └── TermPaper.tex
+            └── TermPaper.bib
+            └── TermPaper.pdf
+        └── /Slides
+            └── Slides.Rmd
+            └── Slides.html
+            └── Slides.pdf
+        └── /Poster
+            └── Poster.Rmd
+            └── Poster.html
+            └── Poster.pdf
+        └── /Proposal
+            └── Proposal.Rmd
+            └── Proposal.html
+            └── Proposal.pdf
+```
+
+There are two main meta-files
+
+* `README.txt` overviews the project structure and what the codes are doing
+* `MAKEFILE` explicitly describes and executes all codes (and typically logs the output).
+
+**MAKEFILE**.
+
+If all code is written with the same program (such as R) the makefile can be written in a single language. For us, this looks like
+```{r, eval=FALSE}
+# Project Structure
+home_dir    <- path.expand("~/Desktop/Project/")
+data_dir_r  <- paste0(data_dir, "Data/Raw/")
+data_dir_c  <- paste0(data_dir, "Data/Clean/")
+out_dir     <- paste0(hdir, "Output/")
+code_dir    <- paste0(hdir, "Code/")
+
+# Execute Codes
+# libraries are loaded within each RBLOCK
+setwd( code_dir )
+source( "RBLOCK_001_DataClean.R" )
+source( "RBLOCK_002_Figures.R" )
+source( "RBLOCK_003_ModelsTests.R" )
+source( "RBLOCK_004_Robust.R" )
+
+# Report all information relevant for replication
+sessionInfo()
+```
+
+Notice there is a lot of documentation `# like this`, which is crucial for large projects. Also notice that anyone should be able to replicate the entire project by downloading a zip file and simply changing `home_dir`.
+
+
+If some folders or files need to be created, you can do this within R
+```{r, eval =FALSE}
+# list the files and directories
+list.files(recursive=TRUE, include.dirs=TRUE)
+# create directory called 'Data'
+dir.create('Data')
+```
+
+## Logging/Sinking
+
+When executing the makefile, you can also log the output in three different ways: 
+
+1. Inserting some code into the makefile that "sinks" the output 
+```{r, eval=FALSE}
+# Project Structure
+home_dir    <- path.expand("~/Desktop/Project/")
+data_dir_r  <- paste0(data_dir, "Data/Raw/")
+data_dir_c  <- paste0(data_dir, "Data/Clean/")
+out_dir     <- paste0(hdir, "Output/")
+code_dir    <- paste0(hdir, "Code/")
+
+# Log Output
+set.wd( code_dir )
+sink("MAKEFILE.Rout", append=TRUE, split=TRUE)
+
+# Execute Codes
+source( "RBLOCK_001_DataClean.R" )
+source( "RBLOCK_002_Figures.R" )
+source( "RBLOCK_003_ModelsTests.R" )
+source( "RBLOCK_004_Robust.R" )
+sessionInfo()
+
+# Stop Logging Output
+sink()
+```
+
+2. Starting a session that "sinks" the makefile
+```{r, eval=FALSE}
+sink("MAKEFILE.Rout", append=TRUE, split=TRUE)
+source("MAKEFILE.R")
+sink()
+```
+
+3. Execute the makefile via the commandline 
+```{bash, eval=FALSE}
+R CMD BATCH MAKEFILE.R MAKEFILE.Rout
+```
+
+
+## Class Projects
+
+Zip your project into a single file that is easy for *others* to identify: `Class_Project_LASTNAME_FIRSTNAME.zip`
+
+
+Your code should be readable and error free. For code writing guides, see
+
+* https://google.github.io/styleguide/Rguide.html
+* https://style.tidyverse.org/
+* https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/codestyle.html
+* http://adv-r.had.co.nz/Style.html
+* https://www.burns-stat.com/pages/Tutor/R_inferno.pdf
+
+For organization guidelines, see
+
+* https://guides.lib.berkeley.edu/c.php?g=652220&p=4575532
+* https://kbroman.org/steps2rr/pages/organize.html
+* https://drivendata.github.io/cookiecutter-data-science/
+* https://ecorepsci.github.io/reproducible-science/project-organization.html
+
+For additional logging capabilities, see https://cran.r-project.org/web/packages/logr/
+
+For very large projects, there are many more tools available at https://cran.r-project.org/web/views/ReproducibleResearch.html
+
+For larger scale projects, use scripts 
+
+* https://kbroman.org/steps2rr/pages/scripts.html
+* https://kbroman.org/steps2rr/pages/automate.html
+
+
+## Debugging 
+
+In R, you use multiple functions on different types of data objects. Moreover, you "typically solve complex problems by decomposing them into simple functions, not simple objects." (H. Wickham)
+
+
+We can use the following packages to help deal with various problems that may arise
+```{r}
+library(microbenchmark)
+library(compiler)
+library(profvis)
+library(parallel)
+library(Rcpp)
+```
+
+Problems print to the console
+```{r, error=TRUE}
+message("This is what a message looks like")
+
+warning("This is what a warning looks like")
+
+stop("This is what an error looks like")
+```
+
+Nonproblems also print to the console
+```{r, error=TRUE}
+cat('cat\n')
+print('print')
+```
+
+**Tracing**.
+
+Consider this example of an error process (originally taken from https://adv-r.hadley.nz/ ).
+```{r, error=TRUE}
+# Let i() check if its argument is numeric
+i <- function(i0) {
+  if ( !is.numeric(i0) ) {
+    stop("`d` must be numeric", call.=FALSE)
+  }
+  i0 + 10
+}
+
+# Let f() call g() call h() call i()
+h <- function(i0) i(i0)
+g <- function(h0) h(h0)
+f <- function(g0) g(g0)
+
+# Observe Error
+f("a")
+```
+
+First try simple print debugging
+```{r, error=TRUE}
+f2 <- function(g0) {
+  cat("f2 calls g2()\n")
+  g2(g0)
+}
+g2 <- function(h0) {
+  cat("g2 calls h2() \n")
+  cat("b =", h0, "\n")
+  h2(h0)
+}
+h2 <- function(i0) {
+  cat("h2 call i() \n")
+  i(i0)
+}
+
+f2("a")
+```
+
+If that fails, try traceback debugging
+```{r, error=TRUE}
+traceback()
+```
+
+And if that fails, try an Interactive approach
+```{r, error=TRUE}
+g3 <- function(h0) {
+  browser()
+  h(h0)
+}
+f3 <- function(g0){
+  g3(g0)
+}
+f3("a")
+```
+
+
+**Isolating**.
+
+To inspect objects
+```{r, eval=FALSE}
+is.object(f)
+is.object(c(1,1))
+
+class(f)
+class(c(1,1))
+
+# Storage Mode Type 
+typeof(f)
+typeof(c(1,1))
+
+storage.mode(f)
+storage.mode(c(1,1))
+```
+
+To check for valid inputs/outputs
+```{r, eval=FALSE}
+x <- c(NA, NULL, NaN, Inf, 0)
+
+cat("Vector to inspect: ")
+x
+
+cat("NA: ")
+is.na(x)
+
+cat("NULL: ")
+is.null(x)
+
+cat("NaN: ")
+is.nan(x)
+
+cat("Finite: ")
+is.finite(x)
+
+cat("Infinite: ")
+is.infinite(x)
+# Many others
+```
+
+To check for values
+```{r, eval=FALSE}
+all( x > -2 )
+any( x > -2 )
+# Check Matrix Rows
+rowAny <- function(x) rowSums(x) > 0
+rowAll <- function(x) rowSums(x) == ncol(x)
+```
+
+**Handling**.
+
+Simplest example
+```{r, eval=F}
+x <- 'A'
+tryCatch(
+  expr = log(x),
+  error = function(e) {
+        message('Caught an error but did not break')
+        print(e)
+        return(NA)
+})
+```
+
+Another example
+```{r}
+x <- -2
+tryCatch(
+  expr = log(x),
+  error = function(e) {
+        message('Caught an error but did not break')
+        print(e)
+        return(NA)
+    },
+    warning = function(w){
+        message('Caught a warning!')
+        print(w)
+        return(NA)        
+    },
+    finally = {
+        message("Returned log(x) if successfull or NA if Error or Warning")
+    }
+)
+```
+
+<!--# Ignore warnings/messages
+    Supressing errors is possible but a bad idea
+    ```{r, error=TRUE}
+    try(1+2, silent=T)
+    try(warning('warning'), silent=T)
+    try(error('error'), silent=T)
+
+    try(1+2, silent=F)
+    try(warning('warning'), silent=F)
+    try(error('error'), silent=F)
+    
+    #suppressMessages()    
+    ```
+-->
+
+Safe Functions
+```{r, error=TRUE}
+# Define
+log_safe <- function(x){
+    lnx <- tryCatch(
+        expr = log(x),
+        error = function(e){
+            cat('Error Caught: \n\t')        
+            print(e)
+            return(NA)            
+        },
+        warning = function(w){
+            cat('Warning Caught: \n\t')
+            print(w)
+            return(NA)            
+        })
+    return(lnx)
+}
+
+# Test 
+log_safe( 1)
+log_safe(-1)
+log_safe(' ')
+
+
+# Further Tests
+s <- sapply(list("A",Inf, -Inf, NA, NaN, 0, -1, 1), log_safe)
+
+s
+```
+
+
+
+## Optimizing 
+
+In General, clean code is faster and less error prone. 
+
+By optimizing repetitive tasks, you end up with code that
+
+* is cleaner, faster, and more general
+* can be easily parallelized
+
+So, after identifying a bottleneck, try 
+
+1. **vectorize your code**
+2. use a dedicated package 
+3. use parallel computations
+4. compile your code in C++
+
+
+But remember
+
+* Don't waste time optimizing code that is not holding you back.
+* Look at what has already done.
+
+
+**Benchmarking**.
+
+For identifying bottlenecks, the simplest approach is to time how long a code-chunk runs
+```{r, error=TRUE}
+system.time({
+    x0 <- runif(1e5)
+    x1 <- sqrt(x0)
+    x2 <- paste0('J-', x1)
+})
+```
+
+You can *visually* identify bottlenecks in larger blocks
+```{r, error=TRUE}
+# Generate Large Random Dataset
+n <- 2e6
+x <- runif(n)
+y <- runif(n)
+z <- runif(n)
+XYZ <- cbind(x,y,z)
+
+# Inspect 4 equivalent `row mean` calculations 
+profvis::profvis({
+    m <- rowSums(XYZ)/ncol(XYZ)
+    m <- rowMeans(XYZ)
+    m <- apply(XYZ, 1, mean)
+    m <- rep(NA, n);  for(i in 1:n){ m[i] <- (x[i] + y[i] + z[i]) / 3 }
+})
+# rowSums(), colSums(), rowMeans(), and colMeans() are vectorised and fast.
+# for loop is not the slowest, but the ugliest.
+```
+
+
+For systematic speed comparisons, try the `microbenchmark` package
+```{r, error=TRUE}
+# 3 Equivalent calculations of the mean of a vector
+mean1 <- function(x,p=1) mean(x^p)
+mean2 <- function(x,p=1) sum(x^p) / length(x)
+mean3 <- function(x,p=1) mean.default(x^p)
+
+# Time them
+x <- runif(1e6)
+microbenchmark::microbenchmark(
+  mean1(x,.5),
+  mean2(x,.5),
+  mean3(x,.5)
+)
+```
+
+**Vectorize**.
+
+Computers are really good at math, so exploit this.
+
+* First try vectors
+* Then try `apply` functions
+* See https://uscbiostats.github.io/software-dev-site/handbook-slow-patterns.html
+
+
+Vector operations are generally faster and easier to read than loops
+```{r, error=TRUE}
+x <- runif(1e6)
+
+# Compare 2 moving averages
+
+# First Try
+ma1 <- function(y){
+    z <- y*NA
+    for(i in 2:length(y)){
+        z[i] <- (y[i]-y[i-1])/2
+    }
+    return(z)
+}
+
+# Optimized using diff
+diff( c(2,2,10,9) )
+
+ma2 <- function(y){
+    z2 <- diff(y)/2
+    z2 <- c(NA, z2) 
+    return(z2)
+}
+
+all.equal(ma1(y),ma2(y))
+
+microbenchmark::microbenchmark(
+  ma1(y),
+  ma2(y)
+)
+```
+Likewise, matrix operations are often faster than vector operations.
+
+
+**Packages**.
+
+Before creating your own program, check if there is a faster or more memory efficient version. E.g., [data.table](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html) or [Rfast2](https://cran.r-project.org/web/packages/Rfast2/index.html) for basic data manipulation.
+
+Some functions are simply wrappers for the function you want, and calling it directly can speed things up. 
+```{r, error=TRUE}
+X <- cbind(1, runif(1e6))
+Y <- X %*% c(1,2) + rnorm(1e6)
+DAT <- as.data.frame(cbind(Y,X))
+
+system.time({ lm(Y~X, data=DAT) })
+system.time({ .lm.fit(X, Y) })
+system.time({ solve(t(X)%*%X) %*% (t(X)%*%Y) })
+```
+Note that such functions to have fewer checks and return less information, so you must know exactly what you are putting in and getting out.
+
+
+**Parallel**.
+
+Sometimes there will still be a problematic bottleneck. 
+
+Your next step should be parallelism:
+
+* Write the function as a general vectorized function.
+* Apply the same function to every element in a list *at the same time*
+
+```{r, error=TRUE}
+# lapply in parallel on {m}ultiple {c}ores
+x <- c(10,20,30,40,50)
+f <- function(element) { element^element } 
+parallel::mclapply( x, mc.cores=2, FUN=f)
+```
+
+More power is often not the solution
+
+```{r, error=TRUE}
+# vectorize and compile
+e_power_e_fun <- compiler::cmpfun( function(vector){ vector^vector} )
+
+# base R
+x <- 0:1E6
+s_vc <- system.time( e_power_e_vec <- e_power_e_fun(x) )
+s_vc
+
+# brute power
+x <- 0:1E6
+s_bp <- system.time({
+  e_power_e_mc <- unlist( parallel::mclapply(x, mc.cores=2, FUN=e_power_e_fun))
+})
+s_bp
+
+# Same results
+all(e_power_e_vec==e_power_e_mc)
+```
+
+Parallelism does not go great with a GUI.
+For identifying bottlenecks on a cluster without a GUI, try `Rprof()`
+```{r, error=TRUE, eval=F}
+Rprof( interval = 0.005)
+    # Create Data
+    x <- runif(2e6)
+    y <- sqrt(x)
+    # Loop Format Data
+    z <- y*NA
+    for(i in 2:length(y)){ z[i] <- (y[i]-y[i-1])/2 }
+    # Regression
+    X <- cbind(1,x)[-1,]
+    Z <- z[-1]
+    reg_fast <- .lm.fit(X, Z)
+Rprof(NULL)
+summaryRprof()
+```
+
+If you still are stuck, you can
+
+* try [Amazon Web Server](https://aws.amazon.com/ec2/) for more brute-power 
+* rewrite bottlenecks with a working C++ compiler or Fortran compiler.
+
+Before doing that, however, look into <https://cran.r-project.org/web/views/HighPerformanceComputing.html>
+
+
+**Compiled Code**.
+
+You can use C++ code within R to speed up a specific chunk.
+
+To get C++ on your computer
+
+* On Windows, install Rtools.
+* On Mac, install Xcode from the app store.
+* On Linux, sudo apt-get install r-base-dev or similar.
+
+To call C++ from R use package `Rcpp`
+```{r, error=TRUE}
+Rcpp::cppFunction('
+  int add(int x, int y, int z) {
+    int sum = x + y + z;
+    return sum;
+  }'
+)
+add(1, 2, 3)
+```
+
+For help getting started with Rcpp, see https://cran.r-project.org/web/packages/Rcpp/vignettes/Rcpp-quickref.pdf
+
+
+First try to use C++ (or Fortran) code that others have written
+```{r, eval=FALSE}
+.C
+.Fortran
+```
+For a tutorial, see https://masuday.github.io/fortran_tutorial/r.html
+
+
+**Memory Usage**.
+
+For finding problematic blocks or whole scripts: `utils::Rprof(memory.profiling = TRUE)` logs total memory usage of R at regular time intervals
+
+For finding problematic functions: `utils::Rprofmem()` logs memory usage at each call
+
+For memory leaks, first free up space and use the `bench` package for timing
+```{r, eval=F}
+gc() # garbage cleanup
+
+bench::mark(
+  mean1(x,.5),
+  mean2(x,.5),
+  mean3(x,.5))
+```
+
+
+
+## More Literature
+
+Advanced Programming 
+
+* https://rmd4sci.njtierney.com/
+* https://smac-group.github.io/ds/high-performance-computing.html
+* https://www.stat.umn.edu/geyer/3701/notes/arithmetic.Rmd
+
+For debugging tips
+
+* https://cran.r-project.org/doc/manuals/R-lang.html#Debugging
+* https://cran.r-project.org/doc/manuals/R-exts.html#Debugging
+* https://adv-r.hadley.nz/debugging.html
+* https://adv-r.hadley.nz/conditions.html
+* https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/debugging.html
+* https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/functions.html
+
+
+For optimization tips
+
+* https://cran.r-project.org/doc/manuals/R-exts.html#Tidying-and-profiling-R-code
+* https://cran.r-project.org/doc/manuals/R-lang.html#Exception-handling
+* https://adv-r.hadley.nz/perf-measure.html.libPaths()
+* https://adv-r.hadley.nz/perf-improve.html
+* https://cran.r-project.org/doc/manuals/R-exts.html#System-and-foreign-language-interfaces
+ https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/profiling.html
+* https://adv-r.hadley.nz/rcpp.html
+* https://bookdown.dongzhuoer.com/hadley/adv-r/
+
+For parallel programming 
+
+* https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/parallel.html
+* https://bookdown.org/rdpeng/rprogdatascience/parallel-computation.html
+* https://grantmcdermott.com/ds4e/parallel.html
+* https://psu-psychology.github.io/r-bootcamp-2018/talks/parallel_r.html
+
+
+For general tips
+
+* https://github.com/christophergandrud/Rep-Res-Book
+* Efficient R programming. C. Gillespie R. Lovelace. 2021. https://csgillespie.github.io/efficientR/
+* Data Science at the Command Line, 1e. Janssens J. 2020. https://www.datascienceatthecommandline.com/1e/
+* R Programming for Data Science. Peng R. 2020. https://bookdown.org/rdpeng/rprogdatascience/
+* Advanced R. H. Wickham 2019. https://adv-r.hadley.nz/
+* Econometrics in R. Grant Farnsworth. 2008. http://cran.r-project.org/doc/contrib/Farnsworth-EconometricsInR.pdf
+* The R Inferno. https://www.burns-stat.com/documents/books/the-r-inferno/
+
+
+# Applications
+***
+
+[Shiny](https://shiny.posit.co/) is an R package to build web applications.
+
+Shiny Flexdashboards are nicely formatted Shiny Apps. While it is possible to use Shiny without the Flexdashboard formatting, I think it is easier to remember
+
+* `.R` files are codes for statistical analysis
+* `.Rmd` files are for communicating: reports, slides, posters, and apps
+
+
+**Example: Histogram**.
+Download the source file [TrialApp1_Histogram_Dashboard.Rmd](https://jadamso.github.io/Rbooks/Templates/TrialApp1_Histogram_Dashboard.Rmd)
+and open it with `rstudio`. Then run it with 
+```{r,  eval=FALSE}
+rmarkdown::run('TrialApp1_Histogram_Dashboard.Rmd')
+```
+
+* Within the app, experiment with how larger sample sizes change the distribution. 
+
+* Edit the app to let the user specify the number of breaks in the histogram. 
+
+If you are having difficulty, you can try working first with the barebones shiny code. To do this, download [TrialApp0_Histogram.Rmd](https://jadamso.github.io/Rbooks/Templates/TrialApp0_Histogram.Rmd) and edit it in Rstudio. You can run the code with `rmarkdown::run('TrialApp0_Histogram.Rmd')`.
+
+
+## More Literature
+
+Overview
+
+* https://bookdown.org/yihui/rmarkdown/shiny-documents.html
+* https://shiny.rstudio.com/tutorial/
+* https://shiny.rstudio.com/articles/
+* https://shiny.rstudio.com/gallery/
+* https://rstudio.github.io/leaflet/shiny.html
+* https://mastering-shiny.org/
+
+More Help with Shiny Apps
+
+* https://shiny.rstudio.com/tutorial/written-tutorial/lesson1/
+* https://mastering-shiny.org/basic-app.html
+* https://towardsdatascience.com/beginners-guide-to-creating-an-r-shiny-app-1664387d95b3
+* https://shiny.rstudio.com/articles/interactive-docs.html
+* https://bookdown.org/yihui/rmarkdown/shiny-documents.html
+* https://shiny.rstudio.com/gallery/plot-interaction-basic.html
+* https://www.brodrigues.co/blog/2021-03-02-no_shiny_dashboard/
+* https://bookdown.org/yihui/rmarkdown/shiny.html
+* https://shinyserv.es/shiny/
+* https://bookdown.org/egarpor/NP-UC3M/kre-i-kre.html#fig:kreg
+* https://engineering-shiny.org/
+
+
+
+# Software {.tabset}
+
+The current version of R (and any packages) used to make this document are
+```{r}
+sessionInfo()
+```
+With Rstudio, you can update both R and Rstudio.
+
+## Latest versions
+
+Make sure R is up to date.
+
+Make sure your R packages are up to date.
+```{r,  eval=FALSE}
+update.packages()
+```
+
+After updating R, you can update *all* packages stored in *all* `.libPaths()` with the following command
+```{r,  eval=FALSE}
+update.packages(checkBuilt=T, ask=F)
+# install.packages(old.packages(checkBuilt=T)[,"Package"])
+```
+
+**Used Rarely:**
+
+To find specific broken packages after an update
+```{r,  eval=FALSE}
+library(purrr)
+
+set_names(.libPaths()) %>%
+  map(function(lib) {
+    .packages(all.available = TRUE, lib.loc = lib) %>%
+        keep(function(pkg) {
+            f <- system.file('Meta', 'package.rds', package = pkg, lib.loc = lib)
+            tryCatch({readRDS(f); FALSE}, error = function(e) TRUE)
+        })
+  })
+# https://stackoverflow.com/questions/31935516/installing-r-packages-error-in-readrdsfile-error-reading-from-connection/55997765
+```
+
+To remove packages duplicated in multiple libraries
+```{r,  eval=FALSE}
+# Libraries
+i <- installed.packages()
+libs <- .libPaths()
+# Find Duplicated Packages
+i1 <- i[ i[,'LibPath']==libs[1], ]
+i2 <- i[ i[,'LibPath']==libs[2], ]
+dups <- i2[,'Package'] %in% i1[,'Package']
+all( dups )
+# Remove
+remove.packages(  i2[,'Package'], libs[2] )
+```
+
+
+## General Workflow
+
+If you want to go further down the reproducibility route (recommended, but not required for our class), consider making your entire workflow use Free Open Source Software
+
+
+**Linux:** An alternative to windows and mac operating systems.
+Used in computing clusters, big labs, and phones.
+E.g., Ubuntu and Fedora are popular brands
+
+* https://www.r-bloggers.com/linux-data-science-virtual-machine-new-and-upgraded-tools/,
+* http://www.howtogeek.com/249966/how-to-install-and-use-the-linux-bash-shell-on-windows-10/
+
+
+On Fedora, you can open RStudio on the commandline with
+```{bash, eval=FALSE}
+rstudio
+```
+
+Alternatively, you are encouraged to try using R without a GUI. E.g., on Fedora, this document can be created directly via 
+```{bash, eval=FALSE}
+Rscript -e "rmarkdown::render('RMarkown.Rmd')"
+```
+
+
+**Latex:** An alternative to Microsoft Word.
+Great for writing many equations and typesetting.
+Easy to integrate Figures, Tables, and References.
+Steep learning curve.
+
+* easiest to get started online with [Overleaf](https://www.overleaf.com/)
+* can also download yourself via [Tex Live](https://www.tug.org/texlive/) and GUI [TexStudio](https://www.texstudio.org/)
+
+To begin programming, see 
+
+* https://biostat.app.vumc.org/wiki/pub/Main/TheresaScott/Intro.to.LaTeX.TAScott.pdf
+* https://www.tug.org/begin.html
+
+
+
+## Sweave
+
+
+**Knitr:** 
+You can produce a pdf from an .Rnw file via `knitr`
+
+```{bash, eval=FALSE}
+Rscript -e "knitr::Sweave2knitr('Sweave_file.Rnw')"
+Rscript -e "knitr::knit2pdf('Sweave_file-knitr.Rnw')"
+```
+
+For background on knitr
+
+* https://yihui.org/knitr/
+* https://kbroman.org/knitr_knutshell/pages/latex.html
+* https://sachsmc.github.io/knit-git-markr-guide/knitr/knit.html
+
+
+**Sweave:** is an alternative to Rmarkdown for integrating latex and R. While Rmarkdown "writes R and latex within markdown", Sweave "write R in latex". Sweave files end in ".Rnw" and can be called within R
+
+```{r, eval=FALSE}
+Sweave('Sweavefile.Rnw')
+```
+
+or directly from the command line
+
+```{bash, eval=FALSE}
+R CMD Sweave Sweavefile.Rnw 
+```
+
+In both cases, a latex file `Sweavefile.tex` is produced, which can then be converted to `Sweavefile.pdf`.
+
+
+For more on Sweave,
+
+* https://rpubs.com/YaRrr/SweaveIntro
+* https://support.rstudio.com/hc/en-us/articles/200552056-Using-Sweave-and-knitr
+* https://www.statistik.lmu.de/~leisch/Sweave/Sweave-manual.pdf
+
+
+
+## Stata
+
+For those transitioning from Stata or replicating others' Stata work, you can work with Stata data and code within R.
+
+Translations of common procedures is provided by https://stata2r.github.io/. See also the textbook "R for Stata Users" by Robert A. Muenchen and Joseph M. Hilbe.
+
+Many packages allows you to read data created by different programs. As of right now, `haven` is a particularly useful for reading in Stata files
+```{r, eval=FALSE}
+library(haven)
+read_dta()
+# See also foreign::read.dta
+```
+
+You can also execute stata commands directly in R via package `Rstata`. (Last time I checked, `Rstata` requires you to have purchased a non-student version of Stata.) Moreover, you can include stata in the markdown reports via package `Statamarkdown`:
+```{r, eval=FALSE}
+library(Rstata)
+library(Statamarkdown)
+```
+
+There are many R packages to replicate or otherwise directly copy what Stata does. For example, see the `margins` package  https://cran.r-project.org/web/packages/margins/vignettes/Introduction.html
+
+
+
+For more information on R and Stata, see
+
+* https://github.com/lbraglia/RStata
+* https://ignacioriveros1.github.io/r/2020/03/22/r_and_stata.html
+* https://bookdown.org/yihui/rmarkdown-cookbook/eng-stata.html
+* https://rpubs.com/quarcs-lab/stata-from-Rstudio
+* https://clanfear.github.io/Stata_R_Equivalency/docs/r_stata_commands.html
+* https://libguides.bates.edu/c.php?g=209169&p=7233333
+
+You can also use other software (such as Python) within R. You can also use R within Stata, or both within Python. With R, you can easily import many different data types
+
+* https://cran.r-project.org/doc/manuals/R-data.html
+* https://raw.githubusercontent.com/rstudio/cheatsheets/main/data-import.pdf
+
+
+
