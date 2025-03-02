@@ -1,5 +1,8 @@
 # To Do
 
+
+## Bookdown
+
 Add title page
 
 knitr::include_url("https://sites.google.com/view/jordan-adamson/")
@@ -14,7 +17,6 @@ To Create from scratch, use a template ``bookdown::create_gitbook('index.Rmd')``
 * https://github.com/rstudio/bookdown
 * https://bookdown.org/pkaldunn/SRM-Textbook/
 
-
 Github repos must be public to deploy!
 https://bookdown.org/yihui/bookdown/github.html
 
@@ -25,33 +27,98 @@ Make plots interactive via https://plotly-r.com/
 
 https://easystats.github.io/report/
 
-
 * https://happygitwithr.com/classroom-overview.html
 * https://aeturrell.github.io/coding-for-economists/intro.html
 
 
+#### Hypothesis Tests 
 
 
-#### Statistics 
+
+Weighted means, quantiles, and variance
+```{r}
+ wt <- c(5,  5,  4,  1)
+ x <- c(3.7,3.3,3.5,2.8)
+ xm <- sum(wt*x)/sum(wt)
+ v <- sum(wt * (x - xm)^2)/sum(wt)
+ 
+weighted.mean
+spatstat.univar::weighted.quantile
+    oo <- order(x)
+    x <- x[oo]
+    w <- w[oo]
+    Fx <- cumsum(w)/sum(w)
+    med_id <- max(which(Fx <= .5))+1
+    x[med_id]
+    
+```
+https://seismo.berkeley.edu/~kirchner/Toolkits/Toolkit_12.pdf
+https://www.bookdown.org/rwnahhas/RMPH/survey-desc.html
 
 
 ```{r}
-twosam <- function(y1, y2){
-    n1  <- length(y1)
-    n2  <- length(y2)
-    yb1 <- mean(y1)
-    yb2 <- mean(y2)
-    s1  <- var(y1)
-    s2  <- var(y2)
+t_2sample <- function(x1, x2){
+    # Differences between means
+    m1 <- mean(x1)
+    m2 <- mean(x2)
+    d <- (m1-m2)
+    
+    # SE estimate
+    n1  <- length(x1)
+    n2  <- length(x2)
+    s1  <- var(x1)
+    s2  <- var(x2)
     s   <- ((n1-1)*s1 + (n2-1)*s2)/(n1+n2-2)
-    tst <- (yb1-yb2)/sqrt(s*(1/n1+1/n2))
-    return(tst)
+    d_se <- sqrt(s*(1/n1+1/n2))
+    
+    # t stat
+    t_stat <- d/d_se
+    return(t_stat)
 }
  
-tstat <- twosam(data$male, data$female); tstat
+tstat <- twosam(data$male, data$female)
+tstat
 ```
 
-Spearman Correlation
+
+#### Power Analysis
+
+https://osf.io/zqphw/download
+The Essential Guide to Effect Sizes: Statistical Power, Meta-Analysis, and the Interpretation of Research Results
+https://online.stat.psu.edu/statprogram/reviews/statistical-concepts/power-analysis
+https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/power.html
+https://peopleanalytics-regression-book.org/power-tests.html
+
+https://aaroncaldwell.us/SuperpowerBook/
+
+Parametric P values and Power Analysis
+```{r}
+xy <- USArrests[,c('Murder','UrbanPop')]
+colnames(xy) <- c('y','x')
+
+reg <- lm(y~x, dat=xy)
+
+## T-values
+b <- coef(reg)
+se_b <- sqrt(diag(vcov(reg)))
+t_b <- b/se_b
+
+## P-values
+k <- reg$df.residual
+p <- (1-pt(abs(t_b), k))*2
+p <- pt(-t_b, k) + (1-pt(t_b, k))
+
+#PT_r <- pwrss::power.t.test(T_r, df=k, plot=FALSE, alpha=0.05)
+PT_r <- 1 -
+    pt( qt(alpha/2, df=k), df=k, ncp=abs(T_r), lower.tail=F) +
+    pt( qt(alpha/2, df=k, lower.tail=F), df=k, ncp=abs(T_r), lower.tail=F)
+1 - pt( qt(1-alpha/2, df=k)-abs(T_r), df=k) + pt( qt(alpha/2, df=k)-abs(T_r), df=k)
+``` 
+
+
+
+
+
 
 
 #### Data Analysis
@@ -60,28 +127,10 @@ https://onlinelibrary.wiley.com/doi/10.1002/%28SICI%291099-1255%28199709/10%2912
 
 Add styling to interactive plots
 
-
-The & and | operators
-    always evaluate left and right
-    vectorised
-The && and || operators
-    they evaluate the right side only if needed (i.e. conditionally)
-    they accept only scalars on both sides!
-x <- 1:3
-if(length(x) >= 5 & x[5] > 12) print("ok")
-if(length(x) >= 5& & x[5] > 12) print("ok")
-https://meek-parfait-60672c.netlify.app/docs/m1_r-intro_01#103
-
 Data clean/merge
- * by, with, subset, split, aggregate, stack, switch, do.call, reduce
+ * by, with, subset, stack, switch
+ * do.call, reduce
  * data.table, ...
-
-Strings. https://meek-parfait-60672c.netlify.app/docs/M1_R-intro_03_text.html, https://raw.githubusercontent.com/rstudio/cheatsheets/main/regex.pdf
-kingText = "The king infringes the law on playing curling."
-gsub(pattern = "ing", replacement = "", x = kingText)
-gsub("[aeiouy]", "_", kingText)
-gsub("([[:alpha:]]{3,})ing\\b", "\\1", kingText) 
-
 
 
 
@@ -180,9 +229,9 @@ diag( \widehat{\Omega} ) = [\widehat{\sigma^2_{1}}, \widehat{\sigma^2_{1}}, ...,
 \widehat{\sigma^2_{i}} = \hat{\epsilon_{i}}^2
 $$
 
-Autocorrelation Dependance: $\sigma_{i,j}=f( dist(i,j) )$.
+Autocorrelation Dependence: $\sigma_{i,j}=f( dist(i,j) )$.
 
-Cluster Dependance: 
+Cluster Dependence: 
 $$\sigma_{i,j}=
 \begin{cases}
 \hat{\sigma}_{group1} & i,j \in \text{group } 1\\
@@ -270,6 +319,7 @@ https://www.r-bloggers.com/2024/09/stepwise-selection-of-variables-in-regression
 https://www.tandfonline.com/doi/full/10.1080/26939169.2023.2276446#d1e1498
 
 Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)
+
 
 #### Power Analysis
 
