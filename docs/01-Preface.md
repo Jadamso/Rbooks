@@ -6,17 +6,17 @@
 --->
 
 
-This [Rbook](https://jadamso.github.io/Rbooks/) introduces students to econometrics without parametric assumptions and formulas. In many ways, it is a modern version of "Introductory Econometrics: Using Monte Carlo Simulation with Microsoft Excel" by Barreto and Howland, updated to give econometrics students the best tools for their labor market and adhere to modern statistics [teaching guidelines](https://www.amstat.org/education/curriculum-guidelines-for-undergraduate-programs-in-statistical-science-). Research also suggests that R and R markdown are a good combination for teaching; [1](https://doi.org/10.1080/00220485.2019.1618765) [2](https://doi.org/10.1002/jae.657). The Rbook is organized into three parts
+This [Rbook](https://jadamso.github.io/Rbooks/) introduces students to econometrics without parametric assumptions and formulas. In many ways, it is a modern version of "Introductory Econometrics: Using Monte Carlo Simulation with Microsoft Excel" by Barreto and Howland, updated to give econometrics students the best tools for their labor market and adhere to modern statistics [teaching guidelines](https://www.amstat.org/education/curriculum-guidelines-for-undergraduate-programs-in-statistical-science-). The Rbook is organized into three parts
 
  * *Part   I*: Data Analysis in R
  * *Part  II*: Linear Regression in R
  * *Part III*: Reproducible Research in R
 
-Part I introduces students to the basics of programming and statistical analysis of economic data using R. There are many practical examples, including on how to analyze data interactively and communicate results. I aimed to replace mathematics with simulations whenever possible.
+Part I introduces students to the basics of programming and statistical analysis of economic data using R. There are many practical examples, including on how to analyze data interactively and communicate results. I aimed to replace mathematics with simulations whenever possible. We also cover statistical reporting using R + markdown, which research suggests is a good combination [1](https://doi.org/10.1080/00220485.2019.1618765) [2](https://doi.org/10.1002/jae.657). 
 
 Part II refines material from several introductory econometrics textbooks and covers linear models only from a "minimum distance" perspective. (We operate under the maxim "All models are wrong" and do not prove unbiasedness.) Also included is a novel chapter on "Data scientism" that more clearly illustrates the ways that simplistic approaches can mislead rather than illuminate. (I stress "gun safety" instead of "pull to shoot", which I feel is missing from many textbooks.) Overall, there is a more humble view towards what we can infer from linear regressions and more room for economic theory in model development and interpretation.
 
-Part III synthesize a lot of programming guidance and examples now available on the internet.
+Part III synthesize a lot of programming guidance and examples now available on the internet. This is useful for semester projects and beyond.
 
 ***
 
@@ -24,6 +24,6 @@ Although any interested reader may find it useful, this Rbook is primarily devel
 
 Please report any errors or issues at https://github.com/Jadamso/Rbooks/issues.
 
-Last updated: 02.03.2025
+Last updated: 16.04.2025
 
 

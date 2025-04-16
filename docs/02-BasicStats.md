@@ -252,8 +252,8 @@ add_vec(x,x)
 
 ``` r
 sum_squared <- function(x1, x2) {
-	y <- (x1 + x2)^2
-	return(y)
+    y <- (x1 + x2)^2
+    return(y)
 }
 
 sum_squared(1, 3)
@@ -931,13 +931,15 @@ outer(x_mat2, x)
 
 ## Types
 
-The two most common data types are
+The two basic types of data are *cardinal* and *factor* data. We can further distinguish between whether cardinal data are discrete or continuous. We can also further distinguish between whether factor data are ordered or not
 
-* *cardinal*: the difference between elements always mean the same thing. E.g., 2-1=3-2.
-* *factor*: the difference between  elements does not always mean the same thing. E.g., First place - Second place = ??.
+* *cardinal*: the difference between elements always mean the same thing. 
+    * discrete: E.g., 2-1=3-2.
+    * continuous: E.g., 2.11-1.4444=3.11-2.4444
+* *factor*: the difference between elements does not always mean the same thing.
+    * ordered: E.g., First place - Second place ?? Second place - Third place.
+    * unordered (categorical): E.g., A - B ????
 
-We can further distinguish between whether cardinal data are discrete or continuous (i.e., whether an arbitrary number of decimal points are allowed.)
-We can also further distinguish between whether factor data are ordered or not (i.e., whether the labels {"A", "B", and "C"} correspond to any meaningful order like {first, second, and third}.)
 
 
 ``` r
@@ -1142,9 +1144,11 @@ sum(is.na(x))
 ## [1] 0
 ```
 
-To further examine data, we look at "distributions". In what follows, we will denote the data for a single variable as $\{X_{i}\}_{i=1}^{N}$, where there are $N$ observations and $X_{i}$ is the value of the $i$th one. While $X_{i}$ could be 
+To further examine a particular variable, we look at its distribution.
 
-## Distributions
+## Empirical Distributions
+
+In what follows, we will denote the data for a single variable as $\{X_{i}\}_{i=1}^{N}$, where there are $N$ observations and $X_{i}$ is the value of the $i$th one.
 
 **Histogram**. The histogram divides the range of $\{X_{i}\}_{i=1}^{N}$ into $L$ exclusive bins of equal-width $h=[\text{max}(X_{i}) - \text{min}(X_{i})]/L$, and counts the number of observations within each bin. We often scale the counts to interpret the numbers as a density. Mathematically, for an exclusive bin with midpoint $x$, we compute
 \begin{eqnarray}
@@ -1161,6 +1165,12 @@ rug(USArrests$Murder, col=grey(0,.5))
 
 <img src="02-BasicStats_files/figure-html/unnamed-chunk-28-1.png" width="672" />
 
+
+Note that if you your data is discrete, you can directly plot the counts. E.g.,  
+```
+x <- floor(USArrests$Murder) #Discretized
+plot(table(x), xlab='Murder Rate (Discrete)', ylab='Count')
+```
 
 **Empirical *Cumulative* Distribution Function**. The ECDF counts the proportion of observations whose values $X_{i}$ are less than $x$; 
 \begin{eqnarray}
@@ -1304,6 +1314,48 @@ stripchart(USArrests$Murder,
 
 <img src="02-BasicStats_files/figure-html/unnamed-chunk-32-1.png" width="672" />
 
+## Joint Distributions
+
+Scatterplots are used frequently to summarize the joint relationship between two variables. They can be enhanced in several ways. As a default, use semi-transparent points so as not to hide any points (and perhaps see if your observations are concentrated anywhere).
+
+You can also add regression lines (and confidence intervals), although I will defer this until later.
+
+
+``` r
+plot(Murder~UrbanPop, USArrests, pch=16, col=grey(0.,.5))
+```
+
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-33-1.png" width="672" />
+
+``` r
+# Add the line of best fit for pooled data
+#reg <- lm(Murder~UrbanPop, data=USArrests)
+#abline(reg, lty=2)
+```
+
+**Marginal Distributions**. You can also show the distributions of each variable along each axis.
+
+
+``` r
+# Setup Plot
+layout( matrix(c(2,0,1,3), ncol=2, byrow=TRUE),
+    widths=c(9/10,1/10), heights=c(1/10,9/10))
+
+# Scatterplot
+par(mar=c(4,4,1,1))
+plot(Murder~UrbanPop, USArrests, pch=16, col=rgb(0,0,0,.5))
+
+# Add Marginals
+par(mar=c(0,4,1,1))
+xhist <- hist(USArrests$UrbanPop, plot=FALSE)
+barplot(xhist$counts, axes=FALSE, space=0, border=NA)
+
+par(mar=c(4,0,1,1))
+yhist <- hist(USArrests$Murder, plot=FALSE)
+barplot(yhist$counts, axes=FALSE, space=0, horiz=TRUE, border=NA)
+```
+
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-34-1.png" width="672" />
 
 
 ## Conditional Distributions
@@ -1337,7 +1389,7 @@ hist(murder_highpop,
     border=NA, ylim=ylim)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-33-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-35-1.png" width="672" />
 
 It is sometimes it is preferable to show the ECDF instead. And you can glue various combinations together to convey more information all at once
 
@@ -1365,7 +1417,7 @@ legend('bottomright', col=cols,
     legend=c('Low (<= Mean)','High (>= Mean)'))
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-34-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-36-1.png" width="672" />
 
 
 You can also split data into grouped boxplots in the same way
@@ -1384,7 +1436,7 @@ boxplot(Murder~UrbanPop_Kcut, USArrests,
     xlab='Urban Population', ylab='')
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-35-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-37-1.png" width="672" />
 
 ``` r
 # 4 Groups with equal numbers of observations
@@ -1396,27 +1448,7 @@ boxplot(Murder~UrbanPop_Kcut, USArrests,
 ```
 
 
-
-## Joint Distributions
-
-Scatterplots are used frequently to summarize the joint relationship between two variables. They can be enhanced in several ways. As a default, use semi-transparent points so as not to hide any points (and perhaps see if your observations are concentrated anywhere).
-
-You can also add regression lines (and confidence intervals), although I will defer this until later.
-
-
-``` r
-plot(Murder~UrbanPop, USArrests, pch=16, col=grey(0.,.5))
-```
-
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-36-1.png" width="672" />
-
-``` r
-# Add the line of best fit for pooled data
-#reg <- lm(Murder~UrbanPop, data=USArrests)
-#abline(reg, lty=2)
-```
-
-**Conditional Relationships**. You can also use size, color, and shape to distinguish different conditional relationships.
+**Conditional Relationships**. You can also use size, color, and shape to further distinguish different conditional relationships.
 
 
 ``` r
@@ -1429,7 +1461,7 @@ cols <- ifelse(assault_high, rgb(1,0,0,.5), rgb(0,0,1,.5))
 plot(Murder~UrbanPop, USArrests, pch=16, col=cols)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-37-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-38-1.png" width="672" />
 
 ``` r
 # Could also add regression lines y for each data split
@@ -1440,56 +1472,17 @@ plot(Murder~UrbanPop, USArrests, pch=16, col=cols)
 ```
 
 
-**Marginal Distributions**. You can also show the distributions of each variable along each axis.
-
-
-``` r
-# Setup Plot
-layout( matrix(c(2,0,1,3), ncol=2, byrow=TRUE),
-    widths=c(9/10,1/10), heights=c(1/10,9/10))
-
-# Scatterplot
-par(mar=c(4,4,1,1))
-plot(Murder~UrbanPop, USArrests, pch=16, col=rgb(0,0,0,.5))
-
-# Add Marginals
-par(mar=c(0,4,1,1))
-xhist <- hist(USArrests$UrbanPop, plot=FALSE)
-barplot(xhist$counts, axes=FALSE, space=0, border=NA)
-
-par(mar=c(4,0,1,1))
-yhist <- hist(USArrests$Murder, plot=FALSE)
-barplot(yhist$counts, axes=FALSE, space=0, horiz=TRUE, border=NA)
-```
-
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-38-1.png" width="672" />
-
-
-
-## Further Reading 
-For plotting histograms and marginals, see 
-
-* https://www.r-bloggers.com/2011/06/example-8-41-scatterplot-with-marginal-histograms/
-* https://r-graph-gallery.com/histogram.html
-* https://r-graph-gallery.com/74-margin-and-oma-cheatsheet.html 
-* https://jtr13.github.io/cc21fall2/tutorial-for-scatter-plot-with-marginal-distribution.html.
-
-
-
-# Statistics
-***
-
 ## Random Variables
 
 Random variables are vectors that are generated from a probabilistic process. 
 
-The *sample space* of a random variable refers to the set of all possible outcomes.
-A *probability* assigns to any set of events a number between $0$ and $1$.
+* The *sample space* of a random variable refers to the set of all possible outcomes.
+* The *probability* of a particular set of outcomes is the proportion that those outcomes occur in the long run.
 
 There are two basic types of sample spaces:
 
 **Discrete**.
-The random variable can take one of several discrete values.  E.g., any number in $\{1,2,3,4\}$.
+The random variable can take one of several discrete values.  E.g., any number in $\{1,2,3,...\}$.
 
 
 ``` r
@@ -1498,7 +1491,7 @@ rbinom(1, 1, 0.5) # 1 draw
 ```
 
 ```
-## [1] 1
+## [1] 0
 ```
 
 ``` r
@@ -1506,58 +1499,57 @@ rbinom(4, 1, 0.5) # 4 draws
 ```
 
 ```
-## [1] 0 0 0 0
+## [1] 0 0 1 1
 ```
 
 ``` r
-x0 <- rbinom(1000, 1, 0.5)
-hist(x0, breaks=50, border=NA, main=NA, freq=T)
+x0 <- rbinom(600, 1, 0.5)
+
+# Cumulative Averages
+x0_t <- seq_len(length(x0))
+x0_mt <- cumsum(x0)/x0_t
+plot(x0_t, x0_mt, type='l',
+    ylab='Cumulative Average',
+    xlab='Flip #')
 ```
 
 <img src="02-BasicStats_files/figure-html/unnamed-chunk-39-1.png" width="672" />
 
 ``` r
-# plot(table(x0))
-
-# Bernoulli (Coin Flip: Heads=1 Tails=0)
-x0 <- rbinom(1000, 1, 0.2)
+# Long run proportions
+x0 <- rbinom(2000, 1, 0.5)
 hist(x0, breaks=50, border=NA, main=NA, freq=T)
 ```
 
 <img src="02-BasicStats_files/figure-html/unnamed-chunk-39-2.png" width="672" />
 
-``` r
-# plot(table(x0))
-```
-
 
 ``` r
-# Discrete Uniform (numbers 1,...4 all have equal probability)
-sample(1:4, 1, replace=T) # 1 draw
-```
-
-```
-## [1] 4
-```
-
-``` r
-sample(1:4, 3, replace=T) # 3 draws
-```
-
-```
-## [1] 4 4 4
-```
-
-``` r
-x1 <- sample(1:4, 1000, replace=T)
-hist(x1, breaks=50, border=NA, main=NA, freq=T)
+# Bernoulli (Unfair Coin Flip)
+x0 <- rbinom(2000, 1, 0.2)
+hist(x0, breaks=50, border=NA, main=NA, freq=T)
 ```
 
 <img src="02-BasicStats_files/figure-html/unnamed-chunk-40-1.png" width="672" />
 
+
 ``` r
-# plot(table(x1))
+# Discrete Uniform (numbers 1,...4)
+# sample(1:4, 1, replace=T, prob=rep(1/4,4) ) # 1 draw, equal probabilities
+x1 <- sample(1:4, 2000, replace=T, prob=rep(1/4,4))
+hist(x1, breaks=50, border=NA, main=NA, freq=T)
 ```
+
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-41-1.png" width="672" />
+
+
+``` r
+# Multinoulli (aka Categorical)
+x1 <- sample(1:4, 2000, replace=T, prob=c(3,4,1,2)/10) # unequal probabilities
+hist(x1, breaks=50, border=NA, main=NA, freq=T)
+```
+
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-42-1.png" width="672" />
 
 
 **Continuous**.
@@ -1570,15 +1562,15 @@ runif(3) # 3 draws
 ```
 
 ```
-## [1] 0.9593647 0.1682418 0.4078311
+## [1] 0.02080043 0.56223900 0.57047505
 ```
 
 ``` r
 x2 <- runif(2000)
-hist(x2, breaks=25, border=NA, main=NA, freq=F)
+hist(x2, breaks=20, border=NA, main=NA, freq=F)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-41-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-43-1.png" width="672" />
 
 ``` r
 # Normal (Gaussian)
@@ -1586,45 +1578,153 @@ rnorm(3) # 3 draws
 ```
 
 ```
-## [1]  1.0808476 -0.4670859  0.4303165
+## [1] -0.7031871 -2.4176092 -0.4144168
 ```
 
 ``` r
-x3 <- rnorm(1000)
-hist(x3, breaks=25, border=NA, main=NA, freq=F)
+x3 <- rnorm(2000)
+hist(x3, breaks=20, border=NA, main=NA, freq=F)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-41-2.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-43-2.png" width="672" />
+
+We might further distinguish types of random variables based on whether their maximum value is theoretically finite or infinite.
 
 
-We might further distinguish types of random variables based on whether their maximum value is theoretically finite or infinite. In any case, we often summarize distributions with *statistics*: functions of data. The most basic way to do this is
+**Probability distributions**.
+
+Random variables are drawn from [probability distributions](https://en.wikipedia.org/wiki/List_of_probability_distributions). The most common ones are [easily accessible](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html).
+
+All random variables have an associated theoretical Cumulative Distribution Function: $F_{X}(x) =$ Probability$(X_{i} \leq x)$. Continuous random variables have an associated density function: $f_{X}$, as well as a quantile function: $Q_{X}(p)$, which is the inverse of the CDF: the $x$ value where $p$ percent of the data fall below it.
+
+Here is an example of the [Beta distribution](https://en.wikipedia.org/wiki/Beta_distribution)
 
 ``` r
-summary(x1)
+pars <- expand.grid( c(.5,1,2), c(.5,1,2) )
+par(mfrow=c(3,3))
+apply(pars, 1, function(p){
+    x <- seq(0,1,by=.01)
+    fx <- dbeta( x,p[1], p[2])
+    plot(x, fx, type='l', xlim=c(0,1), ylim=c(0,4), lwd=2)
+    #hist(rbeta(2000, p[1], p[2]), breaks=50, border=NA, main=NA, freq=F)
+})
+title('Beta densities', outer=T, line=-1)
+```
+
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-44-1.png" width="672" />
+
+Here is a more in-depth example using the [Dagum distribution](https://en.wikipedia.org/wiki/Dagum_distribution)
+
+
+``` r
+# Quantile Function (VGAM::qdagum)
+# (In addition to the main equation, there are many checks and options for consistency with other functions)
+qdagum <- function(p, scale = 1, shape1.a, shape2.p, lower.tail = TRUE, log.p = FALSE) {
+  LLL <- max(length(p), length(shape1.a), length(scale), length(shape2.p))
+  
+  if (length(p) < LLL) p <- rep_len(p, LLL)
+  if (length(shape1.a) < LLL) shape1.a <- rep_len(shape1.a, LLL)
+  if (length(scale) < LLL) scale <- rep_len(scale, LLL)
+  if (length(shape2.p) < LLL) shape2.p <- rep_len(shape2.p, LLL)
+
+  if (lower.tail) {
+    if (log.p) {
+      ln.p <- p
+      ans <- scale * (expm1(-ln.p / shape2.p))^(-1 / shape1.a)
+      ans[ln.p > 0] <- NaN
+    } else {
+      ans <- scale * (expm1(-log(p) / shape2.p))^(-1 / shape1.a)
+      ans[p < 0] <- NaN
+      ans[p == 0] <- 0
+      ans[p == 1] <- Inf
+      ans[p > 1] <- NaN
+    }
+  } else {
+    if (log.p) {
+      ln.p <- p
+      ans <- scale * (expm1(-log(-expm1(ln.p)) / shape2.p))^(-1 / shape1.a)
+      ans[ln.p > 0] <- NaN
+    } else {
+      # Main equation (theoretically derived from the CDF)
+      ans <- scale * (expm1(-log1p(-p) / shape2.p))^(-1 / shape1.a)
+      ans[p < 0] <- NaN
+      ans[p == 0] <- Inf
+      ans[p == 1] <- 0
+      ans[p > 1] <- NaN
+    }
+  }
+  ans[scale <= 0 | shape1.a <= 0 | shape2.p <= 0] <- NaN
+  return(ans)
+}
+
+# Generate Random Variables (VGAM::rdagum)
+rdagum <-function(n, scale=1, shape1.a, shape2.p){
+    p <- runif(n) # generate a random quantile
+    qdagum(p, scale=scale, shape1.a=shape1.a, shape2.p=shape2.p)
+}
+
+# Example
+set.seed(123)
+x <- rdagum(3000,1,3,1)
+
+# Empirical Distribution
+Fx_hat <- ecdf(x)
+plot(Fx_hat, lwd=2, xlim=c(0,5))
+
+# Two Quantiles
+p <- c(.25, .9)
+cols <- c(2,4)
+Qx_hat <- quantile(x, p)
+segments(Qx_hat,p,-10,p, col=cols)
+segments(Qx_hat,p,Qx_hat,0, col=cols)
+mtext( round(Qx_hat,2), 1, at=Qx_hat, col=cols)
+```
+
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-45-1.png" width="672" />
+
+We will return to the theory behind probability distributions in a later chapter.
+
+## Further Reading 
+
+For plotting histograms and marginals, see 
+
+* https://www.r-bloggers.com/2011/06/example-8-41-scatterplot-with-marginal-histograms/
+* https://r-graph-gallery.com/histogram.html
+* https://r-graph-gallery.com/74-margin-and-oma-cheatsheet.html 
+* https://jtr13.github.io/cc21fall2/tutorial-for-scatter-plot-with-marginal-distribution.html.
+
+
+# Statistics
+***
+
+We often summarize distributions with *statistics*: functions of data. The most basic way to do this is
+
+``` r
+summary( runif(1000))
 ```
 
 ```
-##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-##   1.000   2.000   3.000   2.503   3.000   4.000
+##      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+## 0.0000653 0.2433963 0.5054190 0.5039852 0.7685290 0.9995000
 ```
 
 ``` r
-summary(x3)
+summary( rnorm(1000) )
 ```
 
 ```
 ##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-## -3.12854 -0.63213  0.04556  0.03611  0.68480  3.32838
+## -2.84855 -0.65619 -0.05057 -0.02011  0.64258  3.42110
 ```
 
 The values in "summary" can all be calculated individually. (E.g., the "mean" computes the [sum of all values] divided by [number of values].) There are many other combinations of statistics you can use.
 
+## Mean and Variance
 
-## Center/Spread Statistics
 The most basic statistics summarize the center of a distribution and how far apart the values are spread.
 
-**Mean and Variance**. Perhaps the most common statistic is the mean;
-$$\overline{X}=\frac{\sum_{i=1}^{N}X_{i}}{N}$$, where $X_{i}$ denotes the value of the $i$th observation.
+**Mean**. Perhaps the most common statistic is the mean;
+$$\overline{X}=\frac{\sum_{i=1}^{N}X_{i}}{N},$$ where $X_{i}$ denotes the value of the $i$th observation.
 
 
 ``` r
@@ -1636,13 +1736,13 @@ abline(v=m, col=2, lwd=2)
 title(paste0('mean= ', round(m,2)), font.main=1)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-43-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-47-1.png" width="672" />
 
 ``` r
 # is m close to it's true value (1-0)/2=.5?
 ```
 
-Perhaps the second most common statistic is the variance: the average squared deviation from the mean
+**Variance**. Perhaps the second most common statistic is the variance: the average squared deviation from the mean
 $$V_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \overline{X}]^2}{N}.$$
 The standard deviation is simply $s_{X} = \sqrt{V_{X}}$.^[Note that a "corrected version" is used by R and many statisticians: $V_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \overline{X}]^2}{N-1}$.]
 
@@ -1658,7 +1758,7 @@ text(s_lh, -.02,
 title(paste0('sd= ', round(s,2)), font.main=1)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-44-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-48-1.png" width="672" />
 
 ``` r
 # Note a small sample correction: 
@@ -1668,6 +1768,128 @@ title(paste0('sd= ', round(s,2)), font.main=1)
 
 Together, these statistics summarize the central tendency and dispersion of a distribution. In some special cases, such as with the normal distribution, they completely describe the distribution. Other distributions are easier to describe with other statistics.
 
+## Shape Statistics
+
+Central tendency and dispersion are often insufficient to describe a distribution. To further describe shape, we can compute these to "standard moments":
+
+$$Skew_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \overline{X}]^3 / N}{ [s_{X}]^3 }$$
+$$Kurt_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \overline{X}]^4 / N}{ [s_{X}]^4 }.$$
+
+**Skewness**.
+Skew captures how symmetric the distribution is.
+
+
+``` r
+x <- rweibull(1000, shape=1)
+hist(x, border=NA, main=NA, freq=F, breaks=20)
+```
+
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-49-1.png" width="672" />
+
+
+``` r
+skewness <-  function(x) {
+ x_bar <- mean(x)
+ m3 <- mean((x - x_bar)^3)
+ skew <- m3/(sd(x)^3)
+ return(skew)
+}
+
+skewness( rweibull(1000, shape=1))
+```
+
+```
+## [1] 1.721855
+```
+
+``` r
+skewness( rweibull(1000, shape=10) )
+```
+
+```
+## [1] -0.7698367
+```
+
+**Kurtosis**.
+Kurt captures how many "outliers" there are.
+
+
+``` r
+x <- rweibull(1000, shape=1)
+boxplot(x, main=NA)
+```
+
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-51-1.png" width="672" />
+
+
+``` r
+kurtosis <- function(x) {  
+ x_bar <- mean(x)
+ m4 <- mean((x - x_bar)^4) 
+ kurt <- m4/(sd(x)^4) - 3  
+ return(kurt)
+}
+
+kurtosis( rweibull(1000, shape=1))
+```
+
+```
+## [1] 6.318697
+```
+
+``` r
+kurtosis( rweibull(1000, shape=10) )
+```
+
+```
+## [1] 0.6659003
+```
+
+
+**Clusters/Gaps**. You can also describe distributions in terms of how clustered the values are
+
+
+``` r
+# Number of Modes
+x <- rbeta(1000, .6, .6)
+hist(x, border=NA, main=NA, freq=F, breaks=20)
+```
+
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-53-1.png" width="672" />
+
+But remember: *a picture is worth a thousand words*.
+
+
+``` r
+# Random Number Generator 
+r_ugly1 <- function(n, theta1=c(-8,-1), theta2=c(-2,2), rho=.25){
+    omega   <- rbinom(n, size=1, rho)
+    epsilon <- omega * runif(n, theta1[1], theta2[1]) +
+        (1-omega) * rnorm(n, theta1[2], theta2[2])
+    return(epsilon)
+}
+# Large Sample
+par(mfrow=c(1,1))
+X <- seq(-12,6,by=.001)
+rx <- r_ugly1(1000000)
+hist(rx, breaks=1000,  freq=F, border=NA,
+    xlab="x", main='')
+```
+
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-54-1.png" width="672" />
+
+``` r
+# Show True Density
+#d_ugly1 <- function(x, theta1=c(-8,-1), theta2=c(-2,2), rho=.25){
+#    rho     * dunif(x, theta1[1], theta2[1]) +
+#    (1-rho) * dnorm(x, theta1[2], theta2[2]) }
+#dx <- d_ugly1(X)
+#lines(X, dx, col=1)
+```
+
+
+
+## Other Center/Spread Statistics
 
 **Median, Interquartile Range, Median Absolute Deviation**. Recall that the $q$th quantile is the value where $q$ percent of the data are below and ($1-q$) percent are above. 
 
@@ -1675,7 +1897,10 @@ The median ($q=.5$) is the point where half of the data is lower values and the 
 The first and third quartiles ($q=.25$ and $q=.75$) together measure is the middle 50 percent of the data. The size of that range (interquartile range: the difference between the quartiles) represents "spread" or "dispersion" of the data.
 
 The mean absolute deviation also measures spread
-$$MAD_{X} = med\left( | X_{i} - med(X) | \right).$$
+$$
+\tilde{X} = Med(X_{i}) \\
+MAD_{X} = Med\left( | X_{i} - \tilde{X} | \right).
+$$
 
 
 ``` r
@@ -1684,15 +1909,15 @@ x
 ```
 
 ```
-##  [1]  0  0  0  4  2  0  0  0 12  2  8  4  1  0  0  6  0  1  0  0  5  3  5  0  2
-## [26]  0  1  0  1  0  0  2  1  2  5  0  0  0  3  0  2  0  5  0  1  0  1  2  0  3
+##  [1] 0 4 0 7 0 0 0 3 3 0 0 0 2 0 0 2 1 0 4 3 0 0 6 2 0 2 0 1 0 0 0 3 2 0 0 1 0 4
+## [39] 0 0 2 1 2 0 0 2 7 4 1 0
 ```
 
 ``` r
 plot(table(x))
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-45-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-55-1.png" width="672" />
 
 ``` r
 #mean(x)
@@ -1700,7 +1925,7 @@ median(x)
 ```
 
 ```
-## [1] 1
+## [1] 0
 ```
 
 ``` r
@@ -1710,7 +1935,7 @@ mad(x, constant=1) # median( abs(x - median(x)) )
 ```
 
 ```
-## [1] 1
+## [1] 0
 ```
 
 
@@ -1735,16 +1960,16 @@ x_id
 ```
 ##       [,1] [,2] [,3]
 ##  [1,]    0    0    0
-##  [2,]    0    0    1
+##  [2,]    0    0    0
 ##  [3,]    0    0    0
 ##  [4,]    0    0    0
 ##  [5,]    0    0    0
-##  [6,]    0    0    0
+##  [6,]    1    0    0
 ##  [7,]    0    0    0
 ##  [8,]    0    0    0
 ##  [9,]    0    0    0
 ## [10,]    0    0    0
-## [11,]    0    0    0
+## [11,]    0    0    1
 ## [12,]    0    0    0
 ## [13,]    0    0    0
 ## [14,]    0    0    0
@@ -1752,12 +1977,12 @@ x_id
 ## [16,]    0    0    0
 ## [17,]    0    0    0
 ## [18,]    0    0    0
-## [19,]    1    0    0
+## [19,]    0    1    0
 ## [20,]    0    0    0
 ## [21,]    0    0    0
 ## [22,]    0    0    0
 ## [23,]    0    0    0
-## [24,]    0    1    0
+## [24,]    0    0    0
 ## [25,]    0    0    0
 ## [26,]    0    0    0
 ```
@@ -1773,7 +1998,7 @@ x <- factor(unlist(x), levels=LETTERS)
 plot(x)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-47-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-57-1.png" width="672" />
 
 ``` r
 tx <- table(x)
@@ -1782,7 +2007,7 @@ names(tx)[tx==max(tx)]
 ```
 
 ```
-## [1] "U"
+## [1] "H"
 ```
 
 ``` r
@@ -1792,7 +2017,7 @@ sd(sx) # mad(sx)
 ```
 
 ```
-## [1] 0.01826304
+## [1] 0.01541228
 ```
 
 ``` r
@@ -1801,137 +2026,176 @@ max(tx)/mean(tx)
 ```
 
 ```
-## [1] 2.34
+## [1] 1.82
 ```
 
 
-## Shape Statistics
 
-Central tendency and dispersion are often insufficient to describe a distribution. To further describe shape, we can compute these to "standard moments":
+## Associations
 
-$$Skew_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \overline{X}]^3 / N}{ [s_{X}]^3 }$$
-$$Kurt_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \overline{X}]^4 / N}{ [s_{X}]^4 }.$$
+There are several ways to quantitatively describe the relationship between two variables, $Y$ and $X$. The major differences surround whether the variables are cardinal, ordinal, or categorical.
 
-**Skewness**.
-Skew captures how symmetric the distribution is.
-
+**Pearson (Linear) Correlation**. 
+Suppose $X$ and $Y$ are both cardinal data. As such, you can compute the most famous measure of association, the covariance:
+$$
+C_{XY} =  \sum_{i} [X_i - \overline{X}] [Y_i - \overline{Y}] / N
+$$
 
 ``` r
-x <- rlnorm(1000)
-
-hist(x, border=NA, main=NA, freq=F, breaks=20)
+# Bivariate Data from USArrests
+xy <- USArrests[,c('Murder','UrbanPop')]
+#plot(xy, pch=16, col=grey(0,.25))
+cov(xy)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-48-1.png" width="672" />
+```
+##             Murder   UrbanPop
+## Murder   18.970465   4.386204
+## UrbanPop  4.386204 209.518776
+```
+Note that $C_{XX}=V_{X}$.
+For ease of interpretation, we rescale this statistic to always lay between $-1$ and $1$ 
+$$
+r_{XY} = \frac{ C_{XY} }{ \sqrt{V_X} \sqrt{V_Y}}
+$$
+
+``` r
+cor(xy)[2]
+```
+
+```
+## [1] 0.06957262
+```
+
+
+**Falk Codeviance**.
+The Codeviance is a robust alternative to Covariance. Instead of relying on means (which can be sensitive to outliers), it uses medians ($\tilde{X}$) to capture the central tendency.^[See also *Theil-Sen Estimator*, which may be seen as a precursor.] We can also scale the Codeviance by the median absolute deviation to compute the median correlation.
+\[
+\text{CoDev}(X,Y) = \text{Med}\left\{ |X_i - \tilde{X}| |Y_i - \tilde{Y}| \right\} \\
+\tilde{r}_{XY} = \frac{ \text{CoDev}(X,Y) }{ \text{MAD}(X) \text{MAD}(Y) }.
+\]
 
 
 ``` r
-skewness <-  function(x) {
- x_bar <- mean(x)
- m3 <- mean((x - x_bar)^3)
- skew <- m3/(sd(x)^3)
- return(skew)
+cor_m <- function(xy) {
+  # Compute medians for each column
+  med <- apply(xy, 2, median)
+  # Subtract the medians from each column
+  xm <- sweep(xy, 2, med, "-")
+  # Compute CoDev
+  CoDev <- median(xm[, 1] * xm[, 2])
+  # Compute the medians of absolute deviation
+  MadProd <- prod( apply(abs(xm), 2, median) )
+  # Return the robust correlation measure
+  return( CoDev / MadProd)
 }
-
-skewness(rlnorm(1000))
+cor_m(xy)
 ```
 
 ```
-## [1] 4.244953
+## [1] 0.005707763
+```
+
+
+**Kendall's Tau**.
+Suppose $X$ and $Y$ are both *ordered* variables. Kendall's Tau measures the strength and direction of association by counting the number of concordant pairs (where the ranks agree) versus discordant pairs (where the ranks disagree). A value of \(\tau = 1\) implies perfect agreement in rankings, \(\tau = -1\) indicates perfect disagreement, and \(\tau = 0\) suggests no association in the ordering.
+\[
+\tau = \frac{2}{n(n-1)} \sum_{i} \sum_{j > i} \text{sgn} \Bigl( (X_i - X_j)(Y_i - Y_j) \Bigr),
+\]
+where the sign function is:
+$$
+\text{sgn}(z) = 
+\begin{cases}
++1 & \text{if } z > 0\\
+0  & \text{if } z = 0 \\
+-1 & \text{if} z < 0 
+\end{cases}.
+$$
+
+``` r
+xy <- USArrests[,c('Murder','UrbanPop')]
+xy[,1] <- rank(xy[,1] )
+xy[,2] <- rank(xy[,2] )
+# plot(xy, pch=16, col=grey(0,.25))
+tau <- cor(xy[, 1], xy[, 2], method = "kendall")
+round(tau, 3)
+```
+
+```
+## [1] 0.074
+```
+
+**Cramer's V**. Suppose $X$ and $Y$ are both *categorical* variables; the value of $X$ is one of $1...r$ categories and the value of $Y$ is one of $1...k$ categories. Cramer's V quantifies the strength of association by adjusting a "chi-squared" statistic to provide a measure that ranges from 0 to 1; 0 indicates no association while a value closer to 1 signifies a strong association. 
+
+First, consider a contingency table for $X$ and $Y$ with \(r\) rows and \(k\) columns. The chi-square statistic is then defined as:
+
+\[
+\chi^2 = \sum_{i=1}^{r} \sum_{j=1}^{k} \frac{(O_{ij} - E_{ij})^2}{E_{ij}}.
+\]
+
+where
+
+- \(O_{ij}\) denote the observed frequency in cell \((i, j)\),
+- \(E_{ij} = \frac{R_i \cdot C_j}{n}\) is the expected frequency for each cell if $X$ and $Y$ are independent
+- \(R_i\) denote the total frequency for row \(i\) (i.e., \(R_i = \sum_{j=1}^{k} O_{ij}\)),
+- \(C_j\) denote the total frequency for column \(j\) (i.e., \(C_j = \sum_{i=1}^{r} O_{ij}\)),
+- \(n\) be the grand total of observations, so that \(n = \sum_{i=1}^{r} \sum_{j=1}^{k} O_{ij}\).
+
+
+Second, normalize the chi-square statistic with the sample size and the degrees of freedom to compute Cramer's V. 
+
+\[
+V = \sqrt{\frac{\chi^2 / n}{\min(k - 1, \, r - 1)}},
+\]
+
+where:
+
+- \(n\) is the total sample size,
+- \(k\) is the number of categories for one variable,
+- \(r\) is the number of categories for the other variable.
+
+
+
+``` r
+xy <- USArrests[,c('Murder','UrbanPop')]
+xy[,1] <- cut(xy[,1],3)
+xy[,2] <- cut(xy[,2],4)
+table(xy)
+```
+
+```
+##               UrbanPop
+## Murder         (31.9,46.8] (46.8,61.5] (61.5,76.2] (76.2,91.1]
+##   (0.783,6.33]           4           5           8           5
+##   (6.33,11.9]            0           4           7           6
+##   (11.9,17.4]            2           4           2           3
 ```
 
 ``` r
-skewness(rnorm(1000))
-```
-
-```
-## [1] -0.0002386932
-```
-
-**Kurtosis**.
-Kurt captures how many "outliers" there are.
-
-
-``` r
-x <- rcauchy(1000)
-
-par(mfrow=c(1,2))
-hist(x, border=NA, main=NA, freq=F, breaks=100)
-boxplot(x, main=NA)
-```
-
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-50-1.png" width="672" />
-
-
-
-``` r
-kurtosis <- function(x) {  
- x_bar <- mean(x)
- m4 <- mean((x - x_bar)^4) 
- kurt <- m4/(sd(x)^4) - 3  
- return(kurt)
+cor_v <- function(xy){
+    # Create a contingency table from the categorical variables
+    tbl <- table(xy)
+    # Compute the chi-square statistic (without Yates' continuity correction)
+    chi2 <- chisq.test(tbl, correct=FALSE)$statistic
+    # Total sample size
+    n <- sum(tbl)
+    # Compute the minimum degrees of freedom (min(rows-1, columns-1))
+    df_min <- min(nrow(tbl) - 1, ncol(tbl) - 1)
+    # Calculate Cramer's V
+    V <- sqrt((chi2 / n) / df_min)
+    return(V)
 }
-
-kurtosis(rcauchy(1000))
+cor_v(xy)
 ```
 
 ```
-## [1] 118.8045
+## X-squared 
+## 0.2307071
 ```
 
 ``` r
-kurtosis(rnorm(1000))
+# DescTools::CramerV( table(xy) )
 ```
-
-```
-## [1] 0.07173244
-```
-
-
-**Clusters/Gaps**. You can also describe distributions in terms of how clustered the values are
-
-
-``` r
-# Number of Modes
-x <- rbeta(1000, .6, .6)
-hist(x, border=NA, main=NA, freq=F, breaks=20)
-```
-
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-52-1.png" width="672" />
-
-But remember: *a picture is worth a thousand words*.
-
-
-``` r
-# Random Number Generator 
-r_ugly1 <- function(n, theta1=c(-8,-1), theta2=c(-2,2), rho=.25){
-    omega   <- rbinom(n, size=1, rho)
-    epsilon <- omega * runif(n, theta1[1], theta2[1]) +
-        (1-omega) * rnorm(n, theta1[2], theta2[2])
-    return(epsilon)
-}
-# Large Sample
-par(mfrow=c(1,1))
-X <- seq(-12,6,by=.001)
-rx <- r_ugly1(1000000)
-hist(rx, breaks=1000,  freq=F, border=NA,
-    xlab="x", main='')
-```
-
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-53-1.png" width="672" />
-
-``` r
-# Show True Density
-#d_ugly1 <- function(x, theta1=c(-8,-1), theta2=c(-2,2), rho=.25){
-#    rho     * dunif(x, theta1[1], theta2[1]) +
-#    (1-rho) * dnorm(x, theta1[2], theta2[2]) }
-#dx <- d_ugly1(X)
-#lines(X, dx, col=1)
-```
-
-
-
-
 
 
 ## Beyond Basics
@@ -1955,8 +2219,7 @@ install.packages("twosamples")
 
 The most common tasks also have [cheatsheets](https://www.rstudio.com/resources/cheatsheets/) you can use. 
 
-**Probability Distributions**.
-There are many many different [probability distributions](https://en.wikipedia.org/wiki/List_of_probability_distributions). The most common ones are [easily accessible](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html)
+For example, to generate 'exotic' probability distributions
 
 
 ``` r
@@ -1967,10 +2230,10 @@ for(p in c(-.5,0)){
     x <- rgev(2000, mu=0, sigma=1, xi=p)
     hist(x, breaks=50, border=NA, main=NA, freq=F)
 }
-title('GEV distributions', outer=T, line=-1)
+title('GEV densities', outer=T, line=-1)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-55-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-64-1.png" width="672" />
 
 
 ``` r
@@ -1981,51 +2244,15 @@ for(p in c(-1, 0,2)){
     x <- rtlambda(2000, p)
     hist(x, breaks=100, border=NA, main=NA, freq=F)
 }
-title('Tukey Lambda distributions', outer=T, line=-1)
+title('Tukey-Lambda densities', outer=T, line=-1)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-56-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-65-1.png" width="672" />
 
-
-
-
-``` r
-pars <- expand.grid( c(.5,1,2), c(.5,1,2) )
-par(mfrow=c(3,3))
-apply(pars, 1, function(p){
-    x <- rbeta(2000, p[1], p[2])
-    hist(x, breaks=50, border=NA, main=NA, freq=F)
-})
-title('Beta distributions', outer=T, line=-1)
-```
-
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-57-1.png" width="672" />
 
 
 
 ## Further Reading
-
-Many introductory econometrics textbooks have a good appendix on probability and statistics. There are many useful texts online too
-
-* [Refresher] https://www.khanacademy.org/math/statistics-probability/probability-library/basic-theoretical-probability/a/probability-the-basics
-* https://www.atmos.albany.edu/facstaff/timm/ATM315spring14/R/IPSUR.pdf
-* https://math.dartmouth.edu/~prob/prob/prob.pdf
-* https://bookdown.org/speegled/foundations-of-statistics/
-* https://bookdown.org/probability/beta/discrete-random-variables.html
-* https://www.econometrics-with-r.org/2.1-random-variables-and-probability-distributions.html
-* https://probability4datascience.com/ch02.html
-* https://rc2e.com/probability
-* https://book.stat420.org/probability-and-statistics-in-r.html
-* https://statsthinking21.github.io/statsthinking21-R-site/probability-in-r-with-lucy-king.html
-* https://bookdown.org/probability/statistics/
-* https://bookdown.org/probability/beta/
-* https://bookdown.org/a_shaker/STM1001_Topic_3/
-* https://bookdown.org/fsancier/bookdown-demo/
-* https://bookdown.org/kevin_davisross/probsim-book/
-* https://bookdown.org/machar1991/ITER/2-pt.html
-* https://www.atmos.albany.edu/facstaff/timm/ATM315spring14/R/IPSUR.pdf
-* https://math.dartmouth.edu/~prob/prob/prob.pdf
-
 
 Many random variables are related to each other
 
@@ -2063,10 +2290,10 @@ sapply(1:3, function(i){
 })
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-58-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-66-1.png" width="672" />
 
 ```
-## [1] 0.5183512 0.5298982 0.5194884
+## [1] 0.5425521 0.4771145 0.5038657
 ```
 
 Examine the sampling distribution of the mean
@@ -2081,10 +2308,34 @@ hist(sample_means, breaks=50, border=NA,
     main='Sampling Distribution of the mean')
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-59-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-67-1.png" width="672" />
 
+This is one of the most profound results known in statistics, known as the *central limit theorem*: the sampling distribution of the mean is approximately standard normal.
 
-Examine the sampling distribution of "order statistics"
+**central limit theorem**. There are actually many different variants of the central limit theorem, as it applies more generally: the sampling distribution of many statistics are standard normal. For example, examine the sampling distribution of the standard deviation.
+
+``` r
+three_sds <- c(  sd(runif(100)),  sd(runif(100)),  sd(runif(100))  )
+three_sds
+```
+
+```
+## [1] 0.2866693 0.2907758 0.2814790
+```
+
+``` r
+sample_sds <- sapply(1:1000, function(i){
+    s <- sd(runif(100))
+    return(s)
+})
+hist(sample_sds, breaks=50, border=NA,
+    col=4, font.main=1,
+    main='Sampling Distribution of the sd')
+```
+
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-68-1.png" width="672" />
+
+It is beyond this class to prove this result, but you should know that not all sampling distributions are standard normal. For example, examine the sampling distribution of the three main "order statistics"
 
 ``` r
 # Create 300 samples, each with 1000 random uniform variables
@@ -2109,38 +2360,11 @@ hist(xmax, breaks=100, border=NA, main='Max', font.main=1)
 title('Sampling Distributions', outer=T, line=-1)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-60-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-69-1.png" width="672" />
 
-
-
-**Complex Functions**.
-You can sample more complex statistics. For example, examine the sampling distribution of the standard deviation.
 
 ``` r
-three_sds <- c(  sd(runif(100)),  sd(runif(100)),  sd(runif(100))  )
-three_sds
-```
-
-```
-## [1] 0.2962351 0.2603989 0.2835583
-```
-
-``` r
-sample_sds <- sapply(1:1000, function(i){
-    s <- sd(runif(100))
-    return(s)
-})
-hist(sample_sds, breaks=50, border=NA,
-    col=4, font.main=1,
-    main='Sampling Distribution of the sd')
-```
-
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-61-1.png" width="672" />
-
-
-Try any function!
-
-``` r
+# To explore, try any function!
 fun_of_rv <- function(f, n=100){
   x <- runif(n)
   y <- f(x)
@@ -2151,7 +2375,7 @@ fun_of_rv( f=mean )
 ```
 
 ```
-## [1] 0.5394034
+## [1] 0.4634983
 ```
 
 ``` r
@@ -2159,7 +2383,7 @@ fun_of_rv( f=function(i){ diff(range(exp(i))) } )
 ```
 
 ```
-## [1] 1.703668
+## [1] 1.602588
 ```
 
 
@@ -2179,7 +2403,7 @@ sd(sample_means)
 ```
 
 ```
-## [1] 0.01606439
+## [1] 0.01675691
 ```
 
 Note that in some cases (not discussed here), you can estimate the standard error to get a confidence interval.
@@ -2206,7 +2430,7 @@ mq <- quantile(sample_means, probs=c(.05,.95))
 abline(v=mq)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-65-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-73-1.png" width="672" />
 
 ``` r
 paste0('we are 90% confident that the mean is between ', 
@@ -2231,7 +2455,7 @@ mq <- quantile(sample_quants, probs=c(.025,.975))
 abline(v=mq)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-66-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-74-1.png" width="672" />
 
 ``` r
 paste0('we are 95% confident that the upper percentile is between ', 
@@ -2258,7 +2482,7 @@ hist(x, breaks=bks, border=NA,
 abline(v=xq0)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-67-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-75-1.png" width="672" />
 
 ``` r
 paste0('we are 90% confident that the a future data point will be between ', 
@@ -2282,8 +2506,8 @@ xq[,1:4]
 
 ```
 ##           [,1]      [,2]      [,3]      [,4]
-## [1,] 0.2000212 0.1996063 0.1976142 0.2254125
-## [2,] 0.7939777 0.8010905 0.7666877 0.7836741
+## [1,] 0.1935914 0.2085894 0.2303030 0.1979923
+## [2,] 0.8023608 0.7771637 0.7939178 0.7716116
 ```
 
 ``` r
@@ -2317,7 +2541,7 @@ c_ul # 50% confidence interval
 abline(v=.5, col=2, lwd=2)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-68-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-76-1.png" width="672" />
 
 
 ## Resampling
@@ -2334,12 +2558,11 @@ mean(sample_dat)
 ## [1] 7.788
 ```
 
-How then can we estimate the sampling distribution of a statistic? We can "resample" our data. 
-Hesterberg (2015) provides a nice illustration of the idea. The two most basic versions are the jackknife and the bootstrap, which are discussed below.
+How then can we estimate the sampling distribution of a statistic? We can "resample" our data. *Hesterberg (2015)* provides a nice illustration of the idea. The two most basic versions are the jackknife and the bootstrap, which are discussed below.
 
 
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-71-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-79-1.png" width="672" />
 
 
 
@@ -2367,7 +2590,7 @@ hist(Jmeans, breaks=25, border=NA,
 abline(v=sample_mean, col='red', lty=2)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-72-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-80-1.png" width="672" />
 
 
 **Bootstrap Distribution**. Here, we draw $n$ observations with replacement from the original data to create a bootstrap sample and calculate a statistic. Each bootstrap sample $b=1...B$ uses a random set of observations (denoted $N_{b}$) to compute a statistic. We repeat that many times, say $B=9999$, to estimate the sampling distribution. Consider the sample mean as an example;
@@ -2392,7 +2615,7 @@ hist(Bmeans, breaks=25, border=NA,
 abline(v=sample_mean, col='red', lty=2)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-73-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-81-1.png" width="672" />
 
 **Caveat**.
 Note that we do not use the mean of the bootstrap or jackknife statistics as a replacement for the original estimate. This is because the bootstrap and jackknife distributions are centered at the observed statistic, not the population parameter. (The bootstrapped mean is centered at the sample mean, not the population mean.) This means that we cannot use the bootstrap to improve on $\overline{x}$; no matter how many bootstrap samples we take. We can, however, use the jackknife and bootstrap to estimate sampling variability.
@@ -2470,7 +2693,7 @@ plot(Nseq[-1], abs(diff(SE)), pch=16, col=grey(0,.5),
     ylab='decrease in standard error', xlab='sample size')
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-76-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-84-1.png" width="672" />
 
 
 ## Further Reading
@@ -2512,7 +2735,7 @@ abline(v=ci_95, lwd=2)
 abline(v=8, col=2, lwd=2)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-77-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-85-1.png" width="672" />
 
 **Impose the Null**.
 We can also compute a *null distribution*: the sampling distribution of the statistic under the null hypothesis (assuming your null hypothesis was true). We focus on the simplest, the bootstrap, where loop through a large number of simulations. In each iteration of the loop, we drop impose the null hypothesis and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''. Specifically, we compute the distribution of t-values on data with randomly reshuffled outcomes (imposing the null), and compare how extreme the observed value is.
@@ -2536,7 +2759,7 @@ abline(v=ci_95, lwd=2)
 abline(v=sample_mean, lwd=2, col=2)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-78-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-86-1.png" width="672" />
 
 
 ## Default Statistics
@@ -2554,7 +2777,7 @@ plot(That_NullDist1,
 abline(v=sample_mean, col='red')
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-79-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-87-1.png" width="672" />
 
 ``` r
 p <- That_NullDist1(sample_mean)
@@ -2620,7 +2843,7 @@ plot(That_NullDist2, xlim=range(boot_t0, jack_t),
 abline(v=abs(jack_t), col='red')
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-83-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-91-1.png" width="672" />
 
 ``` r
 p <- That_NullDist2( abs(jack_t) ) 
@@ -2673,7 +2896,7 @@ hist(x2, border=NA, breaks=bks,
     main='Sample 2', font.main=1)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-85-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-93-1.png" width="672" />
 
 There may be several differences between these samples. Often, the first summary statistic we investigate is the difference in means. 
 
@@ -2709,7 +2932,7 @@ abline(v=boot_ci, lwd=2)
 abline(v=0, lwd=2, col=2)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-86-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-94-1.png" width="672" />
 
 ``` r
 ecdf(boot_d)(0)
@@ -2750,7 +2973,7 @@ abline(v=quantile(boot_d, probs=c(.025, .975)), lwd=2)
 abline(v=0, lwd=2, col=2)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-87-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-95-1.png" width="672" />
 
 ``` r
 ecdf(boot_d)(0)
@@ -2770,7 +2993,7 @@ abline(v=quantile(boot_d, probs=c(.025, .975)), lwd=2)
 abline(v=0, lwd=2, col=2)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-87-2.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-95-2.png" width="672" />
 
 ``` r
 ecdf(boot_d)(0)
@@ -2815,7 +3038,7 @@ pch=16, col=grey(0,.25))
 abline(a=0,b=1,lty=2)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-88-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-96-1.png" width="672" />
 
 We can also test for a differences in entire *distributions*, using all sample data $x \in \{X_1\} \cup \{X_2\}$.
 
@@ -2852,7 +3075,7 @@ legend('bottomright', col=c(2,4), lty=1,
     legend=c(expression(F[1]), expression(F[2])))
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-90-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-98-1.png" width="672" />
 
 An intuitive alternative is the Cramer-von Mises Statistic: the sum of absolute distances (raised to a power) between two CDF's. 
 \begin{eqnarray}
@@ -2871,7 +3094,7 @@ lines(x, F2, col=4, lwd=2)
 title(paste0('CVM = ',CVMqv), font.main=1)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-91-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-99-1.png" width="672" />
 
 Just as before, you use bootstrapping for hypothesis testing.
 
@@ -3097,7 +3320,7 @@ qqplot(ys, xs,
 abline(a=0, b=1, lty=2)
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-102-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-110-1.png" width="672" />
 
 When polishing, you must do two things
 
@@ -3132,8 +3355,10 @@ outer_legend('topright', legend='single data point',
     pch=16, col=rgb(0,0,0,.1), cex=1, bty='n')
 ```
 
-<img src="02-BasicStats_files/figure-html/unnamed-chunk-103-1.png" width="672" />
+<img src="02-BasicStats_files/figure-html/unnamed-chunk-111-1.png" width="672" />
 
+For useful tips, see C. Wilke (2019) "Fundamentals of Data Visualization: A Primer on Making Informative and
+Compelling Figures" https://clauswilke.com/dataviz/
 
 **Saving**.
 You can export figures with specific dimensions
@@ -3227,7 +3452,7 @@ fig
 
 ```{=html}
 <div class="plotly html-widget html-fill-item" id="htmlwidget-89c6aa5050c63be742a4" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-89c6aa5050c63be742a4">{"x":{"visdat":{"29e775fcfc8d":["function () ","plotlyVisDat"]},"cur_data":"29e775fcfc8d","attrs":{"29e775fcfc8d":{"hovertemplate":"%{y}","alpha":0.59999999999999998,"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"x":[13.199999999999999,10,8.8000000000000007,17.399999999999999,2.6000000000000001,7.2000000000000002,2.2000000000000002,9.6999999999999993,2.1000000000000001,16.100000000000001,6,4.2999999999999998,2.1000000000000001,13,0.80000000000000004,14.4,3.7999999999999998,13.199999999999999,2.2000000000000002,8.5,5.7000000000000002,6.7999999999999998],"type":"histogram","name":"Low Pop. (< Mean)","inherit":true},"29e775fcfc8d.1":{"hovertemplate":"%{y}","alpha":0.59999999999999998,"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"x":[8.0999999999999996,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,5.2999999999999998,10.4,6,15.4,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,9,12.199999999999999,7.4000000000000004,11.4,11.1,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,12.699999999999999,3.2000000000000002,4,2.6000000000000001],"type":"histogram","name":"High Pop (>= Mean)","inherit":true}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"barmode":"stack","title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Murders Arrests per 100,000 People"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Number of States"},"legend":{"title":{"text":"<b> % Urban Pop. <\/b>"}},"hovermode":"closest","showlegend":true},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"hovertemplate":["%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}"],"x":[13.199999999999999,10,8.8000000000000007,17.399999999999999,2.6000000000000001,7.2000000000000002,2.2000000000000002,9.6999999999999993,2.1000000000000001,16.100000000000001,6,4.2999999999999998,2.1000000000000001,13,0.80000000000000004,14.4,3.7999999999999998,13.199999999999999,2.2000000000000002,8.5,5.7000000000000002,6.7999999999999998],"type":"histogram","name":"Low Pop. (< Mean)","marker":{"color":"rgba(31,119,180,0.6)","line":{"color":"rgba(31,119,180,1)"}},"error_y":{"color":"rgba(31,119,180,0.6)"},"error_x":{"color":"rgba(31,119,180,0.6)"},"xaxis":"x","yaxis":"y","frame":null},{"hovertemplate":["%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}"],"x":[8.0999999999999996,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,5.2999999999999998,10.4,6,15.4,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,9,12.199999999999999,7.4000000000000004,11.4,11.1,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,12.699999999999999,3.2000000000000002,4,2.6000000000000001],"type":"histogram","name":"High Pop (>= Mean)","marker":{"color":"rgba(255,127,14,0.6)","line":{"color":"rgba(255,127,14,1)"}},"error_y":{"color":"rgba(255,127,14,0.6)"},"error_x":{"color":"rgba(255,127,14,0.6)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<script type="application/json" data-for="htmlwidget-89c6aa5050c63be742a4">{"x":{"visdat":{"1bd135c23443":["function () ","plotlyVisDat"]},"cur_data":"1bd135c23443","attrs":{"1bd135c23443":{"hovertemplate":"%{y}","alpha":0.59999999999999998,"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"x":[13.199999999999999,10,8.8000000000000007,17.399999999999999,2.6000000000000001,7.2000000000000002,2.2000000000000002,9.6999999999999993,2.1000000000000001,16.100000000000001,6,4.2999999999999998,2.1000000000000001,13,0.80000000000000004,14.4,3.7999999999999998,13.199999999999999,2.2000000000000002,8.5,5.7000000000000002,6.7999999999999998],"type":"histogram","name":"Low Pop. (< Mean)","inherit":true},"1bd135c23443.1":{"hovertemplate":"%{y}","alpha":0.59999999999999998,"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"x":[8.0999999999999996,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,5.2999999999999998,10.4,6,15.4,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,9,12.199999999999999,7.4000000000000004,11.4,11.1,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,12.699999999999999,3.2000000000000002,4,2.6000000000000001],"type":"histogram","name":"High Pop (>= Mean)","inherit":true}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"barmode":"stack","title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Murders Arrests per 100,000 People"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Number of States"},"legend":{"title":{"text":"<b> % Urban Pop. <\/b>"}},"hovermode":"closest","showlegend":true},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"hovertemplate":["%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}"],"x":[13.199999999999999,10,8.8000000000000007,17.399999999999999,2.6000000000000001,7.2000000000000002,2.2000000000000002,9.6999999999999993,2.1000000000000001,16.100000000000001,6,4.2999999999999998,2.1000000000000001,13,0.80000000000000004,14.4,3.7999999999999998,13.199999999999999,2.2000000000000002,8.5,5.7000000000000002,6.7999999999999998],"type":"histogram","name":"Low Pop. (< Mean)","marker":{"color":"rgba(31,119,180,0.6)","line":{"color":"rgba(31,119,180,1)"}},"error_y":{"color":"rgba(31,119,180,0.6)"},"error_x":{"color":"rgba(31,119,180,0.6)"},"xaxis":"x","yaxis":"y","frame":null},{"hovertemplate":["%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}","%{y}"],"x":[8.0999999999999996,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,5.2999999999999998,10.4,6,15.4,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,9,12.199999999999999,7.4000000000000004,11.4,11.1,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,12.699999999999999,3.2000000000000002,4,2.6000000000000001],"type":"histogram","name":"High Pop (>= Mean)","marker":{"color":"rgba(255,127,14,0.6)","line":{"color":"rgba(255,127,14,1)"}},"error_y":{"color":"rgba(255,127,14,0.6)"},"error_x":{"color":"rgba(255,127,14,0.6)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 
 **Boxplots**. See https://plotly.com/r/box-plots/
@@ -3253,7 +3478,7 @@ fig
 
 ```{=html}
 <div class="plotly html-widget html-fill-item" id="htmlwidget-068f3a3e21d0ad35a7fe" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-068f3a3e21d0ad35a7fe">{"x":{"visdat":{"29e76190cb7a":["function () ","plotlyVisDat"]},"cur_data":"29e76190cb7a","attrs":{"29e76190cb7a":{"y":{},"pointpos":0,"boxpoints":"all","hoverinfo":"text","text":{},"color":{},"alpha":0.59999999999999998,"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"box"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Percent of People in an Urban Area"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Murders Arrests per 100,000 People"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"fillcolor":"rgba(102,194,165,0.6)","y":[16.100000000000001,13,0.80000000000000004,3.7999999999999998,2.2000000000000002,5.7000000000000002],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text"],"text":["<b> Mississippi <\/b> <br>Urban  : 44 <br>Assault: 259 <br>Murder : 16.1","<b> North Carolina <\/b> <br>Urban  : 45 <br>Assault: 337 <br>Murder : 13","<b> North Dakota <\/b> <br>Urban  : 44 <br>Assault: 45 <br>Murder : 0.8","<b> South Dakota <\/b> <br>Urban  : 45 <br>Assault: 86 <br>Murder : 3.8","<b> Vermont <\/b> <br>Urban  : 32 <br>Assault: 48 <br>Murder : 2.2","<b> West Virginia <\/b> <br>Urban  : 39 <br>Assault: 81 <br>Murder : 5.7"],"type":"box","name":"(31.9,46.8]","marker":{"color":"rgba(102,194,165,0.6)","line":{"color":"rgba(102,194,165,1)"}},"line":{"color":"rgba(102,194,165,1)"},"xaxis":"x","yaxis":"y","frame":null},{"fillcolor":"rgba(252,141,98,0.6)","y":[13.199999999999999,10,8.8000000000000007,17.399999999999999,2.6000000000000001,2.2000000000000002,9.6999999999999993,2.1000000000000001,6,2.1000000000000001,14.4,13.199999999999999,6.7999999999999998],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Alabama <\/b> <br>Urban  : 58 <br>Assault: 236 <br>Murder : 13.2","<b> Alaska <\/b> <br>Urban  : 48 <br>Assault: 263 <br>Murder : 10","<b> Arkansas <\/b> <br>Urban  : 50 <br>Assault: 190 <br>Murder : 8.8","<b> Georgia <\/b> <br>Urban  : 60 <br>Assault: 211 <br>Murder : 17.4","<b> Idaho <\/b> <br>Urban  : 54 <br>Assault: 120 <br>Murder : 2.6","<b> Iowa <\/b> <br>Urban  : 57 <br>Assault: 56 <br>Murder : 2.2","<b> Kentucky <\/b> <br>Urban  : 52 <br>Assault: 109 <br>Murder : 9.7","<b> Maine <\/b> <br>Urban  : 51 <br>Assault: 83 <br>Murder : 2.1","<b> Montana <\/b> <br>Urban  : 53 <br>Assault: 109 <br>Murder : 6","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Assault: 57 <br>Murder : 2.1","<b> South Carolina <\/b> <br>Urban  : 48 <br>Assault: 279 <br>Murder : 14.4","<b> Tennessee <\/b> <br>Urban  : 59 <br>Assault: 188 <br>Murder : 13.2","<b> Wyoming <\/b> <br>Urban  : 60 <br>Assault: 161 <br>Murder : 6.8"],"type":"box","name":"(46.8,61.5]","marker":{"color":"rgba(252,141,98,0.6)","line":{"color":"rgba(252,141,98,1)"}},"line":{"color":"rgba(252,141,98,1)"},"xaxis":"x","yaxis":"y","frame":null},{"fillcolor":"rgba(141,160,203,0.6)","y":[5.9000000000000004,7.2000000000000002,6,15.4,11.300000000000001,12.1,2.7000000000000002,9,4.2999999999999998,11.4,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,8.5,4,2.6000000000000001],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Delaware <\/b> <br>Urban  : 72 <br>Assault: 238 <br>Murder : 5.9","<b> Indiana <\/b> <br>Urban  : 65 <br>Assault: 113 <br>Murder : 7.2","<b> Kansas <\/b> <br>Urban  : 66 <br>Assault: 115 <br>Murder : 6","<b> Louisiana <\/b> <br>Urban  : 66 <br>Assault: 249 <br>Murder : 15.4","<b> Maryland <\/b> <br>Urban  : 67 <br>Assault: 300 <br>Murder : 11.3","<b> Michigan <\/b> <br>Urban  : 74 <br>Assault: 255 <br>Murder : 12.1","<b> Minnesota <\/b> <br>Urban  : 66 <br>Assault: 72 <br>Murder : 2.7","<b> Missouri <\/b> <br>Urban  : 70 <br>Assault: 178 <br>Murder : 9","<b> Nebraska <\/b> <br>Urban  : 62 <br>Assault: 102 <br>Murder : 4.3","<b> New Mexico <\/b> <br>Urban  : 70 <br>Assault: 285 <br>Murder : 11.4","<b> Ohio <\/b> <br>Urban  : 75 <br>Assault: 120 <br>Murder : 7.3","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Assault: 151 <br>Murder : 6.6","<b> Oregon <\/b> <br>Urban  : 67 <br>Assault: 159 <br>Murder : 4.9","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Assault: 106 <br>Murder : 6.3","<b> Virginia <\/b> <br>Urban  : 63 <br>Assault: 156 <br>Murder : 8.5","<b> Washington <\/b> <br>Urban  : 73 <br>Assault: 145 <br>Murder : 4","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Assault: 53 <br>Murder : 2.6"],"type":"box","name":"(61.5,76.2]","marker":{"color":"rgba(141,160,203,0.6)","line":{"color":"rgba(141,160,203,1)"}},"line":{"color":"rgba(141,160,203,1)"},"xaxis":"x","yaxis":"y","frame":null},{"fillcolor":"rgba(231,138,195,0.6)","y":[8.0999999999999996,9,7.9000000000000004,3.2999999999999998,15.4,5.2999999999999998,10.4,4.4000000000000004,12.199999999999999,7.4000000000000004,11.1,3.3999999999999999,12.699999999999999,3.2000000000000002],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Arizona <\/b> <br>Urban  : 80 <br>Assault: 294 <br>Murder : 8.1","<b> California <\/b> <br>Urban  : 91 <br>Assault: 276 <br>Murder : 9","<b> Colorado <\/b> <br>Urban  : 78 <br>Assault: 204 <br>Murder : 7.9","<b> Connecticut <\/b> <br>Urban  : 77 <br>Assault: 110 <br>Murder : 3.3","<b> Florida <\/b> <br>Urban  : 80 <br>Assault: 335 <br>Murder : 15.4","<b> Hawaii <\/b> <br>Urban  : 83 <br>Assault: 46 <br>Murder : 5.3","<b> Illinois <\/b> <br>Urban  : 83 <br>Assault: 249 <br>Murder : 10.4","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Assault: 149 <br>Murder : 4.4","<b> Nevada <\/b> <br>Urban  : 81 <br>Assault: 252 <br>Murder : 12.2","<b> New Jersey <\/b> <br>Urban  : 89 <br>Assault: 159 <br>Murder : 7.4","<b> New York <\/b> <br>Urban  : 86 <br>Assault: 254 <br>Murder : 11.1","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Assault: 174 <br>Murder : 3.4","<b> Texas <\/b> <br>Urban  : 80 <br>Assault: 201 <br>Murder : 12.7","<b> Utah <\/b> <br>Urban  : 80 <br>Assault: 120 <br>Murder : 3.2"],"type":"box","name":"(76.2,91.1]","marker":{"color":"rgba(231,138,195,0.6)","line":{"color":"rgba(231,138,195,1)"}},"line":{"color":"rgba(231,138,195,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<script type="application/json" data-for="htmlwidget-068f3a3e21d0ad35a7fe">{"x":{"visdat":{"1bd1147ec2dc":["function () ","plotlyVisDat"]},"cur_data":"1bd1147ec2dc","attrs":{"1bd1147ec2dc":{"y":{},"pointpos":0,"boxpoints":"all","hoverinfo":"text","text":{},"color":{},"alpha":0.59999999999999998,"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"box"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Percent of People in an Urban Area"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Murders Arrests per 100,000 People"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"fillcolor":"rgba(102,194,165,0.6)","y":[16.100000000000001,13,0.80000000000000004,3.7999999999999998,2.2000000000000002,5.7000000000000002],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text"],"text":["<b> Mississippi <\/b> <br>Urban  : 44 <br>Assault: 259 <br>Murder : 16.1","<b> North Carolina <\/b> <br>Urban  : 45 <br>Assault: 337 <br>Murder : 13","<b> North Dakota <\/b> <br>Urban  : 44 <br>Assault: 45 <br>Murder : 0.8","<b> South Dakota <\/b> <br>Urban  : 45 <br>Assault: 86 <br>Murder : 3.8","<b> Vermont <\/b> <br>Urban  : 32 <br>Assault: 48 <br>Murder : 2.2","<b> West Virginia <\/b> <br>Urban  : 39 <br>Assault: 81 <br>Murder : 5.7"],"type":"box","name":"(31.9,46.8]","marker":{"color":"rgba(102,194,165,0.6)","line":{"color":"rgba(102,194,165,1)"}},"line":{"color":"rgba(102,194,165,1)"},"xaxis":"x","yaxis":"y","frame":null},{"fillcolor":"rgba(252,141,98,0.6)","y":[13.199999999999999,10,8.8000000000000007,17.399999999999999,2.6000000000000001,2.2000000000000002,9.6999999999999993,2.1000000000000001,6,2.1000000000000001,14.4,13.199999999999999,6.7999999999999998],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Alabama <\/b> <br>Urban  : 58 <br>Assault: 236 <br>Murder : 13.2","<b> Alaska <\/b> <br>Urban  : 48 <br>Assault: 263 <br>Murder : 10","<b> Arkansas <\/b> <br>Urban  : 50 <br>Assault: 190 <br>Murder : 8.8","<b> Georgia <\/b> <br>Urban  : 60 <br>Assault: 211 <br>Murder : 17.4","<b> Idaho <\/b> <br>Urban  : 54 <br>Assault: 120 <br>Murder : 2.6","<b> Iowa <\/b> <br>Urban  : 57 <br>Assault: 56 <br>Murder : 2.2","<b> Kentucky <\/b> <br>Urban  : 52 <br>Assault: 109 <br>Murder : 9.7","<b> Maine <\/b> <br>Urban  : 51 <br>Assault: 83 <br>Murder : 2.1","<b> Montana <\/b> <br>Urban  : 53 <br>Assault: 109 <br>Murder : 6","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Assault: 57 <br>Murder : 2.1","<b> South Carolina <\/b> <br>Urban  : 48 <br>Assault: 279 <br>Murder : 14.4","<b> Tennessee <\/b> <br>Urban  : 59 <br>Assault: 188 <br>Murder : 13.2","<b> Wyoming <\/b> <br>Urban  : 60 <br>Assault: 161 <br>Murder : 6.8"],"type":"box","name":"(46.8,61.5]","marker":{"color":"rgba(252,141,98,0.6)","line":{"color":"rgba(252,141,98,1)"}},"line":{"color":"rgba(252,141,98,1)"},"xaxis":"x","yaxis":"y","frame":null},{"fillcolor":"rgba(141,160,203,0.6)","y":[5.9000000000000004,7.2000000000000002,6,15.4,11.300000000000001,12.1,2.7000000000000002,9,4.2999999999999998,11.4,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,8.5,4,2.6000000000000001],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Delaware <\/b> <br>Urban  : 72 <br>Assault: 238 <br>Murder : 5.9","<b> Indiana <\/b> <br>Urban  : 65 <br>Assault: 113 <br>Murder : 7.2","<b> Kansas <\/b> <br>Urban  : 66 <br>Assault: 115 <br>Murder : 6","<b> Louisiana <\/b> <br>Urban  : 66 <br>Assault: 249 <br>Murder : 15.4","<b> Maryland <\/b> <br>Urban  : 67 <br>Assault: 300 <br>Murder : 11.3","<b> Michigan <\/b> <br>Urban  : 74 <br>Assault: 255 <br>Murder : 12.1","<b> Minnesota <\/b> <br>Urban  : 66 <br>Assault: 72 <br>Murder : 2.7","<b> Missouri <\/b> <br>Urban  : 70 <br>Assault: 178 <br>Murder : 9","<b> Nebraska <\/b> <br>Urban  : 62 <br>Assault: 102 <br>Murder : 4.3","<b> New Mexico <\/b> <br>Urban  : 70 <br>Assault: 285 <br>Murder : 11.4","<b> Ohio <\/b> <br>Urban  : 75 <br>Assault: 120 <br>Murder : 7.3","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Assault: 151 <br>Murder : 6.6","<b> Oregon <\/b> <br>Urban  : 67 <br>Assault: 159 <br>Murder : 4.9","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Assault: 106 <br>Murder : 6.3","<b> Virginia <\/b> <br>Urban  : 63 <br>Assault: 156 <br>Murder : 8.5","<b> Washington <\/b> <br>Urban  : 73 <br>Assault: 145 <br>Murder : 4","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Assault: 53 <br>Murder : 2.6"],"type":"box","name":"(61.5,76.2]","marker":{"color":"rgba(141,160,203,0.6)","line":{"color":"rgba(141,160,203,1)"}},"line":{"color":"rgba(141,160,203,1)"},"xaxis":"x","yaxis":"y","frame":null},{"fillcolor":"rgba(231,138,195,0.6)","y":[8.0999999999999996,9,7.9000000000000004,3.2999999999999998,15.4,5.2999999999999998,10.4,4.4000000000000004,12.199999999999999,7.4000000000000004,11.1,3.3999999999999999,12.699999999999999,3.2000000000000002],"pointpos":0,"boxpoints":"all","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Arizona <\/b> <br>Urban  : 80 <br>Assault: 294 <br>Murder : 8.1","<b> California <\/b> <br>Urban  : 91 <br>Assault: 276 <br>Murder : 9","<b> Colorado <\/b> <br>Urban  : 78 <br>Assault: 204 <br>Murder : 7.9","<b> Connecticut <\/b> <br>Urban  : 77 <br>Assault: 110 <br>Murder : 3.3","<b> Florida <\/b> <br>Urban  : 80 <br>Assault: 335 <br>Murder : 15.4","<b> Hawaii <\/b> <br>Urban  : 83 <br>Assault: 46 <br>Murder : 5.3","<b> Illinois <\/b> <br>Urban  : 83 <br>Assault: 249 <br>Murder : 10.4","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Assault: 149 <br>Murder : 4.4","<b> Nevada <\/b> <br>Urban  : 81 <br>Assault: 252 <br>Murder : 12.2","<b> New Jersey <\/b> <br>Urban  : 89 <br>Assault: 159 <br>Murder : 7.4","<b> New York <\/b> <br>Urban  : 86 <br>Assault: 254 <br>Murder : 11.1","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Assault: 174 <br>Murder : 3.4","<b> Texas <\/b> <br>Urban  : 80 <br>Assault: 201 <br>Murder : 12.7","<b> Utah <\/b> <br>Urban  : 80 <br>Assault: 120 <br>Murder : 3.2"],"type":"box","name":"(76.2,91.1]","marker":{"color":"rgba(231,138,195,0.6)","line":{"color":"rgba(231,138,195,1)"}},"line":{"color":"rgba(231,138,195,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 
 **Scatterplots**. See https://plotly.com/r/bubble-charts/
@@ -3291,9 +3516,18 @@ fig
 
 ```{=html}
 <div class="plotly html-widget html-fill-item" id="htmlwidget-51205323a2a1fdc211fe" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-51205323a2a1fdc211fe">{"x":{"visdat":{"29e77c24c2bd":["function () ","plotlyVisDat"]},"cur_data":"29e77c24c2bd","attrs":{"29e77c24c2bd":{"x":{},"y":{},"mode":"markers","hoverinfo":"text","text":{},"marker":{"size":{},"opacity":0.5,"showscale":true,"colorbar":{"title":"Murder Arrests (per 100,000)"}},"color":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Percent of People in an Urban Area"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Assault Arrests per 100,000 People"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[58,48,80,50,91,78,77,72,80,60,83,54,83,65,57,66,52,66,51,67,85,74,66,44,70,53,62,81,56,89,70,86,45,44,75,68,67,72,87,48,45,59,80,80,32,63,73,39,66,60],"y":[236,263,294,190,276,204,110,238,335,211,46,120,249,113,56,115,109,249,83,300,149,255,72,259,178,109,102,252,57,159,285,254,337,45,120,151,159,106,174,279,86,188,201,120,48,156,145,81,53,161],"mode":"markers","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Alabama <\/b> <br>Urban  : 58 <br>Assault: 236 <br>Murder : 13.2","<b> Alaska <\/b> <br>Urban  : 48 <br>Assault: 263 <br>Murder : 10","<b> Arizona <\/b> <br>Urban  : 80 <br>Assault: 294 <br>Murder : 8.1","<b> Arkansas <\/b> <br>Urban  : 50 <br>Assault: 190 <br>Murder : 8.8","<b> California <\/b> <br>Urban  : 91 <br>Assault: 276 <br>Murder : 9","<b> Colorado <\/b> <br>Urban  : 78 <br>Assault: 204 <br>Murder : 7.9","<b> Connecticut <\/b> <br>Urban  : 77 <br>Assault: 110 <br>Murder : 3.3","<b> Delaware <\/b> <br>Urban  : 72 <br>Assault: 238 <br>Murder : 5.9","<b> Florida <\/b> <br>Urban  : 80 <br>Assault: 335 <br>Murder : 15.4","<b> Georgia <\/b> <br>Urban  : 60 <br>Assault: 211 <br>Murder : 17.4","<b> Hawaii <\/b> <br>Urban  : 83 <br>Assault: 46 <br>Murder : 5.3","<b> Idaho <\/b> <br>Urban  : 54 <br>Assault: 120 <br>Murder : 2.6","<b> Illinois <\/b> <br>Urban  : 83 <br>Assault: 249 <br>Murder : 10.4","<b> Indiana <\/b> <br>Urban  : 65 <br>Assault: 113 <br>Murder : 7.2","<b> Iowa <\/b> <br>Urban  : 57 <br>Assault: 56 <br>Murder : 2.2","<b> Kansas <\/b> <br>Urban  : 66 <br>Assault: 115 <br>Murder : 6","<b> Kentucky <\/b> <br>Urban  : 52 <br>Assault: 109 <br>Murder : 9.7","<b> Louisiana <\/b> <br>Urban  : 66 <br>Assault: 249 <br>Murder : 15.4","<b> Maine <\/b> <br>Urban  : 51 <br>Assault: 83 <br>Murder : 2.1","<b> Maryland <\/b> <br>Urban  : 67 <br>Assault: 300 <br>Murder : 11.3","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Assault: 149 <br>Murder : 4.4","<b> Michigan <\/b> <br>Urban  : 74 <br>Assault: 255 <br>Murder : 12.1","<b> Minnesota <\/b> <br>Urban  : 66 <br>Assault: 72 <br>Murder : 2.7","<b> Mississippi <\/b> <br>Urban  : 44 <br>Assault: 259 <br>Murder : 16.1","<b> Missouri <\/b> <br>Urban  : 70 <br>Assault: 178 <br>Murder : 9","<b> Montana <\/b> <br>Urban  : 53 <br>Assault: 109 <br>Murder : 6","<b> Nebraska <\/b> <br>Urban  : 62 <br>Assault: 102 <br>Murder : 4.3","<b> Nevada <\/b> <br>Urban  : 81 <br>Assault: 252 <br>Murder : 12.2","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Assault: 57 <br>Murder : 2.1","<b> New Jersey <\/b> <br>Urban  : 89 <br>Assault: 159 <br>Murder : 7.4","<b> New Mexico <\/b> <br>Urban  : 70 <br>Assault: 285 <br>Murder : 11.4","<b> New York <\/b> <br>Urban  : 86 <br>Assault: 254 <br>Murder : 11.1","<b> North Carolina <\/b> <br>Urban  : 45 <br>Assault: 337 <br>Murder : 13","<b> North Dakota <\/b> <br>Urban  : 44 <br>Assault: 45 <br>Murder : 0.8","<b> Ohio <\/b> <br>Urban  : 75 <br>Assault: 120 <br>Murder : 7.3","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Assault: 151 <br>Murder : 6.6","<b> Oregon <\/b> <br>Urban  : 67 <br>Assault: 159 <br>Murder : 4.9","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Assault: 106 <br>Murder : 6.3","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Assault: 174 <br>Murder : 3.4","<b> South Carolina <\/b> <br>Urban  : 48 <br>Assault: 279 <br>Murder : 14.4","<b> South Dakota <\/b> <br>Urban  : 45 <br>Assault: 86 <br>Murder : 3.8","<b> Tennessee <\/b> <br>Urban  : 59 <br>Assault: 188 <br>Murder : 13.2","<b> Texas <\/b> <br>Urban  : 80 <br>Assault: 201 <br>Murder : 12.7","<b> Utah <\/b> <br>Urban  : 80 <br>Assault: 120 <br>Murder : 3.2","<b> Vermont <\/b> <br>Urban  : 32 <br>Assault: 48 <br>Murder : 2.2","<b> Virginia <\/b> <br>Urban  : 63 <br>Assault: 156 <br>Murder : 8.5","<b> Washington <\/b> <br>Urban  : 73 <br>Assault: 145 <br>Murder : 4","<b> West Virginia <\/b> <br>Urban  : 39 <br>Assault: 81 <br>Murder : 5.7","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Assault: 53 <br>Murder : 2.6","<b> Wyoming <\/b> <br>Urban  : 60 <br>Assault: 161 <br>Murder : 6.8"],"marker":{"colorbar":{"title":"Murder Arrests (per 100,000)","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"size":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"opacity":0.5,"line":{"colorbar":{"title":"","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":false,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998]}},"type":"scatter","xaxis":"x","yaxis":"y","frame":null},{"x":[32,91],"y":[45,337],"type":"scatter","mode":"markers","opacity":0,"hoverinfo":"none","showlegend":false,"marker":{"colorbar":{"title":"Murder","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"color":[0.80000000000000004,17.399999999999999],"line":{"color":"rgba(255,127,14,1)"}},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<script type="application/json" data-for="htmlwidget-51205323a2a1fdc211fe">{"x":{"visdat":{"1bd17fe263d6":["function () ","plotlyVisDat"]},"cur_data":"1bd17fe263d6","attrs":{"1bd17fe263d6":{"x":{},"y":{},"mode":"markers","hoverinfo":"text","text":{},"marker":{"size":{},"opacity":0.5,"showscale":true,"colorbar":{"title":"Murder Arrests (per 100,000)"}},"color":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20],"type":"scatter"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"showlegend":false,"title":"Crime and Urbanization in America 1975","xaxis":{"domain":[0,1],"automargin":true,"title":"Percent of People in an Urban Area"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Assault Arrests per 100,000 People"},"hovermode":"closest"},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[58,48,80,50,91,78,77,72,80,60,83,54,83,65,57,66,52,66,51,67,85,74,66,44,70,53,62,81,56,89,70,86,45,44,75,68,67,72,87,48,45,59,80,80,32,63,73,39,66,60],"y":[236,263,294,190,276,204,110,238,335,211,46,120,249,113,56,115,109,249,83,300,149,255,72,259,178,109,102,252,57,159,285,254,337,45,120,151,159,106,174,279,86,188,201,120,48,156,145,81,53,161],"mode":"markers","hoverinfo":["text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text","text"],"text":["<b> Alabama <\/b> <br>Urban  : 58 <br>Assault: 236 <br>Murder : 13.2","<b> Alaska <\/b> <br>Urban  : 48 <br>Assault: 263 <br>Murder : 10","<b> Arizona <\/b> <br>Urban  : 80 <br>Assault: 294 <br>Murder : 8.1","<b> Arkansas <\/b> <br>Urban  : 50 <br>Assault: 190 <br>Murder : 8.8","<b> California <\/b> <br>Urban  : 91 <br>Assault: 276 <br>Murder : 9","<b> Colorado <\/b> <br>Urban  : 78 <br>Assault: 204 <br>Murder : 7.9","<b> Connecticut <\/b> <br>Urban  : 77 <br>Assault: 110 <br>Murder : 3.3","<b> Delaware <\/b> <br>Urban  : 72 <br>Assault: 238 <br>Murder : 5.9","<b> Florida <\/b> <br>Urban  : 80 <br>Assault: 335 <br>Murder : 15.4","<b> Georgia <\/b> <br>Urban  : 60 <br>Assault: 211 <br>Murder : 17.4","<b> Hawaii <\/b> <br>Urban  : 83 <br>Assault: 46 <br>Murder : 5.3","<b> Idaho <\/b> <br>Urban  : 54 <br>Assault: 120 <br>Murder : 2.6","<b> Illinois <\/b> <br>Urban  : 83 <br>Assault: 249 <br>Murder : 10.4","<b> Indiana <\/b> <br>Urban  : 65 <br>Assault: 113 <br>Murder : 7.2","<b> Iowa <\/b> <br>Urban  : 57 <br>Assault: 56 <br>Murder : 2.2","<b> Kansas <\/b> <br>Urban  : 66 <br>Assault: 115 <br>Murder : 6","<b> Kentucky <\/b> <br>Urban  : 52 <br>Assault: 109 <br>Murder : 9.7","<b> Louisiana <\/b> <br>Urban  : 66 <br>Assault: 249 <br>Murder : 15.4","<b> Maine <\/b> <br>Urban  : 51 <br>Assault: 83 <br>Murder : 2.1","<b> Maryland <\/b> <br>Urban  : 67 <br>Assault: 300 <br>Murder : 11.3","<b> Massachusetts <\/b> <br>Urban  : 85 <br>Assault: 149 <br>Murder : 4.4","<b> Michigan <\/b> <br>Urban  : 74 <br>Assault: 255 <br>Murder : 12.1","<b> Minnesota <\/b> <br>Urban  : 66 <br>Assault: 72 <br>Murder : 2.7","<b> Mississippi <\/b> <br>Urban  : 44 <br>Assault: 259 <br>Murder : 16.1","<b> Missouri <\/b> <br>Urban  : 70 <br>Assault: 178 <br>Murder : 9","<b> Montana <\/b> <br>Urban  : 53 <br>Assault: 109 <br>Murder : 6","<b> Nebraska <\/b> <br>Urban  : 62 <br>Assault: 102 <br>Murder : 4.3","<b> Nevada <\/b> <br>Urban  : 81 <br>Assault: 252 <br>Murder : 12.2","<b> New Hampshire <\/b> <br>Urban  : 56 <br>Assault: 57 <br>Murder : 2.1","<b> New Jersey <\/b> <br>Urban  : 89 <br>Assault: 159 <br>Murder : 7.4","<b> New Mexico <\/b> <br>Urban  : 70 <br>Assault: 285 <br>Murder : 11.4","<b> New York <\/b> <br>Urban  : 86 <br>Assault: 254 <br>Murder : 11.1","<b> North Carolina <\/b> <br>Urban  : 45 <br>Assault: 337 <br>Murder : 13","<b> North Dakota <\/b> <br>Urban  : 44 <br>Assault: 45 <br>Murder : 0.8","<b> Ohio <\/b> <br>Urban  : 75 <br>Assault: 120 <br>Murder : 7.3","<b> Oklahoma <\/b> <br>Urban  : 68 <br>Assault: 151 <br>Murder : 6.6","<b> Oregon <\/b> <br>Urban  : 67 <br>Assault: 159 <br>Murder : 4.9","<b> Pennsylvania <\/b> <br>Urban  : 72 <br>Assault: 106 <br>Murder : 6.3","<b> Rhode Island <\/b> <br>Urban  : 87 <br>Assault: 174 <br>Murder : 3.4","<b> South Carolina <\/b> <br>Urban  : 48 <br>Assault: 279 <br>Murder : 14.4","<b> South Dakota <\/b> <br>Urban  : 45 <br>Assault: 86 <br>Murder : 3.8","<b> Tennessee <\/b> <br>Urban  : 59 <br>Assault: 188 <br>Murder : 13.2","<b> Texas <\/b> <br>Urban  : 80 <br>Assault: 201 <br>Murder : 12.7","<b> Utah <\/b> <br>Urban  : 80 <br>Assault: 120 <br>Murder : 3.2","<b> Vermont <\/b> <br>Urban  : 32 <br>Assault: 48 <br>Murder : 2.2","<b> Virginia <\/b> <br>Urban  : 63 <br>Assault: 156 <br>Murder : 8.5","<b> Washington <\/b> <br>Urban  : 73 <br>Assault: 145 <br>Murder : 4","<b> West Virginia <\/b> <br>Urban  : 39 <br>Assault: 81 <br>Murder : 5.7","<b> Wisconsin <\/b> <br>Urban  : 66 <br>Assault: 53 <br>Murder : 2.6","<b> Wyoming <\/b> <br>Urban  : 60 <br>Assault: 161 <br>Murder : 6.8"],"marker":{"colorbar":{"title":"Murder Arrests (per 100,000)","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"size":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998],"opacity":0.5,"line":{"colorbar":{"title":"","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":false,"color":[13.199999999999999,10,8.0999999999999996,8.8000000000000007,9,7.9000000000000004,3.2999999999999998,5.9000000000000004,15.4,17.399999999999999,5.2999999999999998,2.6000000000000001,10.4,7.2000000000000002,2.2000000000000002,6,9.6999999999999993,15.4,2.1000000000000001,11.300000000000001,4.4000000000000004,12.1,2.7000000000000002,16.100000000000001,9,6,4.2999999999999998,12.199999999999999,2.1000000000000001,7.4000000000000004,11.4,11.1,13,0.80000000000000004,7.2999999999999998,6.5999999999999996,4.9000000000000004,6.2999999999999998,3.3999999999999999,14.4,3.7999999999999998,13.199999999999999,12.699999999999999,3.2000000000000002,2.2000000000000002,8.5,4,5.7000000000000002,2.6000000000000001,6.7999999999999998]}},"type":"scatter","xaxis":"x","yaxis":"y","frame":null},{"x":[32,91],"y":[45,337],"type":"scatter","mode":"markers","opacity":0,"hoverinfo":"none","showlegend":false,"marker":{"colorbar":{"title":"Murder","ticklen":2},"cmin":0.80000000000000004,"cmax":17.399999999999999,"colorscale":[["0","rgba(68,1,84,1)"],["0.0416666666666667","rgba(70,19,97,1)"],["0.0833333333333333","rgba(72,32,111,1)"],["0.125","rgba(71,45,122,1)"],["0.166666666666667","rgba(68,58,128,1)"],["0.208333333333333","rgba(64,70,135,1)"],["0.25","rgba(60,82,138,1)"],["0.291666666666667","rgba(56,93,140,1)"],["0.333333333333333","rgba(49,104,142,1)"],["0.375","rgba(46,114,142,1)"],["0.416666666666667","rgba(42,123,142,1)"],["0.458333333333333","rgba(38,133,141,1)"],["0.5","rgba(37,144,140,1)"],["0.541666666666667","rgba(33,154,138,1)"],["0.583333333333333","rgba(39,164,133,1)"],["0.625","rgba(47,174,127,1)"],["0.666666666666667","rgba(53,183,121,1)"],["0.708333333333333","rgba(79,191,110,1)"],["0.75","rgba(98,199,98,1)"],["0.791666666666667","rgba(119,207,85,1)"],["0.833333333333333","rgba(147,214,70,1)"],["0.875","rgba(172,220,52,1)"],["0.916666666666667","rgba(199,225,42,1)"],["0.958333333333333","rgba(226,228,40,1)"],["1","rgba(253,231,37,1)"]],"showscale":true,"color":[0.80000000000000004,17.399999999999999],"line":{"color":"rgba(255,127,14,1)"}},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 
+If you have many point, you can also use a 2D histogram instead. https://plotly.com/r/2D-Histogram/.
+
+
+``` r
+fig <- plot_ly(
+    USArrests, x = ~UrbanPop, y = ~Assault)
+fig <- add_histogram2d(fig, nbinsx=25, nbinsy=25)
+fig
+```
 
 
 ## Custom Figures
@@ -3405,7 +3639,7 @@ plot_ly( data=dat, x=~X, y=~Y)
 
 ```{=html}
 <div class="plotly html-widget html-fill-item" id="htmlwidget-d52e8a77a43c034cdbda" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-d52e8a77a43c034cdbda">{"x":{"visdat":{"29e75faf661c":["function () ","plotlyVisDat"]},"cur_data":"29e75faf661c","attrs":{"29e75faf661c":{"x":{},"y":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20]}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"xaxis":{"domain":[0,1],"automargin":true,"title":"X"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Y"},"hovermode":"closest","showlegend":false},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100],"y":[4.5991821626822631,9.5042795582700741,8.9425752406243539,11.881634581402238,17.004529766069965,24.794681191293563,24.536515878885485,32.705969393290893,35.136343005339398,33.825303127399572,41.91456585270943,46.729375438694113,52.743940506045192,56.248919531464374,57.901935279610314,63.471371277200781,69.119711112746486,75.323050616621984,75.764291626729033,76.387118235049044,83.996748708154698,87.912663506307396,91.123680664794747,98.086772261131699,100.93055416898154,105.02356330786922,106.9049477908744,114.63877593721193,116.33151789441902,117.39891466716018,123.96918943962019,129.57057182206304,132.21399593513812,132.5820957144183,146.57800176052532,143.10677557952417,147.45597012416951,154.07357210020444,154.6115680214466,159.30654939339263,164.98275562858439,165.06321210231235,174.59285941567703,176.30774617882514,179.53465905631069,180.34484661264048,188.34483106715038,190.96766421386155,194.740253977631,197.47203917281362,201.18275559296285,209.60182681812284,209.91292968911611,211.01318993954621,222.49759103067981,225.51133460729713,229.54111888845435,235.06288652922223,234.07035975269486,240.62957942619408,243.16250031608701,248.70603141682767,255.5471559124301,255.78327279468812,259.5399959743263,263.924870535558,266.94691336808756,272.40663544424461,274.49258837995507,278.63582174871442,282.76154291428907,283.81690883103647,293.03708390061723,295.39924620848456,299.10216439789093,305.00960239163999,307.676916392875,315.19234121781545,314.80035199502447,319.11082749574751,321.92967629170573,329.52707354557657,331.32214963924713,336.90440146927909,337.50151012266252,344.61806126626993,348.14656561871061,354.38283280053867,352.66860128089081,359.80641627939991,361.74714546203091,367.67216297663907,373.61915403545902,376.34799825752037,380.12552807774199,381.01531666708888,387.12250999523468,387.53225274232005,394.40909076189206,401.82391229530828],"type":"scatter","mode":"markers","marker":{"color":"rgba(31,119,180,1)","line":{"color":"rgba(31,119,180,1)"}},"error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"line":{"color":"rgba(31,119,180,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<script type="application/json" data-for="htmlwidget-d52e8a77a43c034cdbda">{"x":{"visdat":{"1bd13ca0d97c":["function () ","plotlyVisDat"]},"cur_data":"1bd13ca0d97c","attrs":{"1bd13ca0d97c":{"x":{},"y":{},"alpha_stroke":1,"sizes":[10,100],"spans":[1,20]}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"xaxis":{"domain":[0,1],"automargin":true,"title":"X"},"yaxis":{"domain":[0,1],"automargin":true,"title":"Y"},"hovermode":"closest","showlegend":false},"source":"A","config":{"modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"data":[{"x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100],"y":[4.5991821626822631,9.5042795582700741,8.9425752406243539,11.881634581402238,17.004529766069965,24.794681191293563,24.536515878885485,32.705969393290893,35.136343005339398,33.825303127399572,41.91456585270943,46.729375438694113,52.743940506045192,56.248919531464374,57.901935279610314,63.471371277200781,69.119711112746486,75.323050616621984,75.764291626729033,76.387118235049044,83.996748708154698,87.912663506307396,91.123680664794747,98.086772261131699,100.93055416898154,105.02356330786922,106.9049477908744,114.63877593721193,116.33151789441902,117.39891466716018,123.96918943962019,129.57057182206304,132.21399593513812,132.5820957144183,146.57800176052532,143.10677557952417,147.45597012416951,154.07357210020444,154.6115680214466,159.30654939339263,164.98275562858439,165.06321210231235,174.59285941567703,176.30774617882514,179.53465905631069,180.34484661264048,188.34483106715038,190.96766421386155,194.740253977631,197.47203917281362,201.18275559296285,209.60182681812284,209.91292968911611,211.01318993954621,222.49759103067981,225.51133460729713,229.54111888845435,235.06288652922223,234.07035975269486,240.62957942619408,243.16250031608701,248.70603141682767,255.5471559124301,255.78327279468812,259.5399959743263,263.924870535558,266.94691336808756,272.40663544424461,274.49258837995507,278.63582174871442,282.76154291428907,283.81690883103647,293.03708390061723,295.39924620848456,299.10216439789093,305.00960239163999,307.676916392875,315.19234121781545,314.80035199502447,319.11082749574751,321.92967629170573,329.52707354557657,331.32214963924713,336.90440146927909,337.50151012266252,344.61806126626993,348.14656561871061,354.38283280053867,352.66860128089081,359.80641627939991,361.74714546203091,367.67216297663907,373.61915403545902,376.34799825752037,380.12552807774199,381.01531666708888,387.12250999523468,387.53225274232005,394.40909076189206,401.82391229530828],"type":"scatter","mode":"markers","marker":{"color":"rgba(31,119,180,1)","line":{"color":"rgba(31,119,180,1)"}},"error_y":{"color":"rgba(31,119,180,1)"},"error_x":{"color":"rgba(31,119,180,1)"},"line":{"color":"rgba(31,119,180,1)"},"xaxis":"x","yaxis":"y","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 ```
 
 ``` r
@@ -3511,5 +3745,280 @@ Some other good packages for posters/presenting you should be aware of
 * https://odeleongt.github.io/postr/
 * https://wytham.rbind.io/post/making-a-poster-in-r/
 * https://www.animateyour.science/post/How-to-design-an-award-winning-conference-poster
+
+# Probability Theory
+
+## Mean and Variance
+
+**Discrete**. If the sample space is discrete, we can compute the theoretical mean (or expected value) as
+$$
+\mu = \sum_{i} x_{i} P(X=x_{i}),
+$$
+where $P(X=x_{i})$ is the probability the random variable takes the particular value $x_{i}$. Similarly, we can compute the theoretical variance as
+$$
+\sigma^2 = \sum_{i} [x_{i} - \mu]^2 P(X=x_{i}),
+$$
+
+For example, consider an unfair coin with a $.75$ probability of heads ($x_{i}=1$) and a $.25$ probability of tails ($x_{i}=0$) has a theoretical mean of 
+$$
+\mu = 1\times.75 + 0 \times .25 = .75
+$$
+and a theoretical variance of 
+$$
+\sigma^2 = [1 - .75]^2 \times.75 + [0 - .75]^2 \times.25 = 0.1875
+$$
+
+
+``` r
+x <- rbinom(10000, size=1, prob=.75)
+round( mean(x), 4)
+```
+
+```
+## [1] 0.747
+```
+
+``` r
+round( var(x), 4)
+```
+
+```
+## [1] 0.189
+```
+
+**Continuous**. If the sample space is continuous, we can compute the theoretical mean (or expected value) as
+$$
+\mu = \int x f(x) d x,
+$$
+where $f(x)$ is the probability the random variable takes the particular value $x$. Similarly, we can compute the theoretical variance as
+$$
+\sigma^2 = \int [x - \mu]^2 f(x) d x,
+$$
+For example, consider a random variable with a continuous uniform distribution over [-1, 1]. In this case, $f(x)=1/[1 - (-1)]=1/2$ for each $x$ in  [-1, 1] and 
+$$
+\mu = \int_{-1}^{1} \frac{x}{2} d x = \int_{-1}^{0} \frac{x}{2} d x + \int_{0}^{1} \frac{x}{2} d x = 0
+$$
+and 
+$$
+\sigma^2 = \int_{-1}^{1} x^2 \frac{1}{2} d x = \frac{1}{2} \frac{x^3}{3}|_{-1}^{1} = \frac{1}{6}[1 - (-1)] = 2/6 =1/3
+$$
+
+``` r
+x <- runif(10000, -1,1)
+round( mean(x), 4)
+```
+
+```
+## [1] -0.0026
+```
+
+``` r
+round( var(x), 4)
+```
+
+```
+## [1] 0.3287
+```
+
+
+## Bivariate Distributions
+Suppose we have two discrete variables $X_{1}$ and $X_{2}$.
+Their **joint distribution** is denoted as
+\begin{eqnarray}
+P(X_{1} = x_{1}, X_{2} = x_{2})
+\end{eqnarray}
+The **conditional distributions** are defined as
+\begin{eqnarray}
+P(X_{1} = x_{1} | X_{2} = x_{2}) = \frac{ P(X_{1} = x_{1}, X_{2} = x_{2})}{ P( X_{2} = x_{2} )}\\
+P(X_{2} = x_{2} | X_{1} = x_{1}) = \frac{ P(X_{1} = x_{1}, X_{2} = x_{2})}{ P( X_{1} = x_{1} )}
+\end{eqnarray}
+The **marginal distributions** are then defined as
+\begin{eqnarray}
+P(X_{1} = x_{1}) = \sum_{x_{2}} P(X_{1} = x_{1} | X_{2} = x_{2}) P( X_{2} = x_{2} ) \\
+P(X_{2} = x_{2}) = \sum_{x_{1}} P(X_{2} = x_{2} | X_{1} = x_{1}) P( X_{1} = x_{1} ),
+\end{eqnarray}
+which is also known as the *law of total probability*.
+
+For one example, Consider flipping two coins. Denoted each coin as $i \in \{1, 2\}$, and mark whether "heads" is face up; $X_{i}=1$ if Heads and $=0$ if Tails. Suppose both coins are "fair": $P(X_{1}=1)= 1/2$ and $P(X_{2}=1|X_{1})=1/2$, then the four potential outcomes have equal probabilities. The joint distribution is 
+\begin{eqnarray}
+P(X_{1} = x_{1}, X_{2} = x_{2}) &=& P(X_{1} = x_{1}) P(X_{2} = x_{2})\\
+P(X_{1} = 0, X_{2} = 0) &=& 1/2 \times 1/2 = 1/4 \\
+P(X_{1} = 0, X_{2} = 1) &=& 1/4 \\
+P(X_{1} = 1, X_{2} = 0) &=& 1/4 \\
+P(X_{1} = 1, X_{2} = 1) &=& 1/4 .
+\end{eqnarray}
+The marginal distribution of the second coin is 
+\begin{eqnarray}
+P(X_{2} = 0) &=& P(X_{2} = 0 | X_{1} = 0) P(X_{1}=0) + P(X_{2} = 0 | X_{1} = 1) P(X_{1}=1)\\
+&=& 1/2 \times 1/2 + 1/2 \times 1/2 = 1/2\\
+P(X_{2} = 1) &=& P(X_{2} = 1 | X_{1} = 0) P(X_{1}=0) + P(X_{2} = 1 | X_{1} = 1) P(X_{1}=1)\\
+&=& 1/2 \times 1/2 + 1/2 \times 1/2 = 1/2
+\end{eqnarray}
+
+
+``` r
+# Create a 2x2 matrix for the joint distribution.
+# Rows correspond to X1 (coin 1), and columns correspond to X2 (coin 2).
+P_fair <- matrix(1/4, nrow = 2, ncol = 2)
+rownames(P_fair) <- c("X1=0", "X1=1")
+colnames(P_fair) <- c("X2=0", "X2=1")
+P_fair
+```
+
+```
+##      X2=0 X2=1
+## X1=0 0.25 0.25
+## X1=1 0.25 0.25
+```
+
+``` r
+# Compute the marginal distributions.
+# Marginal for X1: sum across columns.
+P_X1 <- rowSums(P_fair)
+P_X1
+```
+
+```
+## X1=0 X1=1 
+##  0.5  0.5
+```
+
+``` r
+# Marginal for X2: sum across rows.
+P_X2 <- colSums(P_fair)
+P_X2
+```
+
+```
+## X2=0 X2=1 
+##  0.5  0.5
+```
+
+``` r
+# Compute the conditional probabilities P(X2 | X1).
+cond_X2_given_X1 <- matrix(0, nrow = 2, ncol = 2)
+for (j in 1:2) {
+  cond_X2_given_X1[, j] <- P_fair[, j] / P_X1[j]
+}
+rownames(cond_X2_given_X1) <- c("X2=0", "X2=1")
+colnames(cond_X2_given_X1) <- c("given X1=0", "given X1=1")
+cond_X2_given_X1
+```
+
+```
+##      given X1=0 given X1=1
+## X2=0        0.5        0.5
+## X2=1        0.5        0.5
+```
+
+Consider a second example, where the second coin is "Completely Unfair", so that it is always the same as the first. The outcomes generated with a Completely Unfair coin are the same as if we only flipped one coin.
+\begin{eqnarray}
+P(X_{1} = x_{1}, X_{2} = x_{2}) &=& P(X_{1} = x_{1}) \mathbf{1}( x_{1}=x_{2} )\\
+P(X_{1} = 0, X_{2} = 0) &=& 1/2 \\
+P(X_{1} = 0, X_{2} = 1) &=& 0 \\
+P(X_{1} = 1, X_{2} = 0) &=& 0 \\
+P(X_{1} = 1, X_{2} = 1) &=& 1/2 .
+\end{eqnarray}
+Note that $\mathbf{1}(X_{1}=1) $ means $X_{1}= 1$ and $0$ if $X_{1}\neq0$.
+The marginal distribution of the second coin is 
+\begin{eqnarray}
+P(X_{2} = 0) 
+&=& P(X_{2} = 0 | X_{1} = 0) P(X_{1}=0) + P(X_{2} = 0 | X_{1} = 1) P(X_{1}=1) \\
+&=& 1/2 \times 1 + 0 \times 1/2 = 1/2\\
+P(X_{2} = 1)
+&=& P(X_{2} = 1 | X_{1} =0) P( X_{1} = 0) + P(X_{2} = 1 | X_{1} = 1) P( X_{1} =1)\\
+&=& 0\times 1/2 + 1 \times 1/2 = 1/2
+\end{eqnarray}
+which is the same as in the first example! Different joint distributions can have the same marginal distributions.
+
+
+
+``` r
+# Create the joint distribution matrix for the unfair coin case.
+P_unfair <- matrix(c(0.5, 0, 0, 0.5), nrow = 2, ncol = 2, byrow = TRUE)
+rownames(P_unfair) <- c("X1=0", "X1=1")
+colnames(P_unfair) <- c("X2=0", "X2=1")
+P_unfair
+```
+
+```
+##      X2=0 X2=1
+## X1=0  0.5  0.0
+## X1=1  0.0  0.5
+```
+
+``` r
+# Compute the marginal distribution for X2 in the unfair case.
+P_X2_unfair <- colSums(P_unfair)
+P_X1_unfair <- rowSums(P_unfair)
+
+# Compute the conditional probabilities P(X1 | X2) for the unfair coin.
+cond_X2_given_X1_unfair <- matrix(NA, nrow = 2, ncol = 2)
+for (j in 1:2) {
+  if (P_X1_unfair[j] > 0) {
+    cond_X2_given_X1_unfair[, j] <- P_unfair[, j] / P_X1_unfair[j]
+  }
+}
+rownames(cond_X2_given_X1_unfair) <- c("X2=0", "X2=1")
+colnames(cond_X2_given_X1_unfair) <- c("given X1=0", "given X1=1")
+cond_X2_given_X1_unfair
+```
+
+```
+##      given X1=0 given X1=1
+## X2=0          1          0
+## X2=1          0          1
+```
+
+
+Finally, note **Bayes' Theorem**:
+\begin{eqnarray}
+P(X_{1} = x_{1} | X_{2} = x_{2})  P( X_{2} = x_{2}) &=& P(X_{1} = x_{1}, X_{2} = x_{2}) = P(X_{2} = x_{2} | X_{1} = x_{1}) P(X_{1}=x_{1})\\
+P(X_{1} = x_{1} | X_{2} = x_{2}) &=& \frac{ P(X_{2} = x_{2} | X_{1} = x_{1}) P(X_{1}=x_{1}) }{ P( X_{2} = x_{2}) }
+\end{eqnarray}
+
+``` r
+# Verify Bayes' theorem for the unfair coin case:
+# Compute P(X1=1 | X2=1) using the formula:
+#   P(X1=1 | X2=1) = [P(X2=1 | X1=1) * P(X1=1)] / P(X2=1)
+
+P_X1_1 <- 0.5
+P_X2_1_given_X1_1 <- 1  # Since coin 2 copies coin 1.
+P_X2_1 <- P_X2_unfair["X2=1"]
+
+bayes_result <- (P_X2_1_given_X1_1 * P_X1_1) / P_X2_1
+bayes_result
+```
+
+```
+## X2=1 
+##    1
+```
+
+
+
+## Further Reading 
+
+Many introductory econometrics textbooks have a good appendix on probability and statistics. There are many useful texts online too
+
+* [Refresher] https://www.khanacademy.org/math/statistics-probability/probability-library/basic-theoretical-probability/a/probability-the-basics
+* https://www.r-bloggers.com/2024/03/calculating-conditional-probability-in-r/
+* https://www.atmos.albany.edu/facstaff/timm/ATM315spring14/R/IPSUR.pdf
+* https://math.dartmouth.edu/~prob/prob/prob.pdf
+* https://bookdown.org/speegled/foundations-of-statistics/
+* https://bookdown.org/probability/beta/discrete-random-variables.html
+* https://www.econometrics-with-r.org/2.1-random-variables-and-probability-distributions.html
+* https://probability4datascience.com/ch02.html
+* https://rc2e.com/probability
+* https://book.stat420.org/probability-and-statistics-in-r.html
+* https://statsthinking21.github.io/statsthinking21-R-site/probability-in-r-with-lucy-king.html
+* https://bookdown.org/probability/statistics/
+* https://bookdown.org/probability/beta/
+* https://bookdown.org/a_shaker/STM1001_Topic_3/
+* https://bookdown.org/fsancier/bookdown-demo/
+* https://bookdown.org/kevin_davisross/probsim-book/
+* https://bookdown.org/machar1991/ITER/2-pt.html
+* https://www.atmos.albany.edu/facstaff/timm/ATM315spring14/R/IPSUR.pdf
+* https://math.dartmouth.edu/~prob/prob/prob.pdf
 
 

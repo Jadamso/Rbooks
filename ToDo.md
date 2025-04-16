@@ -21,19 +21,22 @@ Github repos must be public to deploy!
 https://bookdown.org/yihui/bookdown/github.html
 
 
-## R Programming
+## Basic Statistics
 
 Make plots interactive via https://plotly-r.com/
 
+**Interpretation**
 https://easystats.github.io/report/
 
+**Github**
 * https://happygitwithr.com/classroom-overview.html
 * https://aeturrell.github.io/coding-for-economists/intro.html
 
+Coefficient of colligation
+
+
 
 #### Hypothesis Tests 
-
-
 
 Weighted means, quantiles, and variance
 ```{r}
@@ -93,8 +96,8 @@ https://aaroncaldwell.us/SuperpowerBook/
 
 Parametric P values and Power Analysis
 ```{r}
-xy <- USArrests[,c('Murder','UrbanPop')]
-colnames(xy) <- c('y','x')
+xy <- USArrests[,c("Murder","UrbanPop")]
+colnames(xy) <- c("y","x")
 
 reg <- lm(y~x, dat=xy)
 
@@ -116,11 +119,6 @@ PT_r <- 1 -
 ``` 
 
 
-
-
-
-
-
 #### Data Analysis
 
 https://onlinelibrary.wiley.com/doi/10.1002/%28SICI%291099-1255%28199709/10%2912%3A5%3C533%3A%3AAID-JAE454%3E3.0.CO%3B2-V
@@ -140,7 +138,6 @@ Data clean/merge
 #### GoF
 https://statmodeling.stat.columbia.edu/2024/06/17/this-well-known-paradox-of-r-squared-is-still-buggin-me-can-you-help-me-out/
 
-Spearman Correlation
 
 #### Diminishing Returns
 Value of More Data: Just as before, there are diminishing returns to larger sample sizes with simple OLS.
@@ -168,7 +165,24 @@ plot(Nseq[-1], abs(diff(SE)), pch=16, col=grey(0,.5), main='Marginal Gain',
 ```
 
 
-Section 7: Derive Simple OLS
+#### Bivariate Data II
+
+Locally Linear 
+
+Robust Regressions: 
+    Simple quantile regression
+    See *Theil-Sen Estimator* and *repeated median regression*, which may be seen as precursors.
+    https://www.tandfonline.com/doi/abs/10.1080/00031305.1989.10475606
+    https://www.eecs.yorku.ca/course_archive/2012-13/F/6338/lectures/LeastMedianOfSquares.pdf
+    Repeated median regression
+    Quantile regression
+    
+Generalized Error Terms:
+    quantile check function
+    minkowski distance
+
+#### Derive Simple OLS
+
 
 * "Introduction to Econometrics with R" by Hanck, Arnold, Gerber, and Schmelzer, https://www.econometrics-with-r.org/
 (taking seriously Greene's "Model Building--A General to Simple Strategy")
@@ -219,8 +233,6 @@ Vhat <- s * XtXi
 vcov(reg)
 ```
 
-
-
 **Reality**
 There are common violations to the iid case. 
 Heteroskedasticity:
@@ -269,7 +281,7 @@ summary(reg)$fstatistic
 summary(reg)
 ```
 
-## Diagnostics 
+#### Diagnostics 
 
 Note that we can also calculate the leverage vector $H = [h_{1}, h_{2}, ...., h_{N}]$  directly from our OLS projection matrix $\hat{P}$, since $H=diag(\hat{P})$ and
 $$
@@ -287,7 +299,6 @@ Yhat <- Pmat%*%Y
 ## Yhat
 ## predict(reg)
 ```
-
 
 ```{r}
 # Sall, J. (1990) Leverage plots for general linear hypotheses. American Statistician *44*, 308-315.
