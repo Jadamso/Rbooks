@@ -153,8 +153,8 @@ Save the following code as `MyFirstScript.R`
 ```{r, eval=F}
 # Define New Function
 sum_squared <- function(x1, x2) {
-	y <- (x1 + x2)^2
-	return(y)
+    y <- (x1 + x2)^2
+    return(y)
 } 
 
 # Test New Function
@@ -167,12 +167,9 @@ sum_squared(x, x)
 message('Script Completed')
 ```
 
-**Restart Rstudio**. Alternatively, **clean the workspace** by
+*Restart Rstudio*.^[Alternatively, *clean the workspace* by 1: clearing the environment and history (use the broom in top right panel). 2: clearing unsaved plots (use the broom in bottom right panel).]
 
-* clearing the environment and history (use the broom in top right panel)
-* clearing unsaved plots (use the broom in bottom right panel)
-
-**Replicate** in another tab *or directly in console on the bottom left) via
+*Replicate* in another tab via
 ```{r, eval=FALSE}
 source('MyFirstScript.R')
 ```
@@ -196,15 +193,6 @@ sum_squared(z,z)
 
 # Report all information relevant for replication
 sessionInfo()
-```
-
-**CLI options** Note that there are also alternative ways to replicate via the command line interface (CLI) after opening a terminal.
- 
-```{bash, eval=FALSE}
-# Method 1
-Rscript -e "source('MyFirstScript.R')"
-# Method 2
-Rscript MyFirstScript.R
 ```
 
 Note that you can open a new terminal in RStudio in the top bar by
@@ -368,31 +356,24 @@ For larger scale projects, use scripts
 * https://kbroman.org/steps2rr/pages/automate.html
 
 
+
+# Performance 
+***
+
 ## Debugging 
 
 In R, you use multiple functions on different types of data objects. Moreover, you "typically solve complex problems by decomposing them into simple functions, not simple objects." (H. Wickham)
 
 
-We can use the following packages to help deal with various problems that may arise
-```{r}
-library(microbenchmark)
-library(compiler)
-library(profvis)
-library(parallel)
-library(Rcpp)
-```
-
 Problems print to the console
 ```{r, error=TRUE}
-message("This is what a message looks like")
-
 warning("This is what a warning looks like")
-
 stop("This is what an error looks like")
 ```
 
 Nonproblems also print to the console
 ```{r, error=TRUE}
+message("This is what a message looks like")
 cat('cat\n')
 print('print')
 ```
@@ -644,7 +625,7 @@ profvis::profvis({
 ```
 
 
-For systematic speed comparisons, try the `microbenchmark` package
+For systematic speed comparisons, try a benchmarking package
 ```{r, error=TRUE}
 # 3 Equivalent calculations of the mean of a vector
 mean1 <- function(x,p=1) mean(x^p)
@@ -656,9 +637,19 @@ x <- runif(1e6)
 microbenchmark::microbenchmark(
   mean1(x,.5),
   mean2(x,.5),
-  mean3(x,.5)
+  mean3(x,.5),
+  times=20
+)
+
+# Time them (w/ memory)
+bench::mark(
+  mean1(x,.5),
+  mean2(x,.5),
+  mean3(x,.5),
+  iterations=20
 )
 ```
+
 
 **Vectorize**.
 
@@ -671,9 +662,8 @@ Computers are really good at math, so exploit this.
 
 Vector operations are generally faster and easier to read than loops
 ```{r, error=TRUE}
-x <- runif(1e6)
-
 # Compare 2 moving averages
+x <- runif(2e6)
 
 # First Try
 ma1 <- function(y){
@@ -693,15 +683,39 @@ ma2 <- function(y){
     return(z2)
 }
 
-all.equal(ma1(y),ma2(y))
+all.equal(ma1(x),ma2(x))
 
-microbenchmark::microbenchmark(
-  ma1(y),
-  ma2(y)
-)
+system.time( ma1(x) )
+system.time( ma2(x) )
+
+ma3 <- compiler::cmpfun(ma2)
+system.time( ma3(x) )
 ```
 Likewise, matrix operations are often faster than vector operations.
 
+
+**Memory Usage**.
+
+For finding problematic blocks `utils::Rprof(memory.profiling = TRUE)` logs total memory usage of R at regular time intervals. E.g.
+```{r, error=TRUE, eval=F}
+Rprof( interval = 0.005)
+    # Create Data
+    x <- runif(2e6)
+    y <- sqrt(x)
+    # Loop Format Data
+    z <- y*NA
+    for(i in 2:length(y)){ z[i] <- (y[i]-y[i-1])/2 }
+    # Regression
+    X <- cbind(1,x)[-1,]
+    Z <- z[-1]
+    reg_fast <- .lm.fit(X, Z)
+Rprof(NULL)
+summaryRprof()
+```
+
+For finding problematic functions: `utils::Rprofmem()` logs memory usage at each call
+
+For finding problematic scripts, see "Advanced Optimization". (With Rprof, you can identifying bottlenecks on a cluster without a GUI.)
 
 **Packages**.
 
@@ -719,7 +733,6 @@ system.time({ solve(t(X)%*%X) %*% (t(X)%*%Y) })
 ```
 Note that such functions to have fewer checks and return less information, so you must know exactly what you are putting in and getting out.
 
-
 **Parallel**.
 
 Sometimes there will still be a problematic bottleneck. 
@@ -732,7 +745,7 @@ Your next step should be parallelism:
 ```{r, error=TRUE}
 # lapply in parallel on {m}ultiple {c}ores
 x <- c(10,20,30,40,50)
-f <- function(element) { element^element } 
+f <- function(element) { element^element }
 parallel::mclapply( x, mc.cores=2, FUN=f)
 ```
 
@@ -758,23 +771,10 @@ s_bp
 all(e_power_e_vec==e_power_e_mc)
 ```
 
-Parallelism does not go great with a GUI.
-For identifying bottlenecks on a cluster without a GUI, try `Rprof()`
-```{r, error=TRUE, eval=F}
-Rprof( interval = 0.005)
-    # Create Data
-    x <- runif(2e6)
-    y <- sqrt(x)
-    # Loop Format Data
-    z <- y*NA
-    for(i in 2:length(y)){ z[i] <- (y[i]-y[i-1])/2 }
-    # Regression
-    X <- cbind(1,x)[-1,]
-    Z <- z[-1]
-    reg_fast <- .lm.fit(X, Z)
-Rprof(NULL)
-summaryRprof()
-```
+Note that parallelism does not go well with a GUI.
+
+
+## Advanced Optimizing
 
 If you still are stuck, you can
 
@@ -782,6 +782,107 @@ If you still are stuck, you can
 * rewrite bottlenecks with a working C++ compiler or Fortran compiler.
 
 Before doing that, however, look into <https://cran.r-project.org/web/views/HighPerformanceComputing.html>
+
+In what follows, note that there are alternative ways to run R via the command line. For example,
+```{bash, eval=FALSE}
+# Method 1
+R -e "source('MyFirstScript.R')"
+# Method 2
+R CMD BATCH MyFirstScript.R
+```
+
+**Cluster Computing**
+
+For parallel computations on a computer cluster, you will need to use both R and the linux command line.
+
+```{bash}
+R --slave -e '1:10'
+
+R --slave -e '
+    1:10
+    seq(0,1,by=.2)
+    paste(c("A","D"), 1:2)
+'
+```
+
+```{bash, eval=F}
+R --slave -e '
+    .libPaths("~/R-Libs")    
+    options(repos="https://cloud.r-project.org/")
+    
+    update.packages(ask=F)
+    
+    suppressPackageStartupMessages(library(stargazer))
+'    
+```
+
+You will often want to rerun entire scripts with a different parameter. To do so, you need to edit your R scripts to accept parameters from the command line 
+
+```{r}
+args <- commandArgs(TRUE)
+```
+
+For example
+```{bash}
+R --slave -e '
+    args <- commandArgs(TRUE)
+    paste0(1, args)
+' --args a b c
+
+R --slave -e '
+    args <- commandArgs(TRUE)
+    my_numbers <- as.numeric(args)
+    my_numbers + 1
+' --args $(seq 1 10)
+```
+
+You can also store the output and computer resources of a script. For example, save the last script as `RBLOCK.R` in the folder `$HOME/R_Code` and run the following
+
+```{bash, eval=F}
+# Which Code
+RDIR=$HOME/R_Code #main directory
+infile=$RDIR/RBLOCK.R #specific code
+outfile=$RDIR/R_Logs/RBLOCK$design_N.Rout #log R output
+memfile=$RDIR/R_Logs/RBLOCK$design_N.Rtime #log computer resources
+
+# Execute the Script and store resource useage via `time`
+command time -o $memfile -v \
+    R CMD BATCH --no-save --quiet --no-restore "--args 1 2 3" $infile $outfile 
+```
+Note that you need to have https://ftp.gnu.org/gnu/time installed
+
+
+On an academic computing cluster, you may have to use a scheduler like *slurm*. In which case you can submit  a bash script
+```{bash, eval=F}
+sbatch  --mem 10GB --time=0-01:00:00 -a 50 SlurmJob.sh
+```
+where ` SlurmJob.sh` looks like
+```{bash, eval=F}
+#!/bin/bash
+#SBATCH --ntasks=1
+#SBATCH --error=$HOME/R_Code/Slurm_Logs/%x.error-%j
+#SBATCH --output=$HOME/R_Code/Slurm_Logs/%x.out-%j
+
+# Which Code
+RDIR=$HOME/R_Code
+infile=$RDIR/RBLOCK.R
+outfile=$RDIR/R_Logs/RBLOCK$design_N.Rout
+memfile=$RDIR/R_Logs/RBLOCK$design_N.Rtime
+
+# Which Parameter
+a="${SLURM_ARRAY_TASK_ID}"
+
+# Execute the Script with a specific parameter, and store memory/time useage
+command time -o $memfile -v \
+    R CMD BATCH --no-save --quiet --no-restore "--args $a" $infile $outfile 
+
+# Summarize memory/time useage
+echo "design_N: $design_N Gridpoints"
+cat $memfile | awk '/User time/ {printf "Time: %.2f Hours\n", $4/3600}'
+cat $memfile | awk '/Maximum resident set size/ {printf "Memory: %.2f GB\n", $6/1048576}'
+echo "Partition: $SLURM_JOB_PARTITION"
+```
+
 
 
 **Compiled Code**.
@@ -814,23 +915,6 @@ First try to use C++ (or Fortran) code that others have written
 .Fortran
 ```
 For a tutorial, see https://masuday.github.io/fortran_tutorial/r.html
-
-
-**Memory Usage**.
-
-For finding problematic blocks or whole scripts: `utils::Rprof(memory.profiling = TRUE)` logs total memory usage of R at regular time intervals
-
-For finding problematic functions: `utils::Rprofmem()` logs memory usage at each call
-
-For memory leaks, first free up space and use the `bench` package for timing
-```{r, eval=F}
-gc() # garbage cleanup
-
-bench::mark(
-  mean1(x,.5),
-  mean2(x,.5),
-  mean3(x,.5))
-```
 
 
 
