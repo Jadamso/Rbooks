@@ -26,6 +26,14 @@ For help setting up, see any of the following links
 * https://owi.usgs.gov/R/training-curriculum/installr/
 * https://www.earthdatascience.org/courses/earth-analytics/document-your-science/setup-r-rstudio/
 
+For Fedora users, note that you need to first enable the repo and then install
+
+```{bash, eval=F}
+sudo dnf install 'dnf-command(copr)'
+sudo dnf copr enable iucar/rstudio
+sudo dnf install rstudio-desktop
+```
+
 *Make sure you have the latest version of R and Rstudio for class.* If not, then reinstall. 
 
 ## Interfacing with R
@@ -151,24 +159,6 @@ sum_squared(x, x)
 sum_squared(x, 2*x)
 ```
 
-Applying the same function over and over again
-```{r}
-sapply(1:3, exp)
-c( exp(1), exp(2), exp(3))
-
-# More complex example
-sapply(1:10, function(i){
-    x <- i^(i-1)
-    y <- x + mean( 0:i )
-    z <- log(y)/i
-    return(z)
-})
-
-# mapply takes multiple vectors
-# mapply(sum, 1:3, exp(1:3) )
-```
-
-
 Functions can take functions as arguments
 ```{r}
 fun_of_seq <- function(f){
@@ -183,16 +173,51 @@ fun_of_seq(sd)
 ```
 
 
-<!---
-recursive functions
+## Loops
+
+Applying the same function over and over again
 ```{r}
-# For Loop
-x <- rep(1, 3)
-for(i in 2:length(x) ){
+exp_vector <- vector(length=3)
+for(i in 1:3){
+    exp_vector[i] <- exp(i)
+}
+
+# Compare
+exp_vector
+c( exp(1), exp(2), exp(3))
+```
+
+sore complicated example
+```{r}
+complicate_fun <- function(i, j=0){
+    x <- i^(i-1)
+    y <- x + mean( j:i )
+    z <- log(y)/i
+    return(z)
+}
+complicated_vector <- vector(length=10)
+for(i in 1:10){
+    complicated_vector[i] <- complicate_fun(i)
+}
+```
+
+recursive loop
+```{r}
+x <- vector(length=4)
+x[1] <- 1
+for(i in 2:4){
     x[i] <- (x[i-1]+1)^2
 }
 x
+```
 
+<!---
+```{r, eval=F, echo=F}
+# mapply takes multiple vectors
+# mapply(sum, 1:3, exp(1:3) )
+```
+
+```{r}
 # for loop in a function
 r_fun <- function(n){
     x <- rep(1,n)
@@ -746,14 +771,11 @@ hist(x3, breaks=20, border=NA, main=NA, freq=F)
 
 We might further distinguish types of random variables based on whether their maximum value is theoretically finite or infinite.
 
+**Probability distributions**. Random variables are drawn from [probability distributions](https://en.wikipedia.org/wiki/List_of_probability_distributions). The most common ones are [easily accessible](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html).
 
-**Probability distributions**.
+All random variables have an associated theoretical Cumulative Distribution Function: $F_{X}(x) =$ Probability$(X_{i} \leq x)$. Continuous random variables have an associated density function: $f_{X}$, as well as a quantile function: $Q_{X}(p)$, which is the inverse of the CDF: the $x$ value where $p$ percent of the data fall below it. (Recall that the median is the value $x$ where $50\%$ of the data fall below $x$, for example.)
 
-Random variables are drawn from [probability distributions](https://en.wikipedia.org/wiki/List_of_probability_distributions). The most common ones are [easily accessible](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html).
-
-All random variables have an associated theoretical Cumulative Distribution Function: $F_{X}(x) =$ Probability$(X_{i} \leq x)$. Continuous random variables have an associated density function: $f_{X}$, as well as a quantile function: $Q_{X}(p)$, which is the inverse of the CDF: the $x$ value where $p$ percent of the data fall below it.
-
-Here is an example of the [Beta distribution](https://en.wikipedia.org/wiki/Beta_distribution)
+Here is an example of the [Beta](https://en.wikipedia.org/wiki/Beta_distribution) probability distribution
 ```{r, results='hide'}
 pars <- expand.grid( c(.5,1,2), c(.5,1,2) )
 par(mfrow=c(3,3))
@@ -766,53 +788,29 @@ apply(pars, 1, function(p){
 title('Beta densities', outer=T, line=-1)
 ```
 
-Here is a more in-depth example using the [Dagum distribution](https://en.wikipedia.org/wiki/Dagum_distribution)
+Here is a more in-depth example of drawing random variables from the [Dagum distribution](https://en.wikipedia.org/wiki/Dagum_distribution)
 
 ```{r, results='hide'}
 # Quantile Function (VGAM::qdagum)
-# (In addition to the main equation, there are many checks and options for consistency with other functions)
-qdagum <- function(p, scale = 1, shape1.a, shape2.p, lower.tail = TRUE, log.p = FALSE) {
-  LLL <- max(length(p), length(shape1.a), length(scale), length(shape2.p))
-  
-  if (length(p) < LLL) p <- rep_len(p, LLL)
-  if (length(shape1.a) < LLL) shape1.a <- rep_len(shape1.a, LLL)
-  if (length(scale) < LLL) scale <- rep_len(scale, LLL)
-  if (length(shape2.p) < LLL) shape2.p <- rep_len(shape2.p, LLL)
-
-  if (lower.tail) {
-    if (log.p) {
-      ln.p <- p
-      ans <- scale * (expm1(-ln.p / shape2.p))^(-1 / shape1.a)
-      ans[ln.p > 0] <- NaN
-    } else {
-      ans <- scale * (expm1(-log(p) / shape2.p))^(-1 / shape1.a)
-      ans[p < 0] <- NaN
-      ans[p == 0] <- 0
-      ans[p == 1] <- Inf
-      ans[p > 1] <- NaN
-    }
-  } else {
-    if (log.p) {
-      ln.p <- p
-      ans <- scale * (expm1(-log(-expm1(ln.p)) / shape2.p))^(-1 / shape1.a)
-      ans[ln.p > 0] <- NaN
-    } else {
-      # Main equation (theoretically derived from the CDF)
-      ans <- scale * (expm1(-log1p(-p) / shape2.p))^(-1 / shape1.a)
-      ans[p < 0] <- NaN
-      ans[p == 0] <- Inf
-      ans[p == 1] <- 0
-      ans[p > 1] <- NaN
-    }
-  }
-  ans[scale <= 0 | shape1.a <= 0 | shape2.p <= 0] <- NaN
+qdagum <- function(p, scale=1, shape1.a, shape2.p) {
+  # Quantile function (theoretically derived from the CDF)
+  ans <- scale * (expm1(-log(p) / shape2.p))^(-1 / shape1.a)
+  # Special known cases
+  ans[p == 0] <- 0
+  ans[p == 1] <- Inf
+  # Checks
+  ans[p < 0] <- NaN
+  ans[p > 1] <- NaN
+  if(scale <= 0 | shape1.a <= 0 | shape2.p <= 0){ ans <- ans*NaN }
+  # Return
   return(ans)
 }
 
 # Generate Random Variables (VGAM::rdagum)
 rdagum <-function(n, scale=1, shape1.a, shape2.p){
-    p <- runif(n) # generate a random quantile
-    qdagum(p, scale=scale, shape1.a=shape1.a, shape2.p=shape2.p)
+    p <- runif(n) # generate random quantile probabilities
+    x <- qdagum(p, scale=scale, shape1.a=shape1.a, shape2.p=shape2.p) #find the inverses
+    return(x)
 }
 
 # Example
@@ -821,9 +819,9 @@ x <- rdagum(3000,1,3,1)
 
 # Empirical Distribution
 Fx_hat <- ecdf(x)
-plot(Fx_hat, lwd=2, xlim=c(0,5))
+plot(Fx_hat, lwd=2, xlim=c(0,5), main='')
 
-# Two Quantiles
+# Two Examples of generating a random variable
 p <- c(.25, .9)
 cols <- c(2,4)
 Qx_hat <- quantile(x, p)
@@ -1595,7 +1593,8 @@ abline(v=sample_mean, col='red', lty=2)
 Note that we do not use the mean of the bootstrap or jackknife statistics as a replacement for the original estimate. This is because the bootstrap and jackknife distributions are centered at the observed statistic, not the population parameter. (The bootstrapped mean is centered at the sample mean, not the population mean.) This means that we cannot use the bootstrap to improve on $\overline{x}$; no matter how many bootstrap samples we take. We can, however, use the jackknife and bootstrap to estimate sampling variability.
 
 **Intervals**.
-Note that both methods provide imperfect estimates, and can give different numbers. Until you know more, a conservative approach is to take the larger estimate.
+Note that both methods provide imperfect estimates, and can give different numbers. Percentiles of jackknife resamples are systematically less variable than they should be. Until you know more, a conservative approach is to take the larger estimate.
+
 ```{r}
 # Boot CI
 boot_ci <- quantile(Bmeans, probs=c(.025, .975))
@@ -1653,6 +1652,7 @@ See
 
 * https://www.r-bloggers.com/2025/02/bootstrap-vs-standard-error-confidence-intervals/
 
+
 # Hypothesis Tests
 ***
 
@@ -1661,7 +1661,7 @@ See
 In this section, we test hypotheses using *data-driven* methods that assume much less about the data generating process. There are two main ways to conduct a hypothesis test to do so: inverting a confidence interval and imposing the null.
 
 **Invert a CI**.
-One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. We then have this decision rule
+One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. We then use this decision rule
 
 * reject the null if value falls outside of the interval
 * fail to reject the null if value falls inside of the interval
@@ -1686,12 +1686,12 @@ abline(v=8, col=2, lwd=2)
 ```
 
 **Impose the Null**.
-We can also compute a *null distribution*: the sampling distribution of the statistic under the null hypothesis (assuming your null hypothesis was true). We focus on the simplest, the bootstrap, where loop through a large number of simulations. In each iteration of the loop, we drop impose the null hypothesis and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``resamples''. Specifically, we compute the distribution of t-values on data with randomly reshuffled outcomes (imposing the null), and compare how extreme the observed value is.
+We can also compute a *null distribution*: the sampling distribution of the statistic under the null hypothesis (assuming your null hypothesis was true). We use the bootstrap to loop through a large number of "resamples". In each iteration of the loop, we impose the null hypothesis and re-estimate the statistic of interest. We then calculate the range of the statistic across all resamples and compare how extreme the original value we observed is. We use a 95% confidence interval of the null distribution to create a *rejection region*.
 ```{r}
 sample_dat <- USArrests$Murder
 sample_mean <- mean(sample_dat)
 
-# Bootstrap estimates
+# Bootstrap NULL: mean=8
 set.seed(1)
 Bmeans0 <- sapply(1:10^4, function(i) {
     dat_b <- sample(sample_dat, replace=T) 
@@ -1700,40 +1700,53 @@ Bmeans0 <- sapply(1:10^4, function(i) {
 })
 hist(Bmeans0, breaks=25, border=NA,
     main='', xlab=expression( bar(X)[b]) )
-ci_95 <- quantile(Bmeans0, probs=c(.025, .975))
+ci_95 <- quantile(Bmeans0, probs=c(.025, .975)) # critical region
 abline(v=ci_95, lwd=2)
-
 abline(v=sample_mean, lwd=2, col=2)
 ```
 
 
+
 ## Default Statistics
 
-**p-values**. A *p-value* is the frequency you would see something as extreme as your statistic when sampling from the null distribution.
+**p-values**. This is the frequency you would see something as extreme as your statistic when sampling from the null distribution.
+
+There are three associated tests: the two-sided test (observed statistic is extremely high or low) or one of the one-sided tests (observed statistic is extremely low, observed statistic is extremely high). E.g.
+
+* $HA​: \bar{X} > 8$ implies a right tail test
+* $HA: \bar{X} < 8$ implies a left tail test
+* $HA​: \bar{X} \neq 8$ implies a two tail test
+
+In any case, typically "p<.05: statistically significant" and "p>.05: not statistically significant".
 
 ```{r}
-# P( boot0_means > sample_mean) 
-# NULL: mean=8
-That_NullDist1 <- ecdf(Bmeans0)
-plot(That_NullDist1,
+# One-Sided Test, ALTERNATIVE: mean > 8
+# Prob( boot0_means > sample_mean) 
+Fhat0 <- ecdf(Bmeans0) # Right tail
+plot(Fhat0,
     xlab=expression( beta[b] ),
     main='Null Bootstrap Distribution for means', font.main=1)
 abline(v=sample_mean, col='red')
-p <- That_NullDist1(sample_mean)
-p
+
+p <- 1- Fhat0(sample_mean) #Right Tail
+if(p >.05){
+    message('fail to reject the null that sample_mean=8, at the 5% level')
+} else {
+    message('reject the null that sample_mean=8 in favor of >8, at the 5% level')
+}
 ```
 
-There are three associated tests: the two-sided test (observed statistic is extremely high or low) or one of the one-sided tests (observed statistic is extremely low, observed statistic is extremely high). In either case, typically "p<.05: statistically significant" and "p>.05: statistically insignificant".^[Note that the p-value is not the ``probability that we reject the null based on the data we have and given the null is true''. This is called the statistical power of the test.]
-```{r}
-# One-Sided Test, ALTERNATIVE: mean < 8
-if(p >.05){
-    message('fail to reject the null that sample_mean=8 at the 5% level')
-} else {
-    message('reject the null that sample_mean=8 in favor of <8 at the 5% level')
-}
 
+```{r}
 # Two-Sided Test, ALTERNATIVE: mean < 8 or mean >8
-if( p >.025 | p >.975){
+# Prob(boot0_means > sample_mean or -boot0_means < sample_mean)
+
+Fhat0 <- ecdf(Bmeans0)
+p_left <- Fhat0(sample_mean) #Left Tail
+p_right <- 1 - Fhat0(sample_mean) #Right Tail
+p <- 2*min(p_left, p_right)
+
+if(p >.05){
     message('fail to reject the null that sample_mean=8 at the 5% level')
 } else {
     message('reject the null that sample_mean=8 in favor of either <8 or >8 at the 5% level')
@@ -1746,39 +1759,43 @@ if( p >.025 | p >.975){
 jack_se <- sd(Jmeans)
 mean0 <- 8
 jack_t <- (sample_mean - mean0)/jack_se
+
+# Note that you can also use a corrected se
+# jack_se <- sqrt((n-1)/n) * sd(Jmeans)
 ```
 There are several benefits to this:
 
 * makes the statistic comparable across different studies
-* makes the null distribution theoretically known (at least approximately)
 * makes the null distribution not depend on theoretical parameters ($\sigma$)
+* makes the null distribution theoretically known asymptotically (approximately)
 
-```{r, eval=F}
-# Two-Sided Test, based on theory
-# 1-pt( abs(jack_t), n-1) + pt(-abs(jack_t), n-1)
-```
-In another statistics class, you will learn the math behind the null t-distribution. In this class, we skip this because we can simply bootstrap the t-statistic too.
+The last point implies we are dealing with a symmetric distributions: $Prob( t_{boot} > t ~\text{or}~ t_{boot} < -t) = Prob( |t| < |t_{boot}| )$.^[In another statistics class, you will learn the math behind the null t-distribution. In this class, we skip this because we can simply bootstrap the t-statistic too.]
+
 ```{r}
 set.seed(1)
-boot_t0 <- sapply(1:10^4, function(i) {
+boot_t0 <- sapply(1:10^3, function(i) {
     dat_b <- sample(sample_dat, replace=T) 
     mean_b <- mean(dat_b) + (8 - sample_mean) # impose the null by recentering
-    jack_t <- (mean_b - mean0)/jack_se
+    # jack ses
+    jack_se_b <- sd( sapply(1:length(dat_b), function(i){
+        mean(dat_b[-i])
+    }) )
+    jack_t <- (mean_b - mean0)/jack_se_b
 })
 
-# Two Sided Test for P(t > jack_t or  t < -jack_t | Null)
-That_NullDist2 <- ecdf(abs(boot_t0))
-plot(That_NullDist2, xlim=range(boot_t0, jack_t),
+# Two Sided Test
+Fhat0 <- ecdf(abs(boot_t0))
+plot(Fhat0, xlim=range(boot_t0, jack_t),
     xlab=expression( abs(hat(t)[b]) ),
     main='Null Bootstrap Distribution for t', font.main=1)
 abline(v=abs(jack_t), col='red')
-p <- That_NullDist2( abs(jack_t) ) 
+p <- 1 - Fhat0( abs(jack_t) ) 
 p
 
 if(p >.05){
-    message('fail to reject the null that sample_mean=8 at the 5% level')
+    message('fail to reject the null that sample_mean=8, at the 5% level')
 } else {
-    message('reject the null that sample_mean=8 in favor of either <8 or >8 at the 5% level')
+    message('reject the null that sample_mean=8 in favor of either <8 or >8, at the 5% level')
 }
 ```
 
@@ -1795,7 +1812,7 @@ x1 <- wage1[wage1$educ == 15, 'wage']
 x2 <- wage1[wage1$educ == 16, 'wage']
 ```
 
-Although it not necessary, we will assume that each $X_{is}$ is an independent observation for simplicity. 
+For simplicity, we will assume that each $X_{is}$ is an independent observation. 
 
 ```{r}
 # Sample 1
@@ -1803,7 +1820,7 @@ n1 <- 100
 x1 <- rnorm(n1, 0, 2)
 # Sample 2
 n2 <- 80
-x2 <- rnorm(n1, 1, 1)
+x2 <- rnorm(n2, 1, 1)
 
 par(mfrow=c(1,2))
 bks <- seq(-7,7, by=.5)
@@ -1816,12 +1833,11 @@ hist(x2, border=NA, breaks=bks,
 
 There may be several differences between these samples. Often, the first summary statistic we investigate is the difference in means. 
 
-**Equal Means**. The sample mean $\overline{X}_{s}$ is the average value of all the observations in the sample. We want to know if the means are different. To test this hypothesis, we examine the differences term
+**Equal Means**. We often want to know if the means of different sample are different in . To test this hypothesis, we compute the sample mean $\overline{X}_{s}$ over all observations in each sample and then examine the differences term
 \begin{eqnarray} 
 D = \overline{X}_{1} - \overline{X}_{2},
 \end{eqnarray}
 with a null hypothesis of $D=0$.
-
 
 ```{r}
 # Differences between means
@@ -1845,15 +1861,21 @@ hist(boot_d, border=NA, font.main=1,
 boot_ci <- quantile(boot_d, probs=c(.025, .975))
 abline(v=boot_ci, lwd=2)
 abline(v=0, lwd=2, col=2)
-ecdf(boot_d)(0)
+
+# p-value
+1 - ecdf(boot_d)(0)
 ```
 
-Just as with one sample tests, we can standardize $D$ into a $t$ statistic. (In which case we also theoretically know the distribution.) Similarly, we can also compute one or two sided hypothesis tests. 
+Just as with one sample tests, we can standardize $D$ into a $t$ statistic. In which case, we can easily compute one or two sided hypothesis tests. Note, however, that we have to compute the standard error for the difference statistic, which is a bit more complicated. 
+```{r, eval=F}
+se_hat <- sqrt(var(x1)/n1 + var(x2)/n2);
+t_obs <- d/se_hat
+```
 
 
-**Equal Quantiles or Variances**.
+**Other Differences**.
 
-The above procedure generalized from "means" to other statistics like "variances" or "quantiles".
+The above procedure generalized from differences in "means" to other statistics like "quantiles".
 
 ```{r}
 # Bootstrap Distribution Function
@@ -1876,8 +1898,12 @@ hist(boot_d, border=NA, font.main=1,
     main='Difference in Medians')
 abline(v=quantile(boot_d, probs=c(.025, .975)), lwd=2)
 abline(v=0, lwd=2, col=2)
-ecdf(boot_d)(0)
+1 - ecdf(boot_d)(0)
+```
 
+Note that these estimates suffer from a finite-sample bias, which we can correct for. Also note that bootstrap tests can perform poorly with highly unequal variances or skewed data.
+
+```{r, eval=F}
 # 2-Sided Test for SD Differences
 #d <- sd(x2) - sd(x1)
 boot_d <- boot_fun(sd)
@@ -1885,95 +1911,18 @@ hist(boot_d, border=NA, font.main=1,
     main='Difference in Standard Deviations')
 abline(v=quantile(boot_d, probs=c(.025, .975)), lwd=2)
 abline(v=0, lwd=2, col=2)
-ecdf(boot_d)(0)
+1 - ecdf(boot_d)(0)
 
 
 # Try any function!
 # boot_fun( function(xs) { IQR(xs)/median(xs) } )
 ```
 
+## Further Literature
 
-## Distributional Tests
 
-We can also examine whether there are any differences between the entire *distributions*
-```{r}
-# Compute Quantiles
-quants <- seq(0,1,length.out=101)
-Q1 <- quantile(x1, probs=quants)
-Q2 <- quantile(x2, probs=quants)
-
-# Compare Distributions via Quantiles
-rx <- range(c(x1, x2))
-par(mfrow=c(1,2))
-plot(rx, c(0,1), type='n', font.main=1,
-    main='Distributional Comparison',
-    xlab=expression(Q[s]),
-    ylab=expression(F[s]))
-lines(Q1, quants, col=2)
-lines(Q2, quants, col=4)
-legend('topleft', col=c(2,4), lty=1,
-legend=c('F1', 'F2'))
-
-# Compare Quantiles
-plot(Q1, Q2, xlim=rx, ylim=rx,
-    main='Quantile-Quantile Plot', font.main=1,
-pch=16, col=grey(0,.25))
-abline(a=0,b=1,lty=2)
-```
-
-We can also test for a differences in entire *distributions*, using all sample data $x \in \{X_1\} \cup \{X_2\}$.
-```{r}
-# Sorted Sample Data
-x1 <- sort(x1)
-x2 <- sort(x2)
-x <- sort(c(x1, x2))
-
-# Distributions
-F1 <- ecdf(x1)(x)
-F2 <- ecdf(x2)(x)
-
-library(twosamples)
-```
-
-The starting point is the Kolmogorov-Smirnov Statistic: the maximum absolute difference between two CDF's. 
-\begin{eqnarray}
-KS &=& \max_{x} |F_{1}(x)- F_{2}(x)|^{p}.
-\end{eqnarray}
-
-```{r}
-# Kolmogorov-Smirnov
-KSq <- which.max(abs(F2 - F1))
-KSqv <- round(twosamples::ks_stat(x1, x2),2)
-
-plot(range(x), c(0,1), type="n", xlab='x', ylab='ECDF')
-title(paste0('KS = ', KSqv), font.main=1)
-segments(x[KSq], F1[KSq], x[KSq], F2[KSq], lwd=1, col=grey(0,.5))
-lines(x, F1, col=2, lwd=2)
-lines(x, F2, col=4, lwd=2)
-legend('bottomright', col=c(2,4), lty=1,
-    legend=c(expression(F[1]), expression(F[2])))
-```
-
-An intuitive alternative is the Cramer-von Mises Statistic: the sum of absolute distances (raised to a power) between two CDF's. 
-\begin{eqnarray}
-CVM=\sum_{x} |F_{1}(x)- F_{2}(x)|^{p}.
-\end{eqnarray}
-
-```{r}
-# Cramer-von Mises Statistic (p=2)
-CVMqv <- round(twosamples::cvm_stat(x1, x2, power=2), 2) 
-
-plot(range(x), c(0,1), type="n", xlab='x', ylab='ECDF')
-segments(x, F1, x, F2, lwd=.5, col=grey(0,.1))
-lines(x, F1, col=2, lwd=2)
-lines(x, F2, col=4, lwd=2)
-title(paste0('CVM = ',CVMqv), font.main=1)
-```
-
-Just as before, you use bootstrapping for hypothesis testing.
-```{r}
-twosamples::cvm_test(x1, x2)
-```
+* https://learningstatisticswithr.com/book/hypothesistesting.html
+* https://okanbulut.github.io/rbook/part5.html
 
 
 # Data Analysis
@@ -2546,15 +2495,17 @@ Some other good packages for posters/presenting you should be aware of
 
 # Probability Theory
 
+You were already introduced to this with [https://jadamso.github.io/Rbooks/data.html#random-variables](random variables) and probability distributions. In this section, we will dig a little deeper theoretically into some of the statistics we might use in practice.
+
 ## Mean and Variance
 
 **Discrete**. If the sample space is discrete, we can compute the theoretical mean (or expected value) as
 $$
-\mu = \sum_{i} x_{i} P(X=x_{i}),
+\mu = \sum_{i} x_{i} Prob(X=x_{i}),
 $$
-where $P(X=x_{i})$ is the probability the random variable takes the particular value $x_{i}$. Similarly, we can compute the theoretical variance as
+where $Prob(X=x_{i})$ is the probability the random variable $X$ takes the particular value $x_{i}$. Similarly, we can compute the theoretical variance as
 $$
-\sigma^2 = \sum_{i} [x_{i} - \mu]^2 P(X=x_{i}),
+\sigma^2 = \sum_{i} [x_{i} - \mu]^2 Prob(X=x_{i}),
 $$
 
 For example, consider an unfair coin with a $.75$ probability of heads ($x_{i}=1$) and a $.25$ probability of tails ($x_{i}=0$) has a theoretical mean of 
@@ -2599,33 +2550,33 @@ round( var(x), 4)
 Suppose we have two discrete variables $X_{1}$ and $X_{2}$.
 Their **joint distribution** is denoted as
 \begin{eqnarray}
-P(X_{1} = x_{1}, X_{2} = x_{2})
+Prob(X_{1} = x_{1}, X_{2} = x_{2})
 \end{eqnarray}
 The **conditional distributions** are defined as
 \begin{eqnarray}
-P(X_{1} = x_{1} | X_{2} = x_{2}) = \frac{ P(X_{1} = x_{1}, X_{2} = x_{2})}{ P( X_{2} = x_{2} )}\\
-P(X_{2} = x_{2} | X_{1} = x_{1}) = \frac{ P(X_{1} = x_{1}, X_{2} = x_{2})}{ P( X_{1} = x_{1} )}
+Prob(X_{1} = x_{1} | X_{2} = x_{2}) = \frac{ Prob(X_{1} = x_{1}, X_{2} = x_{2})}{ Prob( X_{2} = x_{2} )}\\
+Prob(X_{2} = x_{2} | X_{1} = x_{1}) = \frac{ Prob(X_{1} = x_{1}, X_{2} = x_{2})}{ Prob( X_{1} = x_{1} )}
 \end{eqnarray}
 The **marginal distributions** are then defined as
 \begin{eqnarray}
-P(X_{1} = x_{1}) = \sum_{x_{2}} P(X_{1} = x_{1} | X_{2} = x_{2}) P( X_{2} = x_{2} ) \\
-P(X_{2} = x_{2}) = \sum_{x_{1}} P(X_{2} = x_{2} | X_{1} = x_{1}) P( X_{1} = x_{1} ),
+Prob(X_{1} = x_{1}) = \sum_{x_{2}} Prob(X_{1} = x_{1} | X_{2} = x_{2}) Prob( X_{2} = x_{2} ) \\
+Prob(X_{2} = x_{2}) = \sum_{x_{1}} Prob(X_{2} = x_{2} | X_{1} = x_{1}) Prob( X_{1} = x_{1} ),
 \end{eqnarray}
 which is also known as the *law of total probability*.
 
-For one example, Consider flipping two coins. Denoted each coin as $i \in \{1, 2\}$, and mark whether "heads" is face up; $X_{i}=1$ if Heads and $=0$ if Tails. Suppose both coins are "fair": $P(X_{1}=1)= 1/2$ and $P(X_{2}=1|X_{1})=1/2$, then the four potential outcomes have equal probabilities. The joint distribution is 
+For one example, Consider flipping two coins. Denoted each coin as $i \in \{1, 2\}$, and mark whether "heads" is face up; $X_{i}=1$ if Heads and $=0$ if Tails. Suppose both coins are "fair": $Prob(X_{1}=1)= 1/2$ and $Prob(X_{2}=1|X_{1})=1/2$, then the four potential outcomes have equal probabilities. The joint distribution is 
 \begin{eqnarray}
-P(X_{1} = x_{1}, X_{2} = x_{2}) &=& P(X_{1} = x_{1}) P(X_{2} = x_{2})\\
-P(X_{1} = 0, X_{2} = 0) &=& 1/2 \times 1/2 = 1/4 \\
-P(X_{1} = 0, X_{2} = 1) &=& 1/4 \\
-P(X_{1} = 1, X_{2} = 0) &=& 1/4 \\
-P(X_{1} = 1, X_{2} = 1) &=& 1/4 .
+Prob(X_{1} = x_{1}, X_{2} = x_{2}) &=& Prob(X_{1} = x_{1}) Prob(X_{2} = x_{2})\\
+Prob(X_{1} = 0, X_{2} = 0) &=& 1/2 \times 1/2 = 1/4 \\
+Prob(X_{1} = 0, X_{2} = 1) &=& 1/4 \\
+Prob(X_{1} = 1, X_{2} = 0) &=& 1/4 \\
+Prob(X_{1} = 1, X_{2} = 1) &=& 1/4 .
 \end{eqnarray}
 The marginal distribution of the second coin is 
 \begin{eqnarray}
-P(X_{2} = 0) &=& P(X_{2} = 0 | X_{1} = 0) P(X_{1}=0) + P(X_{2} = 0 | X_{1} = 1) P(X_{1}=1)\\
+Prob(X_{2} = 0) &=& Prob(X_{2} = 0 | X_{1} = 0) Prob(X_{1}=0) + Prob(X_{2} = 0 | X_{1} = 1) Prob(X_{1}=1)\\
 &=& 1/2 \times 1/2 + 1/2 \times 1/2 = 1/2\\
-P(X_{2} = 1) &=& P(X_{2} = 1 | X_{1} = 0) P(X_{1}=0) + P(X_{2} = 1 | X_{1} = 1) P(X_{1}=1)\\
+Prob(X_{2} = 1) &=& Prob(X_{2} = 1 | X_{1} = 0) Prob(X_{1}=0) + Prob(X_{2} = 1 | X_{1} = 1) Prob(X_{1}=1)\\
 &=& 1/2 \times 1/2 + 1/2 \times 1/2 = 1/2
 \end{eqnarray}
 
@@ -2645,7 +2596,7 @@ P_X1
 P_X2 <- colSums(P_fair)
 P_X2
 
-# Compute the conditional probabilities P(X2 | X1).
+# Compute the conditional probabilities Prob(X2 | X1).
 cond_X2_given_X1 <- matrix(0, nrow = 2, ncol = 2)
 for (j in 1:2) {
   cond_X2_given_X1[, j] <- P_fair[, j] / P_X1[j]
@@ -2657,20 +2608,20 @@ cond_X2_given_X1
 
 Consider a second example, where the second coin is "Completely Unfair", so that it is always the same as the first. The outcomes generated with a Completely Unfair coin are the same as if we only flipped one coin.
 \begin{eqnarray}
-P(X_{1} = x_{1}, X_{2} = x_{2}) &=& P(X_{1} = x_{1}) \mathbf{1}( x_{1}=x_{2} )\\
-P(X_{1} = 0, X_{2} = 0) &=& 1/2 \\
-P(X_{1} = 0, X_{2} = 1) &=& 0 \\
-P(X_{1} = 1, X_{2} = 0) &=& 0 \\
-P(X_{1} = 1, X_{2} = 1) &=& 1/2 .
+Prob(X_{1} = x_{1}, X_{2} = x_{2}) &=& Prob(X_{1} = x_{1}) \mathbf{1}( x_{1}=x_{2} )\\
+Prob(X_{1} = 0, X_{2} = 0) &=& 1/2 \\
+Prob(X_{1} = 0, X_{2} = 1) &=& 0 \\
+Prob(X_{1} = 1, X_{2} = 0) &=& 0 \\
+Prob(X_{1} = 1, X_{2} = 1) &=& 1/2 .
 \end{eqnarray}
 Note that $\mathbf{1}(X_{1}=1) $ means $X_{1}= 1$ and $0$ if $X_{1}\neq0$.
 The marginal distribution of the second coin is 
 \begin{eqnarray}
-P(X_{2} = 0) 
-&=& P(X_{2} = 0 | X_{1} = 0) P(X_{1}=0) + P(X_{2} = 0 | X_{1} = 1) P(X_{1}=1) \\
+Prob(X_{2} = 0) 
+&=& Prob(X_{2} = 0 | X_{1} = 0) Prob(X_{1}=0) + Prob(X_{2} = 0 | X_{1} = 1) Prob(X_{1}=1) \\
 &=& 1/2 \times 1 + 0 \times 1/2 = 1/2\\
-P(X_{2} = 1)
-&=& P(X_{2} = 1 | X_{1} =0) P( X_{1} = 0) + P(X_{2} = 1 | X_{1} = 1) P( X_{1} =1)\\
+Prob(X_{2} = 1)
+&=& Prob(X_{2} = 1 | X_{1} =0) Prob( X_{1} = 0) + Prob(X_{2} = 1 | X_{1} = 1) Prob( X_{1} =1)\\
 &=& 0\times 1/2 + 1 \times 1/2 = 1/2
 \end{eqnarray}
 which is the same as in the first example! Different joint distributions can have the same marginal distributions.
@@ -2687,7 +2638,7 @@ P_unfair
 P_X2_unfair <- colSums(P_unfair)
 P_X1_unfair <- rowSums(P_unfair)
 
-# Compute the conditional probabilities P(X1 | X2) for the unfair coin.
+# Compute the conditional probabilities Prob(X1 | X2) for the unfair coin.
 cond_X2_given_X1_unfair <- matrix(NA, nrow = 2, ncol = 2)
 for (j in 1:2) {
   if (P_X1_unfair[j] > 0) {
@@ -2702,13 +2653,13 @@ cond_X2_given_X1_unfair
 
 Finally, note **Bayes' Theorem**:
 \begin{eqnarray}
-P(X_{1} = x_{1} | X_{2} = x_{2})  P( X_{2} = x_{2}) &=& P(X_{1} = x_{1}, X_{2} = x_{2}) = P(X_{2} = x_{2} | X_{1} = x_{1}) P(X_{1}=x_{1})\\
-P(X_{1} = x_{1} | X_{2} = x_{2}) &=& \frac{ P(X_{2} = x_{2} | X_{1} = x_{1}) P(X_{1}=x_{1}) }{ P( X_{2} = x_{2}) }
+Prob(X_{1} = x_{1} | X_{2} = x_{2})  Prob( X_{2} = x_{2}) &=& Prob(X_{1} = x_{1}, X_{2} = x_{2}) = Prob(X_{2} = x_{2} | X_{1} = x_{1}) Prob(X_{1}=x_{1})\\
+Prob(X_{1} = x_{1} | X_{2} = x_{2}) &=& \frac{ Prob(X_{2} = x_{2} | X_{1} = x_{1}) Prob(X_{1}=x_{1}) }{ Prob( X_{2} = x_{2}) }
 \end{eqnarray}
 ```{r}
 # Verify Bayes' theorem for the unfair coin case:
-# Compute P(X1=1 | X2=1) using the formula:
-#   P(X1=1 | X2=1) = [P(X2=1 | X1=1) * P(X1=1)] / P(X2=1)
+# Compute Prob(X1=1 | X2=1) using the formula:
+#   Prob(X1=1 | X2=1) = [Prob(X2=1 | X1=1) * Prob(X1=1)] / Prob(X2=1)
 
 P_X1_1 <- 0.5
 P_X2_1_given_X1_1 <- 1  # Since coin 2 copies coin 1.

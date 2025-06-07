@@ -84,7 +84,66 @@ tstat
 ```
 
 
+
+
+#### Endogeneity
+
+```{r}
+## Theoretical Relationship
+x <- c(-1,1)/2
+y <- c(0,0)
+plot.new()
+plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1))
+s <- seq(length(x)-1)
+arrows(x[1], y[1], x[2], y[2], code=2, lwd=2)
+text(c(-1,1), y, c("X","Y"), cex=2)
+```
+
+```{r}
+### Reverse Causation
+x <- c(-1,1)/2
+y <- c(0,0)
+plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1))
+arrows(x[1], y[1], x[2], y[2], code=1, lwd=2)
+text(c(-1,1), y, c("X","Y"), cex=2)
+```
+
+```{r}
+### Lurking/Confounding Variable
+x <- c(-1,0,1)/2
+y <- c(0,-1,0)/2
+plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1), ylim=c(-1,.2))
+arrows(x[1], y[1], x[2], y[2], code=1, lwd=2)
+arrows(x[3], y[3], x[2], y[2], code=1, lwd=2)
+text(c(-2/3,0,2/3), c(1/5,-2/3,1/5), c("X","Z","Y"), cex=2)
+```
+
+*Example 1:* Suppose you want to know how taxes affect economic prosperity.
+What are the issue with interpreting an empirical finding that higher $Taxes$ do not affect $GDP$ with data from Canada and Germany? Or across all countries for that matter?
+
+```{r}
+x <- c(-1,0,1)/2
+y <- c(0,-1,0)/2
+plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1), ylim=c(-1,.25))
+arrows(x[1], y[1], x[2]-.1, y[2], code=3, lwd=2)
+arrows(x[3], y[3], x[2]+.1, y[2], code=3, lwd=2)
+arrows(x[3], y[3]+.2, x[1], y[1]+.2, code=3, lwd=2)
+text(c(-2/3,0,2/3), c(1/5,-2/3,1/5), 
+    c("Taxes","Culture, Laws, Record Keeping","GDP"), cex=1.3)
+```
+
+*Example 2:* What do you think about this plot from (https://ourworldindata.org/grapher/share-of-population-with-cancer-vs-gdp)? Is money the root of all evil; our focus on wealth literally a cancer to society?
+
+*Example 3:* This map of cocaine (https://www.unodc.org/wdr2016/field/1.2.3._Prevalence_cocaine.pdf) usage looks a lot like GDP. Could it be that cocaine causes people to become rich, or rather that people in richer countries use more cocaine?
+
 #### Power Analysis
+
+```{r, eval=F}
+# Two-Sided Test, based on theory
+# Symmetric Null Distribution: p_upper = 1 - p_upper
+# pt( -abs(jack_t), n-1) = 1-pt( abs(jack_t), n-1)
+# p <- 2*(1-pt(abs(jack_t), n-1) )
+```
 
 https://osf.io/zqphw/download
 The Essential Guide to Effect Sizes: Statistical Power, Meta-Analysis, and the Interpretation of Research Results
@@ -93,6 +152,8 @@ https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/power.html
 https://peopleanalytics-regression-book.org/power-tests.html
 
 https://aaroncaldwell.us/SuperpowerBook/
+
+
 
 Parametric P values and Power Analysis
 ```{r}
@@ -116,7 +177,8 @@ PT_r <- 1 -
     pt( qt(alpha/2, df=k), df=k, ncp=abs(T_r), lower.tail=F) +
     pt( qt(alpha/2, df=k, lower.tail=F), df=k, ncp=abs(T_r), lower.tail=F)
 1 - pt( qt(1-alpha/2, df=k)-abs(T_r), df=k) + pt( qt(alpha/2, df=k)-abs(T_r), df=k)
-``` 
+```
+
 
 
 #### Data Analysis
@@ -132,7 +194,7 @@ Data clean/merge
 
 
 
-## Linear Regression
+## Multivariate Data
 
 
 #### GoF
@@ -165,21 +227,6 @@ plot(Nseq[-1], abs(diff(SE)), pch=16, col=grey(0,.5), main='Marginal Gain',
 ```
 
 
-#### Bivariate Data II
-
-Locally Linear 
-
-Robust Regressions: 
-    Simple quantile regression
-    See *Theil-Sen Estimator* and *repeated median regression*, which may be seen as precursors.
-    https://www.tandfonline.com/doi/abs/10.1080/00031305.1989.10475606
-    https://www.eecs.yorku.ca/course_archive/2012-13/F/6338/lectures/LeastMedianOfSquares.pdf
-    Repeated median regression
-    Quantile regression
-    
-Generalized Error Terms:
-    quantile check function
-    minkowski distance
 
 #### Derive Simple OLS
 
@@ -281,6 +328,7 @@ summary(reg)$fstatistic
 summary(reg)
 ```
 
+
 #### Diagnostics 
 
 Note that we can also calculate the leverage vector $H = [h_{1}, h_{2}, ...., h_{N}]$  directly from our OLS projection matrix $\hat{P}$, since $H=diag(\hat{P})$ and
@@ -332,90 +380,6 @@ https://www.tandfonline.com/doi/full/10.1080/26939169.2023.2276446#d1e1498
 Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)
 
 
-#### Power Analysis
-
-https://osf.io/zqphw/download
-The Essential Guide to Effect Sizes: Statistical Power, Meta-Analysis, and the Interpretation of Research Results
-https://online.stat.psu.edu/statprogram/reviews/statistical-concepts/power-analysis
-https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/power.html
-https://peopleanalytics-regression-book.org/power-tests.html
-
-https://aaroncaldwell.us/SuperpowerBook/
-
-Parametric P values and Power Analysis
-```{r}
-xy <- USArrests[,c('Murder','UrbanPop')]
-colnames(xy) <- c('y','x')
-
-reg <- lm(y~x, dat=xy)
-
-## T-values
-b <- coef(reg)
-se_b <- sqrt(diag(vcov(reg)))
-t_b <- b/se_b
-
-## P-values
-k <- reg$df.residual
-p <- (1-pt(abs(t_b), k))*2
-p <- pt(-t_b, k) + (1-pt(t_b, k))
-
-#PT_r <- pwrss::power.t.test(T_r, df=k, plot=FALSE, alpha=0.05)
-PT_r <- 1 -
-    pt( qt(alpha/2, df=k), df=k, ncp=abs(T_r), lower.tail=F) +
-    pt( qt(alpha/2, df=k, lower.tail=F), df=k, ncp=abs(T_r), lower.tail=F)
-1 - pt( qt(1-alpha/2, df=k)-abs(T_r), df=k) + pt( qt(alpha/2, df=k)-abs(T_r), df=k)
-``` 
-
-#### Endogeneity
-
-```{r}
-## Theoretical Relationship
-x <- c(-1,1)/2
-y <- c(0,0)
-plot.new()
-plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1))
-s <- seq(length(x)-1)
-arrows(x[1], y[1], x[2], y[2], code=2, lwd=2)
-text(c(-1,1), y, c("X","Y"), cex=2)
-```
-
-```{r}
-### Reverse Causation
-x <- c(-1,1)/2
-y <- c(0,0)
-plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1))
-arrows(x[1], y[1], x[2], y[2], code=1, lwd=2)
-text(c(-1,1), y, c("X","Y"), cex=2)
-```
-
-```{r}
-### Lurking/Confounding Variable
-x <- c(-1,0,1)/2
-y <- c(0,-1,0)/2
-plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1), ylim=c(-1,.2))
-arrows(x[1], y[1], x[2], y[2], code=1, lwd=2)
-arrows(x[3], y[3], x[2], y[2], code=1, lwd=2)
-text(c(-2/3,0,2/3), c(1/5,-2/3,1/5), c("X","Z","Y"), cex=2)
-```
-
-*Example 1:* Suppose you want to know how taxes affect economic prosperity.
-What are the issue with interpreting an empirical finding that higher $Taxes$ do not affect $GDP$ with data from Canada and Germany? Or across all countries for that matter?
-
-```{r}
-x <- c(-1,0,1)/2
-y <- c(0,-1,0)/2
-plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1), ylim=c(-1,.25))
-arrows(x[1], y[1], x[2]-.1, y[2], code=3, lwd=2)
-arrows(x[3], y[3], x[2]+.1, y[2], code=3, lwd=2)
-arrows(x[3], y[3]+.2, x[1], y[1]+.2, code=3, lwd=2)
-text(c(-2/3,0,2/3), c(1/5,-2/3,1/5), 
-    c("Taxes","Culture, Laws, Record Keeping","GDP"), cex=1.3)
-```
-
-*Example 2:* What do you think about this plot from (https://ourworldindata.org/grapher/share-of-population-with-cancer-vs-gdp)? Is money the root of all evil; our focus on wealth literally a cancer to society?
-
-*Example 3:* This map of cocaine (https://www.unodc.org/wdr2016/field/1.2.3._Prevalence_cocaine.pdf) usage looks a lot like GDP. Could it be that cocaine causes people to become rich, or rather that people in richer countries use more cocaine?
-
 
 
 ## Intermediate R
@@ -439,7 +403,7 @@ Update packages after new install,
     for loop checks for old packages and installs if not already installed. not from source
 
 
-#### RCPP
+#### Rcpp
 https://teuder.github.io/rcpp4everyone_en/
 http://adv-r.had.co.nz/Rcpp.html
 http://dirk.eddelbuettel.com/code/rcpp.examples.html (https://gallery.rcpp.org/)
@@ -529,8 +493,6 @@ https://community.rstudio.com/t/tikz-in-r-markdown-with-html-output/54260/2
 
 <!--f <- function(x) x^2-->
 <!--f1 <- Deriv::Deriv(f)-->
-
-<!--for more dimesniosn-->
 
 <!--optim-->
 <!--```-->

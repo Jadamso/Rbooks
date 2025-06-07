@@ -24,6 +24,6 @@ Although any interested reader may find it useful, this Rbook is primarily devel
 
 Please report any errors or issues at https://github.com/Jadamso/Rbooks/issues.
 
-Last updated: 16.04.2025
+Last updated: 07.06.2025
 
 
