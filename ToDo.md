@@ -1,9 +1,27 @@
 # To Do
 
 
+
+
 ## Bookdown
 
-Add title page
+Annotation
+https://web.hypothes.is/hypothesis-for-faculty-instructors/
+
+
+::: {.callout-tip, icon=false, collapse="true"}
+::: {.callout-note, icon=false, collapse="true"}
+::: {.callout-warning, icon=false, collapse="true"}
+::: {.callout-important, icon=false, collapse="true"}
+
+
+
+
+https://bookdown.org/yihui/bookdown/markdown-extensions-by-bookdown.html
+https://bookdown.org/yihui/bookdown/web-pages-and-shiny-apps.html
+https://bookdown.org/yihui/rmarkdown-cookbook/cache-path.html
+https://quarto.org/docs/output-formats/html-basics.html
+https://quarto.org/docs/dashboards/interactivity/observable.html
 
 knitr::include_url("https://sites.google.com/view/jordan-adamson/")
 
@@ -381,6 +399,13 @@ Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Lea
 
 
 
+Local Moran’s I maps "hot spots" and "cold spots" --- areas with strong positive or negative spatial correlation. High positive/negative values mean similar values cluster/anti-cluster.
+```{r}
+# Local Autocorrelation
+rast_moran <- autocor(luxembourg_elevation_raster, method='moran', global=F)
+colmap <- colorRampPalette(colors = c("darkblue", "lightgrey", "darkred"), bias=2.5)
+plot(rast_moran,col=colmap(100))
+```
 
 ## Intermediate R
 
