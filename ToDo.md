@@ -1,5 +1,6 @@
 # To Do
 
+## Big Picture 
 
 Style 
 
@@ -9,36 +10,42 @@ Style
 * Provide simple numerical examples for each mathematical expression
 * Each chapter ends with 3 questions.
 * Update the writing, as well as references/bibliography
+* Clean up all figures (axes, titles, legends, ...)
+
 
 Content
 
-* Add a little sampling theory and real-world applications to 4.3
-* Complete 11.4, 12.3 & 13.1
+* More introduction to R in Chapter 1
+* Add a little math about probabality distributions to the first part of section 4, plus a little sampling theory and real-world applications to 4.3
+* Add some theory about adjusted R2 and F-test to 11.4, also introduce J-test
+* Complete 12.4 (Regressograms) 
+* Complete 14.1 (Experimental Design)
 * Add semi-formal treatment of "Multiple Hypothesis Testing" to 15.1
-* Add some theory of adjusted R2 and F-test to 11.4, also introduce J-test (see 
+* Complete 16 Misc Topics.
 
 
+## Quarto/Bookdown (Specifics)
 
-
-
-## Quarto/Bookdown
-
-Annotation
+Add Annotation (quarto)
 https://web.hypothes.is/hypothesis-for-faculty-instructors/
 
 
 Callouts
-::: {.callout-tip, icon=false, collapse="true"}
-::: {.callout-note, icon=false, collapse="true"}
-::: {.callout-warning, icon=false, collapse="true"}
-::: {.callout-important, icon=false, collapse="true"}
+
+* ::: {.callout-tip, icon=false, collapse="true"}
+* ::: {.callout-note, icon=false, collapse="true"}
+* ::: {.callout-warning, icon=false, collapse="true"}
+* ::: {.callout-important, icon=false, collapse="true"}
 
 
-Notes
-::: {.aside}
-::: {.tip}
-::: {.background}
+Notes (custom code)
 
+* ::: {.aside}
+* ::: {.tip}
+* ::: {.background}
+
+
+See also 
 
 https://bookdown.org/yihui/bookdown/markdown-extensions-by-bookdown.html
 https://bookdown.org/yihui/bookdown/web-pages-and-shiny-apps.html
@@ -62,7 +69,7 @@ Note that Github repos must be public to deploy!
 https://bookdown.org/yihui/bookdown/github.html
 
 
-## Basic Statistics
+## Introduction to Data Analysis (Specifics)
 
 ? Coefficient of colligation
 
@@ -101,7 +108,7 @@ Data clean/merge
 
 
 
-## Multivariate Data
+## Introduction to Linear Regression (Specifics)
 
 Add interactive plots via https://plotly-r.com/
 
@@ -270,11 +277,9 @@ summary(reg)
 #### Diagnostics 
 
 Note that we can also calculate the leverage vector $H = [h_{1}, h_{2}, ...., h_{N}]$  directly from our OLS projection matrix $\hat{P}$, since $H=diag(\hat{P})$ and
-$$
-\hat{P}=X(X'X)^{-1}X'\\
-\hat{\epsilon}=y-X\hat{\beta}=y-X(X'X)^{-1}X'y=y-\hat{P}y\\
-\hat{P}y=X(X'X)^{-1}X'y=y-(y-X(X'X)^{-1}X'y)=y-\hat{\epsilon}=\hat{y}\\
-$$
+$\hat{P}=X(X'X)^{-1}X'$
+$\hat{\epsilon}=y-X\hat{\beta}=y-X(X'X)^{-1}X'y=y-\hat{P}y$
+$\hat{P}y=X(X'X)^{-1}X'y=y-(y-X(X'X)^{-1}X'y)=y-\hat{\epsilon}=\hat{y}$
 ```{r}
 Ehat <- Y - X%*% Bhat
 ## Ehat
