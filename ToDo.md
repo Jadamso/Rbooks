@@ -1,20 +1,43 @@
 # To Do
 
 
+Style 
+
+* Transfer to quarto and allow student annotation
+* Make R code use "cache" 
+* Add student callouts
+* Provide simple numerical examples for each mathematical expression
+* Each chapter ends with 3 questions.
+* Update the writing, as well as references/bibliography
+
+Content
+
+* Add a little sampling theory and real-world applications to 4.3
+* Complete 11.4, 12.3 & 13.1
+* Add semi-formal treatment of "Multiple Hypothesis Testing" to 15.1
+* Add some theory of adjusted R2 and F-test to 11.4, also introduce J-test (see 
 
 
-## Bookdown
+
+
+
+## Quarto/Bookdown
 
 Annotation
 https://web.hypothes.is/hypothesis-for-faculty-instructors/
 
 
+Callouts
 ::: {.callout-tip, icon=false, collapse="true"}
 ::: {.callout-note, icon=false, collapse="true"}
 ::: {.callout-warning, icon=false, collapse="true"}
 ::: {.callout-important, icon=false, collapse="true"}
 
 
+Notes
+::: {.aside}
+::: {.tip}
+::: {.background}
 
 
 https://bookdown.org/yihui/bookdown/markdown-extensions-by-bookdown.html
@@ -35,26 +58,13 @@ To Create from scratch, use a template ``bookdown::create_gitbook('index.Rmd')``
 * https://github.com/rstudio/bookdown
 * https://bookdown.org/pkaldunn/SRM-Textbook/
 
-Github repos must be public to deploy!
+Note that Github repos must be public to deploy!
 https://bookdown.org/yihui/bookdown/github.html
 
 
 ## Basic Statistics
 
-Make plots interactive via https://plotly-r.com/
-
-**Interpretation**
-https://easystats.github.io/report/
-
-**Github**
-* https://happygitwithr.com/classroom-overview.html
-* https://aeturrell.github.io/coding-for-economists/intro.html
-
-Coefficient of colligation
-
-
-
-#### Hypothesis Tests 
+? Coefficient of colligation
 
 Weighted means, quantiles, and variance
 ```{r}
@@ -77,127 +87,6 @@ https://seismo.berkeley.edu/~kirchner/Toolkits/Toolkit_12.pdf
 https://www.bookdown.org/rwnahhas/RMPH/survey-desc.html
 
 
-```{r}
-t_2sample <- function(x1, x2){
-    # Differences between means
-    m1 <- mean(x1)
-    m2 <- mean(x2)
-    d <- (m1-m2)
-    
-    # SE estimate
-    n1  <- length(x1)
-    n2  <- length(x2)
-    s1  <- var(x1)
-    s2  <- var(x2)
-    s   <- ((n1-1)*s1 + (n2-1)*s2)/(n1+n2-2)
-    d_se <- sqrt(s*(1/n1+1/n2))
-    
-    # t stat
-    t_stat <- d/d_se
-    return(t_stat)
-}
- 
-tstat <- twosam(data$male, data$female)
-tstat
-```
-
-
-
-
-#### Endogeneity
-
-```{r}
-## Theoretical Relationship
-x <- c(-1,1)/2
-y <- c(0,0)
-plot.new()
-plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1))
-s <- seq(length(x)-1)
-arrows(x[1], y[1], x[2], y[2], code=2, lwd=2)
-text(c(-1,1), y, c("X","Y"), cex=2)
-```
-
-```{r}
-### Reverse Causation
-x <- c(-1,1)/2
-y <- c(0,0)
-plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1))
-arrows(x[1], y[1], x[2], y[2], code=1, lwd=2)
-text(c(-1,1), y, c("X","Y"), cex=2)
-```
-
-```{r}
-### Lurking/Confounding Variable
-x <- c(-1,0,1)/2
-y <- c(0,-1,0)/2
-plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1), ylim=c(-1,.2))
-arrows(x[1], y[1], x[2], y[2], code=1, lwd=2)
-arrows(x[3], y[3], x[2], y[2], code=1, lwd=2)
-text(c(-2/3,0,2/3), c(1/5,-2/3,1/5), c("X","Z","Y"), cex=2)
-```
-
-*Example 1:* Suppose you want to know how taxes affect economic prosperity.
-What are the issue with interpreting an empirical finding that higher $Taxes$ do not affect $GDP$ with data from Canada and Germany? Or across all countries for that matter?
-
-```{r}
-x <- c(-1,0,1)/2
-y <- c(0,-1,0)/2
-plot(x,y, type='n', axes=F, ann=F, xlim=c(-1,1), ylim=c(-1,.25))
-arrows(x[1], y[1], x[2]-.1, y[2], code=3, lwd=2)
-arrows(x[3], y[3], x[2]+.1, y[2], code=3, lwd=2)
-arrows(x[3], y[3]+.2, x[1], y[1]+.2, code=3, lwd=2)
-text(c(-2/3,0,2/3), c(1/5,-2/3,1/5), 
-    c("Taxes","Culture, Laws, Record Keeping","GDP"), cex=1.3)
-```
-
-*Example 2:* What do you think about this plot from (https://ourworldindata.org/grapher/share-of-population-with-cancer-vs-gdp)? Is money the root of all evil; our focus on wealth literally a cancer to society?
-
-*Example 3:* This map of cocaine (https://www.unodc.org/wdr2016/field/1.2.3._Prevalence_cocaine.pdf) usage looks a lot like GDP. Could it be that cocaine causes people to become rich, or rather that people in richer countries use more cocaine?
-
-#### Power Analysis
-
-```{r, eval=F}
-# Two-Sided Test, based on theory
-# Symmetric Null Distribution: p_upper = 1 - p_upper
-# pt( -abs(jack_t), n-1) = 1-pt( abs(jack_t), n-1)
-# p <- 2*(1-pt(abs(jack_t), n-1) )
-```
-
-https://osf.io/zqphw/download
-The Essential Guide to Effect Sizes: Statistical Power, Meta-Analysis, and the Interpretation of Research Results
-https://online.stat.psu.edu/statprogram/reviews/statistical-concepts/power-analysis
-https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/power.html
-https://peopleanalytics-regression-book.org/power-tests.html
-
-https://aaroncaldwell.us/SuperpowerBook/
-
-
-
-Parametric P values and Power Analysis
-```{r}
-xy <- USArrests[,c("Murder","UrbanPop")]
-colnames(xy) <- c("y","x")
-
-reg <- lm(y~x, dat=xy)
-
-## T-values
-b <- coef(reg)
-se_b <- sqrt(diag(vcov(reg)))
-t_b <- b/se_b
-
-## P-values
-k <- reg$df.residual
-p <- (1-pt(abs(t_b), k))*2
-p <- pt(-t_b, k) + (1-pt(t_b, k))
-
-#PT_r <- pwrss::power.t.test(T_r, df=k, plot=FALSE, alpha=0.05)
-PT_r <- 1 -
-    pt( qt(alpha/2, df=k), df=k, ncp=abs(T_r), lower.tail=F) +
-    pt( qt(alpha/2, df=k, lower.tail=F), df=k, ncp=abs(T_r), lower.tail=F)
-1 - pt( qt(1-alpha/2, df=k)-abs(T_r), df=k) + pt( qt(alpha/2, df=k)-abs(T_r), df=k)
-```
-
-
 
 #### Data Analysis
 
@@ -214,9 +103,40 @@ Data clean/merge
 
 ## Multivariate Data
 
+Add interactive plots via https://plotly-r.com/
 
-#### GoF
+**Interpretation**
+https://easystats.github.io/report/
+
+
+#### Adjusted R2 (add to 10.4)
+https://davegiles.blogspot.com/2013/10/in-what-sense-is-adjusted-r-squared.html
+https://stats.stackexchange.com/questions/130069/what-is-the-distribution-of-r2-in-linear-regression-under-the-null-hypothesis
+Rencher, A. C., & Schaalje, G. B. (2008). Linear Models in Statistics (2nd ed.). Wiley. Chapter 5 (“The General Linear Model”), Section 5.6.2 (“Distribution of R2 under the Null Hypothesis”), which shows that under the null (all slopes zero) and Gaussian errors,
+
 https://statmodeling.stat.columbia.edu/2024/06/17/this-well-known-paradox-of-r-squared-is-still-buggin-me-can-you-help-me-out/
+
+#### F-Test (add to 10.4)
+ANOVA
+
+```{r}
+model0 <- lm(sr ~ 1, data = LifeCycleSavings) ## Null restricted model
+model1 <- lm(sr ~ 1 + pop15 , data = LifeCycleSavings) ## Alternative unrestricted model
+anova(model0, model1, test = "F")
+
+# Manual F-test
+rss0 <- sum(resid(model0)^2)
+rss1 <- sum(resid(model1)^2)
+df0  <- df.residual(model0)
+df1  <- df.residual(model1)
+F    <- ((rss0 - rss1)/(df0-df1)) / (rss1/df1)
+p    <- 1-pf(F, df0-df1, df1)
+cbind(F, p)
+```
+
+#### J-Test (add to 10.4)
+* https://bookdown.org/mike/data_analysis/non-nested-model-tests.html#sec-davidson--mackinnon-j-test
+
 
 
 #### Diminishing Returns
@@ -245,14 +165,18 @@ plot(Nseq[-1], abs(diff(SE)), pch=16, col=grey(0,.5), main='Marginal Gain',
 ```
 
 
-
 #### Derive Simple OLS
-
 
 * "Introduction to Econometrics with R" by Hanck, Arnold, Gerber, and Schmelzer, https://www.econometrics-with-r.org/
 (taking seriously Greene's "Model Building--A General to Simple Strategy")
 
-Note that we can compute classic estimates for variability: denoting the Standard Error of the Regression as $\hat{\sigma}$, and the Standard Error of the Coefficient Estimates as $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\beta}}~~$ (or simply Standard Errors).
+
+
+
+#### Parametric Variability Estimates and Hypothesis Tests [Under Construction]
+
+
+First note that we can compute classic estimates for variability: denoting the Standard Error of the Regression as $\hat{\sigma}$, and the Standard Error of the Coefficient Estimates as $\hat{\sigma}_{\hat{\alpha}}$ and $\hat{\sigma}_{\hat{\beta}}~~$ (or simply Standard Errors).
 $$
 \hat{\sigma}^2 = \frac{1}{n-2}\sum_{i}\hat{\epsilon_{i}}^2\\
 \hat{\sigma}^2_{\hat{\alpha}}=\hat{\sigma}^2\left[\frac{1}{n}+\frac{\bar{x}^2}{\sum_{i}(x_i-\bar{x})^2}\right]\\
@@ -260,10 +184,6 @@ $$
 $$
 These equations are motivated by particular data generating proceses, which you can read more about this at https://www.econometrics-with-r.org/4-lrwor.html.]
 
-
-
-
-#### Parametric Variability Estimates and Hypothesis Tests [Under Construction]
 
 In general, note that the linear model has
 $$
@@ -398,7 +318,6 @@ https://www.tandfonline.com/doi/full/10.1080/26939169.2023.2276446#d1e1498
 Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)
 
 
-
 Local Moran’s I maps "hot spots" and "cold spots" --- areas with strong positive or negative spatial correlation. High positive/negative values mean similar values cluster/anti-cluster.
 ```{r}
 # Local Autocorrelation
@@ -407,168 +326,3 @@ colmap <- colorRampPalette(colors = c("darkblue", "lightgrey", "darkred"), bias=
 plot(rast_moran,col=colmap(100))
 ```
 
-## Intermediate R
-
-For and while loops
-
-```{r}
-add2 = function(x, ...){
-  y <- x+2
-  dots = list(...)
-  print(dots)
-  return(y)
-}
-add2(1:4,
-    arg1=1:5,
-    "test stuff",
-    b="another", list(test_still=2))
-```
-
-Update packages after new install, 
-    for loop checks for old packages and installs if not already installed. not from source
-
-
-#### Rcpp
-https://teuder.github.io/rcpp4everyone_en/
-http://adv-r.had.co.nz/Rcpp.html
-http://dirk.eddelbuettel.com/code/rcpp.examples.html (https://gallery.rcpp.org/)
-
-```{r}
-library(Rcpp)
-cppFunction('int add(int x, int y, int z) {
-  int sum = x + y + z;
-  return sum;
-}')
-add(1, 2, 3)
-```
-
-```{r}
-library(Rcpp)
-cppFunction('
-double rcpp_sum(NumericVector v){
-    double sum = 0;
-    for(int i=0; i<v.length(); ++i){
-        sum += v[i];
-    }
-    return(sum);
-}
-')
-rcpp_sum(1:3)
-```
-
-
-Random Numbers
-https://teuder.github.io/rcpp4everyone_en/220_dpqr_functions.html
-https://en.cppreference.com/w/cpp/numeric/random
-
-Particle Filter
-https://dirk.eddelbuettel.com/code/rcpp.kalman.html
-https://dirk.eddelbuettel.com/code/rcpp.smc.html
-
-
-
-#### RReproducible
-
-- fill in /DataScientism_Poster
-- default /DataScientism_Slides to `output: ioslides_presentation`
-- remove dependance on "reshape2" package in all files
-- update links [RandRstudio](https://jadamso.github.io/Rbooks/01-RandRstudio.md)
-
-Add 
- - Screenshot of Rmarkdown
- - How to execute
- 
-Add Tikz Pictures
-https://community.rstudio.com/t/tikz-in-r-markdown-with-html-output/54260/2
-
-```{r}
-#install.packages("magick")
-#install.packages("pdftools")
-```
-
-```{tikz, fig.cap = "Funky tikz", fig.ext = 'png'}
-\usetikzlibrary{positioning}
-\usetikzlibrary{arrows}
-\usetikzlibrary{shapes}
-
-\begin{tikzpicture}[box/.style={draw,rounded corners,text width=2.5cm,align=center}]
-\node[box] (a) {Data Folder};
-\node[left=of a.170,font=\bfseries] (aux1) {Data Source 1};
-\node[left=of a.190,font=\bfseries] (aux2) {Data Source 2};
-\node[below=0cm of aux2]{ $\vdots$};
-\node[ellipse, below=of a, fill=lightgray, x radius=3.75cm, align=center,  y radius=2cm] (b) { Data Work \\ \{Clean, Analyze, ...\}} ;
-\node[box, below=of b, text width=4cm] (c) {Output Folder \\ \{Figures, Tables, ...\} };
-\node[right=of c,font=\bfseries] (d) {Final Document};
-\draw[->] (aux1) -- (a.170);
-\draw[->] (aux2) -- (a.190);
-\draw[->] (a) -- (b);
-\draw[->] (b) -- (c);
-\draw[->] (c) -- (d);
-\end{tikzpicture}
-```
-
-
-<!--```{r, error=TRUE}-->
-<!--https://cran.r-project.org/web/views/NumericalMathematics.html-->
-<!--https://cran.r-project.org/web/views/Optimization.html-->
-
-<!--    integrate() finds the area under the curve defined by f()-->
-<!--    uniroot() finds where f() hits zero-->
-<!--    optimise() finds the location of the lowest (or highest) value of f()-->
-
-<!--f <- function(x) x^2-->
-<!--f1 <- Deriv::Deriv(f)-->
-
-<!--optim-->
-<!--```-->
-
-
-
-
-<!--
-###  Quantitative Analysis of Almost Any Type of Data} 
-
-E.g., plotting galactic superclusters
-\vspace{.5\baselineskip}
-\includegraphics[scale=0.25, trim=0 5cm 0 5cm, clip=true]{./Figures/shapley.pdf}
-\vspace{-2\baselineskip}
-
-\begin{Rcode}{basicstyle=\tiny\ttfamily}
-library(spatstat)
-data(shapley)
-plot(shapley, pch=16, main="", cols=rgb(0,0,0,.1), cex=.4, use.marks=F)
-\end{Rcode}
-<<echo=TRUE, cache=FALSE, fig=TRUE, eval=TRUE>>=
-library(spatstat)
-data(shapley)
-plot(shapley, pch=16, main="", cols=rgb(0,0,0,.1), cex=.4, use.marks=F)
-@
-\vspace{-.5\baselineskip}
-
-\textbf{Physics and Chemistry:}
-Particle Simulations, DNA Sequences, Protein Folding\\
-\textbf{Biology:} 
-Human Brain Morphology, Insect Trajectories  \\
-{\footnotesize \texttt{bio3d:} 
-\url{http://thegrantlab.org/bio3d/tutorials/structure-analysis} \\
-\url{https://ecomorph.wordpress.com/2015/08/05/retinal-topography-maps-in-r/}} \\
-\textbf{Astronomy:} Map the Brightness of Galaxy Locations 
-{\footnotesize \url{https://asaip.psu.edu/resources/datasets}}
-\bash
-Rscript -e 'library(spatstat); data(shapley);  pdf("./shapley.pdf"); plot(unmark(shapley), pch=16, main = "", cols=rgb(0,0,0,.1), cex=.4 )'
-\END
-
-###  ... To Large Scale Observational Data ...}
-{\footnotesize \url{https://cran.r-project.org/web/views/MedicalImaging.html}}
-data(brains)
-shapes3d(brains$x[,,], type="dots", axes3=T)  ## 24 markers (x,y,z) for 59 people $
-
-\textbf{Social and Historical:} Income, Population, Crime, ... \\
-i.e. \footnotesize{\url{http://www.census.gov/did/www/saipe/data/statecounty/maps/iy2014/Tot_Pct_Poor2014.pdf}} \\
-i.e. \footnotesize{\url{http://lincolnmullen.com/projects/slavery/}}\\~\\
-
-\textbf{Ecology:} Global Temperatures, Soil Attributes, Land Use, ...\\
-https://benborgy.wordpress.com/
-i.e. \footnotesize{\url{https://benborgy.files.wordpress.com/2014/08/spatializemap_2.jpg}} \\
-i.e. \footnotesize{\url{http://esdac.jrc.ec.europa.eu/themes/global-data-other-initiatives}} \\
--->
