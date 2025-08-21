@@ -1,6 +1,6 @@
 # {#index .unnumbered}
 
-Last updated: 15.07.2025
+Last updated: 21.08.2025
 
 <img src="Figures_Manual/Logo.png" style="display:block; margin:auto;" width="100%"/>
 

@@ -59,7 +59,6 @@ My main sell to you is that being reproducible is in your own self-interest.
 
 * You found out Excel had some bugs in it's statistical calculations (see e.g., https://biostat.app.vumc.org/wiki/pub/Main/TheresaScott/StatsInExcel.TAScot.handout.pdf). You now use a new version of the spreadsheet
 * You're not sure you merged everything correctly. After much time and effort, most (but not all) of the numbers match exactly.
- 
 
 *2 years later*, your boss wants you to replicate: $\{ X_{1}, X_{2}, X_{3} \} \to Y_{1}$
 
@@ -119,18 +118,74 @@ sudo dnf install rstudio-desktop
 
 #### Interfacing with R {-}
 
-Rstudio is easiest to get going with. (There are other GUI's.) There are 4 panes. The top left is where you write and save code
+Rstudio is perhaps the easiest to get going with. (There are other GUI's.)
 
- * Create and save a new `R Script` file *My_First_Script.R*
- * could also use a plain .txt file.
+In Rstudio, there are 4 panes. (If you do not see 4, click "file > new file > R script" on the top left of the toolbar.)
+
+
 
 ```{r, echo=F}
 knitr::include_graphics("./Figures_Manual/Rstudio.svg")
 ```
 
-The pane below is where your code is executed. For all following examples, make sure to both execute and store your code.
 
-Note that the coded examples generally have objects, functions, and comments.
+The top left pane is where you write your code. For example, type
+```{r, eval=F}
+1+1
+```
+
+The pane below is where your code is executed. 
+Keep you mouse on the same line as your code, and then click "Run". 
+You should see
+```
+> 1+1
+[1] 2
+```
+If you click "Run" again, you should see that same output printed again.
+
+
+**Multiple Lines**
+
+You should add comments to your codes, and you do this with hashtags. For example
+```{r, eval=F}
+# This is my first comment!
+1+1 # The simplest calculation I could think of
+```
+You can execute each line one-at-a-time. 
+
+Or you can highlight them both, to take advantage of how R executes commands line by line.
+
+
+**Assignment**
+
+You can create "variables" that store values. For example,
+```{r, eval=F}
+x <- 1 # Make your first variable
+x + 1 # The simplest calculation I could think of
+```
+
+```{r, eval=F}
+x <- 23 #Another example
+x + 1
+```
+
+Your variables must be defined in order to use them. Otherwise you get an error. For example,
+```{r, eval=F}
+y + 1
+```
+
+**Scripting**
+
+* Save your `R Script` file as *My_First_Script.R*
+* re-run your entire script 
+
+As we proceed, you can see both my source scripts and output like this:
+```{r}
+x <- 1 # Make your first variable
+x + 1 # The simplest calculation I could think of
+```
+
+As you work through the material, make sure to both execute and save your scripts (with comments).
 
 
 ## Further Reading
@@ -174,9 +229,20 @@ For more on why to program in R, see
 ***
 
 
+
 ## Objects
 
-Vectors are probably your most common mathematical objects, which nest scalars as a special case. 
+In R: scalars, vectors, and matrices are different kinds of "objects". 
+
+These objects are used extensively in data analysis
+
+* scalars: summary statistics (average household income).
+* vectors: single variables in data sets (the household income of each family in Vancouver).
+* matrices: multiple variables in data sets (the age and education level of every person in class).
+
+
+Vectors are probably your most common object in R, but we will start with scalars (which are treated as a special case in R).
+
 
 #### **Scalars**. {-}
 
@@ -186,12 +252,15 @@ xs <- 2 # Make your first scalar
 xs  # Print the scalar
 ```
 
-Perform simple calculations
+Perform simple calculations and see how R is doing the math for you
 ```{r}
+xs + 2
+xs*2 # Perform and print a simple calculation
 (xs+1)^2 # Perform and print a simple calculation
 xs + NA # often used for missing values
-xs*2
 ```
+
+Now change `xs`, predict what will happen, then re-run the code.
 
 #### **Vectors**. {-}
 
@@ -532,6 +601,11 @@ d2c
 #class(d2c)
 ```
 
+Note that for theoretical analysis, the types are sometimes grouped differently as
+
+* continuous (continuous cardinal data)
+* discrete (discrete cardinal, ordered factor, and unordered factor data)
+
 #### **Other Types**. {-} 
 R also allows for more unstructured data types, such as *strings* and *lists*. You often combine all of the different data types into a single dataset called a *data.frame*
 ```{r}
@@ -599,7 +673,7 @@ rug(USArrests$Murder, col=grey(0,.5))
 ```
 
 
-Note that if you your data is discrete, you can directly plot the counts.
+Note that if you your data are factor data, or discrete cardinal data, you can directly plot the counts.
 ```{r, eval=F}
 x <- floor(USArrests$Murder) #Discretized
 plot(table(x), xlab='Murder Rate (Discrete)', ylab='Count')
@@ -815,7 +889,7 @@ Random variables are vectors that are generated from a known Cumulative Distribu
 * A *probability* for each particular set of outcomes, which is the proportion that those outcomes occur in the long run.
 
 
-There are many [probability distributions](https://en.wikipedia.org/wiki/List_of_probability_distributions), and the most common ones are [easily accessible](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html). But there are only two basic types of sample spaces: discrete and continuous, which lead to two types of random variables.
+There are many [probability distributions](https://en.wikipedia.org/wiki/List_of_probability_distributions), and the most common ones are [easily accessible](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html). But there are only two basic types of sample spaces: discrete (encompassing cardinal-discrete, factor-ordered, and factor-unordered data) and continuous, which lead to two types of random variables.
 
 
 ## Discrete
@@ -1171,131 +1245,99 @@ dx <- d_ugly1(X)
 lines(X, dx, col=1)
 ```
 
-## Associations
+# Probability Theory
 
-There are several ways to quantitatively describe the relationship between two variables, $Y$ and $X$. The major differences surround whether the variables are cardinal, ordinal, or categorical.
+You were already introduced to this with [https://jadamso.github.io/Rbooks/random-variables.html](random variables) and probability distributions. In this section, we will dig a little deeper theoretically into the statistics we are most likely to use in practice.
 
-#### **Correlation**. {-}
-**Pearson (Linear) Correlation**.
-Suppose $X$ and $Y$ are both cardinal data. As such, you can compute the most famous measure of association, the covariance:
+## Mean and Variance
+
+The mean and variance are probably the two most basic statistics we might compute, and are often used. To understand them better, we separately analyze how they are computed for discrete and continuous random variables.
+
+#### **Discrete**. {-} 
+If the sample space is discrete, we can compute the theoretical mean (or expected value) as
 $$
-C_{XY} =  \sum_{i} [X_i - \overline{X}] [Y_i - \overline{Y}] / N
+\mu = \sum_{i} x_{i} Prob(X=x_{i}),
 $$
-```{r}
-# Bivariate Data from USArrests
-xy <- USArrests[,c('Murder','UrbanPop')]
-#plot(xy, pch=16, col=grey(0,.25))
-cov(xy)
-```
-Note that $C_{XX}=V_{X}$.
-For ease of interpretation, we rescale this statistic to always lay between $-1$ and $1$ 
+where $Prob(X=x_{i})$ is the probability the random variable $X$ takes the particular value $x_{i}$. Similarly, we can compute the theoretical variance as
 $$
-r_{XY} = \frac{ C_{XY} }{ \sqrt{V_X} \sqrt{V_Y}}
+\sigma^2 = \sum_{i} [x_{i} - \mu]^2 Prob(X=x_{i}),
 $$
-```{r}
-cor(xy)[2]
-```
 
-**Falk Codeviance**.
-The Codeviance is a robust alternative to Covariance. Instead of relying on means (which can be sensitive to outliers), it uses medians ($\tilde{X}$) to capture the central tendency.^[See also *Theil-Sen Estimator*, which may be seen as a precursor.] We can also scale the Codeviance by the median absolute deviation to compute the median correlation.
-\[
-\text{CoDev}(X,Y) = \text{Med}\left\{ |X_i - \tilde{X}| |Y_i - \tilde{Y}| \right\} \\
-\tilde{r}_{XY} = \frac{ \text{CoDev}(X,Y) }{ \text{MAD}(X) \text{MAD}(Y) }.
-\]
-```{r}
-cor_m <- function(xy) {
-  # Compute medians for each column
-  med <- apply(xy, 2, median)
-  # Subtract the medians from each column
-  xm <- sweep(xy, 2, med, "-")
-  # Compute CoDev
-  CoDev <- median(xm[, 1] * xm[, 2])
-  # Compute the medians of absolute deviation
-  MadProd <- prod( apply(abs(xm), 2, median) )
-  # Return the robust correlation measure
-  return( CoDev / MadProd)
-}
-cor_m(xy)
-```
-
-#### **Kendall's Tau**. {-}
-Suppose $X$ and $Y$ are both *ordered* variables. Kendall's Tau measures the strength and direction of association by counting the number of concordant pairs (where the ranks agree) versus discordant pairs (where the ranks disagree). A value of \(\tau = 1\) implies perfect agreement in rankings, \(\tau = -1\) indicates perfect disagreement, and \(\tau = 0\) suggests no association in the ordering.
-\[
-\tau = \frac{2}{n(n-1)} \sum_{i} \sum_{j > i} \text{sgn} \Bigl( (X_i - X_j)(Y_i - Y_j) \Bigr),
-\]
-where the sign function is:
+For example, consider an unfair coin with a $.75$ probability of heads ($x_{i}=1$) and a $.25$ probability of tails ($x_{i}=0$) has a theoretical mean of 
 $$
-\text{sgn}(z) = 
-\begin{cases}
-+1 & \text{if } z > 0\\
-0  & \text{if } z = 0 \\
--1 & \text{if} z < 0 
-\end{cases}.
+\mu = 1\times.75 + 0 \times .25 = .75
 $$
-```{r}
-xy <- USArrests[,c('Murder','UrbanPop')]
-xy[,1] <- rank(xy[,1] )
-xy[,2] <- rank(xy[,2] )
-# plot(xy, pch=16, col=grey(0,.25))
-tau <- cor(xy[, 1], xy[, 2], method = "kendall")
-round(tau, 3)
-```
-
-#### **Cramer's V**. {-}
-Suppose $X$ and $Y$ are both *categorical* variables; the value of $X$ is one of $1...r$ categories and the value of $Y$ is one of $1...k$ categories. Cramer's V quantifies the strength of association by adjusting a "chi-squared" statistic to provide a measure that ranges from 0 to 1; 0 indicates no association while a value closer to 1 signifies a strong association. 
-
-First, consider a contingency table for $X$ and $Y$ with \(r\) rows and \(k\) columns. The chi-square statistic is then defined as:
-
-\[
-\chi^2 = \sum_{i=1}^{r} \sum_{j=1}^{k} \frac{(O_{ij} - E_{ij})^2}{E_{ij}}.
-\]
-
-where
-
-- \(O_{ij}\) denote the observed frequency in cell \((i, j)\),
-- \(E_{ij} = \frac{R_i \cdot C_j}{n}\) is the expected frequency for each cell if $X$ and $Y$ are independent
-- \(R_i\) denote the total frequency for row \(i\) (i.e., \(R_i = \sum_{j=1}^{k} O_{ij}\)),
-- \(C_j\) denote the total frequency for column \(j\) (i.e., \(C_j = \sum_{i=1}^{r} O_{ij}\)),
-- \(n\) be the grand total of observations, so that \(n = \sum_{i=1}^{r} \sum_{j=1}^{k} O_{ij}\).
-
-
-Second, normalize the chi-square statistic with the sample size and the degrees of freedom to compute Cramer's V. 
-
-\[
-V = \sqrt{\frac{\chi^2 / n}{\min(k - 1, \, r - 1)}},
-\]
-
-where:
-
-- \(n\) is the total sample size,
-- \(k\) is the number of categories for one variable,
-- \(r\) is the number of categories for the other variable.
-
+and a theoretical variance of 
+$$
+\sigma^2 = [1 - .75]^2 \times.75 + [0 - .75]^2 \times.25 = 0.1875
+$$
 
 ```{r}
-xy <- USArrests[,c('Murder','UrbanPop')]
-xy[,1] <- cut(xy[,1],3)
-xy[,2] <- cut(xy[,2],4)
-table(xy)
+x <- rbinom(10000, size=1, prob=.75)
 
-cor_v <- function(xy){
-    # Create a contingency table from the categorical variables
-    tbl <- table(xy)
-    # Compute the chi-square statistic (without Yates' continuity correction)
-    chi2 <- chisq.test(tbl, correct=FALSE)$statistic
-    # Total sample size
-    n <- sum(tbl)
-    # Compute the minimum degrees of freedom (min(rows-1, columns-1))
-    df_min <- min(nrow(tbl) - 1, ncol(tbl) - 1)
-    # Calculate Cramer's V
-    V <- sqrt((chi2 / n) / df_min)
-    return(V)
-}
-cor_v(xy)
+round( mean(x), 4)
 
-# DescTools::CramerV( table(xy) )
+round( var(x), 4)
 ```
 
+
+**Weighted Data**.
+Sometimes, you may have a dataset of values and probability weights. Othertimes, you can calculate them yourself. In either case, you can explicitly do the computations 
+
+```{r}
+# Compute probability weights for unique values
+h  <- table(x) #table of counts
+wt <- c(h)/length(x) #probabilities (must sum to 1)
+xt <- as.numeric(names(h)) #values
+# Weighted Mean
+xm <- sum(wt*xt)
+xm
+```
+
+Try computing the mean both ways for another random sample
+```{r}
+x  <-  sample(c(0,1,2), 1000, replace=T)
+```
+Try also computing a weighted variance
+```{r}
+# xv <- sum(wt * (x - xm)^2)/sum(wt)
+```
+
+#### **Continuous**. {-}
+If the sample space is continuous, we can compute the theoretical mean (or expected value) as
+$$
+\mu = \int x f(x) d x,
+$$
+where $f(x)$ is the probability the random variable takes the particular value $x$. Similarly, we can compute the theoretical variance as
+$$
+\sigma^2 = \int [x - \mu]^2 f(x) d x,
+$$
+For example, consider a random variable with a continuous uniform distribution over [-1, 1]. In this case, $f(x)=1/[1 - (-1)]=1/2$ for each $x$ in  [-1, 1] and 
+$$
+\mu = \int_{-1}^{1} \frac{x}{2} d x = \int_{-1}^{0} \frac{x}{2} d x + \int_{0}^{1} \frac{x}{2} d x = 0
+$$
+and 
+$$
+\sigma^2 = \int_{-1}^{1} x^2 \frac{1}{2} d x = \frac{1}{2} \frac{x^3}{3}|_{-1}^{1} = \frac{1}{6}[1 - (-1)] = 2/6 =1/3
+$$
+```{r}
+x <- runif(10000, -1,1)
+round( mean(x), 4)
+round( var(x), 4)
+```
+
+You can again explicitly do the computations with weighted data, but here we have an additional approximation error
+```{r}
+# values and probabilities
+h  <- hist(x, plot=F)
+wt <- h$counts/length(x) 
+xt <- h$mids
+# Weighted mean
+xm <- sum(wt*xt)
+xm
+
+# Compare to "mean(x)"
+```
 
 
 
@@ -1308,6 +1350,11 @@ Many random variables are related to each other
 * https://qiangbo-workspace.oss-cn-shanghai.aliyuncs.com/2018-11-11-common-probability-distributions/distab.pdf
 
 Note that numbers randomly generated on your computer cannot be truly random, they are "Pseudorandom".
+
+For weighted statistics, see
+
+* https://seismo.berkeley.edu/~kirchner/Toolkits/Toolkit_12.pdf
+* https://www.bookdown.org/rwnahhas/RMPH/survey-desc.html
 
 
 # (Re)Sampling 
@@ -1910,13 +1957,13 @@ x1 <- wage1[wage1$educ == 15, 'wage']
 x2 <- wage1[wage1$educ == 16, 'wage']
 ```
 
-For simplicity, we will assume that each $X_{is}$ is an independent observation. 
+For simplicity, we will assume that each observation is an independent observation. We will further assume the data from each group are normally distributed, but the mean and variance can be different across groups.
 
 ```{r}
-# Sample 1
+# Sample 1 (e.g., males)
 n1 <- 100
 x1 <- rnorm(n1, 0, 2)
-# Sample 2
+# Sample 2 (e.g., females)
 n2 <- 80
 x2 <- rnorm(n2, 1, 1)
 
@@ -1928,7 +1975,6 @@ hist(x1, border=NA, breaks=bks,
 hist(x2, border=NA, breaks=bks, 
     main='Sample 2', font.main=1)
 ```
-
 There may be several differences between these samples. Often, the first summary statistic we investigate is the difference in means. 
 
 #### **Equal Means**. {-}
@@ -2050,11 +2096,6 @@ abline(v=0, lwd=2, col=2)
 
 # Data Analysis
 ***
-
-
-
-
-
 
 ## Beyond Basics
 
@@ -2218,7 +2259,6 @@ We can use packages to access many different types of data. To read in a Stata d
 # R packages: wooldridge, causaldata, Ecdat, AER, ....
 ```
 
-
 #### **Cleaning Data**. {-}
 
 Data transformation is often necessary before analysis, so remember to be careful and check your code is doing what you want. (If you have large datasets, you can always test out the code on a sample.)
@@ -2339,9 +2379,7 @@ plot(y~x, xy_dat, pch=16, col=rgb(0,0,0,.05), cex=.5,
     xlab='', ylab='') # Format Axis Labels Seperately
 mtext( 'y=0.25 x + e\n e ~ standard-normal', 2, line=2.2)
 mtext( expression(x%in%~'[0,10]'), 1, line=2.2)
-
-abline( lm(y~x, data=xy_dat), lty=2)
-
+#abline( lm(y~x, data=xy_dat), lty=2)
 title('Plot with good features, but too excessive in several ways',
     adj=0, font.main=1)
 
@@ -2673,66 +2711,136 @@ If you are still lost, try one of the many online tutorials (such as these)
 
 
 
-# Probability Theory
+# Bivariate Data
 
-You were already introduced to this with [https://jadamso.github.io/Rbooks/random-variables.html](random variables) and probability distributions. In this section, we will dig a little deeper theoretically into the statistics we are most likely to use in practice.
 
-## Mean and Variance
+## Statistics for associations
 
-The mean and variance are probably the two most basic statistics we might compute, and are often used. To understand them better, we separately analyze how they are computed for discrete and continuous random variables.
+There are several ways to quantitatively describe the relationship between two variables, $Y$ and $X$. The major differences surround whether the variables are cardinal, ordinal, or categorical.
 
-#### **Discrete**. {-} 
-If the sample space is discrete, we can compute the theoretical mean (or expected value) as
+#### **Correlation**. {-}
+**Pearson (Linear) Correlation**.
+Suppose $X$ and $Y$ are both cardinal data. As such, you can compute the most famous measure of association, the covariance:
 $$
-\mu = \sum_{i} x_{i} Prob(X=x_{i}),
-$$
-where $Prob(X=x_{i})$ is the probability the random variable $X$ takes the particular value $x_{i}$. Similarly, we can compute the theoretical variance as
-$$
-\sigma^2 = \sum_{i} [x_{i} - \mu]^2 Prob(X=x_{i}),
-$$
-
-For example, consider an unfair coin with a $.75$ probability of heads ($x_{i}=1$) and a $.25$ probability of tails ($x_{i}=0$) has a theoretical mean of 
-$$
-\mu = 1\times.75 + 0 \times .25 = .75
-$$
-and a theoretical variance of 
-$$
-\sigma^2 = [1 - .75]^2 \times.75 + [0 - .75]^2 \times.25 = 0.1875
-$$
-
-```{r}
-x <- rbinom(10000, size=1, prob=.75)
-
-round( mean(x), 4)
-
-round( var(x), 4)
-```
-
-#### **Continuous**. {-}
-If the sample space is continuous, we can compute the theoretical mean (or expected value) as
-$$
-\mu = \int x f(x) d x,
-$$
-where $f(x)$ is the probability the random variable takes the particular value $x$. Similarly, we can compute the theoretical variance as
-$$
-\sigma^2 = \int [x - \mu]^2 f(x) d x,
-$$
-For example, consider a random variable with a continuous uniform distribution over [-1, 1]. In this case, $f(x)=1/[1 - (-1)]=1/2$ for each $x$ in  [-1, 1] and 
-$$
-\mu = \int_{-1}^{1} \frac{x}{2} d x = \int_{-1}^{0} \frac{x}{2} d x + \int_{0}^{1} \frac{x}{2} d x = 0
-$$
-and 
-$$
-\sigma^2 = \int_{-1}^{1} x^2 \frac{1}{2} d x = \frac{1}{2} \frac{x^3}{3}|_{-1}^{1} = \frac{1}{6}[1 - (-1)] = 2/6 =1/3
+C_{XY} =  \sum_{i} [X_i - \overline{X}] [Y_i - \overline{Y}] / N
 $$
 ```{r}
-x <- runif(10000, -1,1)
-round( mean(x), 4)
-round( var(x), 4)
+# Bivariate Data from USArrests
+xy <- USArrests[,c('Murder','UrbanPop')]
+#plot(xy, pch=16, col=grey(0,.25))
+cov(xy)
+```
+Note that $C_{XX}=V_{X}$.
+For ease of interpretation, we rescale this statistic to always lay between $-1$ and $1$ 
+$$
+r_{XY} = \frac{ C_{XY} }{ \sqrt{V_X} \sqrt{V_Y}}
+$$
+```{r}
+cor(xy)[2]
+```
+
+**Falk Codeviance**.
+The Codeviance is a robust alternative to Covariance. Instead of relying on means (which can be sensitive to outliers), it uses medians ($\tilde{X}$) to capture the central tendency.^[See also *Theil-Sen Estimator*, which may be seen as a precursor.] We can also scale the Codeviance by the median absolute deviation to compute the median correlation.
+\[
+\text{CoDev}(X,Y) = \text{Med}\left\{ |X_i - \tilde{X}| |Y_i - \tilde{Y}| \right\} \\
+\tilde{r}_{XY} = \frac{ \text{CoDev}(X,Y) }{ \text{MAD}(X) \text{MAD}(Y) }.
+\]
+```{r}
+cor_m <- function(xy) {
+  # Compute medians for each column
+  med <- apply(xy, 2, median)
+  # Subtract the medians from each column
+  xm <- sweep(xy, 2, med, "-")
+  # Compute CoDev
+  CoDev <- median(xm[, 1] * xm[, 2])
+  # Compute the medians of absolute deviation
+  MadProd <- prod( apply(abs(xm), 2, median) )
+  # Return the robust correlation measure
+  return( CoDev / MadProd)
+}
+cor_m(xy)
+```
+
+#### **Kendall's Tau**. {-}
+Suppose $X$ and $Y$ are both *ordered* variables. Kendall's Tau measures the strength and direction of association by counting the number of concordant pairs (where the ranks agree) versus discordant pairs (where the ranks disagree). A value of \(\tau = 1\) implies perfect agreement in rankings, \(\tau = -1\) indicates perfect disagreement, and \(\tau = 0\) suggests no association in the ordering.
+\[
+\tau = \frac{2}{n(n-1)} \sum_{i} \sum_{j > i} \text{sgn} \Bigl( (X_i - X_j)(Y_i - Y_j) \Bigr),
+\]
+where the sign function is:
+$$
+\text{sgn}(z) = 
+\begin{cases}
++1 & \text{if } z > 0\\
+0  & \text{if } z = 0 \\
+-1 & \text{if} z < 0 
+\end{cases}.
+$$
+```{r}
+xy <- USArrests[,c('Murder','UrbanPop')]
+xy[,1] <- rank(xy[,1] )
+xy[,2] <- rank(xy[,2] )
+# plot(xy, pch=16, col=grey(0,.25))
+tau <- cor(xy[, 1], xy[, 2], method = "kendall")
+round(tau, 3)
+```
+
+#### **Cramer's V**. {-}
+Suppose $X$ and $Y$ are both *categorical* variables; the value of $X$ is one of $1...r$ categories and the value of $Y$ is one of $1...k$ categories. Cramer's V quantifies the strength of association by adjusting a "chi-squared" statistic to provide a measure that ranges from 0 to 1; 0 indicates no association while a value closer to 1 signifies a strong association. 
+
+First, consider a contingency table for $X$ and $Y$ with \(r\) rows and \(k\) columns. The chi-square statistic is then defined as:
+
+\[
+\chi^2 = \sum_{i=1}^{r} \sum_{j=1}^{k} \frac{(O_{ij} - E_{ij})^2}{E_{ij}}.
+\]
+
+where
+
+- \(O_{ij}\) denote the observed frequency in cell \((i, j)\),
+- \(E_{ij} = \frac{R_i \cdot C_j}{n}\) is the expected frequency for each cell if $X$ and $Y$ are independent
+- \(R_i\) denote the total frequency for row \(i\) (i.e., \(R_i = \sum_{j=1}^{k} O_{ij}\)),
+- \(C_j\) denote the total frequency for column \(j\) (i.e., \(C_j = \sum_{i=1}^{r} O_{ij}\)),
+- \(n\) be the grand total of observations, so that \(n = \sum_{i=1}^{r} \sum_{j=1}^{k} O_{ij}\).
+
+
+Second, normalize the chi-square statistic with the sample size and the degrees of freedom to compute Cramer's V. 
+
+\[
+V = \sqrt{\frac{\chi^2 / n}{\min(k - 1, \, r - 1)}},
+\]
+
+where:
+
+- \(n\) is the total sample size,
+- \(k\) is the number of categories for one variable,
+- \(r\) is the number of categories for the other variable.
+
+
+```{r}
+xy <- USArrests[,c('Murder','UrbanPop')]
+xy[,1] <- cut(xy[,1],3)
+xy[,2] <- cut(xy[,2],4)
+table(xy)
+
+cor_v <- function(xy){
+    # Create a contingency table from the categorical variables
+    tbl <- table(xy)
+    # Compute the chi-square statistic (without Yates' continuity correction)
+    chi2 <- chisq.test(tbl, correct=FALSE)$statistic
+    # Total sample size
+    n <- sum(tbl)
+    # Compute the minimum degrees of freedom (min(rows-1, columns-1))
+    df_min <- min(nrow(tbl) - 1, ncol(tbl) - 1)
+    # Calculate Cramer's V
+    V <- sqrt((chi2 / n) / df_min)
+    return(V)
+}
+cor_v(xy)
+
+# DescTools::CramerV( table(xy) )
 ```
 
 
-## Bivariate Distributions
+## Bivariate Probability Theory
 Suppose we have two discrete variables $X_{1}$ and $X_{2}$.
 
 Their **joint distribution** is denoted as

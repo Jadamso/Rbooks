@@ -29,7 +29,6 @@ Content
 Add Annotation (quarto)
 https://web.hypothes.is/hypothesis-for-faculty-instructors/
 
-
 Callouts
 
 * ::: {.callout-tip, icon=false, collapse="true"}
@@ -43,7 +42,6 @@ Notes (custom code)
 * ::: {.aside}
 * ::: {.tip}
 * ::: {.background}
-
 
 See also 
 
@@ -71,28 +69,20 @@ https://bookdown.org/yihui/bookdown/github.html
 
 ## Introduction to Data Analysis (Specifics)
 
+linearity of expectation
+
 ? Coefficient of colligation
 
-Weighted means, quantiles, and variance
+Weighted quantiles
 ```{r}
- wt <- c(5,  5,  4,  1)
- x <- c(3.7,3.3,3.5,2.8)
- xm <- sum(wt*x)/sum(wt)
- v <- sum(wt * (x - xm)^2)/sum(wt)
- 
-weighted.mean
 spatstat.univar::weighted.quantile
     oo <- order(x)
     x <- x[oo]
     w <- w[oo]
     Fx <- cumsum(w)/sum(w)
     med_id <- max(which(Fx <= .5))+1
-    x[med_id]
-    
+    x[med_id] 
 ```
-https://seismo.berkeley.edu/~kirchner/Toolkits/Toolkit_12.pdf
-https://www.bookdown.org/rwnahhas/RMPH/survey-desc.html
-
 
 
 #### Data Analysis
@@ -105,7 +95,6 @@ Data clean/merge
  * by, with, subset, stack, switch
  * do.call, reduce
  * data.table, ...
-
 
 
 ## Introduction to Linear Regression (Specifics)
