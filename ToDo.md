@@ -1,6 +1,9 @@
 # To Do
 
-## Big Picture 
+## Quarto/Bookdown
+
+
+#### Big Picture 
 
 Style 
 
@@ -12,20 +15,7 @@ Style
 * Update the writing, as well as references/bibliography
 * Clean up all figures (axes, titles, legends, ...)
 
-
-Content
-
-* More introduction to R in Chapter 1
-* Add a little math about probabality distributions to the first part of section 4, plus a little sampling theory and real-world applications to 4.3
-* Add some theory about adjusted R2 and F-test to 11.4, also introduce J-test
-* Complete 12.4 (Regressograms) 
-* Complete 14.1 (Experimental Design)
-* Add semi-formal treatment of "Multiple Hypothesis Testing" to 15.1
-* Complete 16 Misc Topics.
-
-
-## Quarto/Bookdown (Specifics)
-
+#### Specifics 
 Add Annotation (quarto)
 https://web.hypothes.is/hypothesis-for-faculty-instructors/
 
@@ -69,9 +59,21 @@ https://bookdown.org/yihui/bookdown/github.html
 
 ## Introduction to Data Analysis (Specifics)
 
-linearity of expectation
 
-? Coefficient of colligation
+#### Big Picture
+
+* Add a little sampling theory (math) and real-world applications to 4.3
+
+#### Misc. Specifics?
+Linearity of expectation
+
+Data Transformation
+* The Box-Cox Transformation Technique: A Review
+
+https://plotly.com/r/splom/
+
+Other Metrics of association
+* ? Coefficient of colligation
 
 Weighted quantiles
 ```{r}
@@ -84,11 +86,6 @@ spatstat.univar::weighted.quantile
     x[med_id] 
 ```
 
-
-#### Data Analysis
-
-https://onlinelibrary.wiley.com/doi/10.1002/%28SICI%291099-1255%28199709/10%2912%3A5%3C533%3A%3AAID-JAE454%3E3.0.CO%3B2-V
-
 Add styling to interactive plots
 
 Data clean/merge
@@ -96,13 +93,20 @@ Data clean/merge
  * do.call, reduce
  * data.table, ...
 
+https://onlinelibrary.wiley.com/doi/10.1002/%28SICI%291099-1255%28199709/10%2912%3A5%3C533%3A%3AAID-JAE454%3E3.0.CO%3B2-V
 
-## Introduction to Linear Regression (Specifics)
 
-Add interactive plots via https://plotly-r.com/
+## Introduction to Linear Regression
 
-**Interpretation**
-https://easystats.github.io/report/
+#### Big Picture
+
+* Add some theory about adjusted R2 and F-test to 11.4, also introduce J-test
+* Complete 12.4 (Regressograms) 
+* Complete 14.1 (Experimental Design)
+* Add semi-formal treatment of "Multiple Hypothesis Testing" to 15.1
+* Complete 16 Misc Topics.
+* Add interactive plots via https://plotly-r.com/
+
 
 
 #### Adjusted R2 (add to 10.4)
@@ -111,6 +115,11 @@ https://stats.stackexchange.com/questions/130069/what-is-the-distribution-of-r2-
 Rencher, A. C., & Schaalje, G. B. (2008). Linear Models in Statistics (2nd ed.). Wiley. Chapter 5 (“The General Linear Model”), Section 5.6.2 (“Distribution of R2 under the Null Hypothesis”), which shows that under the null (all slopes zero) and Gaussian errors,
 
 https://statmodeling.stat.columbia.edu/2024/06/17/this-well-known-paradox-of-r-squared-is-still-buggin-me-can-you-help-me-out/
+
+**Interpretation**
+https://easystats.github.io/report/
+
+
 
 #### F-Test (add to 10.4)
 ANOVA

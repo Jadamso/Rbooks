@@ -122,12 +122,9 @@ Rstudio is perhaps the easiest to get going with. (There are other GUI's.)
 
 In Rstudio, there are 4 panes. (If you do not see 4, click "file > new file > R script" on the top left of the toolbar.)
 
-
-
 ```{r, echo=F}
 knitr::include_graphics("./Figures_Manual/Rstudio.svg")
 ```
-
 
 The top left pane is where you write your code. For example, type
 ```{r, eval=F}
@@ -896,7 +893,15 @@ There are many [probability distributions](https://en.wikipedia.org/wiki/List_of
 The random variable can take one of several values in a set. E.g., any number in $\{1,2,3,...\}$ or any letter in $\{A,B,C,...\}$.
 
 #### **Bernoulli.** {-}
-Coin Flip: Heads=1 or Tails=0, with Prob. Heads = 1/2
+Think of a Coin Flip: Heads=1 or Tails=0, with Prob. Heads = 1/2. In general, the probability can vary.
+
+$$X \in \{0,1\} \\
+Prob(X=0) = p \\
+Prob(X=1) = 1-p.
+$$
+
+**Example**.
+
 ```{r}
 rbinom(1, 1, 0.5) # 1 Flip
 rbinom(4, 1, 0.5) # 4 Flips
@@ -928,26 +933,58 @@ mtext('Overall Count', 2, line=2.5)
 ```
 
 #### **Discrete Uniform.** {-}
-Numbers 1,...4 with equal probability
+Numbers with equal probability
+$$X \in \{1,...N\} \\
+Prob(X=1) = Prob(X=2) = ... = Prob(X=N) = 1/N.
+$$
+
+**Example**.
+Suppose $N=4$. 
+
+The probability of a value smaller that $3$ is $P(X\leq 3)=1/4 + 1/4 + 1/4 = 3/4$.
+
+The probability of a value larger than $3$ is $1-P(X<3)=1/4$
+
+
 ```{r}
 # sample(1:4, 1, replace=T, prob=rep(1/4,4) ) # sample of 1
 x1 <- sample(1:4, 2000, replace=T, prob=rep(1/4,4))
 hist(x1, breaks=50, border=NA, main=NA, freq=T)
+
+# Alternative Plot
+#props <- table(x1)
+#barplot(props, ylim = c(0, 0.35), ylab = "Proportion", xlab = "Value")
+#abline(h = 1/4, lty = 2)
 ```
 
 #### **Multinoulli (aka Categorical).** {-}
-Numbers 1,...4 (or letters A,..D) with unequal probabilities
+Numbers 1,...4 (or letters A,..D) with unequal probabilities.
+
+**Example**.
+
 ```{r}
 x1 <- sample(1:4, 2000, replace=T, prob=c(3,4,1,2)/10) # sample of 2000,
 hist(x1, breaks=50, border=NA, main=NA, freq=T)
 ```
 
 ## Continuous
-The random variable can take one value out of an uncountably infinite number. 
+The random variable can take one value out of an uncountably infinite number. The probability of any individual point is zero.
 
 
 #### **Continuous Uniform.** {-}
 Any number between $[0,1]$, allowing for any number of decimal points, with every number having the same probability.
+$$F(x) = Prob(X \leq x) = \begin{cases} 
+0 & x < 0
+x & x \in [0,1]
+1 & x > 1.
+\end{cases}
+$$
+
+The probability of a value smaller that $0.25$ is $F(0.25)=0.25$.
+
+The probability of a value larger than $0.25$ is $1-F(0.25)=0.75$.
+
+The probability of a value being exactly $0.25$ is $Prob(X=0.25)=0$.
 
 ```{r}
 runif(3) # 3 draws
@@ -955,18 +992,22 @@ x2 <- runif(2000)
 hist(x2, breaks=20, border=NA, main=NA, freq=F)
 ```
 
+
+
 #### **Beta.** {-}
 Any number between $[0,1]$ with unequal probabilities. 
 ```{r}
 x3 <- rbeta(2000,2,2) ## two shape parameters
 hist(x3, breaks=20, border=NA, main=NA, freq=F)
 ```
+
 See the underlying probabilities
 ```{r}
 f_25 <- dbeta(.25, 2, 2)
 
 x <- seq(0,1,by=.1)
 fx <- dbeta(x, 2, 2)
+rbind(x, fx)
 ```
 
 Also see that the [Beta](https://en.wikipedia.org/wiki/Beta_distribution) distribution can take many different shapes.
@@ -984,7 +1025,8 @@ title('Beta densities', outer=T, line=-1)
 
 
 #### **Normal (Gaussian).** {-}
-Any number between $(\infty,\infty)$, with a bell shaped probabilities.
+Any number between $(\infty,\infty)$, with a bell shaped probabilities. 
+The distribution is complex, and not written here, but we will encounter it again and again.
 ```{r}
 rnorm(3) # 3 draws
 
@@ -995,7 +1037,6 @@ x <- seq(-10,10,by=.025)
 fx <- dnorm(x)
 lines(x, fx)
 ```
-We will encounter this distribution again and again.
 
 We might further distinguish types of random variables based on whether their maximum value is theoretically finite or infinite. We will return to the theory behind probability distributions in a later chapter. 
 
@@ -1007,7 +1048,6 @@ We might further distinguish types of random variables based on whether their ma
 There are several ways to computationally generate random variables from a probability distribution. Perhaps the most common one is ``inverse sampling'' for continuous random variables. 
 
 Continuous random variables have an associated quantile function: $Q_{X}(p)$, which is the inverse of the CDF: the $x$ value where $p$ percent of the data fall below it. (Recall that the median is the value $x$ where $50\%$ of the data fall below $x$, for example.) To generate a random variable, first sample $p$ from a uniform distribution and then find the associated quantile.
-
 
 Here is an in-depth example of drawing random variables from the [Dagum distribution](https://en.wikipedia.org/wiki/Dagum_distribution)
 ```{r, results='hide'}
@@ -1245,13 +1285,11 @@ dx <- d_ugly1(X)
 lines(X, dx, col=1)
 ```
 
-# Probability Theory
+## Probability Theory
 
 You were already introduced to this with [https://jadamso.github.io/Rbooks/random-variables.html](random variables) and probability distributions. In this section, we will dig a little deeper theoretically into the statistics we are most likely to use in practice.
 
-## Mean and Variance
-
-The mean and variance are probably the two most basic statistics we might compute, and are often used. To understand them better, we separately analyze how they are computed for discrete and continuous random variables.
+The mean and variance are probably the two most basic statistics we might compute, and are often used. To understand them theoretically, we separately analyze how they are computed for discrete and continuous random variables.
 
 #### **Discrete**. {-} 
 If the sample space is discrete, we can compute the theoretical mean (or expected value) as
@@ -1263,7 +1301,7 @@ $$
 \sigma^2 = \sum_{i} [x_{i} - \mu]^2 Prob(X=x_{i}),
 $$
 
-For example, consider an unfair coin with a $.75$ probability of heads ($x_{i}=1$) and a $.25$ probability of tails ($x_{i}=0$) has a theoretical mean of 
+**Example**. Consider an unfair coin with a $.75$ probability of heads ($x_{i}=1$) and a $.25$ probability of tails ($x_{i}=0$) has a theoretical mean of 
 $$
 \mu = 1\times.75 + 0 \times .25 = .75
 $$
@@ -1312,7 +1350,8 @@ where $f(x)$ is the probability the random variable takes the particular value $
 $$
 \sigma^2 = \int [x - \mu]^2 f(x) d x,
 $$
-For example, consider a random variable with a continuous uniform distribution over [-1, 1]. In this case, $f(x)=1/[1 - (-1)]=1/2$ for each $x$ in  [-1, 1] and 
+
+**Example**. Consider a random variable with a continuous uniform distribution over [-1, 1]. In this case, $f(x)=1/[1 - (-1)]=1/2$ for each $x$ in  [-1, 1] and 
 $$
 \mu = \int_{-1}^{1} \frac{x}{2} d x = \int_{-1}^{0} \frac{x}{2} d x + \int_{0}^{1} \frac{x}{2} d x = 0
 $$
@@ -1326,6 +1365,7 @@ round( mean(x), 4)
 round( var(x), 4)
 ```
 
+**Weighted Data**.
 You can again explicitly do the computations with weighted data, but here we have an additional approximation error
 ```{r}
 # values and probabilities
@@ -1340,27 +1380,47 @@ xm
 ```
 
 
-
 ## Further Reading
 
-Many random variables are related to each other
+Probability Theory
 
-* https://en.wikipedia.org/wiki/Relationships_among_probability_distributions
-* https://www.math.wm.edu/~leemis/chart/UDR/UDR.html
-* https://qiangbo-workspace.oss-cn-shanghai.aliyuncs.com/2018-11-11-common-probability-distributions/distab.pdf
-
-Note that numbers randomly generated on your computer cannot be truly random, they are "Pseudorandom".
+* [Refresher] https://www.khanacademy.org/math/statistics-probability/probability-library/basic-theoretical-probability/a/probability-the-basics
+* https://book.stat420.org/probability-and-statistics-in-r.html
+* https://bookdown.org/speegled/foundations-of-statistics/
+* https://math.dartmouth.edu/~prob/prob/prob.pdf
+* https://bookdown.org/probability/beta/discrete-random-variables.html
+* https://www.econometrics-with-r.org/2.1-random-variables-and-probability-distributions.html
+* https://probability4datascience.com/ch02.html
+* https://statsthinking21.github.io/statsthinking21-R-site/probability-in-r-with-lucy-king.html
+* https://bookdown.org/probability/statistics/
+* https://www.atmos.albany.edu/facstaff/timm/ATM315spring14/R/IPSUR.pdf
+* https://rc2e.com/probability
+* https://bookdown.org/probability/beta/
+* https://bookdown.org/a_shaker/STM1001_Topic_3/
+* https://bookdown.org/fsancier/bookdown-demo/
+* https://bookdown.org/kevin_davisross/probsim-book/
+* https://bookdown.org/machar1991/ITER/2-pt.html
+* https://www.atmos.albany.edu/facstaff/timm/ATM315spring14/R/IPSUR.pdf
+* https://math.dartmouth.edu/~prob/prob/prob.pdf
 
 For weighted statistics, see
 
 * https://seismo.berkeley.edu/~kirchner/Toolkits/Toolkit_12.pdf
 * https://www.bookdown.org/rwnahhas/RMPH/survey-desc.html
 
+Note that many random variables are related to each other
+
+* https://en.wikipedia.org/wiki/Relationships_among_probability_distributions
+* https://www.math.wm.edu/~leemis/chart/UDR/UDR.html
+* https://qiangbo-workspace.oss-cn-shanghai.aliyuncs.com/2018-11-11-common-probability-distributions/distab.pdf
+
+Also note that numbers randomly generated on your computer cannot be truly random, they are "Pseudorandom".
+
+
+
 
 # (Re)Sampling 
 ***
-
-
 
 ## Sample Distributions
 
@@ -2714,7 +2774,7 @@ If you are still lost, try one of the many online tutorials (such as these)
 # Bivariate Data
 
 
-## Statistics for associations
+## Statistics
 
 There are several ways to quantitatively describe the relationship between two variables, $Y$ and $X$. The major differences surround whether the variables are cardinal, ordinal, or categorical.
 
@@ -2840,7 +2900,7 @@ cor_v(xy)
 ```
 
 
-## Bivariate Probability Theory
+## Probability Theory
 Suppose we have two discrete variables $X_{1}$ and $X_{2}$.
 
 Their **joint distribution** is denoted as
@@ -2911,15 +2971,15 @@ Prob(X_{1} = 0, X_{2} = 1) &=& 0 \\
 Prob(X_{1} = 1, X_{2} = 0) &=& 0 \\
 Prob(X_{1} = 1, X_{2} = 1) &=& 1/2 .
 \end{eqnarray}
-Note that $\mathbf{1}(X_{1}=1) $ means $X_{1}= 1$ and $0$ if $X_{1}\neq0$.
+Note that $\mathbf{1}(X_{1}=1)$ means $X_{1}= 1$ and $0$ if $X_{1}\neq0$.
 The marginal distribution of the second coin is 
 \begin{eqnarray}
 Prob(X_{2} = 0) 
-&=& Prob(X_{2} = 0 | X_{1} = 0) Prob(X_{1}=0) + Prob(X_{2} = 0 | X_{1} = 1) Prob(X_{1}=1) \\
-&=& 1/2 \times 1 + 0 \times 1/2 = 1/2\\
+&=& Prob(X_{2} = 0 | X_{1} = 0) Prob(X_{1}=0) + Prob(X_{2} = 0 | X_{1} = 1) Prob(X_{1} = 1)\\
+&=& 1/2 \times 1 + 0 \times 1/2 = 1/2 .\\
 Prob(X_{2} = 1)
-&=& Prob(X_{2} = 1 | X_{1} =0) Prob( X_{1} = 0) + Prob(X_{2} = 1 | X_{1} = 1) Prob( X_{1} =1)\\
-&=& 0\times 1/2 + 1 \times 1/2 = 1/2
+&=& Prob(X_{2} = 1 | X_{1} =0) Prob( X_{1} = 0) + Prob(X_{2} = 1 | X_{1} = 1) Prob( X_{1} = 1)\\
+&=& 0\times 1/2 + 1 \times 1/2 = 1/2 .
 \end{eqnarray}
 which is the same as in the first example! Different joint distributions can have the same marginal distributions.
 
@@ -2950,8 +3010,10 @@ cond_X2_given_X1_unfair
 #### **Bayes' Theorem**. {-}
 Finally, note **Bayes' Theorem**:
 \begin{eqnarray}
-Prob(X_{1} = x_{1} | X_{2} = x_{2})  Prob( X_{2} = x_{2}) &=& Prob(X_{1} = x_{1}, X_{2} = x_{2}) = Prob(X_{2} = x_{2} | X_{1} = x_{1}) Prob(X_{1}=x_{1})\\
-Prob(X_{1} = x_{1} | X_{2} = x_{2}) &=& \frac{ Prob(X_{2} = x_{2} | X_{1} = x_{1}) Prob(X_{1}=x_{1}) }{ Prob( X_{2} = x_{2}) }
+Prob(X_{1} = x_{1} | X_{2} = x_{2})  Prob( X_{2} = x_{2}) 
+    &=& Prob(X_{1} = x_{1}, X_{2} = x_{2}) = Prob(X_{2} = x_{2} | X_{1} = x_{1}) Prob(X_{1} = x_{1}).\\
+Prob(X_{1} = x_{1} | X_{2} = x_{2})
+    &=& \frac{ Prob(X_{2} = x_{2} | X_{1} = x_{1}) Prob(X_{1}=x_{1}) }{ Prob( X_{2} = x_{2}) }.
 \end{eqnarray}
 ```{r}
 # Verify Bayes' theorem for the unfair coin case:
@@ -2972,24 +3034,12 @@ bayes_result
 
 Many introductory econometrics textbooks have a good appendix on probability and statistics. There are many useful texts online too
 
-* [Refresher] https://www.khanacademy.org/math/statistics-probability/probability-library/basic-theoretical-probability/a/probability-the-basics
+See the Further reading about Probability Theory in the Statistics chaper.
+
 * https://www.r-bloggers.com/2024/03/calculating-conditional-probability-in-r/
-* https://www.atmos.albany.edu/facstaff/timm/ATM315spring14/R/IPSUR.pdf
-* https://math.dartmouth.edu/~prob/prob/prob.pdf
-* https://bookdown.org/speegled/foundations-of-statistics/
-* https://bookdown.org/probability/beta/discrete-random-variables.html
-* https://www.econometrics-with-r.org/2.1-random-variables-and-probability-distributions.html
-* https://probability4datascience.com/ch02.html
-* https://rc2e.com/probability
-* https://book.stat420.org/probability-and-statistics-in-r.html
-* https://statsthinking21.github.io/statsthinking21-R-site/probability-in-r-with-lucy-king.html
-* https://bookdown.org/probability/statistics/
-* https://bookdown.org/probability/beta/
-* https://bookdown.org/a_shaker/STM1001_Topic_3/
-* https://bookdown.org/fsancier/bookdown-demo/
-* https://bookdown.org/kevin_davisross/probsim-book/
-* https://bookdown.org/machar1991/ITER/2-pt.html
-* https://www.atmos.albany.edu/facstaff/timm/ATM315spring14/R/IPSUR.pdf
-* https://math.dartmouth.edu/~prob/prob/prob.pdf
+
+
+Other Statistics 
+* https://cran.r-project.org/web/packages/qualvar/vignettes/wilcox1973.html
 
 
