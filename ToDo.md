@@ -3,20 +3,30 @@
 ## Quarto/Bookdown
 
 
-#### Big Picture 
+#### Big Picture
 
-Style 
-
-* Transfer to quarto and allow student annotation
-* Make R code use "cache" 
-* Add student callouts
+1. Increase Depth
 * Provide simple numerical examples for each mathematical expression
-* Each chapter ends with 3 questions.
+* Each chapter ends with 3 questions
+* Create exam questions
+2. Optimize document processing
+* Move from Rmarkdown to Quarto and allow student annotation online (hypothesis.is)
+* Make R code use "cache"
+3. Ease coding
+* Add student callouts 
+* Add code annotation in first chapter.
+4. Add materials
+* Create slides
+* Handout for students to use hypothesis.is (examples and nonexamples)
+5. Writing
 * Update the writing, as well as references/bibliography
 * Clean up all figures (axes, titles, legends, ...)
 
+
+
+
 #### Specifics 
-Add Annotation (quarto)
+Add Annotation (quarto + hypothesis.is)
 https://web.hypothes.is/hypothesis-for-faculty-instructors/
 
 Callouts
@@ -62,7 +72,24 @@ https://bookdown.org/yihui/bookdown/github.html
 
 #### Big Picture
 
+Ch 4.
 * Add a little sampling theory (math) and real-world applications to 4.3
+
+Ch 5. Statistics
+* Show cases when CLT breaks down: Infinite variance, strong dependence, ...
+
+Ch 6. (Re)Sampling
+* Value of new data for Bootstrap?
+
+Ch 7. Hypothesis Tests
+* Type I vs II errors. Power analysis
+
+Ch 8. 
+* Incorporate insights from "Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)" 
+
+Ch 9.
+* add "linearity of expectations" etc.?
+
 
 #### Misc. Specifics?
 Linearity of expectation
@@ -94,6 +121,35 @@ Data clean/merge
  * data.table, ...
 
 https://onlinelibrary.wiley.com/doi/10.1002/%28SICI%291099-1255%28199709/10%2912%3A5%3C533%3A%3AAID-JAE454%3E3.0.CO%3B2-V
+
+
+Add Other Datasets:
+
+* https://pages.stern.nyu.edu/~wgreene/Text/Edition7/tablelist8new.htm
+* https://www.ssc.wisc.edu/~bhansen/econometrics/Econometrics%20Data.zip
+* API's from the UScensus or worldbank
+* use a classic package like "AER", "Ecdat", "wooldridge", "causaldata" "np". 
+* see the list by https://vincentarelbundock.github.io/Rdatasets/datasets.html
+
+
+Build on other Examples
+
+* https://github.com/sta210-fa22/website
+* https://github.com/sta199-summer-1/sta199-summer-1.github.io
+* https://github.com/vizdata-s23/vizdata-s23
+* https://github.com/atheobold/stat-313-website
+* https://bookdown.org/probability/statistics/testing.html#two-sample-testing
+* https://book.stat420.org/probability-and-statistics-in-r.html#two-sample-t-test-example
+* https://openstax.org/books/introductory-statistics-2e/pages/10-introduction
+* https://bookdown.org/yihui/rmarkdown-cookbook/eng-stata.html
+* https://jjallaire.github.io/hopr/
+* https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/
+* https://online.stat.psu.edu/statprogram/
+* https://www.coursera.org/learn/stanford-statistics
+* https://www.helmholtz-munich.de/en/core-facility-overview/statistical-consulting/introduction-to-statistics
+* https://onlinestatbook.com/Online_Statistics_Education.pdf
+* https://openstax.org/books/introductory-statistics-2e/pages/1-introduction
+* https://www.edx.org/learn/statistics
 
 
 ## Introduction to Linear Regression
