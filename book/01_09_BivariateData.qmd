@@ -1,0 +1,273 @@
+
+# Bivariate Data
+***
+
+## Statistics
+
+There are several ways to quantitatively describe the relationship between two variables, $Y$ and $X$. The major differences surround whether the variables are cardinal, ordinal, or categorical.
+
+#### **Correlation**. {-}
+**Pearson (Linear) Correlation**.
+Suppose $X$ and $Y$ are both cardinal data. As such, you can compute the most famous measure of association, the covariance:
+$$
+C_{XY} =  \sum_{i} [X_i - \overline{X}] [Y_i - \overline{Y}] / N
+$$
+```{r}
+# Bivariate Data from USArrests
+xy <- USArrests[,c('Murder','UrbanPop')]
+#plot(xy, pch=16, col=grey(0,.25))
+cov(xy)
+```
+Note that $C_{XX}=V_{X}$.
+For ease of interpretation, we rescale this statistic to always lay between $-1$ and $1$ 
+$$
+r_{XY} = \frac{ C_{XY} }{ \sqrt{V_X} \sqrt{V_Y}}
+$$
+```{r}
+cor(xy)[2]
+```
+
+**Falk Codeviance**.
+The Codeviance is a robust alternative to Covariance. Instead of relying on means (which can be sensitive to outliers), it uses medians ($\tilde{X}$) to capture the central tendency.^[See also *Theil-Sen Estimator*, which may be seen as a precursor.] We can also scale the Codeviance by the median absolute deviation to compute the median correlation.
+\[
+\text{CoDev}(X,Y) = \text{Med}\left\{ |X_i - \tilde{X}| |Y_i - \tilde{Y}| \right\} \\
+\tilde{r}_{XY} = \frac{ \text{CoDev}(X,Y) }{ \text{MAD}(X) \text{MAD}(Y) }.
+\]
+```{r}
+cor_m <- function(xy) {
+  # Compute medians for each column
+  med <- apply(xy, 2, median)
+  # Subtract the medians from each column
+  xm <- sweep(xy, 2, med, "-")
+  # Compute CoDev
+  CoDev <- median(xm[, 1] * xm[, 2])
+  # Compute the medians of absolute deviation
+  MadProd <- prod( apply(abs(xm), 2, median) )
+  # Return the robust correlation measure
+  return( CoDev / MadProd)
+}
+cor_m(xy)
+```
+
+#### **Kendall's Tau**. {-}
+Suppose $X$ and $Y$ are both *ordered* variables. Kendall's Tau measures the strength and direction of association by counting the number of concordant pairs (where the ranks agree) versus discordant pairs (where the ranks disagree). A value of \(\tau = 1\) implies perfect agreement in rankings, \(\tau = -1\) indicates perfect disagreement, and \(\tau = 0\) suggests no association in the ordering.
+\[
+\tau = \frac{2}{n(n-1)} \sum_{i} \sum_{j > i} \text{sgn} \Bigl( (X_i - X_j)(Y_i - Y_j) \Bigr),
+\]
+where the sign function is:
+$$
+\text{sgn}(z) = 
+\begin{cases}
++1 & \text{if } z > 0\\
+0  & \text{if } z = 0 \\
+-1 & \text{if} z < 0 
+\end{cases}.
+$$
+```{r}
+xy <- USArrests[,c('Murder','UrbanPop')]
+xy[,1] <- rank(xy[,1] )
+xy[,2] <- rank(xy[,2] )
+# plot(xy, pch=16, col=grey(0,.25))
+tau <- cor(xy[, 1], xy[, 2], method = "kendall")
+round(tau, 3)
+```
+
+#### **Cramer's V**. {-}
+Suppose $X$ and $Y$ are both *categorical* variables; the value of $X$ is one of $1...r$ categories and the value of $Y$ is one of $1...k$ categories. Cramer's V quantifies the strength of association by adjusting a "chi-squared" statistic to provide a measure that ranges from 0 to 1; 0 indicates no association while a value closer to 1 signifies a strong association. 
+
+First, consider a contingency table for $X$ and $Y$ with \(r\) rows and \(k\) columns. The chi-square statistic is then defined as:
+
+\[
+\chi^2 = \sum_{i=1}^{r} \sum_{j=1}^{k} \frac{(O_{ij} - E_{ij})^2}{E_{ij}}.
+\]
+
+where
+
+- \(O_{ij}\) denote the observed frequency in cell \((i, j)\),
+- \(E_{ij} = \frac{R_i \cdot C_j}{n}\) is the expected frequency for each cell if $X$ and $Y$ are independent
+- \(R_i\) denote the total frequency for row \(i\) (i.e., \(R_i = \sum_{j=1}^{k} O_{ij}\)),
+- \(C_j\) denote the total frequency for column \(j\) (i.e., \(C_j = \sum_{i=1}^{r} O_{ij}\)),
+- \(n\) be the grand total of observations, so that \(n = \sum_{i=1}^{r} \sum_{j=1}^{k} O_{ij}\).
+
+
+Second, normalize the chi-square statistic with the sample size and the degrees of freedom to compute Cramer's V. 
+
+\[
+V = \sqrt{\frac{\chi^2 / n}{\min(k - 1, \, r - 1)}},
+\]
+
+where:
+
+- \(n\) is the total sample size,
+- \(k\) is the number of categories for one variable,
+- \(r\) is the number of categories for the other variable.
+
+
+```{r}
+xy <- USArrests[,c('Murder','UrbanPop')]
+xy[,1] <- cut(xy[,1],3)
+xy[,2] <- cut(xy[,2],4)
+table(xy)
+
+cor_v <- function(xy){
+    # Create a contingency table from the categorical variables
+    tbl <- table(xy)
+    # Compute the chi-square statistic (without Yates' continuity correction)
+    chi2 <- chisq.test(tbl, correct=FALSE)$statistic
+    # Total sample size
+    n <- sum(tbl)
+    # Compute the minimum degrees of freedom (min(rows-1, columns-1))
+    df_min <- min(nrow(tbl) - 1, ncol(tbl) - 1)
+    # Calculate Cramer's V
+    V <- sqrt((chi2 / n) / df_min)
+    return(V)
+}
+cor_v(xy)
+
+# DescTools::CramerV( table(xy) )
+```
+
+
+## Probability Theory
+Suppose we have two discrete variables $X_{1}$ and $X_{2}$.
+
+Their **joint distribution** is denoted as
+\begin{eqnarray}
+Prob(X_{1} = x_{1}, X_{2} = x_{2})
+\end{eqnarray}
+The **conditional distributions** are defined as
+\begin{eqnarray}
+Prob(X_{1} = x_{1} | X_{2} = x_{2}) = \frac{ Prob(X_{1} = x_{1}, X_{2} = x_{2})}{ Prob( X_{2} = x_{2} )}\\
+Prob(X_{2} = x_{2} | X_{1} = x_{1}) = \frac{ Prob(X_{1} = x_{1}, X_{2} = x_{2})}{ Prob( X_{1} = x_{1} )}
+\end{eqnarray}
+The **marginal distributions** are then defined as
+\begin{eqnarray}
+Prob(X_{1} = x_{1}) = \sum_{x_{2}} Prob(X_{1} = x_{1} | X_{2} = x_{2}) Prob( X_{2} = x_{2} ) \\
+Prob(X_{2} = x_{2}) = \sum_{x_{1}} Prob(X_{2} = x_{2} | X_{1} = x_{1}) Prob( X_{1} = x_{1} ),
+\end{eqnarray}
+which is also known as the *law of total probability*.
+
+#### **Example: Fair Coin**. {-}
+For one example, Consider flipping two coins. Denoted each coin as $i \in \{1, 2\}$, and mark whether "heads" is face up; $X_{i}=1$ if Heads and $=0$ if Tails. Suppose both coins are "fair": $Prob(X_{1}=1)= 1/2$ and $Prob(X_{2}=1|X_{1})=1/2$, then the four potential outcomes have equal probabilities. The joint distribution is 
+\begin{eqnarray}
+Prob(X_{1} = x_{1}, X_{2} = x_{2}) &=& Prob(X_{1} = x_{1}) Prob(X_{2} = x_{2})\\
+Prob(X_{1} = 0, X_{2} = 0) &=& 1/2 \times 1/2 = 1/4 \\
+Prob(X_{1} = 0, X_{2} = 1) &=& 1/4 \\
+Prob(X_{1} = 1, X_{2} = 0) &=& 1/4 \\
+Prob(X_{1} = 1, X_{2} = 1) &=& 1/4 .
+\end{eqnarray}
+The marginal distribution of the second coin is 
+\begin{eqnarray}
+Prob(X_{2} = 0) &=& Prob(X_{2} = 0 | X_{1} = 0) Prob(X_{1}=0) + Prob(X_{2} = 0 | X_{1} = 1) Prob(X_{1}=1)\\
+&=& 1/2 \times 1/2 + 1/2 \times 1/2 = 1/2\\
+Prob(X_{2} = 1) &=& Prob(X_{2} = 1 | X_{1} = 0) Prob(X_{1}=0) + Prob(X_{2} = 1 | X_{1} = 1) Prob(X_{1}=1)\\
+&=& 1/2 \times 1/2 + 1/2 \times 1/2 = 1/2
+\end{eqnarray}
+
+```{r}
+# Create a 2x2 matrix for the joint distribution.
+# Rows correspond to X1 (coin 1), and columns correspond to X2 (coin 2).
+P_fair <- matrix(1/4, nrow = 2, ncol = 2)
+rownames(P_fair) <- c("X1=0", "X1=1")
+colnames(P_fair) <- c("X2=0", "X2=1")
+P_fair
+
+# Compute the marginal distributions.
+# Marginal for X1: sum across columns.
+P_X1 <- rowSums(P_fair)
+P_X1
+# Marginal for X2: sum across rows.
+P_X2 <- colSums(P_fair)
+P_X2
+
+# Compute the conditional probabilities Prob(X2 | X1).
+cond_X2_given_X1 <- matrix(0, nrow = 2, ncol = 2)
+for (j in 1:2) {
+  cond_X2_given_X1[, j] <- P_fair[, j] / P_X1[j]
+}
+rownames(cond_X2_given_X1) <- c("X2=0", "X2=1")
+colnames(cond_X2_given_X1) <- c("given X1=0", "given X1=1")
+cond_X2_given_X1
+```
+
+#### **Example: Unfair Coin**. {-}
+Consider a second example, where the second coin is "Completely Unfair", so that it is always the same as the first. The outcomes generated with a Completely Unfair coin are the same as if we only flipped one coin.
+\begin{eqnarray}
+Prob(X_{1} = x_{1}, X_{2} = x_{2}) &=& Prob(X_{1} = x_{1}) \mathbf{1}( x_{1}=x_{2} )\\
+Prob(X_{1} = 0, X_{2} = 0) &=& 1/2 \\
+Prob(X_{1} = 0, X_{2} = 1) &=& 0 \\
+Prob(X_{1} = 1, X_{2} = 0) &=& 0 \\
+Prob(X_{1} = 1, X_{2} = 1) &=& 1/2 .
+\end{eqnarray}
+Note that $\mathbf{1}(X_{1}=1)$ means $X_{1}= 1$ and $0$ if $X_{1}\neq0$.
+The marginal distribution of the second coin is 
+\begin{eqnarray}
+Prob(X_{2} = 0) 
+&=& Prob(X_{2} = 0 | X_{1} = 0) Prob(X_{1}=0) + Prob(X_{2} = 0 | X_{1} = 1) Prob(X_{1} = 1)\\
+&=& 1/2 \times 1 + 0 \times 1/2 = 1/2 .\\
+Prob(X_{2} = 1)
+&=& Prob(X_{2} = 1 | X_{1} =0) Prob( X_{1} = 0) + Prob(X_{2} = 1 | X_{1} = 1) Prob( X_{1} = 1)\\
+&=& 0\times 1/2 + 1 \times 1/2 = 1/2 .
+\end{eqnarray}
+which is the same as in the first example! Different joint distributions can have the same marginal distributions.
+
+
+```{r}
+# Create the joint distribution matrix for the unfair coin case.
+P_unfair <- matrix(c(0.5, 0, 0, 0.5), nrow = 2, ncol = 2, byrow = TRUE)
+rownames(P_unfair) <- c("X1=0", "X1=1")
+colnames(P_unfair) <- c("X2=0", "X2=1")
+P_unfair
+
+# Compute the marginal distribution for X2 in the unfair case.
+P_X2_unfair <- colSums(P_unfair)
+P_X1_unfair <- rowSums(P_unfair)
+
+# Compute the conditional probabilities Prob(X1 | X2) for the unfair coin.
+cond_X2_given_X1_unfair <- matrix(NA, nrow = 2, ncol = 2)
+for (j in 1:2) {
+  if (P_X1_unfair[j] > 0) {
+    cond_X2_given_X1_unfair[, j] <- P_unfair[, j] / P_X1_unfair[j]
+  }
+}
+rownames(cond_X2_given_X1_unfair) <- c("X2=0", "X2=1")
+colnames(cond_X2_given_X1_unfair) <- c("given X1=0", "given X1=1")
+cond_X2_given_X1_unfair
+```
+
+#### **Bayes' Theorem**. {-}
+Finally, note **Bayes' Theorem**:
+\begin{eqnarray}
+Prob(X_{1} = x_{1} | X_{2} = x_{2})  Prob( X_{2} = x_{2}) 
+    &=& Prob(X_{1} = x_{1}, X_{2} = x_{2}) = Prob(X_{2} = x_{2} | X_{1} = x_{1}) Prob(X_{1} = x_{1}).\\
+Prob(X_{1} = x_{1} | X_{2} = x_{2})
+    &=& \frac{ Prob(X_{2} = x_{2} | X_{1} = x_{1}) Prob(X_{1}=x_{1}) }{ Prob( X_{2} = x_{2}) }.
+\end{eqnarray}
+```{r}
+# Verify Bayes' theorem for the unfair coin case:
+# Compute Prob(X1=1 | X2=1) using the formula:
+#   Prob(X1=1 | X2=1) = [Prob(X2=1 | X1=1) * Prob(X1=1)] / Prob(X2=1)
+
+P_X1_1 <- 0.5
+P_X2_1_given_X1_1 <- 1  # Since coin 2 copies coin 1.
+P_X2_1 <- P_X2_unfair["X2=1"]
+
+bayes_result <- (P_X2_1_given_X1_1 * P_X1_1) / P_X2_1
+bayes_result
+```
+
+
+
+## Further Reading 
+
+Many introductory econometrics textbooks have a good appendix on probability and statistics. There are many useful texts online too
+
+See the Further reading about Probability Theory in the Statistics chaper.
+
+* https://www.r-bloggers.com/2024/03/calculating-conditional-probability-in-r/
+
+
+Other Statistics 
+* https://cran.r-project.org/web/packages/qualvar/vignettes/wilcox1973.html
+
+

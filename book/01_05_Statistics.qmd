@@ -1,0 +1,326 @@
+
+# Statistics
+***
+
+We often summarize distributions with *statistics*: functions of data. The most basic way to do this is with `summary`, whose values can all be calculated individually. (E.g., the "mean" computes the [sum of all values] divided by [number of values].) There are *many* other statistics.
+
+```{r}
+summary( runif(1000))
+summary( rnorm(1000) )
+```
+
+## Mean and Variance
+
+The most basic statistics summarize the center of a distribution and how far apart the values are spread.
+
+#### **Mean**. {-}
+Perhaps the most common statistic is the mean;
+$$\overline{X}=\frac{\sum_{i=1}^{N}X_{i}}{N},$$ where $X_{i}$ denotes the value of the $i$th observation.
+
+```{r}
+# compute the mean of a random sample
+x <- runif(100)
+hist(x, border=NA, main=NA)
+m <- mean(x)  #sum(x)/length(x)
+abline(v=m, col=2, lwd=2)
+title(paste0('mean= ', round(m,2)), font.main=1)
+```
+
+#### **Variance**.{-}
+Perhaps the second most common statistic is the variance: the average squared deviation from the mean
+$$V_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \overline{X}]^2}{N}.$$
+The standard deviation is simply $s_{X} = \sqrt{V_{X}}$.
+
+
+```{r}
+s <- sd(x) # sqrt(var(x))
+hist(x, border=NA, main=NA, freq=F)
+s_lh <- c(m - s,  m + s)
+abline(v=s_lh, col=4)
+text(s_lh, -.02,
+    c( expression(bar(X)-s[X]), expression(bar(X)+s[X])),
+    col=4, adj=0)
+title(paste0('sd= ', round(s,2)), font.main=1)
+```
+
+Note that a "corrected version" is used by R and many statisticians: $V_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \overline{X}]^2}{N-1}$.
+```{r}
+var(x)
+mean( (x - mean(x))^2 )
+```
+
+Together, these statistics summarize the central tendency and dispersion of a distribution. In some special cases, such as with the normal distribution, they completely describe the distribution. Other distributions are easier to describe with other statistics.
+
+
+## Other Center/Spread Statistics
+
+#### **Absolute Deviations**. {-}
+We can use the *Median* as a "robust alternative" to means. Recall that the $q$th quantile is the value where $q$ percent of the data are below and ($1-q$) percent are above. The median ($q=.5$) is the point where half of the data is lower values and the other half is higher.
+
+
+We can also use the *Interquartile Range* or *Median Absolute Deviation* as an alternative to variance. The first and third quartiles ($q=.25$ and $q=.75$) together measure is the middle 50 percent of the data. The size of that range (interquartile range: the difference between the quartiles) represents "spread" or "dispersion" of the data. The median absolute deviation also measures spread
+$$
+\tilde{X} = Med(X_{i}) \\
+MAD_{X} = Med\left( | X_{i} - \tilde{X} | \right).
+$$
+
+```{r}
+x <- rgeom(50, .4)
+x
+
+plot(table(x))
+
+#mean(x)
+median(x)
+
+#sd(x)
+#IQR(x) # diff( quantile(x, probs=c(.25,.75)))
+mad(x, constant=1) # median( abs(x - median(x)) )
+```
+
+Note that there other absolute deviations:
+```{r, eval=F}
+mean( abs(x - mean(x)) )
+mean( abs(x - median(x)) )
+median( abs(x - mean(x)) )
+```
+
+#### **Mode and Share Concentration**. {-}
+Sometimes, none of the above work well. With categorical data, for example, distributions are easier to describe with other statistics. The mode is the most common observation: the value with the highest observed frequency. We can also measure the spread/dispersion of the frequencies, or compare the highest frequency to the average frequency to measure concentration at the mode.
+
+```{r}
+# Draw 3 Random Letters
+K <- length(LETTERS)
+x_id <- rmultinom(3, 1, prob=rep(1/K,K))
+x_id
+
+# Draw Random Letters 100 Times
+x_id <- rowSums(rmultinom(100, 1, prob=rep(1/K,K)))
+x <- lapply(1:K, function(k){
+    rep(LETTERS[k], x_id[k])
+})
+x <- factor(unlist(x), levels=LETTERS)
+
+plot(x)
+
+tx <- table(x)
+# mode(s)
+names(tx)[tx==max(tx)]
+
+# freq. spread
+sx <- tx/sum(tx)
+sd(sx) # mad(sx)
+
+# freq. concentration 
+max(tx)/mean(tx)
+```
+
+## Shape Statistics
+
+Central tendency and dispersion are often insufficient to describe a distribution. To further describe shape, we can compute the "standard moments" skew and kurtosis, as well as other statistics.
+
+
+#### **Skewness**. {-}
+This captures how symmetric the distribution is.
+$$Skew_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \overline{X}]^3 / N}{ [s_{X}]^3 }$$
+
+
+```{r}
+x <- rweibull(1000, shape=1)
+hist(x, border=NA, main=NA, freq=F, breaks=20)
+
+skewness <-  function(x) {
+ x_bar <- mean(x)
+ m3 <- mean((x - x_bar)^3)
+ skew <- m3/(sd(x)^3)
+ return(skew)
+}
+
+skewness( rweibull(1000, shape=1))
+skewness( rweibull(1000, shape=10) )
+```
+
+#### **Kurtosis**. {-}
+This captures how many "outliers" there are.
+$$Kurt_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \overline{X}]^4 / N}{ [s_{X}]^4 }.$$
+
+```{r}
+x <- rweibull(1000, shape=1)
+boxplot(x, main=NA)
+
+kurtosis <- function(x) {  
+ x_bar <- mean(x)
+ m4 <- mean((x - x_bar)^4) 
+ kurt <- m4/(sd(x)^4) - 3  
+ return(kurt)
+}
+
+kurtosis( rweibull(1000, shape=1))
+kurtosis( rweibull(1000, shape=10) )
+```
+
+#### **Clusters/Gaps**. {-}
+You can also describe distributions in terms of how clustered the values are. Remember: *a picture is worth a thousand words*.
+
+```{r}
+# Number of Modes
+x <- rbeta(1000, .6, .6)
+hist(x, border=NA, main=NA, freq=F, breaks=20)
+
+# Random Number Generator 
+r_ugly1 <- function(n, theta1=c(-8,-1), theta2=c(-2,2), rho=.25){
+    omega   <- rbinom(n, size=1, rho)
+    epsilon <- omega * runif(n, theta1[1], theta2[1]) +
+        (1-omega) * rnorm(n, theta1[2], theta2[2])
+    return(epsilon)
+}
+# Large Sample
+par(mfrow=c(1,1))
+X <- seq(-12,6,by=.001)
+rx <- r_ugly1(1000000)
+hist(rx, breaks=1000,  freq=F, border=NA,
+    xlab="x", main='')
+```
+
+```{r, eval=F}
+# Show True Density
+d_ugly1 <- function(x, theta1=c(-8,-1), theta2=c(-2,2), rho=.25){
+    rho     * dunif(x, theta1[1], theta2[1]) +
+    (1-rho) * dnorm(x, theta1[2], theta2[2]) }
+dx <- d_ugly1(X)
+lines(X, dx, col=1)
+```
+
+## Probability Theory
+
+You were already introduced to this with [https://jadamso.github.io/Rbooks/random-variables.html](random variables) and probability distributions. In this section, we will dig a little deeper theoretically into the statistics we are most likely to use in practice.
+
+The mean and variance are probably the two most basic statistics we might compute, and are often used. To understand them theoretically, we separately analyze how they are computed for discrete and continuous random variables.
+
+#### **Discrete**. {-} 
+If the sample space is discrete, we can compute the theoretical mean (or expected value) as
+$$
+\mu = \sum_{i} x_{i} Prob(X=x_{i}),
+$$
+where $Prob(X=x_{i})$ is the probability the random variable $X$ takes the particular value $x_{i}$. Similarly, we can compute the theoretical variance as
+$$
+\sigma^2 = \sum_{i} [x_{i} - \mu]^2 Prob(X=x_{i}),
+$$
+
+**Example**. Consider an unfair coin with a $.75$ probability of heads ($x_{i}=1$) and a $.25$ probability of tails ($x_{i}=0$) has a theoretical mean of 
+$$
+\mu = 1\times.75 + 0 \times .25 = .75
+$$
+and a theoretical variance of 
+$$
+\sigma^2 = [1 - .75]^2 \times.75 + [0 - .75]^2 \times.25 = 0.1875
+$$
+
+```{r}
+x <- rbinom(10000, size=1, prob=.75)
+
+round( mean(x), 4)
+
+round( var(x), 4)
+```
+
+
+**Weighted Data**.
+Sometimes, you may have a dataset of values and probability weights. Othertimes, you can calculate them yourself. In either case, you can explicitly do the computations 
+
+```{r}
+# Compute probability weights for unique values
+h  <- table(x) #table of counts
+wt <- c(h)/length(x) #probabilities (must sum to 1)
+xt <- as.numeric(names(h)) #values
+# Weighted Mean
+xm <- sum(wt*xt)
+xm
+```
+
+Try computing the mean both ways for another random sample
+```{r}
+x  <-  sample(c(0,1,2), 1000, replace=T)
+```
+Try also computing a weighted variance
+```{r}
+# xv <- sum(wt * (x - xm)^2)/sum(wt)
+```
+
+#### **Continuous**. {-}
+If the sample space is continuous, we can compute the theoretical mean (or expected value) as
+$$
+\mu = \int x f(x) d x,
+$$
+where $f(x)$ is the probability the random variable takes the particular value $x$. Similarly, we can compute the theoretical variance as
+$$
+\sigma^2 = \int [x - \mu]^2 f(x) d x,
+$$
+
+**Example**. Consider a random variable with a continuous uniform distribution over [-1, 1]. In this case, $f(x)=1/[1 - (-1)]=1/2$ for each $x$ in  [-1, 1] and 
+$$
+\mu = \int_{-1}^{1} \frac{x}{2} d x = \int_{-1}^{0} \frac{x}{2} d x + \int_{0}^{1} \frac{x}{2} d x = 0
+$$
+and 
+$$
+\sigma^2 = \int_{-1}^{1} x^2 \frac{1}{2} d x = \frac{1}{2} \frac{x^3}{3}|_{-1}^{1} = \frac{1}{6}[1 - (-1)] = 2/6 =1/3
+$$
+```{r}
+x <- runif(10000, -1,1)
+round( mean(x), 4)
+round( var(x), 4)
+```
+
+**Weighted Data**.
+You can again explicitly do the computations with weighted data, but here we have an additional approximation error
+```{r}
+# values and probabilities
+h  <- hist(x, plot=F)
+wt <- h$counts/length(x) 
+xt <- h$mids
+# Weighted mean
+xm <- sum(wt*xt)
+xm
+
+# Compare to "mean(x)"
+```
+
+
+## Further Reading
+
+Probability Theory
+
+* [Refresher] https://www.khanacademy.org/math/statistics-probability/probability-library/basic-theoretical-probability/a/probability-the-basics
+* https://book.stat420.org/probability-and-statistics-in-r.html
+* https://bookdown.org/speegled/foundations-of-statistics/
+* https://math.dartmouth.edu/~prob/prob/prob.pdf
+* https://bookdown.org/probability/beta/discrete-random-variables.html
+* https://www.econometrics-with-r.org/2.1-random-variables-and-probability-distributions.html
+* https://probability4datascience.com/ch02.html
+* https://statsthinking21.github.io/statsthinking21-R-site/probability-in-r-with-lucy-king.html
+* https://bookdown.org/probability/statistics/
+* https://www.atmos.albany.edu/facstaff/timm/ATM315spring14/R/IPSUR.pdf
+* https://rc2e.com/probability
+* https://bookdown.org/probability/beta/
+* https://bookdown.org/a_shaker/STM1001_Topic_3/
+* https://bookdown.org/fsancier/bookdown-demo/
+* https://bookdown.org/kevin_davisross/probsim-book/
+* https://bookdown.org/machar1991/ITER/2-pt.html
+* https://www.atmos.albany.edu/facstaff/timm/ATM315spring14/R/IPSUR.pdf
+* https://math.dartmouth.edu/~prob/prob/prob.pdf
+
+For weighted statistics, see
+
+* https://seismo.berkeley.edu/~kirchner/Toolkits/Toolkit_12.pdf
+* https://www.bookdown.org/rwnahhas/RMPH/survey-desc.html
+
+Note that many random variables are related to each other
+
+* https://en.wikipedia.org/wiki/Relationships_among_probability_distributions
+* https://www.math.wm.edu/~leemis/chart/UDR/UDR.html
+* https://qiangbo-workspace.oss-cn-shanghai.aliyuncs.com/2018-11-11-common-probability-distributions/distab.pdf
+
+Also note that numbers randomly generated on your computer cannot be truly random, they are "Pseudorandom".
+
+
+

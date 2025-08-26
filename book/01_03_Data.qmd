@@ -1,0 +1,313 @@
+# Data
+***
+
+## Types
+
+#### **Basic Types**. {-}
+The two basic types of data are *cardinal* and *factor* data. We can further distinguish between whether cardinal data are discrete or continuous. We can also further distinguish between whether factor data are ordered or not
+
+* *Cardinal*: the difference between elements always mean the same thing. 
+    * Discrete: E.g., 2-1=3-2.
+    * Continuous: E.g., 2.11-1.4444=3.11-2.4444
+* *Factor*: the difference between elements does not always mean the same thing.
+    * Ordered: E.g., First place - Second place ?? Second place - Third place.
+    * Unordered (categorical): E.g., A - B ????
+
+
+Here are some examples
+```{r}
+d1d <- 1:3 # Cardinal data (Discrete)
+d1d
+#class(d1d)
+
+d1c <- c(1.1, 2/3, 3) # Cardinal data (Continuous)
+d1c
+#class(d1c)
+
+d2o <- factor(c('A','B','C'), ordered=T) # Factor data (Ordinal)
+d2o
+#class(d2o)
+
+d2c <- factor(c('Leipzig','Los Angeles','Logan'), ordered=F) # Factor data (Categorical)
+d2c
+#class(d2c)
+```
+
+Note that for theoretical analysis, the types are sometimes grouped differently as
+
+* continuous (continuous cardinal data)
+* discrete (discrete cardinal, ordered factor, and unordered factor data)
+
+#### **Other Types**. {-} 
+R also allows for more unstructured data types, such as *strings* and *lists*. You often combine all of the different data types into a single dataset called a *data.frame*
+```{r}
+c('hello world', 'hi mom')  # character strings
+
+list(d1c, d2c)  # lists
+
+# data.frames: your most common data type
+    # matrix of different data-types
+    # well-ordered lists
+d0 <- data.frame(y=d1c, x=d2c)
+d0
+```
+
+Note that strings are encounter in a variety of settings, and you often have to format them after reading them into R.^[We will not cover the statistical analysis of text in this course, but strings are amenable to statistical analysis.]
+```{r}
+# Strings
+paste( 'hi', 'mom')
+paste( c('hi', 'mom'), collapse='--')
+
+list(d1c, c('hello world'),
+    list(d1d, list('...inception...'))) # lists
+
+kingText <- "The king infringes the law on playing curling."
+gsub(pattern="ing", replacement="", kingText)
+# advanced usage
+#gsub("[aeiouy]", "_", kingText)
+#gsub("([[:alpha:]]{3})ing\\b", "\\1", kingText) 
+```
+See 
+
+* https://meek-parfait-60672c.netlify.app/docs/M1_R-intro_03_text.html
+* https://raw.githubusercontent.com/rstudio/cheatsheets/main/regex.pdf
+
+
+
+
+## Densities and Distributions
+
+#### **Initial Data Inspection**. {-}
+Regardless of the data types you have, you typically begin by inspecting your data by examining the first few observations.
+ 
+Consider, for example, historical data on crime in the US.
+
+```{r}
+head(USArrests)
+
+# Check NA values
+x <- c(1,NA,2,3)
+sum(is.na(x))
+```
+
+To further examine a particular variable, we look at its distribution. In what follows, we will denote the data for a single variable as $\{X_{i}\}_{i=1}^{N}$, where there are $N$ observations and $X_{i}$ is the value of the $i$th one.
+
+#### **Histogram Density Estimate**. {-}
+The histogram divides the range of $\{X_{i}\}_{i=1}^{N}$ into $L$ exclusive bins of equal-width $h=[\text{max}(X_{i}) - \text{min}(X_{i})]/L$, and counts the number of observations within each bin. We often scale the counts to interpret the numbers as a density. Mathematically, for an exclusive bin with midpoint $x$, we compute
+\begin{eqnarray}
+\widehat{f}_{HIST}(x) &=& \frac{  \sum_{i}^{N} \mathbf{1}\left( X_{i} \in \left[x-\frac{h}{2}, x+\frac{h}{2} \right) \right) }{N h}.
+\end{eqnarray}
+We compute $\widehat{f}_{HIST}(x)$ for each $x \in \left\{ \frac{\ell h}{2} + \text{min}(X) \right\}_{\ell=1}^{L}$.
+```{r}
+hist(USArrests$Murder, freq=F,
+    border=NA, main='', xlab='Murder Arrests')
+# Raw Observations
+rug(USArrests$Murder, col=grey(0,.5))
+```
+
+
+Note that if you your data are factor data, or discrete cardinal data, you can directly plot the counts.
+```{r, eval=F}
+x <- floor(USArrests$Murder) #Discretized
+plot(table(x), xlab='Murder Rate (Discrete)', ylab='Count')
+```
+
+#### **Empirical *Cumulative* Distribution Function**. {-}
+The ECDF counts the proportion of observations whose values $X_{i}$ are less than $x$; 
+\begin{eqnarray}
+\widehat{F}_{ECDF}(x) = \frac{1}{N} \sum_{i}^{N} \mathbf{1}(X_{i} \leq x) 
+\end{eqnarray}
+for each unique value of $x$ in the dataset.
+
+```{r}
+F_murder <- ecdf(USArrests$Murder)
+# proportion of murders < 10
+F_murder(10)
+# proportion of murders < x, for all x
+plot(F_murder, main='', xlab='Murder Arrests',
+    pch=16, col=grey(0,.5))
+```
+
+#### **Boxplots**. {-}
+Boxplots summarize the distribution of data using *quantiles*: the $q$th quantile is the value where $q$ percent of the data are below and ($1-q$) percent are above.
+
+* The "median" is the point where half of the data has lower values and the other half has higher values.
+* The "lower quartile" is the point where 25% of the data has lower values and the other 75% has higher values.
+* The "min" is the smallest value (or largest negative value if there are any) where 0% of the data has lower values.
+
+```{r}
+x <- USArrests$Murder
+
+# quantiles
+median(x)
+range(x)
+quantile(x, probs=c(0,.25,.5))
+
+# deciles are quantiles
+quantile(x, probs=seq(0,1, by=.1))
+```
+
+To compute quantiles, we sort the observations from smallest to largest as $X_{(1)}, X_{(2)},... X_{(N)}$, and then compute quantiles as $X_{ (q*N) }$. Note that $(q*N)$ is rounded and there are different ways to break ties.
+```{r}
+xo <- sort(x)
+xo
+
+# median
+xo[length(xo)*.5]
+quantile(x, probs=.5, type=4)
+
+# min
+xo[1]
+min(xo)
+quantile(xo,probs=0)
+```
+
+The boxplot shows the median (solid black line) and interquartile range ($IQR=$ upper quartile $-$ lower quartile; filled box),^[Technically, the upper and lower ``hinges'' use two different versions of the first and third quartile. See https://stackoverflow.com/questions/40634693/lower-and-upper-quartiles-in-boxplot-in-r] as well extreme values as outliers beyond the $1.5\times IQR$ (points beyond whiskers).
+
+```{r}
+boxplot(USArrests$Murder, main='', ylab='Murder Arrests')
+# Raw Observations
+stripchart(USArrests$Murder,
+    pch='-', col=grey(0,.5), cex=2,
+    vert=T, add=T)
+```
+
+## Joint Distributions
+
+Scatterplots are used frequently to summarize the joint relationship between two variables. They can be enhanced in several ways. As a default, use semi-transparent points so as not to hide any points (and perhaps see if your observations are concentrated anywhere).
+
+You can also add regression lines (and confidence intervals), although I will defer this until later.
+
+```{r}
+plot(Murder~UrbanPop, USArrests, pch=16, col=grey(0.,.5))
+
+# Add the line of best fit for pooled data
+#reg <- lm(Murder~UrbanPop, data=USArrests)
+#abline(reg, lty=2)
+```
+
+#### **Marginal Distributions**.{-}
+You can also show the distributions of each variable along each axis.
+
+```{r}
+# Setup Plot
+layout( matrix(c(2,0,1,3), ncol=2, byrow=TRUE),
+    widths=c(9/10,1/10), heights=c(1/10,9/10))
+
+# Scatterplot
+par(mar=c(4,4,1,1))
+plot(Murder~UrbanPop, USArrests, pch=16, col=rgb(0,0,0,.5))
+
+# Add Marginals
+par(mar=c(0,4,1,1))
+xhist <- hist(USArrests$UrbanPop, plot=FALSE)
+barplot(xhist$counts, axes=FALSE, space=0, border=NA)
+
+par(mar=c(4,0,1,1))
+yhist <- hist(USArrests$Murder, plot=FALSE)
+barplot(yhist$counts, axes=FALSE, space=0, horiz=TRUE, border=NA)
+```
+
+
+## Conditional Distributions
+
+It is easy to show how distributions change according to a third variable using data splits. E.g., 
+
+```{r}
+# Tailored Histogram 
+ylim <- c(0,8)
+xbks <-  seq(min(USArrests$Murder)-1, max(USArrests$Murder)+1, by=1)
+
+# Also show more information
+# Split Data by Urban Population above/below mean
+pop_mean <- mean(USArrests$UrbanPop)
+murder_lowpop <- USArrests[USArrests$UrbanPop< pop_mean,'Murder']
+murder_highpop <- USArrests[USArrests$UrbanPop>= pop_mean,'Murder']
+cols <- c(low=rgb(0,0,1,.75), high=rgb(1,0,0,.75))
+
+par(mfrow=c(1,2))
+hist(murder_lowpop,
+    breaks=xbks, col=cols[1],
+    main='Urban Pop >= Mean', font.main=1,
+    xlab='Murder Arrests',
+    border=NA, ylim=ylim)
+
+hist(murder_highpop,
+    breaks=xbks, col=cols[2],
+    main='Urban Pop < Mean', font.main=1,
+    xlab='Murder Arrests',
+    border=NA, ylim=ylim)
+```
+
+It is sometimes it is preferable to show the ECDF instead. And you can glue various combinations together to convey more information all at once
+
+```{r}
+par(mfrow=c(1,2))
+# Full Sample Density
+hist(USArrests$Murder, 
+    main='Density Function Estimate', font.main=1,
+    xlab='Murder Arrests',
+    breaks=xbks, freq=F, border=NA)
+
+# Split Sample Distribution Comparison
+F_lowpop <- ecdf(murder_lowpop)
+plot(F_lowpop, col=cols[1],
+    pch=16, xlab='Murder Arrests',
+    main='Distribution Function Estimates',
+    font.main=1, bty='n')
+F_highpop <- ecdf(murder_highpop)
+plot(F_highpop, add=T, col=cols[2], pch=16)
+
+legend('bottomright', col=cols,
+    pch=16, bty='n', inset=c(0,.1),
+    title='% Urban Pop.',
+    legend=c('Low (<= Mean)','High (>= Mean)'))
+```
+
+
+You can also split data into grouped boxplots in the same way
+```{r}
+layout( t(c(1,2,2)))
+boxplot(USArrests$Murder, main='',
+    xlab='All Data', ylab='Murder Arrests')
+
+# K Groups with even spacing
+K <- 3
+USArrests$UrbanPop_Kcut <- cut(USArrests$UrbanPop,K)
+Kcols <- hcl.colors(K,alpha=.5)
+boxplot(Murder~UrbanPop_Kcut, USArrests,
+    main='', col=Kcols,
+    xlab='Urban Population', ylab='')
+
+# 4 Groups with equal numbers of observations
+#Qcuts <- c(
+#    '0%'=min(USArrests$UrbanPop)-10*.Machine$double.eps,
+#    quantile(USArrests$UrbanPop, probs=c(.25,.5,.75,1)))
+#USArrests$UrbanPop_cut <- cut(USArrests$UrbanPop, Qcuts)
+#boxplot(Murder~UrbanPop_cut, USArrests, col=hcl.colors(4,alpha=.5))
+```
+
+You can also use size, color, and shape to further distinguish different conditional relationships.
+```{r}
+# High Assault Areas
+assault_high <- USArrests$Assault > median(USArrests$Assault)
+cols <- ifelse(assault_high, rgb(1,0,0,.5), rgb(0,0,1,.5))
+
+# Scatterplot
+# Show High Assault Areas via 'cex=' or 'pch='
+# Could further add regression lines for each data split
+plot(Murder~UrbanPop, USArrests, pch=16, col=cols)
+```
+
+
+
+## Further Reading 
+
+For plotting histograms and marginals, see 
+
+* https://www.r-bloggers.com/2011/06/example-8-41-scatterplot-with-marginal-histograms/
+* https://r-graph-gallery.com/histogram.html
+* https://r-graph-gallery.com/74-margin-and-oma-cheatsheet.html 
+* https://jtr13.github.io/cc21fall2/tutorial-for-scatter-plot-with-marginal-distribution.html.
+
+
