@@ -4,16 +4,19 @@ This book is a collection of primers on using R for econometrics.
 
 * The book is found at https://jadamso.github.io/Rbooks/
 * The source materials are found at https://github.com/Jadamso/Rbooks
-  * *index.Rmd* is the makefile
-  * *ToDo.md* hints at what's next
+* Things to fix/add are found at https://github.com/Jadamso/Rbooks/blob/main/ToDo.md
 
-To compile this book, navigate to the "book" directory, then compile via
+To compile this book, navigate to the root directory, then 
 
-    quarto preview
+    quarto preview book
     
 To publish online, 
 
-    quarto render
-    git add docs
-    git commit -m "Publish site to docs/"
+    quarto render book
+    git add .
+    git commit -m " "
     git push
+    
+To publish a tagged release, 
+
+    gh release create v0.0.2 --title "v0.0.2, for ECON 2320"
