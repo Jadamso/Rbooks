@@ -6,27 +6,25 @@
 #### Big Picture
 
 1. Increase Depth
-* Provide simple numerical examples for each mathematical expression
-* Each chapter ends with 3 questions
-* Create exam questions
-2. Optimize document processing
-* Move from Rmarkdown to Quarto and allow student annotation online (hypothesis.is)
-* Make R code use "cache"
-3. Ease coding
-* Add student callouts 
-* Add code annotation in first chapter.
-4. Add materials
-* Create slides
-* Handout for students to use hypothesis.is (examples and nonexamples)
-5. Writing
-* Update the writing, as well as references/bibliography
-* Clean up all figures (axes, titles, legends, ...)
+ * Provide simple numerical examples for each mathematical expression
+ * Each chapter ends with 3 questions
+ * Create exam questions
+2. Ease coding
+ * Add student callouts 
+ * Add code annotation in first chapter.
+3. Add materials
+ * Create slides
+ * Handout for students to use hypothesis.is (examples and nonexamples)
+4. Writing
+ * Update the writing
+ * Update references/bibliography
+ * Hyperlinks are valid
+ * Clean up all figures (axes, titles, legends, ...)
+ * Definitions are in italics, not quotes or bold, and capitalized. (Or maybe they should be colored, or in a callout box?)
+ * Chapter/section title, subsection, paragraph style. (Paragraphs, not subsection, are also italic and end in period.)
 
 
-
-
-#### Specifics 
-Add Annotation (quarto + hypothesis.is)
+#### Specifics
 https://web.hypothes.is/hypothesis-for-faculty-instructors/
 
 Callouts
@@ -83,12 +81,13 @@ Ch 6. (Re)Sampling
 
 Ch 7. Hypothesis Tests
 * Type I vs II errors. Power analysis
+* Fail to reject the null. Example with multiple hypothesis: can't rule out A, also can't rule out B.
 
 Ch 8. 
 * Incorporate insights from "Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)" 
 
 Ch 9.
-* add "linearity of expectations" etc.?
+* add empirical example of table with joint and marginal distributions
 
 
 #### Misc. Specifics?
@@ -96,6 +95,7 @@ Linearity of expectation
 
 Data Transformation
 * The Box-Cox Transformation Technique: A Review
+* Law of the Unconscious Statistician
 
 https://plotly.com/r/splom/
 
