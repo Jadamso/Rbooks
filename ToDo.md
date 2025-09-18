@@ -3,7 +3,7 @@
 ## Quarto/Bookdown
 
 
-#### Big Picture
+#### Big Picture Tasks
 
 1. Increase Depth
  * Provide simple numerical examples for each mathematical expression
@@ -22,6 +22,37 @@
  * Clean up all figures (axes, titles, legends, ...)
  * Definitions are in italics, not quotes or bold, and capitalized. (Or maybe they should be colored, or in a callout box?)
  * Chapter/section title, subsection, paragraph style. (Paragraphs, not subsection, are also italic and end in period.)
+5. Add content (2 chapters to the second part)
+6. Workflow optimization
+ * Publish using `gh-pages` branch to resolve compilation warning related to YAML file (output-dir: ../docs)
+
+
+
+#### Timeline
+
+Target 1: 4 Months (December)
+    * Setup Rbooks-companion github repo
+    * Add numerical examples, questions, and slides for Part I.
+
+Target 2: 8 Months (April)
+    * Refine existing materials on Rbooks-companion
+    * Add new materials to Rbooks-companion Part I
+    * Add content to Part II.
+    
+Target 3: 12 months
+    * Refine existing companion materials and start refining the textbook itself
+    * Ensure consistent style for definitions, italics, etc. for both Parts I + II.
+    * Create a draft bank of exam questions
+    
+Target 4: 16 Months
+    * Check and update references/bibliography for Parts I–II.
+    * Add code annotations in the first coding chapter and harmonize R code across the book.
+    * Add student handout and exercises for coding and other materials (e.g., using Hypothesis.is.)
+
+Target 5+: 36 Months
+    * Work shifts to shaping the textbook itself (new chapters, full integration)
+    * Refine the ToDo list together and complete it
+
 
 
 #### Specifics
