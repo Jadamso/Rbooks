@@ -23,7 +23,7 @@
  * Definitions are in italics, not quotes or bold, and capitalized. (Or maybe they should be colored, or in a callout box?)
  * Chapter/section title, subsection, paragraph style. (Paragraphs, not subsection, are also italic and end in period.)
 5. Add content (2 chapters to the second part)
-6. Workflow optimization
+6. Workflow optimization?
  * Publish using `gh-pages` branch to resolve compilation warning related to YAML file (output-dir: ../docs)
 
 

@@ -2,27 +2,30 @@
 # Random Variables
 ***
 
-In the last section we computed a distribution given the data, whereas now we generate data given the distribution.
+In the last section we computed a distribution given the data, whereas now we generate data given the distribution. 
 
 Random variables are vectors that are generated from a known Cumulative Distribution Function. They are a sample from a potentially infinite population with
 
 * A *sample space* which refers to the set of all possible outcomes.
 * A *probability* for each particular set of outcomes, which is the proportion that those outcomes occur in the long run.
 
+There are only two basic types of sample spaces: discrete (encompassing cardinal-discrete, factor-ordered, and factor-unordered data) and continuous, which lead to two types of random variables.
 
-There are many [probability distributions](https://en.wikipedia.org/wiki/List_of_probability_distributions), and the most common ones are [easily accessible](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html). But there are only two basic types of sample spaces: discrete (encompassing cardinal-discrete, factor-ordered, and factor-unordered data) and continuous, which lead to two types of random variables.
-
+However, each type of random variable has many [probability distributions](https://en.wikipedia.org/wiki/List_of_probability_distributions). The most common ones are [easily accessible](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html) and can be described using the cumulative distribution function
+\begin{eqnarray}
+F(x) &=& Prob(X_{i} \leq x).
+\end{eqnarray}
+In any case, probabilities must sum up to 1.
 
 ## Discrete
 The random variable can take one of several values in a set. E.g., any number in $\{1,2,3,...\}$ or any letter in $\{A,B,C,...\}$.
 
 #### **Bernoulli**. {-}
-Think of a Coin Flip: Heads=1 or Tails=0, with Prob. Heads = 1/2. In general, the probability can vary.
-
+Think of a Coin Flip: Heads=1 or Tails=0, with Probability Heads = 1/2. In general, the probability can vary.
 \begin{eqnarray}
-X &\in& \{0,1\} \\
-Prob(X=0) &=& p \\
-Prob(X=1) &=& 1-p.
+X_{i} &\in& \{0,1\} \\
+Prob(X_{i} =0) &=& p \\
+Prob(X_{i} =1) &=& 1-p.
 \end{eqnarray}
 
 Here is an example
@@ -30,10 +33,7 @@ Here is an example
 ```{r}
 rbinom(1, 1, 0.5) # 1 Flip
 rbinom(4, 1, 0.5) # 4 Flips
-x0 <- rbinom(600, 1, 0.5)
-
-# Setup Plot
-layout(matrix(c(1, 2), nrow = 1), widths = c(4, 1))
+x0 <- rbinom(400, 1, 0.5)
 
 # Plot Cumulative Averages
 x0_t <- seq_len(length(x0))
@@ -44,66 +44,92 @@ plot(x0_t, x0_mt, type='l',
     xlab='Flip #', 
     ylim=c(0,1), 
     lwd=2)
+# Add individual flip outcomes
 points(x0_t, x0, col=grey(0,.5),
-    pch=16, cex=.2)
+    pch='|', cex=.3)
 
 # Plot Long run proportions
-par(mar=c(4,4,1,1))
-x_hist <- hist(x0, breaks=50, plot=F)
-barplot(x_hist$count, axes=FALSE,
-    space=0, horiz=TRUE, border=NA)
-axis(1)
-axis(2)
-mtext('Overall Count', 2, line=2.5)
+hist(x0, breaks=50,
+    xlab='Flip Outcome', ylab='Count',
+    border=NA, main=NA)
+## plot( table(x0)/length(x0) )
 ```
 
+
 #### **Discrete Uniform**. {-}
-Numbers with equal probability
+Discrete numbers with equal probability
 \begin{eqnarray}
-X &\in& \{1,...N\} \\
-Prob(X=1) &=& Prob(X=2) = ... = Prob(X=N) = 1/N.
+X_{i} &\in& \{1,...N\} \\
+Prob(X_{i} =1) &=& Prob(X_{i} =2) = ... = 1/N.
 \end{eqnarray}
 
-Here is an example with  $N=4$. 
+Here is an example with $N=4$. 
 
-The probability of a value smaller that $3$ is $P(X\leq 3)=1/4 + 1/4 + 1/4 = 3/4$.
+The probability of a value smaller that $3$ is $Prob(X_{i} \leq 3)=1/4 + 1/4 + 1/4 = 3/4$.
 
-The probability of a value larger than $3$ is $1-P(X<3)=1/4$
+The probability of a value larger than $3$ is $1-Prob(X_{i} \leq3)=1/4$
 
 
 ```{r}
-# sample(1:4, 1, replace=T, prob=rep(1/4,4) ) # sample of 1
-x1 <- sample(1:4, 2000, replace=T, prob=rep(1/4,4))
-hist(x1, breaks=50, border=NA, main=NA, freq=T)
+x <- 1:4
+x_probs <- rep(1/4,4)
+# sample(x, 1, replace=T, prob=x_probs) # sample of 1
+X1 <- sample(x, 2000, replace=T, prob=rep(1/4,4))
+hist(X1, breaks=50, border=NA,
+    main=NA, ylab='Count')
+
+# Add Theoretical Counts
+#points(x, x_probs*length(X1), pch='-') 
 
 # Alternative Plot
-#props <- table(x1)
+plot( ecdf(X1), pch=16, col=grey(0,.5), main=NA)
+
+# Alternative Plot 2
+#props <- table(X1)
 #barplot(props, ylim = c(0, 0.35), ylab = "Proportion", xlab = "Value")
 #abline(h = 1/4, lty = 2)
 ```
 
 #### **Multinoulli (aka Categorical)**. {-}
-Numbers 1,...4 (or letters A,..D) with unequal probabilities.
+Numbers 1,...N (or letters A,...) with unequal probabilities.
+\begin{eqnarray}
+X_{i} &\in& \{1,...N\} \\
+Prob(X_{i} =1) &=& p_{1} \\
+Prob(X_{i} =2) &=& p_{2} \\
+        &\vdots& \\
+p_{1} + p_{2} + ... &=& 1
+\end{eqnarray}
 
-Here is an example
+
+Here is an empirical example with three outcomes
 
 ```{r}
-x1 <- sample(1:4, 2000, replace=T, prob=c(3,4,1,2)/10) # sample of 2000,
-hist(x1, breaks=50, border=NA, main=NA, freq=T)
+x <- 1:3
+x_probs <- c(3,6,1)/10
+sum(x_probs)
+X1 <- sample(x, 2000, replace=T, prob=x_probs) # sample of 2000,
+hist(X1, breaks=50, border=NA, 
+    main=NA, ylab='Count')
+#points(x, x_probs*length(X1), pch=16) ## Theoretical Counts
+
+plot( ecdf(X1), pch=16, col=grey(0,.5), main=NA)
 ```
 
 ## Continuous
-The random variable can take one value out of an uncountably infinite number. The probability of any individual point is zero.
-
+The random variable can take one value out of an uncountably infinite number. The probability of any individual point is zero. We describe these variables with the cumulative distribution function $F$, or the probability density function $f$.
 
 #### **Continuous Uniform**. {-}
-Any number between $[0,1]$, allowing for any number of decimal points, with every number having the same probability.
-
+Any number on a unit interval allowing for any number of decimal points, with every number having the same probability.
 \begin{eqnarray}
-F(x) &=& Prob(X \leq x) = \begin{cases} 
+X_{i} &\in& [0,1] \\
+F(x) &=& \begin{cases} 
 0 & x < 0 \\
 x & x \in [0,1] \\
-1 & x > 1.
+1 & x > 1
+\end{cases}\\
+f(x) &=& \begin{cases}
+1 & x \in [0,1] \\
+0 & \text{Otherwise}. 
 \end{cases}
 \end{eqnarray}
 
@@ -111,30 +137,28 @@ The probability of a value smaller that $0.25$ is $F(0.25)=0.25$.
 
 The probability of a value larger than $0.25$ is $1-F(0.25)=0.75$.
 
-The probability of a value being exactly $0.25$ is $Prob(X=0.25)=0$.
+The probability of a value being exactly $0.25$ is $Prob(X_{i} =0.25)=0$.
 
 ```{r}
 runif(3) # 3 draws
-x2 <- runif(2000)
-hist(x2, breaks=20, border=NA, main=NA, freq=F)
+X2 <- runif(2000)
+hist(X2, breaks=20, border=NA, main=NA, freq=F)
 ```
 
 
 
 #### **Beta**. {-}
-Any number between $[0,1]$ with unequal probabilities. 
+Any number on the unit interval, $X_{i} \in [0,1]$, but with *unequal* probabilities. 
 ```{r}
-x3 <- rbeta(2000,2,2) ## two shape parameters
-hist(x3, breaks=20, border=NA, main=NA, freq=F)
-```
+X3 <- rbeta(2000,2,2) ## two shape parameters
+hist(X3, breaks=20, border=NA, main=NA, freq=F)
 
-See the underlying probabilities
-```{r}
-f_25 <- dbeta(.25, 2, 2)
+#See the underlying probabilities
+#f_25 <- dbeta(.25, 2, 2)
 
-x <- seq(0,1,by=.1)
+x <- seq(0,1,by=.01)
 fx <- dbeta(x, 2, 2)
-rbind(x, fx)
+lines(x, fx)
 ```
 
 Also see that the [Beta](https://en.wikipedia.org/wiki/Beta_distribution) distribution can take many different shapes.
@@ -155,13 +179,15 @@ title('Beta densities', outer=T, line=-1)
 
 
 #### **Normal (Gaussian)**. {-}
-Any number between $(\infty,\infty)$, with a bell shaped probabilities. 
-The distribution is complex, and not written here, but we will encounter it again and again.
+Any number between $(\infty,\infty)$, with bell shaped probabilities. 
+The distribution is mathematically complex, and not written here, but we will encounter it again and again.
 ```{r}
 rnorm(3) # 3 draws
 
-x3 <- rnorm(2000) 
-hist(x3, breaks=20, border=NA, main=NA, freq=F)
+X4 <- rnorm(2000)
+hist(X4, breaks=20,
+    border=NA, main=NA,
+    freq=F, ylim=c(0,.4), xlim=c(-4,4))
 
 x <- seq(-10,10,by=.025)
 fx <- dnorm(x)
@@ -174,50 +200,68 @@ We might further distinguish types of random variables based on whether their ma
 
 ## Drawing Samples
 
-#### **Using Computers**. {-}
-There are several ways to computationally generate random variables from a probability distribution. Perhaps the most common one is ``inverse sampling'' for continuous random variables. 
+There are several ways to computationally generate random variables from a probability distribution. Perhaps the most common one is ``inverse sampling''. 
 
-Continuous random variables have an associated quantile function: $Q_{X}(p)$, which is the inverse of the CDF: the $x$ value where $p$ percent of the data fall below it. (Recall that the median is the value $x$ where $50\%$ of the data fall below $x$, for example.) To generate a random variable, first sample $p$ from a uniform distribution and then find the associated quantile.
+Random variables have an associated *quantile function*, which is the inverse of the CDF: the $x$ value where $p$ percent of the data fall below it.
+\begin{eqnarray}
+Q(p) = F^{-1}(p), \quad p\in [0,1]
+\end{eqnarray}
+(Recall that the median is the value $x$ where $50\%$ of the data fall below $x$, for example.) 
+To generate a random variable, first sample $p$ from a uniform distribution and then find the associated quantile.
 
-Here is an in-depth example of drawing random variables from the [Dagum distribution](https://en.wikipedia.org/wiki/Dagum_distribution)
-```{r, results='hide'}
-# Quantile Function (VGAM::qdagum)
-qdagum <- function(p, scale=1, shape1.a, shape2.p) {
+#### **Using Math**. {-}
+If you know the distribution function, then you can derive the quantile function and do inverse sampling. Here is an in-depth example of the [Dagum distribution](https://en.wikipedia.org/wiki/Dagum_distribution). The distribution function is $F(x)=(1+(x/b)^{-a})^{-c}$. For a given $p=F(x)$, we can then solve for the quantile $Q(p)=\frac{ b p^{\frac{1}{ac}} }{(1-p^{1/c})^{1/a}}$.
+
+```{r}
+# Theoretical Quantile Function (from VGAM::qdagum)
+qdagum <- function(p, scale.b=1, shape1.a, shape2.c) {
   # Quantile function (theoretically derived from the CDF)
-  ans <- scale * (expm1(-log(p) / shape2.p))^(-1 / shape1.a)
+  ans <- scale.b * (expm1(-log(p) / shape2.c))^(-1 / shape1.a)
   # Special known cases
   ans[p == 0] <- 0
   ans[p == 1] <- Inf
-  # Checks
+  # Safety Checks
   ans[p < 0] <- NaN
   ans[p > 1] <- NaN
-  if(scale <= 0 | shape1.a <= 0 | shape2.p <= 0){ ans <- ans*NaN }
+  if(scale.b <= 0 | shape1.a <= 0 | shape2.c <= 0){ ans <- ans*NaN }
   # Return
   return(ans)
 }
 
 # Generate Random Variables (VGAM::rdagum)
-rdagum <-function(n, scale=1, shape1.a, shape2.p){
-    p <- runif(n) # generate random quantile probabilities
-    x <- qdagum(p, scale=scale, shape1.a=shape1.a, shape2.p=shape2.p) #find the inverses
+rdagum <-function(n, scale.b=1, shape1.a, shape2.c){
+    p <- runif(n) # generate random probabilities
+    x <- qdagum(p, scale.b=scale.b, shape1.a=shape1.a, shape2.c=shape2.c) #find the inverses
     return(x)
 }
 
 # Example
 set.seed(123)
-x <- rdagum(3000,1,3,1)
-
-# Empirical Distribution
-Fx_hat <- ecdf(x)
-plot(Fx_hat, lwd=2, xlim=c(0,5), main='')
-
-# Two Examples of generating a random variable
-p <- c(.25, .9)
-cols <- c(2,4)
-Qx_hat <- quantile(x, p)
-segments(Qx_hat,p,-10,p, col=cols)
-segments(Qx_hat,p,Qx_hat,0, col=cols)
-mtext( round(Qx_hat,2), 1, at=Qx_hat, col=cols)
+X <- rdagum(3000,1,3,1)
+X[1:5]
 ```
 
-#### **In the Real World**. {-}
+#### **Using Data**. {-}
+
+To generate a random variable from known distributions, you can also use some type of physical machine. E.g., 
+you can roll a fair die to generate Discrete Uniform data or you can roll weighted die to generate Categorical data. However, you can also generate a random variable from a known empirical distribution.
+```{r}
+# Empirical Distribution
+X <- USArrests$Murder
+FX_hat <- ecdf(X)
+plot(FX_hat, lwd=2, xlim=c(0,20),
+    pch=16, col=grey(0,.5), main='')
+
+# Two Examples of generating a random variable
+p <- c(.25, .9) # pretended to be random
+cols <- c(2,4)
+QX_hat <- quantile(X, p, type=1)
+segments(QX_hat, p, -10, p, col=cols)
+segments(QX_hat, p, QX_hat, 0, col=cols)
+mtext( round(QX_hat,2), 1, at=QX_hat, col=cols)
+
+# Multiple Draws
+p <- runif(3000)
+QX_hat <- quantile(x, p,type=1)
+QX_hat[1:5]
+```

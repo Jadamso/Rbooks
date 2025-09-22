@@ -1,5 +1,3 @@
-
-
 # (Re)Sampling 
 ***
 
@@ -85,123 +83,6 @@ fun_of_rv( f=mean )
 fun_of_rv( f=function(i){ diff(range(exp(i))) } )
 ```
 
-
-## Intervals
-
-Using either the bootstrap or jackknife distribution, we can calculate 
-
-* *Confidence Interval:* range your statistic varies across different samples.
-* *Standard Error*: variance of your statistic across different samples.
-
-
-```{r}
-sample_means <- apply(x,1,mean)
-# standard error
-sd(sample_means)
-```
-
-Note that in some cases, you can estimate the standard error to get a confidence interval.
-```{r, eval=F}
-x00 <- x[1,]
-# standard error
-s00 <- sd(x00)/sqrt(length(x00))
-ci <- mean(x00) + c(1.96, -1.96)*s00
-```
-
-#### **Confidence Interval**.  {-}
-Compute the upper and lower quantiles of the sampling distribution.
-
-***Sample Mean***. We simulate the sampling distribution of the sample mean and construct a 90% confidence interval by taking the 5th and 95th percentiles of the simulated means. This gives an empirical estimate of the interval within which the true mean is expected to lie with 90% confidence, assuming repeated sampling.
-```{r}
-# Middle 90%
-mq <- quantile(sample_means, probs=c(.05,.95))
-paste0('we are 90% confident that the mean is between ', 
-    round(mq[1],2), ' and ', round(mq[2],2) )
-
-bks <- seq(.4,.6,by=.001)
-hist(sample_means, breaks=bks, border=NA,
-    col=rgb(0,0,0,.25), font.main=1,
-    main='Confidence Interval for the mean')
-abline(v=mq)
-```
-
-***Sample Percentile***. We repeat the process to estimate the 99th percentile for each sample. We then construct a 95% confidence interval for the 99th percentile estimator, using the 2.5th and 97.5th quantiles of these estimates.
-```{r}
-## Upper Percentile
-sample_quants <- apply(x,1,quantile, probs=.99)
-
-# Middle 95% of estimates
-mq <- quantile(sample_quants, probs=c(.025,.975))
-paste0('we are 95% confident that the upper percentile is between ', 
-    round(mq[1],2), ' and ', round(mq[2],2) )
-
-bks <- seq(.92,1,by=.001)
-hist(sample_quants, breaks=bks, border=NA,
-    col=rgb(0,0,0,.25), font.main=1,
-    main='95% Confidence Interval for the 99% percentile')
-abline(v=mq)
-```
-
-Note that X% confidence intervals do not generally cover X% of the data. Those intervals are a type of prediction interval that is covered later. See also <https://online.stat.psu.edu/stat200/lesson/4/4.4/4.4.2>.
-
-#### **Advanced Intervals**. {-}
-In many cases, we want a X% interval to mean that X% of the intervals we generate will contain the true mean. E.g., in repeated sampling, 50% of constructed confidence intervals are expected to contain the true population mean.
-
-```{r}
-# Theoretically: [-1 sd, +1 sd] has 2/3 coverage
-
-# Confidence Interval for each sample
-xq <- apply(x,1, function(r){ #theoretical se's 
-    mean(r) + c(-1,1)*sd(r)/sqrt(length(r))
-})
-# First 4 interval estimates
-xq[,1:4]
-
-# Explicit calculation
-mu_true <- 0.5
-# Logical vector: whether the true mean is in each CI
-covered <- mu_true >= xq[1, ] & mu_true <= xq[2, ]
-# Empirical coverage rate
-coverage_rate <- mean(covered)
-cat(sprintf("Estimated coverage probability: %.2f%%\n", 100 * coverage_rate))
-```
-
-```{r}
-# Visualize first N confidence intervals
-N <- 100
-plot.new()
-plot.window(xlim = range(xq), ylim = c(0, N))
-for (i in 1:N) {
-  col_i <- if (covered[i]) rgb(0, 0, 0, 0.3) else rgb(1, 0, 0, 0.5)
-  segments(xq[1, i], i, xq[2, i], i, col = col_i, lwd = 2)
-}
-abline(v = mu_true, col = "blue", lwd = 2)
-axis(1)
-title("Visualizing CI Coverage (Red = Missed)")
-```
-
-This differs from a *pointwise inclusion frequency interval*
-```{r}
-# Frequency each point was in an interval
-bks <- seq(0,1,by=.01)
-xcovr <- sapply(bks, function(b){
-    bl <- b >= xq[1,]
-    bu <- b <= xq[2,]
-    mean( bl & bu )
-})
-# 50\% Coverage
-c_ul <- range(bks[xcovr>=.5])
-c_ul # 50% confidence interval
-
-plot.new()
-plot.window(xlim=c(0,1), ylim=c(0,1))
-polygon( c(bks, rev(bks)), c(xcovr, xcovr*0), col=grey(.5,.5), border=NA)
-mtext('Frequency each value was in an interval',2, line=2.5)
-axis(1)
-axis(2)
-abline(h=.5, lwd=2)
-segments(c_ul,0,c_ul,.5, lty=2)
-```
 
 
 ## Resampling
@@ -377,8 +258,7 @@ abline(v=sample_mean, col='red', lty=2)
 ***Caveat***. Note that we do not use the mean of the bootstrap or jackknife statistics as a replacement for the original estimate. This is because the bootstrap and jackknife distributions are centered at the observed statistic, not the population parameter. (The bootstrapped mean is centered at the sample mean, not the population mean.) This means that we cannot use the bootstrap to improve on $\overline{x}$; no matter how many bootstrap samples we take. We can, however, use the jackknife and bootstrap to estimate sampling variability.
 
 
-#### **Intervals**. {-}
-Note that both methods provide imperfect estimates, and can give different numbers. Percentiles of jackknife resamples are systematically less variable than they should be. Until you know more, a conservative approach is to take the larger estimate.
+Also note that both resampling methods provide imperfect estimates, and can give different numbers. Percentiles of jackknife resamples are systematically less variable than they should be. Until you know more, a conservative approach is to take the larger estimate.
 
 ```{r}
 # Boot CI
@@ -393,17 +273,150 @@ jack_ci
 ci_est <- boot_ci
 ```
 
-Also note that the *standard deviation* refers to variance within a single sample, and is hence different from the standard error. Nonetheless, they can both be used to estimate the variability of a statistic.
+
+## Intervals
+
+Using either the bootstrap or jackknife distribution for subsamples, or across multiple samples if we can get them, we can calculate 
+
+* *Confidence Interval:* range your statistic varies across different samples.
+* *Standard Error*: variance of your statistic across different samples (square rooted).
+
+
+```{r}
+sample_means <- apply(x,1,mean)
+# standard error
+sd(sample_means)
+```
+
+Note that in some cases, you can estimate the standard error to get a confidence interval.
+```{r, eval=F}
+x00 <- x[1,]
+# standard error
+s00 <- sd(x00)/sqrt(length(x00))
+ci <- mean(x00) + c(1.96, -1.96)*s00
+```
+
+#### **Confidence Interval**.  {-}
+Compute the upper and lower quantiles of the sampling distribution.
+
+For example, consider the sample mean. We simulate the sampling distribution of the sample mean and construct a 90% confidence interval by taking the 5th and 95th percentiles of the simulated means. This gives an empirical estimate of the interval within which the true mean is expected to lie with 90% confidence, assuming repeated sampling.
+```{r}
+# Middle 90%
+mq <- quantile(sample_means, probs=c(.05,.95))
+paste0('we are 90% confident that the mean is between ', 
+    round(mq[1],2), ' and ', round(mq[2],2) )
+
+bks <- seq(.4,.6,by=.001)
+hist(sample_means, breaks=bks, border=NA,
+    col=rgb(0,0,0,.25), font.main=1,
+    main='Confidence Interval for the mean')
+abline(v=mq)
+```
+
+For another example, consider an extreme sample percentile. We now repeat the above process to estimate the 99th percentile for each sample, instead of the mean for each sample. We then construct a 95% confidence interval for the 99th percentile estimator, using the 2.5th and 97.5th quantiles of these estimates.
+```{r}
+## Upper Percentile
+sample_quants <- apply(x,1,quantile, probs=.99)
+
+# Middle 95% of estimates
+mq <- quantile(sample_quants, probs=c(.025,.975))
+paste0('we are 95% confident that the upper percentile is between ', 
+    round(mq[1],2), ' and ', round(mq[2],2) )
+
+bks <- seq(.92,1,by=.001)
+hist(sample_quants, breaks=bks, border=NA,
+    col=rgb(0,0,0,.25), font.main=1,
+    main='95% Confidence Interval for the 99% percentile')
+abline(v=mq)
+```
+
+Note that $X%$ confidence intervals do not generally cover $X%$ of the data. Those intervals are a type of prediction interval that is covered later. See also <https://online.stat.psu.edu/stat200/lesson/4/4.4/4.4.2>.
+
+#### **Advanced Intervals**. {-}
+In many cases, we want a X% interval to mean that X% of the intervals we generate will contain the true mean. E.g., in repeated sampling, 50% of constructed confidence intervals are expected to contain the true population mean.
+
+```{r}
+# Theoretically: [-1 sd, +1 sd] has 2/3 coverage
+
+# Confidence Interval for each sample
+xq <- apply(x,1, function(r){ #theoretical se's 
+    mean(r) + c(-1,1)*sd(r)/sqrt(length(r))
+})
+# First 4 interval estimates
+xq[,1:4]
+
+# Explicit calculation
+mu_true <- 0.5
+# Logical vector: whether the true mean is in each CI
+covered <- mu_true >= xq[1, ] & mu_true <= xq[2, ]
+# Empirical coverage rate
+coverage_rate <- mean(covered)
+cat(sprintf("Estimated coverage probability: %.2f%%\n", 100 * coverage_rate))
+```
+
+```{r}
+# Visualize first N confidence intervals
+N <- 100
+plot.new()
+plot.window(xlim = range(xq), ylim = c(0, N))
+for (i in 1:N) {
+  col_i <- if (covered[i]) rgb(0, 0, 0, 0.3) else rgb(1, 0, 0, 0.5)
+  segments(xq[1, i], i, xq[2, i], i, col = col_i, lwd = 2)
+}
+abline(v = mu_true, col = "blue", lwd = 2)
+axis(1)
+title("Visualizing CI Coverage (Red = Missed)")
+```
+
+This differs from a *pointwise inclusion frequency interval*
+```{r}
+# Frequency each point was in an interval
+bks <- seq(0,1,by=.01)
+xcovr <- sapply(bks, function(b){
+    bl <- b >= xq[1,]
+    bu <- b <= xq[2,]
+    mean( bl & bu )
+})
+# 50\% Coverage
+c_ul <- range(bks[xcovr>=.5])
+c_ul # 50% confidence interval
+
+plot.new()
+plot.window(xlim=c(0,1), ylim=c(0,1))
+polygon( c(bks, rev(bks)), c(xcovr, xcovr*0), col=grey(.5,.5), border=NA)
+mtext('Frequency each value was in an interval',2, line=2.5)
+axis(1)
+axis(2)
+abline(h=.5, lwd=2)
+segments(c_ul,0,c_ul,.5, lty=2)
+```
+
+
+## Standard Errors
+
+Note that the *standard deviation* refers to variance within a single sample, and is hence different from the standard error. Nonetheless, they can both be used to estimate the variability of a statistic.
 ```{r}
 boot_se <- sd(Bmeans)
 
 sample_sd <- sd(sample_dat)
+theory_se <- sample_sd/sqrt(n)
 
-c(boot_se, sample_sd/sqrt(n))
+c(boot_se, theory_se)
 ```
 
-#### **Value of More Data**.{-}
-Each additional data point you have provides more information, which ultimately decreases the standard error of your estimates. However, it does so at a decreasing rate (known in economics as diminishing returns).
+A famous theoretical result in statistics is that with independent and identical data, i.e. that each $X_{i}$ has the same mean $\mu$ and variance $\sigma^2$, 
+\begin{eqnarray}
+\mathbb{V}\left( \bar{X} \right) 
+&=& \mathbb{V}\left( \frac{\sum_{i}^{n} X_{i}}{n} \right) 
+= \sum_{i}^{n} \mathbb{V}\left(\frac{X_{i}}{n}\right)
+= \sum_{i}^{n} \frac{\sigma^2}{n^2}
+= \sigma^2/n\\
+\mathbb{s}\left(\bar{X}\right) &=& \sqrt{\sigma^2/n} = \sigma/\sqrt{n}.
+\end{eqnarray}
+
+
+
+Notice that each additional data point you have provides more information, which ultimately decreases the standard error of your estimates. However, it does so at a decreasing rate (known in economics as diminishing returns).
 
 ```{r}
 Nseq <- seq(1,100, by=1) # Sample sizes
@@ -431,6 +444,6 @@ plot(Nseq[-1], abs(diff(SE)), pch=16, col=grey(0,.5),
 
 See 
 
-* https://www.r-bloggers.com/2025/02/bootstrap-vs-standard-error-confidence-intervals/
+* <https://www.r-bloggers.com/2025/02/bootstrap-vs-standard-error-confidence-intervals/>
 
 
