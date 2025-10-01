@@ -217,9 +217,9 @@ Often, however, we ultimately want data in long format
 ```{r}
 # Merging data in long format, Second Attempt with dedicated package 
 dat_melted2 <- melt(dat_merged_wide3, measure=c("1_x","1_y","2_x","2_y"))
-melt_vars <- strsplit(as.character(dat_melted2$variable),'_')
-dat_melted2$DF <- sapply(melt_vars, `[[`,1)
-dat_melted2$variable <- sapply(melt_vars, `[[`,2)
+melt_vars <- strsplit(as.character(dat_melted2[['variable']]),'_')
+dat_melted2[,'DF'] <- sapply(melt_vars, `[[`,1)
+dat_melted2[,'variable'] <- sapply(melt_vars, `[[`,2)
 dat_merged_long2 <- dcast(dat_melted2, DF+ID~variable)
 dat_merged_long2 <- as.data.frame(dat_merged_long2)
 
@@ -316,15 +316,33 @@ https://library.virginia.edu/data/articles/mathematical-annotation-in-r
 For exporting options, see `?pdf`.
 For saving other types of files, see `png("*.png")`, `tiff("*.tiff")`, and  `jpeg("*.jpg")`
 
-For some things to avoid, see https://www.data-to-viz.com/caveats.html
+
+Which features are most informative depends on what you want to show, and you can always mix and match. Learn to edit your figures:
+
+* <https://websites.umich.edu/~jpboyd/eng403_chap2_tuftegospel.pdf>
+* <https://jtr13.github.io/cc19/tuftes-principles-of-data-ink.html>
+* <https://github.com/cxli233/FriendsDontLetFriends>
+
+and be aware that each type has benefits and costs. E.g., see
+
+* <https://www.data-to-viz.com/caveats.html>
+* <https://x.com/EdwardTufte/status/1092717905156993024/photo/1>
+* <https://towardsdatascience.com/why-a-box-plot-should-not-be-used-alone-and-some-plots-to-use-it-with-23381f7e3cb6/>
+
+For small datasets, you can plot individual data points with a strip chart.
+For datasets with spatial information, a map is also helpful.
+Sometime tables are better than graphs (see <https://www.edwardtufte.com/notebook/boxplots-data-test>)
+
+
 
 #### **Interactive Figures**. {-}
 
 ***Histograms***. See https://plotly.com/r/histograms/
 ```{r, message=F, message=F}
-pop_mean <- mean(USArrests$UrbanPop)
-murder_lowpop <- USArrests[USArrests$UrbanPop< pop_mean,'Murder']
-murder_highpop <- USArrests[USArrests$UrbanPop>= pop_mean,'Murder']
+pop_mean <- mean(USArrests[,'UrbanPop'])
+pop_cut <- USArrests[,'UrbanPop'] < pop_mean
+murder_lowpop <- USArrests[ pop_cut,'Murder']
+murder_highpop <- USArrests[ !pop_cut,'Murder']
 
 library(plotly)
 fig <- plot_ly(alpha=0.6, 
@@ -343,7 +361,7 @@ fig
 
 ***Boxplots***. See https://plotly.com/r/box-plots/
 ```{r, message=F, message=F}
-USArrests$ID <- rownames(USArrests)
+USArrests[,'ID'] <- rownames(USArrests)
 fig <- plot_ly(USArrests,
     y=~Murder, color=~cut(UrbanPop,4),
     alpha=0.6, type="box",
@@ -361,46 +379,6 @@ fig <- layout(fig,
 fig
 ```
 
-***Scatterplots***. See https://plotly.com/r/bubble-charts/
-```{r, message=F, message=F}
-# Simple Scatter Plot
-#plot(Assault~UrbanPop, USArrests, col=grey(0,.5), pch=16,
-#    cex=USArrests$Murder/diff(range(USArrests$Murder))*2,
-#    main='US Murder arrests (per 100,000)')
-
-# Scatter Plot
-USArrests$ID <- rownames(USArrests)
-fig <- plot_ly(
-    USArrests, x = ~UrbanPop, y = ~Assault,
-    mode='markers',
-    type='scatter',
-    hoverinfo='text',
-    text = ~paste('<b>', ID, '</b>',
-        "<br>Urban  :", UrbanPop,
-        "<br>Assault:", Assault,
-        "<br>Murder :", Murder),
-    color=~Murder,
-    marker=list(
-        size=~Murder,
-        opacity=0.5,
-        showscale=T,  
-        colorbar = list(title='Murder Arrests (per 100,000)')))
-fig <- layout(fig,
-    showlegend=F,
-    title='Crime and Urbanization in America 1975',
-    xaxis = list(title = 'Percent of People in an Urban Area'),
-    yaxis = list(title = 'Assault Arrests per 100,000 People'))
-fig
-```
-
-If you have many point, you can also use a 2D histogram instead. https://plotly.com/r/2D-Histogram/.
-
-```{r, eval=F}
-fig <- plot_ly(
-    USArrests, x = ~UrbanPop, y = ~Assault)
-fig <- add_histogram2d(fig, nbinsx=25, nbinsy=25)
-fig
-```
 
 
 #### **Tables**. {-}
@@ -566,12 +544,12 @@ grid_pts <- expand.grid(
 )
 
 Seg1_dist <- dist( Seg1 )
-grid_pts$dist <- apply(grid_pts, 1, function(s){
+grid_pts[,'dist'] <- apply(grid_pts, 1, function(s){
     dist( rbind(s,s_1) ) + dist( rbind(s,s_2) ) })
-grid_pts$seg <- grid_pts$dist == Seg1_dist
+grid_pts[,'seg'] <- grid_pts[,'dist']  == Seg1_dist
 
-D_point_seg <- st_multipoint( as.matrix(grid_pts[grid_pts$seg==T,1:2]) ) 
-D_point_notseg <- st_multipoint( as.matrix(grid_pts[grid_pts$seg==F,1:2]) ) 
+D_point_seg <- st_multipoint( as.matrix(grid_pts[grid_pts[,'seg']==T,1:2]) ) 
+D_point_notseg <- st_multipoint( as.matrix(grid_pts[grid_pts[,'seg']==F,1:2]) ) 
 
 plot(Seg1)
 points(D_point_notseg, col=2, pch='.')
