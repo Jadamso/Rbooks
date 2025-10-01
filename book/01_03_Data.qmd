@@ -41,16 +41,8 @@ Note that for theoretical analysis, the types are sometimes grouped differently 
 * continuous (continuous cardinal data)
 * discrete (discrete cardinal, ordered factor, and unordered factor data)
 
-In any case, these data are often analyzed in `data.frame` objects
-```{r}
-# data.frames: your most common data type
-    # matrix of different data-types
-    # well-ordered lists
-d0 <- data.frame(x=dat_fact2, y=dat_card2)
-d0
+In any case, data are often computationally analyzed as `data.frame` objects, discussed below.
 
-d0[,'y'] #d0$y
-```
 
 #### **Strings**. {-} 
 Note that R allows for unstructured plain text, called *character strings*, which we can then format as factors
@@ -76,6 +68,100 @@ See
 * <https://raw.githubusercontent.com/rstudio/cheatsheets/main/regex.pdf>
 
 
+## Datasets
+
+Datasets can be stored in a variety of formats on your computer. But they can be analyzed in R in three basic ways.
+
+#### **Lists**. {-}
+
+Lists are probably the most basic type
+```{r}
+x <- 1:10
+y <- 2*x
+list(x, y)  # list of vectors
+
+x_mat1 <- matrix(2:7,2,3)
+x_mat2 <- matrix(4:-1,2,3)
+list(x_mat1, x_mat2)  # list of matrices
+```
+
+Lists are useful for storing unstructured data
+```{r}
+list(list(x_mat1), list(x_mat2))  # list of lists
+
+list(x_mat1, list(x_mat1, x_mat2)) # list of different objects
+
+# ...inception...
+list(x_mat1,
+    list(x_mat1, x_mat2), 
+    list(x_mat1, list(x_mat2)
+    )) 
+```
+
+#### **Data.frames**. {-}
+
+A *data.frame* looks like a matrix but each column is actually a list rather than a vector. This allows you to combine different data types into a single object for analysis, which is why it might be your most common object.
+
+```{r}
+# data.frames: your most common data type
+    # matrix of different data-types
+    # well-ordered lists
+data.frame(x, y)  # list of vectors
+
+# Storing different types of data
+d0 <- data.frame(x=dat_fact2, y=dat_card2)
+d0
+
+d0[,'y'] #d0$y
+```
+
+#### **Arrays**. {-}
+
+Arrays are generalization of matrices to multiple dimensions. They are a very efficient way to store well-formatted numeric data, and are often used in spatial econometrics and time series (often in the form of "data cubes").
+
+```{r}
+# data square (matrix)
+array(data = 1:24, dim = c(3,8))
+
+# data cube
+a <- array(data = 1:24, dim = c(3, 2, 4))
+a
+```
+
+```{r, eval=F}
+a[1, , , drop = FALSE]  # Row 1
+#a[, 1, , drop = FALSE]  # Column 1
+#a[, , 1, drop = FALSE]  # Layer 1
+
+a[ 1, 1,  ]  # Row 1, column 1
+#a[ 1,  , 1]  # Row 1, "layer" 1
+#a[  , 1, 1]  # Column 1, "layer" 1
+a[1 , 1, 1]  # Row 1, column 1, "layer" 1
+```
+
+Apply extends to arrays
+```{r}
+apply(a, 1, mean)    # Row means
+apply(a, 2, mean)    # Column means
+apply(a, 3, mean)    # "Layer" means
+apply(a, 1:2, mean)  # Row/Column combination 
+```
+
+Outer products yield arrays
+```{r}
+x <- c(1,2,3)
+x_mat1 <- outer(x, x) # x %o% x
+x_mat1
+is.array(x_mat1) # Matrices are arrays
+
+x_mat2 <- matrix(6:1,2,3)
+outer(x_mat2, x)
+# outer(x_mat2, matrix(x))
+# outer(x_mat2, t(x))
+# outer(x_mat1, x_mat2)
+```
+
+
 ## Densities and Distributions
 
 #### **Initial Data Inspection**. {-}
@@ -95,7 +181,7 @@ To further examine a particular variable, we look at its distribution. In what f
 
 
 #### **Histogram Density Estimate**. {-}
-The histogram divides the range of the data into $L$ exclusive bins of equal-width $h$, and count the number of observations within each bin. We often rescale the counts so that the total area of all bins sums to one, which allows us to interpret the numbers as a *density* measuring a proportion of the data in each bin. Mathematically, for an exclusive bin $\left[x-\frac{h}{2}, x+\frac{h}{2} \right)$ defined by their midpoint $x$ and width $h$, we compute
+The histogram divides the range of the data into $L$ exclusive bins of equal-width $h$, and count the number of observations within each bin. We often rescale the counts so that the total area of all bins sums to one, which allows us to interpret the numbers as a *density* measuring a proportion of the data in each bin. Mathematically, for an exclusive bin $\left(x-\frac{h}{2}, x+\frac{h}{2} \right]$ defined by their midpoint $x$ and width $h$, we compute
 \begin{eqnarray}
 \widehat{f}_{HIST}(x) &=& \frac{  \sum_{i=1}^{N} \mathbf{1}\left( X_{i} \in \left(x-\frac{h}{2}, x+\frac{h}{2} \right] \right) }{N h}.
 \end{eqnarray}

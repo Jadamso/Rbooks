@@ -6,14 +6,14 @@
 #### Big Picture Tasks
 
 1. Increase Depth
- * Provide simple numerical examples for each mathematical expression
+ * Provide simple numerical examples for every mathematical expression
  * Each chapter ends with 3 questions
- * Create exam questions
 2. Ease coding
  * Add student callouts 
  * Add code annotation in first chapter.
-3. Add materials
+3. Add supplementary materials
  * Create slides
+ * Create exam questions
  * Handout for students to use hypothesis.is (examples and nonexamples)
 4. Writing
  * Update the writing
@@ -22,7 +22,9 @@
  * Clean up all figures (axes, titles, legends, ...)
  * Definitions are in italics, not quotes or bold, and capitalized. (Or maybe they should be colored, or in a callout box?)
  * Chapter/section title, subsection, paragraph style. (Paragraphs, not subsection, are also italic and end in period.)
-5. Add content (2 chapters to the second part)
+5. Refine the core content
+ * Split into three parts: univariate, bivariate, multivariate.
+ * Add content (another chapter to the last part)
 6. Workflow optimization?
  * Publish using `gh-pages` branch to resolve compilation warning related to YAML file (output-dir: ../docs)
 
@@ -112,6 +114,10 @@ https://bookdown.org/yihui/bookdown/github.html
 
 #### Big Picture
 
+Ch 2
+* Define what functions are and provide examples
+* New 2.2 with logic (and, or) as well as counting (choose). Both concrete and computational examples.
+
 Ch 4.
 * Add a little sampling theory (math) and real-world applications to 4.3
 * Add exponential distribution numerical calculations
@@ -138,6 +144,7 @@ Ch 9.
 * add empirical example of table with joint and marginal distributions 
 * other examples from Microeconometrics (Simpsons paradox)
 * 9.4 Hypothesis Tests
+
 
 #### Misc. Specifics?
 
@@ -177,26 +184,6 @@ Add Other Datasets:
 * API's from the UScensus or worldbank
 * use a classic package like "AER", "Ecdat", "wooldridge", "causaldata" "np". 
 * see the list by https://vincentarelbundock.github.io/Rdatasets/datasets.html
-
-
-Build on other Examples
-
-* https://github.com/sta210-fa22/website
-* https://github.com/sta199-summer-1/sta199-summer-1.github.io
-* https://github.com/vizdata-s23/vizdata-s23
-* https://github.com/atheobold/stat-313-website
-* https://bookdown.org/probability/statistics/testing.html#two-sample-testing
-* https://book.stat420.org/probability-and-statistics-in-r.html#two-sample-t-test-example
-* https://openstax.org/books/introductory-statistics-2e/pages/10-introduction
-* https://bookdown.org/yihui/rmarkdown-cookbook/eng-stata.html
-* https://jjallaire.github.io/hopr/
-* https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/
-* https://online.stat.psu.edu/statprogram/
-* https://www.coursera.org/learn/stanford-statistics
-* https://www.helmholtz-munich.de/en/core-facility-overview/statistical-consulting/introduction-to-statistics
-* https://onlinestatbook.com/Online_Statistics_Education.pdf
-* https://openstax.org/books/introductory-statistics-2e/pages/1-introduction
-* https://www.edx.org/learn/statistics
 
 
 
