@@ -9,7 +9,7 @@ This book is a collection of primers on using R for econometrics.
 To compile this book, navigate to the root directory, then 
 
     quarto preview book
-    
+
 To publish online, 
 
     quarto render book
@@ -20,3 +20,4 @@ To publish online,
 To publish a tagged release, 
 
     gh release create v0.0.2 --title "v0.0.2, for ECON 2320"
+

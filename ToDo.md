@@ -54,9 +54,10 @@ Target 5+: 36 Months
     * Refine the ToDo list together and complete it
 
 
+#### Markdown/Github (Specifics)
 
-#### Specifics
-https://web.hypothes.is/hypothesis-for-faculty-instructors/
+
+Better integrate students with https://web.hypothes.is/hypothesis-for-faculty-instructors/
 
 Callouts
 
@@ -96,6 +97,16 @@ Note that Github repos must be public to deploy!
 https://bookdown.org/yihui/bookdown/github.html
 
 
+
+
+
+
+
+
+
+
+
+
 ## Introduction to Data Analysis (Specifics)
 
 
@@ -103,12 +114,18 @@ https://bookdown.org/yihui/bookdown/github.html
 
 Ch 4.
 * Add a little sampling theory (math) and real-world applications to 4.3
+* Add exponential distribution numerical calculations
+* Add more numerical calculations for the normal distribution, e.g. probability calculations for (x <L or x>U)
 
 Ch 5. Statistics
-* Show cases when CLT breaks down: Infinite variance, strong dependence, ...
+* Show cases when CLT breaks down with Infinite variance
+* Add concrete weighted means/variances examples to 5.4
+* Add numerical examples of means and variances (e.g., for normal and exponential)
 
 Ch 6. (Re)Sampling
 * Value of new data for Bootstrap?
+* Bootstrap Jacknife theory (iid)
+* ?Introduce combination/permutation counting?
 
 Ch 7. Hypothesis Tests
 * Type I vs II errors. Power analysis
@@ -118,11 +135,11 @@ Ch 8.
 * Incorporate insights from "Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)" 
 
 Ch 9.
-* add empirical example of table with joint and marginal distributions
-
+* add empirical example of table with joint and marginal distributions 
+* other examples from Microeconometrics (Simpsons paradox)
+* 9.4 Hypothesis Tests
 
 #### Misc. Specifics?
-Linearity of expectation
 
 Data Transformation
 * The Box-Cox Transformation Technique: A Review
@@ -149,7 +166,6 @@ Add styling to interactive plots
 Data clean/merge
  * by, with, subset, stack, switch
  * do.call, reduce
- * data.table, ...
 
 https://onlinelibrary.wiley.com/doi/10.1002/%28SICI%291099-1255%28199709/10%2912%3A5%3C533%3A%3AAID-JAE454%3E3.0.CO%3B2-V
 
@@ -183,15 +199,25 @@ Build on other Examples
 * https://www.edx.org/learn/statistics
 
 
+
+
 ## Introduction to Linear Regression
+
 
 #### Big Picture
 
-* Add some theory about adjusted R2 and F-test to 11.4, also introduce J-test
-* Complete 12.4 (Regressograms) 
-* Complete 14.1 (Experimental Design)
-* Add semi-formal treatment of "Multiple Hypothesis Testing" to 15.1
-* Complete 16 Misc Topics.
+Main gaps are Experimental Design Basics (15.1) and Statistical Decision Theory (17.3)
+
+* Ch.10 Add functions of variables, expected value of transformations, and Jensens Inequality
+* Add some theory about adjusted R2 and F-test to 11.4
+* Complete 15.1 (Experimental Design)
+* Add semi-formal treatment of "Multiple Hypothesis Testing" to 16.1
+* Complete 17 Misc Topics. On the page and also
+ * Description vs. Inference vs. Prediction
+ * Survivor Functions and Kaplan Meier
+ * CLT breaks down with strong dependence
+ * Differences in Quantiles, Quantiles of Differences
+ * J test
 * Add interactive plots via https://plotly-r.com/
 
 
@@ -226,7 +252,7 @@ p    <- 1-pf(F, df0-df1, df1)
 cbind(F, p)
 ```
 
-#### J-Test (add to 10.4)
+#### J-Test 
 * https://bookdown.org/mike/data_analysis/non-nested-model-tests.html#sec-davidson--mackinnon-j-test
 
 
@@ -406,7 +432,6 @@ https://www.r-bloggers.com/2024/09/stepwise-selection-of-variables-in-regression
 https://www.tandfonline.com/doi/full/10.1080/26939169.2023.2276446#d1e1498
 
 Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)
-
 
 Local Moran’s I maps "hot spots" and "cold spots" --- areas with strong positive or negative spatial correlation. High positive/negative values mean similar values cluster/anti-cluster.
 ```{r}

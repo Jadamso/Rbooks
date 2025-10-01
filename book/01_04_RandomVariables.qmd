@@ -4,55 +4,56 @@
 
 In the last section we computed a distribution given the data, whereas now we generate data given the distribution. 
 
-Random variables are vectors that are generated from a known Cumulative Distribution Function. They are a sample from a potentially infinite population with
+Random variables are vectors that are generated from a known Cumulative Distribution Function or Probability Distribution Function, which describes the long run frequencies of all possible outcomes. Random variables have a
 
-* A *sample space* which refers to the set of all possible outcomes.
-* A *probability* for each particular set of outcomes, which is the proportion that those outcomes occur in the long run.
+* *sample space* which refers to the set of all possible outcomes, and
+* *probability* for each particular set of outcomes, which is the proportion that those outcomes occur in the long run.
 
-There are only two basic types of sample spaces: discrete (encompassing cardinal-discrete, factor-ordered, and factor-unordered data) and continuous, which lead to two types of random variables.
+There are only two basic types of sample spaces: discrete (encompassing cardinal-discrete, factor-ordered, and factor-unordered data) and continuous, which lead to two types of random variables. In any case, probabilities must sum up to 1.
 
-However, each type of random variable has many [probability distributions](https://en.wikipedia.org/wiki/List_of_probability_distributions). The most common ones are [easily accessible](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html) and can be described using the cumulative distribution function
+However, each type of random variable has many different 
+[probability distributions](https://en.wikipedia.org/wiki/List_of_probability_distributions). The most common ones are [easily accessible](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html) and can be described using the Cumulative Distribution Function
 \begin{eqnarray}
 F(x) &=& Prob(X_{i} \leq x).
 \end{eqnarray}
-In any case, probabilities must sum up to 1.
+Note that this is just like the ECDF, $\widehat{F}(x)$, except that it is now theoretically known instead of estimated.^[Alternatively, you can think of $F(x)$ as the ECDF for a dataset with an infinite number of observations.]
 
 ## Discrete
 The random variable can take one of several values in a set. E.g., any number in $\{1,2,3,...\}$ or any letter in $\{A,B,C,...\}$.
 
 #### **Bernoulli**. {-}
-Think of a Coin Flip: Heads=1 or Tails=0, with Probability Heads = 1/2. In general, the probability can vary.
+Think of a Coin Flip: Heads=1 or Tails=0, with equal probability. In general, the probability of heads can vary.
 \begin{eqnarray}
 X_{i} &\in& \{0,1\} \\
-Prob(X_{i} =0) &=& p \\
-Prob(X_{i} =1) &=& 1-p.
+Prob(X_{i} =0) &=& 1-p \\
+Prob(X_{i} =1) &=& p.
 \end{eqnarray}
 
 Here is an example
 
 ```{r}
-rbinom(1, 1, 0.5) # 1 Flip
-rbinom(4, 1, 0.5) # 4 Flips
-x0 <- rbinom(400, 1, 0.5)
+rbinom(1, 1, 0.25) # 1 Flip
+rbinom(4, 1, 0.25) # 4 Flips
+X0 <- rbinom(400, 1, 0.25)
 
-# Plot Cumulative Averages
-x0_t <- seq_len(length(x0))
-x0_mt <- cumsum(x0)/x0_t
+# Plot Cumulative Proportion
+X0_t <- seq_len(length(X0)) #head(X0_t)
+X0_mt <- cumsum(X0)/X0_t #head(X0_mt)
 par(mar=c(4,4,1,4))
-plot(x0_t, x0_mt, type='l',
-    ylab='Cumulative Average',
+plot(X0_t, X0_mt, type='l',
+    ylab='Cumulative Proportion (p)',
     xlab='Flip #', 
     ylim=c(0,1), 
     lwd=2)
 # Add individual flip outcomes
-points(x0_t, x0, col=grey(0,.5),
+points(X0_t, X0, col=grey(0,.5),
     pch='|', cex=.3)
 
 # Plot Long run proportions
-hist(x0, breaks=50,
-    xlab='Flip Outcome', ylab='Count',
-    border=NA, main=NA)
-## plot( table(x0)/length(x0) )
+proportions <- table(X0)/length(X0)
+plot(proportions, col=grey(0,.5),
+    xlab='Flip Outcome', ylab='Count', main=NA)
+points(c(0,1), c(.75, .25), pch=16, col='blue') # Theoretical values
 ```
 
 
@@ -65,21 +66,27 @@ Prob(X_{i} =1) &=& Prob(X_{i} =2) = ... = 1/N.
 
 Here is an example with $N=4$. 
 
-The probability of a value smaller that $3$ is $Prob(X_{i} \leq 3)=1/4 + 1/4 + 1/4 = 3/4$.
+The probability of a value smaller than or equal to $3$ is $Prob(X_{i} \leq 3)=1/4 + 1/4 + 1/4 = 3/4$.
 
-The probability of a value larger than $3$ is $1-Prob(X_{i} \leq3)=1/4$
+The probability of a value larger than $3$ is $Prob(X_{i} > 3) = 1-Prob(X_{i} \leq 3)=1/4$.
 
+The probability of a value of a value $>$ 1 and $\leq 3$ is $Prob(1 < X_{i} \leq 3) = Prob(X_{i} \leq 3) - \left[ 1- Prob(X_{i} \leq 1) \right] = 3/4 - 1/4 = 2/4$.^[This is the general formula using CDFs, and you can verify it works in this instance by directly adding the probability of each 2 or 3 event: $Prob(X_{i} = 2) +  Prob(X_{i} = 3) = 1/4 + 1/4 = 2/4$.]
 
 ```{r}
 x <- 1:4
 x_probs <- rep(1/4,4)
 # sample(x, 1, replace=T, prob=x_probs) # sample of 1
 X1 <- sample(x, 2000, replace=T, prob=rep(1/4,4))
-hist(X1, breaks=50, border=NA,
-    main=NA, ylab='Count')
 
-# Add Theoretical Counts
-#points(x, x_probs*length(X1), pch='-') 
+# Plot Long run proportions
+proportions <- table(X1)/length(X1)
+plot(proportions, col=grey(0,.5),
+    xlab='Outcome', ylab='Proportion', main=NA)
+points(x, x_probs, pch=16, col='blue') # Theoretical values
+
+# Hist w/ Theoretical Counts
+# hist(X1, breaks=50, border=NA, main=NA, ylab='Count')
+# points(x, x_probs*length(X1), pch='-') 
 
 # Alternative Plot
 plot( ecdf(X1), pch=16, col=grey(0,.5), main=NA)
@@ -104,19 +111,36 @@ p_{1} + p_{2} + ... &=& 1
 Here is an empirical example with three outcomes
 
 ```{r}
-x <- 1:3
+x <- c('A', 'B', 'C')
 x_probs <- c(3,6,1)/10
 sum(x_probs)
 X1 <- sample(x, 2000, replace=T, prob=x_probs) # sample of 2000,
-hist(X1, breaks=50, border=NA, 
-    main=NA, ylab='Count')
-#points(x, x_probs*length(X1), pch=16) ## Theoretical Counts
 
-plot( ecdf(X1), pch=16, col=grey(0,.5), main=NA)
+# Plot Long run proportions
+proportions <- table(X1)/length(X1)
+plot(proportions, col=grey(0,.5),
+    xlab='Outcome', ylab='Proportion', main=NA)
+points(x_probs, pch=16, col='blue') # Theoretical values
+
+# Histogram version
+# X1_alt <- X1
+# X1_alt[X1_alt=='A'] <- 1
+#X1_alt[X1_alt=='B'] <- 2
+#X1_alt[X1_alt=='C'] <- 3
+#X1_alt <- as.numeric(X1_alt)
+#hist(X1_alt, breaks=50, border=NA, 
+#    main=NA, ylab='Count')
+#points(x, x_probs*length(X1_alt), pch=16) ## Theoretical Counts
+
+# Alternative Plot
+# plot( ecdf(X1), pch=16, col=grey(0,.5), main=NA)
 ```
 
 ## Continuous
-The random variable can take one value out of an uncountably infinite number. The probability of any individual point is zero. We describe these variables with the cumulative distribution function $F$, or the probability density function $f$.
+The random variable can take one value out of an uncountably infinite number. We describe these variables with the cumulative distribution function $F$, or the probability density function $f$.
+
+With a continuous random variable, the probability of any individual point is zero. The probability of $X_{i}$ falling into a range $[a,b]$ is $Prob(a \leq X_{i} \leq b) = F(b) - F(a)$.
+
 
 #### **Continuous Uniform**. {-}
 Any number on a unit interval allowing for any number of decimal points, with every number having the same probability.
@@ -133,18 +157,33 @@ f(x) &=& \begin{cases}
 \end{cases}
 \end{eqnarray}
 
+The probability of a value being exactly $0.25$ is $Prob(X_{i} =0.25)=0$.
+
 The probability of a value smaller that $0.25$ is $F(0.25)=0.25$.
 
 The probability of a value larger than $0.25$ is $1-F(0.25)=0.75$.
 
-The probability of a value being exactly $0.25$ is $Prob(X_{i} =0.25)=0$.
+The probability of a value in $(0.25,0.75]$ is $Prob(0.25 < X_{i} \leq 0.75) = Prob(X_{i} \leq 0.75) - \left[ 1- Prob(X_{i} \leq 0.25) \right] = 0.75 - 0.25 = 0.5$. 
 
 ```{r}
 runif(3) # 3 draws
+
+# Empirical Density 
 X2 <- runif(2000)
 hist(X2, breaks=20, border=NA, main=NA, freq=F)
+# Theoretical Density
+x <- seq(0,1,by=.01)
+fx <- dunif(x)
+lines(x, fx, col='blue')
+
+# CDF examples
+punif(0.25)
+1-punif(0.25)
+punif(0.75) - punif(0.25)
 ```
 
+
+Note that the continuous [uniform distribution](https://en.wikipedia.org/wiki/Continuous_uniform_distribution) generalizes to an arbitrary interval, $X_{i} \in [a,b]$. What is the probability of a value larger than $0.25$ when $a=-b=2$? First use the computer to suggest an answer and then show the answer mathematically.
 
 
 #### **Beta**. {-}
@@ -158,10 +197,9 @@ hist(X3, breaks=20, border=NA, main=NA, freq=F)
 
 x <- seq(0,1,by=.01)
 fx <- dbeta(x, 2, 2)
-lines(x, fx)
+lines(x, fx, col='blue')
 ```
-
-Also see that the [Beta](https://en.wikipedia.org/wiki/Beta_distribution) distribution can take many different shapes.
+The [beta](https://en.wikipedia.org/wiki/Beta_distribution) distribution is mathematically complicated to write, and so we omit it. But it is often used, as the density function has two parameters that allow it to take many different shapes.
 ```{r, results='hide'}
 #| fig-width: 8
 #| fig-height: 6
@@ -171,16 +209,38 @@ pars <- expand.grid( c(.5,1,2), c(.5,1,2) )
 par(mfrow=c(3,3))
 apply(pars, 1, function(p){
     fx <- dbeta( x,p[1], p[2])
-    plot(x, fx, type='l', xlim=c(0,1), ylim=c(0,4), lwd=2)
+    plot(x, fx, type='l', xlim=c(0,1), ylim=c(0,4), lwd=2, col='blue')
     #hist(rbeta(2000, p[1], p[2]), breaks=50, border=NA, main=NA, freq=F)
 })
 title('Beta densities', outer=T, line=-1)
 ```
 
 
+#### **Exponential**. {-}
+Any positive number, $X_{i} \in [0,\infty)$.^[In other classes, you may further distinguish types of random variables based on whether their maximum value is theoretically finite or infinite.] The [exponential](https://en.wikipedia.org/wiki/Exponential_distribution) distribution has a single parameter, $\lambda>0$, that governs its shape
+\begin{eqnarray}
+f(x) = \lambda exp\left\{ -\lambda x \right\}
+\end{eqnarray}
+```{r}
+rexp(3) # 3 draws
+
+X3 <- rexp(2000)
+hist(X3, breaks=20,
+    border=NA, main=NA,
+    freq=F, ylim=c(0,1), xlim=c(0,10))
+    
+x <- seq(0,10,by=.1)
+fx <- dexp(x)
+lines(x, fx, col='blue')
+```
+
+
 #### **Normal (Gaussian)**. {-}
-Any number between $(\infty,\infty)$, with bell shaped probabilities. 
-The distribution is mathematically complex, and not written here, but we will encounter it again and again.
+Any number on the real line, $X_{i} \in (\infty,\infty)$, with bell shaped probabilities. The distribution is mathematically complex, but we will encounter it again and again and again. The density function $f$ has two parameters $\mu \in (\infty,\infty)$ and $\sigma > 0$
+\begin{eqnarray}
+f(x) = \frac{1}{\sqrt{2\pi \sigma^2}} exp\left\{ \frac{-(x-\mu)^2}{2\sigma^2} \right\}
+\end{eqnarray}
+
 ```{r}
 rnorm(3) # 3 draws
 
@@ -191,26 +251,62 @@ hist(X4, breaks=20,
 
 x <- seq(-10,10,by=.025)
 fx <- dnorm(x)
-lines(x, fx)
+lines(x, fx, col='blue')
 ```
 
-We might further distinguish types of random variables based on whether their maximum value is theoretically finite or infinite. We will return to the theory behind probability distributions in a later chapter. 
-
+Even thought the distribution function is complex, we can compute CDF values using the computer 
+```{r}
+pnorm( c(-1.645, 1.645) )
+pnorm( c(-2.326, 2.326) )
+```
 
 
 ## Drawing Samples
 
-There are several ways to computationally generate random variables from a probability distribution. Perhaps the most common one is ``inverse sampling''. 
+To generate a random variable from known distributions, you can use some type of physical machine. E.g., you can roll a fair die to generate Discrete Uniform data or you can roll weighted die to generate Categorical data.
+
+There are also several ways to computationally generate random variables from a probability distribution. Perhaps the most common one is "inverse sampling". 
 
 Random variables have an associated *quantile function*, which is the inverse of the CDF: the $x$ value where $p$ percent of the data fall below it.
 \begin{eqnarray}
 Q(p) = F^{-1}(p), \quad p\in [0,1]
 \end{eqnarray}
 (Recall that the median is the value $x$ where $50\%$ of the data fall below $x$, for example.) 
-To generate a random variable, first sample $p$ from a uniform distribution and then find the associated quantile.
+To generate a random variable using inverse sampling, first sample $p$ from a uniform distribution and then find the associated quantile.^[Drawing random uniform samples with computers is actually quite complex and beyond the scope of this course.]
+
+
+#### **Using Data**. {-}
+
+You can generate a random variable from a known empirical distribution. Inverse sampling randomly selects observations from the dataset with equal probabilities. To implement this, we 
+
+* order the data and associate each observation with an ECDF value
+* draw an ECDF probability $p$ as a random variable with equal probabilities
+* finding the associated data point
+
+```{r}
+# Empirical Distribution
+X <- USArrests$Murder
+FX_hat <- ecdf(X)
+plot(FX_hat, lwd=2, xlim=c(0,20),
+    pch=16, col=grey(0,.5), main='')
+
+# Two Examples of generating a random variable
+p <- c(.25, .9) # pretended to be random
+cols <- c(2,4)
+QX_hat <- quantile(X, p, type=1)
+segments(QX_hat, p, -10, p, col=cols)
+segments(QX_hat, p, QX_hat, 0, col=cols)
+mtext( round(QX_hat,2), 1, at=QX_hat, col=cols)
+
+# Multiple Draws
+p <- runif(3000)
+QX_hat <- quantile(x, p,type=1)
+QX_hat[1:5]
+```
 
 #### **Using Math**. {-}
-If you know the distribution function, then you can derive the quantile function and do inverse sampling. Here is an in-depth example of the [Dagum distribution](https://en.wikipedia.org/wiki/Dagum_distribution). The distribution function is $F(x)=(1+(x/b)^{-a})^{-c}$. For a given $p=F(x)$, we can then solve for the quantile $Q(p)=\frac{ b p^{\frac{1}{ac}} }{(1-p^{1/c})^{1/a}}$.
+
+If you know the distribution function that generates the data, then you can derive the quantile function and do inverse sampling. Here is an in-depth example of the [Dagum distribution](https://en.wikipedia.org/wiki/Dagum_distribution). The distribution function is $F(x)=(1+(x/b)^{-a})^{-c}$. For a given $p=F(x)$, we can then solve for the quantile $Q(p)=\frac{ b p^{\frac{1}{ac}} }{(1-p^{1/c})^{1/a}}$. Afterwhich, we sample $p$ from a uniform distribution and then find the associated quantile.
 
 ```{r}
 # Theoretical Quantile Function (from VGAM::qdagum)
@@ -241,27 +337,3 @@ X <- rdagum(3000,1,3,1)
 X[1:5]
 ```
 
-#### **Using Data**. {-}
-
-To generate a random variable from known distributions, you can also use some type of physical machine. E.g., 
-you can roll a fair die to generate Discrete Uniform data or you can roll weighted die to generate Categorical data. However, you can also generate a random variable from a known empirical distribution.
-```{r}
-# Empirical Distribution
-X <- USArrests$Murder
-FX_hat <- ecdf(X)
-plot(FX_hat, lwd=2, xlim=c(0,20),
-    pch=16, col=grey(0,.5), main='')
-
-# Two Examples of generating a random variable
-p <- c(.25, .9) # pretended to be random
-cols <- c(2,4)
-QX_hat <- quantile(X, p, type=1)
-segments(QX_hat, p, -10, p, col=cols)
-segments(QX_hat, p, QX_hat, 0, col=cols)
-mtext( round(QX_hat,2), 1, at=QX_hat, col=cols)
-
-# Multiple Draws
-p <- runif(3000)
-QX_hat <- quantile(x, p,type=1)
-QX_hat[1:5]
-```
