@@ -116,16 +116,20 @@ https://bookdown.org/yihui/bookdown/github.html
 
 Ch 2
 * Define what functions are and provide examples
-* New 2.2 with logic (and, or) as well as counting (choose). Both concrete and computational examples.
-
+* New 2.2 with logic (and, or) and counting (choose). Both concrete and computational examples.
+    - Suppose license plates use the format AB1 23C, where each of the first two digits can be any one of 26 letters and each of the next three digits can be one of 10 numbers, and the last digit can be one of 26 letters.  How many possible license plate numbers can be generated if no letter or number can be used twice?
+    - Suppose that, from a population of 20 bank accounts, we want to take a random sample of three accounts in order to learn about the population. In this case, the order of selection doesn’t matter. How many different random samples of three accounts are possible? 
+    - The HR committee is about to have a busy day. In the morning, the committee plans to choose 2 employees (out of a set of 25 employees) for promotion. The first person they select will become a manager, and the second person they choose will become an assistant manager. Moving on to the afternoon, the HR committee intends to make a separate decision by choosing 5 employees (out of a set of 23 employees) for termination. Note that the decisions made in the morning and afternoon are independent of one another. How many possible outcomes are there for the HR committee’s overall decisions throughout the day? 
+    
+    
 Ch 4.
-* Add a little sampling theory (math) and real-world applications to 4.3
-* Add exponential distribution numerical calculations
-* Add more numerical calculations for the normal distribution, e.g. probability calculations for (x <L or x>U)
+* Add exponential distribution numerical calculations and and visuals for (x <U or x><)
+* Add more numerical calculations for the normal distribution, e.g. probability calculations and visuals for (x <L or x>U)
+* Add sampling theory and real-world applications to 4.3.
+    - Suppose that employees at a company are 70% female and 30% male. If we select a random sample of eight employees, what is the probability that more than 2 in the sample are female?
+* Quantile examples
 
 Ch 5. Statistics
-* Show cases when CLT breaks down with Infinite variance
-* Add concrete weighted means/variances examples to 5.4
 * Add numerical examples of means and variances (e.g., for normal and exponential)
 
 Ch 6. (Re)Sampling
@@ -140,11 +144,23 @@ Ch 7. Hypothesis Tests
 Ch 8. 
 * Incorporate insights from "Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)" 
 
+        
 Ch 9.
 * add empirical example of table with joint and marginal distributions 
 * other examples from Microeconometrics (Simpsons paradox)
 * 9.4 Hypothesis Tests
 
+?Ch 10. Advanced probability theory?
+    - Suppose you throw two standard dice (each with six sides).  What is the probability of getting a sum of 4? 
+    - Events A: the number on the die is greater than 2. B: the number on the die is even
+        a) Find P(A U B) and P(A ∩ B)
+        b) Are events A and B independent events? Explain.  
+        c) Are events A and B mutually exclusive events?  Explain. 
+        d) Find P(A | B)
+    -Find the probability of rolling a six-sided die and obtaining an even number less than 5. Use a computer simulation to suggest an answer and then provide the math.
+    -Find the probability of rolling a six-sided die and obtaining an odd number or a number less than 5. 
+    -Suppose that we have five equally likely experimental outcomes: 1, 2, 3, 4, 5. Find $Prob(X_{i} \in  \{1, 2, 5\}  or X_{i} \in \{1, 3\})$. Find $Prob(X_{i} \in  \{1, 2, 5\} and X_{i} \in  \{1, 3\}).$
+    - The unemployment rate is 10%. Suppose that 1000 employable people are selected randomly. What is the probability that this sample contains between 90 and 120 unemployed people. Use the normal approximation to binomial probabilities (parameters mu=100, sigma=9.49)
 
 #### Misc. Specifics?
 
@@ -201,12 +217,15 @@ Main gaps are Experimental Design Basics (15.1) and Statistical Decision Theory 
 * Add semi-formal treatment of "Multiple Hypothesis Testing" to 16.1
 * Complete 17 Misc Topics. On the page and also
  * Description vs. Inference vs. Prediction
- * Survivor Functions and Kaplan Meier
  * CLT breaks down with strong dependence
  * Differences in Quantiles, Quantiles of Differences
  * J test
 * Add interactive plots via https://plotly-r.com/
 
+ * Survivor Functions and Kaplan Meier.
+    Sam needs to backup 3 TB of data.  Sam buys 3 external hard drives, each of which can store 1 TB of data. Suppose Sam knows that each of these external hard drives has a 5% chance of failing during any given year. Assume external hard drives fail independently of one another. 
+    a) Compute the probability that Sam will lose all 3TB of his data within a year. 
+    b) Compute the probability that Sam will not lose any data within a year. 
 
 
 #### Adjusted R2 (add to 10.4)
