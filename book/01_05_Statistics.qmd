@@ -131,7 +131,7 @@ Central tendency and dispersion are often insufficient to describe a distributio
 
 #### **Skewness**. {-}
 This captures how symmetric the distribution is.
-$$W_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \overline{X}]^3 / N}{ [s_{X}]^3 }$$
+$$W_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \bar{X}]^3 / N}{ [s_{X}]^3 }$$
 
 
 ```{r}
@@ -152,7 +152,7 @@ skewness( rweibull(1000, shape=10) )
 
 #### **Kurtosis**. {-}
 This captures how many "outliers" there are.
-$$K_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \overline{X}]^4 / N}{ [s_{X}]^4 }.$$
+$$K_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \bar{X}]^4 / N}{ [s_{X}]^4 }.$$
 
 ```{r}
 X <- rweibull(1000, shape=1)
@@ -166,7 +166,7 @@ kurtosis <- function(X){
  return(kurt)
 }
 
-kurtosis( rweibull(1000, shape=1))
+kurtosis( rweibull(1000, shape=1) )
 kurtosis( rweibull(1000, shape=10) )
 ```
 
@@ -236,40 +236,56 @@ round( var(X), 4)
 ```
 
 
-#### **Weighted Data Examples**. {-} 
-Sometimes, you may have a dataset of values and probability weights. Othertimes, you can calculate them yourself. In either case, you can explicitly do the computations for discrete data
+#### **Weighted Data**. {-} 
+Sometimes, you may have a dataset of values and probability weights. Othertimes, you can calculate them yourself. In either case, you can explicitly do the computations for discrete data. Given data on unique outcome $x$ and their frequency $\widehat{p}_{x}=\sum_{i=1}^{N}\mathbf{1}\left(X_{i}=x\right)/N$, we compute $\bar{X}=\sum_{x} x \widehat{p}_{x}$.
 
 ```{r}
 # Compute probability weights for unique values
-h  <- table(X) #table of counts
-wt <- c(h)/length(X) #probabilities (must sum to 1)
-xt <- as.numeric(names(h)) #values
-# Weighted Mean
-X_mean <- sum(wt*xt)
+P  <- table(X) #table of counts
+p <- c(P)/length(X) #frequencies (must sum to 1)
+x <- as.numeric(names(p)) #unique values
+cbind(x,p)
+# Mean
+X_mean <- sum(x*p)
 X_mean
 ```
 
 Try computing the mean both ways for another random sample
 ```{r}
 X  <-  sample(c(0,1,2), 1000, replace=T)
-
-#Try also computing a weighted variance
-# X_var <- sum(wt * (X - x_mean)^2)/sum(wt)
 ```
 
-You can again explicitly do the computations with weighted data, but here we have an additional approximation error
+
+This idea generalizes to a *weighted mean*: an average where different values contribute to the final result with varying levels of importance. For each outcome $x$ we have a weight $W_{x}$ and compute
+\begin{eqnarray}
+\bar{X} &=& \frac{\sum_{x} x W_{x}}{\sum_{x} W_{x}} = \sum_{x} x w_{x},
+\end{eqnarray}
+where $w_{x}=\frac{W_{x}}{\sum_{x} W_{x}}$ is normalized version of $W_{x}$ that implies $\sum_{x}w_{x}=1$.
+
 ```{r}
-# values and probabilities
-h  <- hist(X, plot=F)
-wt <- h[['counts']]/length(x) 
-xt <- h[['mids']]
-# Weighted mean
-X_mean <- sum(wt*xt)
-X_mean
+# Example: compute the final grade for this student
+Homework1 <- c(score=88, weight=0.25)
+Homework2 <- c(score=92, weight=0.25)
+Exam1 <- c(score=67, weight=0.2)
+Exam2 <- c(score=90, weight=0.3)
 
-# Compare to "mean(x)"
+Grades <- rbind(Homework1, Homework2, Exam1, Exam2)
+Grades
+
+# Weighted Mean
+Values <- Grades[,'score'] * Grades[,'weight']
+FinalGrade <- sum(Values)
+FinalGrade
 ```
 
+Note that if there are $K$ unique outcomes and $W_{x}=1$ then $\sum_{x}W_{x}=K$ and $w_{x}=1/K$. This means $\bar{X} = \sum_{x} x w_{x} = \sum_{x} x /K$, which is just a simple mean.
+
+Bonus: provide an example of computing a weighted variance building on this code below
+```{r, eval=F}
+x_diff <- (x - x_mean)^2
+p <- P/sum(P)
+x_var <- sum(p * x_diff)
+```
 
 #### **Continuous Random Variables (Advanced)**. {-}
 If the sample space is continuous, we can compute the theoretical mean (or expected value) as
@@ -295,6 +311,18 @@ round( mean(X), 4)
 round( var(X), 4)
 ```
 
+You can again explicitly do the computations with weighted data, but here we have an additional approximation error
+```{r}
+# values and probabilities
+h  <- hist(X, plot=F)
+wt <- h[['counts']]/length(x) 
+xt <- h[['mids']]
+# Weighted mean
+X_mean <- sum(wt*xt)
+X_mean
+
+# Compare to "mean(x)"
+```
 
 
 ## Further Reading
