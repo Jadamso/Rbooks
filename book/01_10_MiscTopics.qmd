@@ -1,0 +1,191 @@
+# Misc Topics
+
+## Transformations
+
+Transformations can stabilize variance, reduce skewness, and make model errors closer to Gaussian.
+
+Perhaps the most common examples are *power transformations*: $y= x^\lambda$, which includes $\sqrt{x}$ and $x^2$.
+
+Other examples include the *exponential transformation*: $y=exp(x)$ for any $x\in (-\infty, \infty)$ and *logarithmic transformation*: $y=\log x$ for any $x>0$.
+
+The *Box–Cox Transform* nests many cases. For $x>0$ and parameter $\lambda$,
+\begin{eqnarray}
+y=\begin{cases}
+\dfrac{x^\lambda-1}{\lambda}, & \lambda\neq 0,\\
+\log x, & \lambda=0.
+\end{cases}
+\end{eqnarray}
+This function is continuous over $\lambda$.
+
+
+```r
+# Box–Cox transform and inverse
+bc_transform <- function(x, lambda) {
+  if (any(x <= 0)) stop("Box-Cox requires x > 0")
+  if (abs(lambda) < 1e-8) log(x) else (x^lambda - 1)/lambda
+}
+bc_inverse <- function(t, lambda) {
+  if (abs(lambda) < 1e-8) exp(t) else (lambda*t + 1)^(1/lambda)
+}
+
+
+X <- USArrests$Murder
+hist(X)
+
+par(mfrow=c(1,3))
+for(lambda in c(-1,0,1)){
+    Y <- bc_transform(X, lambda)
+    hist(Y, main=paste0('Lambda=', lambda))
+}
+```
+
+#### **Law of the Unconscious Statistician (LOTUS)**. {-}
+
+If $X_{i}$ is discrete data and $g$ is a function, then
+$\mathbb E[g(X)] = \sum_x g(x)Prob(X_{i}=x)$.
+
+
+Let $X_{i}$ take values $\{1,2,3\}$ with
+$$
+Pr(X_{i}=1)=0.2,\quad Prob(X_{i}=2)=0.5,\quad Prob(X_{i}=3)=0.3.
+$$
+Let $g(x)=x^2+1$. By LOTUS,
+$$
+\mathbb E[g(X_{i})]=\sum_x g(x)Prob(X_{i}=x)
+= g(1)\cdot0.2 + g(2)\cdot0.5 + g(3)\cdot0.3.
+$$
+
+Compute:
+- $g(1)=1^2+1=2$
+- $g(2)=2^2+1=5$
+- $g(3)=3^2+1=10$
+
+So
+$$
+\mathbb E[g(X_{i})] = 2(0.2) + 5(0.5) + 10(0.3)
+= 0.4 + 2.5 + 3 = 5.9.
+$$
+
+
+
+```{r}
+x  <- c(1,2,3)
+px <- c(0.2,0.5,0.3)
+g  <- function(x) x^2 + 1
+sum(g(x) * px) 
+```
+
+If $X_{i}$ is continuous data and $g$ is a function, then
+$\mathbb E[g(X_{i})] = \int_{-\infty}^{\infty} g(x)f(x) dx$.
+
+
+```{r}
+set.seed(1)
+x <- rexp(5e5, rate = 1)           # X ~ Exp(1)
+mean(sqrt(x))                      # LOTUS Simulation
+sqrt(pi) / 2                       # Exact via LOTUS integral
+```
+
+
+#### **Jensen’s inequality**. {-}
+
+Concave functions curve inwards, like the inside of a cave.
+Convex functions curve outward, the opposite of concave.
+
+If $g$ is *concave*, then $g(\mathbb E[X_{i}]) \geq \mathbb E[g(X_{i})]$.
+```{r}
+# Continuous Example 1
+mean( sqrt(x) )
+sqrt( mean(x) ) 
+
+# Continuous Example 2
+mean( log(x) )
+log( mean(x) ) 
+```
+
+```{r}
+## Discrete Example
+x  <- c(1,2,3)
+px <- c(0.2,0.5,0.3)
+EX <- sum(x * px)
+EX
+
+g  <- sqrt
+gEX <- g(EX)
+EgX <- sum(g(x) * px)
+c(gEX, EgX)
+```
+
+If $g$ is *convex*, then the inequality reverses: $g(\mathbb E[X_{i}]) \leq \mathbb E[g(X_{i})]$.
+```{r}
+mean( exp(x) )
+exp( mean(x) )  
+```
+
+## Drawing Samples
+
+To generate a random variable from known distributions, you can use some type of physical machine. E.g., you can roll a fair die to generate Discrete Uniform data or you can roll weighted die to generate Categorical data.
+
+There are also several ways to computationally generate random variables from a probability distribution. Perhaps the most common one is "inverse sampling", which uses the quantile function
+\begin{eqnarray}
+\widehat{Q}(p) = \widehat{F}^{-1}(p), \quad p\in [0,1]
+\end{eqnarray}
+
+
+To generate a random variable using inverse sampling, first sample $p$ from a uniform distribution and then find the associated quantile.^[Drawing random uniform samples with computers is actually quite complex and beyond the scope of this course.]
+
+
+#### **Using Data**. {-}
+
+You can generate a random variable from a known empirical distribution. Inverse sampling randomly selects observations from the dataset with equal probabilities. To implement this, we 
+
+* order the data and associate each observation with an ECDF value
+* draw $p \in [0,1]$ as a uniform random variable
+* find the associated data point on the ECDF
+
+```{r}
+# Empirical Distribution
+X <- USArrests$Murder
+FX_hat <- ecdf(X)
+plot(FX_hat, lwd=2, xlim=c(0,20),
+    pch=16, col=grey(0,.5), main='')
+
+# Generating a random variable
+p <- runif(3000) ## Multiple Draws
+QX_hat <- quantile(X, p, type=1)
+QX_hat[1:5]
+```
+
+#### **Using Math**. {-}
+
+If you know the distribution function that generates the data, then you can derive the quantile function and do inverse sampling. Here is an in-depth example of the [Dagum distribution](https://en.wikipedia.org/wiki/Dagum_distribution). The distribution function is $F(x)=(1+(x/b)^{-a})^{-c}$. For a given $p=F(x)$, we can then solve for the quantile $Q(p)=\frac{ b p^{\frac{1}{ac}} }{(1-p^{1/c})^{1/a}}$. Afterwhich, we sample $p$ from a uniform distribution and then find the associated quantile.
+
+```{r}
+# Theoretical Quantile Function (from VGAM::qdagum)
+qdagum <- function(p, scale.b=1, shape1.a, shape2.c) {
+  # Quantile function (theoretically derived from the CDF)
+  ans <- scale.b * (expm1(-log(p) / shape2.c))^(-1 / shape1.a)
+  # Special known cases
+  ans[p == 0] <- 0
+  ans[p == 1] <- Inf
+  # Safety Checks
+  ans[p < 0] <- NaN
+  ans[p > 1] <- NaN
+  if(scale.b <= 0 | shape1.a <= 0 | shape2.c <= 0){ ans <- ans*NaN }
+  # Return
+  return(ans)
+}
+
+# Generate Random Variables (VGAM::rdagum)
+rdagum <-function(n, scale.b=1, shape1.a, shape2.c){
+    p <- runif(n) # generate random probabilities
+    x <- qdagum(p, scale.b=scale.b, shape1.a=shape1.a, shape2.c=shape2.c) #find the inverses
+    return(x)
+}
+
+# Example
+set.seed(123)
+X <- rdagum(3000,1,3,1)
+X[1:5]
+```
+
