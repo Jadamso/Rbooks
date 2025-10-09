@@ -1,99 +1,200 @@
-
 # Statistics
 ***
 
-We often summarize distributions with *statistics*: functions of data. The most basic way to do this is with `summary`, whose values can all be calculated individually. (E.g., the "mean" computes the [sum of all values] divided by [number of values].) There are *many* other statistics.
+We often summarize distributions with *statistics*: functions of data. The most basic way to do this is with `summary`, whose values can all be calculated individually. 
 
 ```{r}
-summary( runif(1000))
-summary( rnorm(1000) )
+# A random sample (real data)
+X <- USArrests[,'Murder']
+summary(X)
+
+# A random sample (computer simulation)
+X <-  runif(1000)
+summary(X)
+
+# Another random sample (computer simulation)
+X <- rnorm(1000) 
+summary(X)
 ```
+
+Together, the mean and variance statistics summarize the central tendency and dispersion of a distribution. In some special cases, such as with the normal distribution, they completely describe the distribution. Other distributions are better described with other statistics, either as an alternative or in addition to the mean and variance. After discussing those other statistics, we will return to the two most basic statistics in theoretical detail.
 
 ## Mean and Variance
 
-The most basic statistics summarize the center of a distribution and how far apart the values are spread.
+The mean and variance are the two most basic statistics that summarize the center and how spread apart the values are.
 
 #### **Mean**. {-}
-Perhaps the most common statistic is the mean;
-$$\bar{X}=\frac{\sum_{i=1}^{N}X_{i}}{N},$$ where $X_{i}$ denotes the value of the $i$th observation.
+Perhaps the most common statistic is the mean, which is the [sum of all values] divided by [number of values];
+\begin{eqnarray}
+\bar{X}=\frac{\sum_{i=1}^{N}X_{i}}{N},
+\end{eqnarray}
+where $X_{i}$ denotes the value of the $i$th observation.
+
+:::{.callout-note icon=false collapse="true"}
+For example, a dataset of $\{1,4,10\}$ has a mean of $[1+4+10]/3=5$.
+```{r}
+X <- c(1,4,10)
+mean(X)
+```
+:::
 
 ```{r}
 # compute the mean of a random sample
-X <- runif(100)
-hist(X, border=NA, main=NA)
-x_bar <- mean(X)  #sum(x)/length(x)
-abline(v=x_bar, col=2, lwd=2)
-title(paste0('mean= ', round(x_bar,2)), font.main=1)
+X1 <- USArrests[,'Murder']
+X1_bar <- mean(X1)  #sum(x)/length(x)
+X1_bar
+
+# visualize on a histogram
+hist(X1, border=NA, main=NA)
+abline(v=X1_bar, col=2, lwd=2)
+title(paste0('mean= ', round(X1_bar,2)), font.main=1)
 ```
 
 #### **Variance**.{-}
 Perhaps the second most common statistic is the variance: the average squared deviation from the mean
 $$V_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \bar{X}]^2}{N}.$$
-The standard deviation is simply $s_{X} = \sqrt{V_{X}}$.
+The standard deviation is simply $s_{X} = \sqrt{V_{X}}$, which can be interpreted as the average distance from the mean.
 
+:::{.callout-note icon=false collapse="true"}
+For example, a dataset of $\{1,4,10\}$ has a mean of $[1+4+10]/3=5$. The variance is $[(1-5)^2+(4-5)^2+(10-5)^2]/3=14$ and the standard deviation is $\sqrt{14}=3.742$.
+```{r}
+X <- c(1,4,10)
+x_bar <- mean(X)
+x_var <- mean( (X-x_bar)^2 )
+sqrt(x_var)
+```
+:::
 
 ```{r}
-s <- sd(X) # sqrt(var(X))
-hist(X, border=NA, main=NA, freq=F)
-s_lh <- c(x_bar - s,  x_bar + s)
-abline(v=s_lh, col=4)
-text(s_lh, -.02,
+X1_s <- sd(X1) # sqrt(var(X))
+hist(X1, border=NA, main=NA, freq=F)
+X1_s_lh <- c(X1_bar - X1_s,  X1_bar + X1_s)
+abline(v=X1_s_lh, col=4)
+text(X1_s_lh, -.02,
     c( expression(bar(X)-s[X]), expression(bar(X)+s[X])),
     col=4, adj=0)
-title(paste0('sd= ', round(s,2)), font.main=1)
+title(paste0('sd= ', round(X1_s,2)), font.main=1)
 ```
 
-Note that a "corrected version" is used by R and many statisticians: $V_{X} =\frac{\sum_{i=1}^{N} [X_{i} - \bar{X}]^2}{N-1}$.
+:::{.callout-tip icon=false collapse="true"}
+Note that a "corrected version" is used by R and many statisticians: $V_{X}' =\frac{\sum_{i=1}^{N} [X_{i} - \bar{X}]^2}{N-1}$ and $s_{X}' = \sqrt{V_{X}'}$. 
 ```{r}
-var(X)
+X <- c(1,4,10)
+
 x_bar <- mean(X)
-mean( (X - x_bar)^2 )
+x_var <- mean( (X - x_bar)^2 )
+x_var
+
+# Corrected Version
+n <- length(X)  
+x_var2 <- sum((X - x_bar)^2 )/(n-1)
+x_var2
+
+var(X) # R-Version
 ```
-
-Together, these statistics summarize the central tendency and dispersion of a distribution. In some special cases, such as with the normal distribution, they completely describe the distribution. Other distributions are easier to describe with other statistics.
-
+:::
 
 ## Other Center/Spread Statistics
 
-#### **Absolute Deviations**. {-}
-We can use the *Median* as a "robust alternative" to means. Recall that the $q$th quantile is the value where $q$ percent of the data are below and ($1-q$) percent are above. The median ($q=.5$) is the point where half of the data is lower values and the other half is higher. This means that median is not sensitive to extreme values (whereas the mean is).
+A general rule of applied statistics is that there are multiple ways to measure something. Mean and Variance are measurements of Center and Spread, but there are others that have different theoretical properties and may be better suited for your dataset.
+
+#### **Medians and Absolute Deviations**. {-}
+We can use the *Median* as a "robust alternative" to means that is especially useful for data with asymmetric distributions and extreme values. Recall that the $q$th quantile is the value where $q$ percent of the data are below and ($1-q$) percent are above. The median ($q=.5$) is the point where half of the data is lower values and the other half is higher. This means that median is not sensitive to extreme values (whereas the mean is).
+
 ```{r}
 X <- rgeom(50, .4)
 X
 
 proportions <- table(X)/length(X)
 plot(proportions, ylab='proportion')
-
-# measures of central tendency
-mean(X)
-median(X)
-
-# robustness to an extreme value
-X_extreme <- c(X, 1000)
-mean( X_extreme )
-median( X_extreme )
 ```
 
-We can also use the *Interquartile Range* or *Median Absolute Deviation* as an alternative to variance. The first and third quartiles ($q=.25$ and $q=.75$) together measure is the middle 50 percent of the data. The size of that range (interquartile range: the difference between the quartiles) represents "spread" or "dispersion" of the data. The median absolute deviation also measures spread
+:::{.callout-note icon=false collapse="true"}
+Examine robustness to an extreme value
+```{r}
+
+X_extreme <- c(X, 1000) # add one extreme value
+#par(mfrow=c(1,2)) # visualize side-by-side
+#hist(X)
+#hist(X_extreme)
+
+
+# Which measures of central tendency are robust
+# to a single extreme value?
+mean(X)
+mean( X_extreme )
+
+quantile(X, prob=0.5)
+quantile(X_extreme, prob=0.5)
+```
+:::
+
+
+:::{.callout-tip icon=false collapse="true"}
+Just like weighted means, we can also compute weighted quantiles
+```{r}
+weighted.quantile <- function(x, w, probs){
+    #See spatstat.univar::weighted.quantile
+    oo <- order(x)
+    x <- x[oo]
+    w <- w[oo]
+    Fx <- cumsum(w)/sum(w)
+    quantile_id <- max(which(Fx <= probs))+1
+    xq <- x[quantile_id] 
+    return(xq)
+    
+}
+
+## Unweighted
+quantile(X, probs=.5)
+weights <- rep(1, length(X))
+weighted.quantile(x=X, w=weights, probs=.5)
+
+## Weighted
+weights <- seq(X)
+weights <- weights/sum(weights) # normalize
+weighted.quantile(x=X, w=weights, probs=.5)
+```
+:::
+
+We can also use the *Interquartile Range* or *Median Absolute Deviation* as an alternative to variance. The difference between the first and third quartiles ($q=.25$ and $q=.75$) measure is range of the middle $50%$ of the data, which is how the boxplot measures "spread". The median absolute deviation is another statistic that also measures "spread"
 \begin{eqnarray}
 \tilde{X} &=& Med(X_{i}) \\
 MAD_{X} &=& Med\left( | X_{i} - \tilde{X} | \right).
 \end{eqnarray}
 
 ```{r}
-#sd(X)
+#An alternative to sd(X)
 mad(X, constant=1) # median( abs(X - median(X)) )
 
-#sd(X) # another alternative
-#IQR(X) # diff( quantile(x, probs=c(.25,.75)))
+# Another alternative, used in the boxplot
+IQR(X) # diff( quantile(x, probs=c(.25,.75)))
 ```
 
-Note that there other absolute deviations:
+:::{.callout-note icon=false collapse="true"}
+Examine robustness to an extreme value
+```{r}
+sd(X)
+sd(X_extreme)
+
+mad(X, constant=1)
+mad(X_extreme, constant=1)
+
+IQR(X)
+IQR(X_extreme)
+```
+:::
+
+
+:::{.callout-tip icon=false collapse="true"}
+Note that there other "absolute deviation" statistics
 ```{r, eval=F}
+# sometimes seen elsewhere
 mean( abs(X - mean(X)) )
 mean( abs(X - median(X)) )
 median( abs(X - mean(X)) )
 ```
+:::
 
 #### **Mode and Share Concentration**. {-}
 Sometimes, none of the above work well. With categorical data, for example, distributions are easier to describe with other statistics. The mode is the most common observation: the value with the highest observed frequency. We can also measure the spread of the frequencies or concentration at the mode vs elsewhere.
@@ -126,8 +227,7 @@ max(proportions)/mean(proportions)
 
 ## Shape Statistics
 
-Central tendency and dispersion are often insufficient to describe a distribution. To further describe shape, we can compute the "standard moments" skew and kurtosis, as well as other statistics.
-
+Central tendency and dispersion are often insufficient to describe a distribution. To further describe shape, we can compute skew and kurtosis to measure asymmetry and extreme values. There are many other statistics we could compute on an ad-hoc basis.
 
 #### **Skewness**. {-}
 This captures how symmetric the distribution is.
@@ -171,13 +271,15 @@ kurtosis( rweibull(1000, shape=10) )
 ```
 
 #### **Clusters/Gaps**. {-}
-You can also describe distributions in terms of how clustered the values are. Remember: *a picture is worth a thousand words*.
+You can also describe distributions in terms of how clustered the values are, including the number of modes and many other statistics. But remember that "a picture is worth a thousand words".
 
 ```{r}
 # Number of Modes
 X <- rbeta(1000, .6, .6)
 hist(X, border=NA, main=NA, freq=F, breaks=20)
+```
 
+```{r}
 # Random Number Generator 
 r_ugly1 <- function(n, theta1=c(-8,-1), theta2=c(-2,2), rho=.25){
     omega   <- rbinom(n, size=1, rho)
@@ -202,9 +304,11 @@ dx <- d_ugly1(x)
 lines(x, dx, col=1)
 ```
 
+
+
 ## Probability Theory
 
-You were already introduced to this with [https://jadamso.github.io/Rbooks/random-variables.html](random variables) and probability distributions. In this section, we will dig a little deeper theoretically into the statistics we are most likely to use in practice.
+You were already introduced to this with (random variables)[https://jadamso.github.io/Rbooks/random-variables.html] and probability distributions. In this section, we will dig a little deeper theoretically into the statistics we are most likely to use in practice.
 
 The mean and variance are probably the two most basic statistics we might compute, and are often used. To understand them theoretically, we separately analyze how they are computed for discrete and continuous random variables.
 
@@ -215,9 +319,11 @@ $$
 $$
 where $Prob(X_{i}=x)$ is the probability the random variable $X_{i}$ takes the particular value $x$. Similarly, we can compute the theoretical variance as
 $$
-\mathbb{V}[X_{i}] = \sum_{x} \left(x - \mathbb{E}[X_{i}] \right)^2 Prob(X_{i}=x),
+\mathbb{V}[X_{i}] = \sum_{x} \left(x - \mathbb{E}[X_{i}] \right)^2 Prob(X_{i}=x).
 $$
+The standard deviation is $\sqrt{\mathbb{V}[X_{i}]}$.
 
+:::{.callout-note icon=false collapse="true"}
 For example, consider an unfair coin with a $.75$ probability of heads ($x=1$) and a $.25$ probability of tails ($x=0$) has a theoretical mean of 
 $$
 \mathbb{E}[X_{i}] = 1\times.75 + 0 \times .25 = .75
@@ -228,16 +334,58 @@ $$
 $$
 
 ```{r}
-X <- rbinom(10000, size=1, prob=.75)
+# A simulation of many coin flips
+x <- c(0,1)
+x_probs <- c(1/2, 1/2)
+X <- sample(x, 400, prob=x_probs, replace=T)
 
 round( mean(X), 4)
 
 round( var(X), 4)
 ```
+:::
 
+
+:::{.callout-note icon=false collapse="true"}
+Consider a six-sided die with equal probability of landing on each side. What is the mean?
+```{r}
+# Manual Way
+1*1/6 + 2*1/6 + 3*1/6 + 4*1/6 + 5*1/6 + 6*1/6
+
+# Computerized Way
+x <- c(1,2,3,4,5,6)
+x_probs <- c(1/6, 1/6, 1/6, 1/6, 1/6, 1/6)
+x_bar <- sum(x*x_probs)
+x_bar
+
+# Verified by simulation
+Xsim <- sample(x, prob=x_probs,
+          size=10000, replace=T)
+mean(Xsim)
+```
+
+What is the standard deviation?
+```{r}
+# Manual Way
+Xvar <- (1-x_bar)^2*1/6 +
+  (2-x_bar)^2*1/6 +
+  (3-x_bar)^2*1/6 +
+  (4-x_bar)^2*1/6 +
+  (5-x_bar)^2*1/6 + 
+  (6-x_bar)^2*1/6
+Xsd <- sqrt(Xvar)
+Xsd
+
+# Verified by simulation
+sd(Xsim)
+```
+:::
 
 #### **Weighted Data**. {-} 
-Sometimes, you may have a dataset of values and probability weights. Othertimes, you can calculate them yourself. In either case, you can explicitly do the computations for discrete data. Given data on unique outcome $x$ and their frequency $\widehat{p}_{x}=\sum_{i=1}^{N}\mathbf{1}\left(X_{i}=x\right)/N$, we compute $\bar{X}=\sum_{x} x \widehat{p}_{x}$.
+Sometimes, you may have a dataset of values and probability weights. Othertimes, you can calculate them yourself. In either case, you can explicitly do the computations for discrete data. Given data on unique outcome $x$ and their frequency $\widehat{p}_{x}=\sum_{i=1}^{N}\mathbf{1}\left(X_{i}=x\right)/N$, we compute 
+\begin{eqnarray}
+\bar{X} &=& \sum_{x} x \widehat{p}_{x}.
+\end{eqnarray}
 
 ```{r}
 # Compute probability weights for unique values
@@ -245,25 +393,34 @@ P  <- table(X) #table of counts
 p <- c(P)/length(X) #frequencies (must sum to 1)
 x <- as.numeric(names(p)) #unique values
 cbind(x,p)
-# Mean
+
+# Compute Mean
 X_mean <- sum(x*p)
 X_mean
 ```
 
+:::{.callout-note icon=false collapse="true"}
 Try computing the mean both ways for another random sample
 ```{r}
 X  <-  sample(c(0,1,2), 1000, replace=T)
-```
 
+# First Way (Computerized)
+mean(X)
+
+# Second Way (Explicit Math)
+# start with a table of counts like the previous example
+```
+:::
 
 This idea generalizes to a *weighted mean*: an average where different values contribute to the final result with varying levels of importance. For each outcome $x$ we have a weight $W_{x}$ and compute
 \begin{eqnarray}
 \bar{X} &=& \frac{\sum_{x} x W_{x}}{\sum_{x} W_{x}} = \sum_{x} x w_{x},
 \end{eqnarray}
-where $w_{x}=\frac{W_{x}}{\sum_{x} W_{x}}$ is normalized version of $W_{x}$ that implies $\sum_{x}w_{x}=1$.
+where $w_{x}=\frac{W_{x}}{\sum_{x'} W_{x'}}$ is normalized version of $W_{x}$ that implies $\sum_{x}w_{x}=1$.
 
+:::{.callout-note icon=false collapse="true"}
+For example, suppose a student has these scores
 ```{r}
-# Example: compute the final grade for this student
 Homework1 <- c(score=88, weight=0.25)
 Homework2 <- c(score=92, weight=0.25)
 Exam1 <- c(score=67, weight=0.2)
@@ -271,23 +428,36 @@ Exam2 <- c(score=90, weight=0.3)
 
 Grades <- rbind(Homework1, Homework2, Exam1, Exam2)
 Grades
+```
 
-# Weighted Mean
+We can compute the final grade as a Weighted Mean
+```{r}
+# Manual Way
+88*0.25 + 92*0.25 + 67*0.2 + 90*0.3
+
+# Computerized Way
 Values <- Grades[,'score'] * Grades[,'weight']
 FinalGrade <- sum(Values)
 FinalGrade
 ```
+:::
 
 Note that if there are $K$ unique outcomes and $W_{x}=1$ then $\sum_{x}W_{x}=K$ and $w_{x}=1/K$. This means $\bar{X} = \sum_{x} x w_{x} = \sum_{x} x /K$, which is just a simple mean.
 
+:::{.callout-tip icon=false collapse="false"}
 Bonus: provide an example of computing a weighted variance building on this code below
 ```{r, eval=F}
 x_diff <- (x - x_mean)^2
 p <- P/sum(P)
 x_var <- sum(p * x_diff)
 ```
+:::
 
-#### **Continuous Random Variables (Advanced)**. {-}
+
+#### **Continuous Random Variables**. {-}
+<details>
+<summary> advanced and optional </summary>
+  <p>
 If the sample space is continuous, we can compute the theoretical mean (or expected value) as
 $$
 \mathbb{E}[X] = \int x f(x) d x,
@@ -306,16 +476,16 @@ $$
 \mathbb{V}[X_{i}]= \int_{-1}^{1} x^2 \frac{1}{2} d x = \frac{1}{2} \frac{x^3}{3}|_{-1}^{1} = \frac{1}{6}[1 - (-1)] = 2/6 =1/3
 $$
 ```{r}
-X <- runif(10000, -1,1)
+X <- USArrests[,'Murder']
 round( mean(X), 4)
 round( var(X), 4)
 ```
-
+:::{.callout-tip icon=false collapse="false"}
 You can again explicitly do the computations with weighted data, but here we have an additional approximation error
 ```{r}
 # values and probabilities
 h  <- hist(X, plot=F)
-wt <- h[['counts']]/length(x) 
+wt <- h[['counts']]/length(X) 
 xt <- h[['mids']]
 # Weighted mean
 X_mean <- sum(wt*xt)
@@ -323,6 +493,15 @@ X_mean
 
 # Compare to "mean(x)"
 ```
+
+Try it yourself with 
+```{r}
+X <- runif(2000, -1, 1)
+```
+:::
+
+  </p>
+</details>
 
 
 ## Further Reading
@@ -352,14 +531,4 @@ For weighted statistics, see
 
 * <https://seismo.berkeley.edu/~kirchner/Toolkits/Toolkit_12.pdf>
 * <https://www.bookdown.org/rwnahhas/RMPH/survey-desc.html>
-
-Note that many random variables are related to each other
-
-* <https://en.wikipedia.org/wiki/Relationships_among_probability_distributions>
-* <https://www.math.wm.edu/~leemis/chart/UDR/UDR.html>
-* <https://qiangbo-workspace.oss-cn-shanghai.aliyuncs.com/2018-11-11-common-probability-distributions/distab.pdf>
-
-Also note that numbers randomly generated on your computer cannot be truly random, they are "Pseudorandom".
-
-
 

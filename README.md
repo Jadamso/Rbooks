@@ -13,6 +13,7 @@ To compile this book, navigate to the root directory, then
 To publish online, 
 
     quarto render book
+    cp -r ./Templates/Figures_Manual ./docs/Figures_Manual
     git add .
     git commit -m " "
     git push

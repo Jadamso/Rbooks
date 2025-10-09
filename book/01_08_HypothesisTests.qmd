@@ -1,0 +1,202 @@
+# Hypothesis Tests
+***
+
+## Basic Ideas
+
+In this section, we test hypotheses using *data-driven* methods that assume much less about the data generating process. There are two main ways to conduct a hypothesis test to do so: inverting a confidence interval and imposing the null.
+
+#### **Invert a CI**.{-}
+One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. We then use this decision rule
+
+* reject the null if value falls outside of the interval
+* fail to reject the null if value falls inside of the interval
+
+```{r}
+sample_dat <- USArrests[,'Murder']
+sample_mean <- mean(sample_dat)
+
+n <- length(sample_dat)
+Jmeans <- sapply(1:n, function(i){
+    dati <- sample_dat[-i]
+    mean(dati)
+})
+hist(Jmeans, breaks=25,
+    border=NA, xlim=c(7.5,8.1),
+    main='', xlab=expression( bar(X)[-i]))
+# CI
+ci_95 <- quantile(Jmeans, probs=c(.025, .975))
+abline(v=ci_95, lwd=2)
+# H0: mean=8
+abline(v=8, col=2, lwd=2)
+```
+
+#### **Impose the Null**. {-}
+We can also compute a *null distribution*: the sampling distribution of the statistic under the null hypothesis (assuming your null hypothesis was true). We use the bootstrap to loop through a large number of "resamples". In each iteration of the loop, we impose the null hypothesis and re-estimate the statistic of interest. We then calculate the range of the statistic across all resamples and compare how extreme the original value we observed is. We use a 95% confidence interval of the null distribution to create a *rejection region*.
+```{r}
+sample_dat <- USArrests[,'Murder']
+sample_mean <- mean(sample_dat)
+
+# Bootstrap NULL: mean=8
+set.seed(1)
+Bmeans0 <- sapply(1:10^4, function(i) {
+    dat_b <- sample(sample_dat, replace=T) 
+    mean_b <- mean(dat_b) + (8 - sample_mean) # impose the null by recentering
+    return(mean_b)
+})
+hist(Bmeans0, breaks=25, border=NA,
+    main='', xlab=expression( bar(X)[b]) )
+ci_95 <- quantile(Bmeans0, probs=c(.025, .975)) # critical region
+abline(v=ci_95, lwd=2)
+abline(v=sample_mean, lwd=2, col=2)
+```
+
+
+
+## Default Statistics
+
+#### **p-values**.{-}
+This is the frequency you would see something as extreme as your statistic when sampling from the null distribution.
+
+There are three associated tests: the two-sided test (observed statistic is extremely high or low) or one of the one-sided tests (observed statistic is extremely low, observed statistic is extremely high). E.g.
+
+* $HA​: \bar{X} > 8$ implies a right tail test
+* $HA: \bar{X} < 8$ implies a left tail test
+* $HA​: \bar{X} \neq 8$ implies a two tail test
+
+In any case, typically "p<.05: statistically significant" and "p>.05: not statistically significant".
+
+
+One sided example
+```{r}
+# One-Sided Test, ALTERNATIVE: mean > 8
+# Prob( boot0_means > sample_mean) 
+Fhat0 <- ecdf(Bmeans0) # Right tail
+plot(Fhat0,
+    xlab=expression( beta[b] ),
+    main='Null Bootstrap Distribution for means', font.main=1)
+abline(v=sample_mean, col='red')
+```
+
+```{r}
+p <- 1- Fhat0(sample_mean) #Right Tail
+if(p >.05){
+    message('fail to reject the null that sample_mean=8, at the 5% level')
+} else {
+    message('reject the null that sample_mean=8 in favor of >8, at the 5% level')
+}
+```
+
+Two sided example
+```{r}
+# Two-Sided Test, ALTERNATIVE: mean < 8 or mean >8
+# Prob(boot0_means > sample_mean or -boot0_means < sample_mean)
+
+Fhat0 <- ecdf(Bmeans0)
+p_left <- Fhat0(sample_mean) #Left Tail
+p_right <- 1 - Fhat0(sample_mean) #Right Tail
+p <- 2*min(p_left, p_right)
+
+if(p >.05){
+    message('fail to reject the null that sample_mean=8 at the 5% level')
+} else {
+    message('reject the null that sample_mean=8 in favor of either <8 or >8 at the 5% level')
+}
+```
+
+
+#### **t-values**. {-}
+A t-value standardizes the statistic you are using for hypothesis testing:
+$$ t = (\hat{\mu} - \mu_{0}) / \hat{s_{\mu}} $$
+```{r}
+jack_se <- sd(Jmeans)
+mean0 <- 8
+jack_t <- (sample_mean - mean0)/jack_se
+
+# Note that you can also use a corrected se
+# jack_se <- sqrt((n-1)/n) * sd(Jmeans)
+```
+There are several benefits to this:
+
+* makes the statistic comparable across different studies
+* makes the null distribution not depend on theoretical parameters ($\sigma$)
+* makes the null distribution theoretically known asymptotically (approximately)
+
+The last point implies we are dealing with a symmetric distributions: $Prob( t_{boot} > t ~\text{or}~ t_{boot} < -t) = Prob( |t| < |t_{boot}| )$.^[In another statistics class, you will learn the math behind the null t-distribution. In this class, we skip this because we can simply bootstrap the t-statistic too.]
+
+```{r}
+set.seed(1)
+boot_t0 <- sapply(1:10^3, function(i) {
+    dat_b <- sample(sample_dat, replace=T) 
+    mean_b <- mean(dat_b) + (8 - sample_mean) # impose the null by recentering
+    # jack ses
+    jack_se_b <- sd( sapply(1:length(dat_b), function(i){
+        mean(dat_b[-i])
+    }) )
+    jack_t <- (mean_b - mean0)/jack_se_b
+})
+
+# Two Sided Test
+Fhat0 <- ecdf(abs(boot_t0))
+plot(Fhat0, xlim=range(boot_t0, jack_t),
+    xlab=expression( abs(hat(t)[b]) ),
+    main='Null Bootstrap Distribution for t', font.main=1)
+abline(v=abs(jack_t), col='red')
+p <- 1 - Fhat0( abs(jack_t) ) 
+p
+
+if(p >.05){
+    message('fail to reject the null that sample_mean=8, at the 5% level')
+} else {
+    message('reject the null that sample_mean=8 in favor of either <8 or >8, at the 5% level')
+}
+```
+
+## Other Statistics
+
+The above procedure generalized from differences in "means" to other statistics like "medians" and other "quantiles".
+
+```{r}
+# Bootstrap Distribution Function
+boot_d <- sapply(1:10^4, function(b, q_null=7.8){
+    x_b <- sample(sample_dat, replace=T)
+    q_b <- quantile(x_b, probs=.5)
+    d_b <- q_b - q_null
+    return(d_b)
+})
+
+# 2-Sided Test for Median Difference
+hist(boot_d, border=NA, font.main=1,
+    main='Difference in Medians')
+abline(v=quantile(boot_d, probs=c(.025, .975)), lwd=2)
+abline(v=0, lwd=2, col=2)
+1 - ecdf(boot_d)(0) ## No Median Difference
+
+## Try with sample_dat <- rnorm(100, 0, 2)
+```
+
+The above procedure generalizes to differences in many other statistics
+
+```{r}
+# 2-Sided Test for SD Differences
+boot_d2 <- sapply(1:10^4, function(b, sd_null=1.2){
+    x_b <- sample(sample_dat, replace=T)
+    sd_b <- sd(x_b)
+    d_b <- sd_b - sd_null
+    return(d_b)
+})
+
+hist(boot_d2, border=NA, font.main=1,
+    main='Difference in Standard Deviations')
+abline(v=quantile(boot_d2, probs=c(.025, .975)), lwd=2)
+abline(v=0, lwd=2, col=2)
+1 - ecdf(boot_d2)(0)
+
+
+# Try any function!
+# IQR(x_b)/median(x_b)
+```
+
+## Further Reading
+
+* <https://learningstatisticswithr.com/book/hypothesistesting.html>
+* <https://okanbulut.github.io/rbook/part5.html>
