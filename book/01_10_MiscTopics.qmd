@@ -1,12 +1,69 @@
 # Misc Topics
 
+
+## More Functions
+
+#### **Advanced Functions**. {-}
+
+Find a value by a particular criterion
+```{r}
+y <- 1:10
+
+# Return Y-value with minimum absolute difference from 3
+abs_diff_y <- abs( y - 3 ) 
+abs_diff_y # is this the luckiest number?
+
+min(abs_diff_y)
+which.min(abs_diff_y)
+y[ which.min(abs_diff_y) ]
+```
+
+
+There are also some useful built in functions for standardizing data
+```{r}
+m <- matrix(c(1:3,2*(1:3)),byrow=TRUE,ncol=3)
+m
+
+# normalize rows
+m/rowSums(m)
+
+# normalize columns
+t(t(m)/colSums(m))
+
+# de-mean rows
+sweep(m,1,rowMeans(m), '-')
+
+# de-mean columns
+sweep(m,2,colMeans(m), '-')
+```
+
+
+#### **Binning and Aggregating**. {-}
+
+```{r}
+x <- 1:10
+cut(x, 4)
+split(x, cut(x, 4))
+```
+
+```{r}
+xs <- split(x, cut(x, 4))
+sapply(xs, mean)
+
+# shortcut
+aggregate(x, list(cut(x,4)), mean)
+```
+
+See also <https://bookdown.org/rwnahhas/IntroToR/logical.html>
+
+
 ## Transformations
 
 Transformations can stabilize variance, reduce skewness, and make model errors closer to Gaussian.
 
 Perhaps the most common examples are *power transformations*: $y= x^\lambda$, which includes $\sqrt{x}$ and $x^2$.
 
-Other examples include the *exponential transformation*: $y=exp(x)$ for any $x\in (-\infty, \infty)$ and *logarithmic transformation*: $y=\log x$ for any $x>0$.
+Other examples include the *exponential transformation*: $y=exp(x)$ for any $x\in (-\infty, \infty)$ and *logarithmic transformation*: $y=\log(x)$ for any $x>0$.
 
 The *Box–Cox Transform* nests many cases. For $x>0$ and parameter $\lambda$,
 \begin{eqnarray}
@@ -17,8 +74,7 @@ y=\begin{cases}
 \end{eqnarray}
 This function is continuous over $\lambda$.
 
-
-```r
+```{r}
 # Box–Cox transform and inverse
 bc_transform <- function(x, lambda) {
   if (any(x <= 0)) stop("Box-Cox requires x > 0")
@@ -28,71 +84,75 @@ bc_inverse <- function(t, lambda) {
   if (abs(lambda) < 1e-8) exp(t) else (lambda*t + 1)^(1/lambda)
 }
 
-
 X <- USArrests$Murder
-hist(X)
+hist(X, main='', border=NA, freq=F)
 
 par(mfrow=c(1,3))
 for(lambda in c(-1,0,1)){
     Y <- bc_transform(X, lambda)
-    hist(Y, main=paste0('Lambda=', lambda))
+    hist(Y, main=paste0('Lambda=', lambda),
+        border=NA, freq=F)
 }
 ```
 
 #### **Law of the Unconscious Statistician (LOTUS)**. {-}
 
-If $X_{i}$ is discrete data and $g$ is a function, then
+As before, we will represent the random variable as $X_{i}$, which can take on values $x$ from the sample space. If $X_{i}$ is a discrete random variable (a random variable with a discrete sample space) and $g$ is a function, then
 $\mathbb E[g(X)] = \sum_x g(x)Prob(X_{i}=x)$.
 
-
+:::{.callout-note icon=false collapse="true"}
 Let $X_{i}$ take values $\{1,2,3\}$ with
 $$
 Pr(X_{i}=1)=0.2,\quad Prob(X_{i}=2)=0.5,\quad Prob(X_{i}=3)=0.3.
 $$
-Let $g(x)=x^2+1$. By LOTUS,
-$$
+Let $g(x)=x^2+1$. Then $g(1)=1^2+1=2$, $g(2)=2^2+1=5$, $g(3)=3^2+1=10$. 
+
+Then, by LOTUS,
+\begin{eqnarray}
 \mathbb E[g(X_{i})]=\sum_x g(x)Prob(X_{i}=x)
-= g(1)\cdot0.2 + g(2)\cdot0.5 + g(3)\cdot0.3.
-$$
-
-Compute:
-- $g(1)=1^2+1=2$
-- $g(2)=2^2+1=5$
-- $g(3)=3^2+1=10$
-
-So
-$$
-\mathbb E[g(X_{i})] = 2(0.2) + 5(0.5) + 10(0.3)
-= 0.4 + 2.5 + 3 = 5.9.
-$$
-
-
-
+&=& g(1)\cdot 0.2 + g(2)\cdot 0.5 + g(3)\cdot 0.3 \\
+&=& 2 \cdot 0.2 + 5 \cdot 0.5 + 10 \cdot 0.3 \\
+&=& 0.4 + 2.5 + 3 = 5.9.
+\end{eqnarray}
 ```{r}
 x  <- c(1,2,3)
-px <- c(0.2,0.5,0.3)
+x_probs <- c(0.2,0.5,0.3)
 g  <- function(x) x^2 + 1
-sum(g(x) * px) 
+sum(g(x) * x_probs) 
 ```
-
-If $X_{i}$ is continuous data and $g$ is a function, then
-$\mathbb E[g(X_{i})] = \int_{-\infty}^{\infty} g(x)f(x) dx$.
-
+:::
 
 ```{r}
-set.seed(1)
+g  <- function(x) x^2 + 1
+
+# A theoretical example
+x <- c(1,2,3,4)
+x_probs <- c(1/4, 1/4, 1/4, 1/4)
+sum(g(x) * x_probs) 
+
+# A simulation example
+X <- sample(x, x_probs, size=1000, replace=T)
+mean(g(X))
+```
+
+:::{.callout-tip icon=false collapse="true"}
+If $X_{i}$ is a continuous random variable (a random variable with a continuous sample space) and $g$ is a function, then
+$\mathbb E[g(X_{i})] = \int_{-\infty}^{\infty} g(x)f(x) dx$.
+```{r}
 x <- rexp(5e5, rate = 1)           # X ~ Exp(1)
 mean(sqrt(x))                      # LOTUS Simulation
 sqrt(pi) / 2                       # Exact via LOTUS integral
 ```
+:::
 
+Note that you have already seen the special case where $g(X_{i})=(X_{i}-\mathbb{E}[X_{i}])$.
 
 #### **Jensen’s inequality**. {-}
 
 Concave functions curve inwards, like the inside of a cave.
 Convex functions curve outward, the opposite of concave.
 
-If $g$ is *concave*, then $g(\mathbb E[X_{i}]) \geq \mathbb E[g(X_{i})]$.
+If $g$ is a *concave* function, then $g(\mathbb E[X_{i}]) \geq \mathbb E[g(X_{i})]$.
 ```{r}
 # Continuous Example 1
 mean( sqrt(x) )
@@ -116,7 +176,8 @@ EgX <- sum(g(x) * px)
 c(gEX, EgX)
 ```
 
-If $g$ is *convex*, then the inequality reverses: $g(\mathbb E[X_{i}]) \leq \mathbb E[g(X_{i})]$.
+
+If $g$ is a *convex* function, then the inequality reverses: $g(\mathbb E[X_{i}]) \leq \mathbb E[g(X_{i})]$.
 ```{r}
 mean( exp(x) )
 exp( mean(x) )  

@@ -2,15 +2,15 @@
 # Bivariate Statistics
 ***
 
-All of the univariate statistics we have covered apply to marginal distributions. For joint distributions, there are several ways to statistically describe the relationship between two variables.  The major differences surround whether the data are cardinal or an ordered/unordered factor.
+All of the univariate statistics we have covered apply to marginal distributions. For joint distributions, there are several ways to statistically describe the relationship between two variables. The major differences surround whether the data are cardinal or an ordered/unordered factor.
 
 ## Statistics of Association
 
-#### **Cardinal**. {-}
+#### **Two Cardinals**. {-}
 *Pearson (Linear) Correlation*.
 Suppose $X$ and $Y$ are both cardinal data. As such, you can compute the most famous measure of association, the covariance:
 $$
-C_{XY} =  \sum_{i} [X_i - \overline{X}] [Y_i - \overline{Y}] / N
+C_{XY} =  \sum_{i} [\hat{X}_{i} - \bar{X}] [Y_i - \bar{Y}] / N
 $$
 ```{r}
 xy <- USArrests[,c('Murder','UrbanPop')]
@@ -29,7 +29,7 @@ cor(xy)[2]
 *Falk Codeviance*.
 The Codeviance is a robust alternative to Covariance. Instead of relying on means (which can be sensitive to outliers), it uses medians ($\tilde{X}$) to capture the central tendency.^[See also *Theil-Sen Estimator*, which may be seen as a precursor.] We can also scale the Codeviance by the median absolute deviation to compute the median correlation.
 \begin{eqnarray}
-\text{CoDev}(X,Y) = \text{Med}\left\{ |X_i - \tilde{X}| |Y_i - \tilde{Y}| \right\} \\
+\text{CoDev}(X,Y) = \text{Med}\left\{ |\hat{X}_{i} - \tilde{X}| |Y_i - \tilde{Y}| \right\} \\
 \tilde{r}_{XY} = \frac{ \text{CoDev}(X,Y) }{ \text{MAD}(X) \text{MAD}(Y) }.
 \end{eqnarray}
 ```{r}
@@ -48,10 +48,10 @@ cor_m <- function(xy) {
 cor_m(xy)
 ```
 
-#### **Ordered Factor**. {-}
+#### **Two Ordered Factors**. {-}
 Suppose $X$ and $Y$ are both *ordered* variables. *Kendall's Tau* measures the strength and direction of association by counting the number of concordant pairs (where the ranks agree) versus discordant pairs (where the ranks disagree). A value of $\tau = 1$ implies perfect agreement in rankings, $\tau = -1$ indicates perfect disagreement, and $\tau = 0$ suggests no association in the ordering.
 $$
-\tau = \frac{2}{n(n-1)} \sum_{i} \sum_{j > i} \text{sgn} \Bigl( (X_i - X_j)(Y_i - Y_j) \Bigr),
+\tau = \frac{2}{n(n-1)} \sum_{i} \sum_{j > i} \text{sgn} \Bigl( (\hat{X}_{i} - \hat{X}_{j})(Y_i - Y_j) \Bigr),
 $$
 where the sign function is:
 $$
@@ -71,7 +71,7 @@ tau <- cor(xy[, 1], xy[, 2], method = "kendall")
 round(tau, 3)
 ```
 
-#### **Unordered Factor**. {-}
+#### **Two Unordered Factors**. {-}
 Suppose $X$ and $Y$ are both *categorical* variables; the value of $X$ is one of $1...r$ categories and the value of $Y$ is one of $1...k$ categories. *Cramer's V* quantifies the strength of association by adjusting a "chi-squared" statistic to provide a measure that ranges from $0$ to $1$; $0$ indicates no association while a value closer to $1$ signifies a strong association. 
 
 First, consider a contingency table for $X$ and $Y$ with $r$ rows and $k$ columns. The chi-square statistic is then defined as:
@@ -127,16 +127,14 @@ cor_v(xy)
 ```
 
 
-#### **Mixed**. {-}
 
-For mixed data, where $Y_{i}$ is a cardinal variable and $X_{i}$ is an unordered factor variable, we analyze associations via group comparisons. The basic idea is seen in a comparison of two samples, which corresponds to an $X_{i}$ with two categories.
+## Mixed Data
 
+For mixed data, $\hat{Y}_{i}$ is a cardinal variable and $\hat{X}_{i}$ is a factor variable (typically unordered). For such data, we analyze associations via group comparisons. The basic idea is seen in a comparison of two samples, which corresponds to an $\hat{X}_{i}$ with two categories.
 
-## Two-Sample Differences
+#### **Mean Differences**. {-}
 
-Suppose we have 2 samples of data. 
-
-Each $X_{is}$ is an individual observation $i$ from the sample $s=1,2$. (For example, the wages for men and women in Canada. For another example, homicide rates in two different American states.)
+Suppose we have 2 samples of data; each $\hat{X}_{is}$ is an individual observation $i$ from the sample $s=1,2$. (For example, the wages for men and women in Canada. For another example, homicide rates in two different American states.)
 
 ```{r, eval=F}
 library(wooldridge)
@@ -165,9 +163,9 @@ hist(x2, border=NA, breaks=bks,
 There may be several differences between these samples. Often, the first summary statistic we investigate is the difference in means. 
 
 #### **Equal Means**. {-}
-We often want to know if the means of different sample are different in . To test this hypothesis, we compute the sample mean $\overline{X}_{s}$ over all observations in each sample and then examine the differences term
+We often want to know if the means of different sample are different in . To test this hypothesis, we compute the sample mean $\bar{X}_{s}$ over all observations in each sample and then examine the differences term
 \begin{eqnarray} 
-D = \overline{X}_{1} - \overline{X}_{2},
+D = \bar{X}_{1} - \bar{X}_{2},
 \end{eqnarray}
 with a null hypothesis of $D=0$.
 
@@ -178,26 +176,27 @@ m2 <- mean(x2)
 d <- m1-m2
     
 # Bootstrap Distribution
-boot_d <- sapply(1:10^4, function(b){
+bootstrap_diff <- vector(length=9999)
+for(b in seq(bootstrap_diff) ){
     x1_b <- sample(x1, replace=T)
     x2_b <- sample(x2, replace=T)
     m1_b <- mean(x1_b)
     m2_b <- mean(x2_b)
     d_b <- m1_b - m2_b
-    return(d_b)
-})
-hist(boot_d, border=NA, font.main=1,
+    bootstrap_diff[b] <- d_b
+}
+hist(bootstrap_diff, border=NA, font.main=1,
     main='Difference in Means')
 
 # 2-Sided Test
-boot_ci <- quantile(boot_d, probs=c(.025, .975))
+boot_ci <- quantile(bootstrap_diff, probs=c(.025, .975))
 abline(v=boot_ci, lwd=2)
 abline(v=0, lwd=2, col=2)
 ```{r}
 
 ```{r}
 # p-value
-1 - ecdf(boot_d)(0)
+1 - ecdf(bootstrap_diff)(0)
 ```
 
 
@@ -237,16 +236,17 @@ The above procedure generalized from differences in "means" to other statistics 
 
 ```{r}
 # Bootstrap Distribution Function
-boot_fun <- function( fun, B=10^4, ...){
-    boot_d <- sapply(1:B, function(b){
+boot_fun <- function( fun, B=9999, ...){
+    bootstrap_diff <- vector(length=B)
+    for(b in seq(bootstrap_diff)){
         x1_b <- sample(x1, replace=T)
         x2_b <- sample(x2, replace=T)
         f1_b <- fun(x1_b, ...)
         f2_b <- fun(x2_b, ...)
         d_b <- f1_b - f2_b
-        return(d_b)
-    })
-    return(boot_d)
+        bootstrap_diff[b] <- d_b
+    }
+    return(bootstrap_diff)
 }
 
 # 2-Sided Test for Median Differences
@@ -311,11 +311,11 @@ abline(a=0,b=1,lty=2)
 
 The starting point for hypothesis testing is the Kolmogorov-Smirnov Statistic: the maximum absolute difference between two CDF's over all sample data $x \in \{X_1\} \cup \{X_2\}$.
 \begin{eqnarray}
-KS &=& \max_{x} |F_{1}(x)- F_{2}(x)|^{p},
+\widehat{KS} &=& \max_{x} |\hat{F}_{1}(x)- \hat{F}_{2}(x)|^{p},
 \end{eqnarray}
 where $p$ is an integer (typically 1). An intuitive alternative is the Cramer-von Mises Statistic: the sum of absolute differences (raised to an integer, typically 2) between two CDF's. 
 \begin{eqnarray}
-CVM=\sum_{x} |F_{1}(x)- F_{2}(x)|^{p}.
+\widehat{CVM} &=& \sum_{x} | \hat{F}_{1}(x)- \hat{F}_{2}(x)|^{p}.
 \end{eqnarray}
 
 ```{r}
@@ -350,17 +350,17 @@ twosamples::cvm_test(x1, x2)
 #### **Comparing Multiple Groups**. {-}
 For multiple groups, we can tests the equality of all distributions (whether at least one group is different). The *Kruskal-Wallis* test examines $H_0:\; F_1 = F_2 = \dots = F_G$ versus $H_A:\; \text{at least one } F_g \text{ differs}$, where $F_g$ is the continuous distribution of group $g=1,...G$. This test does not tell us which group is different.
 
-To conduct the test, first denote individuals $i=1,...n$ with overall ranks $r_1,....r_{n}$. Each individual belongs to group $g=1,...G$, and each group $g$ has $n_{g}$ individuals with average rank $\overline{r}_{g} = \sum_{i} r_{i} /n_{g}$. The Kruskal Wallis statistic is 
+To conduct the test, first denote individuals $i=1,...n$ with overall ranks $r_1,....r_{n}$. Each individual belongs to group $g=1,...G$, and each group $g$ has $n_{g}$ individuals with average rank $\bar{r}_{g} = \sum_{i} r_{i} /n_{g}$. The Kruskal Wallis statistic is 
 \begin{eqnarray}
-KW &=& (N-1) \frac{\sum_{g=1}^{G} n_{g}( \overline{r}_{g} - \overline{r}  )^2  }{\sum_{i=1}^{N} ( r_{i} - \overline{r}  )^2}, 
+\widehat{KW} &=& (N-1) \frac{\sum_{g=1}^{G} n_{g}( \bar{r}_{g} - \bar{r}  )^2  }{\sum_{i=1}^{N} ( r_{i} - \bar{r}  )^2}, 
 \end{eqnarray}
-where  $\overline{r} = \frac{N+1}{2}$ is the grand mean rank.
+where  $\bar{r} = \frac{n+1}{2}$ is the grand mean rank.
 
-In the special case with only two groups, $G=2$, the Kruskal Wallis test reduces to the *Mann–Whitney U-test* (also known as the \textit{Wilcoxon rank-sum test}). In this case, we can write the hypotheses in terms of individual outcomes in each group, $Y_i$ in one group $Y_j$ in the other; $H_0: P(Y_i > Y_j)=P(Y_i > Y_i)$  versus $H_A: P(Y_i > Y_j) \neq P(Y_i > Y_j)$. The corresponding test statistic is
+In the special case with only two groups, $G=2$, the Kruskal Wallis test reduces to the *Mann–Whitney U-test* (also known as the \textit{Wilcoxon rank-sum test}). In this case, we can write the hypotheses in terms of individual outcomes in each group, $Y_i$ in one group $Y_j$ in the other; $H_0: Prob(Y_i > Y_j)=Prob(Y_i > Y_i)$  versus $H_A: Prob(Y_i > Y_j) \neq Prob(Y_i > Y_j)$. The corresponding test statistic is
 \begin{eqnarray}
 U   &=& \min(U_1,U_2) \\
 U_g &=& \sum_{i\in g}\sum_{j\in -g}
-           \Bigl[\mathbf 1(Y_i > Y_j) + \tfrac12\mathbf 1(Y_i = Y_j)\Bigr].
+           \Bigl[\mathbf 1( \hat{Y}_{i} > \hat{Y}_{j}) + \tfrac12\mathbf 1(\hat{Y}_{i} = \hat{Y}_{j})\Bigr].
 \end{eqnarray}
 
 

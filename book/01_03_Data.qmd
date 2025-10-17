@@ -10,7 +10,7 @@ The two basic types of data are *cardinal* (aka numeric) data and *factor* data.
     * Discrete: E.g. $\{ 1,2,3\}$ and notice that $2-1=3-2$.
     * Continuous: E.g., $\{1.4348, 2.4348, 2.9, 3.9 \}$ and notice that $2.9-1.4348=3.9-2.4348$
 * *Factor*: the difference between elements does not always mean the same thing.
-    * Ordered: E.g., $\{1^{st}, 2^{nd}, 3^{rd}\}$ place in a race and notice that $1^{st}$ place - $2^{nd}$ place does not equal $2^{nd}$ place - $3^{rd}$ place for a very competitive person.
+    * Ordered: E.g., $\{1^{st}, 2^{nd}, 3^{rd}\}$ place in a race and notice that $1^{st}$ - $2^{nd}$ place does not equal $2^{nd}$ - $3^{rd}$ place for a very competitive person who cares only about winning.
     * Unordered (categorical): E.g., $\{Amanda, Bert, Charlie\}$ and notice that $Amanda - Bert$ never makes sense.
 
 
@@ -63,11 +63,6 @@ gsub(pattern="ing", replacement="", kingText)
 #gsub("[aeiouy]", "_", kingText)
 #gsub("([[:alpha:]]{3})ing\\b", "\\1", kingText) 
 ```
-See 
-
-* <https://meek-parfait-60672c.netlify.app/docs/M1_R-intro_03_text.html>
-* <https://raw.githubusercontent.com/rstudio/cheatsheets/main/regex.pdf>
-
 
 ## Datasets
 
@@ -175,75 +170,127 @@ Regardless of the data types you have, you typically begin by inspecting your da
 Consider, for example, historical data on crime in the US.
 
 ```{r}
-head(USArrests)
+head(USArrests) # Actual Data
 
 # Check NA values
-X <- c(1,NA,2,3)
+X <- c(3,3.1,NA,0.02) #Small dataset we will use in numerical examples
 sum(is.na(X))
 ```
 
-To further examine a particular variable, we look at its distribution. In what follows, we will often work with data as vector $X=(X_{1}, X_{2}, ....X_{N})$, where there are $N$ observations and $X_{i}$ is the value of the $i$th one.
-
+To further examine a particular variable, we look at its distribution. In what follows, we will often work with data as vector $\hat{X}=(\hat{X}_{1}, \hat{X}_{2}, ....\hat{X}_{n})$, where there are $n$ observations and $\hat{X}_{i}$ is the value of the $i$th one. We often analyze observations in comparison to some value $x$. 
+```{r}
+X <- c(3,3.1,0.02) # Data: "big X"
+x <- 2 # particular value: "little x"
+sum(X <= x)
+sum(X == x)
+```
 
 #### **Histogram Density Estimate**. {-}
-The histogram divides the range of the data into $L$ exclusive bins of equal-width $h$, and count the number of observations within each bin. We often rescale the counts so that the total area of all bins sums to one, which allows us to interpret the numbers as a *density* measuring a proportion of the data in each bin. Mathematically, for an exclusive bin $\left(x-\frac{h}{2}, x+\frac{h}{2} \right]$ defined by their midpoint $x$ and width $h$, we compute
+The [histogram](https://en.wikipedia.org/wiki/Histogram) measures the proportion of the data in different bins. It does so by dividing the range of the data into exclusive bins of equal-width $h$, and count the number of observations within each bin. We often rescale the counts, dividing by the number of observations $n$ multiplied by bin-width $h$, so that the total area of the histogram sums to one, which allows us to interpret the numbers as a *density*.
+
+Mathematically, for an exclusive bin $\left(x-\frac{h}{2}, x+\frac{h}{2} \right]$ defined by their midpoint $x$ and width $h$, we compute
 \begin{eqnarray}
-\widehat{f}(x) &=& \frac{  \sum_{i=1}^{N} \mathbf{1}\left( X_{i} \in \left(x-\frac{h}{2}, x+\frac{h}{2} \right] \right) }{N h}.
+\widehat{f}(x) &=& \frac{  \sum_{i=1}^{n} \mathbf{1}\left( \hat{X}_{i} \in \left(x-\frac{h}{2}, x+\frac{h}{2} \right] \right) }{n h},
 \end{eqnarray}
-Note that $\mathbf{1}()$ is an indicator function, which equals $1$ if the expression inside is TRUE and $0$ otherwise. E.g., if $X_{i}=3.8$ then $\mathbf{1}\left( X_{i} \in \left(1-\frac{1}{2}, 1+\frac{1}{2} \right] \right)=0$ and $\mathbf{1}\left( X_{i} \in \left(4-\frac{1}{2}, 4+\frac{1}{2} \right] \right)=1$. Also note that we compute $\widehat{f}(x)$ for each bin midpoint $x$.^[If the bins exactly span the range, then $h=[\text{max}(X_{i}) - \text{min}(X_{i})]/L$ and $x\in \left\{ \frac{\ell h}{2} + \text{min}(X_{i}) \right\}_{\ell=1}^{L}$.]
+where $\mathbf{1}()$ is an indicator function that equals $1$ if the expression inside is TRUE and $0$ otherwise. E.g., if $\hat{X}_{i}=3.8$ and $h=1$, then for $x=1$ we have $\mathbf{1}\left( \hat{X}_{i} \in \left(1-\frac{h}{2}, 1+\frac{h}{2} \right] \right)=\mathbf{1}\left( 3.8 \in \left(0.5, 1.5\right] \right)=0$ and for $x=4$ $\mathbf{1}\left( \hat{X}_{i} \in \left(4-\frac{h}{2}, 4+\frac{h}{2} \right] \right)=\mathbf{1}\left(  3.8 \in \left(3.5, 4.5\right] \right)=1$.
+
+Note that the area of the rectangle is "base x height", which is $h \times \widehat{f}(x)= \sum_{i=1}^{n} \mathbf{1}\left( \hat{X}_{i} \in \left(x-\frac{h}{2}, x+\frac{h}{2} \right] \right) /n$. This means the rectangle area equals the proportion of data in the bin. We compute $\widehat{f}(x)$ for each bin midpoint $x$, and the area of all rectangles sums to one.^[If $L$ distinct bins exactly span the range, then $h=[\text{max}(\hat{X}_{i}) - \text{min}(\hat{X}_{i})]/L$ and $x\in \left\{ \frac{\ell h}{2} + \text{min}(\hat{X}_{i}) \right\}_{\ell=1}^{L}$.]
 
 :::{.callout-note icon=false collapse="true"}
-For example, let $X=(3,3.1,0.02)$ and use bins $(0,1], (1,2], (2,3], (3,4]$. In this case, the midpoints are $x=(0.5,1.5,2.5,3.5)$ and $h=1$. Then the counts at each midpoints are $(1,0,0,2)$. Since $\frac{1}{Nh}=1/3$, we also have $\widehat{f}(x)=(1/3,0,1/3,1/3)$.
+For example, let $X=(3,3.1,0.02)$ and use bins $(0,1], (1,2], (2,3], (3,4]$. In this case, the midpoints are $x=(0.5,1.5,2.5,3.5)$ and $h=1$. Then the counts at each midpoints are $(1,0,1,1)$. Since $\frac{1}{nh}=\frac{1}{3\times1}=frac{1}{3}$, we can rescale the counts to compute the density as $\widehat{f}(x)=(1,0,1,1) \frac{1}{3}=(1/3,0,1/3,1/3)$.
+
+
 ```{r}
 # Intuitive Examples
 X <- c(3,3.1,0.02)
-hist(X, breaks=c(0,1,2,3,4), plot=F)
+Xhist <- hist(X, breaks=c(0,1,2,3,4), plot=F)
+Xhist
+
+# base x height
+base <- 1
+height <- Xhist$density
+sum(base*height)
 ```
 
-Now intuitively work through an example with three bins instead of four.
+For another example, use the bins $(0,2]$ and $(2,4]$. So the midpoints are $1$ and $3$, and the bin width is $2$. Only one observation, $0.02$, falls in the bin $(0,2]$. The other two observations, $3$ and $3.1$, fall into the bin $(2,4]$. The scaling factor is $\frac{1}{nh}=\frac{1}{3\times 2}=\frac{1}{6}$. So the first bin has density $f(1)=1\frac{1}{6}=1/6$ and the second bin has density $f(3)=2\frac{1}{6}=2/6$. The area of the first bin's rectangle is $2 \times f(1)=2/6=1/3$ and the area of the second rectangle is $2 \times f(3)=4/6=2/3$.
+
+Now intuitively work through an example with three bins instead of four. Compute the areas 
 ```{r}
-hist(X, breaks=c(0,4/3,8/3,4), plot=F)
+Xhist <- hist(X, breaks=c(0,4/3,8/3,4), plot=F)
+base <- 4/3
+height <- Xhist$density
+sum(base*height)
+
 
 # as a default, R uses bins (,] instead of [,)
-# but you can change that 
-hist(X, breaks=c(0,4/3,8/3,4), plot=F, right=F)
+# but you can change that with "right=F"
+# hist(X, breaks=c(0,4/3,8/3,4), plot=F, right=F)
 ```
 :::
 
 ```{r}
 # Practical Example
-hist(USArrests[,'Murder'], freq=F, breaks=20,
+X <- USArrests[,'Murder']
+hist(X,
+    breaks=seq(0,20,by=1), #bin width=1
+    freq=F,
     border=NA, 
     main='',
-    xlab='Murder Arrests',
-    ylab='Proportion of States in each bin')
+    xlab='Murder Arrests')
 # Raw Observations
 rug(USArrests[,'Murder'], col=grey(0,.5))
+
+# Since h=1, the density equals the proportion of states in each bin
+# Redo this example with h=2
 ```
 
-Note that if you your data are factor data, or discrete cardinal data, you can directly plot the counts or proportions in a *bar plot*. For each unique outcome $x$ we compute
+Note that if you your data are factor data, or discrete cardinal data, you can directly plot the proportions in a *bar plot*. For each unique outcome $x$ we compute
 \begin{eqnarray}
-\widehat{p}_{x}=\sum_{i=1}^{N}\mathbf{1}\left(X_{i}=x\right)/N.
+\widehat{p}_{x}=\sum_{i=1}^{n}\mathbf{1}\left(\hat{X}_{i}=x\right)/n.
 \end{eqnarray}
+where $n$ is the number of observations and $\sum_{i=1}^{n}\mathbf{1}\left(\hat{X}_{i}=x\right)$ counts the number of observations equal to $x$. The height of each line equals the proportion of data with a specific value.
+
 ```{r}
 # Discretized data
-xr <- floor(USArrests[,'Murder']) #rounded down
-#table(xr)
-proportions <- table(xr)/length(xr)
+X <- USArrests[,'Murder']
+Xr <- floor(X) #rounded down
+#table(Xr)
+proportions <- table(Xr)/length(Xr)
 plot(proportions, col=grey(0,.5),
-    xlab='Murder Rate (Discretized)',
+    xlab='Murder Arrests (Discretized)',
     ylab='Proportion of States with each value')
 ```
 
 #### **Empirical *Cumulative* Distribution Function**. {-}
 The ECDF counts the proportion of observations whose values are less than or equal to $x$; 
 \begin{eqnarray}
-\widehat{F}(x) = \frac{1}{N} \sum_{i}^{N} \mathbf{1}(X_{i} \leq x).
+\widehat{F}(x) = \frac{1}{n} \sum_{i}^{n} \mathbf{1}( \hat{X}_{i} \leq x).
 \end{eqnarray}
-Typically, we compute this for each unique value of $x$ in the dataset, but sometimes other values of $x$ too.
+Typically, we compute this for each unique value of $x$ in the dataset. The ECDF jumps up by $1/n$ at each of the $n$ data points.
 
 :::{.callout-note icon=false collapse="true"}
-For example, let $X=(3,3.1,0.02)$ and consider the points $x=(0.5,1.5,2.5,3.5)$. Then the counts are $(1,1,1,3)$. Since $N=3$, $\widehat{F}(x)=(1/3,1/3,1/3,1)$.
+For example, let $X=(3,3.1,0.02)$. We reorder the observations as $(0.02, 3, 3.1)$, so that there are discrete jumps of $1/n=1/3$ at each value. Consider the points $x \in \{0.5,2.5,3.5\}$. At $x=0.5$, $F(0.5)$ measures the proportion of the data $\leq 0.5$. Since only one observations, $0.02$, of three is $\leq 0.5$, we can compute $F(0.5)=1/3$. Similarly, since only one observations, $0.02$, of three is $\leq 2.5$, we can compute $F(2.5)=1/3$. Since all observations are $\leq 3.5$, we can compute $F(3.5)=1$.
+```{r}
+X <- c(3,3.1,0.02)
+Fhat <- ecdf(X)
+
+# Visualized
+plot(Fhat)
+
+# Evaluated at the data
+x <- X
+Fhat(X)
+#sum(X<=3)/length(X)
+#sum(X<=3.1)/length(X)
+#sum(X<=0.02)/length(X)
+
+# Evaluated at other points
+x <- c(0.5, 2.5, 3.5)
+Fhat(x)
+#sum(X<=0.5)/length(X)
+#sum(X<=2.5)/length(X)
+#sum(X<=3.5)/length(X)
+```
 :::
 
 ```{r}
@@ -261,9 +308,10 @@ rug(USArrests[,'Murder'])
 #### **Quantiles**. {-}
 You can summarize the distribution of data using *quantiles*: the $q$th quantile is the value where $q$ percent of the data are below and ($1-q$) percent are above.
 
-* The *median* is the point where half of the data has lower values and the other half has higher values.
-* The *lower quartile* is the point where $25%$ of the data has lower values and the other $75%$ has higher values.
+
 * The *min* is the smallest value (or the most negative value if there are any), where $0%$ of the data has lower values.
+* The *median* is the point where half of the data has lower values and the other half has higher values.
+* The *max* is the smallest value (or the most negative value if there are any), where $100%$ of the data has lower values.
 
 :::{.callout-note icon=false collapse="true"}
 For example, if $X=(0,0,0.02,3,5)$ then the median is $0.02$, the lower quartile is $0$, and the upper quartile is $3$. (The number $0$ is also special: the most frequent observation is called the *mode*.) 
@@ -273,43 +321,37 @@ X <-  c(3.1, 3, 0.02)
 quantile(X, probs=c(0,.5,1))
 ```
 
-Now work through an intuitive example with $N=24$ data points (hint: split the ordered observations into groups of six).
+Now work through an intuitive example with observations $\{1,2,...,13\}$. Hint: split the ordered observations into four groups.
 :::
 
+We are often also interested in quartiles: where $25\%$ of the data fall below $x$ (lower quartile) and where $75\%$ of the data fall below $x$ (upper quartile). Sometimes we are also interested in deciles: where $10\%$ of the data fall below $x$ (lower decile) and where $90\%$ of the data fall below $x$ (upper decile). 
 ```{r}
-# quantiles
+# common quantiles
 X <- USArrests[,'Murder']
 quantile(X)
 
-# deciles are quantiles
+# All deciles are quantiles
 quantile(X, probs=seq(0,1, by=.1))
-```
 
-Note that every CDF is associated with a *quantile function* that is the inverse of the CDF: the $x$ value where $p$ percent of the data fall below it. The median is the value $x$ where $50\%$ of the data fall below $x$, for example.
-
-
-```{r}
-# Empirical Distribution
-X <- USArrests$Murder
+# Visualized: Inverting the Empirical Distribution
 FX_hat <- ecdf(X)
 plot(FX_hat, lwd=2, xlim=c(0,20),
     pch=16, col=grey(0,.5), main='')
-
-# Two Example Quantiles
-p <- c(.25, .9)
-cols <- c(2,4)
+# Two Examples of Quantiles 
+p <- c(.25, .9) # Lower Quartile, Upper Decile
+cols <- c(2,4) 
 QX_hat <- quantile(X, p, type=1)
 QX_hat
-
-# Visualized
 segments(QX_hat, p, -10, p, col=cols)
 segments(QX_hat, p, QX_hat, 0, col=cols)
 mtext( round(QX_hat,2), 1, at=QX_hat, col=cols)
 ```
 
+There are some issues with quantiles with smaller datasets. E.g., to compute the median of ${3,3.1,0,1}$, we need some ways to break ties (of which there are many options). Similar issues arise for other quantiles, so quantiles are not used for such small datasets.
+
 
 :::{.callout-tip icon=false collapse="true"}
-To calculate quantiles, the computer sorts the observations from smallest to largest as $X_{(1)}, X_{(2)},... X_{(N)}$, and then computes quantiles as $X_{ (q \times N) }$. Note that $(q \times N)$ is rounded and there are different ways to break ties.
+To calculate quantiles, the computer sorts the observations from smallest to largest as $\hat{X}_{(1)}, \hat{X}_{(2)},... \hat{X}_{(N)}$, and then computes quantiles as $\hat{X}_{ (q \times N) }$. Note that $(q \times N)$ is rounded and there are different ways to break ties.
 ```{r}
 X <- USArrests[,'Murder']
 Xo <- sort(X)
@@ -317,7 +359,7 @@ Xo
 
 # median
 Xo[length(Xo)*.5]
-quantile(X, probs=.5, type=4)
+quantile(X, probs=.5, type=4) #tie break rule #4
 
 # min
 Xo[1]
@@ -327,7 +369,7 @@ quantile(Xo, probs=0)
 :::
 
 #### **Boxplots**. {-}
-Boxplots also summarize the distribution. The boxplot shows the median (solid black line) and interquartile range ($IQR=$ upper quartile $-$ lower quartile; filled box).^[Technically, the upper and lower *hinges* use two different versions of the first and third quartile. See <https://stackoverflow.com/questions/40634693/lower-and-upper-quartiles-in-boxplot-in-r>.] As a default, whiskers are shown as $1.5\times IQR$ and values beyond that are highlighted as outliers (so whiskers do not typically show the data range). You can alternatively show all the raw data points instead of whisker+outliers.
+[Boxplots](https://en.wikipedia.org/wiki/Box_plot) also summarize the distribution. The boxplot shows the median (solid black line) and interquartile range ($IQR=$ upper quartile $-$ lower quartile; filled box).^[Technically, the upper and lower *hinges* use two different versions of the first and third quartile. See <https://stackoverflow.com/questions/40634693/lower-and-upper-quartiles-in-boxplot-in-r>.] As a default, whiskers are shown as $1.5\times IQR$ and values beyond that are highlighted as outliers (so whiskers do not typically show the data range). You can alternatively show all the raw data points instead of whisker+outliers.
 
 ```{r}
 boxplot(USArrests[,'Murder'],
@@ -339,5 +381,15 @@ stripchart(USArrests[,'Murder'],
     vert=T, add=T)
 ```
 
+## Further Reading
+
+ECDF
+
+* <https://library.virginia.edu/data/articles/understanding-empirical-cumulative-distribution-functions>
+
+Handling Strings
+
+* <https://meek-parfait-60672c.netlify.app/docs/M1_R-intro_03_text.html>
+* <https://raw.githubusercontent.com/rstudio/cheatsheets/main/regex.pdf>
 
 

@@ -208,17 +208,6 @@ coef( fe_reg0 )
 
 With fixed effects, we can also compute averages for each group and construct a *between estimator*: $\bar{y}_i = \alpha + \bar{x}_i \beta$. Or we can subtract the average from each group to construct a *within estimator*: $(y_{it} - \bar{y}_i) = (x_{it}-\bar{x}_i)\beta$. 
 
-But note that many factors are not additively separable. This is easy to check with an F-test;
-```{r}
-reg0 <- lm(y~-1+x+fo+fu, dat_f)
-reg1 <- lm(y~-1+x+fo*fu, dat_f)
-reg2 <- lm(y~-1+x*fo*fu, dat_f)
-
-anova(reg0, reg2)
-anova(reg0, reg1, reg2)
-```
-
-
 <!-- 
 > The labels "random effects" and "fixed effects" are misleading. These are labels which arose in the early literature and we are stuck with these labels today. In a previous era regressors were viewed as "fixed". Viewing the individual effect as an unobserved regressor leads to the label of the individual effect as "fixed". Today, we rarely refer to regressors as "fixed" when dealing with observational data. We view all variables as random. Consequently describing u i as "fixed" does not make much sense and it is hardly a contrast with the "random effect" label since under either assumption u i is treated as random. Once again, the labels are unfortunate but the key difference is whether u i is correlated with the regressors.
 -->
@@ -308,6 +297,51 @@ Under some additional assumptions $F_{q}$ follows an F-distribution. For more ab
 
 #### **ANOVA** {-}
 
+Under some additional parametric assumptions about the data generating process, the F-statistic follows an $F$ distribution. This case is well-studied historically, often under the title Analysis of Variance (ANOVA).
+
+An important case corresponds to the restricted model having no explanatory variables (i.e., our model is $Y_{i}=\overline{Y}$)
+
+```{r}
+reg_full <- lm(Murder ~ Assault + UrbanPop + Rape, data = USArrests)
+reg_none <- lm(Murder ~ 1, dat=USArrests)
+anova(reg_none, reg_full)
+
+# Manual F-test
+rss0 <- sum(resid(reg_none)^2) # restricted
+rss1 <- sum(resid(reg_full)^2) # unrestricted
+df0  <- df.residual(reg_none)
+df1  <- df.residual(reg_full)
+F    <- ((rss0 - rss1)/(df0-df1)) / (rss1/df1) # observed F stat
+p    <- 1-pf(F, df0-df1, df1) # where F falls in the F-distribution
+cbind(F, p)
+```
+
+Whether you take a parametric or nonparametric approach to hypothesis testing, you can easily test whether variables are additively separable with an $F$ test.
+```{r}
+# Empirical Example
+reg1 <- lm(Murder~Assault+UrbanPop, USArrests)
+reg2 <- lm(Murder~Assault*UrbanPop, USArrests)
+anova(reg1, reg2)
+```
+
+```{r, eval=F}
+# Simulation Example
+N <- 1000
+x <- runif(N,3,8)
+e <- rnorm(N,0,0.4)
+fo <- factor(rbinom(N,4,.5), ordered=T)
+fu <- factor(rep(c('A','B'),N/2), ordered=F)
+dA <- 1*(fu=='A')
+y <- (2^as.integer(fo)*dA )*sqrt(x)+ 2*as.integer(fo)*e
+dat_f <- data.frame(y,x,fo,fu)
+
+reg0 <- lm(y~-1+x+fo+fu, dat_f)
+reg1 <- lm(y~-1+x+fo*fu, dat_f)
+reg2 <- lm(y~-1+x*fo*fu, dat_f)
+
+anova(reg0, reg2)
+anova(reg0, reg1, reg2)
+```
 
 
 ## Further Reading

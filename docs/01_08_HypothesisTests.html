@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>7&nbsp; Hypothesis Tests – Introductory Economic Statistics: A Data-Driven Approach in R</title>
+<title>7&nbsp; Hypothesis Tests – Introductory Economic Statistics: A Data-Driven Approach using R</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -171,7 +171,7 @@ window.Quarto = {
       <a href="./index.html" class="sidebar-logo-link">
       </a>
     <div class="sidebar-title mb-0 py-0">
-      <a href="./">Introductory Economic Statistics: A Data-Driven Approach in R</a> 
+      <a href="./">Introductory Economic Statistics: A Data-Driven Approach using R</a> 
         <div class="sidebar-tools-main">
     <a href="https://github.com/Jadamso/Rbooks/" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
   <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
@@ -369,7 +369,7 @@ window.Quarto = {
 <hr>
 <section id="basic-ideas" class="level2" data-number="7.1">
 <h2 data-number="7.1" class="anchored" data-anchor-id="basic-ideas"><span class="header-section-number">7.1</span> Basic Ideas</h2>
-<p>In this section, we test hypotheses using <em>data-driven</em> methods that assume much less about the data generating process. There are two main ways to conduct a hypothesis test to do so: inverting a confidence interval and imposing the null.</p>
+<p>In this section, we test hypotheses using <em>data-driven</em> methods that assume much less about the data generating process. There are two main ways to conduct a hypothesis test to do so: inverting a confidence interval and imposing the null. Both approaches rely on the bootstrap: resampling the data to approximate sampling variability. The first treats the distribution of estimates directly; the second explicitly enforces the null hypothesis to evaluate how unusual the observed statistic is</p>
 <section id="invert-a-ci." class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="invert-a-ci."><strong>Invert a CI</strong>.</h4>
 <p>One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. We then use this decision rule</p>
@@ -377,25 +377,29 @@ window.Quarto = {
 <li>reject the null if value falls outside of the interval</li>
 <li>fail to reject the null if value falls inside of the interval</li>
 </ul>
+<p>We typically use a 95% confidence interval to create a <em>rejection region</em>.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>sample_dat <span class="ot">&lt;-</span> USArrests[,<span class="st">'Murder'</span>]</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sample_mean <span class="ot">&lt;-</span> <span class="fu">mean</span>(sample_dat)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">length</span>(sample_dat)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>Jmeans <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>n, <span class="cf">function</span>(i){</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    dati <span class="ot">&lt;-</span> sample_dat[<span class="sc">-</span>i]</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mean</span>(dati)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(Jmeans, <span class="at">breaks=</span><span class="dv">25</span>,</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="fl">7.5</span>,<span class="fl">8.1</span>),</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">''</span>, <span class="at">xlab=</span><span class="fu">expression</span>( <span class="fu">bar</span>(X)[<span class="sc">-</span>i]))</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># CI</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(Jmeans, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>ci_95, <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co"># H0: mean=8</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="dv">8</span>, <span class="at">col=</span><span class="dv">2</span>, <span class="at">lwd=</span><span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>) <span class="co"># to be replicable</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>bootstrap_means <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="dv">999</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_means)){</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    dat_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span>T) </span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    mean_b <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    bootstrap_means[b] <span class="ot">&lt;-</span> mean_b</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_means, <span class="at">breaks=</span><span class="dv">25</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>,</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">''</span>,</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Bootstrap Samples'</span>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co"># CI</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_means, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>ci_95, <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># H0: mean=9</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="dv">9</span>, <span class="at">col=</span><span class="dv">2</span>, <span class="at">lwd=</span><span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -408,25 +412,29 @@ window.Quarto = {
 </section>
 <section id="impose-the-null." class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="impose-the-null."><strong>Impose the Null</strong>.</h4>
-<p>We can also compute a <em>null distribution</em>: the sampling distribution of the statistic under the null hypothesis (assuming your null hypothesis was true). We use the bootstrap to loop through a large number of “resamples”. In each iteration of the loop, we impose the null hypothesis and re-estimate the statistic of interest. We then calculate the range of the statistic across all resamples and compare how extreme the original value we observed is. We use a 95% confidence interval of the null distribution to create a <em>rejection region</em>.</p>
+<p>We can also compute a <em>null distribution</em>: the sampling distribution of the statistic under the null hypothesis (assuming your null hypothesis was true). We use the bootstrap to loop through a large number of “resamples”. In each iteration of the loop, we impose the null hypothesis and re-estimate the statistic of interest. We then calculate the range of the statistic across all resamples and compare how extreme the original value we observed is.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>sample_dat <span class="ot">&lt;-</span> USArrests[,<span class="st">'Murder'</span>]</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>sample_mean <span class="ot">&lt;-</span> <span class="fu">mean</span>(sample_dat)</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap NULL: mean=8</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>Bmeans0 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span><span class="sc">^</span><span class="dv">4</span>, <span class="cf">function</span>(i) {</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    dat_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span>T) </span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    mean_b <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b) <span class="sc">+</span> (<span class="dv">8</span> <span class="sc">-</span> sample_mean) <span class="co"># impose the null by recentering</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(mean_b)</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(Bmeans0, <span class="at">breaks=</span><span class="dv">25</span>, <span class="at">border=</span><span class="cn">NA</span>,</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">''</span>, <span class="at">xlab=</span><span class="fu">expression</span>( <span class="fu">bar</span>(X)[b]) )</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(Bmeans0, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>)) <span class="co"># critical region</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>ci_95, <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sample_mean, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap NULL: mean=9</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap shift: center each bootstrap resample so that the distribution satisfies the null hypothesis on average.</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="dv">9</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>bootstrap_means_null <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="dv">999</span>)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_means_null)){</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    dat_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span>T) </span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    mean_b <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b) <span class="sc">+</span> (mu <span class="sc">-</span> sample_mean) <span class="co"># impose the null via Bootstrap shift</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    bootstrap_means_null[b] <span class="ot">&lt;-</span> mean_b</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_means_null, <span class="at">breaks=</span><span class="dv">25</span>, <span class="at">border=</span><span class="cn">NA</span>,</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">''</span>,</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Null Bootstrap Samples'</span>)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_means_null, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>)) <span class="co"># critical region</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>ci_95, <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sample_mean, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -438,29 +446,34 @@ window.Quarto = {
 </div>
 </section>
 </section>
-<section id="default-statistics" class="level2" data-number="7.2">
-<h2 data-number="7.2" class="anchored" data-anchor-id="default-statistics"><span class="header-section-number">7.2</span> Default Statistics</h2>
-<section id="p-values." class="level4 unnumbered">
-<h4 class="unnumbered anchored" data-anchor-id="p-values."><strong>p-values</strong>.</h4>
-<p>This is the frequency you would see something as extreme as your statistic when sampling from the null distribution.</p>
-<p>There are three associated tests: the two-sided test (observed statistic is extremely high or low) or one of the one-sided tests (observed statistic is extremely low, observed statistic is extremely high). E.g.</p>
+<section id="p-values" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="p-values"><span class="header-section-number">7.2</span> p-values</h2>
+<p>A <em>p-value</em> is the frequency you see something as extreme as your statistic when sampling from the null distribution. There are three tests associated with p-values: the two-sided test (observed statistic is either extremely high or low) or one of the one-sided tests (observed statistic is extremely low, observed statistic is extremely high).</p>
+<p>For a concrete example, consider whether the mean statistic, <span class="math inline">\(\bar{X}\)</span>, is centered on a theoretical value of <span class="math inline">\(\mu=9\)</span> for the population. If your null hypothesis is that the theoretical mean is eight, <span class="math inline">\(H_{0}: \mu =9\)</span>, and you calculated the mean for your sample as <span class="math inline">\(\bar{x}\)</span>, then you can consider any one of these three alternative hypotheses:</p>
 <ul>
-<li><span class="math inline">\(HA​: \bar{X} &gt; 8\)</span> implies a right tail test</li>
-<li><span class="math inline">\(HA: \bar{X} &lt; 8\)</span> implies a left tail test</li>
-<li><span class="math inline">\(HA​: \bar{X} \neq 8\)</span> implies a two tail test</li>
+<li><span class="math inline">\(H_{A​}: \mu &gt; 9\)</span>, a right-tail test <span class="math inline">\(Prob( \bar{X} &gt; \bar{x} \mid \mu = 9 )\)</span></li>
+<li><span class="math inline">\(H_{A}: \mu &lt; 9\)</span>, a left-tail test <span class="math inline">\(Prob( \bar{X} &lt; \bar{x} \mid \mu = 9 )\)</span></li>
+<li><span class="math inline">\(H_{A}​: \mu \neq 9\)</span>, a two-tail test</li>
 </ul>
-<p>In any case, typically “p&lt;.05: statistically significant” and “p&gt;.05: not statistically significant”.</p>
-<p>One sided example</p>
+<p>A one-sided test is straightforward to implement via a bootstrap null distribution. For a left-tail test, we examine <span class="math display">\[\begin{eqnarray}
+Prob( \bar{X} &lt; \bar{x} \mid \mu = 9 )
+    &amp;\approx&amp; Prob( \bar{x}^{\text{boot}} &lt; \bar{x} \mid  \mu^{\text{boot}} = 9 ) = \widehat{F}^{\text{boot}}_{0}(\bar{x}),
+\end{eqnarray}\]</span> where <span class="math inline">\(\widehat{F}^{\text{boot}}_{0}\)</span> is the ECDF of the bootstrap null distribution. For a right-tail test, we examine <span class="math inline">\(Prob( \bar{X} &gt; \bar{x} \mid \mu = 9 ) \approx 1-\widehat{F}^{\text{boot}}_{0}(\bar{x})\)</span>.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># One-Sided Test, ALTERNATIVE: mean &gt; 8</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Prob( boot0_means &gt; sample_mean) </span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>Fhat0 <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(Bmeans0) <span class="co"># Right tail</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(Fhat0,</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>( beta[b] ),</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">'Null Bootstrap Distribution for means'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sample_mean, <span class="at">col=</span><span class="st">'red'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># One-Sided Test, ALTERNATIVE: mean &gt; 9</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize One Sided Prob. &amp; reject region boundary</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_means_null, <span class="at">border=</span><span class="cn">NA</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq=</span>F, <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'Null Bootstrap'</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sample_mean, <span class="at">col=</span><span class="dv">4</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Equivalent Visualization</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>Fhat0 <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(bootstrap_means_null) <span class="co"># Look at right tail</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(Fhat0,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">''</span>,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Null Bootstrap'</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sample_mean, <span class="at">col=</span><span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -469,153 +482,192 @@ window.Quarto = {
 </figure>
 </div>
 </div>
-</div>
-<div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">-</span> <span class="fu">Fhat0</span>(sample_mean) <span class="co">#Right Tail</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(p <span class="sc">&gt;</span>.<span class="dv">05</span>){</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">'fail to reject the null that sample_mean=8, at the 5% level'</span>)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">'reject the null that sample_mean=8 in favor of &gt;8, at the 5% level'</span>)</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Numerically Compute Two Sided Probability</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">-</span> <span class="fu">Fhat0</span>(sample_mean) <span class="co">#Compute right Tail</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>p1</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.986987</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<p>Two sided example</p>
+<p>A two sided test is slightly more complicated to compute. We want the probability mass in both tails, for the random variable <span class="math inline">\(\bar{X}\)</span> that is at least as far from the null mean of <span class="math inline">\(9\)</span> as our observed sample mean <span class="math inline">\(\bar{x}\)</span>. <span class="math display">\[\begin{eqnarray}
+Prob( |\bar{X} - \mu| \geq |\bar{x} - \mu| \mid \mu = 9 )
+&amp;\approx&amp; Prob( |\bar{x}^{\text{boot}}- \mu^{\text{boot}}| \geq |\bar{x}- \mu^{\text{boot}}|  \mid \mu^{\text{boot}} = 9) \\
+&amp;=&amp; 1-\widehat{F}^{|\text{boot}|}(|\bar{x}-9|),
+\end{eqnarray}\]</span> where <span class="math inline">\(\widehat{F}^{|\text{boot}|}\)</span> is the ECDF of <span class="math inline">\(|\bar{x}^{\text{boot}}- \mu^{\text{boot}}|\)</span>.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Two-Sided Test, ALTERNATIVE: mean &lt; 8 or mean &gt;8</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Prob(boot0_means &gt; sample_mean or -boot0_means &lt; sample_mean)</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>Fhat0 <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(Bmeans0)</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>p_left <span class="ot">&lt;-</span> <span class="fu">Fhat0</span>(sample_mean) <span class="co">#Left Tail</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>p_right <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">Fhat0</span>(sample_mean) <span class="co">#Right Tail</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">2</span><span class="sc">*</span><span class="fu">min</span>(p_left, p_right)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(p <span class="sc">&gt;</span>.<span class="dv">05</span>){</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">'fail to reject the null that sample_mean=8 at the 5% level'</span>)</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">'reject the null that sample_mean=8 in favor of either &lt;8 or &gt;8 at the 5% level'</span>)</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</details>
-</div>
-</section>
-<section id="t-values." class="level4 unnumbered">
-<h4 class="unnumbered anchored" data-anchor-id="t-values."><strong>t-values</strong>.</h4>
-<p>A t-value standardizes the statistic you are using for hypothesis testing: <span class="math display">\[ t = (\hat{\mu} - \mu_{0}) / \hat{s_{\mu}} \]</span></p>
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>jack_se <span class="ot">&lt;-</span> <span class="fu">sd</span>(Jmeans)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>mean0 <span class="ot">&lt;-</span> <span class="dv">8</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>jack_t <span class="ot">&lt;-</span> (sample_mean <span class="sc">-</span> mean0)<span class="sc">/</span>jack_se</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Note that you can also use a corrected se</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co"># jack_se &lt;- sqrt((n-1)/n) * sd(Jmeans)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</details>
-</div>
-<p>There are several benefits to this:</p>
-<ul>
-<li>makes the statistic comparable across different studies</li>
-<li>makes the null distribution not depend on theoretical parameters (<span class="math inline">\(\sigma\)</span>)</li>
-<li>makes the null distribution theoretically known asymptotically (approximately)</li>
-</ul>
-<p>The last point implies we are dealing with a symmetric distributions: <span class="math inline">\(Prob( t_{boot} &gt; t ~\text{or}~ t_{boot} &lt; -t) = Prob( |t| &lt; |t_{boot}| )\)</span>.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>boot_t0 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span><span class="sc">^</span><span class="dv">3</span>, <span class="cf">function</span>(i) {</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    dat_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span>T) </span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    mean_b <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b) <span class="sc">+</span> (<span class="dv">8</span> <span class="sc">-</span> sample_mean) <span class="co"># impose the null by recentering</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># jack ses</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    jack_se_b <span class="ot">&lt;-</span> <span class="fu">sd</span>( <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(dat_b), <span class="cf">function</span>(i){</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mean</span>(dat_b[<span class="sc">-</span>i])</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    }) )</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    jack_t <span class="ot">&lt;-</span> (mean_b <span class="sc">-</span> mean0)<span class="sc">/</span>jack_se_b</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Two Sided Test</span></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>Fhat0 <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(<span class="fu">abs</span>(boot_t0))</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(Fhat0, <span class="at">xlim=</span><span class="fu">range</span>(boot_t0, jack_t),</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>( <span class="fu">abs</span>(<span class="fu">hat</span>(t)[b]) ),</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">'Null Bootstrap Distribution for t'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">abs</span>(jack_t), <span class="at">col=</span><span class="st">'red'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Two-Sided Test, ALTERNATIVE: mean &lt; 9 or mean &gt;9</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="dv">9</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize Two Sided Prob. &amp; reject region boundary</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(<span class="fu">abs</span>(bootstrap_means_null<span class="sc">-</span>mu),</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq=</span>F, <span class="at">breaks=</span><span class="dv">20</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">main=</span><span class="st">''</span>, <span class="at">xlab=</span><span class="st">'Null Bootstrap'</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">abs</span>(sample_mean<span class="sc">-</span>mu), <span class="at">col=</span><span class="dv">4</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Equivalent Visualization</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>Fhat_abs0 <span class="ot">&lt;-</span> <span class="fu">ecdf</span>( <span class="fu">abs</span>(bootstrap_means_null<span class="sc">-</span>mu) )</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(Fhat_abs0,</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">''</span>,</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Null Bootstrap'</span>)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">abs</span>(sample_mean<span class="sc">-</span>mu), <span class="at">col=</span><span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="01_08_HypothesisTests_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="01_08_HypothesisTests_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">Fhat0</span>( <span class="fu">abs</span>(jack_t) ) </span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>p</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.727</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(p <span class="sc">&gt;</span>.<span class="dv">05</span>){</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">'fail to reject the null that sample_mean=8, at the 5% level'</span>)</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">'reject the null that sample_mean=8 in favor of either &lt;8 or &gt;8, at the 5% level'</span>)</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Numerically Compute Two Sided Probability</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">Fhat_abs0</span>( <span class="fu">abs</span>(sample_mean<span class="sc">-</span>mu) )</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>p2</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.03303303</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
+</div>
+<section id="statistical-significance." class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="statistical-significance."><strong>Statistical significance</strong>.</h4>
+<p>Often, one may see or hear “p&lt;.05: statistically significant” and “p&gt;.05: not statistically significant”. That is decision making on purely statistical grounds, and it may or may not be suitable for your context. You simply need to know that whoever says those things is using <span class="math inline">\(5\%\)</span> as a critical value to reject an alternative hypothesis.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Purely-Statistical Decision Making Examples.</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># One Sided Test</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(p1 <span class="sc">&gt;</span>.<span class="dv">05</span>){</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">'fail to reject the null that sample_mean=9, at the 5% level'</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">'reject the null that sample_mean=9 in favor of &gt;9, at the 5% level'</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "fail to reject the null that sample_mean=9, at the 5% level"</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Two Sided Test</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(p2 <span class="sc">&gt;</span>.<span class="dv">05</span>){</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">'fail to reject the null that sample_mean=9, at the 5% level'</span>)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">'reject the null that sample_mean=9 in favor of either &lt;9 or &gt;9, at the 5% level'</span>)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "reject the null that sample_mean=9 in favor of either &lt;9 or &gt;9, at the 5% level"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>Beware that a common misreading of the p-value as “the probability the null is true”. That is false.</p>
+</section>
+<section id="caveat." class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="caveat."><strong>Caveat</strong>.</h4>
+<p>Also note that the <em>p-value</em> is itself a function of data, and hence a random variable that changes from sample to sample. Given that the <span class="math inline">\(5\%\)</span> level is somewhat arbitrary, and that the p-value both varies from sample to sample and is often misunderstood, it makes sense to give p-values a limited role in decision making.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>p_values <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="dv">300</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b2 <span class="cf">in</span> <span class="fu">seq</span>(p_values)){</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    bootstrap_means_null <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="dv">999</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_means_null)){</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>        dat_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span>T) </span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>        mean_b <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b) <span class="sc">+</span> (mu <span class="sc">-</span> sample_mean) <span class="co"># impose the null</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        bootstrap_means_null[b] <span class="ot">&lt;-</span> mean_b</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    Fhat_abs0 <span class="ot">&lt;-</span> <span class="fu">ecdf</span>( <span class="fu">abs</span>(bootstrap_means_null<span class="sc">-</span>mu) )</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    p2 <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">-</span> <span class="fu">Fhat_abs0</span>( <span class="fu">abs</span>(sample_mean<span class="sc">-</span>mu) )</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    p_values[b2] <span class="ot">&lt;-</span> p2</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(p_values, <span class="at">freq=</span>F,</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">main=</span><span class="st">''</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="01_08_HypothesisTests_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
 </div>
 </section>
 </section>
 <section id="other-statistics" class="level2" data-number="7.3">
 <h2 data-number="7.3" class="anchored" data-anchor-id="other-statistics"><span class="header-section-number">7.3</span> Other Statistics</h2>
-<p>The above procedure generalized from differences in “means” to other statistics like “medians” and other “quantiles”.</p>
+<section id="t-values." class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="t-values."><strong>t-values</strong>.</h4>
+<p>A <em>t-value</em> standardizes the approach for hypothesis tests of the mean: <span class="math display">\[\begin{eqnarray}
+\widehat{t} = (\bar{X} - \mu) / \widehat{se}(\bar{X})
+\end{eqnarray}\]</span></p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap Distribution Function</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>boot_d <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span><span class="sc">^</span><span class="dv">4</span>, <span class="cf">function</span>(b, <span class="at">q_null=</span><span class="fl">7.8</span>){</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    x_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span>T)</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    q_b <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x_b, <span class="at">probs=</span>.<span class="dv">5</span>)</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    d_b <span class="ot">&lt;-</span> q_b <span class="sc">-</span> q_null</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(d_b)</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co"># 2-Sided Test for Median Difference</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_d, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">font.main=</span><span class="dv">1</span>,</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">'Difference in Medians'</span>)</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">quantile</span>(boot_d, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>)), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="dv">0</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</details>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="01_08_HypothesisTests_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
-</div>
-<details class="code-fold">
-<summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">-</span> <span class="fu">ecdf</span>(boot_d)(<span class="dv">0</span>) <span class="do">## No Median Difference</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.2472</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Try with sample_dat &lt;- rnorm(100, 0, 2)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Sample t statistic</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>jackknife_means <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="fu">length</span>(sample_dat))</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(jackknife_means)){</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    jackknife_means[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b[<span class="sc">-</span>i])</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="dv">9</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>sample_t <span class="ot">&lt;-</span> (sample_mean <span class="sc">-</span> mu)<span class="sc">/</span><span class="fu">sd</span>(jackknife_means)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<p>The above procedure generalizes to differences in many other statistics</p>
+<p>There are several benefits to this:</p>
+<ul>
+<li>uses the same statistic for different hypothesis tests</li>
+<li>makes the statistic comparable across different studies</li>
+<li>removes dependence on unknown parameters by normalizing with a standard error</li>
+<li>makes the null distribution theoretically known asymptotically (approximately)</li>
+</ul>
+<p>For the first point, notice that the recentering adjustment affects two-sided tests (because they depend on distance from the null mean) but not one-sided tests (because adding a constant does not change rank order).</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 2-Sided Test for SD Differences</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>boot_d2 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span><span class="sc">^</span><span class="dv">4</span>, <span class="cf">function</span>(b, <span class="at">sd_null=</span><span class="fl">1.2</span>){</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    x_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span>T)</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    sd_b <span class="ot">&lt;-</span> <span class="fu">sd</span>(x_b)</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    d_b <span class="ot">&lt;-</span> sd_b <span class="sc">-</span> sd_null</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(d_b)</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_d2, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">font.main=</span><span class="dv">1</span>,</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">'Difference in Standard Deviations'</span>)</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">quantile</span>(boot_d2, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>)), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="dv">0</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>bootstrap_means_null <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="dv">999</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_means_null)){</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    dat_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span>T) </span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    mean_b <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b) <span class="sc">+</span> (mu <span class="sc">-</span> sample_mean) <span class="co"># impose the null</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    bootstrap_means_null[b] <span class="ot">&lt;-</span> mean_b</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co"># See that the "recentering" matters for two-sided tests</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ecdf</span>( <span class="fu">abs</span>(bootstrap_means_null<span class="sc">-</span>mu) )( <span class="fu">abs</span>(sample_mean<span class="sc">-</span>mu) )</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.966967</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="fu">ecdf</span>( <span class="fu">abs</span>(bootstrap_means_null) )( <span class="fu">abs</span>(sample_mean) )</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.01301301</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co"># See that the "recentering" doesn't matter for one-sided ones</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="fu">ecdf</span>( bootstrap_means_null<span class="sc">-</span>mu)( sample_mean<span class="sc">-</span>mu)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.01301301</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="fu">ecdf</span>( bootstrap_means_null )( sample_mean)</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.01301301</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>The last point implies we are typically dealing with a normal distribution that is well-studied, or another well-studied distribution derived from it.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Boostrap Null Distribution</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>bootstrap_t_null <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="dv">999</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_t_null)){</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    dat_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span>T) </span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    mean_b <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b) <span class="sc">+</span> (mu <span class="sc">-</span> sample_mean) <span class="co"># impose the null by recentering</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute t-stat using jackknife ses (same as above)</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    jackknife_means_b <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="fu">length</span>(dat_b))</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(jackknife_means_b)){</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>        jackknife_means_b[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b[<span class="sc">-</span>i])</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    jackknife_se_b <span class="ot">&lt;-</span> <span class="fu">sd</span>( jackknife_means_b )</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    jackknife_t_b <span class="ot">&lt;-</span> (mean_b <span class="sc">-</span> mu)<span class="sc">/</span>jackknife_se_b</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    bootstrap_t_null[b] <span class="ot">&lt;-</span> jackknife_t_b</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Two Sided Test</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>Fhat0 <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(<span class="fu">abs</span>(bootstrap_t_null))</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(Fhat0, </span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlim=</span><span class="fu">range</span>(bootstrap_t_null, sample_t),</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Null Bootstrap Distribution for |t|'</span>,</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">''</span>)</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">abs</span>(sample_t), <span class="at">col=</span><span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -626,14 +678,93 @@ window.Quarto = {
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">-</span> <span class="fu">ecdf</span>(boot_d2)(<span class="dv">0</span>)</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Try any function!</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co"># IQR(x_b)/median(x_b)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">Fhat0</span>( <span class="fu">abs</span>(sample_t) ) </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>p</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.04204204</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
+</section>
+<section id="quantiles-and-shape-statistics." class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="quantiles-and-shape-statistics."><strong>Quantiles and Shape Statistics</strong>.</h4>
+<p>Bootstrap allows hypothesis tests for any statistic, not just the mean, without relying on parametric theory. For example, the above procedures generalize from differences in <em>means</em> to statistics like <em>medians</em> and other quantiles.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Test for Median Differences (Impose the Null)</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap Null Distribution for the median</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Each Bootstrap shifts medians so that median = q_null</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>q_obs <span class="ot">&lt;-</span> <span class="fu">quantile</span>(sample_dat, <span class="at">probs=</span>.<span class="dv">5</span>)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>q_null <span class="ot">&lt;-</span> <span class="fl">7.8</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>bootstrap_quantile_null <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="dv">999</span>)</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_quantile_null)){</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    x_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span>T) <span class="co">#bootstrap sample</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    q_b <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x_b, <span class="at">probs=</span>.<span class="dv">5</span>) <span class="co"># median</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    d_b <span class="ot">&lt;-</span> q_b <span class="sc">-</span> (q_obs<span class="sc">-</span>q_null) <span class="co">#impose the null</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    bootstrap_quantile_null[b] <span class="ot">&lt;-</span> d_b </span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="co"># 2-Sided Test for Median Difference</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_quantile_null<span class="sc">-</span>q_null, </span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span>F, <span class="at">xlab=</span><span class="st">'Null Bootstrap'</span>,</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">font.main=</span><span class="dv">1</span>, <span class="at">main=</span><span class="st">'Medians (Impose Null)'</span>)</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>median_ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_quantile_null<span class="sc">-</span>q_null, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>median_ci, <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>q_obs<span class="sc">-</span>q_null, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="01_08_HypothesisTests_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 2-Sided Test for Median Difference</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="do">## Null: No Median Difference</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">-</span> <span class="fu">ecdf</span>( <span class="fu">abs</span>(bootstrap_quantile_null<span class="sc">-</span>q_null))( <span class="fu">abs</span>(q_obs<span class="sc">-</span>q_null) ) </span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5485485</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>The above procedure generalizes to differences in many other statistics. Perhaps the most informative are differences in shape. E.g., you can test for differences in <em>spread</em>, <em>skew</em>, or <em>kurtosis</em>.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Test for SD Differences (Invert CI)</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>sd_obs <span class="ot">&lt;-</span> <span class="fu">sd</span>(sample_dat)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>sd_null <span class="ot">&lt;-</span> <span class="fl">3.6</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>bootstrap_sd <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="dv">999</span>)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_sd)){</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    x_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span>T)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    sd_b <span class="ot">&lt;-</span> <span class="fu">sd</span>(x_b)</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    bootstrap_sd[b] <span class="ot">&lt;-</span> sd_b</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_sd, <span class="at">freq=</span>F,</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'Bootstrap'</span>, <span class="at">font.main=</span><span class="dv">1</span>,</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">'Standard Deviations (Invert CI)'</span>)</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>sd_ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_sd, <span class="at">probs=</span><span class="fu">c</span>(<span class="fl">0.25</span>,.<span class="dv">975</span>) )</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sd_ci, <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sd_null, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="01_08_HypothesisTests_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Try any function!</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="co"># IQR(x_b)/median(x_b)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</section>
 </section>
 <section id="further-reading" class="level2" data-number="7.4">
 <h2 data-number="7.4" class="anchored" data-anchor-id="further-reading"><span class="header-section-number">7.4</span> Further Reading</h2>
@@ -647,7 +778,10 @@ window.Quarto = {
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr>
 <ol>
-<li id="fn1"><p>In another statistics class, you will learn the math behind the null t-distribution. In this class, we skip this because we can simply bootstrap the t-statistic too.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1"><p> The normal distribution is a symmetric distribution, which means that <span class="math display">\[\begin{eqnarray}
+Prob( t^{\text{boot}} &gt; t ) &amp;=&amp; Prob( t^{\text{boot}} &lt; - t) \\
+Prob( t^{\text{boot}} &gt; t ~\text{or}~ t^{\text{boot}} &lt; -t) &amp;=&amp; 2 Prob( t^{\text{boot}} | &lt; -|t| )
+\end{eqnarray}\]</span> In another statistics class, you will learn the math behind the null t-distribution. In this class, we skip this because we can simply bootstrap the t-statistic too.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 

@@ -66,10 +66,10 @@ Better integrate students with https://web.hypothes.is/hypothesis-for-faculty-in
 Callouts
 
 * Must Know ::: {.callout-tip icon=false collapse="true"}
-* Good Practice ::: {.callout-note icon=false collapse="true"}
+* Test Yourself ::: {.callout-note icon=false collapse="true"}
 
-* ::: {.callout-warning icon=false collapse="false"}
-* ::: {.callout-important, icon=false collapse="false"}
+* ::: {.callout-warning icon=false collapse="true"}
+* ::: {.callout-important, icon=false collapse="true"}
 
 
 Notes (custom code)
@@ -103,6 +103,15 @@ https://bookdown.org/yihui/bookdown/github.html
 
 
 
+#### Add Other Datasets in StatsII:
+
+* builtin "datasets" package: USPersonalExpenditure, LifeCycleSavings, EuStockMarkets, JohnsonJohnson, freeny, longley, occupationalStatus, uspop
+* use additional package like "AER", "Ecdat", "wooldridge", "causaldata" "np".
+* API's from the UScensus or worldbank, especially for sampling examples
+* See the list by https://vincentarelbundock.github.io/Rdatasets/datasets.html
+* https://pages.stern.nyu.edu/~wgreene/Text/Edition7/tablelist8new.htm
+* https://www.ssc.wisc.edu/~bhansen/econometrics/Econometrics%20Data.zip
+
 
 
 
@@ -129,25 +138,21 @@ Syllabus, Refresher (Highschool Background, on your own time)
 
 #### Ch 4. Random Variables
 * https://www.khanacademy.org/math/mappers/statistics-and-probability-192-202
+* Show how F(x) comes from f(x), and vice versa.
+
 
 #### Ch 5. Mean and Standard Deviation
-* Add numerical examples of means and variances (e.g., for normal and exponential)
 * https://www.khanacademy.org/math/mappers/statistics-and-probability-220-223
 
-#### Ch 6. Other Statistics
 
-
-#### Ch 7. (Re)Sampling
+#### Ch 6. (Re)Sampling
 * Bootstrap Jacknife theory (iid)
 * Value of new data for Bootstrap?
-* ?combination/permutation sampling?
 
-#### Ch 8. Hypothesis Tests
-* Intervals, Standard Errors, One sample Htest
-* https://www.tandfonline.com/doi/abs/10.1198/000313008X332421
-* https://onlinelibrary.wiley.com/doi/10.1002/%28SICI%291099-1255%28199709/10%2912%3A5%3C533%3A%3AAID-JAE454%3E3.0.CO%3B2-V
+#### Ch 7. Hypothesis Tests
+* permutation sampling and H-testing
 
-#### Ch 9. Data Analysis
+#### Ch 8. Data Analysis
 * Incorporate insights from "Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)" 
 
 Add styling to interactive plots
@@ -156,39 +161,18 @@ Data clean/merge
  * by, with, subset, stack, switch
  * do.call, reduce
 
+* https://onlinelibrary.wiley.com/doi/10.1002/%28SICI%291099-1255%28199709/10%2912%3A5%3C533%3A%3AAID-JAE454%3E3.0.CO%3B2-V
 
-#### Ch.10 Misc Univariate Topics
+#### Ch.9 Misc Univariate Topics
 
-* Data Transformations, Law of the Unconscious Statistician, Jensen's Inequality
-    - The Box-Cox Transformation Technique: A Review
-* Add sampling theory and real-world applications to 4.3.
-    - Suppose that employees at a company are 70% female and 30% male. If we select a random sample of eight employees, what is the probability that more than 2 in the sample are female?
-* ?Inverse sampling
+* [The Box-Cox Transformation Technique: A Review](https://www.jstor.org/stable/2348250)
 * ?Fail to reject the null. Example with multiple hypothesis: can't rule out A, also can't rule out B.
 
+* Probability Integral Transform
+- https://blogs.sas.com/content/iml/2024/05/13/p-values-under-null.html
 
 
-
-
-
-
-## Bivariate Data (Stats II)
-***
-(Formerly part of Introduction to Data Analysis)
-
-#### Ch 11. Bivariate Data
-* add empirical example of table with joint and marginal distributions
-
-#### Ch 12. Bivariate Statistics
-* other examples from Microeconometrics (Simpsons paradox)
-* 10.4 Hypothesis Tests
-* Two Sample test tests
-
-
-#### Ch.X  Advanced probability theory?
-* Type I vs II errors. Power analysis
-* Compound probability (Binomial, Poisson), Bates Distribution
-    - Suppose you throw two standard dice (each with six sides).  What is the probability of getting a sum of 4? 
+* ?Advanced and Compound probability? 
     - Events A: the number on the die is greater than 2. B: the number on the die is even
         a) Find P(A U B) and P(A ∩ B)
         b) Are events A and B independent events? Explain.  
@@ -196,18 +180,38 @@ Data clean/merge
         d) Find P(A | B)
     -Find the probability of rolling a six-sided die and obtaining an even number less than 5. Use a computer simulation to suggest an answer and then provide the math.
     -Find the probability of rolling a six-sided die and obtaining an odd number or a number less than 5. 
-    -Suppose that we have five equally likely experimental outcomes: 1, 2, 3, 4, 5. Find $Prob(X_{i} \in  \{1, 2, 5\}  or X_{i} \in \{1, 3\})$. Find $Prob(X_{i} \in  \{1, 2, 5\} and X_{i} \in \{1, 3\}).$
-    - The unemployment rate is 10%. Suppose that 1000 employable people are selected randomly. What is the probability that this sample contains between 90 and 120 unemployed people. Use the normal approximation to binomial probabilities (parameters mu=100, sigma=9.49)
-* Mixture Distributions
+    -Suppose that we have five equally likely experimental outcomes: 1, 2, 3, 4, 5. Find $Prob(X_{i} \in  \{1, 2, 5\}  or X_{i} \in \{1, 3\})$. Find $Prob(X_{i} \in  \{1, 2, 5\} and X_{i} \in \{1, 3\})$.
+* Binomial Distribution
+* Binomial Limit Theorem
+    - The unemployment rate is 10%. Suppose that 100 employable people are selected randomly. What is the probability that this sample contains between 9 and 12 unemployed people. Use the normal approximation to binomial probabilities (parameters mu=100, sigma=9.49).
+    - Suppose that employees at a company are 70% female and 30% male. If we select a random sample of eight employees, what is the probability that more than 2 in the sample are female?
+* Bates Distribution
+
+* Poisson Limit Theorem
+    - use the Poisson approximation to binomial probabilities.
 
 
-#### Add Other Datasets:
 
-* https://pages.stern.nyu.edu/~wgreene/Text/Edition7/tablelist8new.htm
-* https://www.ssc.wisc.edu/~bhansen/econometrics/Econometrics%20Data.zip
-* API's from the UScensus or worldbank
-* StatsII, use a classic package like "AER", "Ecdat", "wooldridge", "causaldata" "np". 
-* See the list by https://vincentarelbundock.github.io/Rdatasets/datasets.html
+## Bivariate Data (Stats II)
+***
+(Formerly part of Introduction to Data Analysis)
+
+#### Ch 10. Bivariate Data
+* add empirical example of table with joint and marginal distributions
+
+#### Ch 11. Bivariate Statistics
+* other examples from Microeconometrics (Simpsons paradox)
+* 10.4 Hypothesis Tests
+* Two Sample test tests
+
+
+#### Ch.12. Hypothesis Testing 
+* https://www.tandfonline.com/doi/abs/10.1198/000313008X332421
+* Advanced probability theory?
+* Type I vs II errors. Power analysis
+
+
+
 
 
 
@@ -229,11 +233,11 @@ Main gaps are Experimental Design Basics (15.1) and Statistical Decision Theory 
 * Ch.12 https://plotly.com/r/splom/
 * Complete 15.1 (Experimental Design)
 * Add semi-formal treatment of "Multiple Hypothesis Testing" to 16.1
-* Complete 17 Misc Topics. On the page and also
+* Complete Misc Topics. On the page and also
  * Description vs. Inference vs. Prediction
- * CLT breaks down with strong dependence
+ * ?CLT breaks down with strong dependence?
  * Differences in Quantiles, Quantiles of Differences
- * J test
+ * Model Selection, J test, Model Combination
 * Add interactive plots via https://plotly-r.com/
 
 
@@ -300,28 +304,6 @@ https://easystats.github.io/report/
 
 
 
-#### F-Test (add to 10.4)
-ANOVA
-
-```{r}
-model0 <- lm(sr ~ 1, data = LifeCycleSavings) ## Null restricted model
-model1 <- lm(sr ~ 1 + pop15 , data = LifeCycleSavings) ## Alternative unrestricted model
-anova(model0, model1, test = "F")
-
-# Manual F-test
-rss0 <- sum(resid(model0)^2)
-rss1 <- sum(resid(model1)^2)
-df0  <- df.residual(model0)
-df1  <- df.residual(model1)
-F    <- ((rss0 - rss1)/(df0-df1)) / (rss1/df1)
-p    <- 1-pf(F, df0-df1, df1)
-cbind(F, p)
-```
-
-#### J-Test 
-* https://bookdown.org/mike/data_analysis/non-nested-model-tests.html#sec-davidson--mackinnon-j-test
-
-
 
 #### Diminishing Returns
 Value of More Data: Just as before, there are diminishing returns to larger sample sizes with simple OLS.
@@ -378,4 +360,9 @@ rast_moran <- autocor(luxembourg_elevation_raster, method='moran', global=F)
 colmap <- colorRampPalette(colors = c("darkblue", "lightgrey", "darkred"), bias=2.5)
 plot(rast_moran,col=colmap(100))
 ```
+
+
+#### Misc Topics 
+* J-Test, https://bookdown.org/mike/data_analysis/non-nested-model-tests.html#sec-davidson--mackinnon-j-test
+
 
