@@ -6,15 +6,15 @@
 Notice that we have gotten pretty far without actually trying to meaningfully interpret regression coefficients. That is because the above procedure will always give us number, regardless as to whether the true data generating process is linear or not. So, to be cautious, we have been interpreting the regression outputs while being agnostic as to how the data are generated. We now consider a special situation where we know the data are generated according to a linear process and are only uncertain about the parameter values.
 
 *If* the data generating process is 
-$$
+\begin{eqnarray}
 y=X\beta + \epsilon\\
 \mathbb{E}[\epsilon | X]=0,
-$$
+\end{eqnarray}
 then we have a famous result that lets us attach a simple interpretation of OLS coefficients as unbiased estimates of the effect of X:
-$$
+\begin{eqnarray}
 \hat{\beta} = (X'X)^{-1}X'y = (X'X)^{-1}X'(X\beta + \epsilon) = \beta + (X'X)^{-1}X'\epsilon\\
 \mathbb{E}\left[ \hat{\beta} \right] = \mathbb{E}\left[ (X'X)^{-1}X'y \right] = \beta + (X'X)^{-1}\mathbb{E}\left[ X'\epsilon \right] = \beta
-$$
+\end{eqnarray}
 
 
 Generate a simulated dataset with 30 observations and two exogenous variables. Assume the following relationship: $y_{i} = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \epsilon_i$ where the variables and the error term are realizations of the following data generating processes (DGP):
@@ -105,11 +105,7 @@ abline(lm(y[-1]~x[-1]))
 
 See [AEJ-leverage](https://www.rwi-essen.de/fileadmin/user_upload/RWI/Publikationen/I4R_Discussion_Paper_Series/032_I4R_Haddad_Kattan_Wochner-updateJune28.pdf) and [NBER-leverage](https://statmodeling.stat.columbia.edu/2025/02/28/the-r-squared-on-this-is-kinda-low-no/) for examples of leverage in economics.
 
-Standardized residuals are
-$$
-r_i=\frac{\hat{\epsilon}_i}{s_{[i]}\sqrt{1-h_i}},
-$$
-where $s_{[i]}$ is the root mean squared error of a regression with the $i$th observation removed and $h_i$ is the leverage of residual $\hat{\epsilon_i}$. 
+Standardized residuals are $r_i=\frac{\hat{\epsilon}_i}{s_{[i]}\sqrt{1-h_i}}$, where $s_{[i]}$ is the root mean squared error of a regression with the $i$th observation removed and $h_i$ is the leverage of residual $\hat{\epsilon_i}$. 
 ```{r, eval=F}
 which.max(hatvalues(reg))
 which.max(rstandard(reg))
@@ -117,11 +113,12 @@ which.max(rstandard(reg))
 
 (See https://www.r-bloggers.com/2016/06/leverage-and-influence-in-a-nutshell/ for a good interactive explanation, and https://online.stat.psu.edu/stat462/node/87/ for detail.)
 
-The fourth plot further assesses outlier $X$ using *Cook's Distance*, which sums of all prediction changes when observation $i$ is removed and scales proportionally to the mean square error $s^2 = \frac{\sum_{i} (e_{i})^2 }{n-K}.
+The fourth plot further assesses outlier $X$ using *Cook's Distance*, which sums of all prediction changes when observation $i$ is removed and scales proportionally to the mean square error
 \begin{eqnarray}
 D_{i} 
-= \frac{\sum_{j} \left( \hat{y_j} - \hat{y_j}_{[i]} \right)^2 }{ p s^2 }
-= \frac{[e_{i}]^2}{p s^2 } \frac{h_i}{(1-h_i)^2}
+&=& \frac{\sum_{j} \left( \hat{y_j} - \hat{y_j}_{[i]} \right)^2 }{ p s^2 }
+= \frac{[e_{i}]^2}{p s^2 } \frac{h_i}{(1-h_i)^2} \\
+s^2 &=& \frac{\sum_{i} (e_{i})^2 }{n-K}.
 \end{eqnarray}
 ```{r, eval=F}
 which.max(cooks.distance(reg))
@@ -131,11 +128,7 @@ car::influencePlot(reg)
 
 
 #### **Collinearity**. {-}
-This is when one explanatory variable in a multiple linear regression model can be linearly predicted from the others with a substantial degree of accuracy. Coefficient estimates may change erratically in response to small changes in the model or the data. (In the extreme case where there are more variables than observations $K>N$, the inverse of $X'X$ has an infinite number of solutions.) To diagnose collinearity, we can use the *Variance Inflation Factor*
-$$
-VIF_{k}=\frac{1}{1-R^2_k},
-$$
-where $R^2_k$ is the $R^2$ for the regression of $X_k$ on the other covariates $X_{-k}$ (a regression that does not involve the response variable Y)
+This is when one explanatory variable in a multiple linear regression model can be linearly predicted from the others with a substantial degree of accuracy. Coefficient estimates may change erratically in response to small changes in the model or the data. (In the extreme case where there are more variables than observations $K>N$, the inverse of $X'X$ has an infinite number of solutions.) To diagnose collinearity, we can use the *Variance Inflation Factor*: $VIF_{k}=\frac{1}{1-R^2_k}$, where $R^2_k$ is the $R^2$ for the regression of $X_k$ on the other covariates $X_{-k}$ (a regression that does not involve the response variable Y)
 ```{r, eval=F}
 car::vif(reg) 
 sqrt(car::vif(reg)) > 2 # problem?
@@ -203,13 +196,13 @@ If $\rho=\lambda$, we get the CES production function. This nests the ''perfect 
 
 
 We compute the mean squared error in the original scale by inverting the predictions;
-$$
+\begin{eqnarray}
 \widehat{y}_{i} =
 \begin{cases}
 [ \widehat{y}_{i}^{(\lambda)} \cdot \lambda ]^{1/\lambda} -1 & \lambda  \neq 0 \\
 exp( \widehat{y}_{i}^{(\lambda)}) -1 &  \lambda=0
 \end{cases}.
-$$
+\end{eqnarray}
 
 
 It is easiest to optimize parameters in a 2-step procedure called  `concentrated optimization'. We first solve for $\widehat{\beta}(\rho,\lambda)$ and compute the mean squared error $MSE(\rho,\lambda)$. We then find the $(\rho,\lambda)$ which minimizes $MSE$.
