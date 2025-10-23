@@ -138,19 +138,20 @@ Syllabus, Refresher (Highschool Background, on your own time)
 
 #### Ch 4. Random Variables
 * https://www.khanacademy.org/math/mappers/statistics-and-probability-192-202
-* Show how F(x) comes from f(x), and vice versa.
+* Further show how F(x) comes from f(x), and vice versa.
 
 
 #### Ch 5. Mean and Standard Deviation
 * https://www.khanacademy.org/math/mappers/statistics-and-probability-220-223
 
-
 #### Ch 6. (Re)Sampling
 * Bootstrap Jacknife theory (iid)
 * Value of new data for Bootstrap?
 
+
 #### Ch 7. Hypothesis Tests
 * permutation sampling and H-testing
+
 
 #### Ch 8. Data Analysis
 * Incorporate insights from "Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)" 
@@ -162,6 +163,7 @@ Data clean/merge
  * do.call, reduce
 
 * https://onlinelibrary.wiley.com/doi/10.1002/%28SICI%291099-1255%28199709/10%2912%3A5%3C533%3A%3AAID-JAE454%3E3.0.CO%3B2-V
+
 
 #### Ch.9 Misc Univariate Topics
 
@@ -181,16 +183,29 @@ Data clean/merge
     -Find the probability of rolling a six-sided die and obtaining an even number less than 5. Use a computer simulation to suggest an answer and then provide the math.
     -Find the probability of rolling a six-sided die and obtaining an odd number or a number less than 5. 
     -Suppose that we have five equally likely experimental outcomes: 1, 2, 3, 4, 5. Find $Prob(X_{i} \in  \{1, 2, 5\}  or X_{i} \in \{1, 3\})$. Find $Prob(X_{i} \in  \{1, 2, 5\} and X_{i} \in \{1, 3\})$.
+
+
 * Binomial Distribution
-* Binomial Limit Theorem
+
+
+The CLT is a generalization of the Binomial Limit Theorem (de Moivre–Laplace theorem)
+* Illustration using rbinom()
+* Applications
     - The unemployment rate is 10%. Suppose that 100 employable people are selected randomly. What is the probability that this sample contains between 9 and 12 unemployed people. Use the normal approximation to binomial probabilities (parameters mu=100, sigma=9.49).
     - Suppose that employees at a company are 70% female and 30% male. If we select a random sample of eight employees, what is the probability that more than 2 in the sample are female?
+
 * Bates Distribution
 
 * Poisson Limit Theorem
     - use the Poisson approximation to binomial probabilities.
 
+Inequalities
+* 68–95–99.7_rule
+* Samuelsons_inequality
+* Chebyshevs_inequality
 
+
+Suppose you read that Honda Civic is the most commonly stolen car. Does this mean that Honda Civic cars have a higher probability to be stolen compared to other cars?
 
 ## Bivariate Data (Stats II)
 ***
@@ -213,7 +228,55 @@ Data clean/merge
 
 
 
+When we test a hypothesis, we start with a claim called the null hypothesis \(H_0\) and an alternative claim \(H_A\). Because we base conclusions on sample data, which has variability, mistakes are possible. There are two types of errors:
 
+* *Type I Error*: Rejecting a true null hypothesis. (False Positive). 
+* *Type II Error*: Failing to reject a false null hypothesis (False Negative). 
+
+| **True Situation** | **Decision: Fail to Reject \(H_0\)** | **Decision: Reject \(H_0\)** |
+|---|---|---|
+| \(H_0\) is true |  Correct (no detection)  |  **Type I Error** (false positive) |
+| \(H_0\) is false |  **Type II Error** (false negative; missed detection) | Correct (effect detected) |
+
+Here is a Courtroom Analogy. Someone at trial is either guilty or not (a Bernoulli random variable), and you hypothesize that they are innocent.
+
+| **Reality** | **Court’s Decision** | **Interpretation** |
+|---|---|---|
+| Innocent | Convicted | **Type I Error** (false positive) |
+| Guilty   | Freed     | **Type II Error** (false negative) |
+
+
+The probability of Type I Error is called *significance level* and denoted by $Prob(\text{Type I Error}) = \alpha$. The probability of correctly rejecting a false null is called *power* and denoted by $\text{Power} = 1 - \beta = 1 -  P(\text{Type II Error})$. 
+
+Significance is often chosen by statistical analysts to be \( \alpha = 0.05 \).
+Power is less often chosen, instead following from a decision about power. There is an important Trade-off for fixed sample sizes: Increasing significance (fewer false positive) often lowers power (more false negatives). Generally, power depends on the effect size and sample size: bigger true effects and larger \(n\) make it easier to detect real differences (higher power, lower \(\beta\)).
+
+:::
+The code below runs a small simulation for a two-sided z-test of a mean with known \(\sigma\). It shows how power increases when the effect size \((\mu - \mu_0)/\sigma\) or sample size \(n\) increases.
+
+```{r power-sim}
+#"Power vs. Sample Size and Effect Size"
+set.seed(1)
+
+power_sim <- function(n = 25, mu = 0.2, mu0 = 0, sigma = 1, alpha = 0.05, reps = 5000){
+    zcrit <- qnorm(1 - alpha/2)
+    rejections <- vector(length=1000)
+    for(i in 1:length(rejections)) {
+        xbar <- mean(rnorm(n, mean = mu, sd = sigma))
+        z <- sqrt(n) * (xbar - mu0) / sigma
+        rejections[i] <- abs(z) > zcrit
+    }
+    mean(rejections)
+}
+
+grid <- expand.grid(n = c(20, 50, 100),
+                    effect = c(0.1, 0.2, 0.4))  # effect = (mu - mu0)/sigma
+grid$power <- mapply(function(n, eff) power_sim(n = n, mu = eff, mu0 = 0, sigma = 1),
+                     grid$n, grid$effect)
+
+grid
+```
+:::
 
 
 
@@ -234,7 +297,7 @@ Main gaps are Experimental Design Basics (15.1) and Statistical Decision Theory 
 * Complete 15.1 (Experimental Design)
 * Add semi-formal treatment of "Multiple Hypothesis Testing" to 16.1
 * Complete Misc Topics. On the page and also
- * Description vs. Inference vs. Prediction
+ * Description vs. Inference vs. Prediction -  See also <https://online.stat.psu.edu/stat200/lesson/4/4.4/4.4.2>.
  * ?CLT breaks down with strong dependence?
  * Differences in Quantiles, Quantiles of Differences
  * Model Selection, J test, Model Combination
@@ -337,6 +400,8 @@ https://www.explainxkcd.com/wiki/index.php/2048:_Curve-Fitting
 Measurement Error
 Smearing?
 
+**Quantile Results**.{-}
+
 #### Data Scientism
 
 https://www.aeaweb.org/conference/2017/preliminary/paper/2BhG4nbH
@@ -365,4 +430,32 @@ plot(rast_moran,col=colmap(100))
 #### Misc Topics 
 * J-Test, https://bookdown.org/mike/data_analysis/non-nested-model-tests.html#sec-davidson--mackinnon-j-test
 
+
+This differs from a *pointwise inclusion frequency interval*
+```{r}
+# Frequency each point was in an interval
+bks <- seq(0,1,by=.01)
+xcovr <- vector(length=length(bks))
+for(b in seq(xcovr)){
+    bl <- b >= xq[1,]
+    bu <- b <= xq[2,]
+    xcovr[b] <- mean( bl & bu )
+}
+# 50\% Coverage
+c_ul <- range(bks[xcovr>=.5])
+c_ul # 50% confidence interval
+
+plot.new()
+plot.window(xlim=c(0,1), ylim=c(0,1))
+polygon( c(bks, rev(bks)), c(xcovr, xcovr*0), col=grey(.5,.5), border=NA)
+mtext('Frequency each value was in an interval',2, line=2.5)
+axis(1)
+axis(2)
+abline(h=.5, lwd=2)
+segments(c_ul,0,c_ul,.5, lty=2)
+```
+
+
+
+Assume the tail part of a plane has the same surface area as the wings. During WWII, the designers of planes needed to know which parts of  a plane to reinforce.  They could not reinforce the entire plane, or it would become heavy and slow.  They looked at planes that returned from the battle with bullet damage, and noticed that most of these planes had bullet holes in the tail part of the plane. Does this mean that the tail part of the plane should be reinforced?
 
