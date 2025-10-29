@@ -1,7 +1,7 @@
 # Simple Regression
 ***
 
-Suppose we have some bivariate data. First, we inspect it as in Part I.
+Suppose we have some bivariate data: $\hat{X}_{i}, \hat{Y}_{i}$. First, we inspect it as in Part I.
 
 ```{r}
 # Bivariate Data from USArrests
@@ -20,21 +20,28 @@ Now we will assess the association between variables by fitting a line through t
 ## Simple Linear Regression
 This refers to fitting a linear model to bivariate data. Specifically, our model is 
 \begin{eqnarray}
-\hat{Y}_{i}=\beta_{0}+\beta_{1} \hat{X}_{i}+e_{i}
+\hat{Y}_{i}=b_{0}+b_{1} \hat{X}_{i}+e_{i},
 \end{eqnarray}
-and our objective function is
+where $b_{0}$ and $b_{1}$ are parameters, often referred to as "coefficients", and $\hat{X}_{i}, \hat{Y}_{i}$ are data for observation $i$, and $e_{i}$ is a residual error term that represents the difference between the model and the data.
+
+We then find the parameters which best-fit the data. Specifically, our objective function is
 \begin{eqnarray}
-min_{\beta_{0}, \beta_{1}} \sum_{i=1}^{N} \left( e_{i} \right)^2 =  min_{\beta_{0}, \beta_{1}} \sum_{i=1} \left( \hat{Y}_{i} - [\beta_{0}+\beta_{1} \hat{X}_{i}] \right)^2.
+\min_{b_{0}, b_{1}} \sum_{i=1}^{n} \left( e_{i} \right)^2 &=& \min_{b_{0}, b_{1}} \sum_{i=1}^{n} \left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right)^2.
 \end{eqnarray}
-Minimizing the sum of squared errors yields parameter estimates
+Minimizing the sum of squared errors then yields two parameter estimates:
 \begin{eqnarray}
-\hat{\beta_{0}}=\bar{Y}-\hat{\beta_{1}}\bar{X} \\
-\hat{\beta_{1}}=\frac{\sum_{i}^{}(\hat{X}_{i}-\bar{X})(\hat{Y}_{i}-\bar{Y})}{\sum_{i}^{}(\hat{X}_{i}-\bar{X})^2} = \frac{C_{XY}}{V_{X}}
+0 &=& \sum_{i=1}^{n} 2\left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right)\\ 
+\hat{b_{0}} &=& \hat{M}_{Y}-\hat{b_{1}}\hat{M}_{X} \\
 \end{eqnarray}
-and predictions
+where $\hat{M}_{Y}$ and $\hat{M}_{X}$ are sample means. Similarly, 
 \begin{eqnarray}
-\hat{y}_{i} &=& \hat{\beta}_{0}+\hat{\beta}\hat{X}_{i}\\
-\hat{e}_i &=& \hat{Y}_{i}-\hat{y}_i
+0 &=& \sum_{i=1}^{n} 2\left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right) \hat{X}_{i} \\
+\hat{b_{1}} &=& \frac{\sum_{i}^{n}(\hat{X}_{i}-\hat{M}_{X})(\hat{Y}_{i}-\hat{M}_{Y})}{\sum_{i}^{}(\hat{X}_{i}-\hat{M}_{X})^2} = \frac{\hat{C}_{XY}}{\hat{V}_{X}},
+\end{eqnarray}
+the latter term being the estimated covariance between $X$ and $Y$ divided by the variance of $X$. This in turn yields model predictions
+\begin{eqnarray}
+\hat{y}_{i} &=& \hat{b}_{0}+\hat{b}\hat{X}_{i}\\
+\hat{e}_i &=& \hat{Y}_{i}-\hat{y}_{i}
 \end{eqnarray}
 
 ```{r}
@@ -78,15 +85,15 @@ add_trace(fig, x=~x, y=~pred,
     line=list(width=1/2),
     marker=list(symbol=134, size=5))
 ```
-For a quantitative summary, we can also compute the linear correlation between the predictions and the data 
+For a quantitative summary, we can also compute the linear correlation between the model predictions and the sample data 
 \begin{eqnarray}
-R = Cor( \hat{y}_i, y)
+\hat{R} = Cor( \hat{y}_i, \hat{Y}_{i})
 \end{eqnarray}
-With linear models, we typically compute $R^2$, known as the "coefficient of determination", using the sums of squared errors (Total, Explained, and Residual)
+With linear models, we typically compute $\hat{R}^2$, known as the "coefficient of determination", using the sums of squared errors (Total, Explained, and Residual)
 \begin{eqnarray}
-\underbrace{\sum_{i}(\hat{Y}_{i}-\bar{Y})^2}_\text{TSS}
-=\underbrace{\sum_{i}(\hat{y}_i-\bar{Y})^2}_\text{ESS}+\underbrace{\sum_{i}\hat{e}_{i}^2}_\text{RSS}\\
-R^2 = \frac{ESS}{TSS}=1-\frac{RSS}{TSS}
+\underbrace{\sum_{i}(\hat{Y}_{i}-\hat{M}_{Y})^2}_\text{TSS}
+=\underbrace{\sum_{i}(\hat{y}_i-\hat{M}_{Y})^2}_\text{ESS}+\underbrace{\sum_{i}\hat{e}_{i}^2}_\text{RSS}\\
+\hat{R}^2 = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}
 \end{eqnarray}
 ```{r}
 # Manually Compute R2
@@ -115,7 +122,8 @@ A regression coefficient is a statistic. And, just like all statistics, we can c
 * *confidence interval:* range your statistic varies across different samples.
 
 
-Note that values reported by your computer do not necessarily satisfy this definition. To calculate these statistics, we will estimate variability using *data-driven* methods. (For some theoretical background, see, e.g., https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf.)
+Note that values reported by your computer do not necessarily satisfy this definition. To calculate these statistics, we will estimate variability using *data-driven* methods. (For some theoretical background, see <https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf>.) 
+
 
 #### **Jackknife**. {-}
 We first consider the simplest, the jackknife. In this procedure, we loop through each row of the dataset. And, in each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``subsamples''.
@@ -135,7 +143,7 @@ jack_se <- sd(jack_coefs)
 hist(jack_coefs, breaks=25,
     main=paste0('SE est. = ', round(jack_se,4)),
     font.main=1, border=NA,
-    xlab=expression(beta[-i]))
+    xlab=expression(hat(b)[-i]))
 # Original Estimate
 abline(v=coef(reg)['x'], lwd=2)
 # Jackknife Confidence Intervals
@@ -150,14 +158,7 @@ abline(v=jack_ci_percentile, lty=2)
 
 #### **Bootstrap**. {-}
 
-There are several resampling techniques. The other main one is the bootstrap, which resamples with *replacement* for an *arbitrary* number of iterations. When bootstrapping a dataset with $n$ observations, you randomly resample all $n$ rows in your data set $B$ times. Random subsampling is one of many hybrid approaches that tries to combine the best of both worlds.
-
-| | Sample Size per Iteration | Number of Iterations | Resample |
-| -------- | ------- | ------- | ------- |
-Bootstrap | $n$     | $B$  | With Replacement |
-Jackknife | $n-1$   | $n$  | Without Replacement |
-Random Subsample | $m < n$ | $B$  | Without Replacement |
-
+There are several resampling techniques. The other main one is the bootstrap, which resamples with *replacement* for an *arbitrary* number of iterations. When bootstrapping a dataset with $n$ observations, you randomly resample all $n$ rows in your data set $B$ times. 
 ```{r}
 # Bootstrap
 boot_regs <- lapply(1:399, function(b){
@@ -171,11 +172,20 @@ boot_se <- sd(boot_coefs)
 hist(boot_coefs, breaks=25,
     main=paste0('SE est. = ', round(boot_se,4)),
     font.main=1, border=NA,
-    xlab=expression(beta[b]))
+    xlab=expression(hat(b)[b]))
 boot_ci_percentile <- quantile(boot_coefs, probs=c(.025,.975))
 abline(v=boot_ci_percentile, lty=2)
 abline(v=coef(reg)['x'], lwd=2)
 ```
+
+#### **Subsampling**. {-}
+Random subsampling is one of many hybrid approaches that tries to combine the best of the core methods: Bootstrap and Jacknife.
+
+| | Sample Size per Iteration | Number of Iterations | Resample |
+| -------- | ------- | ------- | ------- |
+Bootstrap | $n$     | $B$  | With Replacement |
+Jackknife | $n-1$   | $n$  | Without Replacement |
+Random Subsample | $m < n$ | $B$  | Without Replacement |
 
 ```{r}
 # Random Subsamples
@@ -190,19 +200,19 @@ rs_se <- sd(rs_coefs)
 hist(rs_coefs, breaks=25,
     main=paste0('SE est. = ', round(rs_se,4)),
     font.main=1, border=NA,
-    xlab=expression(beta[b]))
+    xlab=expression(hat(b)[b]))
 abline(v=coef(reg)['x'], lwd=2)
 rs_ci_percentile <- quantile(rs_coefs, probs=c(.025,.975))
 abline(v=rs_ci_percentile, lty=2)
 ```
 
-We can also bootstrap other statistics, such as a t-statistic or $R^2$. We do such things to test a null hypothesis, which is often ``no relationship''. We are rarely interested in computing standard errors and conducting hypothesis tests for two variables. However, we work through the ideas in the two-variable case to better understand the multi-variable case.
+We can also bootstrap other statistics, such as $\hat{t}$ or $\hat{R}^2$. We do such things to test a null hypothesis, which is often ``no relationship''. We are rarely interested in computing standard errors and conducting hypothesis tests for simple linear regressions, but work through the ideas with two variables before moving to analyze multiple variables.
 
 ## Hypothesis Tests
 
 #### **Invert a CI**. {-}
 
-One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. Does the slope coefficient equal $0$? For reasons we won't go into in this class, we typically normalize the coefficient by its standard error: $\hat{t} = \frac{\hat{\beta}}{\hat{\sigma}_{\hat{\beta}}}$
+One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. Does the slope coefficient equal $0$? For reasons we won't go into in this class, we typically normalize the coefficient by its standard error: $\hat{t} = \frac{\hat{b}}{\hat{s}_{\hat{b}}}$, where $\hat{s}_{\hat{b}}$ is the estimated standard error of the coefficient.
 ```{r}
 tvalue <- coef(reg)['x']/jack_se
 
@@ -210,8 +220,8 @@ jack_t <- sapply(jack_regs, function(reg_b){
     # Data
     xy_b <- reg_b$model
     # Coefficient
-    beta_b <- coef(reg_b)[['x']]
-    t_hat_b <- beta_b/jack_se
+    coef_b <- coef(reg_b)[['x']]
+    t_hat_b <- coef_b/jack_se
     return(t_hat_b)
 })
 
@@ -227,13 +237,13 @@ abline(v=0, col="red", lwd=2)
 #### **Impose the Null**.{-}
 We can also compute a null distribution. We focus on the simplest: bootstrap simulations that each impose the null hypothesis and re-estimate the statistic of interest. Specifically, we compute the distribution of t-values on data with randomly reshuffled outcomes (imposing the null), and compare how extreme the observed value is.
 ```{r}
-# Null Distribution for Beta
+# Null Distribution for Reg Coef
 boot_t0 <- sapply( 1:399, function(b){
     xy_b <- xy
     xy_b$y <- sample( xy_b$y, replace=T)
     reg_b <- lm(y~x, dat=xy_b)
-    beta_b <- coef(reg_b)[['x']]
-    t_hat_b <- beta_b/jack_se
+    coef_b <- coef(reg_b)[['x']]
+    t_hat_b <- coef_b/jack_se
     return(t_hat_b)
 })
 
@@ -248,14 +258,12 @@ abline(v=boot_ci_percentile0, lty=2)
 abline(v=tvalue, col="red", lwd=2)
 ```
 
-Alternatively, you can impose the null by recentering the sampling distribution around the theoretical value; $\hat{t} = \frac{\hat{\beta} - \beta_{0} }{\hat{\sigma}_{\hat{\beta}}}$. Under some assumptions, the null distribution follows a t-distribution. (For more on parametric t-testing based on statistical theory, see https://www.econometrics-with-r.org/4-lrwor.html.)
-
-
-In any case, we can calculate a *p-value*: the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true). We can always calculate a p-value from an explicit null distribution.
+Alternatively, you can impose the null by recentering the sampling distribution around the theoretical value; $\hat{t} = \frac{\hat{b} - B_{0} }{\hat{s}_{\hat{b}}}$.^[Under some assumptions, the null distribution follows a t-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)] In any case, we can calculate a *p-value*: the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true). We can always calculate a p-value from an explicit null distribution.
 ```{r}
 # One Sided Test for P(t > boot_t | Null) = 1 - P(t < boot_t | Null)
 That_NullDist1 <- ecdf(boot_t0)
 Phat1  <- 1-That_NullDist1(jack_t)
+
 
 # Two Sided Test for P(t > jack_t or t < -jack_t | Null)
 That_NullDist2 <- ecdf(abs(boot_t0))

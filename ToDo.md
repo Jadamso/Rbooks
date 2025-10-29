@@ -152,52 +152,15 @@ Syllabus, Refresher (Highschool Background, on your own time)
 #### Ch 7. Hypothesis Tests
 * permutation sampling and H-testing
 
-
-#### Ch 8. Data Analysis
-* Incorporate insights from "Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)" 
-
-Add styling to interactive plots
-
-Data clean/merge
- * by, with, subset, stack, switch
- * do.call, reduce
-
-* https://onlinelibrary.wiley.com/doi/10.1002/%28SICI%291099-1255%28199709/10%2912%3A5%3C533%3A%3AAID-JAE454%3E3.0.CO%3B2-V
+* ?Fail to reject the null. Example with multiple hypothesis: can't rule out A, also can't rule out B.
 
 
-#### Ch.9 Misc Univariate Topics
+#### Ch.8 Misc Univariate Topics
 
 * [The Box-Cox Transformation Technique: A Review](https://www.jstor.org/stable/2348250)
-* ?Fail to reject the null. Example with multiple hypothesis: can't rule out A, also can't rule out B.
 
 * Probability Integral Transform
 - https://blogs.sas.com/content/iml/2024/05/13/p-values-under-null.html
-
-
-* ?Advanced and Compound probability? 
-    - Events A: the number on the die is greater than 2. B: the number on the die is even
-        a) Find P(A U B) and P(A ∩ B)
-        b) Are events A and B independent events? Explain.  
-        c) Are events A and B mutually exclusive events?  Explain. 
-        d) Find P(A | B)
-    -Find the probability of rolling a six-sided die and obtaining an even number less than 5. Use a computer simulation to suggest an answer and then provide the math.
-    -Find the probability of rolling a six-sided die and obtaining an odd number or a number less than 5. 
-    -Suppose that we have five equally likely experimental outcomes: 1, 2, 3, 4, 5. Find $Prob(X_{i} \in  \{1, 2, 5\}  or X_{i} \in \{1, 3\})$. Find $Prob(X_{i} \in  \{1, 2, 5\} and X_{i} \in \{1, 3\})$.
-
-
-* Binomial Distribution
-
-
-The CLT is a generalization of the Binomial Limit Theorem (de Moivre–Laplace theorem)
-* Illustration using rbinom()
-* Applications
-    - The unemployment rate is 10%. Suppose that 100 employable people are selected randomly. What is the probability that this sample contains between 9 and 12 unemployed people. Use the normal approximation to binomial probabilities (parameters mu=100, sigma=9.49).
-    - Suppose that employees at a company are 70% female and 30% male. If we select a random sample of eight employees, what is the probability that more than 2 in the sample are female?
-
-* Bates Distribution
-
-* Poisson Limit Theorem
-    - use the Poisson approximation to binomial probabilities.
 
 Inequalities
 * 68–95–99.7_rule
@@ -205,14 +168,16 @@ Inequalities
 * Chebyshevs_inequality
 
 
-Suppose you read that Honda Civic is the most commonly stolen car. Does this mean that Honda Civic cars have a higher probability to be stolen compared to other cars?
-
 ## Bivariate Data (Stats II)
 ***
 (Formerly part of Introduction to Data Analysis)
 
-#### Ch 10. Bivariate Data
+#### Ch 10. Bivariate Distributions
 * add empirical example of table with joint and marginal distributions
+
+
+Suppose you read that Honda Civic is the most commonly stolen car. Does this mean that Honda Civic cars have a higher probability to be stolen compared to other cars?
+
 
 #### Ch 11. Bivariate Statistics
 * other examples from Microeconometrics (Simpsons paradox)
@@ -228,15 +193,15 @@ Suppose you read that Honda Civic is the most commonly stolen car. Does this mea
 
 
 
-When we test a hypothesis, we start with a claim called the null hypothesis \(H_0\) and an alternative claim \(H_A\). Because we base conclusions on sample data, which has variability, mistakes are possible. There are two types of errors:
+When we test a hypothesis, we start with a claim called the null hypothesis $H_0$ and an alternative claim $H_A$. Because we base conclusions on sample data, which has variability, mistakes are possible. There are two types of errors:
 
 * *Type I Error*: Rejecting a true null hypothesis. (False Positive). 
 * *Type II Error*: Failing to reject a false null hypothesis (False Negative). 
 
-| **True Situation** | **Decision: Fail to Reject \(H_0\)** | **Decision: Reject \(H_0\)** |
+| **True Situation** | **Decision: Fail to Reject $H_0$** | **Decision: Reject $H_0$** |
 |---|---|---|
-| \(H_0\) is true |  Correct (no detection)  |  **Type I Error** (false positive) |
-| \(H_0\) is false |  **Type II Error** (false negative; missed detection) | Correct (effect detected) |
+| $H_0$ is true |  Correct (no detection)  |  **Type I Error** (false positive) |
+| $H_0$ is false |  **Type II Error** (false negative; missed detection) | Correct (effect detected) |
 
 Here is a Courtroom Analogy. Someone at trial is either guilty or not (a Bernoulli random variable), and you hypothesize that they are innocent.
 
@@ -246,13 +211,13 @@ Here is a Courtroom Analogy. Someone at trial is either guilty or not (a Bernoul
 | Guilty   | Freed     | **Type II Error** (false negative) |
 
 
-The probability of Type I Error is called *significance level* and denoted by $Prob(\text{Type I Error}) = \alpha$. The probability of correctly rejecting a false null is called *power* and denoted by $\text{Power} = 1 - \beta = 1 -  P(\text{Type II Error})$. 
+The probability of Type I Error is called *significance level* and denoted by $Prob(\text{Type I Error}) = \alpha$. The probability of correctly rejecting a false null is called *power* and denoted by $\text{Power} = 1 - \beta = 1 -  Prob(\text{Type II Error})$. 
 
-Significance is often chosen by statistical analysts to be \( \alpha = 0.05 \).
-Power is less often chosen, instead following from a decision about power. There is an important Trade-off for fixed sample sizes: Increasing significance (fewer false positive) often lowers power (more false negatives). Generally, power depends on the effect size and sample size: bigger true effects and larger \(n\) make it easier to detect real differences (higher power, lower \(\beta\)).
+Significance is often chosen by statistical analysts to be $ \alpha = 0.05 $.
+Power is less often chosen, instead following from a decision about power. There is an important Trade-off for fixed sample sizes: Increasing significance (fewer false positive) often lowers power (more false negatives). Generally, power depends on the effect size and sample size: bigger true effects and larger $n$ make it easier to detect real differences (higher power, lower $\beta$).
 
 :::
-The code below runs a small simulation for a two-sided z-test of a mean with known \(\sigma\). It shows how power increases when the effect size \((\mu - \mu_0)/\sigma\) or sample size \(n\) increases.
+The code below runs a small simulation for a two-sided z-test of a mean with known $\sigma$. It shows how power increases when the effect size $(\mu - \mu_0)/\sigma$ or sample size $n$ increases.
 
 ```{r power-sim}
 #"Power vs. Sample Size and Effect Size"
@@ -278,6 +243,18 @@ grid
 ```
 :::
 
+
+
+#### Ch 13. Data Analysis
+* Incorporate insights from "Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)" 
+
+Add styling to interactive plots
+
+Data clean/merge
+ * by, with, subset, stack, switch
+ * do.call, reduce
+
+* https://onlinelibrary.wiley.com/doi/10.1002/%28SICI%291099-1255%28199709/10%2912%3A5%3C533%3A%3AAID-JAE454%3E3.0.CO%3B2-V
 
 
 

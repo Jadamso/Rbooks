@@ -27,16 +27,38 @@ Often, we think of the population as being infinitely large. This is an approxim
 sample(1:4, 2, replace=T)
 ```
 
+Intuition for infinite populations: imagine drawing names from a giant urn. If the urn has only 10 names, then removing one name slightly changes the composition of the urn, and the probabilities shift for the next name you draw. Now imagine the urn has 100 billion names, so that removing one makes no noticeable difference. We can pretend the composition never changes. Each draw is essentially identical and independent (iid).
+
+
 
 ## Sample Distributions
 
 The *sampling distribution* of a statistic shows us how much a statistic varies from sample to sample. 
 
-For example, see how the mean varies from sample to sample to sample.
+For example, see how the mean statistic varies from sample to sample to sample.
+
+:::{.callout-note icon=false collapse="true"}
+Given ages for population of $4$ students, compute the sampling distribution for the mean with samples of $n=2$.
+```{r}
+X <- c(19,21,20,17) #student ages
+# six possible samples
+mean1 <- mean( X[c(1,2)] ) #{1,2}
+mean2 <- mean( X[c(1,3)] ) #{1,3}
+mean3 <- mean( X[c(1,4)] ) #{3,4}
+mean4 <- mean( X[c(2,3)] ) #{2,3}
+mean5 <- mean( X[c(2,4)] ) #{2,4}
+mean6 <- mean( X[c(3,4)] ) #{3,4}
+# sampling distribution
+means <- c(mean1, mean2, mean3, mean4, mean5, mean6)
+hist(means, freq=F, breaks=100, border=F)
+```
+
+Now compute the sampling distribution for the median with samples of $n=3$.
+:::
 
 :::{.callout-note icon=false collapse="true"}
 ```{r}
-# Three Sample Example
+# Three Sample Example from infinite population
 x_one <- runif(100)
 mean_one <- mean(x_one)
 x_two <- runif(100)
@@ -90,7 +112,7 @@ hist(sample_means,
 In this figure, you see two the most profound results known in statistics
 
 * *Law of Large Numbers*: the sample mean is centered around the true mean.
-* *Central Limit Theorem*: the sampling distribution of the mean is approximately standard normal.
+* *Central Limit Theorem*: the sampling distribution of the statistic is approximately Normal.
 
 
 
@@ -108,7 +130,7 @@ round(m_LLLN, 3)
 
 
 #### **Central Limit Theorem**. {-}
-There are different variants of the central limit theorem (CLT), but they all say some version of "the sampling distribution of a statistic is approximately standard normal". For example, the sampling distribution of the mean, shown above, is approximately standard normal.
+There are different variants of the central limit theorem (CLT), but they all say some version of "the sampling distribution of a statistic is approximately normal". For example, the sampling distribution of the mean, shown above, is approximately normal.
 
 :::{.callout-note icon=false collapse="true"}
 ```{r}
@@ -160,7 +182,7 @@ my_function <- function(x){ diff(range(exp(x))) }
 :::
 
 
-It is beyond this class to prove this result mathematically, but you should know that not all sampling distributions are standard normal. The CLT approximation is better for "large $n$" datasets and data with "well behaved" variances. The CLT does not apply to "extreme" statistics. 
+It is beyond this class to prove this result mathematically, but you should know that not all sampling distributions are standard normal. The CLT approximation is better for "large $n$" datasets with "well behaved" variances. The CLT does not apply to "extreme" statistics. 
 
 :::{.callout-note icon=false collapse="true"}
 For example of "extreme" statistics, examine the sampling distribution of min, median, max statistics.
@@ -381,8 +403,8 @@ hist(bootstrap_means, breaks=25,
 abline(v=sample_mean, col='red', lty=2)
 ```
 
-:::{.callout-tip icon=false collapse="true"}
 Why does this work? The sample: $\{\hat{X}_{1}, \hat{X}_{2}, ... \hat{X}_{n}\}$ is drawn from a CDF $F$. Each bootstrap sample: $\{\hat{X}_{1}^{(b)}, \hat{X}_{2}^{(b)}, ... \hat{X}_{n}^{(b)}\}$ is drawn from the ECDF $\hat{F}$. With $\hat{F} \approx F$, each bootstrap sample is approximately a random sample. So when we compute a statistic on each bootstrap sample, we approximate the sampling distribution of the statistic.
+:::{.callout-note icon=false collapse="true"}
 ```{r}
 # theoretical probabilities
 x <- c(0,1)
@@ -456,7 +478,7 @@ hist(sample_means,
 abline(v=mq)
 ```
 
-For another example, consider an extreme statistic. We now repeat the above process to estimate the median for each sample, instead of the mean. We then construct a $95\%$ confidence interval using the $2.5^{th}$ and $97.5^{th}$ quantiles of these estimates.
+For another example, consider the median. We now repeat the above process to estimate the median for each sample, instead of the mean. 
 ```{r}
 ## Sample Quantiles (medians)
 sample_quants <- apply(x_samples, 1, quantile, probs=0.5)
@@ -476,7 +498,54 @@ abline(v=mq)
 
 Note that $Z\%$ confidence intervals do not generally cover $Z\%$ of the data (those types of intervals are covered later). In the examples above, notice the confidence interval for the mean differs from the confidence interval of the median, and so both cannot cover $90\%$ of the data. The confidence interval for the mean is roughly $[0.48, 0.52]$, which theoretically covers only a $0.52-0.48=0.04$ proportion of uniform random data, much less than $90%$.
 
+Often, a $Z\%$ interval means that $Z\%$ of the intervals we generate will contain the true mean. E.g., suppose that we repeatedly sample data and construct $95\%$ bootstrap confidence interval for the mean, then we expect that $95\%$ of our constructed confidence intervals contain the theoretical population mean. A $95\%$ coverage level does not imply a $95\%$ probability that the true mean lies within the particular confidence interval you calculated for a particular sample.
 
+
+Note that confidence intervals shrink with more data, as averaging washes out random fluctuations. Here is the intuition.
+
+* With $n=1$ apple, your estimate depends entirely on that one draw. If it happens to be unusually large or small, your estimate can be far off.
+* With $n=2$ apples, the estimate averages out their idiosyncrasies. An unusually heavy apple can be balanced by a lighter one, lowering how far off you can be. You are less likely to get two extreme values than just one.
+* With $n=100$ apples, individual apples barely move the needle. The average becomes stable.
+
+```{r}
+X <- c(19,21,20,17) #student ages
+# six possible samples of size 2
+mean1 <- mean( X[c(1,2)] ) #{1,2}
+mean2 <- mean( X[c(1,3)] ) #{1,3}
+mean3 <- mean( X[c(1,4)] ) #{3,4}
+mean4 <- mean( X[c(2,3)] ) #{2,3}
+mean5 <- mean( X[c(2,4)] ) #{2,4}
+mean6 <- mean( X[c(3,4)] ) #{3,4}
+means_2 <- c(mean1, mean2, mean3, mean4, mean5, mean6)
+sd(means_2)
+# four possible samples of size 3
+mean1 <- mean( X[c(1,2,3)] ) 
+mean2 <- mean( X[c(1,2,4)] ) 
+mean3 <- mean( X[c(1,3,4)] ) 
+mean4 <- mean( X[c(2,3,4)] ) 
+means_3 <- c(mean1, mean2, mean3, mean4, mean5, mean6)
+sd(means_3)
+```
+
+```{r, eval=F}
+# Create 300 samples, each of size n
+n <- 10000
+x_samples <- matrix(nrow=300, ncol=n)
+for(i in seq(nrow(x_samples))){
+    x_samples[i,] <- runif(1000)
+}
+# Compute means for each row (for each sample)
+sample_means <- apply(x_samples, 1, mean)
+mq <- quantile(sample_means, probs=c(.05,.95))
+paste0('we are 90% confident that the mean is between ', 
+    round(mq[1],2), ' and ', round(mq[2],2) )
+hist(sample_means,
+    breaks=seq(.4,.6, by=.001), 
+    border=NA, freq=F,
+    col=rgb(0,0,0,.25), font.main=1,
+    main='90% Confidence Interval for the Mean (larger n)')
+abline(v=mq)
+```
 
 ## Probability Theory
 
@@ -569,18 +638,11 @@ ci <- mean(sample_dat1) + spread_theory*sd_theory
 
 #### **CI Coverage**. {-}
 
-<details>
-<summary> Advanced and Optional </summary>
-  <p>
-In many cases, we want a $Z\%$ interval to mean that $Z\%$ of the intervals we generate will contain the true mean. E.g., when repeatedly sampling $M$, $50\%$ of constructed confidence intervals are expected to contain the theoretical mean $\mu$.
-
-
-Given the sample mean, $M$, and the sample size, $n$, is large enough for the mean to be approximately normally distributed, we can construct a symmetric confidence interval $[M - E, M + E]$, where $E$ is some "margin of error" on either side of $M$. A coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$. I.e., if the same sampling procedure were repeated $100$ times from the same population, approximately $95$ of the resulting intervals would be expected to contain the true population mean.^[Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( E + mu > M > mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ $95%$ of the time because whenever $M$ is within $10$ of $\mu$, $\mu$ is also within $10$ of $M$.] Note that a $95%$ coverage level does not imply a 95% probability that the true parameter lies within a particular calculated interval. E.g., if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95%$ does not mean $Prob(9 - E < \mu < 9 + E)=95%$.
+Given the sample mean, $M$, and the sample size, $n$, is large enough for the mean to be approximately normally distributed, we can construct a symmetric confidence interval $[M - E, M + E]$, where $E$ is some "margin of error" on either side of $M$. A coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$. I.e., if the same sampling procedure were repeated $100$ times from the same population, approximately $95$ of the resulting intervals would be expected to contain the true population mean.^[Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( E + mu > M > mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ $95%$ of the time because whenever $M$ is within $10$ of $\mu$, $\mu$ is also within $10$ of $M$.] Note that a $95\%$ coverage level does not imply a $95%$ probability that the true parameter lies within a particular calculated interval. E.g., if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$.
 
 :::{.callout-tip icon=false collapse="true"}
 Given the sample mean, $M$, and the sample size, $n$, is large enough for the mean to be approximately normally distributed. What confidence interval satisfies the following: the theoretical mean $\mu$ is inside of the interval with probability $(1 - 0.05)%$ (i.e., for $(1 - 0.05)%$ of samples).
 :::
-
 
 For a fixed sample size $n$, there is a trade-off between *Precision*: the width of a confidence interval, *Accuracy*: the probability that a confidence interval contains the theoretical value.
 
@@ -618,9 +680,6 @@ abline(v = mu_true, col = "blue", lwd = 2)
 axis(1)
 title("Visualizing CI Coverage (Red = Missed)")
 ```
-
-  </p>
-</details>
 
 
 
