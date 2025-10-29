@@ -73,52 +73,18 @@ fig
 
 
 ## Multiple Linear Regression
+
 With $K$ variables, the linear model is
 \begin{eqnarray}
-y_i=\beta_0+\beta_1 x_{i1}+\beta_2 x_{i2}+\ldots+\beta_K x_{iK}+\epsilon_i = [1~~  x_{i1} ~~...~~ x_{iK}] \beta + \epsilon_i
+\hat{Y}_{i}=b_0 + b_1 \hat{X}_{i1}+ b_2 \hat{X}_{i2}+\ldots+b_K \hat{X}_{iK}+e_i
 \end{eqnarray}
-and our objective is
+Grouping the coefficients as a vector $B=(b_0 ~~ b_1 ~~... ~~ b_{K})$. Our objective is
 \begin{eqnarray}
-min_{\beta} \sum_{i=1}^{N} (\epsilon_i)^2.
+\min_{B} \sum_{i=1}^{n} e_{i}^2, 
 \end{eqnarray}
-
-Denoting 
-\begin{eqnarray}
-y= \begin{pmatrix} 
-y_{1} \\ \vdots \\ y_{N}
-\end{pmatrix} \quad
-\textbf{X} = \begin{pmatrix} 
-1 & x_{11} & ... & x_{1K} \\
-& \vdots & & \\
-1 & x_{N1} & ... & x_{NK} 
-\end{pmatrix},
-\end{eqnarray}
-we can also write the model and objective in matrix form
-\begin{eqnarray}
-y=\textbf{X}\beta+\epsilon\\
-min_{\beta} (\epsilon' \epsilon)
-\end{eqnarray}
-
-Minimizing the squared errors yields coefficient estimates
-\begin{eqnarray}
-\hat{\beta}=(\textbf{X}'\textbf{X})^{-1}\textbf{X}'y
-\end{eqnarray}
-and predictions 
-\begin{eqnarray}
-\hat{y}=\textbf{X} \hat{\beta} \\
-\hat{\epsilon}=y - \hat{y} \\
-\end{eqnarray}
+which yields the best fitting coefficients $\hat{B^{*}}$.
 
 ```{r}
-# Manually Compute
-Y <- USArrests[,'Murder']
-X <- USArrests[,c('Assault','UrbanPop')]
-X <- as.matrix(cbind(1,X))
-
-XtXi <- solve(t(X)%*%X)
-Bhat <- XtXi %*% (t(X)%*%Y)
-c(Bhat)
-
 # Check
 reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
 coef(reg)
@@ -130,10 +96,10 @@ plot(USArrests$Murder, predict(reg), pch=16, col=grey(0,.5))
 abline(a=0,b=1, lty=2)
 ```
 
-We can also again compute sums of squared errors. Adding random data may sometimes improve the fit, however, so we adjust the $R^2$ by the number of covariates $K$.
+We can also again compute sums of squared errors. Adding random data may sometimes improve the fit, however, so we adjust the $\hat{R}^2$ by the number of covariates $K$.
 \begin{eqnarray}
-R^2 = \frac{ESS}{TSS}=1-\frac{RSS}{TSS}\\
-R^2_{\text{adj.}} = 1-\frac{N-1}{N-K}(1-R^2)
+\hat{R}^2 = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}\\
+\hat{R}^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-\hat{R}^2)
 \end{eqnarray}
 
 ```{r}
@@ -161,16 +127,45 @@ legend('topleft', horiz=T,
     legend=c('Undjusted', 'Adjusted'), pch=c(1,16))
 ```
 
+#### **Matrix Notation**. {-}
 
+The linear model has a fairly simple solution for $\hat{B}^{*}$ if you know linear algebra. Denoting $\hat{\mathbf{X}}_{i} = [1~~  \hat{X}_{i1} ~~...~~ \hat{X}_{iK}]$ as a row vector, we can write the model as $\hat{Y}_{i} = \hat{\mathbf{X}}_{i}B + e_{i}$. We can then write the model in matrix form
+\begin{eqnarray}
+\hat{Y} &=& \hat{\textbf{X}}B + E \\
+\hat{Y} &=& \begin{pmatrix} 
+\hat{Y}_{1} \\ \vdots \\ \hat{Y}_{N}
+\end{pmatrix} \quad
+\textbf{X} = \begin{pmatrix} 
+1 & \hat{X}_{11} & ... & \hat{X}_{1K} \\
+& \vdots & & \\
+1 & \hat{X}_{n1} & ... & \hat{X}_{nK} 
+\end{pmatrix}
+\end{eqnarray}
+Minimizing the squared errors: $\min_{B} e_{i}^2 = \min_{B} (E' E)$, yields coefficient estimates and predictions 
+\begin{eqnarray}
+\hat{B^{*}} &=& (\hat{\textbf{X}}'\hat{\textbf{X}})^{-1}\hat{\textbf{X}}'\hat{Y}\\
+\hat{y} &=& \hat{\textbf{X}} \hat{B^{*}} \\
+\hat{E} &=& \hat{Y} - \hat{y} \\
+\end{eqnarray}
+```{r}
+# Manually Compute
+Y <- USArrests[,'Murder']
+X <- USArrests[,c('Assault','UrbanPop')]
+X <- as.matrix(cbind(1,X))
 
-## Factor Variables
+XtXi <- solve(t(X)%*%X)
+Bhat <- XtXi %*% (t(X)%*%Y)
+c(Bhat)
+```
+
+#### **Factor Variables**. {-}
 
 So far, we have discussed cardinal data where the difference between units always means the same thing: e.g., $4-3=2-1$. There are also factor variables
 
 * Ordered: refers to Ordinal data. The difference between units means something, but not always the same thing. For example, $4th - 3rd \neq 2nd - 1st$.
-* Unordered: refers to Categorical data. The difference between units is meaningless. For example, $B-A=?$
+* Unordered: refers to Categorical data. The difference between units is meaningless. For example, $D-C=?$
 
-To analyze either factor, we often convert them into indicator variables or dummies; $D_{c}=\mathbf{1}( Factor = c)$. One common case is if you have observations of individuals over time periods, then you may have two factor variables. An unordered factor that indicates who an individual is; for example $D_{i}=\mathbf{1}( Individual = i)$, and an order factor that indicates the time period; for example $D_{t}=\mathbf{1}( Time \in [month~ t, month~ t+1) )$. There are many other cases you see factor variables, including spatial ID's in purely cross sectional data.
+To analyze either factor, we often convert them into indicator variables or dummies; $\hat{D}_{c}=\mathbf{1}( \text{Factor} = c)$. One common case is if you have observations of individuals over time periods, then you may have two factor variables. An unordered factor that indicates who an individual is; for example $\hat{D}_{i}=\mathbf{1}( \text{Individual} = i)$, and an order factor that indicates the time period; for example $\hat{D}_{t}=\mathbf{1}( \text{Time} \in [\text{month}~ t, \text{month}~ t+1) )$. There are many other cases you see factor variables, including spatial ID's in purely cross sectional data.
 
 Be careful not to handle categorical data as if they were cardinal. E.g., generate city data with Leipzig=1, Lausanne=2, LosAngeles=3, ... and then include city as if it were a cardinal number (that's a big no-no). The same applied to ordinal data; PopulationLeipzig=2, PopulationLausanne=3, PopulationLosAngeles=1.
 
@@ -185,13 +180,13 @@ y <- (2^as.integer(fo)*dA )*sqrt(x)+ 2*as.integer(fo)*e
 dat_f <- data.frame(y,x,fo,fu)
 ```
 
-With factors, you can still include them in the design matrix of an OLS regression
+With factors, you can still include them in the design matrix of an OLS regression. For example, 
 \begin{eqnarray}
-y_{it} = x_{it} \beta_{x} + d_{t}\beta_{t}
+\hat{Y}_{i} = b_{0} + \hat{X}_{i} b_{1} + \sum_{t}\hat{D}_{t}b_{t}
 \end{eqnarray}
-When, as commonly done, the factors are modeled as being additively seperable, they are modeled "fixed effects".^[There are also *random effects*: the factor variable comes from a distribution that is uncorrelated with the regressors. This is rarely used in economics today, however, and are mostly included for historical reasons and special cases where fixed effects cannot be estimated due to data limitations.]
-Simply including the factors into the OLS regression yields a "dummy variable" fixed effects estimator.
-**Hansen Econometrics, Theorem 17.1:** *The fixed effects estimator of $\beta$ algebraically equals the dummy variable estimator of $\beta$. The two estimators have the same residuals.*
+When, as commonly done, the factors are modeled as being additively seperable, they are modeled "fixed effects".^[There are also *random effects*: the factor variable comes from a distribution that is uncorrelated with the regressors. This is rarely used in economics today, however, and are mostly included for historical reasons and special cases where fixed effects cannot be estimated due to data limitations.] Simply including the factors into the OLS regression yields a "dummy variable" fixed effects estimator. 
+
+> The fixed effects estimator of $\beta$ algebraically equals the dummy variable estimator of $\beta$. The two estimators have the same residuals. (Hansen Econometrics, Theorem 17.1)
 <!--
 In fact, if the fixed effect is ``fully unstructured then the only way to consistently estimate the coefficient $\beta$ is by an estimator which is invariant'' (Hansen Econometrics, p). 
 -->
@@ -206,7 +201,7 @@ fe_reg0 <- lm(y~-1+x+fo+fu, dat_f)
 coef( fe_reg0 )
 ```
 
-With fixed effects, we can also compute averages for each group and construct a *between estimator*: $\bar{y}_i = \alpha + \bar{x}_i \beta$. Or we can subtract the average from each group to construct a *within estimator*: $(y_{it} - \bar{y}_i) = (x_{it}-\bar{x}_i)\beta$. 
+With fixed effects, we can also compute averages for each group: $\hat{M}_{Yt}=\sum_{i}^{n_{t}} \hat{Y}_{it}/n_{t}$, where each period $t$ has $n_{t}$ observations denoted $\hat{Y}_{it}$. We can then construct a *between estimator*: $\hat{M}_{Yt} = b_{0} + \hat{M}_{Xt} b_{1}$. Or we can subtract the average from each group to construct a *within estimator*: $(\hat{Y}_{it} - \hat{M}_{Yt}) = (\hat{X}_{it}-\hat{M}_{Xt})b_{1}$. 
 
 <!-- 
 > The labels "random effects" and "fixed effects" are misleading. These are labels which arose in the early literature and we are stuck with these labels today. In a previous era regressors were viewed as "fixed". Viewing the individual effect as an unobserved regressor leads to the label of the individual effect as "fixed". Today, we rarely refer to regressors as "fixed" when dealing with observational data. We view all variables as random. Consequently describing u i as "fixed" does not make much sense and it is hardly a contrast with the "random effect" label since under either assumption u i is treated as random. Once again, the labels are unfortunate but the key difference is whether u i is correlated with the regressors.
@@ -216,10 +211,9 @@ With fixed effects, we can also compute averages for each group and construct a 
 
 ## Variability Estimates
 
+Above, we computed the coefficient $\hat{B}$ for a particular sample: $\hat{X}_{1i}, \hat{X}_{2i}, ..., \hat{Y}_{i}$. We now seek to know how much the best-fitting coefficients $B^{*}$ varies from sample to sample. I.e., $\hat{B}$ is our estimate and we want to know the variance of our estimator: $\mathbb{V}(B^{*})$. To estimate this variability, we can use the same *data-driven* methods introduced previously. 
 
-To estimate the variability of our estimates, we can use the same *data-driven* methods introduced in the last section. As before, we can conduct independent hypothesis tests using t-values.
-
-We can also conduct *joint* tests that account for interdependancies in our estimates. For example, to test whether two coefficients both equal $0$, we bootstrap the *joint* distribution of coefficients.
+As before, we can also conduct independent hypothesis tests using t-values. However, we can also conduct *joint tests* that account for interdependancies in our estimates. For example, to test whether two coefficients both equal $0$, we bootstrap the joint distribution of coefficients.
 
 ```{r}
 # Bootstrap SE's
@@ -261,14 +255,14 @@ fig
 
 #### **F-statistic**. {-}
 
-We can also use an $F$ test for any $q$ hypotheses. Specifically, when $q$ hypotheses *restrict* a model, the degrees of freedom drop from $k_{u}$ to $k_{r}$ and the residual sum of squares $RSS=\sum_{i}(y_{i}-\widehat{y}_{i})^2$ typically increases. We compute the statistic
+We can also use an $F$ test for any $q$ hypotheses. Specifically, when $q$ hypotheses *restrict* a model, the degrees of freedom drop from $k_{u}$ to $k_{r}$ and the residual sum of squares $\hat{RSS}=\sum_{i}(\hat{Y}_{i}-\hat{y}_{i})^2$ typically increases. We compute the statistic
 \begin{eqnarray}
-F_{q} = \frac{(RSS_{r}-RSS_{u})/(k_{u}-k_{r})}{RSS_{u}/(N-k_{u})}
+\hat{F}_{q} = \frac{(\hat{RSS}_{r}-\hat{RSS}_{u})/(k_{u}-k_{r})}{\hat{RSS}_{u}/(n-k_{u})}
 \end{eqnarray}
 
-If you test whether all $K$ variables are significant, the restricted model is a simple intercept and $RSS_{r}=TSS$, and $F_{q}$ can be written in terms of $R^2$: $F_{K} = \frac{R^2}{1-R^2} \frac{N-K}{K-1}$. The first fraction is the relative goodness of fit, and the second fraction is an adjustment for degrees of freedom (similar to how we  adjusted the $R^2$ term before). 
+If you test whether all $K$ variables are significant, the restricted model is a simple intercept and $\hat{RSS}_{r}=\hat{TSS}$, and $\hat{F}_{q}$ can be written in terms of $\hat{R}^2$: $\hat{F}_{K} = \frac{\hat{R}^2}{1-\hat{R}^2} \frac{n-K}{K-1}$. The first fraction is the relative goodness of fit, and the second fraction is an adjustment for degrees of freedom (similar to how we adjusted the $\hat{R}^2$ term before). 
 
-To conduct a hypothesis test, first compute a null distribution by randomly reshuffling the outcomes and recompute the $F$ statistic, and then compare how often random data give something as extreme as your initial statistic. For some intuition on this F test, examine how the adjusted $R^2$ statistic varies with bootstrap samples. 
+To conduct a hypothesis test, first compute a null distribution by randomly reshuffling the outcomes and recompute the F statistic, and then compare how often random data give something as extreme as your initial statistic. For some intuition on this F test, examine how the adjusted $\hat{R}^2$ statistic varies with bootstrap samples. 
 ```{r}
 # Bootstrap under the null
 boots <- 1:399
@@ -293,13 +287,11 @@ abline(v=summary(reg)$adj.r.squared, lwd=2, col=2)
 
 Note that *hypothesis testing is not to be done routinely*, as additional complications arise when testing multiple hypothesis sequentially.
 
-Under some additional assumptions $F_{q}$ follows an F-distribution. For more about F-testing, see https://online.stat.psu.edu/stat501/lesson/6/6.2 and https://www.econometrics.blog/post/understanding-the-f-statistic/
+Under some additional assumptions $F_{q}$ follows an F-distribution. For more about F-testing, see <https://online.stat.psu.edu/stat501/lesson/6/6.2> and <https://www.econometrics.blog/post/understanding-the-f-statistic/>
 
 #### **ANOVA** {-}
 
-Under some additional parametric assumptions about the data generating process, the F-statistic follows an $F$ distribution. This case is well-studied historically, often under the title Analysis of Variance (ANOVA).
-
-An important case corresponds to the restricted model having no explanatory variables (i.e., our model is $Y_{i}=\overline{Y}$)
+Under some additional parametric assumptions about the data generating process, the F-statistic follows an $F$ distribution. This case is well-studied historically, often under the title Analysis of Variance (ANOVA). An important case corresponds to the restricted model having no explanatory variables (i.e., our model is $\hat{Y}_{i}=b_{0}$ and our predictions are $\hat{y}_{i}=\hat{M}_{Y}$).
 
 ```{r}
 reg_full <- lm(Murder ~ Assault + UrbanPop + Rape, data = USArrests)
@@ -316,7 +308,7 @@ p    <- 1-pf(F, df0-df1, df1) # where F falls in the F-distribution
 cbind(F, p)
 ```
 
-Whether you take a parametric or nonparametric approach to hypothesis testing, you can easily test whether variables are additively separable with an $F$ test.
+Whether you take a parametric or nonparametric approach to hypothesis testing, you can easily test whether variables are additively separable with an F test.
 ```{r}
 # Empirical Example
 reg1 <- lm(Murder~Assault+UrbanPop, USArrests)

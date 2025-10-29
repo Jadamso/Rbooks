@@ -5,19 +5,18 @@
 
 Notice that we have gotten pretty far without actually trying to meaningfully interpret regression coefficients. That is because the above procedure will always give us number, regardless as to whether the true data generating process is linear or not. So, to be cautious, we have been interpreting the regression outputs while being agnostic as to how the data are generated. We now consider a special situation where we know the data are generated according to a linear process and are only uncertain about the parameter values.
 
-*If* the data generating process is 
+If the data generating process is truly linear then we have a famous result that lets us attach a simple interpretation of OLS coefficients as unbiased estimates of the effect of $X$.^[If you know matrix notation, then assume
 \begin{eqnarray}
-y=X\beta + \epsilon\\
-\mathbb{E}[\epsilon | X]=0,
+Y_{i} = X_{i} \beta + \epsilon_{i} &\quad& \mathbb{E}[\epsilon_{i} | X_{i} ]=0.
 \end{eqnarray}
-then we have a famous result that lets us attach a simple interpretation of OLS coefficients as unbiased estimates of the effect of X:
+Then define the estimator and notice that it is unbiased
 \begin{eqnarray}
-\hat{\beta} = (X'X)^{-1}X'y = (X'X)^{-1}X'(X\beta + \epsilon) = \beta + (X'X)^{-1}X'\epsilon\\
-\mathbb{E}\left[ \hat{\beta} \right] = \mathbb{E}\left[ (X'X)^{-1}X'y \right] = \beta + (X'X)^{-1}\mathbb{E}\left[ X'\epsilon \right] = \beta
+\beta^{*} = (X'X)^{-1}X'Y = (X'X)^{-1}X'(X\beta + \epsilon) = \beta + (X'X)^{-1}X'\epsilon\\
+\mathbb{E}\left[ \beta^{*} \right] = \mathbb{E}\left[ (X'X)^{-1}X'Y \right] = \beta + (X'X)^{-1}\mathbb{E}\left[ X'\epsilon \right] = \beta
 \end{eqnarray}
+]
 
-
-Generate a simulated dataset with 30 observations and two exogenous variables. Assume the following relationship: $y_{i} = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \epsilon_i$ where the variables and the error term are realizations of the following data generating processes (DGP):
+For example, generate a simulated dataset with 30 observations and two exogenous variables. Assume the following relationship: $Y_{i} = \beta_0 + \beta_1 X_{i1} + \beta_2 X_{i2} + \epsilon_{i}$ where the variables and the error term are realizations of the following data generating processes:
 ```{r}
 N <- 30
 B <- c(10, 2, -1)
@@ -88,9 +87,9 @@ plot(reg, pch=16, col=grey(0,.5))
 ```
 
 #### **Outliers**. {-}
-The first diagnostic plot examines outliers in terms the outcome $y_i$ being far from its prediction $\hat{y}_i$. You may be interested in such outliers because they can (but do not have to) unduly influence your estimates. 
+The first diagnostic plot examines outliers in terms the observed outcome $\hat{Y}_i$ being far from its prediction $\hat{y}_i$. You may be interested in such outliers because they can (but do not have to) unduly influence your estimates. 
 
-The third diagnostic plot examines another type of outlier, where an observation with the explanatory variable $x_i$ is far from the center of mass of the other $x$'s. A point has high *leverage* if the estimates change dramatically when you estimate the model without that data point.
+The third diagnostic plot examines another type of outlier, the observed explanatory variable $\hat{X}_{i}$ is far from the others. A point has high *leverage* if the estimates change dramatically when you estimate the model without that data point.
 ```{r}
 N <- 40
 x <- c(25, runif(N-1,3,8))
@@ -103,22 +102,18 @@ abline(lm(y~x), col=2, lty=2)
 abline(lm(y[-1]~x[-1]))
 ```
 
-See [AEJ-leverage](https://www.rwi-essen.de/fileadmin/user_upload/RWI/Publikationen/I4R_Discussion_Paper_Series/032_I4R_Haddad_Kattan_Wochner-updateJune28.pdf) and [NBER-leverage](https://statmodeling.stat.columbia.edu/2025/02/28/the-r-squared-on-this-is-kinda-low-no/) for examples of leverage in economics.
-
-Standardized residuals are $r_i=\frac{\hat{\epsilon}_i}{s_{[i]}\sqrt{1-h_i}}$, where $s_{[i]}$ is the root mean squared error of a regression with the $i$th observation removed and $h_i$ is the leverage of residual $\hat{\epsilon_i}$. 
+Standardized residuals are $r_i=\frac{\hat{e}_i}{s_{[i]}\sqrt{1-h_i}}$, where $s_{[i]}$ is the root mean squared error of a regression with the $i$th observation removed and $h_i$ is the leverage of residual $\hat{e}_{i}$. 
 ```{r, eval=F}
 which.max(hatvalues(reg))
 which.max(rstandard(reg))
 ```
 
-(See https://www.r-bloggers.com/2016/06/leverage-and-influence-in-a-nutshell/ for a good interactive explanation, and https://online.stat.psu.edu/stat462/node/87/ for detail.)
-
-The fourth plot further assesses outlier $X$ using *Cook's Distance*, which sums of all prediction changes when observation $i$ is removed and scales proportionally to the mean square error
+The fourth plot further assesses outliers in the explanatory variables ($X$) using *Cook's Distance*, which sums of all prediction changes when observation $i$ is removed and scales proportionally to the mean square error
 \begin{eqnarray}
 D_{i} 
-&=& \frac{\sum_{j} \left( \hat{y_j} - \hat{y_j}_{[i]} \right)^2 }{ p s^2 }
-= \frac{[e_{i}]^2}{p s^2 } \frac{h_i}{(1-h_i)^2} \\
-s^2 &=& \frac{\sum_{i} (e_{i})^2 }{n-K}.
+&=& \frac{\sum_{j} \left( \hat{y_j} - \hat{y_j}_{[i]} \right)^2 }{ p \hat{S}^2 }
+= \frac{\hat{e}_{i}^2}{p \hat{S}^2 } \frac{h_i}{(1-h_i)^2} \\
+\hat{S}^2 &=& \frac{\sum_{i} \hat{e}_{i}^2 }{n-K}.
 \end{eqnarray}
 ```{r, eval=F}
 which.max(cooks.distance(reg))
@@ -126,9 +121,11 @@ car::influencePlot(reg)
 ```
 
 
+See <https://www.r-bloggers.com/2016/06/leverage-and-influence-in-a-nutshell/> for a good interactive explanation, and <https://online.stat.psu.edu/stat462/node/87/> for detail. See [AEJ-leverage](https://www.rwi-essen.de/fileadmin/user_upload/RWI/Publikationen/I4R_Discussion_Paper_Series/032_I4R_Haddad_Kattan_Wochner-updateJune28.pdf) and [NBER-leverage](https://statmodeling.stat.columbia.edu/2025/02/28/the-r-squared-on-this-is-kinda-low-no/) for examples of leverage in economics.
+
 
 #### **Collinearity**. {-}
-This is when one explanatory variable in a multiple linear regression model can be linearly predicted from the others with a substantial degree of accuracy. Coefficient estimates may change erratically in response to small changes in the model or the data. (In the extreme case where there are more variables than observations $K>N$, the inverse of $X'X$ has an infinite number of solutions.) To diagnose collinearity, we can use the *Variance Inflation Factor*: $VIF_{k}=\frac{1}{1-R^2_k}$, where $R^2_k$ is the $R^2$ for the regression of $X_k$ on the other covariates $X_{-k}$ (a regression that does not involve the response variable Y)
+This is when one explanatory variable in a multiple linear regression model can be linearly predicted from the others with a substantial degree of accuracy. Coefficient estimates may change erratically in response to small changes in the model or the data. (In the extreme case, there are more variables than observations $K>n$ and an infinite number of solutions to a linear model.) To diagnose collinearity, we can use the *Variance Inflation Factor*: $\hat{VIF}_{k}=\frac{1}{1-\hat{R}^2_k}$, where $\hat{R}^2_k$ is the $\hat{R}^2$ for the regression of $\hat{X}_k$ on the other covariates $\hat{X}_{-k}$ (a regression that does not involve the response variable Y)
 ```{r, eval=F}
 car::vif(reg) 
 sqrt(car::vif(reg)) > 2 # problem?
@@ -166,18 +163,18 @@ Transforming variables can often improve your model fit while still allowing it 
 | linear--log | $y$ | $ln(x)$ | $\Delta y \approx  \frac{\beta_1}{100}\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\frac{\beta_1}{100}$ units |
 | log--log | $ln(y)$ | $ln(x)$ | $\Delta y \% \approx \beta_1\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\beta_1$ percent|
 
-Now recall from micro theory that an additively seperable and linear production function is referred to as ``perfect substitutes''. With a linear model and untranformed data, you have implicitly modelled the different regressors $X$ as perfect substitutes. Further recall that the ''perfect substitutes'' model is a special case of the constant elasticity of substitution production function. Here, we will build on http://dx.doi.org/10.2139/ssrn.3917397, and consider box-cox transforming both $X$ and $y$. Specifically, apply the box-cox transform of $y$ using parameter $\lambda$ and apply another box-cox transform to each $x$ using the same parameter $\rho$ so that
+Now recall from micro theory that an additively seperable and linear production function is referred to as ``perfect substitutes''. With a linear model and untranformed data, you have implicitly modelled the different regressors $X$ as perfect substitutes. Further recall that the ''perfect substitutes'' model is a special case of the constant elasticity of substitution production function. Here, we will build on <http://dx.doi.org/10.2139/ssrn.3917397>, and consider box-cox transforming both $X$ and $y$. Specifically, apply the box-cox transform of $y$ using parameter $\lambda$ and apply another box-cox transform to each $x$ using the same parameter $\rho$ so that
 \begin{eqnarray}
-y^{(\lambda)}_{i} &=& \sum_{k=1}^{K}\beta_{k} x^{(\rho)}_{ik} + \epsilon_{i}\\
-y^{(\lambda)}_{i} &=&
+Y^{(\lambda)}_{i} &=& \sum_{k=1}^{K}\beta_{k} X^{(\rho)}_{ik} + \epsilon_{i}\\
+Y^{(\lambda)}_{i} &=&
 \begin{cases}
-\lambda^{-1}[ (y_i+1)^{\lambda}- 1] & \lambda \neq 0 \\
-log(y_i+1) &  \lambda=0
+\lambda^{-1}\left[ (Y_i+1)^{\lambda}- 1\right] & \lambda \neq 0 \\
+\log\left(Y_i+1\right) &  \lambda=0
 \end{cases}.\\
-x^{(\rho)}_{i} =
+x^{(\rho)}_{i} &=&
 \begin{cases}
-\rho^{-1}[ (x_i)^{\rho}- 1] & \rho \neq 0 \\
-log(x_{i}+1) &  \rho=0
+\rho^{-1}\left[ (X_i)^{\rho}- 1\right] & \rho \neq 0 \\
+\log\left(X_{i}+1\right) &  \rho=0
 \end{cases}.
 \end{eqnarray}
 
@@ -197,10 +194,10 @@ If $\rho=\lambda$, we get the CES production function. This nests the ''perfect 
 
 We compute the mean squared error in the original scale by inverting the predictions;
 \begin{eqnarray}
-\widehat{y}_{i} =
+\hat{y}_{i} =
 \begin{cases}
-[ \widehat{y}_{i}^{(\lambda)} \cdot \lambda ]^{1/\lambda} -1 & \lambda  \neq 0 \\
-exp( \widehat{y}_{i}^{(\lambda)}) -1 &  \lambda=0
+\left[ \hat{y}_{i}^{(\lambda)} \cdot \lambda \right]^{1/\lambda} -1 & \lambda  \neq 0 \\
+\exp\left( \hat{y}_{i}^{(\lambda)} \right) -1 &  \lambda=0
 \end{cases}.
 \end{eqnarray}
 
@@ -437,18 +434,19 @@ As such, there are two main ways to summarize gradients: how $Y$ changes with $X
 
 1. For regressograms, you can approximate gradients with small finite differences. For some small $h_{p}$, we can manually compute
 \begin{eqnarray}
-\widehat{\beta_{p}}(\mathbf{x}) &=& \frac{ \widehat{Y}(x_{1},...,x_{p}+h_{p}...,x_{P})-\widehat{Y}(x_{1},...,x_{p}-h_{p}...,x_{P})}{2h_{p}},
+\hat{\beta}_{p}(\mathbf{x}) &=& \frac{ \hat{y}(x_{1},...,x_{p}+ \frac{h_{p}}{2}...,x_{P})-\hat{y}(x_{1},...,x_{p}-\frac{h_{p}}{2}...,x_{P})}{h_{p}},
 \end{eqnarray}
 
-2. When using split-sample regressions, you can get all estimated coefficients that provides gradient estimates in each direction.
+2. When using split-sample regressions or local linear regressions, you can use the estimated slope coefficients $\hat{\beta}_{p}(\mathbf{x})$ as gradient estimates in each direction.^[In matrix notation, we have the estimates
 \begin{eqnarray}
-\widehat{\beta}(\mathbf{x}) &=& [\mathbf{X}'\mathbf{K}(\mathbf{x})\mathbf{X}]^{-1} \mathbf{X}'\mathbf{K}(\mathbf{x})Y \\
+\hat{\beta}(\mathbf{x}) &=& [\mathbf{X}'\mathbf{K}(\mathbf{x})\mathbf{X}]^{-1} \mathbf{X}'\mathbf{K}(\mathbf{x})Y \\
 \mathbf{K}(\mathbf{x}) &=& \begin{pmatrix}
-K\left(\frac{\mathbf{X}_{1}-\mathbf{x}}{h}\right) & ... & 0\\
+K\left(\frac{\mathbf{X}_{1}-\mathbf{x}}{h_{1}}\right) & ... & 0\\
 \vdots & & \\
-0 & ... & K\left(\frac{\mathbf{X}_{P}-\mathbf{x}}{h}\right)
-\end{pmatrix},
+0 & ... & K\left(\frac{\mathbf{X}_{P}-\mathbf{x}}{h_{P}}\right)
+\end{pmatrix}.
 \end{eqnarray}
+]
 
 After computing gradients, you can summarize them in various plots
 
@@ -456,7 +454,7 @@ After computing gradients, you can summarize them in various plots
 * Plot of gradients and CI's, \cite{Chaudhuri1999, HendersonEtAl2012}
 
 
-You may also be interested in a particular gradient or a single summary statistic. For example, a bivariate regressogram can estimate the marginal effect of $X_{1}$ at the means; $\widehat{\beta_{1}}(\overline{\mathbf{x}}=[\overline{x_{1}}, \overline{x_{2}}])$. You may also be interested in the mean of the marginal effects (sometimes said simply as "average effect"), which averages the marginal effect over all datapoints in the dataset: $1/N \sum_{i}^{N} \widehat{\beta_{1}}(\mathbf{X}_{i})$, or the median marginal effect. Such statistics are single numbers that can be presented similar to an OLS regression table where each row corresponds a variable and each cell has two elements: "mean gradient (sd gradient)".
+You may also be interested in a particular gradient or a single summary statistic. For example, a bivariate regressogram can estimate the marginal effect of $X_{1}$ at the means; $\widehat{\beta_{1}}(\overline{\mathbf{x}}=[\overline{x_{1}}, \overline{x_{2}}])$. You may also be interested in the mean of the marginal effects (sometimes said simply as "average effect"), which averages the marginal effect over all datapoints in the dataset: $1/n \sum_{i}^{n} \widehat{\beta_{1}}(\mathbf{X}_{i})$, or the median marginal effect. Such statistics are single numbers that can be presented similar to an OLS regression table where each row corresponds a variable and each cell has two elements: "mean gradient (sd gradient)".
 
 
 
@@ -468,6 +466,6 @@ Diagnostics
 * <https://book.stat420.org/model-diagnostics.html#leverage>
 * <https://socialsciences.mcmaster.ca/jfox/Books/RegressionDiagnostics/index.html>
 * <https://bookdown.org/ripberjt/labbook/diagnosing-and-addressing-problems-in-linear-regression.html>
-* Belsley, D. A., Kuh, E., and Welsch, R. E. (1980). Regression Diagnostics: Identifying influential data and sources of collinearity. Wiley. https://doi.org/10.1002/0471725153
-* Fox, J. D. (2020). Regression diagnostics: An introduction (2nd ed.). SAGE. https://dx.doi.org/10.4135/9781071878651
+* Belsley, D. A., Kuh, E., and Welsch, R. E. (1980). Regression Diagnostics: Identifying influential data and sources of collinearity. Wiley. <https://doi.org/10.1002/0471725153>
+* Fox, J. D. (2020). Regression diagnostics: An introduction (2nd ed.). SAGE. <https://dx.doi.org/10.4135/9781071878651>
 

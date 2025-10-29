@@ -1,75 +1,20 @@
 # Misc. Univariate Topics
 
 
-## Functions for Data Analysis
 
-#### **Data Handling**. {-}
-
-You can find a value by a particular criterion
-```{r}
-y <- 1:10
-
-# Return Y-value with minimum absolute difference from 3
-abs_diff_y <- abs( y - 3 ) 
-abs_diff_y # is this the luckiest number?
-
-min(abs_diff_y)
-which.min(abs_diff_y)
-y[ which.min(abs_diff_y) ]
-```
-
-
-There are also some useful built in functions for standardizing data
-```{r}
-m <- matrix(c(1:3,2*(1:3)),byrow=TRUE,ncol=3)
-m
-
-# normalize rows
-m/rowSums(m)
-
-# normalize columns
-t(t(m)/colSums(m))
-
-# de-mean rows
-sweep(m,1,rowMeans(m), '-')
-
-# de-mean columns
-sweep(m,2,colMeans(m), '-')
-```
-
-
-#### **Binning and Aggregating**. {-}
-
-```{r}
-x <- 1:10
-cut(x, 4)
-split(x, cut(x, 4))
-```
-
-```{r}
-xs <- split(x, cut(x, 4))
-sapply(xs, mean)
-
-# shortcut
-aggregate(x, list(cut(x,4)), mean)
-```
-
-See also <https://bookdown.org/rwnahhas/IntroToR/logical.html>
-
-
-## Transformations
+## Data Transformations
 
 Transformations can stabilize variance, reduce skewness, and make model errors closer to Gaussian.
 
 Perhaps the most common examples are *power transformations*: $y= x^\lambda$, which includes $\sqrt{x}$ and $x^2$.
 
-Other examples include the *exponential transformation*: $y=exp(x)$ for any $x\in (-\infty, \infty)$ and *logarithmic transformation*: $y=\log(x)$ for any $x>0$.
+Other examples include the *exponential transformation*: $y=\exp(x)$ for any $x\in (-\infty, \infty)$ and *logarithmic transformation*: $y=\log(x)$ for any $x>0$.
 
 The *Box–Cox Transform* nests many cases. For $x>0$ and parameter $\lambda$,
 \begin{eqnarray}
 y=\begin{cases}
 \dfrac{x^\lambda-1}{\lambda}, & \lambda\neq 0,\\
-\log x, & \lambda=0.
+\log\left(x\right) & \lambda=0.
 \end{cases}
 \end{eqnarray}
 This function is continuous over $\lambda$.
@@ -245,3 +190,299 @@ X <- rdagum(3000,1,3,1)
 X[1:5]
 ```
 
+
+## Set Theory
+
+Let the sample space contain events $A$ and $B$, with their probability denoted as $Prob(A)$ and $Prob(B)$. Then
+
+- the *union*: $A\cup B$, refers to either event occurring
+- the *intersection*: $A\cap B$, refers to both events occurring
+- the events $A$ and $B$ are *mutually exclusive* if and only if $A\cap B$ is empty.
+- the *inclusion–exclusion* rule is: $Prob(A\cup B)=Prob(A)+Prob(B)-Prob(A\cap B)$.
+- the events $A$ and $B$ are *mutually independent* if and only if $Prob(A\cap B)=Prob(A) Prob(B)$.
+- the *conditional probability* is $Prob(A \mid B) = Prob(A \cap B)/ P(B)$.
+
+For example, consider a six sided die where
+
+- $A$: number $>\!2$, which implies $A=\{3,4,5,6\}$
+- $B$: number is even, which implies $B=\{2,4,6\}$
+- To check mutually exclusive: notice $A\cap B=\{4,6\}$ which is not empty. So No, event $A$ and event $B$ are not mutually exclusive.
+
+Further assuming the die are fair
+
+- $Prob(A)=4/6=2/3$ and $Prob(B)=3/6=1/2$
+- $A\cup B=\{2,3,4,5,6\}$, which implies $Prob(A\cup B)=5/6$.
+- $A\cap B=\{4,6\}$, which implies $Prob(A\cap B)=2/6=1/3$.
+- To check independence: notice $Prob(A\cap B)=1/3 = (2/3) (1/2) = Prob(A)Prob(B)$. So Yes, event $A$ and event $B$ are mutually independent.
+- Finally, the conditional probability of $Prob(\text{die is} >2 \mid \text{die shows an even number}) = Prob(A \mid B) = Prob(A \cap B)/ P(B) = \frac{1/3}{2/3}=2/3$.
+
+```{r}
+# Simulation verification
+set.seed(123)
+rolls <- sample(1:6, 1e6, replace = TRUE)
+A <- rolls > 2
+B <- rolls %% 2 == 0
+P_AcondB <- mean(A & B) / mean(B)
+round(P_AcondB, 3)
+```
+
+:::{.callout-tip icon=false collapse="true"}
+Consider a six sided die with sample space $\{1,2,3,4,5,6\}$ where each outcome is each equally likely. What is $Prob(\text{die is odd or }<5)$?
+Denote the odd events as $A=\{1,3,5\}$ and the less than five events as  $B=\{1,2,3,4\}$. Then
+
+- $A\cup B=\{1,3\}$, which implies $Prob(A\cap B)=2/6=1/3$.
+- $Prob(A)=3/6=1/2$ and $Prob(B)=4/6=2/3$.
+- By inclusion–exclusion: $Prob(A\cup B)=Prob(A)+Prob(B)-Prob(A\cap B)=1/2+2/3-1/3=5/6$.
+
+Now find $Prob(\text{die is even and }<5)$. Verify your answer with a computer simulation.
+:::
+
+
+## Count Distributions
+
+#### **Binomial**. {-}
+
+The sum of $n$ Bernoulli trials (number of successes)
+
+* Discrete, support $\{0,1,\ldots,n\}$
+* Probability Mass Function: $Prob(X_{i}=x)=\binom{n}{x}p^k(1-p)^{n-x}$
+* See <https://en.wikipedia.org/wiki/Binomial_distribution>
+* A common use case: How many heads will I get when I flip a coin twice?
+
+```{r}
+## Minimal example
+n <- 15
+p <- 0.3
+
+# PMF plot
+x <- 0:n
+f_x <- dbinom(x, n, p)
+plot(x, f_x, type = "h", col = "blue",
+    main='',  xlab = "x", ylab = "Prob(X = x)")
+title(bquote(paste('Binom(',.(n),', ',.(p), ')' ) ))
+points(x, f_x, pch = 16, col = "blue")
+
+# Simulate:  Compare empirical vs theoretical
+#X <- rbinom(1e4, size = n, prob = p)
+#c(emp_mean = mean(X), th_mean = n*p)
+#c(emp_var  = var(X),  th_var  = n*p*(1-p))
+```
+
+:::{.callout-tip icon=false collapse="true"}
+Suppose that employees at a company are $70%$ female and $30%$ male. If we select a random sample of eight employees, what is the probability that more than $2$ in the sample are female?
+:::
+
+:::{.callout-tip icon=false collapse="true"}
+Show that 
+$\mathbb{E}[X_{i}]=np$ and $\mathbb{V}[X_{i}]=np(1-p)$.
+:::
+
+The Binomial Limit Theorem (de Moivre–Laplace theorem) says that as $n$ grows large, with $p \in (0,1)$ staying fixed, the Binomial distribution is approximately normal with mean $np$ and variance $np(1-p)$
+
+:::{.callout-tip icon=false collapse="true"}
+The unemployment rate is $10%$. Suppose that $100$ employable people are selected randomly. What is the probability that this sample contains between $9$ and $12$ unemployed people. Use the normal approximation to binomial probabilities (parameters $\mu=100, \sigma=9.49$).
+:::
+
+#### **Poisson**. {-}
+
+The number of events in a fixed interval
+
+* Discrete, support $\{0,1,2,\ldots\}$
+* Probability Mass Function: $Prob(X_{i}=x)=e^{-\lambda}\lambda^x/x!$
+* See <https://en.wikipedia.org/wiki/Poisson_distribution>
+* A common use case: How many cars will show up in the lot tomorrow?
+
+```{r}
+## Minimal example
+lambda <- 3.5
+
+# PMF plot
+x <- 0:15
+f_x <- dpois(x, lambda)
+plot(x, f_x, type="h", col="blue",
+     xlab = "x", ylab = "Prob(X = x)")
+points(x, f_x, pch = 16, col = "blue")
+title(bquote(paste('Pois(',.(lambda), ')')))
+
+
+# Simulate: Compare empirical vs theoretical
+#X <- rpois(1e4, lambda)
+#c(emp_mean = mean(X), th_mean = lambda)
+#c(emp_var  = var(X),  th_var  = lambda)
+```
+
+:::{.callout-tip icon=false collapse="true"}
+Show that $\mathbb{E}[X_{i}] = \mathbb{V}[X_{i}]= \lambda$.
+:::
+
+#### **Irwin–Hall**. {-}
+
+The sum of $n$ i.i.d. $\text{Uniform}(0,1)$.  
+
+* Continuous, support $[0,n]$
+* Probability Density Function: $f(x) = \dfrac{1}{(n-1)!}
+\displaystyle\sum_{k=0}^{\lfloor x \rfloor} (-1)^k
+\binom{n}{k} (x - k)^{n-1}$ for $x \in [0,n]$, and $0$ otherwise
+* See <https://en.wikipedia.org/wiki/Irwin%E2%80%93Hall_distribution>
+* A common use case: representing the sum of many small independent financial shocks
+
+```{r}
+## Minimal example (base R)
+# Irwin–Hall PDF function
+dirwinhall <- function(x, n) {
+    f_x <- vector(length=length(x))
+    for(i in seq(x)) {
+        xx <- x[i]
+        if(xx < 0 | xx > n){
+            f_x[i] <- 0 
+        } else {
+            k <- 0:floor(xx)
+            f_k <- sum((-1)^k*choose(n, k)*(xx-k)^(n-1))/factorial(n-1)
+            f_x[i] <- f_k
+        }}
+    return(f_x)
+}
+
+# Parameters
+n <- 2
+x <- seq(0, n, length.out = 500)
+
+# Compute and plot PDF
+f_x <- dirwinhall(x, n)
+plot(x, f_x, type="l", col="blue",
+    main='', xlab = "x", ylab = "f(x)")
+title(bquote(paste('IrwinHall(',.(n), ')')))
+```
+
+See also the Bates Distribution.
+
+
+## Beyond Basic Programming
+
+Use expansion "packages" for more functionality.
+
+Most packages can be easily installed, and you only need to install packages once.
+```{r, eval=FALSE}
+# common packages for tables/figures
+install.packages("plotly")
+install.packages("reactable")
+install.packages("stargazer")
+
+# common packages for data/teaching
+install.packages("AER")
+install.packages("Ecdat")
+install.packages('wooldridge')
+
+# other packages for statistics and data handling
+install.packages("extraDistr")
+install.packages("twosamples")
+install.packages("data.table")
+```
+
+You need to load the package via `library` every time you want the extended functionality. For example, to generate 'exotic' probability distributions
+```{r}
+library(extraDistr)
+
+par(mfrow=c(1,2))
+for(p in c(-.5,0)){
+    x <- rgev(2000, mu=0, sigma=1, xi=p)
+    hist(x, breaks=50, border=NA, main=NA, freq=F)
+}
+title('GEV densities', outer=T, line=-1)
+```
+
+```{r}
+library(extraDistr)
+
+par(mfrow=c(1,3))
+for(p in c(-1, 0,2)){
+    x <- rtlambda(2000, p)
+    hist(x, breaks=100, border=NA, main=NA, freq=F)
+}
+title('Tukey-Lambda densities', outer=T, line=-1)
+```
+
+The most common tasks also have [cheatsheets](https://www.rstudio.com/resources/cheatsheets/) you can use. 
+
+#### **Updating**. {-}
+
+Make sure R and your packages are up to date. The current version of R and any packages used can be found (and recorded) with 
+
+```{r, eval=F}
+sessionInfo()
+```
+
+To update your R packages, use 
+```{r, eval=F}
+update.packages()
+```
+
+#### **Base**. {-}
+While additional packages can make your code faster, they also create dependancies that can lead to problems. So learn base R well before becoming dependent on other packages
+
+* <https://bitsofanalytics.org/posts/base-vs-tidy/>
+* <https://jtr13.github.io/cc21fall2/comparison-among-base-r-tidyverse-and-datatable.html>
+
+
+#### **Advanced Programming**. {-}
+
+<details>
+<summary> Advanced and Optional </summary>
+  <p>
+ 
+Sometimes you will want to install a package from GitHub. For this, you can use [devtools](https://devtools.r-lib.org/) or its light-weight version [remotes](https://remotes.r-lib.org/)
+```{r, eval=FALSE}
+install.packages("devtools")
+install.packages("remotes")
+```
+
+Note that to install `devtools`, you also need to have developer tools installed on your computer.
+
+* Windows: [Rtools](https://cran.r-project.org/bin/windows/Rtools/)
+* Mac: [Xcode](https://apps.apple.com/us/app/xcode/id497799835)
+
+To color terminal output on Linux systems, you can use the colorout package
+```{r, eval=FALSE}
+library(remotes)
+# Install <https://github.com/jalvesaq/colorout
+# to .libPaths()[1]
+install_github('jalvesaq/colorout')
+library(colorout)
+```
+
+Note that after updating R, you can update *all* packages stored in *all* `.libPaths()` with the following command
+```{r, eval=FALSE}
+update.packages(checkBuilt=T, ask=F)
+# install.packages(old.packages(checkBuilt=T)[,"Package"])
+```
+
+Sometimes there is a problem. To find specific broken packages after an update
+```{r, eval=FALSE}
+library(purrr)
+
+set_names(.libPaths()) %>%
+  map(function(lib) {
+    .packages(all.available = TRUE, lib.loc = lib) %>%
+        keep(function(pkg) {
+            f <- system.file('Meta', 'package.rds', package = pkg, lib.loc = lib)
+            tryCatch({readRDS(f); FALSE}, error = function(e) TRUE)
+        })
+  })
+# https://stackoverflow.com/questions/31935516/installing-r-packages-error-in-readrdsfile-error-reading-from-connection/55997765
+```
+
+To remove packages duplicated in multiple libraries
+```{r, eval=FALSE}
+# Libraries
+i <- installed.packages()
+libs <- .libPaths()
+# Find Duplicated Packages
+i1 <- i[ i[,'LibPath']==libs[1], ]
+i2 <- i[ i[,'LibPath']==libs[2], ]
+dups <- i2[,'Package'] %in% i1[,'Package']
+all( dups )
+# Remove
+remove.packages(  i2[,'Package'], libs[2] )
+```
+  </p>
+</details>

@@ -61,46 +61,40 @@ title("Grouped Means and Scatterplot", font.main=1)
 
 Just as we use histograms to describe the distribution of a random variable, we can use a regressogram for *conditional* relationships. Specifically, we can use dummies for exclusive intervals or bins to estimate how the average value of $Y$ varies with $X$.
 
-After dividing $X$ into $1,...L$ exclusive bins of width $h$. Each bin has a midpoint, $x$, and an associated dummy variable $D(\hat{X}_{i},x,h)$.\footnote{The bins do not have to have equal width, but $D(\hat{X}_{i},x,h) = \mathbf{1}\left(\text{X}_{i} \in \left(x-h,x+h\right] \right)$ is notationally convenient and a good default.} Then conduct a dummy variable regression
+After dividing $X$ into $1,...L$ exclusive bins of width $h$. Each bin has a midpoint, $x$, and an associated dummy variable $\hat{D}_{i}(x,h) = \mathbf{1}\left(\hat{X}_{i} \in \left(x-h/2,x+h/2\right] \right)$.^[The bins do not all need to have the same width, but that is a good default and more notationally convenient than letting the bandwidth depend on the bin; $h(x)$.] Then conduct a dummy variable regression
 \begin{eqnarray}
-\hat{Y}_{i} &=& \sum_{x \in \{x_{1}, ..., x_{L} \}} \alpha(x) D(\hat{X}_{i},x,h)  + e_{i}.
+\hat{Y}_{i} &=& \sum_{x \in \{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{D}_{i}(x,h)  + e_{i},
 \end{eqnarray}
-Notice that each bin has $N(x,h) = \sum_{i}^{N}D(\hat{X}_{i},x,h)$ observations. We can split the dataset into parts associated with each bin;
+where each bin has a coefficient $b_{0}(x,h)$.
+
+Notice that each bin has $n(x,h) = \sum_{i}^{n}\hat{D}_{i}(x,h)$ observations. This means se can split the dataset into parts associated with each bin
 \begin{eqnarray}
 \label{eqn:regressogram1}
-\sum_{i}^{N}\left[e_{i}\right]^2 
-&=& \sum_{i}^{N}\left[\hat{Y}_{i}- \sum_{x \in \{x_{1}, ..., x_{L} \}} \alpha(x,h) D(\hat{X}_{i},x,h) \right]^2 \\
-&=& \sum_{i}^{N(x_{1},h)}\left[\hat{Y}_{i}- \sum_{x \in \{x_{1}, ..., x_{L} \}} \alpha(x,h) D(\hat{X}_{i},x,h) \right]^2 + ...  \nonumber  \\
-& & \sum_{i}^{N(x_{L},h)}\left[\hat{Y}_{i}- \sum_{x \in \{x_{1}, ..., x_{L} \}} \alpha(x,h) D(\hat{X}_{i},x,h) \right]^2 \\
-&=& \sum_{i}^{N(x_{1},h)}\left[\hat{Y}_{i}- \alpha\left(x_1,h\right) \right]^2 + ... \sum_{i}^{N(x_L,h)}\left[\hat{Y}_{i}-\alpha\left(x_L,h\right) \right]^2 % +~ (N-1)\sum_{i}\hat{Y}_{i}
+\sum_{i}^{n}\left[e_{i}\right]^2 
+&=& \sum_{i}^{n}\left[\hat{Y}_{i}- \sum_{x \in \{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{D}_{i}(x,h) \right]^2 \\
+&=& \sum_{i}^{n(x_{1},h)}\left[\hat{Y}_{i}- \sum_{x \in \{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{D}_{i}(x,h) \right]^2 + ...  \nonumber  \\
+& & \sum_{i}^{n(x_{L},h)}\left[\hat{Y}_{i}- \sum_{x \in \{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{D}_{i}(x,h) \right]^2 \\
+&=& \sum_{i}^{n(x_{1},h)}\left[\hat{Y}_{i}- b_{0}\left(x_1,h\right) \right]^2 + ... \sum_{i}^{n(x_L,h)}\left[\hat{Y}_{i}-b_{0}\left(x_L,h\right) \right]^2 % +~ (N-1)\sum_{i}\hat{Y}_{i}.
 \end{eqnarray}
-Then notice that we can optimize each bin separately;
+This separation allows us optimize for each bin separately
 \begin{eqnarray}
 \label{eqn:regressogram2}
-\text{argmin}_{ \left\{ \alpha(x,h) \right\} } \sum_{i}^{N}\left[e_{i}\right]^2
-&=& \text{argmin}_{ \left\{ \alpha(x,h) \right\} } \sum_{i}^{N(x,h)}\left[\hat{Y}_{i}- \alpha\left(x,h\right) \right]^2,
+\min_{ \left\{ b_{0}(x,h) \right\} } \sum_{i}^{n}\left[e_{i}\right]^2
+&=& \min_{ \left\{ b_{0}(x,h) \right\} } \sum_{i}^{n(x,h)}\left[\hat{Y}_{i}- b\left(x,h\right) \right]^2,
 \end{eqnarray}
 since, in either case, minimizing yields 
 \begin{eqnarray}
-0 &=& -2 \sum_{i}^{N(x,h)}\left[ \hat{Y}_{i} - \alpha(x,h)  \right] \\
-\widehat{\alpha}(x,h) &=& \frac{\sum_{i}^{N(x,h)} \hat{Y}_{i}}{ N(x,h) } .
+0 &=& -2 \sum_{i}^{n(x,h)}\left[ \hat{Y}_{i} - b_{0}(x,h)  \right] \\
+\hat{b}_{0}(x,h) &=& \frac{\sum_{i}^{n(x,h)} \hat{Y}_{i}}{ n(x,h) } = \hat{M}_{Y}(x,h) .
 \end{eqnarray}
-As such, the OLS regression yields coefficients that are intepreted as the conditional mean of $Y$.  We can directly compute the same statistic directly by simply takes the average value of $Y$ for all $i$ observations in a particular bin.
+As such, the OLS regression yields coefficients that are interpreted as the conditional mean: $\hat{M}_{Y}(x,h)$. We can directly compute the same statistic directly by simply takes the average value of $\hat{Y}_{i}$ for all $i$ observations in a particular bin. The values predicted by the model are then found as $\hat{y}_{i} = \sum_{x} \hat{b}(x,h) \hat{D}_{i}(x,h)$.
 
-Interestingly, we can obtain the same statistic from weighted least squares regression. For some specific design point, $x$, we can find $\widehat{\alpha}(x, h)$ by minimizing
+
+Consider this two-bin example of how age affects wage for people aged $10$ to $70$.
 \begin{eqnarray}
-& & \sum_{i}^{N}\left[ \hat{Y}_{i}- \alpha(x,h) \right]^2  D(\hat{X}_{i},x,h) \\
-&=& \sum_{i}^{N(x_{1},h)}\left[ \hat{Y}_{i}- \alpha(x,h) \right]^2  D(\hat{X}_{i},x,h) + ... \sum_{i}^{N(x_{L},h)}\left[ \hat{Y}_{i}- \alpha(x,h) \right]^2  D(\hat{X}_{i},x,h) \\
-&=& \sum_{i}^{N(x,h)}\left[\hat{Y}_{i}- \alpha\left(x,h\right) \right]^2 
+\text{Wage}_{i} &=& b_{0}(x=25, h=15) \mathbf{1}\left(\text{Age}_{i} \in (10,40]\right) + b(x=55, h=15) \mathbf{1}\left(\text{Age}_{i} \in (40,70] \right) + e_{i}.
 \end{eqnarray}
-
-Finally, predicted values are $\widehat{Y}_{i} = \sum_{x} \widehat{\alpha}(x,h) D(\hat{X}_{i},x,h)$.
-
-Consider this three-bin example of how age affects wage.
-\begin{eqnarray}
-\text{Wage} &=& \alpha_{1} \mathbf{1}\left(\text{Age} < 23\right) + \alpha_{2} \mathbf{1}\left(\text{Age} \in [23,65) \right) +  \alpha_{2} \mathbf{1}\left( \text{Age} \geq 65) \right) + \epsilon \nonumber
-\end{eqnarray}
-I.e., the main effect on wages is whether your the right age to work (not in school or retired). But you could also look at yearly bins and see if that tri-part grouping emerges naturally or not (e.g., whether we shouldn't group all working-age people together). For example,
+You could also look at yearly bins and see if a tri-part grouping emerges naturally or not (e.g., whether the main effect on wages is whether your not in school or retired). You can choose other bins as well.
 ```{r}
 ##################
 # Regressogram
@@ -149,11 +143,18 @@ legend('topleft',
     lty=1, col=2:4, cex=.8)
 ```
 
+Interestingly, we can obtain the same statistic from weighted least squares regression. For some specific design point, $x$, we can find $\hat{b}(x, h)$ by minimizing
+\begin{eqnarray}
+\sum_{i}^{n}\left[ e_{i} \right]^2  \hat{D}_{i}(x,h) &=& \sum_{i}^{n}\left[ \hat{Y}_{i}- b_{0}(x,h) \right]^2  \hat{D}_{i}(x,h) \\
+&=& \sum_{i}^{n(x_{1},h)}\left[ \hat{Y}_{i}- b_{0}(x_{1},h) \right]^2  \hat{D}_{i}(x_{1},h) + ... \sum_{i}^{n(x_{L},h)}\left[ \hat{Y}_{i}- b_{0}(x_{L},h) \right]^2  \hat{D}_{i}(x_{L},h) \\
+&=& \sum_{i}^{n(x,h)}\left[\hat{Y}_{i}- b_{0}\left(x,h\right) \right]^2 
+\end{eqnarray}
+
 #### **Piecewise Regression**.{-}
 The regressogram depicts locally constant relationships. We can also included slope terms within each bin to allow for locally linear relationships. This is often called *segmented/piecewise regression*, which runs a separate regression for different subsets of the data.
 
 \begin{eqnarray}
-\hat{Y}_{i} &=& \sum_{x} \left[\alpha(x) + \hat{X}_{i}\beta(x) \right] D(\hat{X}_{i},x,h) + \epsilon_{i}.
+\hat{Y}_{i} &=& \sum_{x} \left[b_{0}(x,h) + b_{1}(x,h)\hat{X}_{i} \right] \hat{D}_{i}(x,h) + e_{i}.
 \end{eqnarray}
 ```{r}
 ##################
@@ -268,22 +269,18 @@ For many things, this pseudo-smoothing is "good enough" or even "great". It real
 A kernel density is generally a "smooth" version of a histogram. We estimate the density at many points (e.g., all unique values $x$ in the dataset), not just the midpoints of exclusive bins. The uniform kernel and density estimator is 
 \begin{eqnarray}
 \label{eqn:uniform}
-\widehat{f}_{unif}(x) &=& \frac{1}{N} \sum_{i}^{N} \frac{k_{U}(\hat{X}_{i}, x, h) }{2h} \\
+\widehat{f}_{U}(x) &=& \frac{1}{n} \sum_{i}^{n} \frac{k_{U}(\hat{X}_{i}, x, h) }{2h} \\
 k_{U}\left( \hat{X}_{i}, x, h \right) &=& \mathbf{1}\left(\frac{|\hat{X}_{i}-x|}{h}<1\right)
 = \mathbf{1}\left( \hat{X}_{i} \in \left( x-h, x + h\right) \right).
 \end{eqnarray} 
 Comparing equations \ref{eqn:uniform} to \ref{eqn:indicator}, we can see the uniform kernel is essentially the histogram but without the restriction that $x$ must be a midpoint of *exclusive* bins. Typically, the points $x$ are chosen to be either the unique observations or some equidistant set of "design points".
 
 
-We can also replace the uniform kernel with a more general kernel function $k\left( \hat{X}_{i}, x, h \right)= K\left( \frac{|\hat{X}_{i}-x|}{h} \right)$. (We normalize $k$, which is easier to program, so that the kernel function $K$ take a single argument that is easier to read.) The general idea behind kernel density is to use windows around each $x$ that potentially overlap, rather than partitioning the range of $X$ into exclusive bins.
-
-We define a general kernel function as a non-negative real-valued function $K$ that integrates to unity:
+We can also replace the uniform kernel with a more general kernel function $k$, which is then normalized to an easier to read and program $K$ function: $k\left( \hat{X}_{i}, x, h \right)= K\left( \frac{|\hat{X}_{i}-x|}{h} \right)$. We can then define a general kernel function as a non-negative real-valued function $K$ that integrates to unity:
 \begin{eqnarray}
 \int_{-\infty}^{\infty} K(v) dv &=& 1
 \end{eqnarray}
-We also only examine symmetric kernels, as some texts also include symmetric in the definition of a kernel; $K(v) = K(-v)$.
-
-For examples of some common kernels, see <https://en.wikipedia.org/wiki/Kernel_(statistics)#In_non-parametric_statistics>. In my view, these are the most intuitive and common.
+The general idea behind kernel density is to use windows around each $x$ that potentially overlap, rather than partitioning the range of $X$ into exclusive bins.^[We only examine symmetric kernels, as some texts also include symmetric in the definition of a kernel; $K(v) = K(-v)$.] For examples of some common kernels, see <https://en.wikipedia.org/wiki/Kernel_(statistics)#In_non-parametric_statistics>. In my view, these are the most intuitive and common.
 ```{r}
 ##################
 # Kernel Density Functions
@@ -292,7 +289,7 @@ For examples of some common kernels, see <https://en.wikipedia.org/wiki/Kernel_(
 X <- seq(-2,2, length.out=1001)
 
 plot.new()
-plot.window(xlim=c(-1,1), ylim=c(0,1))
+plot.window(xlim=c(-1.2,1.2), ylim=c(0,1))
 
 h <- 1
 lines( dunif(X,-h,h)~X, col=1, lty=1)
@@ -312,7 +309,7 @@ h <- 1/2
 lines(density(x=0, bw=h, kernel="epanechnikov"), col=4, lty=1)
 ## Note that "density" defines h slightly differently
 
-segments(0,1,0,0, col=grey(0,1), lwd=2, lend=2)
+rug(0, lwd=2)
 axis(1)
 axis(2)
 
@@ -351,7 +348,6 @@ F_hat <- sapply(ebins, function(x,h=.5){
     fx <- sum(kx,na.rm=T)/(h*N)
     fx
 })
-lines(ebins, F_hat, col=1, lty=1, type='o')
 ## Verify the same
 fhat1 <- density(e, n=12, from=min(ebins), to=max(ebins), bw=.5)
 points(fhat1$x, fhat1$y, pch=16, col=rgb(0,0,1,.5), cex=1.5)
@@ -376,22 +372,22 @@ It is safer to assume that you could be analyzing data with nonlinear relationsh
 \begin{eqnarray}
 \hat{Y}_{i} = m(\hat{X}_{i}) + \epsilon_{i}
 \end{eqnarray}
-where $m$ is an unknown continuous function and $\epsilon$ is white noise. (As such, the linear model is a special case.) You can estimate the model (the mean of $Y$ conditional on $X=x$) with a regressogram or a variety of other least-squares procedures.
+where $m$ is an unknown continuous function and $\epsilon$ is white noise. (As such, the linear model is a special case.) You can estimate the mean of $Y_{i}$ conditional on $X_{i}=x$ with a regressogram or a variety of other least-squares procedures.
 
 #### **Locally Constant**.{-}
 
-Consider a point $x$ and suppose $\hat{Y}_{i} = \alpha(x) + e_{i}$ locally. Then notice a weighted OLS estimator with uniform kernel weights yields
+Consider a point $x$ and suppose $\hat{Y}_{i} = b(x,h) + e_{i}$ locally. Then notice a weighted OLS estimator with uniform kernel weights yields
 \begin{eqnarray} \label{eqn:lcls}
-& & \min_{\alpha(x)}~ \sum_{i}^{N}\left[e_{i} \right]^2 k_{U}\left( \hat{X}_{i}, x, h \right) \\
-\Rightarrow & & -2 \sum_{i}^{N}\left[\hat{Y}_{i}- \alpha(x) \right] k_{U}\left(\hat{X}_{i}, x, h\right) = 0\\
+& & \min_{b(x,h)}~ \sum_{i}^{n}\left[e_{i} \right]^2 k_{U}\left( \hat{X}_{i}, x, h \right) \\
+\Rightarrow & & -2 \sum_{i}^{n}\left[\hat{Y}_{i}- b(x,h) \right] k_{U}\left(\hat{X}_{i}, x, h\right) = 0\\
 \label{eqn:lcls1}
-\Rightarrow & & \widehat{\alpha_{U}}(x) 
+\Rightarrow & & \hat{b_{U}}(x) 
 = \frac{\sum_{i} \hat{Y}_{i} k_{U} \left( \hat{X}_{i}, x, h \right) }{ \sum_{i} k_{U}\left( \hat{X}_{i}, x, h \right) } 
 = \sum_{i} \hat{Y}_{i} \left[ \frac{ k_{U} \left( \hat{X}_{i}, x, h \right) }{ \sum_{i} k_{U}\left( \hat{X}_{i}, x, h \right)} \right] =  \sum_{i} \hat{Y}_{i} w_{i},
 \end{eqnarray}
-where weight $w_{i} = \mathbf{1}\left( |\hat{X}_{i} - x| < h \right)/N$. The last equality is derived analogously to equation \ref{eqn:sum}; where $k_{U} \left( \hat{X}_{i}, x, h \right)$ is either one or zero, and $\sum_{i} k_{U} \left( \hat{X}_{i}, x, h \right) = N(x)$. 
+where weight $w_{i} = \mathbf{1}\left( |\hat{X}_{i} - x| < h \right)/N$. The last equality is derived analogously to equation \ref{eqn:sum}; where $k_{U} \left( \hat{X}_{i}, x, h \right)$ is either one or zero, and $\sum_{i} k_{U} \left( \hat{X}_{i}, x, h \right) = n(x,h)$. 
  
-When $N$ is small, $\widehat{\alpha_U}(x)$ is typically estimated for each observed value: $x \in \{ x_{1},...x_{N} \}$. For large datasets, you can select a subset or evenly spaced values of $x$ for which to estimate $\widehat{\alpha_{U}}(x)$. If we use exclusive bins, then equation \ref{eqn:regressogram1} equals \ref{eqn:lcls1}, which shows the regressogram is a kernel regression weights that recovers the conditional mean. This regressogram is more crude but can be estimated with OLS.
+When $n$ is small, $\hat{b}_{U}(x)$ is typically estimated for each unique observed value: $x \in \{ x_{1},...x_{n} \}$. For large datasets, you can select a subset or evenly spaced values of $x$ for which to estimate $\hat{b}_{U}(x)$. If we use exclusive bins, then equation \ref{eqn:regressogram1} equals \ref{eqn:lcls1}, which shows the regressogram is a kernel regression weights that recovers the conditional mean. This regressogram is more crude but can be estimated with OLS.
 
 ```{r}
 ##################
@@ -413,11 +409,11 @@ The basic idea also generalizes other kernels. As such, a kernel regression usin
 If $X$ represents time, then the local constant regressions is also called a *moving average*. With non-uniform kernel weights, we have a *weighted* moving average.
 
 #### **Locally Linear**.{-}
-A less simple case is a *local linear regression* which conducts a linear regression for each data point using a subsample of data around it. Consider a point $x$ and suppose $\hat{Y}_{i} = \alpha(x) + \beta(x) \hat{X}_{i} + e_{i}$ for data near $x$. The weighted OLS estimator with kernel weights is
+A less simple case is a *local linear regression* which conducts a linear regression for each data point using a subsample of data around it. Consider a point $x$ and suppose $\hat{Y}_{i} = b_{0}(x,h) + b_{1}(x) \hat{X}_{i} + e_{i}$ for data near $x$. The weighted OLS estimator with kernel weights is
 \begin{eqnarray}
-& & \min_{\alpha(x),\beta(x)}~ \sum_{i}^{N}\left[\hat{Y}_{i}- \alpha(x) - \beta(x) \hat{X}_{i} \right]^2 K\left(\frac{|\hat{X}_{i}-x|}{h}\right)
+& & \min_{b_{0}(x,h),b_{1}(x,h)}~ \sum_{i}^{n}\left[\hat{Y}_{i}- b_{0}(x,h) - b_{1}(x,h) \hat{X}_{i} \right]^2 K\left(\frac{|\hat{X}_{i}-x|}{h}\right)
 \end{eqnarray} 
-Deriving the optimal values $\widehat{\alpha}(x)$ and $\widehat{\beta}(x)$ for $k_{U}$ is left as a homework exercise.^[Note that one general benefit of LLLS is with edge effects (see homework). Another is that it is theoretically motivated: assuming that $Y_{i}=m(X_{i}) + \epsilon_{i}$, we can then take a Taylor approximation: $m(X_{i}) + \epsilon_{i} \approx m(x) + m'(x)[X_{i}-x] + \epsilon_{i} = [m(x) - m'(x)x ] + m'(x)X_{i} + \epsilon_{i} = \alpha(x) + \beta(x) X_{i}$. As such, a third benefit is that the estimated coefficient $\widehat{\beta}$ can be interpreted as a gradient estimate at $x$.]
+Deriving the optimal values $\hat{b}_{0}(x,h)$ and  $\hat{b}_{1}(x,h)$ for $k_{U}$ is left as a homework exercise.^[Note that one general benefit of LLLS is with edge effects (see homework). Another is that it is theoretically motivated: assuming that $Y_{i}=m(X_{i}) + \epsilon_{i}$, we can then take a Taylor approximation: $m(X_{i}) + \epsilon_{i} \approx m(x) + m'(x)[X_{i}-x] + \epsilon_{i} = [m(x) - m'(x)x ] + m'(x)X_{i} + \epsilon_{i} = b_{0}(x,h) + b_{1}(x,h) X_{i}$. As such, a third benefit is that the estimated slope coefficient $\hat{b}_{1}(x,h)$ can be interpreted as the estimated gradient at $x$.]
 
 ```{r}
 # ``Naive" Smoother
@@ -443,7 +439,7 @@ legend('topleft', title='Locally Linear',
     lty=1, col=cols, cex=.8)
 ```
 
-Note that there are more complex versions of local linear regressions (see https://shinyserv.es/shiny/kreg/ for a nice illustration.) An even more complex (and more powerful) version is **loess**, which uses adaptive bandwidths in order to have a similar number of data points in each subsample (especially useful when $X$ is not uniform.)
+Note that there are more complex versions of local linear regressions (see <https://shinyserv.es/shiny/kreg/> for a nice illustration.) An even more complex (and more powerful) version is **loess**, which uses adaptive bandwidths in order to have a similar number of data points in each subsample (especially useful when $X$ is not uniform.)
 
 ```{r}
 # Adaptive-width subsamples with non-uniform weights
