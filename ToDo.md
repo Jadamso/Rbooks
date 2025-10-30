@@ -193,58 +193,6 @@ Suppose you read that Honda Civic is the most commonly stolen car. Does this mea
 
 
 
-When we test a hypothesis, we start with a claim called the null hypothesis $H_0$ and an alternative claim $H_A$. Because we base conclusions on sample data, which has variability, mistakes are possible. There are two types of errors:
-
-* *Type I Error*: Rejecting a true null hypothesis. (False Positive). 
-* *Type II Error*: Failing to reject a false null hypothesis (False Negative). 
-
-| **True Situation** | **Decision: Fail to Reject $H_0$** | **Decision: Reject $H_0$** |
-|---|---|---|
-| $H_0$ is true |  Correct (no detection)  |  **Type I Error** (false positive) |
-| $H_0$ is false |  **Type II Error** (false negative; missed detection) | Correct (effect detected) |
-
-Here is a Courtroom Analogy. Someone at trial is either guilty or not (a Bernoulli random variable), and you hypothesize that they are innocent.
-
-| **Reality** | **Court’s Decision** | **Interpretation** |
-|---|---|---|
-| Innocent | Convicted | **Type I Error** (false positive) |
-| Guilty   | Freed     | **Type II Error** (false negative) |
-
-
-The probability of Type I Error is called *significance level* and denoted by $Prob(\text{Type I Error}) = \alpha$. The probability of correctly rejecting a false null is called *power* and denoted by $\text{Power} = 1 - \beta = 1 -  Prob(\text{Type II Error})$. 
-
-Significance is often chosen by statistical analysts to be $ \alpha = 0.05 $.
-Power is less often chosen, instead following from a decision about power. There is an important Trade-off for fixed sample sizes: Increasing significance (fewer false positive) often lowers power (more false negatives). Generally, power depends on the effect size and sample size: bigger true effects and larger $n$ make it easier to detect real differences (higher power, lower $\beta$).
-
-:::
-The code below runs a small simulation for a two-sided z-test of a mean with known $\sigma$. It shows how power increases when the effect size $(\mu - \mu_0)/\sigma$ or sample size $n$ increases.
-
-```{r power-sim}
-#"Power vs. Sample Size and Effect Size"
-set.seed(1)
-
-power_sim <- function(n = 25, mu = 0.2, mu0 = 0, sigma = 1, alpha = 0.05, reps = 5000){
-    zcrit <- qnorm(1 - alpha/2)
-    rejections <- vector(length=1000)
-    for(i in 1:length(rejections)) {
-        xbar <- mean(rnorm(n, mean = mu, sd = sigma))
-        z <- sqrt(n) * (xbar - mu0) / sigma
-        rejections[i] <- abs(z) > zcrit
-    }
-    mean(rejections)
-}
-
-grid <- expand.grid(n = c(20, 50, 100),
-                    effect = c(0.1, 0.2, 0.4))  # effect = (mu - mu0)/sigma
-grid$power <- mapply(function(n, eff) power_sim(n = n, mu = eff, mu0 = 0, sigma = 1),
-                     grid$n, grid$effect)
-
-grid
-```
-:::
-
-
-
 #### Ch 13. Data Analysis
 * Incorporate insights from "Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)" 
 
@@ -257,7 +205,7 @@ Data clean/merge
 * https://onlinelibrary.wiley.com/doi/10.1002/%28SICI%291099-1255%28199709/10%2912%3A5%3C533%3A%3AAID-JAE454%3E3.0.CO%3B2-V
 
 
-
+https://statmodeling.stat.columbia.edu/2025/10/21/reanalysis-of-that-nobel-prizewinning-study-of-patents-and-innovation/
 
 
 ## Multivariate Data (Econometrics)
@@ -267,7 +215,6 @@ Data clean/merge
 
 #### Big Picture
 
-Main gaps are Experimental Design Basics (15.1) and Statistical Decision Theory (17.3)
 
 * Add some theory about adjusted R2 and F-test to 11.4
 * Ch.12 https://plotly.com/r/splom/
@@ -343,32 +290,6 @@ https://statmodeling.stat.columbia.edu/2024/06/17/this-well-known-paradox-of-r-s
 https://easystats.github.io/report/
 
 
-
-
-#### Diminishing Returns
-Value of More Data: Just as before, there are diminishing returns to larger sample sizes with simple OLS.
-
-```{r}
-B <- 300
-Nseq <- seq(3,100, by=1)
-SE <- sapply(Nseq, function(n){
-    sample_statistics <- sapply(1:B, function(b){
-        x <- rnorm(n)
-        e <- rnorm(n)        
-        y <- x*2 + e
-        reg <- lm(y~x)
-        coef(reg)
-        #se <- sqrt(diag(vcov(vcov)))
-    })
-    sd(sample_statistics)
-})
-
-par(mfrow=c(1,2))
-plot(Nseq, SE, pch=16, col=grey(0,.5), main='Absolute Gain',
-    ylab='standard error', xlab='sample size')
-plot(Nseq[-1], abs(diff(SE)), pch=16, col=grey(0,.5), main='Marginal Gain', 
-    ylab='decrease in standard error', xlab='sample size')
-```
 
 #### Data Transformation
 

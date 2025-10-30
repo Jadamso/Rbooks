@@ -27,7 +27,7 @@ Often, we think of the population as being infinitely large. This is an approxim
 sample(1:4, 2, replace=T)
 ```
 
-Intuition for infinite populations: imagine drawing names from a giant urn. If the urn has only 10 names, then removing one name slightly changes the composition of the urn, and the probabilities shift for the next name you draw. Now imagine the urn has 100 billion names, so that removing one makes no noticeable difference. We can pretend the composition never changes. Each draw is essentially identical and independent (iid).
+Intuition for infinite populations: imagine drawing names from a giant urn. If the urn has only $10$ names, then removing one name slightly changes the composition of the urn, and the probabilities shift for the next name you draw. Now imagine the urn has $100$ billion names, so that removing one makes no noticeable difference. We can pretend the composition never changes: each draw is essentially identical and independent (iid). We can even guarantee that be putting any names drawn back into the urn (sampling with replacement).
 
 
 
@@ -35,22 +35,24 @@ Intuition for infinite populations: imagine drawing names from a giant urn. If t
 
 The *sampling distribution* of a statistic shows us how much a statistic varies from sample to sample. 
 
-For example, see how the mean statistic varies from sample to sample to sample.
+For example, the sampling distribution of the mean shows how the sample mean varies from sample to sample to sample. The sampling distribution of mean can also be referred to as the probability distribution of the sample mean.
 
 :::{.callout-note icon=false collapse="true"}
 Given ages for population of $4$ students, compute the sampling distribution for the mean with samples of $n=2$.
 ```{r}
-X <- c(19,21,20,17) #student ages
+X <- c(18,20,22,24) # Ages for student population
 # six possible samples
-mean1 <- mean( X[c(1,2)] ) #{1,2}
-mean2 <- mean( X[c(1,3)] ) #{1,3}
-mean3 <- mean( X[c(1,4)] ) #{3,4}
-mean4 <- mean( X[c(2,3)] ) #{2,3}
-mean5 <- mean( X[c(2,4)] ) #{2,4}
-mean6 <- mean( X[c(3,4)] ) #{3,4}
+m1 <- mean( X[c(1,2)] ) #{1,2}
+m2 <- mean( X[c(1,3)] ) #{1,3}
+m3 <- mean( X[c(1,4)] ) #{3,4}
+m4 <- mean( X[c(2,3)] ) #{2,3}
+m5 <- mean( X[c(2,4)] ) #{2,4}
+m6 <- mean( X[c(3,4)] ) #{3,4}
 # sampling distribution
-means <- c(mean1, mean2, mean3, mean4, mean5, mean6)
-hist(means, freq=F, breaks=100, border=F)
+sample_means <- c(m1, m2, m3, m4, m5, m6)
+hist(sample_means,
+    freq=F, breaks=100,
+    main='', border=F)
 ```
 
 Now compute the sampling distribution for the median with samples of $n=3$.
@@ -59,13 +61,13 @@ Now compute the sampling distribution for the median with samples of $n=3$.
 :::{.callout-note icon=false collapse="true"}
 ```{r}
 # Three Sample Example from infinite population
-x_one <- runif(100)
-mean_one <- mean(x_one)
-x_two <- runif(100)
-mean_two <- mean(x_two)
-x_three <- runif(100)
-mean_three <- mean(x_three)
-sample_means <- c(mean_one, mean_two, mean_three)
+x1 <- runif(100)
+m1 <- mean(x1)
+x2 <- runif(100)
+m2 <- mean(x2)
+x3 <- runif(100)
+m3 <- mean(x3)
+sample_means <- c(m1, m2, m3)
 sample_means
 
 # An Equivalent Approach: fill vector in a loop
@@ -97,7 +99,7 @@ Examine the sampling distribution of the mean
 ```{r}
 # Many sample example
 sample_means <- vector(length=500)
-for(i in seq(sample_means)){
+for(i in seq_along(sample_means)){
     x <- runif(1000)
     m <- mean(x)
     sample_means[i] <- m
@@ -106,6 +108,7 @@ hist(sample_means,
     breaks=seq(0.45,0.55,by=.001),
     border=NA, freq=F,
     col=2, font.main=1, 
+    xlab=expression(hat(M)),
     main='Sampling Distribution of the mean')
 ```
 
@@ -137,7 +140,8 @@ There are different variants of the central limit theorem (CLT), but they all sa
 hist(sample_means,
     breaks=seq(0.45,0.55,by=.001),
     border=NA, freq=F,
-    col=2, font.main=1, 
+    col=2, font.main=1,
+    xlab=expression(hat(M)),
     main='Sampling Distribution of the mean')
     
 ## Approximately normal?
@@ -156,7 +160,7 @@ For an example with another statistic, let's the sampling distribution of the st
 ```{r}
 # CLT example of the "sd" statistic
 sample_sds <- vector(length=1000)
-for(i in seq(sample_sds)){
+for(i in seq_along(sample_sds)){
     x <- runif(100) # same distribution
     s <- sd(x) # different statistic
     sample_sds[i] <- s
@@ -164,7 +168,8 @@ for(i in seq(sample_sds)){
 hist(sample_sds,
     breaks=seq(0.2,0.4,by=.01),
     border=NA, freq=F,
-    col=4, font.main=1, 
+    col=4, font.main=1,
+    xlab=expression(hat(S)),
     main='Sampling Distribution of the sd')
 
 ## Approximately normal?
@@ -189,7 +194,7 @@ For example of "extreme" statistics, examine the sampling distribution of min, m
 ```{r}
 # Create 300 samples, each with 1000 random uniform variables
 x_samples <- matrix(nrow=300, ncol=1000)
-for(i in seq(nrow(x_samples))){
+for(i in seq(1,nrow(x_samples))){
     x_samples[i,] <- runif(1000)
 }
 # Each row is a new sample
@@ -203,23 +208,28 @@ x_maxs <- apply(x_samples, 1, quantile, probs=1)
 # Plot the sampling distributions of min, median, and max
 # Median looks normal. Maximum and Minumum do not!
 par(mfrow=c(1,3))
-hist(x_mins, breaks=100, main='Min', font.main=1, border=NA, freq=F)
-hist(x_meds, breaks=100, main='Med', font.main=1, border=NA, freq=F)
-hist(x_maxs, breaks=100, main='Max', font.main=1, border=NA, freq=F)
-title('Sampling Distributions', outer=T, line=-1)
+hist(x_mins, breaks=100, main='Min', font.main=1,
+    xlab=expression(hat(Q)[0]), border=NA, freq=F)
+hist(x_meds, breaks=100, main='Med', font.main=1,
+    xlab=expression(hat(Q)[0.5]), border=NA, freq=F)
+hist(x_maxs, breaks=100, main='Max', font.main=1,
+    xlab=expression(hat(Q)[1]), border=NA, freq=F)
+title('Sampling Distributions', outer=T, line=-1, adj=0)
 ```
 :::
 
 :::{.callout-tip icon=false collapse="true"}
 Here is an example where variance is not "well behaved" .
 ```{r, eval=F}
-sample_means <- vector(length=1000)
-for(i in seq(sample_means)){
+sample_means <- vector(length=999)
+for(i in seq_along(sample_means)){
     x <- rcauchy(1000,0,10)
     m <- mean(x)
     sample_means[i] <- m
 } )
-hist(sample_means, breaks=100, border=NA, freq=F) # Tails look too "fat"
+hist(sample_means, breaks=100,
+    main='',
+    border=NA, freq=F) # Tails look too "fat"
 ```
 :::
 
@@ -351,13 +361,15 @@ legend(.01, .9, lty=1:2, col=1:2, legend=expression(mu, hat(M)))
 
 Note that we do not use the mean of the resampled statistics as a replacement for the original estimate. This is because the resampled distributions are centered at the observed statistic, not the population parameter. (The bootstrapped mean is centered at the sample mean, for example, not the population mean.) This means that we cannot use resampling to improve on $\hat{M}$. We use resampling to estimate sampling variability.
 
+
+
 #### **Jackknife Distribution**. {-}
 Here, we compute all "leave-one-out" estimates. Specifically, for a dataset with $n$ observations, the jackknife uses $n-1$ observations other than $i$ for each unique subsample. Taking the mean, for example, we have 
-\begin{itemize}
-\item jackknifed estimates: $\overline{x}^{Jack}_{i}=\frac{1}{n-1} \sum_{j \neq i}^{n-1} \hat{X}_{j}$
-\item mean of the jackknife: $\overline{x}^{Jack}=\frac{1}{n} \sum_{i}^{n} \overline{x}^{Jack}_{i}$.
-\item standard error of the jackknife: $\hat{\sigma}^{Jack}= \sqrt{ \frac{1}{n} \sum_{i}^{n} \left[\overline{x}^{Jack}_{i} - \overline{x}^{Jack} \right]^2 }$.
-\end{itemize}
+
+* jackknifed estimates: $\hat{M}_{i}^{\text{jack}}=\frac{1}{n-1} \sum_{j \neq i}^{n-1} \hat{X}_{j}$.
+* mean of the jackknife: $\hat{M}^{\text{jack}}=\frac{1}{n} \sum_{i}^{n} \hat{M}_{i}^{\text{jack}}$.
+* standard deviation of the jackknife: $\hat{S}^{\text{jack}}= \sqrt{ \frac{1}{n} \sum_{i}^{n} \left[\hat{M}_{i}^{\text{jack}} - \hat{M}^{\text{jack}} \right]^2 }$.
+
 
 
 ```{r}
@@ -365,7 +377,8 @@ sample_dat <- USArrests[,'Murder']
 sample_mean <- mean(sample_dat)
 
 # Jackknife Estimates
-jackknife_means <- vector(length=length(sample_dat))
+n <- length(sample_dat)
+jackknife_means <- vector(length=n)
 for(i in seq_along(jackknife_means)){
     dat_noti <- sample_dat[-i]
     mean_noti <- mean(dat_noti)
@@ -378,21 +391,20 @@ abline(v=sample_mean, col='red', lty=2)
 ```
 
 #### **Bootstrap Distribution**. {-}
-Here, we draw $n$ observations with replacement from the original data to create a bootstrap sample and calculate a statistic. Each bootstrap sample $b=1...B$ uses a random subset of observations to compute a statistic. We repeat that many times, say $B=9999$, to estimate the sampling distribution.
+Here, we draw $n$ observations with replacement from the original data to create a bootstrap sample and calculate a statistic. Each bootstrap sample $b=1...B$ uses a random subset of observations to compute a statistic. We repeat that many times, say $B=9999$, to estimate the sampling distribution. Taking the mean, for example, we have
 
-Consider the sample mean as an example;
-\begin{itemize}
-\item bootstrap estimate: $\overline{x}^{\text{boot}}_{b}= \frac{1}{n} \sum_{i \in N_b} \hat{X}_{i} $
-\item mean of the bootstrap: $\overline{x}^{\text{boot}}= \frac{1}{B} \sum_{b} \overline{x}^{\text{boot}}_{b}$.
-\item standard error of the bootstrap: $\hat{\sigma}^{\text{boot}}= \sqrt{ \frac{1}{B} \sum_{b=1}^{B} \left[\overline{x}^{\text{boot}}_{b} - \overline{x}^{\text{boot}} \right]^2 }$.
-\end{itemize}
+* bootstrapped estimate: $\hat{M}_{b}^{\text{boot}}= \frac{1}{n} \sum_{i=1}^{n} \hat{X}_{i}^{(b)}$, for resampled data $\hat{X}_{i}^{(b)}$
+* mean of the bootstrap: $\hat{M}^{\text{boot}}= \frac{1}{B} \sum_{b} \hat{M}_{b}^{\text{boot}}$.
+* standard deviation of the bootstrap: $\hat{S}^{\text{boot}}= \sqrt{ \frac{1}{B} \sum_{b=1}^{B} \left[\hat{M}_{b}^{\text{boot}} - \hat{M}^{\text{boot}} \right]^2}$.
+
 
 
 ```{r}
 # Bootstrap estimates
 bootstrap_means <- vector(length=9999)
 for(b in seq_along(bootstrap_means)){
-    dat_b <- sample(sample_dat, replace=T) # c.f. jackknife
+    boot_id <- sample(1:n, replace=T)
+    dat_b  <- sample_dat[boot_id] # c.f. jackknife
     mean_b <- mean(dat_b)
     bootstrap_means[b] <-mean_b
 }
@@ -404,6 +416,7 @@ abline(v=sample_mean, col='red', lty=2)
 ```
 
 Why does this work? The sample: $\{\hat{X}_{1}, \hat{X}_{2}, ... \hat{X}_{n}\}$ is drawn from a CDF $F$. Each bootstrap sample: $\{\hat{X}_{1}^{(b)}, \hat{X}_{2}^{(b)}, ... \hat{X}_{n}^{(b)}\}$ is drawn from the ECDF $\hat{F}$. With $\hat{F} \approx F$, each bootstrap sample is approximately a random sample. So when we compute a statistic on each bootstrap sample, we approximate the sampling distribution of the statistic.
+
 :::{.callout-note icon=false collapse="true"}
 ```{r}
 # theoretical probabilities
@@ -420,50 +433,29 @@ coin_resample <- sample(x, prob=x_probs_boot, 999, replace=T)
 ```
 :::
 
-Note that both resampling methods provide imperfect estimates, and can give different numbers. Percentiles of jackknife resamples are systematically less variable than they should be. Until you know more, a conservative approach is to take the larger estimate (typically the bootstrap).
+
+Using either the bootstrap or jackknife distribution, we can estimate variability via the *Standard Error*: the standard deviation of your statistic across different samples (square rooted). In either case, this differs from the standard deviation of the data within your sample.
 
 ```{r}
-# Boot CI
-boot_ci <- quantile(bootstrap_means, probs=c(.025, .975))
-boot_ci
-
-# Jack CI
-jack_ci <- quantile(jackknife_means, probs=c(.025, .975))
-jack_ci
-
-# more conservative estimate
-ci <- boot_ci
+sd(sample_dat) # standard deviation
+sd(bootstrap_means) # standard error
 ```
 
 
 ## Intervals
 
-Using either the bootstrap or jackknife distribution for subsamples, or across multiple samples if we can get them, we can calculate 
-
-* *Confidence Interval:* range your statistic varies across different samples.
-* *Standard Error*: variance of your statistic across different samples (square rooted).
-
-```{r}
-# Create 300 samples, each with 1000 random uniform variables
-x_samples <- matrix(nrow=300, ncol=1000)
-for(i in seq(nrow(x_samples))){
-    x_samples[i,] <- runif(1000)
-}
-# Each row is a new sample
-sample_dat1 <- x_samples[1,]
-sd(sample_dat1) # standard deviation
-
-# Compute means for each row (for each sample)
-sample_means <- apply(x_samples, 1, mean)
-sd(sample_means) # standard error
-```
-
+We can also estimate variability using a *Confidence Interval:* range your statistic varies across different samples.
 
 #### **Percentile Intervals**.  {-}
 This type of confidence interval is simply the upper and lower quantiles of the sampling distribution.
 
 For example, consider the sample mean. We simulate the sampling distribution of the sample mean and construct a $90\%$ confidence interval by taking the $5^{th}$ and $95^{th}$ percentiles of the simulated means. 
 ```{r}
+# Create 300 samples, each with 1000 random uniform variables
+x_samples <- matrix(nrow=300, ncol=1000)
+for(i in seq(1,nrow(x_samples))){
+    x_samples[i,] <- runif(1000)
+}
 
 # Middle 90%
 mq <- quantile(sample_means, probs=c(.05,.95))
@@ -498,32 +490,35 @@ abline(v=mq)
 
 Note that $Z\%$ confidence intervals do not generally cover $Z\%$ of the data (those types of intervals are covered later). In the examples above, notice the confidence interval for the mean differs from the confidence interval of the median, and so both cannot cover $90\%$ of the data. The confidence interval for the mean is roughly $[0.48, 0.52]$, which theoretically covers only a $0.52-0.48=0.04$ proportion of uniform random data, much less than $90%$.
 
-Often, a $Z\%$ interval means that $Z\%$ of the intervals we generate will contain the true mean. E.g., suppose that we repeatedly sample data and construct $95\%$ bootstrap confidence interval for the mean, then we expect that $95\%$ of our constructed confidence intervals contain the theoretical population mean. A $95\%$ coverage level does not imply a $95\%$ probability that the true mean lies within the particular confidence interval you calculated for a particular sample.
+Often, a $Z\%$ confidence interval means that $Z\%$ of the intervals we generate will contain the true mean. E.g., suppose that we repeatedly sample data and construct $95\%$ bootstrap confidence interval for the mean, then we expect that $95\%$ of our constructed confidence intervals contain the theoretical population mean.^[Note also that a $95\%$ confidence interval does not imply a $95\%$ probability that the true mean lies within the particular confidence interval you calculated for a particular sample. The interval computed from a given sample either contains the true mean or it does not.]
 
 
-Note that confidence intervals shrink with more data, as averaging washes out random fluctuations. Here is the intuition.
+#### **Interval Size**.  {-}
+
+Confidence intervals shrink with more data, as averaging washes out random fluctuations. Here is the intuition for estimating the weight of an apple:
 
 * With $n=1$ apple, your estimate depends entirely on that one draw. If it happens to be unusually large or small, your estimate can be far off.
 * With $n=2$ apples, the estimate averages out their idiosyncrasies. An unusually heavy apple can be balanced by a lighter one, lowering how far off you can be. You are less likely to get two extreme values than just one.
 * With $n=100$ apples, individual apples barely move the needle. The average becomes stable.
 
 ```{r}
-X <- c(19,21,20,17) #student ages
+X <- c(18,20,22,24) #student ages
 # six possible samples of size 2
-mean1 <- mean( X[c(1,2)] ) #{1,2}
-mean2 <- mean( X[c(1,3)] ) #{1,3}
-mean3 <- mean( X[c(1,4)] ) #{3,4}
-mean4 <- mean( X[c(2,3)] ) #{2,3}
-mean5 <- mean( X[c(2,4)] ) #{2,4}
-mean6 <- mean( X[c(3,4)] ) #{3,4}
-means_2 <- c(mean1, mean2, mean3, mean4, mean5, mean6)
+m1 <- mean( X[c(1,2)] ) #{1,2}
+m2 <- mean( X[c(1,3)] ) #{1,3}
+m3 <- mean( X[c(1,4)] ) #{3,4}
+m4 <- mean( X[c(2,3)] ) #{2,3}
+m5 <- mean( X[c(2,4)] ) #{2,4}
+m6 <- mean( X[c(3,4)] ) #{3,4}
+means_2 <- c(m1, m2, m3, m4, m5, m6)
 sd(means_2)
+
 # four possible samples of size 3
-mean1 <- mean( X[c(1,2,3)] ) 
-mean2 <- mean( X[c(1,2,4)] ) 
-mean3 <- mean( X[c(1,3,4)] ) 
-mean4 <- mean( X[c(2,3,4)] ) 
-means_3 <- c(mean1, mean2, mean3, mean4, mean5, mean6)
+m1 <- mean( X[c(1,2,3)] ) 
+m2 <- mean( X[c(1,2,4)] ) 
+m3 <- mean( X[c(1,3,4)] ) 
+m4 <- mean( X[c(2,3,4)] ) 
+means_3 <- c(m1, m2, m3, m4)
 sd(means_3)
 ```
 
@@ -531,7 +526,7 @@ sd(means_3)
 # Create 300 samples, each of size n
 n <- 10000
 x_samples <- matrix(nrow=300, ncol=n)
-for(i in seq(nrow(x_samples))){
+for(i in seq(1,nrow(x_samples))){
     x_samples[i,] <- runif(1000)
 }
 # Compute means for each row (for each sample)
@@ -546,6 +541,22 @@ hist(sample_means,
     main='90% Confidence Interval for the Mean (larger n)')
 abline(v=mq)
 ```
+
+Note that both resampling methods provide imperfect estimates, and can give different numbers. Jackknife resamples are systematically less variable than they should be and sample $n-1$ instead of $n$. Bootstrap resamples have the right $n$ but often have duplicated data. Until you know more, a conservative approach is to take the larger estimate (often the bootstrap). That is also good advice when considering theoretically derived confidence intervals too.
+
+```{r}
+# Boot CI
+boot_ci <- quantile(bootstrap_means, probs=c(.025, .975))
+boot_ci
+
+# Jack CI
+jack_ci <- quantile(jackknife_means, probs=c(.025, .975))
+jack_ci
+
+# more conservative estimate
+ci <- boot_ci
+```
+
 
 ## Probability Theory
 
@@ -605,7 +616,7 @@ Nseq <- seq(1,100, by=1) # different sample sizes
 SE <- vector(length=length(Nseq))
 for(n in Nseq){
     sample_statistics_n <- vector(length=B)
-    for(b in seq(sample_statistics_n)){
+    for(b in seq(1,B)){
         x_b <- rnorm(n) # Sample of size n
         x_stat_b <- quantile(x_b, probs=.4) # Stat of interest
         sample_statistics_n[b] <- x_stat_b
@@ -616,7 +627,6 @@ for(n in Nseq){
 
 
 plot(Nseq, SE, pch=16, col=grey(0,.5),
-    main='Absolute Gain', font.main=1,
     ylab='standard error', xlab='sample size')
 
 #plot(Nseq[-1], abs(diff(SE)), pch=16, col=grey(0,.5),
@@ -638,13 +648,13 @@ ci <- mean(sample_dat1) + spread_theory*sd_theory
 
 #### **CI Coverage**. {-}
 
-Given the sample mean, $M$, and the sample size, $n$, is large enough for the mean to be approximately normally distributed, we can construct a symmetric confidence interval $[M - E, M + E]$, where $E$ is some "margin of error" on either side of $M$. A coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$. I.e., if the same sampling procedure were repeated $100$ times from the same population, approximately $95$ of the resulting intervals would be expected to contain the true population mean.^[Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( E + mu > M > mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ $95%$ of the time because whenever $M$ is within $10$ of $\mu$, $\mu$ is also within $10$ of $M$.] Note that a $95\%$ coverage level does not imply a $95%$ probability that the true parameter lies within a particular calculated interval. E.g., if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$.
+Given the sample size, $n$, is large enough for the mean to be approximately normally distributed, we can construct a symmetric confidence interval $[M - E, M + E]$, where $E$ is some "margin of error" on either side of the mean $M$. A coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$. I.e., if the same sampling procedure were repeated $100$ times from the same population, approximately $95$ of the resulting intervals would be expected to contain the true population mean.^[Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( E + mu > M > mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ $95%$ of the time because whenever $M$ is within $10$ of $\mu$, $\mu$ is also within $10$ of $M$.] Note that a $95\%$ coverage level does not imply a $95%$ probability that the true parameter lies within a particular calculated interval. E.g., if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$.
 
 :::{.callout-tip icon=false collapse="true"}
-Given the sample mean, $M$, and the sample size, $n$, is large enough for the mean to be approximately normally distributed. What confidence interval satisfies the following: the theoretical mean $\mu$ is inside of the interval with probability $(1 - 0.05)%$ (i.e., for $(1 - 0.05)%$ of samples).
+Given the sample size, $n$, is large enough for the sample mean to be approximately normally distributed, what confidence interval satisfies the following: the theoretical mean $\mu$ is inside of the interval with probability $95%$ (i.e., for $(1 - 0.05)%$ of samples)?
 :::
 
-For a fixed sample size $n$, there is a trade-off between *Precision*: the width of a confidence interval, *Accuracy*: the probability that a confidence interval contains the theoretical value.
+For a fixed sample size $n$, there is a trade-off between *precision*: the width of a confidence interval, and *accuracy*: the probability that a confidence interval contains the theoretical value.
 
 
 ```{r}
@@ -678,7 +688,7 @@ for (i in 1:N) {
 }
 abline(v = mu_true, col = "blue", lwd = 2)
 axis(1)
-title("Visualizing CI Coverage (Red = Missed)")
+title("Visualizing CI Coverage (Red = Missed)", font.main=1)
 ```
 
 
