@@ -45,7 +45,7 @@ x0 <- rbinom(600, 1, 0.5)
 layout(matrix(c(1, 2), nrow = 1), widths = c(4, 1))
 
 # Plot Cumulative Averages
-x0_t <- seq_len(length(x0))
+x0_t <- seq(1, length(x0))
 x0_mt <- cumsum(x0)/x0_t
 par(mar=c(4,4,1,4))
 plot(x0_t, x0_mt, type='l',
@@ -69,12 +69,12 @@ mtext('Observed Frequency', 2, line=2.5)
 ```
 
 #### **Stationary**. {-}
-A stationary time series is one whose statistical properties --- mean, variance, and autocovariance --- do not change over time. Formally
+A stationary time series is one whose statistical properties do not change over time. Formally
 
-* Stationary Means: $E[y_{t}]=E[y_{t'}]$ for all periods $t, t'$
-* Stationary Vars: $V[y_{t}]=V[y_{t'}]$ for all periods $t, t'$
+* Stationary Means: $E[Y_{t}]=E[Y_{t'}]$ for all time periods $t, t'$
+* Stationary Variances: $V[Y_{t}]=V[Y_{t'}]$ for all time periods $t, t'$
 
-E.g., \( y_t = \beta t + u_t, \quad u_t \sim \text{N}(0, \sigma + \alpha t) \)
+For example, consider the data generating process $Y_t = \beta t + \epsilon_t$, with $\epsilon_t \sim \text{N}(0, \sigma + \alpha t)$, with parameters $\beta$ affecting mean stationarity and $\alpha$ affecting variance stationarity.
 
 ```{r}
 tN <- 200
@@ -119,8 +119,9 @@ for(beta in c(0,.05)){
 Time series often exhibit serial dependence—values today are related to past values, and potentially to other processes evolving over time. We can visualize this using correlation-based diagnostics.
 
 The Autocorrelation Function (AFC) measures correlation between a time series and its own lagged values:
-
-$ACF_{Y}(k) = \frac{Cov(Y_{t},Y_{t-k})}{ \sqrt{Var(Y_{t})Var(Y_{t-k})}}$
+\begin{eqnarray}
+ACF_{Y}(k) = \frac{Cov(Y_{t},Y_{t-k})}{ \sqrt{Var(Y_{t})Var(Y_{t-k})}}
+\end{eqnarray}
 
 This helps detect temporal persistence (memory). For stationary processes, the ACF typically decays quickly, whereas for nonstationary processes, it typically decays slowly or persists.
 
@@ -136,7 +137,9 @@ for(beta in c(0,.05)){
 
 The Cross-Correlation Function (CCF) measures correlation between two time series at different lags:
 
-$CCF_{YX}(k) = \frac{Cov(Y_{t},X_{t-k})}{ \sqrt{Var(Y_t)Var(X_{t-k})}}$
+\begin{eqnarray}
+CCF_{YX}(k) = \frac{Cov(Y_{t},X_{t-k})}{ \sqrt{Var(Y_t)Var(X_{t-k})}}
+\end{eqnarray}
 
 This is useful for detecting lagged relationships between two series, such as leading indicators or external drivers. (If $X$ is white noise, any visible structure in the CCF likely reflects nonstationarity in $Y$.)
 
@@ -184,8 +187,8 @@ plot(luxembourg_elevation_raster)
 #### **Stationary.** {-}
 Just as with temporal data, stationarity in spatial data means that the statistical properties (like mean, variance, or spatial correlation) are roughly the same across space.
 
-* Stationary Means: $E[y(s)]=E[y(s')]$ for all locations $s,s'$
-* Stationary Vars: $V[y(s)]=V[y(s')]$ for all locations $s,s'$
+* Stationary Means: $E[Y(s)]=E[Y(s')]$ for all spatial locations $s,s'$
+* Stationary Vars: $V[Y(s)]=V[Y(s')]$ for all spatial locations $s,s'$
 
 ```{r}
 # Simulated 2D spatial fields
@@ -310,7 +313,7 @@ In addition to spatial and temporal dependence, many observational datasets exhi
  * If $Y \to X$ and $X \to Y$, then we have simultaneity
  * If $Z\to Y$ and either $Z\to X$ or $X \to Z$, then we have omitted a potentially important variable
 
-These endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a barrier to interpreting OLS estimates causally. ($X$ and $\epsilon$ may be correlated for other reasons too, such as when $X$ is measured with error.)
+Now recall the linear model is $Y=X\beta + \epsilon$. The endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a barrier to interpreting OLS estimates as reflecting a causal relationship.^[Note that $X$ and $\epsilon$ may be correlated for other reasons too, such as when $X$ is measured with error.]
 
 ```{r}
 # Simulate data with an endogeneity issue
@@ -326,42 +329,24 @@ plot(y~x, data=xy, pch=16, col=grey(0,.5))
 abline(lm(y~x,data=xy))
 ```
 
-With multiple linear regression, endogeneity biases are not just a problem for your main variable of interest. Suppose your interested in how $x_{1}$ affects $y$, conditional on $x_{2}$. Letting $X=[x_{1}, x_{2}]$, you estimate 
-\begin{eqnarray}
-\hat{\beta}_{OLS} = [X'X]^{-1}X'y
-\end{eqnarray}
-You paid special attention in your research design to find a case where $x_{1}$ is truly exogenous. Unfortunately, $x_{2}$ is correlated with the error term. (How unfair, I know, especially after all that work). Nonetheless,
-\begin{eqnarray}
-\mathbb{E}[X'\epsilon] = 
-\begin{bmatrix}
-0 \\ \rho
-\end{bmatrix}\\
-\mathbb{E}[ \hat{\beta}_{OLS} - \beta] = [X'X]^{-1} \begin{bmatrix}
-0 \\ \rho
-\end{bmatrix} = 
-\begin{bmatrix}
-\rho_{1} \\ \rho_{2}
-\end{bmatrix}
-\end{eqnarray}
-The magnitude of the bias for $x_{1}$ thus depends on the correlations between $x_{1}$ and $x_{2}$ as well as $x_{2}$ and $\epsilon$.
-
 I will focus on the seminal economic example to provide some intuition.
+
 
 #### **Competitive Market Equilibrium**. {-}
 This model has three structural relationships: (1) market supply is the sum of quantities supplied by individual firms at a given price, (2) market demand is the sum of quantities demanded by individual people at a given price, and (3) market supply equals market demand in equilibrium. Assuming market supply and demand are linear, we can write these three relationships as
 \begin{eqnarray}
 \label{eqn:market_supply}
-Q_{S}(P) &=& A_{S} + B_{S} P + E_{S},\\
+Q_{S}(P) &=& \alpha_{S} + \beta_{S} P + E_{S},\\
 \label{eqn:market_demand}
-Q_{D}(P) &=& A_{D} - B_{D} P + E_{D},\\
+Q_{D}(P) &=& \alpha_{D} - \beta_{D} P + E_{D},\\
 \label{eqn:market_eq}
 Q_{D} &=& Q_{S} = Q.
 %%  $Q_{D}(P) = \sum_{i} q_{D}_{i}(P)$, 
 \end{eqnarray}
 This last equation implies a simultaneous "reduced form" relationship where both the price and the quantity are outcomes. With a linear parametric structure to these equations, we can use algebra to solve for the equilibrium price and quantity analytically as
 \begin{eqnarray}
-P^{*} &=& \frac{A_{D}-A_{S}}{B_{D}+B_{S}} + \frac{E_{D} - E_{S}}{B_{D}+B_{S}}, \\
-Q^{*} &=& \frac{A_{S}B_{D}+ A_{D}B_{S}}{B_{D}+B_{S}} + \frac{E_{S}B_{D}+ E_{D}B_{S}}{B_{D}+B_{S}}.
+P^{*} &=& \frac{\alpha_{D}-\alpha_{S}}{\beta_{D}+\beta_{S}} + \frac{E_{D} - E_{S}}{\beta_{D}+\beta_{S}}, \\
+Q^{*} &=& \frac{\alpha_{S}\beta_{D}+ \alpha_{D}\beta_{S}}{\beta_{D}+\beta_{S}} + \frac{E_{S}\beta_{D}+ E_{D}\beta_{S}}{\beta_{D}+\beta_{S}}.
 \end{eqnarray}
 
 
@@ -417,7 +402,7 @@ mtext('Quantity',1, line=2)
 mtext('Price',2, line=2)
 ```
 
-Suppose we ask "what is the effect of price on quantity?" You can simply run a regression of quantity ("Y") on price ("X"): $\widehat{\beta}_{OLS} = Cov(Q^{*}, P^{*}) / Var(P^{*})$. You get a number back, but it is hard to interpret meaningfully. 
+Suppose we ask "what is the effect of price on quantity?" You can simply run a regression of quantity, $Y$, on price, $X$, and get the slope coefficient $\hat{b}_{1} = \hat{C}_{Q^{*} P^{*}} / \hat{V}_{P^{*}}$. You always get a number back, but it is hard to interpret meaningfully. 
 ```{r}
 # Analyze Market Data
 dat1 <- data.frame(t(EQ1), cost='1', T=1:N)
@@ -427,6 +412,26 @@ summary(reg1)
 This simple derivation has a profound insight: price-quantity data does not generally tell you how price affects quantity (or vice-versa). The reason is simultaneity: price and quantity mutually cause one another in markets.^[Although there are many ways this simultaneity can happen, economic theorists have made great strides in analyzing the simultaneity problem as it arises from equilibrium market relationships. In fact, 2SLS arose to understand agricultural markets.]
 
 Moreover, this example also clarifies that our initial question "what is the effect of price on quantity?" is misguided. We could more sensibly ask  "what is the effect of price on quantity supplied?" or "what is the effect of price on quantity demanded?"
+
+
+#### **Contamination**. {-}
+
+With multiple linear regression, endogeneity biases are not just a problem for your main variable of interest. Suppose you are interested in how $X_{1}$ affects $Y$, conditioning on $X_{2}$, and that the data generating process is linear: $Y=\beta_{0}+\beta_{1}X_{1}+\beta_{2}X_{2}+\epsilon$. You paid special attention in your research design to find a case where $X_{1}$ is truly exogenous. Unfortunately, if $X_{2}$ is correlated with the error term, then there is also a bias for $X_{1}$. The magnitude of the bias for $X_{1}$ depends on the correlations between $X_{1}$ and $X_{2}$ as well as $X_{2}$ and $\epsilon$.^[Denoting $X=[X_{1}, X_{2}]$, you estimate the OLS coefficients $\hat{B}^{*}$. After algebraic work, you can find the bias $\mathbb{E}[ \hat{B}^{*} - \beta]$ suffers from a contamination effect.
+\begin{eqnarray}
+\hat{B^{*}} &=& [\hat{X}'\hat{X}]^{-1}X'y
+\mathbb{E}[X'\epsilon] &=& 
+\begin{bmatrix}
+0 \\ \rho
+\end{bmatrix}\\
+\mathbb{E}[ \hat{B}^{*} - \beta] &=& [\hat{X}'\hat{X}]^{-1} \begin{bmatrix}
+0 \\ \rho
+\end{bmatrix} \neq 
+\begin{bmatrix}
+0 \\ \rho
+\end{bmatrix}
+\end{eqnarray}
+]
+
 
 ## Further Reading
 

@@ -53,13 +53,13 @@ If you have exogenous variation on one side of the market, you can get informati
 
 To see this, consider an experiment where student subjects are recruited to a classroom and randomly assigned to be either buyers or sellers in a market for little red balls. In this case, the classroom environment allows the experimenter to control for various factors (e.g., the temperature of the room is constant for all subjects) and the explicit randomization of subjects means that there are not typically systematic differences in different groups of students.
 
-In the experiment, sellers are given linear "cost functions" that theoretically yield individual supplies like \eqref{eqn:market_supply} and are paid "price - cost". Buyers are given linear "benefit functions" that theoretically yield individual demands like \eqref{eqn:market_demand}, and are paid "benefit - price". The theoretical predictions are theorefore given in \eqref{eqn:market_supply}. Moreover, experimental manipulation of $A_{S}$ leads to 
+In the experiment, sellers are given linear "cost functions" that theoretically yield individual supplies like \eqref{eqn:market_supply} and are paid "price - cost". Buyers are given linear "benefit functions" that theoretically yield individual demands like \eqref{eqn:market_demand}, and are paid "benefit - price". The theoretical predictions are theorefore given in \eqref{eqn:market_supply}. Moreover, experimental manipulation of $\alpha_{S}$ leads to 
 \begin{eqnarray}
 \label{eqn:comp_market_statics}
-\frac{d P^{*}}{d A_{S}} = \frac{-1}{B_{D}+B_{S}}, \\
-\frac{d Q^{*}}{d A_{S}} = \frac{B_{D}}{B_{D}+B_{S}}.
+\frac{d P^{*}}{d \alpha_{S}} = \frac{-1}{\beta_{D}+\beta_{S}}, \\
+\frac{d Q^{*}}{d \alpha_{S}} = \frac{\beta_{D}}{\beta_{D}+\beta_{S}}.
 \end{eqnarray}
-In this case, the supply shock has identified the demand slope: $-B_{D}=d Q^{*}/d P^{*}$.
+In this case, the supply shock has identified the demand slope: $-\beta_{D}=d Q^{*}/d P^{*}$.
 ```{r}
 # New Observations After Cost Change
 EQ2 <- sapply(1:N, function(n){
@@ -214,7 +214,7 @@ Consider the market equilibrium example, which contains a cost shock. We can sim
 reg2 <- lm(Q~P, data=dat2)
 summary(reg2)
 ```
-It turns out that rhe noisiness of the process within each group affects our OLS estimate: $\widehat{\beta}_{OLS}=Cov(Q^{*}, P^{*}) / Var(P^{*})$. For details, see
+It turns out that the noisiness of the process within each group affects our OLS estimate: $\hat{B^{*}}=\hat{C}_{Q^{*}P^{*}} / \hat{V}_{P^{*}}$. For details, see
 <details>
 <summary><i>Within Group Variance</i></summary>
 You can experiment with the effect of different variances on both OLS and IV in the code below. And note that if we had multiple supply shifts and recorded their magnitudes, then we could recover more information about demand, perhaps tracing it out entirely.
@@ -252,7 +252,7 @@ lapply( list(Egrid_OLS, Egrid_IV), function(ei){
 })
 ```
 </details>
-To overcome this issue, we can compute the change in the expected values $d \mathbb{E}[Q^{*}] / d \mathbb{E}[P^{*}] =-B_{D}$. Empirically, this is estimated via the change in average value.
+To overcome this issue, we can compute the change in the expected values $d \mathbb{E}[Q^{*}] / d \mathbb{E}[P^{*}] =-\beta_{D}$. Empirically, this is estimated via the change in average value.
 ```{r}
 # Wald (1940) Estimate
 dat_mean <- rbind(
@@ -264,10 +264,7 @@ round(B_est, 2)
 ```
 
 
-
-
-
-We can also separately recover $d \mathbb{E}[Q^{*}] / d \mathbb{E}[A_{S}]$ and $d \mathbb{E}[P^{*}] / d \mathbb{E}[A_{S}]$ from separate regressions.^[Mathematically, we can also do this in a single step by exploiting linear algebra: $\frac{\frac{ Cov(Q^{*},A_{S})}{ V(A_{S}) } }{\frac{ Cov(P^{*},A_{S})}{ V(A_{S}) }} = \frac{Cov(Q^{*},A_{S} )}{ Cov(P^{*},A_{S})}.$]
+We can also separately recover $d \mathbb{E}[Q^{*}] / d \mathbb{E}[\alpha_{S}]$ and $d \mathbb{E}[P^{*}] / d \mathbb{E}[\alpha_{S}]$ from separate regressions.^[Mathematically, we can also do this in a single step by exploiting linear algebra: $\frac{\frac{ Cov(Q^{*},\alpha_{S})}{ V(\alpha_{S}) } }{\frac{ Cov(P^{*},\alpha_{S})}{ V(\alpha_{S}) }} = \frac{Cov(Q^{*},\alpha_{S} )}{ Cov(P^{*},\alpha_{S})}.$]
 ```{r}
 # Heckman (2000, p.58) Estimate
 ols_1 <- lm(P~cost, data=dat2)
@@ -277,15 +274,15 @@ round(B_est2[[2]],2)
 ```
 Alternatively, we can recover the same estimate using an 2SLS regression with two equations:
 \begin{eqnarray}
-P &=& \alpha_{1} + A_{S} \beta_{1} + \epsilon_{1} \\
-Q &=& \alpha_{2} + \hat{P} \beta_{2} + \epsilon_{2}.
+\hat{P} &=& b_{0p} + \alpha_{S} b_{1p} + e_{p} \\
+\hat{Q} &=& b_{0q} + \hat{p} b_{1p}  + e_{q}.
 \end{eqnarray}
-In the first regression, we estimate the average effect of the cost shock on prices. In the second equation, we estimate how the average effect of prices *which are exogenous to demand* affect quantity demanded. To see this, first substitute the equilibrium condition into the supply equation: $Q_{D}=Q_{S}=A_{S}+B_{S} P + E_{S}$, lets us rewrite $P$ as a function of $Q_{D}$. This yields two theoretical equations
+where $\hat{p}$, the predicted value of $\hat{P}$ from the first equation, is used to explain quantity in the second equation. In the first regression, we estimate the average effect of the cost shock on prices. In the second equation, we estimate how the average effect of prices *which are exogenous to demand* affect quantity demanded. To see this, first substitute the equilibrium condition into the supply equation: $Q_{D}=Q_{S}=\alpha_{S}+ \beta_{S} P + E_{S}$, lets us rewrite $P$ as a function of $Q_{D}$. This yields two theoretical equations
 \begin{eqnarray}
 \label{eqn:linear_supply_iv}
-P &=& -\frac{A_{S}}{{B_{S}}} + \frac{Q_{D}}{B_{S}} - \frac{E_{S}}{B_{S}} \\
+P &=& -\frac{\alpha_{S}}{{\beta_{S}}} + \frac{Q_{D}}{\beta_{S}} - \frac{E_{S}}{\beta_{S}} \\
 \label{eqn:linear_demand_iv}
-Q_{D} &=&  A_{D} + B_{D} P  + E_{D}.
+Q_{D} &=& \alpha_{D} + \beta_{D} P  + E_{D}.
 \end{eqnarray}
 ```{r}
 # Two Stage Least Squares Estimate
