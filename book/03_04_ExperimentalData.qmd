@@ -3,8 +3,16 @@
 
 ## Design Basics
 
-We will consider with our example from the last chaper
 
+#### **Control and Randomize**. {-}
+
+Perhaps the main feature that distinguishes experimental data from observational data is "control". You can manipulate one of the explanatory variables, and also ensure that other factors are not changing at the same time.
+
+Another distinguishing feature of experiments is "randomization". You can ensure that a manipulated variable is not systematically associated with other variables.
+
+To be concrete, we will continue with our supply and demand example from the last chapter, and this time introduce a cost shock.
+
+#### **Competitive Equilibrium Example**. {-}
 
 ```{r}
 # Demand Curve Simulator
@@ -44,11 +52,7 @@ EQ1 <- sapply(1:N, function(n){
 dat1 <- data.frame(t(EQ1), cost='1', T=1:N)
 ```
 
-#### **Control and Randomize**. {-}
 
-*Blocking* and *Clustering*
-
-#### **Competitive Equilibrium Example**. {-}
 If you have exogenous variation on one side of the market, you can get information on the other. For example, lower costs shift out supply (more is produced at given price), allowing you to trace out part of a demand curve. 
 
 To see this, consider an experiment where student subjects are recruited to a classroom and randomly assigned to be either buyers or sellers in a market for little red balls. In this case, the classroom environment allows the experimenter to control for various factors (e.g., the temperature of the room is constant for all subjects) and the explicit randomization of subjects means that there are not typically systematic differences in different groups of students.
@@ -203,9 +207,19 @@ stargazer::stargazer(regP, regQ,
 ```
 
 
-## "Natural" Experiments
 
-Natural experiments are historical case studies that remedy the endogeneity issues in observational data. They assume that a historical events is quasi (or psuedo) random. In addition to "RDD" and "DID" methods discussed above, instrumental variables are used in historical event studies. The elementary versions use linear regression, so I can cover them here using our competitive equilibrium example from before.
+#### **Blocking* and *Clustering** . {-}
+
+Randomization is the process of randomly manipulating an explanatory variable of (assigning treatments to units).
+
+A completely randomized design is useful when the experimental units are homogeneous. If the experimental units are heterogeneous, blocking is often used to form homogeneous groups.
+
+Continuing with supply and demand example, we might manipulate costs (randomize high or low treatments) for companies in different industries (computer services, lumber harvesting).
+
+## Quasi Experiments
+
+Quasi or "Natural" experiments are historical case studies have the second distinguishing feature of experiments: randomization, but not the first: control. This helps remedy the endogeneity issues in observational data. "Intrumental Variables", "RDD", "DID" methods discussed above are used in historical event studies. The elementary versions use linear regression, so I can cover them here using our competitive equilibrium example from before.
+
 
 #### **Two Stage Least Squares (2SLS)**. {-}
 Consider the market equilibrium example, which contains a cost shock. We can simply run another regression, but there will still be a problem. 
@@ -274,10 +288,12 @@ round(B_est2[[2]],2)
 ```
 Alternatively, we can recover the same estimate using an 2SLS regression with two equations:
 \begin{eqnarray}
-\hat{P} &=& b_{0p} + \alpha_{S} b_{1p} + e_{p} \\
-\hat{Q} &=& b_{0q} + \hat{p} b_{1p}  + e_{q}.
+\hat{P} &=& b_{0p} + b_{1p} \alpha_{S} + e_{p} \\
+\hat{Q} &=& b_{0q} + b_{1q} \hat{p}  + e_{q}.
 \end{eqnarray}
-where $\hat{p}$, the predicted value of $\hat{P}$ from the first equation, is used to explain quantity in the second equation. In the first regression, we estimate the average effect of the cost shock on prices. In the second equation, we estimate how the average effect of prices *which are exogenous to demand* affect quantity demanded. To see this, first substitute the equilibrium condition into the supply equation: $Q_{D}=Q_{S}=\alpha_{S}+ \beta_{S} P + E_{S}$, lets us rewrite $P$ as a function of $Q_{D}$. This yields two theoretical equations
+where $\hat{p}$, the predicted value of $\hat{P}$ from the first equation, is used to explain quantity in the second equation. In the first regression, we estimate how the cost shock affects prices: $\hat{b}_{1p}$ and then predict prices $\hat{p}$. In the second equation, we estimate how the average effect of predicted prices (which are exogenous to demand) affect quantity demanded.
+
+To understand this theoretically, first substitute the equilibrium condition into the supply equation: $Q_{D}=Q_{S}=\alpha_{S}+ \beta_{S} P + E_{S}$, lets us rewrite $P$ as a function of $Q_{D}$. This yields two theoretical equations. We are using the cost shock to understand the theoretical demand curve.
 \begin{eqnarray}
 \label{eqn:linear_supply_iv}
 P &=& -\frac{\alpha_{S}}{{\beta_{S}}} + \frac{Q_{D}}{\beta_{S}} - \frac{E_{S}}{\beta_{S}} \\
@@ -299,21 +315,19 @@ summary(reg2_iv)
 
 
 #### **Caveats**. {-}
-2SLS regression analysis can be very insightful, but I also want to stress some caveats about their practical application.
 
-We always get coefficients back when running `feols`, and sometimes the computed p-values are very small. The interpretation of those numbers rests on many assumptions:
+2SLS regression analysis can be very insightful, but I also want to stress some caveats about their practical application. Most of which stem directly from the absence of control that true experiments have.
 
 * *Instrument exogeneity (Exclusion Restriction):* The instrument must affect outcomes only through the treatment variable (e.g., only supply is affected directly, not demand).
 * *Instrument relevance:* The instrument must be strongly correlated with the endogenous regressor, implying the shock creates meaningful variation.
 * *Functional form correctness:* Supply and demand are assumed linear and additively separable.
 * *Multiple hypothesis testing risks:* We were not repeatedly testing different instruments, which can artificially produce significant findings by chance.
-
-We are rarely sure that all of these assumptions hold, and this is one reason why researchers often also report their OLS results. But that is insufficient, as spatial and temporal dependence also complicate inference:
-
 * *Exclusion restriction violations:* Spatial or temporal spillovers may cause instruments to affect the outcome through unintended channels, undermining instrument exogeneity.
 * *Weak instruments:* Spatial clustering, serial correlation, or network interdependencies can reduce instrument variation, causing weak instruments.
 * *Inference and standard errors:* Spatial or temporal interdependence reduces the effective sample size, making conventional standard errors misleadingly small.
 
+
+We always get coefficients back when running `feols`, and sometimes the computed p-values are very small. The interpretation of those numbers rests on many assumptions, and we are rarely sure that all of these assumptions hold. Researchers often also report their OLS results, but that is insufficient.
 
 ```{r, eval=F, results='hide', echo=F}
 We could also use a nonparametric estimator to diagnose linearity at each stage.

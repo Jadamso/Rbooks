@@ -8,26 +8,104 @@ All of the univariate statistics we have covered apply to marginal distributions
 
 #### **Two Cardinals**. {-}
 *Pearson (Linear) Correlation*.
-Suppose you have two vectors, $\hat{X}$ and $\hat{Y}$, that are both cardinal data. As such, you can compute the most famous measure of association, the covariance. Letting $\hat{M}_{X}$ and $\hat{M}_{Y}$ denote the mean of $X$ and $Y$, we have
+Suppose you have two vectors, $\hat{X}$ and $\hat{Y}$, that are both cardinal data. As such, you can compute the most famous measure of association, the covariance. Letting $\hat{M}_{X}$ and $\hat{M}_{Y}$ denote the mean of $\hat{X}$ and $\hat{Y}$, we have
 \begin{eqnarray}
 \hat{C}_{XY} =  \sum_{i=1}^{n} [\hat{X}_{i} - \hat{M}_{X}] [\hat{Y}_i - \hat{M}_{Y}] / n
 \end{eqnarray}
+
+Note that covariance of $\hat{X}$ and $\hat{X}$ is just the variance of $\hat{X}$; $\hat{C}_{XX}=\hat{V}_{X}$, and recall that the standard deviation is $\hat{S}_{X}=\sqrt{\hat{V}_X}$. For ease of interpretation and comparison, we rescale the correlation statistic to always lay on a scale $-1$ and $+1$. A value close to $-1$ suggests negative association, a value close to $0$ suggests no association, and a value close to $+1$ suggests positive association.
+\begin{eqnarray}
+\hat{R}_{XY} = \frac{ \hat{C}_{XY} }{ \hat{S}_{X} \hat{S}_{Y}}
+\end{eqnarray}
+
+:::{.callout-note icon=false collapse="true"}
+If $\hat{X}=\left(0,1,2,3\right)$ and $\hat{Y}=\left(0.1, 0.3, 0.2, 0.4\right)$, what is the correlation? Find the answer both mathematically and computationally.
+
+Mathematically, there are five steps.
+
+Step 1: Compute the means
+\begin{eqnarray}
+\hat{M}_{X} &=& \frac{0+1+2}{3} = 1 \\
+\hat{M}_{Y} &=& \frac{0.1+0.3+0.2}{3} = 0.2
+\end{eqnarray}
+
+Step 2: Compute the deviances
+\begin{eqnarray}
+\begin{array}{c|rrrr}
+\hat{X}_i   & 0   & 1 & 2 \\
+\tilde{X}_{i} = (\hat{X}_i-\hat{M}_{X}) & -1  & 0 & 1 \\
+\hat{Y}_i   & 0.1 & 0.3 & 0.2 \\
+\tilde{Y}_{i} = (\hat{Y}_i-\hat{M}_{Y})   & -0.1 & 0.1 & 0 
+\end{array}
+\end{eqnarray}
+
+Step 3: Compute the Covariance
+\begin{eqnarray}
+\hat{C}_{XY} &=&
+\sum \tilde{X}_{i} \tilde{Y}_{i}/n 
+= \left[ (-1)(-0.1) + 0(0.1) + 1(0) \right] \frac{1}{3} 
+=  (-0.1) \frac{1}{3}
+= 1/30
+\end{eqnarray}
+
+Step 4: Compute Sample Variances
+\begin{eqnarray}
+\hat{V}_{X} &=& \sum_{i=1}^n \tilde{X}_{i}^2 / n
+= \left[(-1)^2+0^2+1^2 \right]/3
+= 2/3 \\
+\hat{S}_{X} &=& \sqrt{2/3} \\
+\hat{V}_{Y} &=& \sum_{i=1}^n \tilde{Y}_{i}^2 / n
+= \left[ (-0.1)^2+(0.1)^2+0^2 \right]/3
+= \left[0.01+0.01\right]/3
+= \frac{2}{100} \frac{1}{3} = 2/300 \\
+\hat{S}_{Y} &=& \sqrt{2/300}
+\end{eqnarray}
+
+Step 5: Compute the Correlation
+\begin{eqnarray}
+\frac{\hat{C}_{XY}}{\hat{S}_X \hat{S}_Y}
+&=& \frac{1/30}{ \sqrt{2/3}  \sqrt{2/300}}
+= \frac{1/30}{ 2 /\sqrt{900}}
+= \frac{1/30}{2/30} = 1/2
+\end{eqnarray}
+
+Note that this value suggests a positive relationship between the variables.
+
+```{r}
+X <- c(0,1,2)
+X
+Y <- c(0.1,0.3,0.2)
+Y
+
+mX <- mean(X)
+mY <- mean(Y)
+
+dev_X <- X - mX
+dev_Y <- Y - mY
+cov_manual <-  sum(dev_X * dev_Y) / length(X)
+
+var_X <- sum(dev_X^2) / length(X)
+var_X
+var_Y <- sum(dev_Y^2) / length(Y)
+var_Y
+
+cor_manual <- cov_manual / sqrt(var_X * var_Y)
+cor_manual
+
+cor(X,Y)
+```
+:::
+
+
 ```{r}
 xy <- USArrests[,c('Murder','UrbanPop')]
 #plot(xy, pch=16, col=grey(0,.25))
 cov(xy)
-```
-Note that $\hat{C}_{XX}=\hat{V}_{X}$.
-For ease of interpretation and comparison, we rescale this statistic to always lay between $-1$ and $1$ 
-\begin{eqnarray}
-\hat{R}_{XY} = \frac{ \hat{C}_{XY} }{ \sqrt{\hat{V}_X} \sqrt{\hat{V}_Y}}
-\end{eqnarray}
-```{r}
 cor(xy)[2]
 ```
 
 *Falk Codeviance*.
-The Codeviance, $\tilde{C}_{XY}$, is a robust alternative to Covariance. Instead of relying on means (which can be sensitive to outliers), it uses medians.^[See also *Theil-Sen Estimator*, which may be seen as a precursor.] We can also scale the Codeviance by the median absolute deviation to compute the median correlation, which typically lies in $[-1,1]$ but not always. Letting $\tilde{M}_{X}$ and $\tilde{M}_{Y}$ denote the median of $X$ and $Y$, we have
+The Codeviance, $\tilde{C}_{XY}$, is a robust alternative to Covariance. Instead of relying on means (which can be sensitive to outliers), it uses medians.^[See also *Theil-Sen Estimator*, which may be seen as a precursor.] We can also scale the Codeviance by the median absolute deviation to compute the median correlation, which typically lies in $[-1,1]$ but not always. Letting $\tilde{M}_{X}$ and $\tilde{M}_{Y}$ denote the median of $\hat{X}$ and $\hat{Y}$, we have
 \begin{eqnarray} 
 \tilde{C}_{XY} = \text{Med}\left\{ |\hat{X}_{i} - \tilde{M}_{X}| |\hat{Y}_i - \tilde{M}_{Y}| \right\} \\
 \tilde{R}_{XY} = \frac{ \tilde{C}_{XY} }{ \hat{\text{MAD}}_{X} \hat{\text{MAD}}_{Y}}. 
@@ -49,7 +127,7 @@ codev(xy)
 ```
 
 #### **Two Ordered Factors**. {-}
-Suppose now that $X$ and $Y$ are both *ordered* variables. *Kendall's rank correlation coefficient* measures the strength and direction of association by counting the number of concordant pairs (where the ranks agree) versus discordant pairs (where the ranks disagree). A value of $1$ implies perfect agreement in rankings, a value of $-1$ indicates perfect disagreement, and a value of $0$ suggests no association in the ordering.
+Suppose now that $\hat{X}$ and $\hat{Y}$ are both *ordered* variables. *Kendall's rank correlation coefficient* measures the strength and direction of association by counting the number of concordant pairs (where the ranks agree) versus discordant pairs (where the ranks disagree). A value closer to $1$ suggests positive association in rankings, a value closer to $-1$ suggests a negative association, and a value of $0$ suggests no association in the ordering.
 \begin{eqnarray}
 \hat{KT} = \frac{2}{n(n-1)} \sum_{i} \sum_{j > i} \text{sgn} \Bigl( (\hat{X}_{i} - \hat{X}_{j})(\hat{Y}_i - \hat{Y}_j) \Bigr),
 \end{eqnarray}
@@ -71,13 +149,11 @@ KT <- cor(xy[, 1], xy[, 2], method = "kendall")
 round(KT, 3)
 ```
 
-Kendall's rank correlation coefficient can also be used for non-linear relationships, where Pearson's correlation coefficient often falls short.
-```{r, results='hide'}
+Kendall's rank correlation coefficient can also be used for non-linear relationships, where Pearson's correlation coefficient often falls short. It almost always helps to visual your data first before summarizing it with a statistic. 
+```{r, results='hide', echo=F}
 #| fig-width: 8
 #| fig-height: 8
 ## https://commons.wikimedia.org/wiki/File:Correlation_examples2.svg
-
-xy <- USArrests[,c('Murder','UrbanPop')]
 
 MyPlot <- function(xy, xlim = c(-4, 4), ylim = c(-3,3)) {
    plot(xy, main ='', xlab = "", ylab = "",
@@ -91,7 +167,7 @@ MyPlot <- function(xy, xlim = c(-4, 4), ylim = c(-3,3)) {
     cor3 <- cor(xy[,1], xy[,2], method='kendall')
     cors <- c(cor1, cor2, cor3)
     
-    #cor3 <- abs(generalCorr::gmcmtx0( xy[,1:2])[2])
+    #cor3 <- abs(generalCorr::gmcmtx0( xy[,c(1,2)])[2])
     #cor4 <- Rfast::dcor( xy[,1], xy[,2])[[4]]
     #cor5 <- XICOR::xicor( xy[,1], xy[,2]) ## cor( xy[,1], xy[,2], method='kendall') 
 
@@ -125,7 +201,7 @@ output()
 ```
 
 #### **Two Unordered Factors**. {-}
-Suppose $X$ and $Y$ are both *categorical* variables; the value of $X$ is one of $1...K$ categories and the value of $Y$ is one of $1...J$ categories. We organize such data as a contingency table with $K$ rows and $J$ columns and use *Cramer's V* to quantify the strength of association by adjusting a "chi-squared" statistic to provide a measure that ranges from $0$ to $1$; $0$ indicates no association while a value closer to $1$ signifies a strong association. 
+Suppose $\hat{X}$ and $\hat{Y}$ are both *categorical* variables; the value of $\hat{X}$ is one of $1...K$ categories and the value of $\hat{Y}$ is one of $1...J$ categories. We organize such data as a contingency table with $K$ rows and $J$ columns and use *Cramer's V* to quantify the strength of association by adjusting a *chi-squared* statistic to provide a measure that ranges from $0$ to $1$; $0$ suggests no association while a value closer to $1$ suggests a strong association. 
 
 First, compute the chi-square statistic:
 \begin{eqnarray}
@@ -134,17 +210,16 @@ First, compute the chi-square statistic:
 
 where
 
-- $\hat{O}_{kj}$ denote the observed frequency in cell $(k, j)$,
-- $\hat{E}_{kj} = \hat{RF}_{k} \cdot \hat{CF}_j / n$ is the expected frequency for each cell if $\hat{X}$ and $\hat{Y}$ are independent
-- $\hat{RF}_{k}$ denotes the total frequency for row $k$ (i.e., $\hat{RF}_i = \sum_{j=1}^{J} \hat{O}_{kj}$),
-- $\hat{CF}_{j}$ denotes the total frequency for column $j$ (i.e., $\hat{CF}_{j} = \sum_{k=1}^{K} \hat{O}_{kj}$),
+* $\hat{O}_{kj}$ denote the observed frequency in cell $(k, j)$,
+* $\hat{E}_{kj} = \hat{RF}_{k} \cdot \hat{CF}_j / n$ is the expected frequency for each cell if $\hat{X}$ and $\hat{Y}$ are independent
+* $\hat{RF}_{k}$ denotes the total frequency for row $k$ (i.e., $\hat{RF}_i = \sum_{j=1}^{J} \hat{O}_{kj}$),
+* $\hat{CF}_{j}$ denotes the total frequency for column $j$ (i.e., $\hat{CF}_{j} = \sum_{k=1}^{K} \hat{O}_{kj}$),
 
 
-Second, normalize the chi-square statistic with the sample size and the degrees of freedom to compute Cramer's V. Recalling that $I$ is the number of categories for $X$, and $J$ is the number of categories for $Y$, the statistic is
+Second, normalize the chi-square statistic with the sample size and the degrees of freedom to compute Cramer's V. Recalling that $I$ is the number of categories for $\hat{X}$, and $J$ is the number of categories for $\hat{Y}$, the statistic is
 \begin{eqnarray}
-\hat{CV} = \sqrt{\frac{\hat{\chi}^2 / n}{\min(J - 1, \, K - 1)}},
+\hat{CV} = \sqrt{\frac{\hat{\chi}^2 / n}{\min(J - 1, \, K - 1)}}.
 \end{eqnarray}
-
 
 ```{r}
 xy <- USArrests[,c('Murder','UrbanPop')]
@@ -174,27 +249,37 @@ CV(xy)
 
 You can conduct hypothesis tests for these statistics using the same procedures we learned for univariate data. For example, by inverting a confidence interval.
 
+:::{.callout-note icon=false collapse="true"}
 ```{r}
 xy <- USArrests[,c('Murder','UrbanPop')]
-KT <- cor(xy[, 1], xy[, 2], method="kendall")
+xy_cor <- cor(xy[, 1], xy[, 2])
     
 # Bootstrap Distribution of Kendall Correlation
 n <- nrow(xy)
-bootstrap_KT <- vector(length=9999)
-for(b in seq(bootstrap_KT) ){
+bootstrap_cor <- vector(length=9999)
+for(b in seq(bootstrap_cor) ){
     xy_b <- xy[sample(n, replace=T),]
-    KT_b <- cor(xy_b[, 1], xy_b[, 2], method="kendall")
-    bootstrap_KT[b] <- KT_b
+    xy_cor_b <- cor(xy_b[, 1], xy_b[, 2], method="kendall")
+    bootstrap_cor[b] <- xy_cor_b
 }
-hist(bootstrap_KT, breaks=100,
+hist(bootstrap_cor, breaks=100,
     border=NA, font.main=1,
     main='')
 
-## Test whether KT is statistically different from 0
-boot_ci <- quantile(bootstrap_KT, probs=c(0.025, 0.975))
+## Test whether correlation is statistically different from 0
+boot_ci <- quantile(bootstrap_cor, probs=c(0.025, 0.975))
 abline(v=boot_ci)
 abline(v=0, col='red')
 ```
+:::
+
+:::{.callout-tip icon=false collapse="true"}
+Test whether Kendal's correlation statistic is statistically different from $0$.
+```{r}
+xy <- USArrests[,c('Murder','UrbanPop')]
+KT <- cor(xy[, 1], xy[, 2], method="kendall")
+```
+:::
 
 ## Mixed Data
 
@@ -217,7 +302,7 @@ n2 <- 80
 x2 <- rnorm(n2, 1, 1)
 
 par(mfrow=c(1,2))
-bks <- seq(-7,7, by=.5)
+bks <- seq(-8,8, by=.5)
 hist(x1, border=NA, breaks=bks,
     main='Sample 1', font.main=1)
 
@@ -300,7 +385,7 @@ tstat
 
 
 #### **Other Differences**. {-}
-The above procedure generalized from differences in means to other statistics like quantiles or standard deviations.
+The above procedure generalized from differences in means to other quantiles statistics like medians.
 
 ```{r}
 # Bootstrap Distribution Function
@@ -327,7 +412,20 @@ abline(v=0, lwd=2, col=2)
 1 - ecdf(boot_d)(0)
 ```
 
+
+If we want to test for the differences in medians across groups with independent observations, we can also use notches in the boxplot. If the notches of two boxes do not overlap, then there is rough evidence that the difference in medians is statistically significant. The square root of the sample size is also shown as the bin width in each boxplot.^[Let each group $g$ have median $\tilde{M}_{g}$, interquartile range $\hat{IQR}_{g}$, observations $n_{g}$. We can compute standard deviation of the median as $\tilde{S}_{g}= \frac{1.25 \hat{IQR}_{g}}{1.35 \sqrt{n_{g}}}$. As a rough guess, the interval $\tilde{M}_{g} \pm 1.7 \tilde{S}_{g}$ is the historical default and displayed as a *notch* in the boxplot. See also <https://www.tandfonline.com/doi/abs/10.1080/00031305.1978.10479236>.]
+
+```{r}
+boxplot(x1, x2,
+    col=c(2,4),
+    notch=T,
+    varwidth=T)
+```
+
+We can also examine whether there are differences in spread or shape statistics such as `sd` and `IQR`, or `skew` and `kurtosis`.
+
 :::{.callout-tip icon=false collapse="true"}
+Note that such approaches suffer from a finite-sample bias, which we can correct for. Also note that bootstrap tests can perform poorly with highly unequal variances or skewed data. To see this yourself, make a simulation with skewed data and unequal variances.
 
 ```{r, eval=F}
 # 2-Sided Test for SD Differences
@@ -343,9 +441,10 @@ abline(v=0, lwd=2, col=2)
 # Try any function!
 # boot_fun( function(xs) { IQR(xs)/median(xs) } )
 ```
-
-Note that these estimates suffer from a finite-sample bias, which we can correct for. Also note that bootstrap tests can perform poorly with highly unequal variances or skewed data.
 :::
+
+
+
 
 #### **Distributional Comparisons**. {-}
 We can also examine whether there are any differences between the entire *distributions*
@@ -427,7 +526,7 @@ To conduct the test, first denote individuals $i=1,...n$ with overall ranks $\ha
 \end{eqnarray}
 where  $\bar{r} = \frac{n+1}{2}$ is the grand mean rank.
 
-In the special case with only two groups, $G=2$, the Kruskal Wallis test reduces to the *Mann–Whitney U-test* (also known as the \textit{Wilcoxon rank-sum test}). In this case, we can write the hypotheses in terms of individual outcomes in each group, $Y_i$ in one group $Y_j$ in the other; $H_0: Prob(Y_i > Y_j)=Prob(Y_i > Y_i)$  versus $H_A: Prob(Y_i > Y_j) \neq Prob(Y_i > Y_j)$. The corresponding test statistic is
+In the special case with only two groups, $G=2$, the Kruskal Wallis test reduces to the *Mann–Whitney U* test (also known as the *Wilcoxon rank-sum* test). In this case, we can write the hypotheses in terms of individual outcomes in each group, $Y_i$ in one group $Y_j$ in the other; $H_0: Prob(Y_i > Y_j)=Prob(Y_i > Y_i)$  versus $H_A: Prob(Y_i > Y_j) \neq Prob(Y_i > Y_j)$. The corresponding test statistic is
 \begin{eqnarray}
 \hat{U}   &=& \min(\hat{U}_1, \hat{U}_2) \\
 \hat{U}_g &=& \sum_{i\in g}\sum_{j\in -g}
@@ -449,6 +548,137 @@ kruskal.test(CASchools$stratio, CASchools$county)
 ```
 
 
+## Probability Theory
+
+We will now dig a little deeper theoretically into the statistics we compute. When we know how the data are generated theoretically, we can often compute the theoretical value of the most basic and often-used bivariate statistic: the Pearson correlation. To see this, we focus on two discrete random variables, first showing their covariance, $\mathbb{C}[X_{i}, Y_{i}]$, and then their correlation $\mathbb{R}[X_{i}, Y_{i}]$;
+\begin{eqnarray}
+\mathbb{C}[X_{i}, Y_{i}] 
+&=& \mathbb{E}[(X_{i} – \mathbb{E}[X_{i}])(Y_{i} – \mathbb{E}[Y_{i}])] 
+= \sum_{x}\sum_{y} 
+ \mathbb{E}[(x – \mathbb{E}[X_{i}])(y – \mathbb{E}[Y_{i}])] Prob(X_{i} = x, Y_{i} = y)
+\\
+\mathbb{R}[X_{i}, Y_{i}] &=& \frac{\mathbb{C}[X_{i}, Y_{i}] }{ \mathbb{s}[X_{i}] \mathbb{s}[Y_{i}] }
+\end{eqnarray}
+
+For example, suppose we have discrete data with the following probabilities
+
+|    | x=0 | x=1 | x=2 |
+|:--:|:--:|:--:|:--:|
+| y=0  | 0.0 | 0.1 | 0.0 |
+| y=10 | 0.1 | 0.3 | 0.1 |
+| y=20 | 0.1 | 0.1 | 0.2 |
+
+After verifying that the probabilities sum to $1$, we then compute the marginal distributions
+\begin{eqnarray}
+Prob(X_{i}=0)=0.2,\quad Prob(X_{i}=1)=0.5,\quad Prob(X_{i}=2) = 0.3 \\
+Prob(Y_{i}=0)=0.1,\quad Prob(Y_{i}=10)=0.5,\quad Prob(Y_{i}=20) = 0.4
+\end{eqnarray}
+which allows us to compute the means:
+\begin{eqnarray}
+\mathbb{E}[X_{i}] &=& 0(0.2)+1(0.5)+2(0.3) = 1.1 \\
+\mathbb{E}[Y_{i}] &=& 0(0.1)+10(0.5)+20(0.4) = 13
+\end{eqnarray}
+We can then compute the cell-by-cell contributions: $Prob(X_{i} = x, Y_{i} = y) (x-\mathbb{E}[X_{i}])(y-\mathbb{E}[Y_{i}])$,
+\begin{eqnarray}
+\begin{array}{l l r r r r r}
+\hline
+x & y & Prob(X_{i}=x, Y_{i}=y) & x-\mathbb{E}[X_{i}] & y-\mathbb{E}[Y_{i}] & (x-\mathbb{E}[X_{i}])(y-\mathbb{E}[Y_{i}]) & \text{Contribution}\\
+\hline
+0 & 0  & 0.0 & -1.1 & -13 & 14.3  & 0\\
+0 & 10 & 0.1 & -1.1 & -3  & 3.3   & 0.330\\
+0 & 20 & 0.1 & -1.1 & 7   & -7.7  & -0.770\\
+1 & 0  & 0.1 & -0.1 & -13 & 1.3   & 0.130\\
+1 & 10 & 0.3 & -0.1 & -3  & 0.3   & 0.090\\
+1 & 20 & 0.1 & -0.1 & 7   & -0.7  & -0.070\\
+2 & 0  & 0.0 & 0.9  & -13 & -11.7 & 0\\
+2 & 10 & 0.1 & 0.9  & -3  & -2.7  & -0.270\\
+2 & 20 & 0.2 & 0.9  & 7   & 6.3   & 1.260\\
+\hline
+\end{array}
+\end{eqnarray}
+and plug them into the covariance
+\begin{eqnarray}
+\mathbb{C}[X_{i},Y_{i}] &=& \sum_{x} \sum_{y} \left(x-\mathbb{E}[X_{i}]\right)\left(y-\mathbb{E}[Y_{i}]\right) Prob\left(X_{i} = x, Y_{i} = y\right) \\
+&=& 0 + 0.330 -0.770 + 0.130 + 0.090  -0.070 +0 -0.270 + 1.260
+= 0.7
+\end{eqnarray}
+
+To compute the correlation value, we first need the standard deviations
+\begin{eqnarray}
+\mathbb{V}[X_{i}] &=& \sum_{x} (x-\mathbb{E}[X_{i}])^2 Prob(X_{i} = x) \\
+&=& (0-1.1)^2(0.2)+(1-1.1)^2(0.5)+(2-1.1)^2(0.3)=0.49 \\
+\mathbb{s}[X_{i}] &=& \sqrt{0.49} \\
+\mathbb{V}[Y_{i}] &=& \sum_{y}  (y-\mathbb{E}[Y_{i}])^2 Prob(Y_{i} = y) \\
+&=& (0-13)^2(0.1)+(10-13)^2(0.5)+(20-13)^2(0.4)=41 \\
+\mathbb{s}[Y_{i}] &=& \sqrt{41}.
+\end{eqnarray}
+Then we can find the correlation as
+\begin{eqnarray}
+\frac{\mathbb{C}[X_{i},Y_{i}]}{\mathbb{s}[X_{i}]\mathbb{s}[Y_{i}]} 
+&=& \frac{0.7}{\sqrt{0.49} \sqrt{41}} \approx 0.156,
+\end{eqnarray}
+which suggests a weak positive association between the variables.
+
+```{r}
+x <- c(0,1,2)
+y <- c(0,10,20)
+xy_probs <- matrix(c(
+    0.0, 0.1, 0.0,
+    0.1, 0.3, 0.1,
+    0.1, 0.1, 0.2
+), nrow=3, ncol=3, byrow=TRUE)
+rownames(xy_probs) <- paste0('y=',y)
+colnames(xy_probs) <-  paste0('x=',x)
+
+pX  <- colSums(xy_probs)
+pY  <- rowSums(xy_probs)
+EX  <- sum(x * pX)
+EY  <- sum(y * pY)
+
+dxy_grid <- expand.grid(dy=y-EY, dx=x-EX)[,c(2,1)]
+dxy_grid$p <- as.vector(xy_probs)
+dxy_grid$contribution <- dxy_grid[,'dx'] * dxy_grid[,'dy'] * dxy_grid[,'p']
+CovXY <- sum(dxy_grid$contribution)
+CovXY
+
+VX <- sum( (x-EX)^2 * pX)
+VY <- sum( (y-EY)^2 * pY)
+CorXY <- CovXY / sqrt(VX * VY)
+CorXY
+```
+
+:::{.callout-note icon=false collapse="true"}
+Compute the correlation for bivariate data with these probabilities
+
+|    | x=-10 | x=10 |
+|:--:|:--:|:--:|
+| y=0 | 0.05 | 0.2 |
+| y=1 | 0.05 | 0.2 |
+| y=2 | 0.05 | 0.2 |
+| y=3 | 0.05 | 0.2 |
+
+
+Also compute the correlation for bivariate data with these probabilities
+
+|    | x=-10 | x=10 |
+|:--:|:--:|:--:|
+| y=0 | 0.05 | 0.05 |
+| y=1 | 0.1 | 0.1 |
+| y=2 | 0.15 | 0.15 |
+| y=3 | 0.2 | 0.2 |
+
+Also compute the correlation for bivariate data with these probabilities
+
+|    | x=-10 | x=10 |
+|:--:|:--:|:--:|
+| y=0 | 0.05 | 0.15 |
+| y=1 | 0.05 | 0.15 |
+| y=2 | 0.1 | 0.2 |
+| y=3 | 0.1 | 0.2 |
+
+
+Finally, explain intuitively when the correlation is 0 and when it is not.
+:::
 
 
 ## Further Reading 

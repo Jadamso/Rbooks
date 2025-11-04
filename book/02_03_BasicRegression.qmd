@@ -40,7 +40,7 @@ where $\hat{M}_{Y}$ and $\hat{M}_{X}$ are sample means. Similarly,
 \end{eqnarray}
 the latter term being the estimated covariance between $X$ and $Y$ divided by the variance of $X$. This in turn yields model predictions
 \begin{eqnarray}
-\hat{y}_{i} &=& \hat{b}_{0}+\hat{b}\hat{X}_{i}\\
+\hat{y}_{i} &=& \hat{b}_{0}+\hat{b}_{1}\hat{X}_{i}\\
 \hat{e}_i &=& \hat{Y}_{i}-\hat{y}_{i}
 \end{eqnarray}
 
@@ -85,15 +85,12 @@ add_trace(fig, x=~x, y=~pred,
     line=list(width=1/2),
     marker=list(symbol=134, size=5))
 ```
-For a quantitative summary, we can also compute the linear correlation between the model predictions and the sample data 
-\begin{eqnarray}
-\hat{R} = Cor( \hat{y}_i, \hat{Y}_{i})
-\end{eqnarray}
-With linear models, we typically compute $\hat{R}^2$, known as the "coefficient of determination", using the sums of squared errors (Total, Explained, and Residual)
+For a quantitative summary, we can also compute the linear correlation between the model predictions and the sample data: $\hat{R}_{yY} = \hat{C}_{yY}/[\hat{S}_{y} \hat{S}_{Y}]$. 
+With linear models, we typically compute the "R-squared" statistic $\hat{R}_{yY}^2$, also known as the "coefficient of determination", using the sums of squared errors (Total, Explained, and Residual)
 \begin{eqnarray}
 \underbrace{\sum_{i}(\hat{Y}_{i}-\hat{M}_{Y})^2}_\text{TSS}
 =\underbrace{\sum_{i}(\hat{y}_i-\hat{M}_{Y})^2}_\text{ESS}+\underbrace{\sum_{i}\hat{e}_{i}^2}_\text{RSS}\\
-\hat{R}^2 = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}
+\hat{R}_{yY}^2 = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}
 \end{eqnarray}
 ```{r}
 # Manually Compute R2
@@ -258,7 +255,7 @@ abline(v=boot_ci_percentile0, lty=2)
 abline(v=tvalue, col="red", lwd=2)
 ```
 
-Alternatively, you can impose the null by recentering the sampling distribution around the theoretical value; $\hat{t} = \frac{\hat{b} - B_{0} }{\hat{s}_{\hat{b}}}$.^[Under some assumptions, the null distribution follows a t-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)] In any case, we can calculate a *p-value*: the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true). We can always calculate a p-value from an explicit null distribution.
+Alternatively, you can impose the null by recentering the sampling distribution around the theoretical value; $\hat{t} = \frac{\hat{b} - \beta }{\hat{s}_{\hat{b}}}$.^[Under some assumptions, the null distribution follows a t-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)] In any case, we can calculate a *p-value*: the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true). We can always calculate a p-value from an explicit null distribution.
 ```{r}
 # One Sided Test for P(t > boot_t | Null) = 1 - P(t < boot_t | Null)
 That_NullDist1 <- ecdf(boot_t0)
@@ -267,12 +264,11 @@ Phat1  <- 1-That_NullDist1(jack_t)
 
 # Two Sided Test for P(t > jack_t or t < -jack_t | Null)
 That_NullDist2 <- ecdf(abs(boot_t0))
+Phat2  <-  1-That_NullDist2( abs(tvalue))
+Phat2
 plot(That_NullDist2, xlim=range(boot_t0, jack_t),
     xlab=expression( abs(hat(t)[b]) ),
     main='Null Bootstrap Distribution', font.main=1)
 abline(v=tvalue, col='red')
-
-Phat2  <-  1-That_NullDist2( abs(tvalue))
-Phat2
 ```
 

@@ -12,7 +12,8 @@ A *simple random sample* is a sample where each possible sample of size n has th
 choose(4,2)
 
 # Simple random sample (no duplicates, equal probability)
-sample(1:4, 2, replace=F)
+x <- c(1,2,3,4)
+sample(x, 2, replace=F)
 ```
 
 Often, we think of the population as being infinitely large. This is an approximation that makes mathematical and computational work much simpler. 
@@ -24,10 +25,10 @@ Often, we think of the population as being infinitely large. This is an approxim
 #{4,4}
 
 # Simple random sample (duplicates, equal probability)
-sample(1:4, 2, replace=T)
+sample(x, 2, replace=T)
 ```
 
-Intuition for infinite populations: imagine drawing names from a giant urn. If the urn has only $10$ names, then removing one name slightly changes the composition of the urn, and the probabilities shift for the next name you draw. Now imagine the urn has $100$ billion names, so that removing one makes no noticeable difference. We can pretend the composition never changes: each draw is essentially identical and independent (iid). We can even guarantee that be putting any names drawn back into the urn (sampling with replacement).
+Intuition for infinite populations: imagine drawing names from a giant urn. If the urn has only $10$ names, then removing one name slightly changes the composition of the urn, and the probabilities shift for the next name you draw. Now imagine the urn has $100$ billion names, so that removing one makes no noticeable difference. We can pretend the composition never changes: each draw is essentially identical and independent (iid). We can actually guarantee the names are iid by putting any names drawn back into the urn (sampling with replacement).
 
 
 
@@ -59,6 +60,7 @@ Now compute the sampling distribution for the median with samples of $n=3$.
 :::
 
 :::{.callout-note icon=false collapse="true"}
+To consider an infinite population, expand the loop below to consider 3000 samples and then make a histogram.
 ```{r}
 # Three Sample Example from infinite population
 x1 <- runif(100)
@@ -79,6 +81,7 @@ for(i in seq(sample_means)){
 }
 sample_means
 ```
+For more on loops, see <https://jadamso.github.io/Rbooks/01_02_Mathematics.html#loops>.
 :::
 
 ```{r}
@@ -114,23 +117,60 @@ hist(sample_means,
 
 In this figure, you see two the most profound results known in statistics
 
-* *Law of Large Numbers*: the sample mean is centered around the true mean.
+* *Law of Large Numbers*: the sample mean is centered around the true mean, and more tightly centered with more data
 * *Central Limit Theorem*: the sampling distribution of the statistic is approximately Normal.
 
 
 
 #### **Law of Large Numbers**. {-}
 
-There are different variants of the Law of Large Numbers (LLN), but they all say some version of "the sample mean is centered around the true mean".
+There are different variants of the Law of Large Numbers (LLN), but they all say some version of "the sample mean is centered around the true mean, and more tightly centered with more data".
 
 :::{.callout-note icon=false collapse="true"}
+Notice where the sampling distribution is centered
 ```{r}
-# LLLN example
 m_LLLN <- mean(sample_means)
 round(m_LLLN, 3)
 ```
+and more tightly centered with more data
+```{r}
+par(mfrow=c(1,3))
+for(n in c(5,50,500)){
+    sample_means_n <- vector(length=299)
+    for(i in seq_along(sample_means_n)){
+        x <- runif(n)
+        m <- mean(x)
+        sample_means_n[i] <- m
+    }
+    hist(sample_means_n, 
+        breaks=seq(0,1,by=.005),
+        border=NA, freq=F,
+        col=2, font.main=1, 
+        xlab=expression(hat(M)),
+        main=paste0('n=',n) )
+}
+```
 :::
 
+
+:::{.callout-tip icon=false collapse="true"}
+Plot the variability of the sample mean as a function of sample size
+```{r}
+n_seq <- seq(1, 40)
+sd_seq <- vector(length=length(n_seq))
+for(n in seq_along(sd_seq)){
+    sample_means_n <- vector(length=499)
+    for(i in seq_along(sample_means_n)){
+        x <- runif(n)
+        m <- mean(x)
+        sample_means_n[i] <- m
+    }
+    sd_seq[n] <- sd(sample_means_n)
+}
+plot(n_seq, sd_seq, pch=16, col=grey(0,0.5),
+    xlab='n', ylab='sd of sample means', main='')
+```
+:::
 
 #### **Central Limit Theorem**. {-}
 There are different variants of the central limit theorem (CLT), but they all say some version of "the sampling distribution of a statistic is approximately normal". For example, the sampling distribution of the mean, shown above, is approximately normal.
@@ -329,7 +369,7 @@ PlotSample(B[[Bii[2]]], sample_mean, lineMu=F, star=T)
 par(fig=c(divideX[2], 1, 0, .5), new=T)
 par(mar=c(4.1, 0, 0, 0))
 set.seed(2)
-Bmeans <- sapply(1:9999, function(b) {
+Bmeans <- sapply(1:999, function(b) {
     dat_b <- sample(sample_dat, replace=T) # c.f. jackknife
     mean(dat_b)
 })
@@ -364,12 +404,17 @@ Note that we do not use the mean of the resampled statistics as a replacement fo
 
 
 #### **Jackknife Distribution**. {-}
-Here, we compute all "leave-one-out" estimates. Specifically, for a dataset with $n$ observations, the jackknife uses $n-1$ observations other than $i$ for each unique subsample. Taking the mean, for example, we have 
+Here, we compute all "leave-one-out" estimates. Specifically, for a dataset with $n$ observations, the jackknife uses $n-1$ observations other than $i$ for each unique subsample. 
+
+:::{.callout-note icon=false collapse="true"}
+Taking the mean, for example, we have
 
 * jackknifed estimates: $\hat{M}_{i}^{\text{jack}}=\frac{1}{n-1} \sum_{j \neq i}^{n-1} \hat{X}_{j}$.
-* mean of the jackknife: $\hat{M}^{\text{jack}}=\frac{1}{n} \sum_{i}^{n} \hat{M}_{i}^{\text{jack}}$.
-* standard deviation of the jackknife: $\hat{S}^{\text{jack}}= \sqrt{ \frac{1}{n} \sum_{i}^{n} \left[\hat{M}_{i}^{\text{jack}} - \hat{M}^{\text{jack}} \right]^2 }$.
+* mean of the jackknife: $\bar{\hat{M}}^{\text{jack}}=\frac{1}{n} \sum_{i}^{n} \hat{M}_{i}^{\text{jack}}$.
+* standard deviation of the jackknife: $\hat{S}^{\text{jack}}= \sqrt{ \frac{1}{n} \sum_{i}^{n} \left[\hat{M}_{i}^{\text{jack}} - \bar{\hat{M}}^{\text{jack}} \right]^2 }$.
 
+Given the sample $\{1,6,7,22\}$, compute the jackknife estimate of the median. Show the result mathematically by hand and also with the computer.
+:::
 
 
 ```{r}
@@ -391,11 +436,18 @@ abline(v=sample_mean, col='red', lty=2)
 ```
 
 #### **Bootstrap Distribution**. {-}
-Here, we draw $n$ observations with replacement from the original data to create a bootstrap sample and calculate a statistic. Each bootstrap sample $b=1...B$ uses a random subset of observations to compute a statistic. We repeat that many times, say $B=9999$, to estimate the sampling distribution. Taking the mean, for example, we have
+Here, we draw $n$ observations with replacement from the original data to create a bootstrap sample and calculate a statistic. Each bootstrap sample $b=1...B$ uses a random subset of observations to compute a statistic. We repeat that many times, say $B=9999$, to estimate the sampling distribution.
+
+:::{.callout-note icon=false collapse="true"}
+Taking the mean, for example, we have
 
 * bootstrapped estimate: $\hat{M}_{b}^{\text{boot}}= \frac{1}{n} \sum_{i=1}^{n} \hat{X}_{i}^{(b)}$, for resampled data $\hat{X}_{i}^{(b)}$
-* mean of the bootstrap: $\hat{M}^{\text{boot}}= \frac{1}{B} \sum_{b} \hat{M}_{b}^{\text{boot}}$.
-* standard deviation of the bootstrap: $\hat{S}^{\text{boot}}= \sqrt{ \frac{1}{B} \sum_{b=1}^{B} \left[\hat{M}_{b}^{\text{boot}} - \hat{M}^{\text{boot}} \right]^2}$.
+* mean of the bootstrap: $\bar{\hat{M}}^{\text{boot}}= \frac{1}{B} \sum_{b} \hat{M}_{b}^{\text{boot}}$.
+* standard deviation of the bootstrap: $\hat{S}^{\text{boot}}= \sqrt{ \frac{1}{B} \sum_{b=1}^{B} \left[\hat{M}_{b}^{\text{boot}} - \bar{\hat{M}}^{\text{boot}} \right]^2}$.
+
+Given the sample $\{1,6,7,22\}$, compute the bootstrap estimate of the median, with $B=8$. Show the result with the computer and then show what is happening in each sample by hand.
+:::
+
 
 
 
@@ -403,7 +455,8 @@ Here, we draw $n$ observations with replacement from the original data to create
 # Bootstrap estimates
 bootstrap_means <- vector(length=9999)
 for(b in seq_along(bootstrap_means)){
-    boot_id <- sample(1:n, replace=T)
+    dat_id <- seq(1,n)
+    boot_id <- sample(dat_id , replace=T)
     dat_b  <- sample_dat[boot_id] # c.f. jackknife
     mean_b <- mean(dat_b)
     bootstrap_means[b] <-mean_b
@@ -417,7 +470,7 @@ abline(v=sample_mean, col='red', lty=2)
 
 Why does this work? The sample: $\{\hat{X}_{1}, \hat{X}_{2}, ... \hat{X}_{n}\}$ is drawn from a CDF $F$. Each bootstrap sample: $\{\hat{X}_{1}^{(b)}, \hat{X}_{2}^{(b)}, ... \hat{X}_{n}^{(b)}\}$ is drawn from the ECDF $\hat{F}$. With $\hat{F} \approx F$, each bootstrap sample is approximately a random sample. So when we compute a statistic on each bootstrap sample, we approximate the sampling distribution of the statistic.
 
-:::{.callout-note icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true"}
 ```{r}
 # theoretical probabilities
 x <- c(0,1)
@@ -441,6 +494,27 @@ sd(sample_dat) # standard deviation
 sd(bootstrap_means) # standard error
 ```
 
+Also note that each additional data point you have provides more information, which ultimately decreases the standard error of your estimates. This is why statisticians will often recommend that you to get more data. However, the improvement in the standard error increases at a diminishing rate. In economics, this is known as diminishing returns and why economists may recommend you do not get more data. 
+
+```{r}
+B <- 1000 # number of bootstrap samples
+Nseq <- seq(1,100, by=1) # different sample sizes
+
+SE <- vector(length=length(Nseq))
+for(n in Nseq){
+    sample_statistics_n <- vector(length=B)
+    for(b in seq(1,B)){
+        x_b <- rnorm(n) # Sample of size n
+        x_stat_b <- quantile(x_b, probs=.4) # Stat of interest
+        sample_statistics_n[b] <- x_stat_b
+    }
+    se_n <- sd(sample_statistics_n) # How much the stat varies across samples
+    SE[n] <- se_n
+}
+
+plot(Nseq, SE, pch=16, col=grey(0,.5),
+    ylab='standard error', xlab='sample size')
+```
 
 ## Intervals
 
@@ -587,7 +661,7 @@ The theoretical mean is $\mathbb{E}[\frac{X_{1}+X_{2}}{2}]=\frac{p+p}{2}=p$.
 
 
 #### **Variances**. {-}
-Another famous theoretical result in statistics is that if we have independent and identical data (i.e., that each random variable $X_{i}$ has the same mean $\mu$ and same variance $\sigma^2$ and is drawn without any dependence on the previous draws), then the standard error of the sample mean is "root n" proportional to the theoretical standard error. Intuitively, this follows from thinking of the variance as a type of mean (the theoretical mean squared deviation from $\mu$).
+Another famous theoretical result in statistics is that if we have independent and identical data (i.e., that each random variable $X_{i}$ has the same mean $\mu$, same variance $\sigma^2$, and is drawn without any dependence on the previous draws), then the standard error of the sample mean is "root n" proportional to the theoretical standard error. Intuitively, this follows from thinking of the variance as a type of mean (the mean squared deviation from $\mu$).
 \begin{eqnarray}
 \mathbb{V}\left( M \right) 
 &=& \mathbb{V}\left( \frac{\sum_{i}^{n} X_{i}}{n} \right) 
@@ -607,48 +681,24 @@ theory_se <- sd(sample_dat)/sqrt(n)
 c(boot_se, theory_se)
 ```
 
-Also note that each additional data point you have provides more information, which ultimately decreases the standard error of your estimates. This is why statisticians will often recommend that you to get more data. However, the improvement in the standard error increases at a diminishing rate. In economics, this is known as diminishing returns and why economists may recommend you do not get more data. 
-
-```{r}
-B <- 1000 # number of bootstrap samples
-Nseq <- seq(1,100, by=1) # different sample sizes
-
-SE <- vector(length=length(Nseq))
-for(n in Nseq){
-    sample_statistics_n <- vector(length=B)
-    for(b in seq(1,B)){
-        x_b <- rnorm(n) # Sample of size n
-        x_stat_b <- quantile(x_b, probs=.4) # Stat of interest
-        sample_statistics_n[b] <- x_stat_b
-    }
-    se_n <- sd(sample_statistics_n) # How much the stat varies across samples
-    SE[n] <- se_n
-}
-
-
-plot(Nseq, SE, pch=16, col=grey(0,.5),
-    ylab='standard error', xlab='sample size')
-
-#plot(Nseq[-1], abs(diff(SE)), pch=16, col=grey(0,.5),
-#    main='Marginal Gain', font.main=1,
-#    ylab='decrease in standard error', xlab='sample size')
-```
 
 #### **Shape**. {-}
 Sometimes, the sampling distribution is approximately normal (according to the CLT). In this case, you can use a standard error and the normal distribution to get a confidence interval.
 ```{r, eval=F}
 # Standard Errors
-sd_theory <- sd(sample_dat1)/sqrt(length(sample_dat1))
+theory_sd <- sd(sample_dat1)/sqrt(length(sample_dat1))
 ## Normal CI
-spread_theory <- qnorm(c(0.025, 0.975))
-ci <- mean(sample_dat1) + spread_theory*sd_theory
+theory_quantile <- qnorm(c(0.025, 0.975))
+theory_ci <- mean(sample_dat1) + theory_quantile*theory_sd
+
+# compare with: boot_ci, jack_ci
 ```
 
 
 
 #### **CI Coverage**. {-}
 
-Given the sample size, $n$, is large enough for the mean to be approximately normally distributed, we can construct a symmetric confidence interval $[M - E, M + E]$, where $E$ is some "margin of error" on either side of the mean $M$. A coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$. I.e., if the same sampling procedure were repeated $100$ times from the same population, approximately $95$ of the resulting intervals would be expected to contain the true population mean.^[Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( E + mu > M > mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ $95%$ of the time because whenever $M$ is within $10$ of $\mu$, $\mu$ is also within $10$ of $M$.] Note that a $95\%$ coverage level does not imply a $95%$ probability that the true parameter lies within a particular calculated interval. E.g., if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$.
+Given the sample size, $n$, is large enough for the mean to be approximately normally distributed, we can construct a symmetric confidence interval $[M - E, M + E]$, where $E$ is some "margin of error" on either side of the mean $M$. A coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$. I.e., if the same sampling procedure were repeated $100$ times from the same population, approximately $95$ of the resulting intervals would be expected to contain the true population mean.^[Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( E + \mu > M > \mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ in $95\%$ of the samples because whenever $M$ is within $10$ of $\mu$, the value $\mu$ is also within $10$ of $M$. But for any particular sample, the interval $[\hat{M}-10, \hat{M}+10]$ either does or does not contain $\mu$.] Note that a $95\%$ coverage level does not imply a $95\%$ probability that the true parameter lies within a particular calculated interval. E.g., if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$.
 
 :::{.callout-tip icon=false collapse="true"}
 Given the sample size, $n$, is large enough for the sample mean to be approximately normally distributed, what confidence interval satisfies the following: the theoretical mean $\mu$ is inside of the interval with probability $95%$ (i.e., for $(1 - 0.05)%$ of samples)?
@@ -662,11 +712,11 @@ For a fixed sample size $n$, there is a trade-off between *precision*: the width
 xq <- apply(x_samples, 1, function(r){ #theoretical se's 
     mean(r) + c(-1,1)*sd(r)/sqrt(length(r))
 })
-# First 4 interval estimates
-xq[,1:4]
+# First 3 interval estimates
+xq[, c(1,2,3)]
 
 # Explicit calculation
-mu_true <- 0.5 # theoretical result for x_samples ~ uniform
+mu_true <- 0.5 # theoretical result for uniform samples
 # Logical vector: whether the true mean is in each CI
 covered <- mu_true >= xq[1, ] & mu_true <= xq[2, ]
 # Empirical coverage rate
@@ -679,10 +729,10 @@ cat(sprintf("Estimated coverage probability: %.2f%%\n", 100 * coverage_rate))
 
 ```{r}
 # Visualize first 100 confidence intervals
-N <- 100
+n <- 100
 plot.new()
-plot.window(xlim = range(xq), ylim = c(0, N))
-for (i in 1:N) {
+plot.window(xlim = range(xq), ylim = c(0, n))
+for (i in seq(1,n) ) {
   col_i <- if (covered[i]) rgb(0, 0, 0, 0.3) else rgb(1, 0, 0, 0.5)
   segments(xq[1, i], i, xq[2, i], i, col = col_i, lwd = 2)
 }
