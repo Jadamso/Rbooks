@@ -173,8 +173,7 @@ Inequalities
 (Formerly part of Introduction to Data Analysis)
 
 #### Ch 10. Bivariate Distributions
-* add empirical example of table with joint and marginal distributions
-
+* add empirical examples joint and marginal distributions for discrete data (cross tabulations)
 
 Suppose you read that Honda Civic is the most commonly stolen car. Does this mean that Honda Civic cars have a higher probability to be stolen compared to other cars?
 
