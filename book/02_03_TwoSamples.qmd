@@ -1,0 +1,306 @@
+
+# Mixed Data
+***
+
+
+For mixed data, $\hat{Y}_{i}$ is a cardinal variable and $\hat{X}_{i}$ is a factor variable (typically unordered). For such data, we analyze associations via group comparisons. The basic idea is best seen in a comparison of two samples, which corresponds to an $\hat{X}_{i}$ with two categories.
+
+Suppose we have two samples of data. For example, the heights of men and women in Canada. For another example, homicide rates in two different American states. For another example, the wages for people with and without completing a degree.
+
+```{r, eval=F}
+library(wooldridge)
+x1 <- wage1[wage1$educ == 15, 'wage']
+x2 <- wage1[wage1$educ == 16, 'wage']
+```
+
+```{r}
+# Sample 1 (e.g., males)
+n1 <- 100
+x1 <- rnorm(n1, 0, 2)
+# Sample 2 (e.g., females)
+n2 <- 80
+x2 <- rnorm(n2, 1, 1)
+
+par(mfrow=c(1,2))
+bks <- seq(-8,8, by=.5)
+hist(x1, border=NA, breaks=bks,
+    main='Sample 1', font.main=1)
+
+hist(x2, border=NA, breaks=bks, 
+    main='Sample 2', font.main=1)
+```
+
+## Differences
+
+There may be several differences between these samples. Often, the first summary statistic we investigate is the difference in means. 
+
+#### **Mean Differences**. {-}
+
+We often want to know if the means of different sample are different. To test this hypothesis, we compute the means separately for each sample and then examine the differences term
+\begin{eqnarray} 
+\hat{D} = \hat{M}_{X1} - \hat{M}_{X2},
+\end{eqnarray}
+with a null hypothesis of $D=0$.
+
+```{r}
+# Differences between means
+m1 <- mean(x1)
+m2 <- mean(x2)
+d <- m1-m2
+    
+# Bootstrap Distribution
+bootstrap_diff <- vector(length=9999)
+for(b in seq(bootstrap_diff) ){
+    x1_b <- sample(x1, replace=T)
+    x2_b <- sample(x2, replace=T)
+    m1_b <- mean(x1_b)
+    m2_b <- mean(x2_b)
+    d_b <- m1_b - m2_b
+    bootstrap_diff[b] <- d_b
+}
+hist(bootstrap_diff,
+    border=NA, font.main=1,
+    main='Difference in Means')
+
+# 2-Sided Test
+boot_ci <- quantile(bootstrap_diff, probs=c(.025, .975))
+abline(v=boot_ci, lwd=2)
+abline(v=0, lwd=2, col=2)
+```{r}
+
+```{r}
+# p-value
+1 - ecdf(bootstrap_diff)(0)
+```
+
+
+Just as with one sample tests, we can compute a *standardized differences*, where $D$ is converted into a $t$ statistic.  Note, however, that we have to compute the standard error for the difference statistic, which is a bit more complicated. However, this allows us to easily conduct one or two sided hypothesis tests using a standard normal approximation.
+```{r, eval=F}
+se_hat <- sqrt(var(x1)/n1 + var(x2)/n2);
+t_obs <- d/se_hat
+```
+
+```{r, eval=F, echo=F}
+t_2sample <- function(x1, x2){
+    # Differences between means
+    m1 <- mean(x1)
+    m2 <- mean(x2)
+    d <- (m1-m2)
+
+    # SE estimate
+    n1  <- length(x1)
+    n2  <- length(x2)
+    s1  <- var(x1)
+    s2  <- var(x2)
+    s   <- ((n1-1)*s1 + (n2-1)*s2)/(n1+n2-2)
+    d_se <- sqrt(s*(1/n1+1/n2))
+
+    # t stat
+    t_stat <- d/d_se
+    return(t_stat)
+}
+ 
+tstat <- twosam(data[,'male'], data[,'female'])
+tstat
+```
+
+
+#### **Quantile Differences**. {-}
+The above procedure generalized from differences in means to other quantiles statistics like medians.
+
+```{r}
+# Bootstrap Distribution Function
+boot_quant <- function(x1, x2, B=9999, prob=0.5, ...){
+    bootstrap_diff <- vector(length=B)
+    for(b in seq(bootstrap_diff)){
+        x1_b <- sample(x1, replace=T)
+        x2_b <- sample(x2, replace=T)
+        q1_b <- quantile(x1_b, probs=0.5, ...)
+        q2_b <- quantile(x2_b, probs=0.5, ...)
+        d_b <- q1_b - q2_b
+        bootstrap_diff[b] <- d_b
+    }
+    return(bootstrap_diff)
+}
+
+# 2-Sided Test for Median Differences
+# d <- median(x2) - median(x1)
+boot_d <- boot_quant(x1, x1, B=999, prob=0.5)
+hist(boot_d, border=NA, font.main=1,
+    main='Difference in Medians')
+abline(v=quantile(boot_d, probs=c(.025, .975)), lwd=2)
+abline(v=0, lwd=2, col=2)
+1 - ecdf(boot_d)(0)
+```
+
+
+If we want to test for the differences in medians across groups with independent observations, we can also use notches in the boxplot. If the notches of two boxes do not overlap, then there is rough evidence that the difference in medians is statistically significant. The square root of the sample size is also shown as the bin width in each boxplot.^[Let each group $g$ have median $\tilde{M}_{g}$, interquartile range $\hat{IQR}_{g}$, observations $n_{g}$. We can compute standard deviation of the median as $\tilde{S}_{g}= \frac{1.25 \hat{IQR}_{g}}{1.35 \sqrt{n_{g}}}$. As a rough guess, the interval $\tilde{M}_{g} \pm 1.7 \tilde{S}_{g}$ is the historical default and displayed as a *notch* in the boxplot. See also <https://www.tandfonline.com/doi/abs/10.1080/00031305.1978.10479236>.]
+
+```{r}
+boxplot(x1, x2,
+    col=c(2,4),
+    notch=T,
+    varwidth=T)
+```
+
+
+Note that bootstrap tests can perform poorly with highly unequal variances or skewed data. To see this yourself, make a simulation with skewed data and unequal variances.
+
+
+In principle, we can also examine whether there are differences in spread or shape statistics such as `sd` and `IQR`, or `skew` and `kurtosis`. More often, however, we examine whether there are any differences in the distributions.
+
+:::{.callout-tip icon=false collapse="true"}
+Here is an example to look at differences in "spread"
+```{r, eval=F}
+boot_fun <- function( fun, B=9999, ...){
+    bootstrap_diff <- vector(length=B)
+    for(b in seq(bootstrap_diff)){
+        x1_b <- sample(x1, replace=T)
+        x2_b <- sample(x2, replace=T)
+        f1_b <- fun(x1_b, ...)
+        f2_b <- fun(x2_b, ...)
+        d_b <- f1_b - f2_b
+        bootstrap_diff[b] <- d_b
+    }
+    return(bootstrap_diff)
+}
+
+# 2-Sided Test for SD Differences
+#d <- sd(x2) - sd(x1)
+boot_d <- boot_fun(sd)
+hist(boot_d, border=NA, font.main=1,
+    main='Difference in Standard Deviations')
+abline(v=quantile(boot_d, probs=c(.025, .975)), lwd=2)
+abline(v=0, lwd=2, col=2)
+1 - ecdf(boot_d)(0)
+
+
+# Try any function!
+# boot_fun( function(xs) { IQR(xs)/median(xs) } )
+```
+:::
+
+
+
+## Distributional Comparisons
+
+We can also examine whether there are any differences between the entire *distributions*
+```{r}
+# Sample Wage Data
+library(wooldridge)
+x1 <- sort( wage1[wage1$educ == 15,  'wage'])  
+x2 <- sort( wage1[wage1$educ == 16,  'wage'] )
+x <- sort(c(x1, x2))
+
+# Compute Quantiles
+quants <- seq(0,1,length.out=101)
+Q1 <- quantile(x1, probs=quants)
+Q2 <- quantile(x2, probs=quants)
+
+# Compare Distributions via Quantiles
+rx <- range(c(x1, x2))
+par(mfrow=c(1,2))
+plot(rx, c(0,1), type='n', font.main=1,
+    main='Distributional Comparison',
+    xlab="Quantile",
+    ylab="ECDF")
+lines(Q1, quants, col=2)
+lines(Q2, quants, col=4)
+legend('bottomright', col=c(2,4), lty=1,
+	legend=c(
+	    expression(hat(F)[1]),
+	    expression(hat(F)[2]) 
+))
+
+# Compare Quantiles
+plot(Q1, Q2, xlim=rx, ylim=rx,
+    xlab=expression(Q[1]),
+    ylab=expression(Q[2]),
+    main='Quantile-Quantile Plot', font.main=1,
+pch=16, col=grey(0,.25))
+abline(a=0,b=1,lty=2)
+```
+
+The starting point for hypothesis testing is the Kolmogorov-Smirnov Statistic: the maximum absolute difference between two CDF's over all sample data $x \in \{X_1\} \cup \{X_2\}$.
+\begin{eqnarray}
+\hat{KS} &=& \max_{x} |\hat{F}_{1}(x)- \hat{F}_{2}(x)|^{p},
+\end{eqnarray}
+where $p$ is an integer (typically 1). An intuitive alternative is the Cramer-von Mises Statistic: the sum of absolute differences (raised to an integer, typically 2) between two CDF's. 
+\begin{eqnarray}
+\hat{CVM} &=& \sum_{x} | \hat{F}_{1}(x)- \hat{F}_{2}(x)|^{p}.
+\end{eqnarray}
+
+```{r}
+# Distributions
+F1 <- ecdf(x1)(x)
+F2 <- ecdf(x2)(x)
+
+library(twosamples)
+
+# Kolmogorov-Smirnov
+KSq <- which.max(abs(F2 - F1))
+KSqv <- round(twosamples::ks_stat(x1, x2),2)
+
+# Cramer-von Mises Statistic (p=2)
+CVMqv <- round(twosamples::cvm_stat(x1, x2, power=2), 2) 
+
+# Visualize Differences
+plot(range(x), c(0,1), type="n", xlab='x', ylab='ECDF')
+lines(x, F1, col=2, lwd=2)
+lines(x, F2, col=4, lwd=2)
+
+# KS
+title( paste0('KS: ', KSqv), adj=0, font.main=1)
+segments(x[KSq], F1[KSq], x[KSq], F2[KSq], lwd=1.5, col=grey(0,.75), lty=2)
+
+# CVM
+title( paste0('CVM: ', CVMqv), adj=1, font.main=1)
+segments(x, F1, x, F2, lwd=.5, col=grey(0,.2))
+```
+
+Just as before, you use bootstrapping for hypothesis testing.
+```{r}
+twosamples::ks_test(x1, x2)
+
+twosamples::cvm_test(x1, x2)
+```
+
+#### **Comparing Multiple Groups**. {-}
+For multiple groups, we can tests the equality of all distributions (whether at least one group is different). The *Kruskal-Wallis* test examines $H_0:\; F_1 = F_2 = \dots = F_G$ versus $H_A:\; \text{at least one } F_g \text{ differs}$, where $F_g$ is the continuous distribution of group $g=1,...G$. This test does not tell us which group is different.
+
+To conduct the test, first denote individuals $i=1,...n$ with overall ranks $\hat{r}_1,....\hat{r}_{n}$. Each individual belongs to group $g=1,...G$, and each group $g$ has $n_{g}$ individuals with average rank $\bar{r}_{g} = \sum_{i} \hat{r}_{i} /n_{g}$. The Kruskal Wallis statistic is 
+\begin{eqnarray}
+\hat{KW} &=& (N-1) \frac{\sum_{g=1}^{G} n_{g}( \bar{r}_{g} - \bar{r}  )^2  }{\sum_{i=1}^{n} ( \hat{r}_{i} - \bar{r}  )^2}, 
+\end{eqnarray}
+where  $\bar{r} = \frac{n+1}{2}$ is the grand mean rank.
+
+In the special case with only two groups, $G=2$, the Kruskal Wallis test reduces to the *Mann–Whitney U* test (also known as the *Wilcoxon rank-sum* test). In this case, we can write the hypotheses in terms of individual outcomes in each group, $Y_i$ in one group $Y_j$ in the other; $H_0: Prob(Y_i > Y_j)=Prob(Y_i > Y_i)$  versus $H_A: Prob(Y_i > Y_j) \neq Prob(Y_i > Y_j)$. The corresponding test statistic is
+\begin{eqnarray}
+\hat{U}   &=& \min(\hat{U}_1, \hat{U}_2) \\
+\hat{U}_g &=& \sum_{i\in g}\sum_{j\in -g}
+           \Bigl[\mathbf 1( \hat{Y}_{i} > \hat{Y}_{j}) + \tfrac12\mathbf 1(\hat{Y}_{i} = \hat{Y}_{j})\Bigr].
+\end{eqnarray}
+
+
+```{r}
+library(AER)
+data(CASchools)
+CASchools$stratio <- CASchools$students/CASchools$teachers
+
+# Do student/teacher ratio differ for at least 1 county?
+# Single test of multiple distributions
+kruskal.test(CASchools$stratio, CASchools$county)
+
+# Multiple pairwise tests
+# pairwise.wilcox.test(CASchools$stratio, CASchools$county)
+```
+
+
+
+## Further Reading 
+
+Other Statistics 
+
+* <https://cran.r-project.org/web/packages/qualvar/vignettes/wilcox1973.html>
+
+
