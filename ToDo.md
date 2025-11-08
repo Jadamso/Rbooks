@@ -46,12 +46,12 @@ Target 2: 8 Months (April)
 Target 3: 12 months
     * Refine existing companion materials and start refining the textbook itself
     * Ensure consistent style for definitions, italics, etc. for both Parts I + II.
+    * Harmonize R code across the book.
     * Create a draft bank of exam questions
     
 Target 4: 16 Months
     * Check and update references/bibliography for Parts I–II.
-    * Add code annotations in the first coding chapter and harmonize R code across the book.
-    * Add student handout and exercises for coding and other materials (e.g., using Hypothesis.is.)
+    * Add student handout and exercises for coding and other materials
 
 Target 5+: 36 Months
     * Work shifts to shaping the textbook itself (new chapters, full integration)
@@ -71,12 +71,6 @@ Callouts
 * ::: {.callout-warning icon=false collapse="true"}
 * ::: {.callout-important, icon=false collapse="true"}
 
-
-Notes (custom code)
-
-* ::: {.aside}
-* ::: {.tip}
-* ::: {.background}
 
 See also 
 
@@ -147,15 +141,15 @@ Syllabus, Refresher (Highschool Background, on your own time)
 #### Ch 6. (Re)Sampling
 * Bootstrap Jacknife theory (iid)
 * Value of new data for Bootstrap?
+* permutation sampling?
 
 
-#### Ch 7. Hypothesis Tests
-* permutation sampling and H-testing
+#### Ch 8. p-values Tests
+* permutation H-testing
+* Fail to reject the null. Examples with multiple hypothesis: can't rule out A, also can't rule out B.
+* 8.2. h-tests for mode?
 
-* ?Fail to reject the null. Example with multiple hypothesis: can't rule out A, also can't rule out B.
-
-
-#### Ch.8 Misc Univariate Topics
+#### Ch.9 Misc Univariate Topics
 
 * [The Box-Cox Transformation Technique: A Review](https://www.jstor.org/stable/2348250)
 
@@ -173,26 +167,14 @@ Inequalities
 (Formerly part of Introduction to Data Analysis)
 
 #### Ch 10. Bivariate Distributions
-* add empirical examples joint and marginal distributions for discrete data (cross tabulations)
-
-Suppose you read that Honda Civic is the most commonly stolen car. Does this mean that Honda Civic cars have a higher probability to be stolen compared to other cars?
-
+More examples
+* Suppose you read that Honda Civic is the most commonly stolen car. Does this mean that Honda Civic cars have a higher probability to be stolen compared to other cars?
+* other examples from Microeconometrics (Simpsons paradox)
 
 #### Ch 11. Bivariate Statistics
-* other examples from Microeconometrics (Simpsons paradox)
-* 10.4 Hypothesis Tests
-* Two Sample test tests
 
 
-#### Ch.12. Hypothesis Testing 
-* https://www.tandfonline.com/doi/abs/10.1198/000313008X332421
-* Advanced probability theory?
-* Type I vs II errors. Power analysis
-
-
-
-
-#### Ch 13. Data Analysis
+#### Ch 15. Data Analysis
 * Incorporate insights from "Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)" 
 
 Add styling to interactive plots
@@ -205,6 +187,13 @@ Data clean/merge
 
 
 https://statmodeling.stat.columbia.edu/2025/10/21/reanalysis-of-that-nobel-prizewinning-study-of-patents-and-innovation/
+
+
+#### Ch.16. Misc Topics
+* https://www.tandfonline.com/doi/abs/10.1198/000313008X332421
+* Advanced probability theory?
+* Type I vs II errors. Power analysis
+
 
 
 ## Multivariate Data (Econometrics)
@@ -227,7 +216,7 @@ https://statmodeling.stat.columbia.edu/2025/10/21/reanalysis-of-that-nobel-prize
 * Add interactive plots via https://plotly-r.com/
 
 
-
+* update CCFS in "Observational Data" to use `npSDA`
 
 
 #### Derive Simple OLS

@@ -449,8 +449,6 @@ Given the sample $\{1,6,7,22\}$, compute the bootstrap estimate of the median, w
 :::
 
 
-
-
 ```{r}
 # Bootstrap estimates
 bootstrap_means <- vector(length=9999)
@@ -516,122 +514,6 @@ plot(Nseq, SE, pch=16, col=grey(0,.5),
     ylab='standard error', xlab='sample size')
 ```
 
-## Intervals
-
-We can also estimate variability using a *Confidence Interval:* range your statistic varies across different samples.
-
-#### **Percentile Intervals**.  {-}
-This type of confidence interval is simply the upper and lower quantiles of the sampling distribution.
-
-For example, consider the sample mean. We simulate the sampling distribution of the sample mean and construct a $90\%$ confidence interval by taking the $5^{th}$ and $95^{th}$ percentiles of the simulated means. 
-```{r}
-# Create 300 samples, each with 1000 random uniform variables
-x_samples <- matrix(nrow=300, ncol=1000)
-for(i in seq(1,nrow(x_samples))){
-    x_samples[i,] <- runif(1000)
-}
-
-# Middle 90%
-mq <- quantile(sample_means, probs=c(.05,.95))
-paste0('we are 90% confident that the mean is between ', 
-    round(mq[1],2), ' and ', round(mq[2],2) )
-
-hist(sample_means,
-    breaks=seq(.4,.6, by=.001), 
-    border=NA, freq=F,
-    col=rgb(0,0,0,.25), font.main=1,
-    main='90% Confidence Interval for the Mean')
-abline(v=mq)
-```
-
-For another example, consider the median. We now repeat the above process to estimate the median for each sample, instead of the mean. 
-```{r}
-## Sample Quantiles (medians)
-sample_quants <- apply(x_samples, 1, quantile, probs=0.5)
-
-# Middle 90% of estimates
-mq <- quantile(sample_quants, probs=c(.05,.95))
-paste0('we are 90% confident that the median is between ', 
-    round(mq[1],2), ' and ', round(mq[2],2) )
-
-hist(sample_quants,
-    breaks=seq(.4,.6, by=.001),
-    border=NA, freq=F,
-    col=rgb(0,0,0,.25), font.main=1,
-    main='90% Confidence Interval for the Median')
-abline(v=mq)
-```
-
-Note that $Z\%$ confidence intervals do not generally cover $Z\%$ of the data (those types of intervals are covered later). In the examples above, notice the confidence interval for the mean differs from the confidence interval of the median, and so both cannot cover $90\%$ of the data. The confidence interval for the mean is roughly $[0.48, 0.52]$, which theoretically covers only a $0.52-0.48=0.04$ proportion of uniform random data, much less than $90%$.
-
-Often, a $Z\%$ confidence interval means that $Z\%$ of the intervals we generate will contain the true mean. E.g., suppose that we repeatedly sample data and construct $95\%$ bootstrap confidence interval for the mean, then we expect that $95\%$ of our constructed confidence intervals contain the theoretical population mean.^[Note also that a $95\%$ confidence interval does not imply a $95\%$ probability that the true mean lies within the particular confidence interval you calculated for a particular sample. The interval computed from a given sample either contains the true mean or it does not.]
-
-
-#### **Interval Size**.  {-}
-
-Confidence intervals shrink with more data, as averaging washes out random fluctuations. Here is the intuition for estimating the weight of an apple:
-
-* With $n=1$ apple, your estimate depends entirely on that one draw. If it happens to be unusually large or small, your estimate can be far off.
-* With $n=2$ apples, the estimate averages out their idiosyncrasies. An unusually heavy apple can be balanced by a lighter one, lowering how far off you can be. You are less likely to get two extreme values than just one.
-* With $n=100$ apples, individual apples barely move the needle. The average becomes stable.
-
-```{r}
-X <- c(18,20,22,24) #student ages
-# six possible samples of size 2
-m1 <- mean( X[c(1,2)] ) #{1,2}
-m2 <- mean( X[c(1,3)] ) #{1,3}
-m3 <- mean( X[c(1,4)] ) #{3,4}
-m4 <- mean( X[c(2,3)] ) #{2,3}
-m5 <- mean( X[c(2,4)] ) #{2,4}
-m6 <- mean( X[c(3,4)] ) #{3,4}
-means_2 <- c(m1, m2, m3, m4, m5, m6)
-sd(means_2)
-
-# four possible samples of size 3
-m1 <- mean( X[c(1,2,3)] ) 
-m2 <- mean( X[c(1,2,4)] ) 
-m3 <- mean( X[c(1,3,4)] ) 
-m4 <- mean( X[c(2,3,4)] ) 
-means_3 <- c(m1, m2, m3, m4)
-sd(means_3)
-```
-
-```{r, eval=F}
-# Create 300 samples, each of size n
-n <- 10000
-x_samples <- matrix(nrow=300, ncol=n)
-for(i in seq(1,nrow(x_samples))){
-    x_samples[i,] <- runif(1000)
-}
-# Compute means for each row (for each sample)
-sample_means <- apply(x_samples, 1, mean)
-mq <- quantile(sample_means, probs=c(.05,.95))
-paste0('we are 90% confident that the mean is between ', 
-    round(mq[1],2), ' and ', round(mq[2],2) )
-hist(sample_means,
-    breaks=seq(.4,.6, by=.001), 
-    border=NA, freq=F,
-    col=rgb(0,0,0,.25), font.main=1,
-    main='90% Confidence Interval for the Mean (larger n)')
-abline(v=mq)
-```
-
-Note that both resampling methods provide imperfect estimates, and can give different numbers. Jackknife resamples are systematically less variable than they should be and sample $n-1$ instead of $n$. Bootstrap resamples have the right $n$ but often have duplicated data. Until you know more, a conservative approach is to take the larger estimate (often the bootstrap). That is also good advice when considering theoretically derived confidence intervals too.
-
-```{r}
-# Boot CI
-boot_ci <- quantile(bootstrap_means, probs=c(.025, .975))
-boot_ci
-
-# Jack CI
-jack_ci <- quantile(jackknife_means, probs=c(.025, .975))
-jack_ci
-
-# more conservative estimate
-ci <- boot_ci
-```
-
-
 ## Probability Theory
 
 #### **Means**. {-}
@@ -696,59 +578,8 @@ theory_ci <- mean(sample_dat1) + theory_quantile*theory_sd
 
 
 
-#### **CI Coverage**. {-}
-
-Given the sample size, $n$, is large enough for the mean to be approximately normally distributed, we can construct a symmetric confidence interval $[M - E, M + E]$, where $E$ is some "margin of error" on either side of the mean $M$. A coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$. I.e., if the same sampling procedure were repeated $100$ times from the same population, approximately $95$ of the resulting intervals would be expected to contain the true population mean.^[Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( E + \mu > M > \mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ in $95\%$ of the samples because whenever $M$ is within $10$ of $\mu$, the value $\mu$ is also within $10$ of $M$. But for any particular sample, the interval $[\hat{M}-10, \hat{M}+10]$ either does or does not contain $\mu$.] Note that a $95\%$ coverage level does not imply a $95\%$ probability that the true parameter lies within a particular calculated interval. E.g., if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$.
-
-:::{.callout-tip icon=false collapse="true"}
-Given the sample size, $n$, is large enough for the sample mean to be approximately normally distributed, what confidence interval satisfies the following: the theoretical mean $\mu$ is inside of the interval with probability $95%$ (i.e., for $(1 - 0.05)%$ of samples)?
-:::
-
-For a fixed sample size $n$, there is a trade-off between *precision*: the width of a confidence interval, and *accuracy*: the probability that a confidence interval contains the theoretical value.
-
-
-```{r}
-# Confidence Interval for each sample
-xq <- apply(x_samples, 1, function(r){ #theoretical se's 
-    mean(r) + c(-1,1)*sd(r)/sqrt(length(r))
-})
-# First 3 interval estimates
-xq[, c(1,2,3)]
-
-# Explicit calculation
-mu_true <- 0.5 # theoretical result for uniform samples
-# Logical vector: whether the true mean is in each CI
-covered <- mu_true >= xq[1, ] & mu_true <= xq[2, ]
-# Empirical coverage rate
-coverage_rate <- mean(covered)
-cat(sprintf("Estimated coverage probability: %.2f%%\n", 100 * coverage_rate))
-
-# Theoretically: [-1 sd, +1 sd] has 2/3 coverage
-# Change to [-2 sd, +2 sd] to see Precision-Accuracy tradeoff.
-```
-
-```{r}
-# Visualize first 100 confidence intervals
-n <- 100
-plot.new()
-plot.window(xlim = range(xq), ylim = c(0, n))
-for (i in seq(1,n) ) {
-  col_i <- if (covered[i]) rgb(0, 0, 0, 0.3) else rgb(1, 0, 0, 0.5)
-  segments(xq[1, i], i, xq[2, i], i, col = col_i, lwd = 2)
-}
-abline(v = mu_true, col = "blue", lwd = 2)
-axis(1)
-title("Visualizing CI Coverage (Red = Missed)", font.main=1)
-```
-
-
 
 ## Further Reading
-
-See 
-
-* <https://www.r-bloggers.com/2025/02/bootstrap-vs-standard-error-confidence-intervals/>
-
 
 
 See
