@@ -118,7 +118,7 @@ hist(sample_means,
 In this figure, you see two the most profound results known in statistics
 
 * *Law of Large Numbers*: the sample mean is centered around the true mean, and more tightly centered with more data
-* *Central Limit Theorem*: the sampling distribution of the statistic is approximately Normal.
+* *Central Limit Theorem*: the sampling distribution of the mean is approximately Normal.
 
 
 
@@ -143,7 +143,7 @@ for(n in c(5,50,500)){
         sample_means_n[i] <- m
     }
     hist(sample_means_n, 
-        breaks=seq(0,1,by=.005),
+        breaks=seq(0,1,by=.01),
         border=NA, freq=F,
         col=2, font.main=1, 
         xlab=expression(hat(M)),
@@ -169,6 +169,29 @@ for(n in seq_along(sd_seq)){
 }
 plot(n_seq, sd_seq, pch=16, col=grey(0,0.5),
     xlab='n', ylab='sd of sample means', main='')
+```
+:::
+
+
+The Law of Large Numbers generalizes to many other statistics, like `median` or `sd`. When a statistic converges in probability to the quantity they are meant to estimate, they are called consistent.
+
+:::{.callout-tip icon=false collapse="true"}
+```{r}
+par(mfrow=c(1,3))
+for(n in c(5,50,500)){
+    sample_quants_n <- vector(length=299)
+    for(i in seq_along(sample_quants_n)){
+        x <- runif(n)
+        m <- quantile(x, probs=0.75) #upper quartile
+        sample_quants_n[i] <- m
+    }
+    hist(sample_quants_n, 
+        breaks=seq(0,1,by=.01),
+        border=NA, freq=F,
+        col=2, font.main=1, 
+        xlab="Sample Quantile",
+        main=paste0('n=',n) )
+}
 ```
 :::
 
@@ -227,10 +250,10 @@ my_function <- function(x){ diff(range(exp(x))) }
 :::
 
 
-It is beyond this class to prove this result mathematically, but you should know that not all sampling distributions are standard normal. The CLT approximation is better for "large $n$" datasets with "well behaved" variances. The CLT does not apply to "extreme" statistics. 
+It is beyond this class to prove this result mathematically, but you should know that not all sampling distributions are standard normal. The CLT approximation is better for "large $n$" datasets with "well behaved" variances. The CLT also does not apply to "extreme" statistics. 
 
 :::{.callout-note icon=false collapse="true"}
-For example of "extreme" statistics, examine the sampling distribution of min, median, max statistics.
+For example of "extreme" statistics, examine the sampling distribution of min and max statistics.
 ```{r}
 # Create 300 samples, each with 1000 random uniform variables
 x_samples <- matrix(nrow=300, ncol=1000)
@@ -240,18 +263,15 @@ for(i in seq(1,nrow(x_samples))){
 # Each row is a new sample
 length(x_samples[1,])
 
-# Compute min, median, and max for each sample
+# Compute min and max for each sample
 x_mins <- apply(x_samples, 1, quantile, probs=0)
-x_meds <- apply(x_samples, 1, quantile, probs=.5)
 x_maxs <- apply(x_samples, 1, quantile, probs=1)
 
 # Plot the sampling distributions of min, median, and max
 # Median looks normal. Maximum and Minumum do not!
-par(mfrow=c(1,3))
+par(mfrow=c(1,2))
 hist(x_mins, breaks=100, main='Min', font.main=1,
     xlab=expression(hat(Q)[0]), border=NA, freq=F)
-hist(x_meds, breaks=100, main='Med', font.main=1,
-    xlab=expression(hat(Q)[0.5]), border=NA, freq=F)
 hist(x_maxs, breaks=100, main='Max', font.main=1,
     xlab=expression(hat(Q)[1]), border=NA, freq=F)
 title('Sampling Distributions', outer=T, line=-1, adj=0)
@@ -469,6 +489,7 @@ abline(v=sample_mean, col='red', lty=2)
 Why does this work? The sample: $\{\hat{X}_{1}, \hat{X}_{2}, ... \hat{X}_{n}\}$ is drawn from a CDF $F$. Each bootstrap sample: $\{\hat{X}_{1}^{(b)}, \hat{X}_{2}^{(b)}, ... \hat{X}_{n}^{(b)}\}$ is drawn from the ECDF $\hat{F}$. With $\hat{F} \approx F$, each bootstrap sample is approximately a random sample. So when we compute a statistic on each bootstrap sample, we approximate the sampling distribution of the statistic.
 
 :::{.callout-tip icon=false collapse="true"}
+Here is an intuitive example with Bernoulli random variables (unfair coin flips)
 ```{r}
 # theoretical probabilities
 x <- c(0,1)
