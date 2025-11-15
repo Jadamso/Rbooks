@@ -7,10 +7,11 @@
 
 1. Increase Depth
  * Provide simple numerical examples for every mathematical expression
- * Add integrated questions 
+ * Add more integrated examples
  * Each chapter ends with 3 questions
-2. Ease coding
- * Add student callouts 
+2. Ease Digestion
+ * Add "definition" callouts to Univariate Data. Definitions are in italics, not quotes or bold, and capitalized.
+ * Add callouts to other parts
  * Add code annotation in first chapter.
 3. Add supplementary materials
  * Create slides
@@ -21,10 +22,8 @@
  * Update references/bibliography
  * Hyperlinks are valid
  * Clean up all figures (axes, titles, legends, ...)
- * Definitions are in italics, not quotes or bold, and capitalized. (Maybe they should be colored, or in a callout box?)
- * Chapter/section title, subsection, paragraph style.
+ * Consistent chapter/section title, subsection, paragraph style.
 5. Refine the core content
- * Split into three parts: univariate, bivariate, multivariate.
  * Add content (another chapter to the last part)
 6. Workflow optimization?
  * Publish using `gh-pages` branch to resolve compilation warning related to YAML file (output-dir: ../docs)
@@ -36,19 +35,19 @@
 Target 1: 4 Months (December)
     * Setup Rbooks-companion github repo
     * Add numerical examples, integrated questions, and slides for Part I.
-    * Additional practice questions for weekly tutorials 
-    
+    * Additional practice questions for weekly tutorials
+
 Target 2: 8 Months (April)
     * Refine existing materials on Rbooks-companion
     * Add new materials to Rbooks-companion Part I
     * Add content to Part II.
-    
+
 Target 3: 12 months
     * Refine existing companion materials and start refining the textbook itself
-    * Ensure consistent style for definitions, italics, etc. for both Parts I + II.
+    * Ensure consistent style for definitions, italics, etc. for all Parts.
     * Harmonize R code across the book.
     * Create a draft bank of exam questions
-    
+
 Target 4: 16 Months
     * Check and update references/bibliography for Parts I–II.
     * Add student handout and exercises for coding and other materials

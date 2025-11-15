@@ -133,7 +133,7 @@ exp( mean(x) )
 
 To generate a random variable from known distributions, you can use some type of physical machine. E.g., you can roll a fair die to generate Discrete Uniform data or you can roll weighted die to generate Categorical data.
 
-There are also several ways to computationally generate random variables from a probability distribution. Perhaps the most common one is "inverse sampling". To generate a random variable using inverse sampling, first sample $p$ from a uniform distribution and then find the associated quantile  quantile function $\widehat{F}^{-1}(p)$.^[Drawing random uniform samples with computers is actually quite complex and beyond the scope of this course.]
+There are also several ways to computationally generate random variables from a probability distribution. Perhaps the most common one is "inverse sampling". To generate a random variable using inverse sampling, first sample $p$ from a uniform distribution and then find the associated quantile  quantile function $\hat{F}^{-1}(p)$.^[Drawing random uniform samples with computers is actually quite complex and beyond the scope of this course.]
 
 
 #### **Using Data**. {-}
@@ -142,9 +142,10 @@ You can generate a random variable from a known empirical distribution. Inverse 
 
 * order the data and associate each observation with an ECDF value
 * draw $p \in [0,1]$ as a uniform random variable
-* find the associated data point on the ECDF
+* find the associated quantile via the ECDF
 
 :::{.callout-tip icon=false collapse="true"}
+Here is an example of generating random murder rates for US states.
 ```{r}
 # Empirical Distribution
 X <- USArrests$Murder
@@ -152,8 +153,12 @@ FX_hat <- ecdf(X)
 plot(FX_hat, lwd=2, xlim=c(0,20),
     pch=16, col=grey(0,.5), main='')
 
-# Generating a random variable
+# Generating random variables via inverse ECDF
 p <- runif(3000) ## Multiple Draws
+QX_hat <- quantile(FX_hat, p, type=1)
+QX_hat[c(1,2,3)]
+
+## Can also do directly from the data
 QX_hat <- quantile(X, p, type=1)
 QX_hat[c(1,2,3)]
 ```
@@ -199,24 +204,24 @@ Let the sample space contain events $A$ and $B$, with their probability denoted 
 
 - the *union*: $A\cup B$, refers to either event occurring
 - the *intersection*: $A\cap B$, refers to both events occurring
-- the events $A$ and $B$ are *mutually exclusive* if and only if $A\cap B$ is empty.
-- the *inclusion–exclusion* rule is: $Prob(A\cup B)=Prob(A)+Prob(B)-Prob(A\cap B)$.
-- the events $A$ and $B$ are *mutually independent* if and only if $Prob(A\cap B)=Prob(A) Prob(B)$.
-- the *conditional probability* is $Prob(A \mid B) = Prob(A \cap B)/ P(B)$.
+- the events $A$ and $B$ are *mutually exclusive* if and only if $A\cap B$ is empty
+- the *inclusion–exclusion* rule is: $Prob(A\cup B)=Prob(A)+Prob(B)-Prob(A\cap B)$
+- the events $A$ and $B$ are *mutually independent* if and only if $Prob(A\cap B)=Prob(A) Prob(B)$
+- the *conditional probability* is $Prob(A \mid B) = Prob(A \cap B)/ P(B)$
 
-For example, consider a six sided die where
+For example, consider a six sided die where events are the number $>\!2$ or the number is even.
 
-- $A$: number $>\!2$, which implies $A=\{3,4,5,6\}$
-- $B$: number is even, which implies $B=\{2,4,6\}$
-- To check mutually exclusive: notice $A\cap B=\{4,6\}$ which is not empty. So No, event $A$ and event $B$ are not mutually exclusive.
+- The sets are $A=\{3,4,5,6\}$ and $B=\{2,4,6\}$
+- To check mutually exclusive: notice $A\cap B=\{4,6\}$ which is not empty. So event $A$ and event $B$ are not mutually exclusive
 
 Further assuming the die are fair
 
 - $Prob(A)=4/6=2/3$ and $Prob(B)=3/6=1/2$
-- $A\cup B=\{2,3,4,5,6\}$, which implies $Prob(A\cup B)=5/6$.
-- $A\cap B=\{4,6\}$, which implies $Prob(A\cap B)=2/6=1/3$.
-- To check independence: notice $Prob(A\cap B)=1/3 = (2/3) (1/2) = Prob(A)Prob(B)$. So Yes, event $A$ and event $B$ are mutually independent.
-- Finally, the conditional probability of $Prob(\text{die is} >2 \mid \text{die shows an even number}) = Prob(A \mid B) = Prob(A \cap B)/ P(B) = \frac{1/3}{1/2} = \frac{2/6}{3/6} = 2/3$.
+- $A\cup B=\{2,3,4,5,6\}$, which implies $Prob(A\cup B)=5/6$
+- $A\cap B=\{4,6\}$, which implies $Prob(A\cap B)=2/6=1/3$
+- To check independence: notice $Prob(A\cap B)=1/3 = (2/3) (1/2) = Prob(A)Prob(B)$. So event $A$ and event $B$ are mutually independent
+- To check inclusion–exclusion: notice $Prob(A) + Prob(B) - Prob(A\cap B) = 2/3 + 1/2 - 1/3 = 4/6 + 3/6 - 2/6 = 5/6 = Prob(A\cup B)$
+- Finally, the conditional probability of $Prob(\text{die is} >2 \mid \text{die shows even number}) = Prob(A \mid B) = \frac{Prob(A \cap B)}{P(B)} = \frac{1/3}{1/2} = 2/3$
 
 ```{r}
 # Simulation verification
@@ -277,7 +282,7 @@ Suppose that employees at a company are $70%$ female and $30%$ male. If we selec
 
 :::{.callout-tip icon=false collapse="true"}
 Show that 
-$\mathbb{E}[X_{i}]=np$ and $\mathbb{V}[X_{i}]=np(1-p)$.
+$\mathbb{E}[X_{i}]=np$ and $\mathbb{V}[X_{i}]=np(1-p)$. Start with the case $n=1$, then the case $n=2$, then case $n=3$, then the general case of any $n$.
 :::
 
 The Binomial Limit Theorem (de Moivre–Laplace theorem) says that as $n$ grows large, with $p \in (0,1)$ staying fixed, the Binomial distribution is approximately normal with mean $np$ and variance $np(1-p)$
@@ -363,9 +368,10 @@ See also the Bates Distribution.
 
 ## Beyond Basic Programming
 
-Use expansion "packages" for more functionality.
+#### **Packages**. {-}
+Expansion "packages" allow for more functionality.
 
-Most packages can be easily installed, and you only need to install packages once.
+Most packages can be easily installed from the internet via [CRAN](https://cran.r-project.org/web/packages/available_packages_by_name.html).
 ```{r, eval=FALSE}
 # common packages for tables/figures
 install.packages("plotly")
@@ -383,9 +389,10 @@ install.packages("twosamples")
 install.packages("data.table")
 ```
 
-You need to load the package via `library` every time you want the extended functionality. For example, to generate exotic probability distributions
+You only need to install packages once. But you need to load the package via `library` every time you want the extended functionality. For example, to generate exotic probability distributions
 ```{r}
-library(extraDistr)
+# install.packages("extraDistr"), once ever
+library(extraDistr) # every time you need it
 
 par(mfrow=c(1,2))
 for(p in c(-.5,0)){
@@ -406,10 +413,9 @@ for(p in c(-1, 0,2)){
 title('Tukey-Lambda densities', outer=T, line=-1)
 ```
 
-The most common tasks also have [cheatsheets](https://www.rstudio.com/resources/cheatsheets/) you can use. 
+The most common packages also have [cheatsheets](https://www.rstudio.com/resources/cheatsheets/) you can use. 
 
 #### **Updating**. {-}
-
 Make sure R and your packages are up to date. The current version of R and any packages used can be found (and recorded) with 
 
 ```{r, eval=F}
@@ -421,32 +427,31 @@ To update your R packages, use
 update.packages()
 ```
 
+After updating R, you can update *all* packages stored on your computer (in all `.libPaths()`)
+```{r, eval=FALSE}
+update.packages(checkBuilt=T, ask=F)
+# install.packages(old.packages(checkBuilt=T)[,"Package"])
+```
+
+
 #### **Base**. {-}
-While additional packages can make your code faster, they also create dependancies that can lead to problems. So learn base R well before becoming dependent on other packages
+While additional packages can make your code faster, they also create dependencies that can lead to problems. So learn base R well before becoming dependent on other packages
 
 * <https://bitsofanalytics.org/posts/base-vs-tidy/>
 * <https://jtr13.github.io/cc21fall2/comparison-among-base-r-tidyverse-and-datatable.html>
 
 
-#### **Advanced Programming**. {-}
+#### **Github Packages**. {-}
 
 <details>
 <summary> Advanced and Optional </summary>
   <p>
- 
+
 Sometimes you will want to install a package from GitHub. For this, you can use [devtools](https://devtools.r-lib.org/) or its light-weight version [remotes](https://remotes.r-lib.org/)
+
+To color terminal output on Linux systems, for example, you can use the colorout package
 ```{r, eval=FALSE}
-install.packages("devtools")
-install.packages("remotes")
-```
-
-Note that to install `devtools`, you also need to have developer tools installed on your computer.
-
-* Windows: [Rtools](https://cran.r-project.org/bin/windows/Rtools/)
-* Mac: [Xcode](https://apps.apple.com/us/app/xcode/id497799835)
-
-To color terminal output on Linux systems, you can use the colorout package
-```{r, eval=FALSE}
+# install.packages("remotes")
 library(remotes)
 # Install <https://github.com/jalvesaq/colorout
 # to .libPaths()[1]
@@ -454,39 +459,12 @@ install_github('jalvesaq/colorout')
 library(colorout)
 ```
 
-Note that after updating R, you can update *all* packages stored in *all* `.libPaths()` with the following command
-```{r, eval=FALSE}
-update.packages(checkBuilt=T, ask=F)
-# install.packages(old.packages(checkBuilt=T)[,"Package"])
-```
+To use `devtools` instead, you also need to have software developer tools installed on your computer.
 
-Sometimes there is a problem. To find specific broken packages after an update
-```{r, eval=FALSE}
-library(purrr)
+* Windows: [Rtools](https://cran.r-project.org/bin/windows/Rtools/)
+* Mac: [Xcode](https://apps.apple.com/us/app/xcode/id497799835)
 
-set_names(.libPaths()) %>%
-  map(function(lib) {
-    .packages(all.available = TRUE, lib.loc = lib) %>%
-        keep(function(pkg) {
-            f <- system.file('Meta', 'package.rds', package = pkg, lib.loc = lib)
-            tryCatch({readRDS(f); FALSE}, error = function(e) TRUE)
-        })
-  })
-# https://stackoverflow.com/questions/31935516/installing-r-packages-error-in-readrdsfile-error-reading-from-connection/55997765
-```
 
-To remove packages duplicated in multiple libraries
-```{r, eval=FALSE}
-# Libraries
-i <- installed.packages()
-libs <- .libPaths()
-# Find Duplicated Packages
-i1 <- i[ i[,'LibPath']==libs[1], ]
-i2 <- i[ i[,'LibPath']==libs[2], ]
-dups <- i2[,'Package'] %in% i1[,'Package']
-all( dups )
-# Remove
-remove.packages(  i2[,'Package'], libs[2] )
-```
   </p>
 </details>
+
