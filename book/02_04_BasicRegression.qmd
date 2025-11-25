@@ -57,9 +57,9 @@ First, we qualitatively analyze the ''Goodness of fit'' of our model, we plot ou
 ```{r}
 # Plot Data and Predictions
 library(plotly)
-xy$ID <- rownames(USArrests)
-xy$pred <- predict(reg)
-xy$resid <- resid(reg)
+xy[,'ID'] <- rownames(USArrests)
+xy[,'pred'] <- predict(reg)
+xy[,'resid'] <- resid(reg)
 fig <- plotly::plot_ly(
   xy, x=~x, y=~y,
   mode='markers',
@@ -96,7 +96,7 @@ With linear models, we typically compute the "R-squared" statistic $\hat{R}_{yY}
 # Manually Compute R2
 Ehat <- resid(reg)
 RSS  <- sum(Ehat^2)
-Y <- xy$y
+Y <- xy[,'y']
 TSS  <- sum((Y-mean(Y))^2)
 R2 <- 1 - RSS/TSS
 R2
@@ -105,7 +105,7 @@ R2
 summary(reg)$r.squared
 
 # Double Check R2
-R <- cor(xy$y, predict(reg))
+R <- cor(xy[,'y'], predict(reg))
 R^2
 ```
 
@@ -215,7 +215,7 @@ tvalue <- coef(reg)['x']/jack_se
 
 jack_t <- sapply(jack_regs, function(reg_b){
     # Data
-    xy_b <- reg_b$model
+    xy_b <- reg_b[['model']]
     # Coefficient
     coef_b <- coef(reg_b)[['x']]
     t_hat_b <- coef_b/jack_se
@@ -237,7 +237,7 @@ We can also compute a null distribution. We focus on the simplest: bootstrap sim
 # Null Distribution for Reg Coef
 boot_t0 <- sapply( 1:399, function(b){
     xy_b <- xy
-    xy_b$y <- sample( xy_b$y, replace=T)
+    xy_b[,'y'] <- sample( xy_b[,'y'], replace=T)
     reg_b <- lm(y~x, dat=xy_b)
     coef_b <- coef(reg_b)[['x']]
     t_hat_b <- coef_b/jack_se

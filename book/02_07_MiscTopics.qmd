@@ -12,7 +12,7 @@ Often, we are interested in gradients: how $Y$ changes with $X$. The linear mode
 ```{r}
 # Adaptive-width subsamples with non-uniform weights
 xy <- USArrests[,c('UrbanPop','Murder')]
-xy0 <- xy[order(xy$UrbanPop),]
+xy0 <- xy[order(xy[,'UrbanPop']),]
 names(xy0) <- c('x','y')
 
 
@@ -20,7 +20,7 @@ plot(y~x, pch=16, col=grey(0,.5), dat=xy0)
 reg_lo <- loess(y~x, data=xy0, span=.6)
 
 red_col <- rgb(1,0,0,.5)
-lines(xy0$x, predict(reg_lo),
+lines(xy0[,'x'], predict(reg_lo),
     col=red_col, type='o', pch=2)
 ```
 
@@ -44,8 +44,8 @@ You may also be interested in a particular gradient or a single summary statisti
 ```{r}
 ## Gradients    
 pred_lo <- predict(reg_lo)
-grad_x  <- xy0$x[-1]
-grad_dx <- diff(xy0$x)
+grad_x  <- xy0[,'x'][-1]
+grad_dx <- diff(xy0[,'x'])
 grad_dy <- diff(pred_lo)
 grad_lo <-grad_dy/grad_dx
 
@@ -72,7 +72,7 @@ for(b in 1:nrow(boot_stats)){
     xy_b <- xy0[sample(1:nrow(xy0), replace=T),]
     reg_lo <- loess(y~x, data=xy_b, span=.6)
     pred_lo <- predict(reg_lo)
-    grad_lo <- diff(pred_lo)/diff(xy_b$x)
+    grad_lo <- diff(pred_lo)/diff(xy_b[,'x'])
     dydx_mean <- mean(grad_lo, na.rm=T)
     dydx_sd <- sd(grad_lo, na.rm=T)
     boot_stats[b,1] <- dydx_mean
@@ -228,7 +228,7 @@ In this example, we consider a range for $Y_{i}$ rather than for $m(X_{i})$. The
 # Bivariate Data from USArrests
 xy <- USArrests[,c('Murder','UrbanPop')]
 colnames(xy) <- c('y','x')
-xy0 <- xy[order(xy$x),]
+xy0 <- xy[order(xy[,'x']),]
 ```
 
 For a nice overview of different types of intervals, see <https://www.jstor.org/stable/2685212>. For an in-depth view, see "Statistical Intervals: A Guide for Practitioners and Researchers" or "Statistical Tolerance Regions: Theory, Applications, and Computation". See <https://robjhyndman.com/hyndsight/intervals/> for constructing intervals for future observations in a time-series context. See Davison and Hinkley, chapters 5 and 6 (also Efron and Tibshirani, or Wehrens et al.)
@@ -236,8 +236,8 @@ For a nice overview of different types of intervals, see <https://www.jstor.org/
 
 ```{r}
 # From "Basic Regression"
-xy0 <- xy[order(xy$x),]
-X0 <- unique(xy0$x)
+xy0 <- xy[order(xy[,'x']),]
+X0 <- unique(xy0[,'x'])
 reg_lo <- loess(y~x, data=xy0, span=.8)
 preds_lo <- predict(reg_lo, newdata=data.frame(x=X0))
 
@@ -291,7 +291,7 @@ res_lo <- as.data.frame(do.call(rbind, res_lo))
 res_fun <- function(x0, h, res_lo){
     # Assign equal weight to observations within h distance to x0
     # 0 weight for all other observations
-    ki <- dunif(res_lo$x, x0-h, x0+h) 
+    ki <- dunif(res_lo[['x']], x0-h, x0+h) 
     ei <- res_lo[ki!=0,'e']
     res_i <- quantile(ei, probs=c(.025,.975), na.rm=T)
 }
@@ -309,13 +309,13 @@ lines( X0, preds_lo + res_lo2[2,],
 # Bootstrap Prediction Interval
 boot_resids <- lapply(boot_regs, function(reg_b){
     e_b <- resid(reg_b)
-    x_b <- reg_b$model$x
+    x_b <- reg_b[['model']][['x']]
     res_b <- cbind(e_b, x_b)
 })
 boot_resids <- as.data.frame(do.call(rbind, boot_resids))
 # Homoskedastic
-ehat <- quantile(boot_resids$e_b, probs=c(.025, .975))
-x <- quantile(xy$x,probs=seq(0,1,by=.1))
+ehat <- quantile(boot_resids[,'e_b'], probs=c(.025, .975))
+x <- quantile(xy[,'x'],probs=seq(0,1,by=.1))
 boot_pi <- coef(reg)[1] + x*coef(reg)['x']
 boot_pi <- cbind(boot_pi + ehat[1], boot_pi + ehat[2])
 
@@ -344,7 +344,7 @@ Minimizing out-sample prediction error is perhaps the simplest computational app
 
 ```{r, eval=F}
 # Crossvalidated bandwidth for regression
-xy_mat <- data.frame(y=CASchools$math, x1=CASchools$income)
+xy_mat <- data.frame(y=CASchools[,'math'], x1=CASchools[,'income'])
 library(np)
 
 ## Grid Search
@@ -370,13 +370,13 @@ bw <- BWS[which.min(BWS_CV)]
 llls <- npreg(y~x1, data=xy_mat, 
     ckertype='epanechnikov',
     bws=bw, regtype="ll")
-plot(xy_mat$x, predict(llls), pch=16, col=grey(0,.5),
+plot(xy_mat[,'x'], predict(llls), pch=16, col=grey(0,.5),
     xlab='X', ylab='Predictions')
 abline(a=0,b=1, lty=2)
 
 ## Built in algorithmic Optimziation
 llls2 <- npreg(y~x1, data=xy_mat, ckertype='epanechnikov', regtype="ll")
-points(xy_mat$x, predict(llls2), pch=2, col=rgb(1,0,0,.25))
+points(xy_mat[,'x'], predict(llls2), pch=2, col=rgb(1,0,0,.25))
 
 ## Add legend
 add_legend <- function(...) {
@@ -396,9 +396,9 @@ add_legend('topright',
 ```{r, eval=F}
 # CV Application
 ## Smoothly Estimate X & Y Density
-y <- sort(xy_mat$y)
+y <- sort(xy_mat[,'y'])
 fy <- npudens(y, bandwidth.compute=TRUE)
-x1 <- sort(xy_mat$x1)
+x1 <- sort(xy_mat[,'x1'])
 fx <- npudens(x1, bandwidth.compute=TRUE)
 ## Smoothly Estimate How Y changes with X
 llls2 <- npreg(y~x1,data=xy_mat,
@@ -414,7 +414,7 @@ plot(y~x1, data=xy_mat,
     pch=16, col=grey(0,.25),
     xlab="District Income (1000$)", 
     ylab="Test Score")
-lines( sort(xy_mat$x), predict(llls2)[order(xy_mat$x1)],
+lines( sort(xy_mat[,'x']), predict(llls2)[order(xy_mat[,'x1'])],
     pch=16, col=1)
 ## Marginal Distribution
 par(mar=c(0,4,1,1))
