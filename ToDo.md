@@ -172,6 +172,26 @@ More examples
 
 #### Ch 11. Bivariate Statistics
 
+#### Ch 12. 
+
+* Eliminate twosamples package dependency
+
+
+
+#### Ch 13. Simple Regression
+
+* Add a manual calculation of regression coefficient as callout-note
+* Add manual calculation of R squared as callout-note
+* P-value as callout-tip 
+
+* "Introduction to Econometrics with R" by Hanck, Arnold, Gerber, and Schmelzer, https://www.econometrics-with-r.org/
+(taking seriously Greene's "Model Building--A General to Simple Strategy")
+
+
+
+#### Ch 14. Local Regression
+Use wage-education example repeatedly
+Others go as callout-tip examples.
 
 #### Ch 15. Data Analysis
 * Incorporate insights from "Statistics for Public Policy: A Practical Guide to Being Mostly Right (or at Least Respectably Wrong)" 
@@ -218,13 +238,8 @@ https://statmodeling.stat.columbia.edu/2025/10/21/reanalysis-of-that-nobel-prize
 * update CCFS in "Observational Data" to use `npSDA`
 
 
-#### Derive Simple OLS
 
-* "Introduction to Econometrics with R" by Hanck, Arnold, Gerber, and Schmelzer, https://www.econometrics-with-r.org/
-(taking seriously Greene's "Model Building--A General to Simple Strategy")
-
-
-
+find . -maxdepth 1 -type f -exec grep '[A-Za-z0-9]\$[A-Za-z0-9]' {} +
 
 
 #### Diagnostics 

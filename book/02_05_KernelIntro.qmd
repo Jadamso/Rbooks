@@ -47,7 +47,7 @@ library(wooldridge)
 
 ## Plot 1
 plot(wage~educ, data=wage1, pch=16, col=grey(0,.1))
-educ_means <- aggregate(wage1[,c("wage","educ")], list(wage1$educ), mean)
+educ_means <- aggregate(wage1[,c("wage","educ")], list(wage1[,'educ']), mean)
 points(wage~educ, data=educ_means, pch=17, col='blue', type='b')
 title("Grouped Means and Scatterplot", font.main=1)
 
@@ -95,20 +95,20 @@ dat_sim <- function(n=1000){
 
 
 dat <- dat_sim(1000)
-X <- dat$X
 ## Plot
 plot(Y~X, data=dat, pch=16, col=grey(0,.1),
     ylab='Yearly Productivity ($)', xlab='Age' )
 
 ## Regression Estimates
 reg1  <- lm(Y~X, data=dat) ## OLS
+X <- dat[,'X']
 pred1 <- cbind( Y=predict(reg1), X)[order(X),]
 
-dat$xcc   <- cut(X, seq(Xmn-1,Xmx,length.out=6)) ## Course Age Bins
+dat[,'xcc'] <- cut(X, seq(Xmn-1,Xmx,length.out=6)) ## Course Age Bins
 reg2  <- lm(Y~xcc, data=dat)
 pred2 <- cbind( Y=predict(reg2), X)[order(X),]
 
-dat$xcf   <- cut(X, seq(Xmn-1, Xmx, length.out=31)) ## Fine Age Bins
+dat[,'xcf']   <- cut(X, seq(Xmn-1, Xmx, length.out=31)) ## Fine Age Bins
 reg3  <- lm(Y~xcf, data=dat)
 pred3 <- cbind( Y=predict(reg3), X)[order(X),]
 
@@ -165,21 +165,21 @@ The regressogram depicts locally constant relationships. We can also included sl
 
 ## Plot
 dat <- dat_sim(1000)
-X <- dat$X
 plot(Y~X, data=dat, pch=16, col=grey(0,.1),
     ylab='Yearly Productivity ($)', xlab='Age' )
 
 ## Course Age Bins
+X <- dat[,'X']
 #### Single Regression
-dat$xcc   <- cut(X, seq(Xmn-1,Xmx,length.out=6)) ## Course Age Bins
+dat[,'xcc']   <- cut(X, seq(Xmn-1,Xmx,length.out=6)) ## Course Age Bins
 pred4 <- cbind( Y=predict( lm(Y~xcc*X, data=dat) ), X)[order(X),]
 #### Split Sample Regressions
-dat4 <- split( dat, dat$xcc)
+dat4 <- split( dat, dat[,'xcc'])
 pred4_B <- lapply(dat4, function(d){
-    pred_d <- cbind( Y=predict( lm(Y~X, d)), X=d$X)
+    pred_d <- cbind( Y=predict( lm(Y~X, d)), X=d[,'X'])
 })
 pred4_B <- as.data.frame(do.call('rbind', pred4_B))
-pred4_B <- pred4_B[order(pred4_B$X),]
+pred4_B <- pred4_B[order(pred4_B[,'X']),]
 
 lines(Y~X, data=pred4, lwd=2, col=5, lty=1)
 lines(Y~X, data=pred4_B, lwd=4, col=5, lty=3)
@@ -187,15 +187,15 @@ lines(Y~X, data=pred4_B, lwd=4, col=5, lty=3)
 
 ## Fine Age Bins
 #### Single Regression
-dat$xcf  <- cut(X, seq(Xmn-1,Xmx,length.out=31)) ## Course Age Bins
+dat[,'xcf']  <- cut(X, seq(Xmn-1,Xmx,length.out=31)) ## Course Age Bins
 pred5 <- cbind( Y=predict(lm(Y~xcf*X,data=dat)), X)[order(X),]
 #### Split Sample Regressions
-dat5 <- split(dat, dat$xcf)
+dat5 <- split(dat, dat[,'xcf'])
 pred5_B <- lapply(dat5, function(d){
-    pred_d <- cbind( Y=predict(lm(Y~X, d)), X=d$X)
+    pred_d <- cbind( Y=predict(lm(Y~X, d)), X=d[,'X'])
 })
 pred5_B <- as.data.frame(do.call('rbind', pred5_B))
-pred5_B <- pred5_B[order(pred5_B$X),]
+pred5_B <- pred5_B[order(pred5_B[,'X']),]
 
 ## Compare Models
 lines(Y~X, data=pred5, lwd=2, col=6, lty=1)
@@ -217,10 +217,10 @@ reg <- lm(y~x, data=xy)
 
 # Diagnose Fit
 #plot( fitted(reg), resid(reg), pch=16, col=grey(0,.5))
-#plot( xy$x, resid(reg), pch=16, col=grey(0,.5))
+#plot( xy[,'x'], resid(reg), pch=16, col=grey(0,.5))
 
 # Linear in 2 Pieces (subsets)
-xcut2 <- cut(xy$x,2)
+xcut2 <- cut(xy[,'x'],2)
 xy_list2 <- split(xy, xcut2)
 regs2 <- lapply(xy_list2, function(xy_s){
     lm(y~x, data=xy_s)
@@ -228,7 +228,7 @@ regs2 <- lapply(xy_list2, function(xy_s){
 sapply(regs2, coef)
 
 # Linear in 3 Pieces (subsets or bins)
-xcut3 <- cut(xy$x, seq(32,92,by=20)) # Finer Bins
+xcut3 <- cut(xy[,'x'], seq(32,92,by=20)) # Finer Bins
 xy_list3 <- split(xy, xcut3)
 regs3 <- lapply(xy_list3, function(xy_s){
     lm(y~x, data=xy_s)
@@ -238,20 +238,20 @@ sapply(regs3, coef)
 
 Compare Predictions
 ```{r}
-pred1 <- data.frame(yhat=predict(reg), x=reg$model$x)
-pred1 <- pred1[order(pred1$x),]
+pred1 <- data.frame(yhat=predict(reg), x=reg[['model']][,'x'])
+pred1 <- pred1[order(pred1[,'x']),]
 
 pred2 <- lapply(regs2, function(reg){
-    data.frame(yhat=predict(reg), x=reg$model$x)
+    data.frame(yhat=predict(reg), x=reg[['model']][,'x'])
 })
 pred2 <- do.call(rbind,pred2)
-pred2 <- pred2[order(pred2$x),]
+pred2 <- pred2[order(pred2[,'x']),]
 
 pred3 <- lapply(regs3, function(reg){
-    data.frame(yhat=predict(reg), x=reg$model$x)
+    data.frame(yhat=predict(reg), x=reg[['model']][,'x'])
 })
 pred3 <- do.call(rbind,pred3)
-pred3 <- pred3[order(pred3$x),]
+pred3 <- pred3[order(pred3[,'x']),]
 
 # Compare Predictions
 plot(y ~ x, pch=16, col=grey(0,.5), dat=xy)
@@ -352,11 +352,11 @@ F_hat <- sapply(ebins, function(x,h=.5){
 })
 ## Verify the same
 fhat1 <- density(e, n=12, from=min(ebins), to=max(ebins), bw=.5)
-points(fhat1$x, fhat1$y, pch=16, col=rgb(0,0,1,.5), cex=1.5)
+points(fhat1[['x']], fhat1[['y']], pch=16, col=rgb(0,0,1,.5), cex=1.5)
 
 ## Gaussian Estimates at all sample points
 fhat2 <- density(e, n=1000, from=min(ebins), to=max(ebins), bw=.5)
-points(fhat2$x, fhat2$y, pch=16, col=rgb(1,0,0,.25), cex=.5)
+points(fhat2[['x']], fhat2[['y']], pch=16, col=rgb(1,0,0,.25), cex=.5)
 
 legend('topleft', pch=c(15,16,16),
     col=c(grey(0,.5),rgb(0,0,1,.5), rgb(1,0,0,.25)),
@@ -422,12 +422,12 @@ Deriving the optimal values $\hat{b}_{0}(x,h)$ and  $\hat{b}_{1}(x,h)$ for $k_{U
 pred_fun <- function(x0, h, xy){
     # Assign equal weight to observations within h distance to x0
     # 0 weight for all other observations
-    ki   <- dunif(xy$x, x0-h, x0+h) 
+    ki   <- dunif(xy[,'x'], x0-h, x0+h) 
     llls <- lm(y~x, data=xy, weights=ki)
     yhat_i <- predict(llls, newdata=data.frame(x=x0))
 }
 
-X0 <- sort(unique(xy$x))
+X0 <- sort(unique(xy[,'x']))
 pred_lo1 <- sapply(X0, pred_fun, h=2, xy=xy)
 pred_lo2 <- sapply(X0, pred_fun, h=20, xy=xy)
 
@@ -445,16 +445,16 @@ Note that there are more complex versions of local linear regressions (see <http
 
 ```{r}
 # Adaptive-width subsamples with non-uniform weights
-xy0 <- xy[order(xy$x),]
+xy0 <- xy[order(xy[,'x']),]
 plot(y~x, pch=16, col=grey(0,.5), dat=xy0)
 
 reg_lo4 <- loess(y~x, data=xy0, span=.4)
 reg_lo8 <- loess(y~x, data=xy0, span=.8)
 
 cols <- hcl.colors(3,alpha=.75)[-3]
-lines(xy0$x, predict(reg_lo4),
+lines(xy0[,'x'], predict(reg_lo4),
     col=cols[1], type='o', pch=2)
-lines(xy0$x, predict(reg_lo8),
+lines(xy0[,'x'], predict(reg_lo8),
     col=cols[2], type='o', pch=2)
 
 legend('topleft', title='Loess',
@@ -468,8 +468,8 @@ The smoothed predicted values estimate the local means. So we can also construct
 
 ```{r}
 # Loess
-xy0 <- xy[order(xy$x),]
-X0 <- unique(xy0$x)
+xy0 <- xy[order(xy[,'x']),]
+X0 <- unique(xy0[,'x'])
 reg_lo <- loess(y~x, data=xy0, span=.8)
 
 # Jackknife CI
