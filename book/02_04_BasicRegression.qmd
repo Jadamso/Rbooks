@@ -38,23 +38,127 @@ where $\hat{M}_{Y}$ and $\hat{M}_{X}$ are sample means. Similarly,
 0 &=& \sum_{i=1}^{n} 2\left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right) \hat{X}_{i} \\
 \hat{b}_{1} &=& \frac{\sum_{i}^{n}(\hat{X}_{i}-\hat{M}_{X})(\hat{Y}_{i}-\hat{M}_{Y})}{\sum_{i}^{}(\hat{X}_{i}-\hat{M}_{X})^2} = \frac{\hat{C}_{XY}}{\hat{V}_{X}},
 \end{eqnarray}
-the latter term being the estimated covariance between $X$ and $Y$ divided by the variance of $X$. This in turn yields model predictions
+the latter term being the estimated covariance between $X$ and $Y$ divided by the variance of $X$. 
+
+
+```{r}
+# Run a Simple Regression
+reg <- lm(y~x, dat=xy)
+coef(reg)
+# predict(reg)
+# resid(reg)
+
+cov(xy[,'x'],xy[,'y'])/var(xy['x'])
+```
+
+Once we have the coefficient, we can find the predictions
 \begin{eqnarray}
 \hat{y}_{i} &=& \hat{b}_{0}+\hat{b}_{1}\hat{X}_{i}\\
 \hat{e}_i &=& \hat{Y}_{i}-\hat{y}_{i}
 \end{eqnarray}
 
+
+
+
+
+:::{.callout-tip icon=false collapse="true"}
+Suppose we have a dataset with $n = 3$ observations: $\{(1,2), (2,2.5), (3,4)\}$.
+
+We can compute the regression coefficients and model predictions in five steps.
+
+Step 1. Sample Means
+
+\begin{eqnarray}
+\hat{M}_X &=& \frac{1+2+3}{3} = 2 \\
+\hat{M}_Y &=& \frac{2 + 2.5 + 4}{3} = \frac{17}{6}.
+\end{eqnarray}
+
+Step 2. Covariance and Variance 
+
+\begin{array}{c|c|c|c|c|c|c|}
+i & X_i & Y_i & (X_i - \hat{M}_X) & (Y_i - \hat{M}_Y) & (X_i - \hat{M}_X)(Y_i - \hat{M}_Y) & (X_i - \hat{M}_X)^2 \\ \hline
+1 & 1 & 2 & -1 & -\tfrac{5}{6} & \tfrac{5}{6} & 1 \\
+2 & 2 & 2.5 & 0 & -\tfrac{1}{3} & 0 & 0 \\
+3 & 3 & 4 & 1 & \tfrac{7}{6} & \tfrac{7}{6} & 1 \\
+\end{array}
+
+
+
+\begin{eqnarray}
+\hat{C}_{XY} &=& \sum_{i=1}^3 (X_i - \hat{M}_X)(Y_i - \hat{M}_Y) 
+= \tfrac{5}{6} + \tfrac{7}{6} = 2 \\
+\hat{V}_X &=& \sum_{i=1}^3 (X_i - \hat{M}_X)^2 = 1 + 1 = 2.
+\end{eqnarray}
+
+
+Step 3. Slope and Intercept
+
+\begin{eqnarray}
+\hat{b}_1 = \frac{\hat{C}_{XY}}{\hat{V}_X} = \frac{2}{2} = 1,
+\end{eqnarray}
+
+\begin{eqnarray}
+\hat{b}_0 = \hat{M}_Y - \hat{b}_1 \hat{M}_X
+= \frac{17}{6} - 2
+= \frac{5}{6}.
+\end{eqnarray}
+
+\begin{eqnarray}
+\hat{y}_i = \hat{b}_0 + \hat{b}_1 X_i 
+          = \frac{5}{6} + X_i.
+\end{eqnarray}
+
+
+Step 4. Fitted Values and Residuals
+
+\begin{eqnarray}
+\begin{array}{c|c|c|c|c}
+i & X_i & Y_i & \hat{y}_i = \tfrac{5}{6} + X_i & \hat{e}_i = Y_i - \hat{y}_i \\ \hline
+1 & 1 & 2   & \tfrac{11}{6} & \tfrac{1}{6} \\
+2 & 2 & 2.5 & \tfrac{17}{6} & -\tfrac{1}{3} \\
+3 & 3 & 4   & \tfrac{23}{6} & \tfrac{1}{6} \\
+\end{array}
+\end{eqnarray}
+
+
+
 ```{r}
-# Run a Regression Coefficients
-reg <- lm(y~x, dat=xy)
-# predict(reg)
-# resid(reg)
-# coef(reg)
+xy0 <- data.frame(
+    x=c(1,2,3),
+    y=c(2,2.5,4))
+reg0 <- lm(y~x, dat=xy0)
+
+coef(reg0)
+predict(reg0)
+resid(reg0)
 ```
 
-#### **Goodness of Fit**. {-}
-First, we qualitatively analyze the ''Goodness of fit'' of our model, we plot our predictions for a qualitative analysis
+
+(Optional) Verification of the Normal Equations
+
+\begin{eqnarray}
+\sum_{i=1}^3 \hat{e}_i 
+= \tfrac{1}{6} - \tfrac{1}{3} + \tfrac{1}{6}
+= 0,
+\end{eqnarray}
+
+\begin{eqnarray}
+\sum_{i=1}^3 \hat{e}_i X_i 
+= \left(\tfrac{1}{6}\right)(1)
++ \left(-\tfrac{1}{3}\right)(2)
++ \left(\tfrac{1}{6}\right)(3)
+= 0.
+\end{eqnarray}
+
 ```{r}
+e0 <- resid(reg0)
+sum(e0)
+sum(e0*xy0[,'x'])
+``` 
+:::
+
+
+```{r, echo=F}
 # Plot Data and Predictions
 library(plotly)
 xy[,'ID'] <- rownames(USArrests)
@@ -85,6 +189,11 @@ add_trace(fig, x=~x, y=~pred,
     line=list(width=1/2),
     marker=list(symbol=134, size=5))
 ```
+
+
+
+#### **Goodness of Fit**. {-}
+First, we qualitatively analyze the ''Goodness of fit'' of our model by plotting it against the data.
 For a quantitative summary, we can also compute the linear correlation between the model predictions and the sample data: $\hat{R}_{yY} = \hat{C}_{yY}/[\hat{S}_{y} \hat{S}_{Y}]$. 
 With linear models, we typically compute the "R-squared" statistic $\hat{R}_{yY}^2$, also known as the "coefficient of determination", using the sums of squared errors (Total, Explained, and Residual)
 \begin{eqnarray}
@@ -92,6 +201,8 @@ With linear models, we typically compute the "R-squared" statistic $\hat{R}_{yY}
 =\underbrace{\sum_{i}(\hat{y}_i-\hat{M}_{Y})^2}_\text{ESS}+\underbrace{\sum_{i}\hat{e}_{i}^2}_\text{RSS}\\
 \hat{R}_{yY}^2 = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}
 \end{eqnarray}
+
+
 ```{r}
 # Manually Compute R2
 Ehat <- resid(reg)
@@ -110,20 +221,141 @@ R^2
 ```
 
 
+
+
+
+:::{.callout-note icon=false collapse="true"}
+Suppose you have data on education level and wages. Conduct a linear regression. Then summarize the model relationship and how well it fits the data. 
+```{r, eval=F}
+library(wooldridge)
+xy <- wage1[,c('educ','wage')]
+```
+:::
+
+
+
+:::{.callout-tip icon=false collapse="true"}
+We use the dataset $\{(1,2), (2,2.5), (3,4)\}$ to compute Goodness of fit.
+
+From before, we know that $\hat{M}_Y = \frac{17}{6}$ and the fitted values and residuals from the regression are
+\begin{eqnarray}
+\hat{y}_1 = \frac{11}{6},\qquad
+\hat{y}_2 = \frac{17}{6},\qquad
+\hat{y}_3 = \frac{23}{6}.\\
+\hat{e}_1 = \frac{1}{6},\qquad
+\hat{e}_2 = -\frac{1}{3},\qquad
+\hat{e}_3 = \frac{1}{6}.
+\end{eqnarray}
+
+Step 1. Total Sum of Squares (TSS)
+
+\begin{eqnarray}
+\begin{aligned}
+\hat{Y}_1 - \hat{M}_Y &= 2 - \frac{17}{6} = -\frac{5}{6},\\
+\hat{Y}_2 - \hat{M}_Y &= 2.5 - \frac{17}{6} = -\frac{1}{3},\\
+\hat{Y}_3 - \hat{M}_Y &= 4 - \frac{17}{6} = \frac{7}{6}.
+\end{aligned}
+\end{eqnarray}
+
+\begin{eqnarray}
+\begin{aligned}
+\hat{TSS} &= \sum_{i} (\hat{Y}_i - \hat{M}_Y)^2 \\
+&= \left(-\frac{5}{6}\right)^2
++ \left(-\frac{1}{3}\right)^2
++ \left(\frac{7}{6}\right)^2 \\
+&= \frac{25}{36} + \frac{1}{9} + \frac{49}{36}
+= \frac{78}{36}
+= \frac{13}{6}.
+\end{aligned}
+\end{eqnarray}
+
+Step 2. Explained Sum of Squares (ESS)
+
+\begin{eqnarray}
+\hat{y}_1 - \hat{M}_Y = -1,\qquad
+\hat{y}_2 - \hat{M}_Y = 0,\qquad
+\hat{y}_3 - \hat{M}_Y = 1.
+\end{eqnarray}
+
+\begin{eqnarray}
+\hat{ESS}
+= \sum_i (\hat{y}_i - \hat{M}_Y)^2.
+= (-1)^2 + 0^2 + 1^2 = 2.
+\end{eqnarray}
+
+Step 3. Residual Sum of Squares (RSS)
+
+\begin{eqnarray}
+\hat{RSS} 
+= \sum_{i} \hat{e}_i^2
+= \left(\frac{1}{6}\right)^2
++ \left(-\frac{1}{3}\right)^2
++ \left(\frac{1}{6}\right)^2.
+\end{eqnarray}
+
+\begin{eqnarray}
+\hat{RSS}
+= \frac{1}{36} + \frac{1}{9} + \frac{1}{36}
+= \frac{1}{36} + \frac{4}{36} + \frac{1}{36}
+= \frac{6}{36}
+= \frac{1}{6}.
+\end{eqnarray}
+
+
+Step 4. Check the Decomposition
+
+\begin{eqnarray}
+\hat{ESS} + \hat{RSS}
+= 2 + \frac{1}{6}
+= \frac{12}{6} + \frac{1}{6}
+= \frac{13}{6}
+= \hat{TSS}.
+\end{eqnarray}
+
+Step 5. Coefficient of Determination
+
+\begin{eqnarray}
+\hat{R}_{yY}^2
+= \frac{\hat{ESS}}{\hat{TSS}}
+= \frac{2}{13/6}
+= \frac{12}{13}
+\approx 0.9
+\end{eqnarray}
+
+(Verification)
+\begin{eqnarray}
+1 - \frac{\hat{RSS}}{\hat{TSS}}
+= 1 - \frac{1/6}{13/6}
+= 1 - \frac{1}{13}
+= \frac{12}{13}.
+\end{eqnarray}
+
+```{r}
+# Compute R2
+Ehat0 <- resid(reg0)
+RSS0  <- sum(Ehat0^2)
+Y0 <- xy0[,'y']
+TSS0  <- sum((Y0-mean(Y0))^2)
+R2 <- 1 - RSS0/TSS0
+
+# compare with our calculation: 12/13
+```
+
+:::
+
+
 ## Variability Estimates
 
-A regression coefficient is a statistic. And, just like all statistics, we can calculate 
+A regression coefficient is a statistic. And, just like all statistics, we can estimate it's variability using a
 
-* *standard deviation*: variability within a single sample.
-* *standard error*: variability across different samples.
+* *standard error*: variability across different samples (c.f.  *standard deviation*: variability within a single sample.)
 * *confidence interval:* range your statistic varies across different samples.
-
 
 Note that values reported by your computer do not necessarily satisfy this definition. To calculate these statistics, we will estimate variability using *data-driven* methods. (For some theoretical background, see <https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf>.) 
 
 
 #### **Jackknife**. {-}
-We first consider the simplest, the jackknife. In this procedure, we loop through each row of the dataset. And, in each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all ``subsamples''.
+We first consider the simplest, the jackknife. In this procedure, we loop through each row of the dataset. And, in each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all subsamples.
 
 ```{r}
 # Jackknife Standard Errors for OLS Coefficient
@@ -155,7 +387,7 @@ abline(v=jack_ci_percentile, lty=2)
 
 #### **Bootstrap**. {-}
 
-There are several resampling techniques. The other main one is the bootstrap, which resamples with *replacement* for an *arbitrary* number of iterations. When bootstrapping a dataset with $n$ observations, you randomly resample all $n$ rows in your data set $B$ times. 
+There are several resampling techniques. The other main one is the bootstrap, which resamples with replacement for an arbitrary number of iterations. When bootstrapping a dataset with $n$ observations, you randomly resample all $n$ rows in your data set $B$ times. 
 ```{r}
 # Bootstrap
 boot_regs <- lapply(1:399, function(b){
@@ -175,35 +407,10 @@ abline(v=boot_ci_percentile, lty=2)
 abline(v=coef(reg)['x'], lwd=2)
 ```
 
-#### **Subsampling**. {-}
-Random subsampling is one of many hybrid approaches that tries to combine the best of the core methods: Bootstrap and Jacknife.
-
-| | Sample Size per Iteration | Number of Iterations | Resample |
-| -------- | ------- | ------- | ------- |
-Bootstrap | $n$     | $B$  | With Replacement |
-Jackknife | $n-1$   | $n$  | Without Replacement |
-Random Subsample | $m < n$ | $B$  | Without Replacement |
-
-```{r}
-# Random Subsamples
-rs_regs <- lapply(1:399, function(b){
-    b_id <- sample( nrow(xy), nrow(xy)-10, replace=F)
-    xy_b <- xy[b_id,]
-    reg_b <- lm(y~x, dat=xy_b)
-})
-rs_coefs <- sapply(rs_regs, coef)['x',]
-rs_se <- sd(rs_coefs)
-
-hist(rs_coefs, breaks=25,
-    main=paste0('SE est. = ', round(rs_se,4)),
-    font.main=1, border=NA,
-    xlab=expression(hat(b)[b]))
-abline(v=coef(reg)['x'], lwd=2)
-rs_ci_percentile <- quantile(rs_coefs, probs=c(.025,.975))
-abline(v=rs_ci_percentile, lty=2)
-```
-
 We can also bootstrap other statistics, such as $\hat{t}$ or $\hat{R}^2$. We do such things to test a null hypothesis, which is often ``no relationship''. We are rarely interested in computing standard errors and conducting hypothesis tests for simple linear regressions, but work through the ideas with two variables before moving to analyze multiple variables.
+
+
+
 
 ## Hypothesis Tests
 
@@ -231,44 +438,99 @@ abline(v=quantile(jack_t, probs=c(.025,.975)), lty=2)
 abline(v=0, col="red", lwd=2)
 ```
 
+
+:::{.callout-note icon=false collapse="true"}
+Suppose you have data on education level and wages. Conduct a linear regression. Then construct a $95\%$ confidence interval for the slope coefficient and test the hypothesis of no relationship.
+```{r, eval=F}
+library(wooldridge)
+xy <- wage1[,c('educ','wage')]
+```
+:::
+
 #### **Impose the Null**.{-}
-We can also compute a null distribution. We focus on the simplest: bootstrap simulations that each impose the null hypothesis and re-estimate the statistic of interest. Specifically, we compute the distribution of t-values on data with randomly reshuffled outcomes (imposing the null), and compare how extreme the observed value is.
+We can also compute a null distribution. We focus on the simplest: simulations that each impose the null hypothesis and re-estimate the statistic of interest. Specifically, we compute the distribution of $t$-values on data with randomly reshuffled outcomes (imposing the null), and compare how extreme the observed value is. We can sample with replacement (i.e., the null bootstrap) or without (permutation), just as with the [correlation](https://jadamso.github.io/Rbooks/02_02_BivariateStatistics.html#two-cardinals) statistic.
+
 ```{r}
 # Null Distribution for Reg Coef
-boot_t0 <- sapply( 1:399, function(b){
+null_t <- sapply( 1:399, function(b){
     xy_b <- xy
-    xy_b[,'y'] <- sample( xy_b[,'y'], replace=T)
+    ## xy_b[,'y'] <- sample( xy_b[,'y'], replace=T) ## Bootstrap
+    xy_b[,'y'] <- sample( xy_b[,'y'], replace=F) ## Permutation
     reg_b <- lm(y~x, dat=xy_b)
     coef_b <- coef(reg_b)[['x']]
     t_hat_b <- coef_b/jack_se
     return(t_hat_b)
 })
 
-# Null Bootstrap Distribution
-boot_ci_percentile0 <- quantile(boot_t0, probs=c(.025,.975))
-hist(boot_t0, breaks=25,
-    main='Null Bootstrap Density',
+# Null Distribution
+null_ci <- quantile(null_t, probs=c(.025,.975))
+hist(null_t, breaks=25,
+    main='Null Distribution',
     font.main=1, border=NA,
     xlab=expression(hat(t)[b]),
-    xlim=range(boot_t0))
-abline(v=boot_ci_percentile0, lty=2)
+    xlim=range(null_t))
+abline(v=null_ci, lty=2)
 abline(v=tvalue, col="red", lwd=2)
 ```
 
-Alternatively, you can impose the null by recentering the sampling distribution around the theoretical value; $\hat{t} = \frac{\hat{b} - \beta }{\hat{s}_{\hat{b}}}$.^[Under some assumptions, the null distribution follows a t-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)] In any case, we can calculate a *p-value*: the probability you would see something as extreme as your statistic under the null (assuming your null hypothesis was true). We can always calculate a p-value from an explicit null distribution.
+Permutations are common when testing against ``no association'', but the bootstrap allows us to test against other specific hypothesis: $\beta$. To impose the null, you recenter the sampling distribution around the hypothetical value; $\hat{t} = \frac{\hat{b} - \beta}{\hat{s}_{\hat{b}}}$.^[Under some assumptions, the null distribution follows a $t$-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)] 
+
+
+In any case, we can calculate a *$p$-value*: the probability you would see something as at least as extreme as your statistic under the null (assuming your null hypothesis was true). We can always calculate a $p$-value from an explicit null distribution.
 ```{r}
-# One Sided Test for P(t > boot_t | Null) = 1 - P(t < boot_t | Null)
-That_NullDist1 <- ecdf(boot_t0)
+# One Sided Test for P(t > boot_t | Null) = 1 - P(t < boot_t | Null of t=0)
+That_NullDist1 <- ecdf(null_t)
 Phat1  <- 1-That_NullDist1(jack_t)
 
 
-# Two Sided Test for P(t > jack_t or t < -jack_t | Null)
-That_NullDist2 <- ecdf(abs(boot_t0))
+# Two Sided Test for P(t > jack_t or t < -jack_t | Null of t=0)
+That_NullDist2 <- ecdf(abs(null_t))
 Phat2  <-  1-That_NullDist2( abs(tvalue))
 Phat2
-plot(That_NullDist2, xlim=range(boot_t0, jack_t),
+plot(That_NullDist2, xlim=range(null_t, jack_t),
     xlab=expression( abs(hat(t)[b]) ),
-    main='Null Bootstrap Distribution', font.main=1)
+    main='Null Distribution', font.main=1)
 abline(v=tvalue, col='red')
 ```
+
+:::{.callout-note icon=false collapse="true"}
+Suppose you have data on grades completed and wages. Conduct a linear regression. Then compute a $p$-value for the null hypothesis of no relationship between education level and wages.
+```{r, eval=F}
+library(wooldridge)
+xy <- wage1[,c('educ','wage')]
+```
+:::
+
+
+#### **Association is not Causation**.{-}
+
+The same caveats about "correlation is not causation" extend to regression. You may be tempted to use the term "the effect", but that interpretation of a regression coefficient assumes the linear model is true. If you fit a line to a non-linear relationship, then you will still get back a coefficient even though there is no singular *the* effect: the true relationship is non-linear! Also consider a classic example, Anscombe's Quartet, which shows four very different datasets that give the same linear regression coefficient. Notice that you understand the problem because we used scatterplots to visual the data.^[The same principles holds when comparing two groups: <http://www.stat.columbia.edu/~gelman/research/published/causal_quartet_second_revision.pdf>]
+
+```{r}
+# Anscombe's Quartet 
+
+par(mfrow=c(2,2))
+for(i in 1:4){
+    xi <- anscombe[,paste0('x',i)]
+    yi <- anscombe[,paste0('y',i)]
+    plot(xi, yi, ylim=c(4,13), xlim=c(4,20),
+        pch=16, col=grey(0,.6))
+    reg <- lm(yi~xi)
+    b <- round(coef(reg)[2],2)
+    p <- round(summary(reg)$coefficients[2,4],4)
+    abline(reg, col='orange')
+    title(paste0("Slope=", b,', p=',p), font.main=1)
+}
+
+## For an even better example, see `Datasaurus Dozen'F
+#browseURL(
+#'https://bookdown.org/paul/applied-data-visualization/
+#why-look-the-datasaurus-dozen.html')
+```
+
+It is true that linear regression "is the best linear predictor of the nonlinear regression function if the mean-squared error is used as the loss function." \parencite[p.92]{camerontrivedi2005} But this is not a carte-blanche justification for OLS, as the best of the bad predictors is still a bad predictor. For many economic applications, it is more helpful to think and speak of "dose response curves" instead of "the effect".
+
+While adding interaction terms or squared terms allows one incorporate heterogeneity and non-linearity, they change several features of the model (most of which are not intended). Often, there are nonsensical predicted values. For example, if the most of your age data are between $[23,65]$, a quadratic term can imply silly things for people aged $10$ or $90$. 
+
+Nonetheless, linear regression provides an important piece of quantitative information that is understood by many. All models are an approximation, and sometimes only unimportant nuances are missing from a vanilla linear model. Other times, that model can be seriously misleading. (This is especially true if your making policy recommendations based on a universal "the effect".) As an exploratory tool, linear regession is a good guess but one whose point estimates should not be taken too seriously (in which case, the standard errors are also much less important).  Before trying to find a regression specification that makes sense for the entire dataset, explore local relationships.
 

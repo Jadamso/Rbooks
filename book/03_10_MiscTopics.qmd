@@ -127,3 +127,69 @@ h_{1} & 0 & 0  \\
 where each $h_{k}$ is the bandwidth for variable $X_{k}$.
 
 There are many types of cross-validation \parencite{ArlotCelisse2010, BatesEtAl2023}. For example, one extension is *k-fold cross validation*, which splits $N$ datapoints into $k=1...K$ groups, each sized $B$, and predicts values for the left-out group. \textit{Generalized cross-validation} adjusts for the degrees of freedom, whereas the \texttt{npreg} function in R uses \textit{least-squares cross-validation} \parencite[p.74]{racine2019} by default. You can refer to extensions on a case by case basis.
+
+
+#### **Subsampling**. {-}
+Random subsampling is one of many hybrid approaches that tries to combine the best of the core methods: Bootstrap and Jacknife.
+
+| | Sample Size per Iteration | Number of Iterations | Resample |
+| -------- | ------- | ------- | ------- |
+Bootstrap | $n$     | $B$  | With Replacement |
+Jackknife | $n-1$   | $n$  | Without Replacement |
+Random Subsample | $m < n$ | $B$  | Without Replacement |
+
+```{r}
+xy <- USArrests[,c('Murder','UrbanPop')]
+colnames(xy) <- c('y','x')
+reg <-  lm(y~x, dat=xy)
+coef(reg)
+
+# Random Subsamples
+rs_regs <- lapply(1:399, function(b){
+    b_id <- sample( nrow(xy), nrow(xy)-10, replace=F)
+    xy_b <- xy[b_id,]
+    reg_b <- lm(y~x, dat=xy_b)
+})
+rs_coefs <- sapply(rs_regs, coef)['x',]
+rs_se <- sd(rs_coefs)
+
+hist(rs_coefs, breaks=25,
+    main=paste0('SE est. = ', round(rs_se,4)),
+    font.main=1, border=NA,
+    xlab=expression(hat(b)[b]))
+abline(v=coef(reg)['x'], lwd=2)
+rs_ci_percentile <- quantile(rs_coefs, probs=c(.025,.975))
+abline(v=rs_ci_percentile, lty=2)
+```
+
+
+#### **Matrix Notation**. {-}
+
+Grouping the coefficients as a vector $B=(b_0 ~~ b_1 ~~... ~~ b_{K})$, we want to find coefficients that minimize the sum of squared errors. The linear model has a fairly simple solution for $\hat{B}^{*}$ if you know linear algebra. Denoting $\hat{\mathbf{X}}_{i} = [1~~  \hat{X}_{i1} ~~...~~ \hat{X}_{iK}]$ as a row vector, we can write the model as $\hat{Y}_{i} = \hat{\mathbf{X}}_{i}B + e_{i}$. We can then write the model in matrix form
+\begin{eqnarray}
+\hat{Y} &=& \hat{\textbf{X}}B + E \\
+\hat{Y} &=& \begin{pmatrix} 
+\hat{Y}_{1} \\ \vdots \\ \hat{Y}_{N}
+\end{pmatrix} \quad
+\hat{\textbf{X}} = \begin{pmatrix} 
+1 & \hat{X}_{11} & ... & \hat{X}_{1K} \\
+& \vdots & & \\
+1 & \hat{X}_{n1} & ... & \hat{X}_{nK} 
+\end{pmatrix}
+\end{eqnarray}
+Minimizing the squared errors: $\min_{B} e_{i}^2 = \min_{B} (E' E)$, yields coefficient estimates and predictions 
+\begin{eqnarray}
+\hat{B^{*}} &=& (\hat{\textbf{X}}'\hat{\textbf{X}})^{-1}\hat{\textbf{X}}'\hat{Y}\\
+\hat{y} &=& \hat{\textbf{X}} \hat{B^{*}} \\
+\hat{E} &=& \hat{Y} - \hat{y} \\
+\end{eqnarray}
+```{r}
+# Manually Compute
+Y <- USArrests[,'Murder']
+X <- USArrests[,c('Assault','UrbanPop')]
+X <- as.matrix(cbind(1,X))
+
+XtXi <- solve(t(X)%*%X)
+Bhat <- XtXi %*% (t(X)%*%Y)
+c(Bhat)
+```

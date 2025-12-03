@@ -2,7 +2,7 @@
 # Bivariate Statistics
 ***
 
-All of the univariate statistics we have covered apply to marginal distributions. For joint distributions, there are several ways to statistically describe the relationship between two variables. The major differences surround whether the data are cardinal or an ordered/unordered factor.
+All of the univariate statistics we have covered apply to marginal distributions. For joint distributions, there are several ways to statistically describe the relationship between two variables. The major differences surround whether the data are cardinal or an ordered/unordered factor. 
 
 ## Statistics of Association
 
@@ -19,7 +19,7 @@ Note that covariance of $\hat{X}$ and $\hat{X}$ is just the variance of $\hat{X}
 \end{eqnarray}
 
 :::{.callout-note icon=false collapse="true"}
-If $\hat{X}=\left(0,1,2\right)$ and $\hat{Y}=\left(0.1, 0.3, 0.2\right)$, what is the correlation? Find the answer both mathematically and computationally.
+What is the correlation for the dataset $\{ (0,0.1) , (1, 0.3), (2, 0.2) \}$? Find the answer both mathematically and computationally.
 
 Mathematically, there are five steps.
 
@@ -169,9 +169,14 @@ Because all dependence resides in the pairing, and permuting one margin destroys
 To construct a permutation test, we need to use `replace=F`. Rework the above code to make a Permutation Null Distribution and conduct a permutation test.
 :::
 
+So the bootstrap evaluates sampling variability in the world that generated your data. A permutation test constructs the distribution of the statistic in a world where the null is true. Alltogether, we have
 
-* A bootstrap CI evaluates sampling variability in the world that generated your data.
-* A permutation test constructs the distribution of the statistic in a world where the null is true.
+| Distribution| Sample Size per Iteration | Number of Iterations | Resample |
+| -------- | ------- | ------- | ------- |
+Jackknife  | $n-1$   | $n$  | $X,Y$ without Replacement |
+Bootstrap  | $n$     | $B$  | $X,Y$ with Replacement |
+Null Bootstrap | $n$ | $B$  | just $X$ with Replacement |
+Permutation  | $n$   | $B$  | just $X$ without Replacement |
 
 
 
@@ -225,6 +230,7 @@ abline(v=quantile(null_permutation_codev, probs=c(0.025, 0.975)))
 abline(v=xy_codev, col='blue')
 ```
 :::
+
 
 #### **Two Ordered Factors**. {-}
 Suppose now that $\hat{X}$ and $\hat{Y}$ are both *ordered* variables. *Kendall's rank correlation* statistic measures the strength and direction of association by counting the number of concordant pairs (where the ranks agree) versus discordant pairs (where the ranks disagree). A value closer to $1$ suggests positive association in rankings, a value closer to $-1$ suggests a negative association, and a value of $0$ suggests no association in the ordering.
@@ -360,6 +366,112 @@ CV(xy)
 ```
 
 You construct sampling distributions and conduct hypothesis tests for  Cramer's V statistic in the same way you do as the other statistics.
+
+
+## Association is not Causation
+
+In all of the above statistics, we measure association not causation. 
+
+One major issue is statistical significance: sometimes there are relationships in the population that do not show up in samples, or non-relationships that appear in samples. This should be familiar at this point.
+
+Other major issues pertain to real relationships averaging out and mechanically inducing relationships with random data. To be concrete about these issue, I will focus on the most-used correlation statistic and examine
+
+* Causation without correlation
+* Correlation without causation
+
+
+Note that these are not the only examples of causation without correlation and correlation without causation. Many real datasets have temporal and spatial interdependence that create additional issues, but we will delay covering them until much later.
+
+#### **Causation without correlation**. {-}
+
+Examples of this first issue includes *nonlinear effects* and  *heterogeneous effects* averaging out.
+
+```{r}
+set.seed(123)
+n <- 10000
+
+# X causes Y via Y = X^2 + noise
+X <- runif(n, min = -1, max = 1)
+epsilon <- rnorm(n, mean = 0, sd = 0.1)
+Y <- X^2 + epsilon  # clear causal effect of X on Y
+plot(X,Y, pch=16, col=grey(0,.1))
+
+# Correlation over the entire range
+title( paste0('Cor: ', round( cor(X, Y), 1) ) ,
+    font.main=1)
+```
+
+```{r}
+# Heterogeneous Effects
+X <- rnorm(n) # Randomized "treatment"
+
+# Heterogeneous effects based on group
+group <- rbinom(n, size = 1, prob = 0.5)
+epsilon <- rnorm(n, mean = 0, sd = 1)
+Y <- ifelse(group == 1,
+            X + epsilon,   # positive effect
+            -X + epsilon)  # negative effect
+plot(X,Y, pch=16, col=grey(0,.1))
+
+# Correlation in the pooled sample
+title( paste0('Cor: ', round( cor(X, Y), 1) ),
+    font.main=1 )
+```
+
+
+#### **Correlation without causation**. {-}
+Examples of this second issue includes *shared denominators* and  *selection bias* inducing correlations.
+
+Consider three completely random variables. We can induce a mechanical relationship between the first two variables by dividing them both by the third variable.
+
+```{r}
+set.seed(123)
+n <- 20000
+
+# Independent components
+A <- runif(n)
+B <- runif(n)
+C <- runif(n)
+par(mfrow=c(1,2))
+plot(A,B, pch=16, col=grey(0,.1))
+title('Independent Variables', font.main=1)
+
+# Ratios with a shared denominator
+X <- A / C
+Y <- B / C
+plot(X,Y, pch=16, col=grey(0,.1))
+title('With Common Divisor', font.main=1)
+
+# Correlation
+cor(X, Y)
+```
+
+Consider an admissions rule into university: applicants are accepted if they have either high test scores or strong extracurriculars. Even if there is no general relationship between test scores and extracurriculars, you will see one amongst university students.
+
+```{r}
+
+# Independent traits in the population
+test_score        <- rnorm(n, mean = 0, sd = 1)
+extracurriculars  <- rnorm(n, mean = 0, sd = 1)
+
+# Selection above thresholds
+threshold <- 1.0
+admitted <- (test_score > threshold) | (extracurriculars > threshold)
+mean(admitted)  # admission rate
+
+par(mfrow = c(1, 2))
+# Full population
+plot(test_score, extracurriculars,
+     pch=16, col=grey(0,.1))
+title('General Sample', font.main=1)
+# Admitted only
+plot(test_score[admitted], extracurriculars[admitted],
+     pch=16, col=grey(0,.1))
+title('University Sample', font.main=1)
+# Correlation among admitted applicants only
+cor(test_score[admitted], extracurriculars[admitted])
+```
+
 
 ## Probability Theory
 
