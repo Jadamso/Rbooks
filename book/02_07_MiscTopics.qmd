@@ -38,9 +38,6 @@ After computing gradients, you can summarize them in various plots
 * Histograms, Scatterplots
 * Plot of gradients and their CI's, \cite{Chaudhuri1999, HendersonEtAl2012}
 
-You may also be interested in a particular gradient or a single summary statistic. For example, a bivariate regressogram can estimate the "marginal effect at the mean"; $\hat{b}_{1}( x=\hat{M}_{X} )$. More often you are interested in the "mean of the gradients", sometimes said simply as "average effect", which averages the gradients over all datapoints in the dataset: $1/n \sum_{i}^{n} \hat{b}_{1}(x=X_{i})$. Alternatively, you may be interested in the median of the gradients, or measures of "effect heterogeneity": the interquartile range or standard deviation of the gradients. Such statistics are single numbers that can be presented in tabular form: "mean gradient (sd gradient)". You can alternative report standard errors: "mean gradient (estimated se), sd gradient (estimated se)".
-
-
 ```{r}
 ## Gradients    
 pred_lo <- predict(reg_lo)
@@ -59,15 +56,20 @@ hist(grad_lo,  breaks=20,
 plot(grad_x+grad_dx, grad_lo,
     xlab='x', ylab=expression(d~hat(y)/dx),
     col=red_col, pch=16) ## Diminishing Returns?
+```
 
+You may also be interested in a particular gradient or a single summary statistic. For example, a bivariate regressogram can estimate the "marginal effect at the mean"; $\hat{b}_{1}( x=\hat{M}_{X} )$. More typically, you would be interested in the "mean of the gradients", sometimes said simply as "average effect", which averages the gradients over all datapoints in the dataset: $1/n \sum_{i}^{n} \hat{b}_{1}(x=\hat{X}_{i})$. Alternatively, you may be interested in the median of the gradients, or measures of "effect heterogeneity": the interquartile range or standard deviation of the gradients. Such statistics are single numbers that can be presented in tabular form: "mean gradient (sd gradient)". You can alternative report standard errors: "mean gradient (estimated se), sd gradient (estimated se)".
+
+```{r}
 ## Tabular Summary
 tab_stats <- c(
-    mean(grad_lo, na.rm=T),
-    sd(grad_lo, na.rm=T))
+    M=mean(grad_lo, na.rm=T),
+    S=sd(grad_lo, na.rm=T))
 tab_stats
 
 ## Use bootstrapping to get SE's
 boot_stats <- matrix(NA, nrow=299, ncol=2)
+colnames(boot_stats) <- c('M se', 'S se')
 for(b in 1:nrow(boot_stats)){
     xy_b <- xy0[sample(1:nrow(xy0), replace=T),]
     reg_lo <- loess(y~x, data=xy_b, span=.6)
@@ -123,12 +125,14 @@ When we test a hypothesis, we start with a claim called the null hypothesis $H_0
 | $H_0$ is True  |  Correct (no detection)  |  Type I Error (False Positive) |
 | $H_0$ is False |  Type II Error (False Negative; missed detection) | Correct (effect detected) |
 
+:::{.callout-tip icon=false collapse="true"}
 Here is a Courtroom example: Someone suspected of committing a crime is at trial, and they are either guilty or not (a Bernoulli random variable). You hypothesize that the suspect is innocent, and a jury can either convict them (decide guilty) or free them (decide not-guilty). Recall that fail-to-reject a hypothesis does mean accepting it, so deciding not-guilty does not necessarily mean innocent.
 
 | True Situation | Decision: Free | Decision: Convict |
 |---|---|---|
 | Suspect Innocent |  Correctly Freed  | Falsely Convicted |
 | Suspect Guilty   |  Falsely Freed    | Correctly Convicted |
+:::
 
 #### **Statistical Power**. {-}
 

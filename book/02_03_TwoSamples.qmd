@@ -170,7 +170,7 @@ If we want to test for the differences in medians across groups with independent
 
 ```{r}
 boxplot(Y1, Y2,
-    col=c(2,4),
+    col=cols,
     notch=T,
     varwidth=T)
 ```
@@ -280,8 +280,8 @@ CVMqv <- round(twosamples::cvm_stat(Y1, Y2, power=2), 2)
 
 # Visualize Differences
 plot(range(y), c(0,1), type="n", xlab='x', ylab='ECDF')
-lines(y, F1, col=2, lwd=2)
-lines(y, F2, col=4, lwd=2)
+lines(y, F1, col=cols[1], lwd=2)
+lines(y, F2, col=cols[2], lwd=2)
 
 # KS
 title( paste0('KS: ', KSqv), adj=0, font.main=1)
@@ -299,6 +299,15 @@ twosamples::ks_test(Y1, Y2)
 twosamples::cvm_test(Y1, Y2)
 ```
 
+:::{.callout-tip icon=false collapse="true"}
+Compare the distribution of arrests for two different counties, each with data over time.
+
+```{r, eval=F}
+library(wooldridge)
+countymurders
+```
+
+:::
 
 #### **Comparing Multiple Groups**. {-}
 For multiple groups, we can tests the equality of all distributions (whether at least one group is different). The *Kruskal-Wallis* test examines $H_0:\; F_1 = F_2 = \dots = F_G$ versus $H_A:\; \text{at least one } F_g \text{ differs}$, where $F_g$ is the continuous distribution of group $g=1,...G$. This test does not tell us which group is different.
@@ -332,7 +341,16 @@ kruskal.test(CASchools[,'stratio'], CASchools[,'county'])
 
 ## Theory
 
-Under the assumption that both populations are normally distributed, we can analytically derive the sampling distribution for the difference-in-means.
+Under the assumption that both populations are normally distributed, we can analytically derive the sampling distribution for the difference-in-means. In particular, the $t$-statistic
+\begin{eqnarray}
+\hat{t} = \frac{
+    \hat{M}_{Y1} - \hat{M}_{Y2}
+}{
+    \sqrt{\hat{S}_{Y1}+\hat{S}_{Y2}}/\sqrt{n}
+}
+\end{eqnarray}
+follows Student's [t-distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution).
+Welch's [$t$-statistic](https://en.wikipedia.org/wiki/Welch%27s_t-test) is an adjustment for two normally distributed populations with potentially unequal variances or sample sizes.
 
 ```{r}
 # Sample 1 (e.g., males)
@@ -348,8 +366,9 @@ hist(Y1, border=NA, breaks=bks,
     main='Sample 1', font.main=1)
 hist(Y2, border=NA, breaks=bks, 
     main='Sample 2', font.main=1)
-```
 
+t.test(Y1, Y2, var.equal=F)
+```
 
 ## Further Reading 
 
