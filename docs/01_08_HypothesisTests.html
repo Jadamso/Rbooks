@@ -403,9 +403,9 @@ window.Quarto = {
 <h2 data-number="8.1" class="anchored" data-anchor-id="p-values"><span class="header-section-number">8.1</span> <span class="math inline">\(p\)</span>-values</h2>
 <p>A <span class="math inline">\(p\)</span>-value is the frequency you see something as extreme as your statistic when sampling from the null distribution. We want the probability mass in both tails: the random variable <span class="math inline">\(M\)</span> that is at least as extreme (far from the null mean of <span class="math inline">\(9\)</span>) as our observed sample mean <span class="math inline">\(\hat{M}\)</span>. <span class="math display">\[\begin{eqnarray}
 Prob( |M - \mu| \geq |\hat{M} - \mu| \mid \mu = 9 )
-&amp;\approx&amp; Prob( |M^{\text{boot}}- \mu^{\text{boot}}| \geq |\hat{M}- \mu^{\text{boot}}|  \mid \mu^{\text{boot}} = 9) \\
+&amp;\approx&amp; Prob( |M^{\text{boot}}- \mu| \geq |\hat{M}- \mu|  \mid \mu = 9) \\
 &amp;=&amp; 1-\hat{F}^{|\text{boot}|}_{0}(|\hat{M}-9|),
-\end{eqnarray}\]</span> where <span class="math inline">\(\hat{F}^{|\text{boot}|}_{0}\)</span> is the ECDF of <span class="math inline">\(|M^{\text{boot}}- \mu^{\text{boot}}|\)</span>.</p>
+\end{eqnarray}\]</span> where <span class="math inline">\(\hat{F}^{|\text{boot}|}_{0}\)</span> is the ECDF of <span class="math inline">\(|M^{\text{boot}}- \mu|\)</span>.</p>
 <p>The bootstrap idea here is to approximate <span class="math inline">\(M-\mu\)</span>, the difference between the sample mean <span class="math inline">\(M\)</span> and the unknown theoretical mean <span class="math inline">\(\mu\)</span>, with the difference between the bootstrap mean <span class="math inline">\(M^{\text{boot}}\)</span> and the sample mean, <span class="math inline">\(M^{\text{boot}}-M\)</span>.</p>
 <div class="callout callout-style-default callout-note no-icon callout-titled">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
@@ -487,6 +487,11 @@ Note
 </div>
 </div>
 </div>
+<p>Note that</p>
+<ul>
+<li>Bootstrap estimates the distribution of <span class="math inline">\(\hat{M}-M\)</span>.</li>
+<li>Null-bootstrap shifts the bootstrap so they are centered at the hypothesized mean, estimating the distribution of <span class="math inline">\(\hat{M}-\mu\)</span>.</li>
+</ul>
 <section id="caveats." class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="caveats."><strong>Caveats</strong>.</h4>
 <p>Beware that a common misreading of the <span class="math inline">\(p\)</span>-value as “the probability the null is true”. That is false.</p>
@@ -538,9 +543,10 @@ Note
 <h2 data-number="8.2" class="anchored" data-anchor-id="other-statistics"><span class="header-section-number">8.2</span> Other Statistics</h2>
 <section id="t-values." class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="t-values."><strong><span class="math inline">\(t\)</span>-values</strong>.</h4>
-<p>A <em><span class="math inline">\(t\)</span>-value</em> standardizes the approach for hypothesis tests of the mean. For any specific sample, we compute the estimate <span class="math display">\[\begin{eqnarray}
-\hat{t}=(\hat{M}-\mu)/\hat{S},
-\end{eqnarray}\]</span> which corresponds to the estimator <span class="math inline">\(t = (M - \mu) / \mathbb{s}(M)\)</span>, which varies from sample to sample. We can use bootstrapping to estimate the variability of the <span class="math inline">\(t\)</span> statistic, just like we did with the mean.</p>
+<p>A <em><span class="math inline">\(t\)</span>-value</em> standardizes the approach for hypothesis tests of the mean. <span class="math display">\[\begin{eqnarray}
+t = (M - \mu) / SE(M),
+\end{eqnarray}\]</span></p>
+<p>For any specific sample, we must approximate the standard error. Using the theory-driven approach, we compute <span class="math inline">\(\hat{t}=(\hat{M}-\mu)/(\hat{S}/\sqrt{n})\)</span>. Using the theory-driven approach, we compute <span class="math inline">\(\hat{t}=(\hat{M}-\mu)/(\hat{SE}^{\text{jack}})\)</span> or <span class="math inline">\(\hat{t}=(\hat{M}-\mu)/(\hat{SE}^{\text{boot}})\)</span>. In any case, we can approximate use bootstrapping to estimate the variability of the <span class="math inline">\(t\)</span> statistic, just like we did with the mean.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -562,42 +568,43 @@ Tip
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># t statistic </span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>jackknife_means <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="fu">length</span>(sample_dat))</span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(jackknife_means)){</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    jackknife_means[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b[<span class="sc">-</span>i])</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>sample_t <span class="ot">&lt;-</span> (sample_mean <span class="sc">-</span> mu)<span class="sc">/</span><span class="fu">sd</span>(jackknife_means)</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Boostrap Null Distribution</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>bootstrap_t_null <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="dv">999</span>)</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_t_null)){</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    dat_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span>T) </span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    mean_b <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b) <span class="sc">+</span> (mu <span class="sc">-</span> sample_mean) <span class="co"># impose the null by recentering</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute t stat using jackknife ses (same as above)</span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    jackknife_means_b <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="fu">length</span>(dat_b))</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(jackknife_means_b)){</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        jackknife_means_b[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b[<span class="sc">-</span>i])</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    jackknife_se_b <span class="ot">&lt;-</span> <span class="fu">sd</span>( jackknife_means_b )</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    jackknife_t_b <span class="ot">&lt;-</span> (mean_b <span class="sc">-</span> mu)<span class="sc">/</span>jackknife_se_b</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    bootstrap_t_null[b] <span class="ot">&lt;-</span> jackknife_t_b</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the null distribution and CI</span></span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_t_null, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">breaks=</span><span class="dv">50</span>,</span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq=</span>F, <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'Null Bootstrap for t'</span>)</span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sample_t, <span class="at">col=</span><span class="dv">4</span>)</span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_t_null, <span class="at">probs=</span><span class="fu">c</span>(<span class="fl">0.025</span>,<span class="fl">0.975</span>) )</span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>ci_95, <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute the p-value for two-sided test</span></span>
-<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>Fhat0 <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(<span class="fu">abs</span>(bootstrap_t_null))</span>
-<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(Fhat0, </span>
-<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlim=</span><span class="fu">range</span>(bootstrap_t_null, sample_t),</span>
-<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Null Bootstrap for |t|'</span>,</span>
-<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">''</span>)</span>
-<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">abs</span>(sample_t), <span class="at">col=</span><span class="dv">4</span>)</span>
-<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">Fhat0</span>( <span class="fu">abs</span>(sample_t) )</span>
-<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>( <span class="fu">paste0</span>(<span class="st">'p='</span>, <span class="fu">round</span>(p,<span class="dv">3</span>)) )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    dat_i <span class="ot">&lt;-</span> sample_dat[<span class="sc">-</span>i]</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    jackknife_means[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_i)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>sample_t <span class="ot">&lt;-</span> (sample_mean <span class="sc">-</span> mu)<span class="sc">/</span><span class="fu">sd</span>(jackknife_means)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Boostrap Null Distribution</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>bootstrap_t_null <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="dv">999</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_t_null)){</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    dat_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span>T) </span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    mean_b <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b) <span class="sc">+</span> (mu <span class="sc">-</span> sample_mean) <span class="co"># impose the null by recentering</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute t stat using jackknife ses (same as above)</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    jackknife_means_b <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="at">length=</span><span class="fu">length</span>(dat_b))</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(jackknife_means_b)){</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>        jackknife_means_b[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b[<span class="sc">-</span>i])</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    jackknife_se_b <span class="ot">&lt;-</span> <span class="fu">sd</span>( jackknife_means_b )</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    jackknife_t_b <span class="ot">&lt;-</span> (mean_b <span class="sc">-</span> mu)<span class="sc">/</span>jackknife_se_b</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    bootstrap_t_null[b] <span class="ot">&lt;-</span> jackknife_t_b</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the null distribution and CI</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_t_null, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">breaks=</span><span class="dv">50</span>,</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq=</span>F, <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'Null Bootstrap for t'</span>)</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sample_t, <span class="at">col=</span><span class="dv">4</span>)</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_t_null, <span class="at">probs=</span><span class="fu">c</span>(<span class="fl">0.025</span>,<span class="fl">0.975</span>) )</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>ci_95, <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute the p-value for two-sided test</span></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>Fhat0 <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(<span class="fu">abs</span>(bootstrap_t_null))</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(Fhat0, </span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlim=</span><span class="fu">range</span>(bootstrap_t_null, sample_t),</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Null Bootstrap for |t|'</span>,</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">''</span>)</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">abs</span>(sample_t), <span class="at">col=</span><span class="dv">4</span>)</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">Fhat0</span>( <span class="fu">abs</span>(sample_t) )</span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>( <span class="fu">paste0</span>(<span class="st">'p='</span>, <span class="fu">round</span>(p,<span class="dv">3</span>)) )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -614,7 +621,7 @@ Tip
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">'reject the null that mean=9 in favor of either &lt;9 or &gt;9, at the 5% level'</span>)</span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "reject the null that mean=9 in favor of either &lt;9 or &gt;9, at the 5% level"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "fail to reject the null that mean=9, at the 5% level"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 </div>
@@ -794,7 +801,7 @@ Advanced and Optional
 <p>The <span class="math inline">\(p\)</span>-value for a one-sided test is more straightforward to implement via a bootstrap null distribution.</p>
 <p>For a left-tail test, we examine <span class="math display">\[\begin{eqnarray}
 p = Prob( M &lt; \hat{M} \mid \mu = 9 )
-    &amp;\approx&amp; Prob( M^{\text{boot}} &lt; \hat{M} \mid  \mu^{\text{boot}} = 9 ) = \hat{F}^{\text{boot}}_{0}(\hat{M}),
+    &amp;\approx&amp; Prob( M^{\text{boot}} &lt; \hat{M} \mid  \mu = 9 ) = \hat{F}^{\text{boot}}_{0}(\hat{M}),
 \end{eqnarray}\]</span> where <span class="math inline">\(\hat{F}^{\text{boot}}_{0}\)</span> is the ECDF of the bootstrap null distribution. We reject the null if <span class="math inline">\(p &lt; 0.05\)</span> at the <span class="math inline">\(5\%\)</span> level, and otherwise fail to reject.</p>
 <p>For a right-tail test, we examine <span class="math inline">\(p=Prob( M &gt; \hat{M} \mid \mu = 9 ) \approx 1-\hat{F}^{\text{boot}}_{0}(\hat{M})\)</span>.</p>
 <div class="cell">

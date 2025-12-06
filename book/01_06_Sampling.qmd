@@ -6,7 +6,7 @@ A *simple random sample* is a sample where each possible sample of size $n$ has 
 
 ```{r}
 #All possible samples of two from {1,2,3,4}
-#{1,2} {1,3}, {3,4}
+#{1,2} {1,3}, {1,4}
 #{2,3} {2,4}
 #{3,4}
 choose(4,2)
@@ -174,7 +174,7 @@ plot(n_seq, sd_seq, pch=16, col=grey(0,0.5),
 
 
 #### **Central Limit Theorem**. {-}
-There are different variants of the central limit theorem (CLT), but they all say some version of "the sampling distribution of a statistic is approximately normal". For example, the sampling distribution of the mean, shown above, is approximately normal.
+There are different variants of the central limit theorem (CLT), but they all say some version of "the sampling distribution of the mean is approximately normal". For example, the sampling distribution of the mean, shown above, is approximately normal.
 
 :::{.callout-note icon=false collapse="true"}
 ```{r}
@@ -219,9 +219,6 @@ x <- seq(0.1, 0.9, by=0.001)
 fx <- dnorm(x, mu, mu_sd)
 lines(x, fx, col='blue')
 
-# Try another function, such as
-my_function <- function(x){ diff(range(exp(x))) }
-
 # try another random variable, such as rexp(100) instead of runif(100)
 ```
 :::
@@ -253,6 +250,9 @@ hist(x_maxs, breaks=100, main='Max', font.main=1,
     xlab=expression(hat(Q)[1]), border=NA, freq=F)
 title('Sampling Distributions', outer=T, line=-1, adj=0)
 ```
+
+# Explore another function, such as
+my_function <- function(x){ diff(range(x)) }
 :::
 
 :::{.callout-tip icon=false collapse="true"}
@@ -435,7 +435,7 @@ text(0.01, divideY3[4]+.03, adj=0, "Resamples (r)")
 legend(.01, .9, lty=1:2, col=1:2, legend=expression(mu, hat(M)))
 ```
 
-Note that we do not use the mean of the resampled statistics as a replacement for the original estimate. This is because the resampled distributions are centered at the observed statistic, not the population parameter. (The bootstrapped mean is centered at the sample mean, for example, not the population mean.) This means that we cannot use resampling to improve on $\hat{M}$. We use resampling to estimate sampling variability.
+Note that we do not use the mean of the resampled statistics as a replacement for the original estimate. This is because the resampled distributions are centered at the observed statistic, not the population parameter. (The bootstrapped mean is centered at the sample mean, for example, not the population mean.) This means that we do not use resampling to improve on $\hat{M}$. We use resampling to estimate sampling variability.
 
 
 
@@ -445,9 +445,9 @@ Here, we compute all "leave-one-out" estimates. Specifically, for a dataset with
 :::{.callout-note icon=false collapse="true"}
 Taking the mean, for example, we have
 
-* jackknifed estimates: $\hat{M}_{i}^{\text{jack}}=\frac{1}{n-1} \sum_{j \neq i}^{n-1} \hat{X}_{j}$.
+* jackknifed estimates: $\hat{M}_{i}^{\text{jack}}=\frac{1}{n-1} \sum_{j \neq i}^{n} \hat{X}_{j}$.
 * mean of the jackknife: $\bar{\hat{M}}^{\text{jack}}=\frac{1}{n} \sum_{i}^{n} \hat{M}_{i}^{\text{jack}}$.
-* standard deviation of the jackknife: $\hat{S}^{\text{jack}}= \sqrt{ \frac{1}{n} \sum_{i}^{n} \left[\hat{M}_{i}^{\text{jack}} - \bar{\hat{M}}^{\text{jack}} \right]^2 }$.
+* standard deviation of the jackknife: $\hat{SE}^{\text{jack}}= \sqrt{ \frac{1}{n} \sum_{i}^{n} \left[\hat{M}_{i}^{\text{jack}} - \bar{\hat{M}}^{\text{jack}} \right]^2 }$.
 
 Given the sample $\{1,6,7,22\}$, compute the jackknife estimate of the median. Show the result mathematically by hand and also with the computer.
 :::
@@ -479,7 +479,7 @@ Taking the mean, for example, we have
 
 * bootstrapped estimate: $\hat{M}_{b}^{\text{boot}}= \frac{1}{n} \sum_{i=1}^{n} \hat{X}_{i}^{(b)}$, for resampled data $\hat{X}_{i}^{(b)}$
 * mean of the bootstrap: $\bar{\hat{M}}^{\text{boot}}= \frac{1}{B} \sum_{b} \hat{M}_{b}^{\text{boot}}$.
-* standard deviation of the bootstrap: $\hat{S}^{\text{boot}}= \sqrt{ \frac{1}{B} \sum_{b=1}^{B} \left[\hat{M}_{b}^{\text{boot}} - \bar{\hat{M}}^{\text{boot}} \right]^2}$.
+* standard deviation of the bootstrap: $\hat{SE}^{\text{boot}}= \sqrt{ \frac{1}{B} \sum_{b=1}^{B} \left[\hat{M}_{b}^{\text{boot}} - \bar{\hat{M}}^{\text{boot}} \right]^2}$.
 
 Given the sample $\{1,6,7,22\}$, compute the bootstrap estimate of the median, with $B=8$. Show the result with the computer and then show what is happening in each sample by hand.
 :::
@@ -522,12 +522,19 @@ coin_resample <- sample(x, prob=x_probs_boot, 999, replace=T)
 :::
 
 
-Using either the bootstrap or jackknife distribution, we can estimate variability via the *Standard Error*: the standard deviation of your statistic across different samples (square rooted). In either case, this differs from the standard deviation of the data within your sample.
+#### **Standard Errors**. {-}
+
+Using either the bootstrap or jackknife distribution, we can estimate variability of the sampling distribution of the statistic via the *Standard Error*. In either case, this differs from the standard deviation of the data within your sample.
+
+* sample *standard deviation*: variability of individual observations within a single sample.
+* sample *standard error*: variability of a statistic across repeated samples.
 
 ```{r}
 sd(sample_dat) # standard deviation
 sd(bootstrap_means) # standard error
 ```
+
+Note that both Jackknife and Bootstrap resampling methods provide imperfect estimates, and can give different numbers. Jackknife resamples are often less variable than they should be and sample $n-1$ instead of $n$. Bootstrap resamples have the right $n$ but often have duplicated data. Until you know more, a conservative rule-of-thumb is to take the larger estimate (often the bootstrap). That is also a good rule-of-thumb when considering theoretically derived confidence intervals too.
 
 Also note that each additional data point you have provides more information, which ultimately decreases the standard error of your estimates. This is why statisticians will often recommend that you to get more data. However, the improvement in the standard error increases at a diminishing rate. In economics, this is known as diminishing returns and why economists may recommend you do not get more data. 
 
@@ -561,7 +568,6 @@ The LLN follows from a famous theoretical result in statistics, *Linearity of Ex
 \end{eqnarray}
 Assuming each data point has identical means; $\mathbb{E}[X_{i}]=\mu$, the expected value of the sample average is the mean; $\mathbb{E}\left[M\right] = \sum_{i=1}^{n} \mu/n = \mu$.
 
-Note that the estimator $M$ differs from the particular estimate you calculated for your sample, $\hat{M}$. For example, consider flipping a coin three times: $M$ corresponds to a theoretical value before you flip the coins and $\hat{M}$ corresponds to a specific value after you flip the coins.
 
 :::{.callout-tip icon=false collapse="true"}
 For example, consider a coin flip with Heads $X_{i}=1$ having probability $p$ and Tails $X_{i}=0$ having probability $1-p$. First notice that $\mathbb{E}[X_{i}]=p$. Then notice we can first 
@@ -580,18 +586,28 @@ The theoretical mean is $\mathbb{E}[\frac{X_{1}+X_{2}}{2}]=\frac{p+p}{2}=p$.
 
 
 #### **Variances**. {-}
-Another famous theoretical result in statistics is that if we have independent and identical data (i.e., that each random variable $X_{i}$ has the same mean $\mu$, same variance $\sigma^2$, and is drawn without any dependence on the previous draws), then the standard error of the sample mean is "root n" proportional to the theoretical standard error. Intuitively, this follows from thinking of the variance as a type of mean (the mean squared deviation from $\mu$).
+Another famous theoretical result in statistics is that if we have independent and identical data (i.e., that each random variable $X_{i}$ has the same mean $\mu$, same variance $\sigma^2$, and is drawn without any dependence on the previous draws), then the standard error of the sample mean decreases by $1/\sqrt{n}$. Intuitively, this follows from thinking of the variance as a type of mean (the mean squared deviation from $\mu$).
 \begin{eqnarray}
 \mathbb{V}\left( M \right) 
-&=& \mathbb{V}\left( \frac{\sum_{i}^{n} X_{i}}{n} \right) 
-= \sum_{i}^{n} \mathbb{V}\left(\frac{X_{i}}{n}\right)
-= \sum_{i}^{n} \frac{\sigma^2}{n^2}
+&=& \mathbb{V}\left( \frac{\sum_{i=1}^{n} X_{i}}{n} \right) 
+= \sum_{i=1}^{n} \mathbb{V}\left(\frac{X_{i}}{n}\right)
+= \sum_{i=1}^{n} \frac{\sigma^2}{n^2}
 = \sigma^2/n\\
-\mathbb{s}\left(M\right) &=& \sqrt{\mathbb{V}\left( M \right) } = \sqrt{\sigma^2/n} = \sigma/\sqrt{n}.
+SE\left(M\right) &=& \sqrt{\mathbb{V}\left( M \right) } = \sqrt{\sigma^2/n} = \sigma/\sqrt{n}.
 \end{eqnarray}
 
 
-Note that the *standard deviation* refers to variance within a single sample, and is hence different from the standard error. Nonetheless, it can be used to estimate the variability of the mean: we can estimate $\mathbb{s}\left(M\right)$ with $\hat{S}/\sqrt{n}$, where $\hat{S}$ is the standard deviation of the sample. This estimate is often a little different from than the bootstrap estimate, as it is based on idealistic theoretical assumptions whereas the bootstrap estimate is driven by data that are often not ideal.
+Note that the *standard deviation* refers variability of individual observations (in either a sample or population), and is hence different from the standard error. Nonetheless, the sample standard deviation can be used to estimate the standard error of the sample mean: we can estimate $SE\left(M\right)$ by replacing the population standard deviation, $\sigma$, with the sample standard deviation, $\hat{S}$. To be clear, see that
+
+| Concept            | What varies                 | Notation     | What it measures           |
+| ------------------ | --------------------------- | ------------ | -------------------------- |
+| Standard deviation | individual observations     | sample: \hat{S}, population $\sigma$  | spread of the distribution |
+| Standard error     | a statistic                 | $SE(M)$ | sampling variability |
+
+We can then estimate $SE(M)$ based on theory: assume that the data are i.i.d and that $M$ follows a normal distribution, and then compute $\hat{S}/\sqrt{n}\approx SE(M)$. 
+
+Another data-driven way is to create a bootstrap distribution for the sample mean and then compute the standard deviation of the bootstrap distribution $\hat{SE}^{\text{boot}} \approx SE(M)$. The theory-driven estimate is often a little different from than the bootstrap estimate, as the theory-driven estimate is based on idealistic assumptions (i.i.d. and normality) whereas the bootstrap estimate is driven by data that are often not ideal. The theory-driven estimate does have some advantages too, but we do not go into that as we would need more advanced mathematics.
+
 ```{r}
 boot_se <- sd(bootstrap_means)
 
