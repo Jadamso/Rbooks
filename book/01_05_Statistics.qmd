@@ -21,12 +21,12 @@ Together, the sample mean and variance statistics summarize the central tendency
 
 ## Mean and Variance
 
-The sample mean and variance are the two most basic statistics that summarize the center and how spread apart the values are. As before, we represent data as vector $\hat{X}=(\hat{X}_{1}, \hat{X}_{2}, ....\hat{X}_{n})$, where there are $n$ observations and $\hat{X}_{i}$ is the value of the $i$th one.
+The mean and variance are the two most basic statistics that summarize the center and how spread apart the values are for data in your sample. As before, we represent data as vector $\hat{X}=(\hat{X}_{1}, \hat{X}_{2}, ....\hat{X}_{n})$, where there are $n$ observations and $\hat{X}_{i}$ is the value of the $i$th one.
 
 
 
 #### **Mean**. {-}
-Perhaps the most common statistic is the sample mean, which is the [sum of all values] divided by [number of values];
+Perhaps the most common statistic is the empirical mean, also known as the sample mean, which is the [sum of all values] divided by [number of values];
 \begin{eqnarray}
 \hat{M} &=& \frac{\sum_{i=1}^{n}\hat{X}_{i}}{n},
 \end{eqnarray}
@@ -54,11 +54,11 @@ title(paste0('mean= ', round(X1_mean,2)), font.main=1)
 ```
 
 #### **Variance**.{-}
-Perhaps the second most common statistic is the sample variance: the average squared deviation from the mean
+Perhaps the second most common statistic is the empirical variance: the average squared deviation from the mean
 \begin{eqnarray}
 \hat{V} &=&\frac{\sum_{i=1}^{n} [\hat{X}_{i} - \hat{M}]^2}{n}.
 \end{eqnarray}
-The sample standard deviation is simply $\hat{S} = \sqrt{\hat{V} }$, which can be interpreted as the average distance from the mean.
+The empirical standard deviation is simply $\hat{S} = \sqrt{\hat{V} }$.
 
 :::{.callout-note icon=false collapse="true"}
 For example, a dataset of $\{1,4,10\}$ has a mean of $[1+4+10]/3=5$. The variance is $[(1-5)^2+(4-5)^2+(10-5)^2]/3=14$ and the standard deviation is $\sqrt{14}$.
@@ -82,7 +82,7 @@ title(paste0('sd= ', round(X1_s,2)), font.main=1)
 ```
 
 :::{.callout-tip icon=false collapse="true"}
-Note that a "corrected version" is used by R and many statisticians: $\hat{V}' =\frac{\sum_{i=1}^{n} [\hat{X}_{i} - \hat{M}]^2}{n-1}$ and $\hat{S}' = \sqrt{\hat{V}'}$. In this class, we use the "unocorrect version" as defined previously. There is hardly any difference when $n$ is large: e.g., $\frac{1}{n}\approx \frac{1}{n-1}$ for $n=100,000$.
+Note that a "unbiased version" of the empirical variance is used by R and many statisticians: $\hat{V}' =\frac{\sum_{i=1}^{n} [\hat{X}_{i} - \hat{M}]^2}{n-1}$ and $\hat{S}' = \sqrt{\hat{V}'}$. In this class, we use the version defined previously because we do not yet know about "bias/unbiased" statistics. Do not be concerned, as there is hardly any difference when $n$ is large: e.g., $\frac{1}{n}\approx \frac{1}{n-1}$ for $n=100,000$.
 ```{r}
 X <- c(1,4,10)
 
@@ -104,7 +104,7 @@ var(X) # R-Version
 A general rule of applied statistics is that there are multiple ways to measure something. Mean and Variance are measurements of Center and Spread, but there are others that have different theoretical properties and may be better suited for your dataset.
 
 #### **Medians and Absolute Deviations**. {-}
-We can use the sample *Median* as a "robust alternative" to means that is especially useful for data with asymmetric distributions and extreme values. Recall that the $q$th quantile is the value where $q$ percent of the data are below and ($1-q$) percent are above. The median ($q=.5$) is the point where half of the data is lower values and the other half is higher. This implies that median is not sensitive to extreme values (whereas the mean is).
+We can use the empirical *Median* as a "robust alternative" to means that is especially useful for data with asymmetric distributions and extreme values. Recall that the $q$th quantile is the value where $q$ percent of the data are below and ($1-q$) percent are above. The median ($q=.5$) is the point where half of the data is lower values and the other half is higher. This implies that median is not sensitive to extreme values (whereas the mean is).
 
 ```{r}
 X <- rexp(50, 0.4)
@@ -158,7 +158,7 @@ quants <- quantile(X, probs=c(.25,.75))
 quants[2]-quants[1]
 IQR(X)
 ```
-Compute the $\text{MAD}$ statistic for the dataset $\{1,4,10\}$. First compute the median, $\text{Med}(1,4,10)=1$. Then compute $\text{Med}( |1-4|,~ |4-4|,~ |10-4| )= \text{Med}( 3, 0, 6 ) = 3$.
+Compute the $\text{MAD}$ statistic for the dataset $\{1,4,10\}$. First compute the median, $\text{Med}(1,4,10)=4$. Then compute $\text{Med}( |1-4|,~ |4-4|,~ |10-4| )= \text{Med}( 3, 0, 6 ) = 3$.
 ```{r}
 X <- c(1,4,10)
 #Another alternative to sd(X)
@@ -273,8 +273,9 @@ kurtosis <- function(X){
  m4 <- mean((X - X_mean)^4) 
  s4 <- sd(X)^4
  kurt <- m4/s4
- excess_kurt <- kurt - 3 # compare against normal
  return(kurt)
+ # use instead to compare against normal
+ # excess_kurt <- kurt - 3 
 }
 
 kurtosis( rweibull(1000, shape=1) )
@@ -329,28 +330,35 @@ lines(x, dx, col=1)
 
 ## Probability Theory
 
-We will now dig a little deeper theoretically into the statistics we compute. When we know how the data are generated theoretically, we can often compute the theoretical value of the two most basic and often-used statistics: the mean and variance. To see this, we separately analyze how they are computed for discrete and continuous random variables.
+We will now dig a little deeper theoretically into the statistics we compute. When we know how the data are generated theoretically, we can often compute the theoretical value of the two most basic and often-used statistics: the mean and variance. Here, we denote $X_{i}$ as a random variable that can take on specific values $x$ from the sample space with known probabilities. For example, $X_{i}$ is a coin that we will flip and it can land on heads ($x=1$) or tails ($x=0$).
 
-Here, we denote $X_{i}$ as a random variable that can take on specific values $x$ from the sample space with known probabilities. For example, $X_{i}$ is coin that we will flip and it can land on heads ($x=1$) or tails ($x=0$).
+* $X_{i}$ is random variable, taking on outcomes $x$
+* $\hat{X}_{i}$ is a realized value
+
+The theoretical mean, $\mu$, and variance, $\sigma^2$, describe the population distribution $F$ generating the data. This differs from the particular estimate you calculated for your sample, $\hat{M}$, and the estimator $M$. For example, consider flipping a coin three times: $M$ corresponds to a theoretical formula you compute on coins before they are flipped and $\hat{M}$ corresponds to a specific value after you flip the coins.
+
+| Conceptual level  | Mean      | Variance   | What it is | Terminology                              | Alternative Terminology |
+| ----------------- | --------- | ---------- |----------------------| ---------------------------------------- |----------- |
+| **Estimate**       | $\hat{M}$ | $\hat{V}$  | one number you compute for a single sample of size $n$ | empirical mean, variance  | sample mean, sample variance (dividing by $n$) |
+| **Estimator**     | $M$       | $V$        | a random variable that computes the statistic for any sample of size $n$ | |
+| **Population**    | $\mu$     | $\sigma^2$ | a number defined by the theoretical distribution |  theoretical mean, variance | population/long-run mean, variance |
+
+For concreteness, we separately analyze how the the theoretical mean and variance are computed for discrete and continuous random variables.
 
 #### **Discrete Random Variables**. {-} 
-If the sample space is discrete, we can compute the *expected value*: theoretical mean as
+If the sample space is discrete, we can compute the *expected value*, or theoretical mean, as
 \begin{eqnarray}
-\mathbb{E}[X_{i}] = \sum_{x} x Prob(X_{i}=x),
+\mu = \mathbb{E}[X_{i}] = \sum_{x} x Prob(X_{i}=x),
 \end{eqnarray}
-where $Prob(X_{i}=x)$ is the probability the random variable $X_{i}$ takes the particular value $x$. Similarly, we can compute the theoretical variance as
+where $\mathbb{E}$ is the expectation function that explicitly uses the population distribution via $Prob(X_{i}=x)$: the probability the random variable $X_{i}$ takes the particular value $x$. Similarly, we can compute the population variance as
 \begin{eqnarray}
-\mathbb{V}[X_{i}] = \sum_{x} \left(x - \mathbb{E}[X_{i}] \right)^2 Prob(X_{i}=x).
+\sigma^2 = \mathbb{V}[X_{i}] = \sum_{x} \left(x - \mathbb{E}[X_{i}] \right)^2 Prob(X_{i}=x),
 \end{eqnarray}
-The standard error is $\mathbb{s}[X_{i}] = \sqrt{\mathbb{V}[X_{i}]}$, which is the expected distance from the mean across different theoretical samples.
-
-* *standard deviation*: variability within a single sample.
-* *standard error*: variability across different samples.
-
+where $\mathbb{V}$ is the variance function. The population standard deviation is $\sigma = \sqrt{\mathbb{V}[X_{i}]}$, which measures the spread of the distribution of individual outcomes around the theoretical mean.
 
 For example, consider a five-sided die with equal probability of landing on each side. I.e., $X_{i}$ is a Discrete Uniform random variable with outcomes $x \in \{1,2,3,4,5\}$. What is the theoretical mean? What is the variance and standard deviation?
 \begin{eqnarray}
-\mathbb{E}[X_{i}] &=& 1\frac{1}{5} + 2\frac{1}{5} + 3\frac{1}{5} + 4\frac{1}{5} + 5\frac{1}{5} = 15/5 = 3\\
+\mu &=& 1\frac{1}{5} + 2\frac{1}{5} + 3\frac{1}{5} + 4\frac{1}{5} + 5\frac{1}{5} = 15/5 = 3\\
 \mathbb{V}[X_{i}] &=& (1-3)^2\frac{1}{5} +
   (2 - 3)^2\frac{1}{5} +
   (3 - 3)^2\frac{1}{5} +
@@ -358,7 +366,7 @@ For example, consider a five-sided die with equal probability of landing on each
   (5 - 3)^2\frac{1}{5} \\
   &=& 2^2 \frac{1}{5} + 1^2\frac{1}{5} + 0^2 \frac{1}{5} + + 1^2\frac{1}{5} +  2^2 \frac{1}{5}
   = (4 + 1 + 1 + 4)/5 = 10/5 = 2\\
-\mathbb{s}[X_{i}] &=& \sqrt{2}
+\sigma &=& \sqrt{2}
 \end{eqnarray}
 ```{r}
 # Computerized Way to Compute Mean
@@ -426,7 +434,7 @@ and the theoretical variance is
 = [1 - p]^2 p + [0 - p]^2 [1-p] = [1 - p]^2 p + p^2 [1-p] 
 = [1-p]p\left( [1-p] + p\right) = [1-p] p.
 \end{eqnarray}
-So the theoretical standard deviation is $\mathbb{s}[X_{i}]=\sqrt{[1-p] p}$.
+So the theoretical standard deviation is $\sigma=\sqrt{[1-p] p}$.
 :::
 
 
@@ -446,7 +454,7 @@ where $\lambda>0$ is a parameter. What is the theoretical standard deviation?
 
 
 :::{.callout-tip icon=false collapse="true"}
-For a discrete uniform random variable with th sample space $\{1,2,3,4,5\}$, calculate the theoretical median and IQR.
+For a discrete uniform random variable with the sample space $\{1,2,3,4,5\}$, calculate the theoretical median and IQR.
 :::
 
 
@@ -458,7 +466,7 @@ Sometimes, you may have a dataset of values and probability weights. Othertimes,
 
 
 :::{.callout-note icon=false collapse="true"}
-Suppose we flipped a coin $100$ times and found that $76$ were heads and $23$ were tails. The estimated probabilities are $76/100$ for the outcome $X_{1}=1$ and $24/100$ for the outcome $X_{i}=0$. We compute the mean as $\hat{M}=1\times 0.76 + 0 \times 0.24 = 0.76$.
+Suppose we flipped a coin $100$ times and found that $76$ were heads and $24$ were tails. The estimated probabilities are $76/100$ for the outcome $X_{1}=1$ and $24/100$ for the outcome $X_{i}=0$. We compute the mean as $\hat{M}=1\times 0.76 + 0 \times 0.24 = 0.76$.
 
 ```{r}
 # Compute a sample estimate using probability weights
@@ -558,7 +566,7 @@ weighted.quantile(x=X, w=weights, probs=.5)
 
 #### **Continuous Random Variables**. {-}
 
-Many continuous random variables are parameterized by their means and variances. For example, the exponential distribution has parameter $\lambda$, which corresponds to the theoretical mean $1/\lambda$ and variance $1/\lambda^2$. For another example, the two parameters of the normal distribution are $\mu$ and $\sigma$, which corresponds to the theoretical mean and variance. 
+Many continuous random variables are parameterized by their means and variances. For example, the exponential distribution has a rate parameter $\lambda$, which corresponds to the theoretical mean $1/\lambda$ and variance $1/\lambda^2$. For another example, the two parameters of the normal distribution are $\mu$ and $\sigma^2$, which corresponds to the theoretical mean and variance. 
 ```{r}
 # Exponential Random Variable
 X <- rexp(5000, 2)
@@ -578,7 +586,9 @@ If the sample space is continuous, we can compute the theoretical mean (or expec
 \begin{eqnarray}
 \mathbb{E}[X] = \int x f(x) d x,
 \end{eqnarray}
-where $f(x)$ is the probability the random variable takes the particular value $x$. Similarly, we can compute the theoretical variance as
+where $f(x)$ is the probability density for the particular value $x$. Note that this is not a probability; probabilities are areas under $f$.
+
+Similarly, we can compute the theoretical variance as
 \begin{eqnarray}
 \mathbb{V}[X_{i}]= \int \left(x - \mathbb{E}[X_{i}] \right)^2 f(x) d x,
 \end{eqnarray}
@@ -597,7 +607,7 @@ round( mean(X), 4)
 round( var(X), 4)
 ```
 :::{.callout-tip icon=false collapse="false"}
-You can estimate means and variances for continuous random variables with weights, but here we have an additional approximation error
+You can estimate means and variances for continuous random variables with weights, but here we have an additional approximation error due to binning by the histogram.
 ```{r}
 # values and probabilities
 h  <- hist(X, plot=F)

@@ -1,16 +1,15 @@
 # $p$-values
 ***
-
  
 ## $p$-values
 
 A $p$-value is the frequency you see something as extreme as your statistic when sampling from the null distribution. We want the probability mass in both tails: the random variable $M$ that is at least as extreme (far from the null mean of $9$) as our observed sample mean $\hat{M}$.
 \begin{eqnarray}
 Prob( |M - \mu| \geq |\hat{M} - \mu| \mid \mu = 9 )
-&\approx& Prob( |M^{\text{boot}}- \mu^{\text{boot}}| \geq |\hat{M}- \mu^{\text{boot}}|  \mid \mu^{\text{boot}} = 9) \\
+&\approx& Prob( |M^{\text{boot}}- \mu| \geq |\hat{M}- \mu|  \mid \mu = 9) \\
 &=& 1-\hat{F}^{|\text{boot}|}_{0}(|\hat{M}-9|),
 \end{eqnarray}
-where $\hat{F}^{|\text{boot}|}_{0}$ is the ECDF of $|M^{\text{boot}}- \mu^{\text{boot}}|$.
+where $\hat{F}^{|\text{boot}|}_{0}$ is the ECDF of $|M^{\text{boot}}- \mu|$.
 
 The bootstrap idea here is to approximate $M-\mu$, the difference between the sample mean $M$ and the unknown theoretical mean $\mu$, with the difference between the bootstrap mean $M^{\text{boot}}$ and the sample mean, $M^{\text{boot}}-M$.
 
@@ -64,6 +63,14 @@ title( paste0('p=', round(p2,3)))
 ```
 :::
 
+
+
+Note that 
+
+* Bootstrap estimates the distribution of $\hat{M}-M$.
+* Null-bootstrap shifts the bootstrap so they are centered at the hypothesized mean, estimating the distribution of $\hat{M}-\mu$.
+
+
 #### **Caveats**. {-}
 
 Beware that a common misreading of the $p$-value as "the probability the null is true". That is false.
@@ -79,7 +86,6 @@ if(p2 >.05){
     print('reject the null that mean=9 in favor of either <9 or >9, at the 5% level')
 }
 ```
-
 
 Also note that the $p$-value is itself a function of data, and hence a random variable that changes from sample to sample. Given that the $5\%$ level is somewhat arbitrary, and that the $p$-value both varies from sample to sample and is often misunderstood, it makes sense to give $p$-values a limited role in decision making. 
 
@@ -104,11 +110,12 @@ hist(p_values, freq=F,
 ## Other Statistics
 
 #### **$t$-values**. {-}
-A *$t$-value* standardizes the approach for hypothesis tests of the mean. For any specific sample, we compute the estimate
+A *$t$-value* standardizes the approach for hypothesis tests of the mean.
 \begin{eqnarray}
-\hat{t}=(\hat{M}-\mu)/\hat{S},
+t = (M - \mu) / SE(M),
 \end{eqnarray}
-which corresponds to the estimator $t = (M - \mu) / \mathbb{s}(M)$, which varies from sample to sample. We can use bootstrapping to estimate the variability of the $t$ statistic, just like we did with the mean.
+
+For any specific sample, we must approximate the standard error. Using the theory-driven approach, we compute $\hat{t}=(\hat{M}-\mu)/(\hat{S}/\sqrt{n})$. Using the theory-driven approach, we compute $\hat{t}=(\hat{M}-\mu)/(\hat{SE}^{\text{jack}})$ or $\hat{t}=(\hat{M}-\mu)/(\hat{SE}^{\text{boot}})$. In any case, we can approximate use bootstrapping to estimate the variability of the $t$ statistic, just like we did with the mean.
 
 :::{.callout-tip icon=false collapse="true"}
 
@@ -119,7 +126,8 @@ mu <- 9
 # t statistic 
 jackknife_means <- vector(length=length(sample_dat))
 for(i in seq_along(jackknife_means)){
-    jackknife_means[i] <- mean(dat_b[-i])
+    dat_i <- sample_dat[-i]
+    jackknife_means[i] <- mean(dat_i)
 }
 sample_t <- (sample_mean - mu)/sd(jackknife_means)
 
@@ -276,7 +284,7 @@ The $p$-value for a one-sided test is more straightforward to implement via a bo
 
 For a left-tail test, we examine \begin{eqnarray}
 p = Prob( M < \hat{M} \mid \mu = 9 )
-    &\approx& Prob( M^{\text{boot}} < \hat{M} \mid  \mu^{\text{boot}} = 9 ) = \hat{F}^{\text{boot}}_{0}(\hat{M}),
+    &\approx& Prob( M^{\text{boot}} < \hat{M} \mid  \mu = 9 ) = \hat{F}^{\text{boot}}_{0}(\hat{M}),
 \end{eqnarray}
 where $\hat{F}^{\text{boot}}_{0}$ is the ECDF of the bootstrap null distribution. We reject the null if $p < 0.05$ at the $5\%$ level, and otherwise fail to reject.
 
