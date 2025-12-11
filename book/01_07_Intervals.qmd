@@ -1,16 +1,47 @@
-# Intervals
+# Confidence Intervals
 ***
 
 
 ## Confidence Intervals
 
-The sampling distribution describes how the statistic varies across samples. The *Confidence Interval* is a way to turn knowledge about that sampling distribution into a statement about the unknown parameter. A $Z\%$ confidence interval for the mean implies that $Z\%$ of the intervals we generate will contain the population mean, $\mu$. In practice, people often interpret confidence intervals informally as ``showing the uncertainty around our estimate'': wider intervals correspond to higher sampling variability and less precise information about $\mu$. Just as with standard errors, we can estimate confidence intervals using theory-driven or data-driven approaches. We will focus on data-driven approaches first.
+The sampling distribution describes how the statistic varies across samples. The *Confidence Interval* is a way to turn knowledge about that sampling distribution into a statement about the unknown parameter. A $Z\%$ confidence interval for the mean implies that $Z\%$ of the intervals we generate will contain the population mean, $\mu$. 
+
+```{r, echo=F}
+B <- 100
+n <- 1000
+x_samples <- matrix(nrow=B, ncol=n)
+for(i in seq(1,nrow(x_samples))){
+    x_samples[i,] <- runif(n)
+}
+
+# Confidence Interval for each sample
+xq <- apply(x_samples, 1, function(r){ #theoretical se's 
+    mean(r) + c(-1,1)*sd(r)/sqrt(n)
+})
+
+# Explicit calculation: whether the true mean is in each CI
+mu_true <- 0.5 # theoretical result for uniform samples
+covered <- mu_true >= xq[1, ] & mu_true <= xq[2, ]
+
+# Visualize confidence intervals
+plot.new()
+plot.window(xlim = range(xq), ylim = c(0,B))
+for(i in seq(1,B) ) {
+  col_i <- if (covered[i]) rgb(0, 0, 0, 0.3) else rgb(1, 0, 0, 0.5)
+  segments(xq[1, i], i, xq[2, i], i, col = col_i, lwd = 2)
+}
+abline(v = mu_true, col = "blue", lwd = 2)
+axis(1)
+title("68% Coverage (Red = Missed)", font.main=1)
+```
+
+Note that a $95\%$ coverage level does not imply a $95\%$ probability that the true parameter lies within a particular calculated interval. The interval you computed either contains the true mean or it does not.
+
+In practice, people often interpret confidence intervals informally as ``showing the uncertainty around our estimate'': wider intervals correspond to higher sampling variability and less precise information about $\mu$. Just as with standard errors, we can estimate confidence intervals using theory-driven or data-driven approaches. We will focus on data-driven approaches first.
 
 
-#### **Percentile Intervals**.  {-}
-This type of confidence interval is simply the upper and lower quantiles of the sampling distribution.
-
-For example, consider the sample mean. We simulate the sampling distribution of the sample mean and construct a $90\%$ confidence interval by taking the $5^{th}$ and $95^{th}$ percentiles of the simulated means. 
+#### **Computation**. {-}
+We compute Confidence Intervals using the upper and lower quantiles of the sampling distribution. For example, consider the sample mean. We simulate the sampling distribution of the sample mean and construct a $90\%$ confidence interval by taking the $5^{th}$ and $95^{th}$ percentiles of the sampling distribution. 
 ```{r}
 # Create 300 samples, each with 1000 random uniform variables
 x_samples <- matrix(nrow=300, ncol=1000)
@@ -53,7 +84,6 @@ abline(v=mq)
 :::
 
 
-Note that $Z\%$ confidence intervals do not generally cover $Z\%$ of the data (those types of intervals are covered later). In the examples above, notice the confidence interval for the mean differs from the confidence interval of the median, and so both cannot cover $90\%$ of the data. The confidence interval for the mean is roughly $[0.48, 0.52]$, which theoretically covers only a $0.52-0.48=0.04$ proportion of uniform random data, much less than the proportion 0.9.
 
 #### **Interval Size**.  {-}
 
@@ -105,8 +135,8 @@ abline(v=mq)
 ```
 
 
-#### **Resampling**.  {-}
-We can use resampling procedures to estimate a confidence interval. E.g., suppose that we repeatedly sample data and construct $95\%$ bootstrap confidence interval for the mean, then we expect that $95\%$ of our constructed confidence intervals contain the theoretical population mean. 
+#### **Resampling Percentile Intervals**.  {-}
+We can use resampling procedures to estimate a confidence interval. E.g., we repeatedly resample data and construct $95\%$ bootstrap confidence interval for the mean, then we expect that $95\%$ of our constructed confidence intervals contain the theoretical population mean. 
  
 
 ```{r}
@@ -241,29 +271,33 @@ abline(v=sample_mean, lwd=2, col=4)
 
 
 
-| Distribution| Sample Size per Iteration | Number of Iterations | Resample |
-| -------- | ------- | ------- | ------- |
-Jackknife  | $n-1$   | $n$  | $X,Y$ without Replacement |
-Bootstrap  | $n$     | $B$  | $X,Y$ with Replacement |
-Null Bootstrap | $n$ | $B$  | $X,Y$ with Replacement and shifted |
+## Misc. Topics
 
-While we could conceptually also use a Null Jackknife distribution, that is uncommon.
+#### **Prediction Intervals**. {-}
 
+Note that $Z\%$ confidence intervals do not generally cover $Z\%$ of the data (those types of intervals are covered later). In the examples above, notice the confidence interval for the mean differs from the confidence interval of the median, and so both cannot cover $90\%$ of the data. The confidence interval for the mean is roughly $[0.48, 0.52]$, which theoretically covers only a $0.52-0.48=0.04$ proportion of uniform random data, much less than the proportion $0.9$.
 
-## Probability Theory
+In addition to confidence intervals, we can also compute a *prediction interval* which estimate the variability of new data rather than a statistic. To do so, we compute the frequency each value was covered.
+```{r}
+x <- runif(1000)
+# Middle 90% of values
+xq0 <- quantile(x, probs=c(.05,.95))
+paste0('we are 90% confident that the a future data point will be between ', 
+    round(xq0[1],2), ' and ', round(xq0[2],2) )
 
-#### **CI Coverage**. {-}
+hist(x,
+    breaks=seq(0,1,by=.01), border=NA,
+    main='Prediction Interval', font.main=1)
+abline(v=xq0)
+```
 
-Given the sampling distribution is approximately normally, the usual confidence intervals are symmetric. For the sample mean $M$, we can construct the interval $[M - E, M + E]$, where $E$ is some "margin of error" on either side of $M$. A coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$. I.e., if the same sampling procedure were repeated $100$ times from the same population, approximately $95$ of the resulting intervals would be expected to contain the true population mean.^[Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( E + \mu > M > \mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ in $95\%$ of the samples because whenever $M$ is within $10$ of $\mu$, the value $\mu$ is also within $10$ of $M$. But for any particular sample, the interval $[\hat{M}-10, \hat{M}+10]$ either does or does not contain $\mu$.] Note that a $95\%$ coverage level does not imply a $95\%$ probability that the true parameter lies within a particular calculated interval. E.g., if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$. The interval you computed either contains the true mean or it does not. 
+#### **Normal Approximation**. {-}
 
+Given the sampling distribution is approximately normally, the usual confidence intervals are symmetric. For the sample mean $M$, we can construct the interval $[M - E, M + E]$, where $E$ is a "margin of error" on either side of $M$. A coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$. I.e., if the same sampling procedure were repeated $100$ times from the same population, approximately $95$ of the resulting intervals would be expected to contain the true population mean.^[Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( \mu + E > M > \mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ in $95\%$ of the samples because whenever $M$ is within $10$ of $\mu$, the value $\mu$ is also within $10$ of $M$. But for any particular sample, the interval $[\hat{M}-10, \hat{M}+10]$ either does or does not contain $\mu$.] 
 
+Recall that a $95\%$ coverage level does not imply a $95\%$ probability that the true parameter lies within a particular calculated interval. E.g., if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$.
 
-:::{.callout-tip icon=false collapse="true"}
-Given the sample size, $n$, is large enough for the sample mean to be approximately normally distributed, what confidence interval satisfies the following: the theoretical mean $\mu$ is inside of the interval with probability $95%$ (i.e., for $(1 - 0.05)%$ of samples)?
-:::
-
-For a fixed sample size $n$, there is a trade-off between *precision*: the width of a confidence interval, and *accuracy*: the probability that a confidence interval contains the theoretical value.
-
+Also note that for a fixed sample size $n$, there is a trade-off between *precision*: the width of a confidence interval, and *accuracy*: the probability that a confidence interval contains the theoretical value.
 
 ```{r}
 # Confidence Interval for each sample
@@ -285,19 +319,20 @@ cat(sprintf("Estimated coverage probability: %.2f%%\n", 100 * coverage_rate))
 # Change to [-2 sd, +2 sd] to see Precision-Accuracy tradeoff.
 ```
 
-```{r}
-# Visualize first 100 confidence intervals
-n <- 100
-plot.new()
-plot.window(xlim = range(xq), ylim = c(0, n))
-for (i in seq(1,n) ) {
-  col_i <- if (covered[i]) rgb(0, 0, 0, 0.3) else rgb(1, 0, 0, 0.5)
-  segments(xq[1, i], i, xq[2, i], i, col = col_i, lwd = 2)
-}
-abline(v = mu_true, col = "blue", lwd = 2)
-axis(1)
-title("Visualizing CI Coverage (Red = Missed)", font.main=1)
-```
+:::{.callout-tip icon=false collapse="true"}
+Given the sample size, $n$, is large enough for the sample mean to be approximately normally distributed, what confidence interval satisfies the following: the theoretical mean $\mu$ is inside of the interval with probability $95%$ (i.e., for $(1 - 0.05)%$ of samples)?
+:::
+
+
+As such, there are two different types of confidence intervals. (While we could also use a Null Jackknife distribution, that is rarely done.)
+
+| Distribution | Mechanism |
+| -------- | ------- |
+Null Bootstrap | randomly resample $n$ observations with replacement and shift |
+Theory Based   | assume observations are i.i.d. and normal distribution is a good approximation |
+: Types of Confidence Interval Estimates
+
+
 
 
 

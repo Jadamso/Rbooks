@@ -118,37 +118,49 @@ https://bookdown.org/yihui/bookdown/github.html
 ***
 (Formerly part of Introduction to Data Analysis)
 
+* Highlight definitions via markdown, alongside italics
+* Add sampling distributions for proportions 
+* Update one-sided intervals
+* Update notation? Estimator/estimate $X_{i}/x_{i}, \bar{X}/\bar{x}$ 
+
 #### Ch 0.
 Syllabus, Refresher (Highschool Background, on your own time)
 
-#### Ch 2.
+#### Ch 2. Programming and Math
 * Define what functions are and provide examples (numerical and visual)
     - https://r02pro.github.io/functions.html
 * New 2.2 with logic (and, or) and counting (choose). Both concrete and computational examples.
-    - Suppose license plates use the format AB1 23C, where each of the first two digits can be any one of 26 letters and each of the next three digits can be one of 10 numbers, and the last digit can be one of 26 letters.  How many possible license plate numbers can be generated if no letter or number can be used twice?
+    - Suppose license plates use the format AB1 23C, where each of the first two digits can be any one of 26 letters and each of the next three digits can be one of 10 numbers, and the last digit can be one of 26 letters. How many possible license plate numbers can be generated if no letter or number can be used twice?
     - Suppose that, from a population of 20 bank accounts, we want to take a random sample of three accounts in order to learn about the population. In this case, the order of selection doesn’t matter. How many different random samples of three accounts are possible? 
     - The HR committee is about to have a busy day. In the morning, the committee plans to choose 2 employees (out of a set of 25 employees) for promotion. The first person they select will become a manager, and the second person they choose will become an assistant manager. Moving on to the afternoon, the HR committee intends to make a separate decision by choosing 5 employees (out of a set of 23 employees) for termination. Note that the decisions made in the morning and afternoon are independent of one another. How many possible outcomes are there for the HR committee’s overall decisions throughout the day?
 
-#### Ch 4. Random Variables
+#### Ch 4. Numerical Statistics
+* https://www.khanacademy.org/math/mappers/statistics-and-probability-220-223
+
+#### Ch 6. Random Variables
 * https://www.khanacademy.org/math/mappers/statistics-and-probability-192-202
 * Further show how F(x) comes from f(x), and vice versa.
 
+#### Ch 7. Statistical Theory
 
-#### Ch 5. Mean and Standard Deviation
-* https://www.khanacademy.org/math/mappers/statistics-and-probability-220-223
-
-#### Ch 6. (Re)Sampling
-* Bootstrap Jacknife theory (iid)
+* Bootstrap Jackknife theory (iid)
 * Value of new data for Bootstrap?
-* permutation sampling?
 
 
-#### Ch 8. p-values Tests
-* permutation H-testing
+1. A fitness tracker manufacturer claims that users take more than 8,000 steps per day on average. 
+A sample of 25 users has mean = 8,492 steps, and a standard deviation = 1,200 steps. Test at the 5% level, using theory-based intervals and showing your work.
+a) state the Hypotheses
+b) Calculate the test statistic 
+c) Do you reject the null Hypothesis?
+d) Fully state your conclusion
+
+#### Ch 8. Intervals
 * Fail to reject the null. Examples with multiple hypothesis: can't rule out A, also can't rule out B.
+
+#### Ch.9 p-values
 * 8.2. h-tests for mode?
 
-#### Ch.9 Misc Univariate Topics
+#### Ch.10 Misc Univariate Topics
 
 * [The Box-Cox Transformation Technique: A Review](https://www.jstor.org/stable/2348250)
 
@@ -170,12 +182,13 @@ More examples
 * Suppose you read that Honda Civic is the most commonly stolen car. Does this mean that Honda Civic cars have a higher probability to be stolen compared to other cars?
 * other examples from Microeconometrics (Simpsons paradox)
 
+
+
 #### Ch 11. Bivariate Statistics
 
 #### Ch 12. 
 
 * Eliminate twosamples package dependency
-
 
 
 #### Ch 13. Simple Regression
@@ -187,6 +200,7 @@ More examples
 * "Introduction to Econometrics with R" by Hanck, Arnold, Gerber, and Schmelzer, https://www.econometrics-with-r.org/
 (taking seriously Greene's "Model Building--A General to Simple Strategy")
 
+https://openstax.org/books/introductory-statistics-2e/pages/12-1-linear-equations
 
 
 #### Ch 14. Local Regression
@@ -212,6 +226,13 @@ https://statmodeling.stat.columbia.edu/2025/10/21/reanalysis-of-that-nobel-prize
 * https://www.tandfonline.com/doi/abs/10.1198/000313008X332421
 * Advanced probability theory?
 * Type I vs II errors. Power analysis
+Measurement Error
+
+Data Transformation
+    Correction for Bias Introduced by a Transformation of Variables
+    https://www.explainxkcd.com/wiki/index.php/2048:_Curve-Fitting
+    Measurement Error
+    Smearing?
 
 
 
@@ -219,9 +240,84 @@ https://statmodeling.stat.columbia.edu/2025/10/21/reanalysis-of-that-nobel-prize
 ***
 (Formerly Introduction to Linear Regression)
 
+## 17 Multivariate Regs I
+ANOVA
+    https://bookdown.org/mike/data_analysis/sec-experimental-design.html
+    https://rpubs.com/odenipinedo/experimental-design-in-R
+    https://bookdown.org/gerhard_krennrich/doe_and_optimization/doe2.html
+    https://michael-franke.github.io/intro-data-analysis/Chap-02-01-data-exp-design.html
+    https://bookdown.org/jgscott/DSGI/experiments.html
+    https://designexptr.org/
 
+
+Adjusted R2 (add to 10.4)
+    https://davegiles.blogspot.com/2013/10/in-what-sense-is-adjusted-r-squared.html
+    https://stats.stackexchange.com/questions/130069/what-is-the-distribution-of-r2-in-linear-regression-under-the-null-hypothesis
+    Rencher, A. C., & Schaalje, G. B. (2008). Linear Models in Statistics (2nd ed.). Wiley. Chapter 5 (“The General Linear Model”), Section 5.6.2 (“Distribution of R2 under the Null Hypothesis”), which shows that under the null (all slopes zero) and Gaussian errors,
+
+    https://statmodeling.stat.columbia.edu/2024/06/17/this-well-known-paradox-of-r-squared-is-still-buggin-me-can-you-help-me-out/
+
+
+## 18. Multivariate Regs II
+12.5 Diagnostics
+    https://book.stat420.org/model-diagnostics.html
+12.6 Transformations
+12.7 Regressograms
+12.8 Locally Linear
+12.9 Gradient Summaries, GoF
+
+## 19: Observational Data
+13.1 Temporal Interdependence
+    Plots
+        https://plotly.com/r/time-series/#time-series-with-range-slider
+        (https://rstudio.github.io/dygraphs/)
+        https://vlyubchich.github.io/tsar/l02_tsintro.html
+        https://vlyubchich.github.io/tsar/l03_smoothing.html
+        https://otexts.com/fpp3/graphics.html
+        https://otexts.com/fpp3/expsmooth.html
+    Stationary vs. Nonstationary
+    Measures of temporal association: ACF, CCF
+13.2 Spatial Interdependence
+    Plots
+    Stationary vs. Nonstationary
+    Measures of spatial association: ACF, CCF
+13.3 Endogeneity Issues Overview
+13.4 Historical Event Studies
+    Caution! Causal interpretation rests on many assumptions. Often including spatial and temporal Independence.
+
+https://www.tandfonline.com/doi/full/10.1080/10618600.2022.2104290#d1e315
+
+## 20 Laboratory Experiments
+
+14.1 Experimental Designs
+    Completely Randomized Designs
+    Factorial Design
+    Randomized Block Design 
+    Crossover Design
+ 
+14.2 Sampling
+    Simple Random Sampling
+    Balanced Sampling
+    Stratified Sampling
+    Cluster Sampling
+    Convenience Sampling
+    Poisson Sampling
+
+## 22. Misc Topics
+16.4 Decision Theory
+16.5 Quality Control
+16.6 Optimal Designs
+
+**Interpretation**
+https://easystats.github.io/report/
+
+
+
+
+
+
+----------------
 #### Big Picture
-
 
 * Add some theory about adjusted R2 and F-test to 11.4
 * Ch.12 https://plotly.com/r/splom/
@@ -278,27 +374,6 @@ See also "dfbetas" and "covratio"
 head(influence.measures(reg)$infmat)
 ```
 
-
-
-#### Adjusted R2 (add to 10.4)
-https://davegiles.blogspot.com/2013/10/in-what-sense-is-adjusted-r-squared.html
-https://stats.stackexchange.com/questions/130069/what-is-the-distribution-of-r2-in-linear-regression-under-the-null-hypothesis
-Rencher, A. C., & Schaalje, G. B. (2008). Linear Models in Statistics (2nd ed.). Wiley. Chapter 5 (“The General Linear Model”), Section 5.6.2 (“Distribution of R2 under the Null Hypothesis”), which shows that under the null (all slopes zero) and Gaussian errors,
-
-https://statmodeling.stat.columbia.edu/2024/06/17/this-well-known-paradox-of-r-squared-is-still-buggin-me-can-you-help-me-out/
-
-
-**Interpretation**
-https://easystats.github.io/report/
-
-
-
-#### Data Transformation
-
-Correction for Bias Introduced by a Transformation of Variables
-https://www.explainxkcd.com/wiki/index.php/2048:_Curve-Fitting
-Measurement Error
-Smearing?
 
 **Quantile Results**.{-}
 

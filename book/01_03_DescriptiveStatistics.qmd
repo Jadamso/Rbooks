@@ -1,0 +1,472 @@
+# Numerical Statistics
+***
+
+We often summarize distributions with *statistics*: functions of data. The most basic way to do this is with `summary`, whose values can all be calculated individually. 
+
+```{r}
+# A random sample (real data)
+X <- USArrests[,'Murder']
+summary(X)
+
+# A random sample (computer simulation)
+X <-  runif(1000)
+summary(X)
+
+# Another random sample (computer simulation)
+X <- rnorm(1000) 
+summary(X)
+```
+
+Together, the sample mean and variance statistics summarize the central tendency and dispersion of a distribution. In some special cases, such as with the normal distribution, they completely describe the distribution. Other distributions are better described with other statistics, either as an alternative or in addition to the mean and variance. After discussing those other statistics, we will return to the two most basic statistics in theoretical detail.
+
+## Mean and Variance
+
+The mean and variance are the two most basic statistics that summarize the center and how spread apart the values are for data in your sample. As before, we represent data as vector $\hat{X}=(\hat{X}_{1}, \hat{X}_{2}, ....\hat{X}_{n})$, where there are $n$ observations and $\hat{X}_{i}$ is the value of the $i$th one.
+
+
+#### **Mean**. {-}
+Perhaps the most common statistic is the empirical mean, also known as the sample mean, which is the [sum of all values] divided by [number of values];
+\begin{eqnarray}
+\hat{M} &=& \frac{\sum_{i=1}^{n}\hat{X}_{i}}{n},
+\end{eqnarray}
+where $\hat{X}_{i}$ denotes the value of the $i$th observation.
+
+:::{.callout-note icon=false collapse="true"}
+For example, a dataset of $\{1,4,10\}$ has a mean of $[1+4+10]/3=5$.
+```{r}
+X <- c(1,4,10)
+sum(X)/length(X)
+mean(X)
+```
+:::
+
+```{r}
+# compute the mean of a random sample
+X1 <- USArrests[,'Murder']
+X1_mean <- mean(X1)
+X1_mean
+
+# visualize on a histogram
+hist(X1, border=NA, main=NA)
+abline(v=X1_mean, col=2, lwd=2)
+title(paste0('mean= ', round(X1_mean,2)), font.main=1)
+```
+
+#### **Variance**.{-}
+Perhaps the second most common statistic is the empirical variance: the average squared deviation from the mean
+\begin{eqnarray}
+\hat{V} &=&\frac{\sum_{i=1}^{n} [\hat{X}_{i} - \hat{M}]^2}{n}.
+\end{eqnarray}
+The empirical standard deviation is simply $\hat{S} = \sqrt{\hat{V} }$.
+
+:::{.callout-note icon=false collapse="true"}
+For example, a dataset of $\{1,4,10\}$ has a mean of $[1+4+10]/3=5$. The variance is $[(1-5)^2+(4-5)^2+(10-5)^2]/3=14$ and the standard deviation is $\sqrt{14}$.
+```{r}
+X <- c(1,4,10)
+X_mean <- mean(X)
+X_var <- mean( (X - X_mean)^2 )
+sqrt(X_var)
+```
+:::
+
+```{r}
+X1_s <- sd(X1) # sqrt(var(X))
+hist(X1, border=NA, main=NA, freq=F)
+X1_s_lh <- c(X1_mean - X1_s,  X1_mean + X1_s)
+abline(v=X1_s_lh, col=4)
+text(X1_s_lh, -.02,
+    c( expression(bar(X)-s[X]), expression(bar(X)+s[X])),
+    col=4, adj=0)
+title(paste0('sd= ', round(X1_s,2)), font.main=1)
+```
+
+:::{.callout-tip icon=false collapse="true"}
+Note that a "unbiased version" of the empirical variance is used by R and many statisticians: $\hat{V}' =\frac{\sum_{i=1}^{n} [\hat{X}_{i} - \hat{M}]^2}{n-1}$ and $\hat{S}' = \sqrt{\hat{V}'}$. In this class, we use the version defined previously because we do not yet know about "bias/unbiased" statistics. Do not be concerned, as there is hardly any difference when $n$ is large: e.g., $\frac{1}{n}\approx \frac{1}{n-1}$ for $n=100,000$.
+```{r}
+X <- c(1,4,10)
+
+X_mean <- mean(X)
+X_var <- mean( (X - X_mean)^2 )
+X_var
+
+# Corrected Version
+n <- length(X)  
+X_var2 <- sum( (X - X_mean)^2 )/(n-1)
+X_var2
+
+var(X) # R-Version
+```
+:::
+
+## Other Center/Spread Statistics
+
+A general rule of applied statistics is that there are multiple ways to measure something. Mean and Variance are measurements of Center and Spread, but there are others that have different theoretical properties and may be better suited for your dataset.
+
+#### **Medians and Absolute Deviations**. {-}
+We can use the empirical *Median* as a "robust alternative" to means that is especially useful for data with asymmetric distributions and extreme values. Recall that the $q$th quantile is the value where $q$ percent of the data are below and ($1-q$) percent are above. The median ($q=.5$) is the point where half of the data is lower values and the other half is higher. This implies that median is not sensitive to extreme values (whereas the mean is).
+
+```{r}
+X1 <- USArrests[,'Murder']
+median(X1)
+quantile(X1, prob=0.5)
+```
+
+:::{.callout-note icon=false collapse="true"}
+Examine robustness to an extreme value
+```{r}
+X1_extreme <- c(X1, 1000) # add one extreme value
+#par(mfrow=c(1,2)) # visualize side-by-side
+#hist(X1)
+#hist(X1_extreme)
+
+# Which measures of central tendency are robust
+# to a single extreme value?
+mean( X1)
+mean( X1_extreme )
+
+quantile(X1, prob=0.5)
+quantile(X1_extreme, prob=0.5)
+```
+:::
+
+
+
+We can also use the sample *Interquartile Range* or *Median Absolute Deviation* as an alternative to variance. The difference between the first and third quartiles (quantiles $q=.25$ and $q=.75$) measure is range of the middle $50%$ of the data, which is how the boxplot measures "spread". The median absolute deviation is another statistic that also measures "spread".
+\begin{eqnarray}
+\tilde{M} &=& \text{Med}( \hat{X}_{i}) \\
+\hat{\text{MAD}} &=& \text{Med}\left( | \hat{X}_{i} - \tilde{M} | \right).
+\end{eqnarray}
+
+```{r}
+IQR(X1)
+mad(X1)
+```
+
+:::{.callout-note icon=false collapse="true"}
+Compute the $IQR$ statistic for the dataset $\{-100,1,4,10,10\}$. 
+
+$IQR =$ Upper quartile $-$ Lower quartile $= 10 - 1 = 9$. 
+
+```{r}
+X <- c(1,4,10)
+# An intuitive alternative to sd(X), used in the boxplot
+quants <- quantile(X, probs=c(.25,.75))
+quants[2]-quants[1]
+IQR(X)
+```
+Compute the $\text{MAD}$ statistic for the dataset $\{1,4,10\}$. First compute the median, $\text{Med}(1,4,10)=4$. Then compute $\text{Med}( |1-4|,~ |4-4|,~ |10-4| )= \text{Med}( 3, 0, 6 ) = 3$.
+```{r}
+#Another alternative to sd(X)
+mad(X, constant=1)
+
+# Computationally equivalent
+# x_med <- quantile(X, probs=.5)
+# x_absdev <- abs(X -x_med)
+# quantile(x_absdev, probs=.5)
+```
+:::
+
+:::{.callout-note icon=false collapse="true"}
+Compare the robustness of various "spread" metrics to an extreme value
+```{r}
+sd(X1)
+sd(X1_extreme)
+
+IQR(X1)
+IQR(X1_extreme)
+
+mad(X1, constant=1)
+mad(X1_extreme, constant=1)
+```
+:::
+
+
+:::{.callout-tip icon=false collapse="true"}
+Note that there other "absolute deviation" statistics
+```{r, eval=F}
+# sometimes seen elsewhere
+mean( abs(X1 - mean(X1)) )
+mean( abs(X1 - median(X1)) )
+```
+:::
+
+
+#### **Weighted Statistics**. {-}
+
+The mean generalizes to a *weighted mean*: an average where different values contribute to the final result with varying levels of importance. For each outcome $x$ we have a weight $W_{x}$ and compute
+\begin{eqnarray}
+\hat{M} &=& \frac{\sum_{x} x W_{x}}{\sum_{x} W_{x}} = \sum_{x} x w_{x},
+\end{eqnarray}
+where $w_{x}=\frac{W_{x}}{\sum_{x'} W_{x'}}$ is normalized version of $W_{x}$ that implies $\sum_{x}w_{x}=1$.^[Note that if there are $K$ unique outcomes and $W_{x}=1$ then $\sum_{x}W_{x}=K$ and $w_{x}=1/K$. This means $\hat{M} = \sum_{x} x w_{x} = \sum_{x} x /K$, which is just a simple mean.]
+
+:::{.callout-note icon=false collapse="true"}
+For example, suppose a student has these scores
+```{r}
+Homework1 <- c(score=88, weight=0.25)
+Homework2 <- c(score=92, weight=0.25)
+Exam1 <- c(score=67, weight=0.2)
+Exam2 <- c(score=90, weight=0.3)
+
+Grades <- rbind(Homework1, Homework2, Exam1, Exam2)
+Grades
+```
+
+We can compute the final grade as a weighted mean
+```{r}
+# Manual Way
+88*0.25 + 92*0.25 + 67*0.2 + 90*0.3
+
+# Computerized Way
+Values <- Grades[,'score'] * Grades[,'weight']
+FinalGrade <- sum(Values)
+FinalGrade
+```
+:::
+
+We can also computed a weighted variance or weighted quantile.
+
+:::{.callout-tip icon=false collapse="false"}
+See that we can also compute weighted quantiles
+```{r}
+weighted.quantile <- function(x, w, probs){
+    #See spatstat.univar::weighted.quantile
+    oo <- order(x)
+    x <- x[oo]
+    w <- w[oo]
+    Fx <- cumsum(w)/sum(w)
+    quantile_id <- max(which(Fx <= probs))+1
+    xq <- x[quantile_id] 
+    return(xq)
+}
+
+## Unweighted
+quantile(X, probs=.5)
+weights <- rep(1, length(X))
+weighted.quantile(x=X, w=weights, probs=.5)
+
+## Weighted
+weights <- seq(X)
+weights <- weights/sum(weights) # normalize
+weighted.quantile(x=X, w=weights, probs=.5)
+```
+:::
+
+#### **Mode and Share Concentration**. {-}
+Sometimes, none of the above work well. With categorical data, for example, distributions are easier to describe with other statistics. The sample *mode* is the most common observation: the value with the highest observed frequency. We can also measure the spread of the frequencies or concentration at the mode vs elsewhere.
+
+```{r}
+X <- c('A', 'B', 'A', 'C', 'C', 'A')
+proportions <- table(X)/length(X)
+plot(proportions, col=grey(0,0.5))
+
+# mode(s)
+mode_id <- which(proportions==max(proportions))
+names(proportions)[ mode_id ]
+
+# freq. spreads
+sd(proportions)
+sum(proportions^2)
+
+# freq. concentration at mode
+max(proportions)/mean(proportions)
+```
+
+## Shape Statistics
+
+Central tendency and dispersion are often insufficient to describe a distribution. To further describe shape, we can compute sample skew and kurtosis to measure asymmetry and extreme values. 
+
+There are many other statistics we could compute on an ad-hoc basis. However, shape is often best understood with graphical descriptions: histogram, ECDF, Boxplot. These should be made before numerical descriptions: skewness and kurtosis statistics.
+
+#### **Skewness**. {-}
+The skewness statistic captures how asymmetric the distribution is by measuring the average cubed deviation from the mean, normalized the standard deviation cubed
+\begin{eqnarray}
+\frac{\sum_{i=1}^{n} [\hat{X}_{i} - \hat{M}]^3 / n}{ \hat{S}^3 }
+\end{eqnarray}
+
+```{r}
+X <- rweibull(1000, shape=1)
+hist(X, border=NA, main=NA, freq=F, breaks=20)
+
+skewness <-  function(X){
+ X_mean <- mean(X)
+ m3 <- mean((X - X_mean)^3)
+ s3 <- sd(X)^3
+ skew <- m3/s3
+ return(skew)
+}
+
+skewness( rweibull(1000, shape=1))
+skewness( rweibull(1000, shape=10) )
+```
+
+We can automatically compare against the normal distribution, which has a skew of 0.
+
+#### **Kurtosis**. {-}
+This statistic captures how many "outliers" there are like skew but looking at quartic deviations instead of cubed ones.
+\begin{eqnarray}
+\frac{\sum_{i=1}^{n} [\hat{X}_{i} - \hat{M}]^4 / n}{ \hat{S}^4 }.
+\end{eqnarray}
+Some authors further subtract $3$ to explicitly compare against the normal distribution (the normal distribution has a kurtosis of $3$).
+
+```{r}
+X <- rweibull(1000, shape=1)
+boxplot(X, main=NA)
+
+kurtosis <- function(X){  
+ X_mean <- mean(X)
+ m4 <- mean((X - X_mean)^4) 
+ s4 <- sd(X)^4
+ kurt <- m4/s4
+ return(kurt)
+ # use instead to compare against normal
+ # excess_kurt <- kurt - 3 
+}
+
+kurtosis( rweibull(1000, shape=1) )
+kurtosis( rweibull(1000, shape=10) )
+```
+
+
+#### **Clusters/Gaps**. {-}
+You can also describe distributions in terms of how clustered the values are, including the number of modes, bunching, and many other statistics. But remember that "a picture is worth a thousand words".
+
+```{r, echo=F}
+# Complicated Random Variable
+r_ugly0 <- function(n, populationMean=c(-2, 3), populationVar=c(1, 4), prob=c(.5,.5)){
+  # Which distribution is each observation coming from
+  di <- sample(c(1,2), size=n, replace=TRUE, prob=prob)
+  rnorm(n, mean=populationMean[di], sd=sqrt(populationVar)[di])
+}
+
+X <- r_ugly0(6000)
+hist(X, breaks=60,
+    freq=F, border=NA,
+    xlab="x", main='')
+
+#hist( rbeta(1000, .6, .6), border=NA, main=NA, freq=F, breaks=20)
+```
+
+```{r, echo=F}
+# Another Complicated Random Variable
+r_ugly1 <- function(n, theta1=c(-8,-1), theta2=c(-2,2), rho=.25){
+    omega   <- rbinom(n, size=1, rho)
+    epsilon <- omega * runif(n, theta1[1], theta2[1]) +
+        (1-omega) * rnorm(n, theta1[2], theta2[2])
+    return(epsilon)
+}
+# Very Large Sample
+X <- r_ugly1(1000000)
+hist(X, breaks=1000,  freq=F, border=NA,
+    xlab="x", main='')
+```
+
+```{r, eval=F}
+# Show True Density
+d_ugly1 <- function(x, theta1=c(-8,-1), theta2=c(-2,2), rho=.25){
+    rho     * dunif(x, theta1[1], theta2[1]) +
+    (1-rho) * dnorm(x, theta1[2], theta2[2]) }
+x <- seq(-12,6,by=.001)
+dx <- d_ugly1(x)
+lines(x, dx, col=1)
+```
+
+
+
+## Data Transformations
+
+Transformations can stabilize variance, reduce skewness, and make model errors closer to Gaussian.
+
+Perhaps the most common examples are *power transformations*: $y= x^\lambda$, which includes $\sqrt{x}$ and $x^2$.
+
+Other examples include the *exponential transformation*: $y=\exp(x)$ for any $x\in (-\infty, \infty)$ and *logarithmic transformation*: $y=\log(x)$ for any $x>0$.
+
+:::{.callout-tip icon=false collapse="true"}
+The exponential function is $e^{x}=1+x/1+2^2/2+x^3/6....=\sum_{k=0}^{\infty} x^k/k!$ and the $log$ function is it's inverse.
+```{r}
+x <- 1:4
+
+y <- exp(x)
+y
+
+z <- log(y)
+z
+```
+:::
+
+
+The *Box–Cox Transform* nests many cases used by statisticians. For $x>0$ and parameter $\lambda$,
+\begin{eqnarray}
+y=\begin{cases}
+\dfrac{x^\lambda-1}{\lambda}, & \lambda\neq 0,\\
+\log\left(x\right) & \lambda=0.
+\end{cases}
+\end{eqnarray}
+This function is continuous over $\lambda$.
+
+```{r}
+# Box–Cox transform and inverse
+bc_transform <- function(x, lambda) {
+  if (any(x <= 0)) stop("Box-Cox requires x > 0")
+  if (abs(lambda) < 1e-8) log(x) else (x^lambda - 1)/lambda
+}
+bc_inverse <- function(t, lambda) {
+  if (abs(lambda) < 1e-8) exp(t) else (lambda*t + 1)^(1/lambda)
+}
+
+X <- USArrests[,'Murder']
+hist(X, main='', border=NA, freq=F)
+
+par(mfrow=c(1,3))
+for(lambda in c(-1,0,1)){
+    Y <- bc_transform(X, lambda)
+    hist(Y, 
+        main=bquote(paste(lambda,'=',.(lambda))),
+        border=NA, freq=F)
+}
+```
+
+Be careful about transforming your data, as the interpretation can be harder.
+
+The mean of transformed data is not equivalent to transforming the mean, for example, which is one reason why you want to first summarize your data before transforming it. 
+
+#### **Jensen’s inequality**. {-}
+
+We can actually say more about how the mean of transformed data not equivalent to transforming the mean. To do that, we define two types of functions:
+
+* Concave functions curve inwards, like the inside of a cave.
+* Convex functions curve outward, the opposite of concave.
+
+Let $\hat{Y}_{i}=g( \hat{X}_{i})$, and denote the mean as $\hat{M}_{Y}$.
+
+If $g$ is a *concave* function, then $g( \hat{M}_{X} ) \geq \hat{M}_{Y}$.
+```{r}
+# Continuous Example 1
+mean( sqrt(x) )
+sqrt( mean(x) ) 
+
+# Continuous Example 2
+mean( log(x) )
+log( mean(x) ) 
+```
+
+```{r}
+## Discrete Example
+x  <- c(1,2,3)
+px <- c(0.2,0.5,0.3)
+MX <- sum(x * px)
+MX
+
+g  <- sqrt
+g(MX)
+
+MY <- sum(g(x) * px)
+MY
+```
+
+
+If $g$ is a *convex* function, then the inequality reverses: $g( \hat{M}_{X}) \leq \hat{M}_{Y}$.
+```{r}
+mean( exp(x) )
+exp( mean(x) )  
+```
+
