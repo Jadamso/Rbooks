@@ -1,0 +1,406 @@
+# Data & Visualization
+***
+
+## Types
+
+#### **Basic Types**. {-}
+The two basic types of data are *cardinal* (aka numeric) data and *factor* data. We can further distinguish between whether cardinal data are discrete or continuous. We can also further distinguish between whether factor data are ordered or not
+
+* *Cardinal (Numeric)*: the difference between elements always means the same thing. 
+    * Discrete: E.g. $\{ 1,2,3\}$ and notice that $2-1=3-2$.
+    * Continuous: E.g., $\{1.4348, 2.4348, 2.9, 3.9 \}$ and notice that $2.9-1.4348=3.9-2.4348$
+* *Factor*: the difference between elements does not always mean the same thing.
+    * Ordered: E.g., $\{1^{st}, 2^{nd}, 3^{rd}\}$ place in a race and notice that $1^{st}$ - $2^{nd}$ place does not equal $2^{nd}$ - $3^{rd}$ place for a very competitive person who cares only about winning.
+    * Unordered (categorical): E.g., $\{Amanda, Bert, Charlie\}$ and notice that $Amanda - Bert$ never makes sense.
+
+
+Here are some examples
+```{r}
+dat_card1 <- c(1,2,3) # Cardinal data (Discrete)
+dat_card1
+
+dat_card2 <- c(1.1, 2/3, 3) # Cardinal data (Continuous)
+dat_card2
+
+dat_fact1 <- factor( c('A','B','C'), ordered=T) # Factor data (Ordinal)
+dat_fact1
+
+dat_fact2 <- factor( c('Leipzig','Los Angeles','Logan'), ordered=F) # Factor data (Categorical)
+dat_fact2
+
+dat_fact3 <- factor( c(T,F), ordered=F) # Factor data (Categorical)
+dat_fact3
+
+# Explicitly check the data types:
+#class(dat_card1)
+#class(dat_card2)
+```
+
+Note that for theoretical analysis, the types are sometimes grouped differently as
+
+* Discrete (discrete cardinal, ordered factor, and unordered factor data). You can count the potential values. E.g., the set $\{A,B,C\}$ has three potential values.
+* Continuous (continuous cardinal data). There are uncountably infinite potential values. E.g., Try counting the numbers between $0$ and $1$ including decimal points, and notice that any two numbers have another potential number between them.
+
+
+In any case, data are often computationally analyzed as `data.frame` objects, discussed below.
+
+
+#### **Strings**. {-} 
+Note that R allows for unstructured plain text, called *character strings*, which we can then format as factors
+```{r}
+c('A','B','C')  # character strings
+c('Leipzig','Los Angeles','Logan')  # character strings
+```
+Also note that strings are encounter in a variety of settings, and you often have to format them after reading them into R.^[We will not cover the statistical analysis of text in this course, but strings are amenable to statistical analysis.]
+```{r}
+# Strings
+paste( 'hi', 'mom')
+paste( c('hi', 'mom'), collapse='--')
+
+kingText <- "The king infringes the law on playing curling."
+gsub(pattern="ing", replacement="", kingText)
+# advanced usage
+#gsub("[aeiouy]", "_", kingText)
+#gsub("([[:alpha:]]{3})ing\\b", "\\1", kingText) 
+```
+
+## Datasets
+
+Datasets can be stored in a variety of formats on your computer. But they can be analyzed in R in three basic ways.
+
+#### **Lists**. {-}
+
+Lists are probably the most basic type
+```{r}
+x <- seq(1,10)
+y <- 2*x
+list(x, y)  # list of vectors
+
+x_mat1 <- matrix( seq(2,7), 2, 3)
+x_mat2 <- matrix( seq(4,-1), 2, 3)
+list(x_mat1, x_mat2)  # list of matrices
+```
+
+Lists are useful for storing unstructured data
+```{r}
+list(list(x_mat1), list(x_mat2))  # list of lists
+
+list(x_mat1, list(x_mat1, x_mat2)) # list of different objects
+
+# ...inception...
+list(x_mat1,
+    list(x_mat1, x_mat2), 
+    list(x_mat1, list(x_mat2)
+    )) 
+```
+
+#### **Data.frames**. {-}
+
+A *data.frame* looks like a matrix but each column can be a different type of vector (or even list). This allows you to combine different data types into a single object for analysis, which is why it might be your most common object.
+
+```{r}
+# data.frames: your most common data type
+    # matrix of different data-types
+    # well-ordered lists
+data.frame(x, y)  # list of vectors
+```
+
+:::{.callout-note icon=false collapse="true"}
+Create a data.frame storing two different types of data. Then show print only the second column
+```{r}
+dat <- data.frame(x=dat_fact2, y=dat_card2)
+dat
+
+dat[,'y']
+```
+:::
+
+#### **Arrays**. {-}
+
+Arrays are generalization of matrices to multiple dimensions. They are a very efficient way to store well-formatted numeric data, and are often used in spatial econometrics and time series (often in the form of "data cubes").
+
+```{r}
+# data square (matrix)
+array(data = seq(1,24), dim=c(3, 8))
+
+# data cube
+a <- array(data = seq(1,24), dim=c(3, 2, 4))
+a
+```
+
+```{r, eval=F}
+a[1, , , drop = FALSE]  # Row 1
+#a[, 1, , drop = FALSE]  # Column 1
+#a[, , 1, drop = FALSE]  # Layer 1
+
+a[ 1, 1,  ]  # Row 1, column 1
+#a[ 1,  , 1]  # Row 1, "layer" 1
+#a[  , 1, 1]  # Column 1, "layer" 1
+a[1 , 1, 1]  # Row 1, column 1, "layer" 1
+```
+
+Apply extends to arrays
+```{r}
+apply(a, 1, mean)    # Row means
+apply(a, 2, mean)    # Column means
+apply(a, 3, mean)    # "Layer" means
+apply(a, c(1,2), mean)  # Row/Column combination 
+```
+
+Outer products yield arrays
+```{r}
+x <- c(1,2,3)
+x_mat1 <- outer(x, x) # x %o% x
+x_mat1
+is.array(x_mat1) # Matrices are arrays
+
+x_mat2 <- matrix( seq(6,1), 2, 3)
+outer(x_mat2, x)
+# outer(x_mat2, matrix(x))
+# outer(x_mat2, t(x))
+# outer(x_mat1, x_mat2)
+```
+
+
+## Densities and Distributions
+
+#### **Initial Data Inspection**. {-}
+Regardless of the data types you have, you typically begin by inspecting your data by examining the first few observations.
+ 
+Consider, for example, historical data on crime in the US.
+
+```{r}
+head(USArrests) # Actual Data
+
+# Check NA values
+X <- c(3,3.1,NA,0.02) #Small dataset we will use in numerical examples
+sum(is.na(X))
+```
+
+To further examine a particular variable, we look at its distribution. In what follows, we will often work with data as vector $\hat{X}=(\hat{X}_{1}, \hat{X}_{2}, ....\hat{X}_{n})$, where there are $n$ observations and $\hat{X}_{i}$ is the value of the $i$th one. We often analyze observations in comparison to some value $x$. 
+```{r}
+X <- c(3,3.1,0.02) # Data: "big X"
+x <- 2 # particular value: "little x"
+sum(X <= x)
+sum(X == x)
+```
+
+#### **Histogram Density Estimate**. {-}
+The [histogram](https://en.wikipedia.org/wiki/Histogram) measures the proportion of the data in different bins. It does so by dividing the range of the data into exclusive bins of equal-width $h$, and count the number of observations within each bin. We often rescale the counts, dividing by the number of observations $n$ multiplied by bin-width $h$, so that the total area of the histogram sums to one, which allows us to interpret the numbers as a *density*.
+
+Mathematically, for an exclusive bin $\left(x-\frac{h}{2}, x+\frac{h}{2} \right]$ defined by their midpoint $x$ and width $h$, we compute
+\begin{eqnarray}
+\hat{f}(x) &=& \frac{  \sum_{i=1}^{n} \mathbf{1}\left( \hat{X}_{i} \in \left(x-\frac{h}{2}, x+\frac{h}{2} \right] \right) }{n h},
+\end{eqnarray}
+where $\mathbf{1}()$ is an indicator function that equals $1$ if the expression inside is TRUE and $0$ otherwise. E.g., if $\hat{X}_{i}=3.8$ and $h=1$, then for $x=1$ we have $\mathbf{1}\left( \hat{X}_{i} \in \left(1-\frac{h}{2}, 1+\frac{h}{2} \right] \right)=\mathbf{1}\left( 3.8 \in \left(0.5, 1.5\right] \right)=0$ and for $x=4$ $\mathbf{1}\left( \hat{X}_{i} \in \left(4-\frac{h}{2}, 4+\frac{h}{2} \right] \right)=\mathbf{1}\left(  3.8 \in \left(3.5, 4.5\right] \right)=1$.
+
+Note that the area of the rectangle is "base x height", which is $h \times \hat{f}(x)= \sum_{i=1}^{n} \mathbf{1}\left( \hat{X}_{i} \in \left(x-\frac{h}{2}, x+\frac{h}{2} \right] \right) /n$.
+This means the rectangle area equals the proportion of data in the bin.
+We compute $\hat{f}(x)$ for each bin midpoint $x$, and the area of all rectangles sums to one.
+^[If $L$ distinct bins exactly span the range, then $h=[\text{max}(\hat{X}_{i}) - \text{min}(\hat{X}_{i})]/L$ and $x\in \left\{ \frac{\ell h}{2} + \text{min}(\hat{X}_{i}) \right\}_{\ell=1}^{L}$.]
+
+:::{.callout-note icon=false collapse="true"}
+For example, consider the dataset $\{3,3.1,0.02\}$ and use bins $(0,1], (1,2], (2,3], (3,4]$.
+In this case, the midpoints are $x=(0.5,1.5,2.5,3.5)$ and $h=1$.
+Then the counts at each midpoints are $(1,0,1,1)$.
+Since $\frac{1}{nh}=\frac{1}{3\times1}=\frac{1}{3}$, we can rescale the counts to compute the density as $\hat{f}(x)=(1,0,1,1) \frac{1}{3}=(1/3,0,1/3,1/3)$.
+
+
+```{r}
+# Intuitive Examples
+X <- c(3,3.1,0.02)
+Xhist <- hist(X, breaks=c(0,1,2,3,4), plot=F)
+Xhist
+
+# base x height
+base <- 1
+height <- Xhist[['density']]
+sum(base*height)
+```
+
+For another example, use the bins $(0,2]$ and $(2,4]$. So the midpoints are $1$ and $3$, and the bin width is $2$. Only one observation, $0.02$, falls in the bin $(0,2]$. The other two observations, $3$ and $3.1$, fall into the bin $(2,4]$. The scaling factor is $\frac{1}{nh}=\frac{1}{3\times 2}=\frac{1}{6}$. So the first bin has density $f(1)=1\frac{1}{6}=1/6$ and the second bin has density $f(3)=2\frac{1}{6}=2/6$. The area of the first bin's rectangle is $2 \times f(1)=2/6=1/3$ and the area of the second rectangle is $2 \times f(3)=4/6=2/3$.
+
+Now intuitively work through an example with three bins instead of four. Compute the areas 
+```{r}
+Xhist <- hist(X, breaks=c(0,4/3,8/3,4), plot=F)
+base <- 4/3
+height <- Xhist[['density']]
+sum(base*height)
+
+
+# as a default, R uses bins (,] instead of [,)
+# but you can change that with "right=F"
+# hist(X, breaks=c(0,4/3,8/3,4), plot=F, right=F)
+```
+:::
+
+```{r}
+# Practical Example
+X <- USArrests[,'Murder']
+hist(X,
+    breaks=seq(0,20,by=1), #bin width=1
+    freq=F,
+    border=NA, 
+    main='',
+    xlab='Murder Arrests')
+# Raw Observations
+rug(USArrests[,'Murder'], col=grey(0,.5))
+
+# Since h=1, the density equals the proportion of states in each bin
+# Redo this example with h=2
+```
+
+Note that if you your data are factor data, or discrete cardinal data, you can directly plot the proportions in a *bar plot*. For each unique outcome $x$ we compute
+\begin{eqnarray}
+\hat{p}_{x}=\sum_{i=1}^{n}\mathbf{1}\left(\hat{X}_{i}=x\right)/n.
+\end{eqnarray}
+where $n$ is the number of observations and $\sum_{i=1}^{n}\mathbf{1}\left(\hat{X}_{i}=x\right)$ counts the number of observations equal to $x$. The height of each line equals the proportion of data with a specific value.
+
+```{r}
+# Discretized data
+X <- USArrests[,'Murder']
+Xr <- floor(X) #rounded down
+#table(Xr)
+proportions <- table(Xr)/length(Xr)
+plot(proportions, col=grey(0,.5),
+    xlab='Murder Arrests (Discretized)',
+    ylab='Proportion of States with each value')
+```
+
+#### **Empirical *Cumulative* Distribution Function**. {-}
+The ECDF counts the proportion of observations whose values are less than or equal to $x$; 
+\begin{eqnarray}
+\hat{F}(x) = \frac{1}{n} \sum_{i}^{n} \mathbf{1}( \hat{X}_{i} \leq x).
+\end{eqnarray}
+Typically, we compute this for each unique value of $x$ in the dataset. The ECDF jumps up by $1/n$ at each of the $n$ data points.
+
+:::{.callout-note icon=false collapse="true"}
+For example, consider the dataset $\{3,3.1,0.02 \}$. We reorder the observations as $\{0.02, 3, 3.1 \}$, so that there are discrete jumps of $1/n=1/3$ at each value. Consider the points $x \in \{0.5,2.5,3.5\}$. At $x=0.5$, $F(0.5)$ measures the proportion of the data $\leq 0.5$. Since only one observations, $0.02$, of three is $\leq 0.5$, we can compute $F(0.5)=1/3$. Similarly, since only one observations, $0.02$, of three is $\leq 2.5$, we can compute $F(2.5)=1/3$. Since all observations are $\leq 3.5$, we can compute $F(3.5)=1$.
+```{r}
+X <- c(3,3.1,0.02)
+Fhat <- ecdf(X)
+
+# Visualized
+plot(Fhat)
+
+# Evaluated at the data
+x <- X
+Fhat(X)
+#sum(X<=3)/length(X)
+#sum(X<=3.1)/length(X)
+#sum(X<=0.02)/length(X)
+
+# Evaluated at other points
+x <- c(0.5, 2.5, 3.5)
+Fhat(x)
+#sum(X<=0.5)/length(X)
+#sum(X<=2.5)/length(X)
+#sum(X<=3.5)/length(X)
+```
+:::
+
+```{r}
+F_murder <- ecdf(USArrests[,'Murder'])
+# proportion of murders <= 10
+F_murder(10)
+# proportion of murders <= x, for all x
+plot(F_murder, main='', 
+    xlab='Murder Arrests (x)',
+    ylab='Proportion of States with Murder Arrests <= x',
+    pch=16, col=grey(0,.5))
+rug(USArrests[,'Murder'])
+```
+
+#### **Quantiles**. {-}
+You can summarize the distribution of data using *quantiles*: the $p$th quantile is a value of $x$ where $p$ percent of the data are below $x$ and ($1-p$) percent are above $x$.
+
+* The *min* is the smallest value (or the most negative value if there are any), where $0%$ of the data has lower values.
+* The *median* is the middle value, where one half of the data has lower values and the other half has higher values.
+* The *max* is the largest value (or the most negative value if there are any), where $100%$ of the data has lower values.
+
+:::{.callout-note icon=false collapse="true"}
+For example, if $X=(0,0,0.02,3,5)$ then the median is $0.02$, the lower quartile is $0$, and the upper quartile is $3$. (The number $0$ is also special: the most frequent observation is called the *mode*.) 
+
+```{r}
+X <-  c(3.1, 3, 0.02)
+quantile(X, probs=c(0,.5,1))
+```
+
+Now work through an intuitive example with observations $\{1,2,...,13\}$. Hint: split the ordered observations into four groups.
+:::
+
+We are often also interested in quartiles: where $25\%$ of the data fall below $x$ (lower quartile) and where $75\%$ of the data fall below $x$ (upper quartile). Sometimes we are also interested in deciles: where $10\%$ of the data fall below $x$ (lower decile) and where $90\%$ of the data fall below $x$ (upper decile). In general, we can use the empirical quantile function
+\begin{eqnarray}
+\hat{Q}(p) = \hat{F}^{-1}(p),
+\end{eqnarray}
+to compute a quantile for any probability $p\in [0,1]$. The median corresponds to $p=0.5$, upper quartile to $p=0.75$, and upper decile to $p=0.9$.
+
+
+```{r}
+# common quantiles
+X <- USArrests[,'Murder']
+quantile(X)
+
+# All deciles are quantiles
+quantile(X, probs=seq(0,1, by=.1))
+
+# Visualized: Inverting the Empirical Distribution
+FX_hat <- ecdf(X)
+plot(FX_hat, lwd=2, xlim=c(0,20),
+    pch=16, col=grey(0,.5), main='')
+# Two Examples of Quantiles 
+p <- c(.25, .9) # Lower Quartile, Upper Decile
+cols <- c(2,4) 
+QX_hat <- quantile(X, p, type=1)
+QX_hat
+segments(QX_hat, p, -10, p, col=cols)
+segments(QX_hat, p, QX_hat, 0, col=cols)
+mtext( round(QX_hat,2), 1, at=QX_hat, col=cols)
+```
+
+There are some issues with quantiles with smaller datasets. E.g., to compute the median of $\{3,3.1,0,1\}$, we need some ways to break ties (of which there are many options). Similar issues arise for other quantiles, so quantiles are not used for such small datasets.
+
+
+:::{.callout-tip icon=false collapse="true"}
+To calculate quantiles, the computer sorts the observations from smallest to largest as $\hat{X}_{(1)}, \hat{X}_{(2)},... \hat{X}_{(N)}$, and then computes quantiles as $\hat{X}_{ (q \times N) }$. Note that $(q \times N)$ is rounded and there are different ways to break ties.
+```{r}
+X <- USArrests[,'Murder']
+Xo <- sort(X)
+Xo
+
+# median
+Xo[length(Xo)*.5]
+quantile(X, probs=.5, type=4) #tie break rule #4
+
+# min
+Xo[1]
+min(Xo)
+quantile(Xo, probs=0)
+```
+:::
+
+#### **Boxplots**. {-}
+[Boxplots](https://en.wikipedia.org/wiki/Box_plot) also summarize the distribution. The boxplot shows the median (solid black line) and interquartile range ($IQR=$ upper quartile $-$ lower quartile; filled box).^[Technically, the upper and lower *hinges* use two different versions of the first and third quartile. See <https://stackoverflow.com/questions/40634693/lower-and-upper-quartiles-in-boxplot-in-r>.] As a default, whiskers are shown as $1.5\times IQR$ and values beyond that are highlighted as outliers (so whiskers do not typically show the data range). You can alternatively show all the raw data points instead of whisker+outliers.
+
+```{r}
+boxplot(USArrests[,'Murder'],
+    main='', ylab='Murder Arrests',
+    whisklty=0, staplelty=0, outline=F)
+# Raw Observations
+stripchart(USArrests[,'Murder'],
+    pch='-', col=grey(0,.5), cex=2,
+    vert=T, add=T)
+```
+
+## Further Reading
+
+ECDF
+
+* <https://library.virginia.edu/data/articles/understanding-empirical-cumulative-distribution-functions>
+
+Handling Strings
+
+* <https://meek-parfait-60672c.netlify.app/docs/M1_R-intro_03_text.html>
+* <https://raw.githubusercontent.com/rstudio/cheatsheets/main/regex.pdf>
+
+
