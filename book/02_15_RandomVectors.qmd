@@ -1,145 +1,18 @@
 
-# Bivariate Distributions
+# Random Vectors
 ***
 
-We will now study two variables. The data for each observation data can be grouped together as a vector $(\hat{X}_{i}, \hat{Y}_{i})$.
-```{r}
-# Bivariate Data from USArrests
-xy <- USArrests[,c('Murder','UrbanPop')]
-xy[1,]
-```
-The vector $(\hat{X}_{i}, \hat{Y}_{i})$ has a *joint distribution* that describes the relationship between $\hat{X}_{i}$ and $\hat{Y}_{i}$.
-
-## Types of Distributions
-
-#### **Joint Distributions**.{-}
-
-Scatterplots are used frequently to summarize the joint relationship between two variables, multiple observations of $(\hat{X}_{i}, \hat{Y}_{i})$. They can be enhanced in several ways. As a default, use semi-transparent points so as not to hide any points (and perhaps see if your observations are concentrated anywhere). You can also add other features that help summarize the relationship, although I will defer this until later.
-
-```{r}
-plot(Murder~UrbanPop, USArrests, pch=16, col=grey(0.,.5))
-```
-
-
-
-#### **Marginal Distributions**.{-}
-You can also show the distributions of each variable along each axis.
-
-```{r}
-# Setup Plot
-layout( matrix(c(2,0,1,3), ncol=2, byrow=TRUE),
-    widths=c(9/10,1/10), heights=c(1/10,9/10))
-
-# Scatterplot
-par(mar=c(4,4,1,1))
-plot(Murder~UrbanPop, USArrests, pch=16, col=rgb(0,0,0,.5))
-
-# Add Marginals
-par(mar=c(0,4,1,1))
-xhist <- hist(USArrests[,'UrbanPop'], plot=FALSE)
-barplot(xhist[['counts']], axes=FALSE, space=0, border=NA)
-
-par(mar=c(4,0,1,1))
-yhist <- hist(USArrests[,'Murder'], plot=FALSE)
-barplot(yhist[['counts']], axes=FALSE, space=0, horiz=TRUE, border=NA)
-```
-
-#### **Conditional Distributions**.{-}
-
-We can show how distributions and densities change according to a second (or even third) variable using data splits. E.g., 
-
-```{r}
-# Tailored Histogram 
-ylim <- c(0,.25)
-xbks <-  seq(min(USArrests[,'Murder'])-1, max(USArrests[,'Murder'])+1, by=1)
-
-# Also show more information
-# Split Data by Urban Population above/below mean
-pop_mean <- mean(USArrests[,'UrbanPop'])
-pop_cut <- USArrests[,'UrbanPop']< pop_mean
-murder_lowpop <- USArrests[pop_cut,'Murder']
-murder_highpop <- USArrests[!pop_cut,'Murder']
-cols <- c(low=rgb(0,0,1,.75), high=rgb(1,0,0,.75))
-
-par(mfrow=c(1,2))
-hist(murder_lowpop,
-    breaks=xbks, col=cols[1],
-    main='Urban Pop >= Mean', font.main=1,
-    xlab='Murder Arrests', freq=F,
-    border=NA, ylim=ylim)
-
-hist(murder_highpop,
-    breaks=xbks, col=cols[2],
-    main='Urban Pop < Mean', font.main=1,
-    xlab='Murder Arrests', freq=F,
-    border=NA, ylim=ylim)
-```
-
-It is sometimes it is preferable to show the ECDF instead. And you can glue various combinations together to convey more information all at once
-
-```{r}
-layout( t(c(1,2,2)))
-# Full Sample Density
-hist(USArrests[,'Murder'], 
-    main='Full Sample Density', font.main=1,
-    xlab='Murder Arrests',
-    breaks=xbks, freq=F, border=NA)
-
-# Split Sample Distribution Comparison
-F_lowpop <- ecdf(murder_lowpop)
-plot(F_lowpop, col=cols[1],
-    pch=16, xlab='Murder Arrests',
-    main='Split Sample Distributions',
-    font.main=1, bty='n')
-F_highpop <- ecdf(murder_highpop)
-plot(F_highpop, add=T, col=cols[2], pch=16)
-
-legend('bottomright', col=cols,
-    pch=16, bty='n', inset=c(0,.1),
-    title='% Urban Pop.',
-    legend=c('Low (<= Mean)','High (>= Mean)'))
-```
-
-```{r, message=F}
-# Simple Interactive Scatter Plot
-# plot(Assault~UrbanPop, USArrests, col=grey(0,.5), pch=16,
-#    cex=USArrests[,'Murder']/diff(range(USArrests[,'Murder']))*2,
-#    main='US Murder arrests (per 100,000)')
-```
-
-
-You can also split data into grouped boxplots in the same way
-```{r}
-# K Groups with even spacing (not even counts)
-K <- 3
-USArrests[,'UrbanPop_Kcut'] <- cut(USArrests[,'UrbanPop'],K)
-table(USArrests[,'UrbanPop_Kcut'] )
-
-# FUll sample
-#boxplot(USArrests[,'Murder'], main='',
-#    xlab='All Data', ylab='Murder Arrests')
-
-# Boxplots for each group
-Kcols <- hcl.colors(K,alpha=.5)
-boxplot(Murder~UrbanPop_Kcut, USArrests,
-    main='', col=Kcols, 
-    varwidth=T, #show number of obs. per group
-    xlab='Urban Population', ylab='')
-
-# 4 Groups with equal numbers of observations
-#Qcuts <- c(
-#    '0%'=min(USArrests[,'UrbanPop'])-10*.Machine[['double.eps']],
-#    quantile(USArrests[,'UrbanPop'], probs=c(.25,.5,.75,1)))
-#USArrests[,'UrbanPop']_cut <- cut(USArrests[,'UrbanPop'], Qcuts)
-#boxplot(Murder~UrbanPop_cut, USArrests, col=hcl.colors(4,alpha=.5))
-```
-
-
-## Probability Theory
+## Theoretical Distributions
 
 We now consider a bivariate *random vector* $(X_{i}, Y_{i})$, which is a theoretical version of the bivariate observations $(\hat{X}_{i}, \hat{Y}_{i})$. E.g., If we are going to flip two coins, then $(X_{i}, Y_{i})$ corresponds to the unflipped coins and $(\hat{X}_{i}, \hat{Y}_{i})$ corresponds to concrete values after they are flipped.
 
-For another example, consider a bivariate random vector where there are three outcomes for $X_{i}$ and three outcomes for $Y_{i}$. The plot below shows higher probability events are reflected with deeper colors. 
+
+#### **Definitions for Discrete Data**. {-}
+The *joint distribution* is defined as
+\begin{eqnarray}
+Prob(X_{i} = x, Y_{i} = y)
+\end{eqnarray}
+For example, consider a bivariate random vector with three outcomes for $X_{i}$ and three outcomes for $Y_{i}$. The plot below shows each outcome $(x,y)$ with deeper colors reflecting higher probability events.
 ```{r}
 prob_table <- expand.grid(x=c(0,1,2), y=c(0,10,20))
 prob_table[,'probabilities'] <- c(
@@ -153,13 +26,7 @@ plot(prob_table[,'x'], prob_table[,'y'],
      xlab = "X", ylab = "Y")
 ```
 
-
-#### **Definitions for Discrete Data**. {-}
-The *joint distribution* is defined as
-\begin{eqnarray}
-Prob(X_{i} = x, Y_{i} = y)
-\end{eqnarray}
-Variables are *statistically independent* if $Prob(X_{i} = x, Y_{i} = y)= Prob(X_{i} = x) Prob(Y_{i} = y)$ for all $x, y$. Independence is sometimes assumed for mathematical simplicity, not because it generally fits data well.^[The same can be said about assuming normally distributed errors, although at least that can be motivated by the Central Limit Theorems.]
+Note that variables are *statistically independent* if $Prob(X_{i} = x, Y_{i} = y)= Prob(X_{i} = x) Prob(Y_{i} = y)$ for all $x, y$. Independence is sometimes assumed for mathematical simplicity, not because it generally fits data well.^[The same can be said about assuming normally distributed errors, although at least that can be motivated by the Central Limit Theorems.]
 
 
 The *conditional distributions* are defined as
@@ -173,8 +40,6 @@ Prob(X_{i} = x) = \sum_{y} Prob(X_{i} = x | Y_{i} = y) Prob( Y_{i} = y ) \\
 Prob(Y_{i} = y) = \sum_{x} Prob(Y_{i} = y | X_{i} = x) Prob( X_{i} = x ),
 \end{eqnarray}
 which is also known as the *law of total probability*.
-
-
 
 
 
@@ -413,14 +278,189 @@ bayes_result
 ```
 
 
+
+## Theoretical Statistics
+
+We will now dig a little deeper theoretically into the statistics we compute. When we know how the data are generated theoretically, we can often compute the theoretical value of the most basic and often-used bivariate statistic: the Pearson correlation. To see this, we focus on two discrete random variables, first showing their covariance, $\mathbb{C}[X_{i}, Y_{i}]$, and then their correlation $\mathbb{R}[X_{i}, Y_{i}]$. Referring to and $\mu_{X}=\mathbb{E}[X_{i}]$ and $\mu_{Y}=\mathbb{E}[Y_{i}]$, we have
+\begin{eqnarray}
+\mathbb{C}[X_{i}, Y_{i}] 
+&=& \mathbb{E}[(X_{i} –  \mu_{X})(Y_{i} – \mu_{Y}])] 
+= \sum_{x}\sum_{y} (x –  \mu_{X})(y –  \mu_{Y}) Prob(X_{i} = x, Y_{i} = y)
+\\
+\mathbb{R}[X_{i}, Y_{i}] &=& \frac{\mathbb{C}[X_{i}, Y_{i}] }{ \sqrt{\mathbb{V}[X_{i}]} \sqrt{\mathbb{V}[Y_{i}]} }
+\end{eqnarray}
+
+For example, suppose we have discrete data with the following outcomes and probabilities. Note that cells reflect the probabilities of the outcomes depicted on the row and column labels, e.g. $Prob(X_{i}=1, Y_{i}=0)=0.1$.
+
+|    | $x=0$ | $x=1$ | $x=2$ |
+|:--:|:--:|:--:|:--:|
+| $y=0$  | $0.0$ | $0.1$ | $0.0$ |
+| $y=10$ | $0.1$ | $0.3$ | $0.1$ |
+| $y=20$ | $0.1$ | $0.1$ | $0.2$ |
+
+
+
+After verifying that the probabilities sum to $1$, we then compute the marginal distributions
+\begin{eqnarray}
+Prob(X_{i}=0)=0.2,\quad Prob(X_{i}=1)=0.5,\quad Prob(X_{i}=2) = 0.3 \\
+Prob(Y_{i}=0)=0.1,\quad Prob(Y_{i}=10)=0.5,\quad Prob(Y_{i}=20) = 0.4
+\end{eqnarray}
+which allows us to compute the means:
+\begin{eqnarray}
+\mathbb{E}[X_{i}] &=& 0(0.2)+1(0.5)+2(0.3) = 1.1 \\
+\mathbb{E}[Y_{i}] &=& 0(0.1)+10(0.5)+20(0.4) = 13
+\end{eqnarray}
+We can then compute the cell-by-cell contributions: $Prob(X_{i} = x, Y_{i} = y) (x-\mathbb{E}[X_{i}])(y-\mathbb{E}[Y_{i}])$, which lead plug in to the covariance formula;
+\begin{eqnarray}
+\begin{array}{l l r r r r r}
+\hline
+x & y & Prob(X_{i}=x, Y_{i}=y) & x-\mathbb{E}[X_{i}] & y-\mathbb{E}[Y_{i}] & (x-\mathbb{E}[X_{i}])(y-\mathbb{E}[Y_{i}]) & \text{Contribution}\\
+\hline
+0 & 0  & 0.0 & -1.1 & -13 & 14.3  & 0\\
+0 & 10 & 0.1 & -1.1 & -3  & 3.3   & 0.330\\
+0 & 20 & 0.1 & -1.1 & 7   & -7.7  & -0.770\\
+1 & 0  & 0.1 & -0.1 & -13 & 1.3   & 0.130\\
+1 & 10 & 0.3 & -0.1 & -3  & 0.3   & 0.090\\
+1 & 20 & 0.1 & -0.1 & 7   & -0.7  & -0.070\\
+2 & 0  & 0.0 & 0.9  & -13 & -11.7 & 0\\
+2 & 10 & 0.1 & 0.9  & -3  & -2.7  & -0.270\\
+2 & 20 & 0.2 & 0.9  & 7   & 6.3   & 1.260\\
+\hline
+\end{array}
+\end{eqnarray}
+\begin{eqnarray}
+\mathbb{C}[X_{i},Y_{i}] &=& \sum_{x} \sum_{y} \left(x-\mathbb{E}[X_{i}]\right)\left(y-\mathbb{E}[Y_{i}]\right) Prob\left(X_{i} = x, Y_{i} = y\right) \\
+&=& 0 + 0.330 -0.770 + 0.130 + 0.090  -0.070 +0 -0.270 + 1.260
+= 0.7
+\end{eqnarray}
+
+To compute the correlation value, we first need the standard deviations
+\begin{eqnarray}
+\mathbb{V}[X_{i}] &=& \sum_{x} (x-\mathbb{E}[X_{i}])^2 Prob(X_{i} = x) \\
+&=& (0-1.1)^2(0.2)+(1-1.1)^2(0.5)+(2-1.1)^2(0.3)=0.49 \\
+\mathbb{V}[Y_{i}] &=& \sum_{y}  (y-\mathbb{E}[Y_{i}])^2 Prob(Y_{i} = y) \\
+&=& (0-13)^2(0.1)+(10-13)^2(0.5)+(20-13)^2(0.4)=41 \\
+\end{eqnarray}
+Then we can find the correlation as
+\begin{eqnarray}
+\frac{\mathbb{C}[X_{i},Y_{i}]}{ \sqrt{\mathbb{V}[X_{i}]} \sqrt{\mathbb{V}[Y_{i}]} } 
+&=& \frac{0.7}{\sqrt{0.49} \sqrt{41}} \approx 0.156,
+\end{eqnarray}
+which suggests a weak positive association between the variables.
+
+
+#### **Using the Computer**. {-}
+
+Note that you can do all of the above calculations using the computer instead of by hand.
+
+```{r}
+# Make a Probability Table
+x <- c(0,1,2)
+y <- c(0,10,20)
+xy_probs <- matrix(c(
+    0.0, 0.1, 0.0,
+    0.1, 0.3, 0.1,
+    0.1, 0.1, 0.2
+), nrow=3, ncol=3, byrow=TRUE)
+rownames(xy_probs) <- paste0('y=',y)
+colnames(xy_probs) <-  paste0('x=',x)
+xy_probs
+
+# Compute Marginals and Means
+pX  <- colSums(xy_probs)
+pY  <- rowSums(xy_probs)
+EX  <- sum(x * pX)
+EY  <- sum(y * pY)
+
+# Compute Covariance
+dxy_grid <- expand.grid(dy=y-EY, dx=x-EX)[,c(2,1)]
+dxy_grid[,'p'] <- as.vector(xy_probs)
+dxy_grid[,'contribution'] <- dxy_grid[,'dx'] * dxy_grid[,'dy'] * dxy_grid[,'p']
+CovXY <- sum(dxy_grid[,'contribution'])
+CovXY
+
+# Compute Variances
+VX <- sum( (x-EX)^2 * pX)
+SX <- sqrt(VX)
+VY <- sum( (y-EY)^2 * pY)
+SY <- sqrt(VY)
+
+# Compute Correlation
+CorXY <- CovXY / (SX * SY)
+CorXY
+```
+
+:::{.callout-note icon=false collapse="true"}
+Compute the correlation for bivariate data with these probabilities, using both math (first) and the computer (second)
+
+|    | $x=-10$ | $x=10$ |
+|:--:|:--:|:--:|
+| $y=0$ | $0.05$ | $0.20$ |
+| $y=1$ | $0.05$ | $0.20$ |
+| $y=2$ | $0.05$ | $0.20$ |
+| $y=3$ | $0.05$ | $0.20$ |
+
+:::
+
+:::{.callout-tip icon=false collapse="true"}
+
+Also compute the correlation for bivariate data with these probabilities
+
+|    | $x=-10$ | $x=10$ |
+|:--:|:--:|:--:|
+| $y=0$ | $0.05$ | $0.05$ |
+| $y=1$ | $0.10$ | $0.10$ |
+| $y=2$ | $0.15$ | $0.15$ |
+| $y=3$ | $0.20$ | $0.20$ |
+
+Also compute the correlation for bivariate data with these probabilities
+
+|    | $x=-10$ | $x=10$ |
+|:--:|:--:|:--:|
+| $y=0$ | $0.05$ | $0.15$ |
+| $y=1$ | $0.05$ | $0.15$ |
+| $y=2$ | $0.10$ | $0.20$ |
+| $y=3$ | $0.10$ | $0.20$ |
+
+Explain intuitively when the correlation equals $0$ and when it does not.
+:::
+
+
+
+## Comparing two groups
+
+Under the assumption that both populations are normally distributed, we can analytically derive the sampling distribution for the difference-in-means between two groups. In particular, the $t$-statistic
+\begin{eqnarray}
+\hat{t} = \frac{
+    \hat{M}_{Y1} - \hat{M}_{Y2}
+}{
+    \sqrt{\hat{S}_{Y1}+\hat{S}_{Y2}}/\sqrt{n}
+}
+\end{eqnarray}
+follows Student's [t-distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution).
+Welch's [$t$-statistic](https://en.wikipedia.org/wiki/Welch%27s_t-test) is an adjustment for two normally distributed populations with potentially unequal variances or sample sizes.
+
+```{r}
+# Sample 1 (e.g., males)
+n1 <- 100
+Y1 <- rnorm(n1, 0, 2)
+# Sample 2 (e.g., females)
+n2 <- 80
+Y2 <- rnorm(n2, 1, 1)
+
+par(mfrow=c(1,2))
+bks <- seq(-8,8, by=.5)
+hist(Y1, border=NA, breaks=bks,
+    main='Sample 1', font.main=1)
+hist(Y2, border=NA, breaks=bks, 
+    main='Sample 2', font.main=1)
+
+t.test(Y1, Y2, var.equal=F)
+```
+
+
+
 ## Further Reading 
-
-For plotting histograms and marginal distributions, see 
-
-* <https://www.r-bloggers.com/2011/06/example-8-41-scatterplot-with-marginal-histograms/>
-* <https://r-graph-gallery.com/histogram.html>
-* <https://r-graph-gallery.com/74-margin-and-oma-cheatsheet.html>
-* <https://jtr13.github.io/cc21fall2/tutorial-for-scatter-plot-with-marginal-distribution.html>
 
 Many introductory econometrics textbooks have a good appendix on probability and statistics. There are many useful statistical texts online too
 
