@@ -433,7 +433,7 @@ segments(c_ul,0,c_ul,.5, lty=2)
 
 
 
-Assume the tail part of a plane has the same surface area as the wings. During WWII, the designers of planes needed to know which parts of  a plane to reinforce.  They could not reinforce the entire plane, or it would become heavy and slow.  They looked at planes that returned from the battle with bullet damage, and noticed that most of these planes had bullet holes in the tail part of the plane. Does this mean that the tail part of the plane should be reinforced?
+Assume the tail part of a plane has the same surface area as the wings. During WWII, the designers of planes needed to know which parts of a plane to reinforce. They could not reinforce the entire plane, or it would become heavy and slow. They looked at planes that returned from the battle with bullet damage, and noticed that most of these planes had bullet holes in the tail part of the plane. Does this mean that the tail part of the plane should be reinforced?
 
 
 
