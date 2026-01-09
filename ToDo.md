@@ -333,6 +333,7 @@ https://easystats.github.io/report/
 
 * update CCFS in "Observational Data" to use `npSDA`
 
+https://www.tandfonline.com/doi/pdf/10.1080/01621459.2021.1938081
 
 
 find . -maxdepth 1 -type f -exec grep '[A-Za-z0-9]\$[A-Za-z0-9]' {} +
@@ -433,4 +434,40 @@ segments(c_ul,0,c_ul,.5, lty=2)
 
 
 Assume the tail part of a plane has the same surface area as the wings. During WWII, the designers of planes needed to know which parts of  a plane to reinforce.  They could not reinforce the entire plane, or it would become heavy and slow.  They looked at planes that returned from the battle with bullet damage, and noticed that most of these planes had bullet holes in the tail part of the plane. Does this mean that the tail part of the plane should be reinforced?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<details>
+<summary> Advanced and Optional </summary>
+A right tail test that "imposes the null" uses the interval $(-\infty, q_{0.95}]$, where $q_{0.95}$ is the $95^{\text{th}}$ percentile of the null bootstrap distribution: If the observed value falls inside that interval, then we fail to reject the null (at the $5\%$ level), otherwise we reject the null (it seems extremely unlikely that we would find such a small value). A left tail test that "imposes the null" uses the interval $[q_{0.05}, \infty)$, where $q_{0.05}$ is the $5^{\text{th}}$ percentile of the null bootstrap distribution. Referring to the hypothetical value generally as $\mu_0$ instead of the particular number $9$, we can summarize the one-sided decision rules as
+
+| | Tail | Reject when | Fail to reject when |
+| --- | --- | --- | --- |
+| **Impose the Null**<br>(shifted/bootstrap-null) | *Right-tail*<br> $H_A: \mu > \mu_0$ | $\hat{M} > q^{\text{null}}_{0.95}$ | $\hat{M} \le q^{\text{null}}_{0.95}$ |
+|                                                                  | *Left-tail*<br>$H_A: \mu < \mu_0$   | $\hat{M} < q^{\text{null}}_{0.05}$ | $\hat{M} \ge q^{\text{null}}_{0.05}$ |
+| **Invert a CI**<br>(percentile CI)               | *Right-tail*<br>$H_A: \mu > \mu_0$  | $\mu_0 < q^{\text{boot}}_{0.05}$   | $\mu_0 \ge q^{\text{boot}}_{0.05}$   |
+|                                                                  | *Left-tail*<br> $H_A: \mu < \mu_0$  | $\mu_0 > q^{\text{boot}}_{0.95}$   | $\mu_0 \le q^{\text{boot}}_{0.95}$  |
+  </p>
+</details>
+
 
