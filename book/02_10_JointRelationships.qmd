@@ -1,5 +1,5 @@
 
-# Statistics
+# Joint Relationships
 ***
 
 We will now study two variables. The data for each observation data can be grouped together as a vector $(\hat{X}_{i}, \hat{Y}_{i})$.
@@ -9,22 +9,112 @@ xy <- USArrests[,c('Murder','UrbanPop')]
 xy[1,]
 ```
 
+## Joint Distributions
 
-## Types of Distributions
+#### **Discrete Data**.{-}
+
+We have multiple observations of $(\hat{X}_{i}, \hat{Y}_{i})$, each of which corresponds to a unique value $(x,y)$. A frequency table shows how often each combination of values appear. The *joint distribution* counts up the number of pairs with the same values and divides by the number of obersvations, $n$;
+\begin{eqnarray}
+\hat{p}_{xy} = \sum_{i=1}^{n}\mathbf{1}\left( \hat{X}_{i}=x, \hat{Y}_{i}=y \right)/n,
+\end{eqnarray}
+The *marginal distributions* are just the univariate information, which can be computed independantly as in <https://jadamso.github.io/Rbooks/01_06_PopStatistics.html#estimates> or from the joint distribution
+\begin{eqnarray}
+\hat{p}_{x} = \sum_{y} \hat{p}_{xy}
+\end{eqnarray}
+
+For example, suppose we observe a sample of $n=13$ students with two discrete variables:
+
+* $X_{i}$ depicts years of education, taking values in $\{12, 14\}$
+* $Y_{i}$ depicts sex, where $y=1$ means female and $y=0$ means male
+
+Assume the count data are summarized by the following table:
+
+\begin{array}{c|cc|c}
+ & y=0\ (\text{male}) & y=1\ (\text{female})\\
+\hline
+x=12 & 4 & 3 \\
+x=14 & 1 & 5 \\
+\hline
+\end{array}
+
+The joint distributions divides each cell count by the total number of observations to obtain
+\begin{array}{c|cc}
+ & y=0 & y=1\\
+\hline
+x=12 & 4/13 & 3/13 \\
+x=14 & 1/13 & 5/13
+\end{array}
+The marginal distribution of $X_{i}$ is
+\begin{eqnarray}
+\hat{p}_{x=12} &=& \frac{4}{13} + \frac{3}{13} = \frac{7}{13},\\
+\hat{p}_{x=14} &=& \frac{1}{13} + \frac{5}{13} = \frac{6}{13}.
+\end{eqnarray}
+The marginal distribution of $Y_{i}$ is
+\begin{eqnarray}
+\hat{p}_{y=0} &=& \frac{4}{13}  + \frac{1}{13} = \frac{5}{13} \approx 0.38,\\
+\hat{p}_{y=1} &=& \frac{3}{13}  + \frac{5}{13} = \frac{8}{13} \approx 0.62.
+\end{eqnarray}
+
+Together, this yields a frequency table with marginals
+\begin{array}{c|cc|c}
+ & y=0\ (\text{male}) & y=1\ (\text{female}) & \text{Row total}\\
+\hline
+x=12 & 4/13 & 3/13 & 7/13\\
+x=14 & 1/13 & 5/13 & 6/13\\
+\hline
+\text{Column total} & 5/13 & 8/13 & 1
+\end{array}
+
+```{r}
+# Simple hand-built dataset: 13 students
+X <- c(rep(12,7), rep(14,6))
+Y <- c(rep(0,4), rep(1,3),  # among X=12: 4 male, 2 female
+       rep(0,1), rep(1,5))  # among X=14: 1 male, 5 female
+dat <- data.frame(educ=X, female=Y)
+
+# Frequency table
+tab  <- table(dat)          # counts
+prop <- tab/sum(tab)        # joint distribution p_xy
+round(prop, 2)
+
+# marginals directly
+margin.table(prop, 1)  # p_x
+margin.table(prop, 2)  # p_y
+
+# joint distribution with marginals added
+addmargins(prop)
+```
 
 
-#### **Joint Distributions**.{-}
 
-Scatterplots are used frequently to summarizes the *joint distribution* of multiple observations of $(\hat{X}_{i}, \hat{Y}_{i})$. They can be enhanced in several ways. As a default, use semi-transparent points so as not to hide any points (and perhaps see if your observations are concentrated anywhere). You can also add other features that help summarize the relationship, although I will defer this until later.
+:::{.callout-tip icon=false collapse="true"}
+```{r}
+library(wooldridge)
+
+# Highschool Students, Sex and Education Attainment
+dat <- wage1[,c('educ','female')]
+dat <- dat[ dat[,'educ'] >=10,]
+
+tab <- table(dat) ## counts
+tab
+
+prop <- tab/sum(tab) ## frequencies
+round(prop,3)
+
+prop_full <- addmargins(prop) ## column and row sums
+round(prop_full,3)
+```
+:::
+
+#### **Continuous Data**.{-}
+
+Scatterplots are used frequently to summarizes the joint distribution of continuous data. They can be enhanced in several ways. As a default, use semi-transparent points so as not to hide any points (and perhaps see if your observations are concentrated anywhere). You can also add other features that help summarize the relationship, although I will defer this until later.
 
 ```{r}
 plot(Murder~UrbanPop, USArrests, pch=16, col=grey(0.,.5))
 ```
 
-
-
-#### **Marginal Distributions**.{-}
-You can also show the distributions of each variable along each axis.
+You can also show the *marginal distributions* of each variable along each axis.
 
 ```{r}
 # Setup Plot
@@ -44,98 +134,6 @@ par(mar=c(4,0,1,1))
 yhist <- hist(USArrests[,'Murder'], plot=FALSE)
 barplot(yhist[['counts']], axes=FALSE, space=0, horiz=TRUE, border=NA)
 ```
-
-#### **Conditional Distributions**.{-}
-
-These describe the relationship between $\hat{Y}_{i}$ and $\hat{X}_{i}$. We show how distribution or density of one variable changes according to a second variable, often using data splits. E.g., 
-
-```{r}
-# Tailored Histogram 
-ylim <- c(0,.25)
-xbks <-  seq(min(USArrests[,'Murder'])-1, max(USArrests[,'Murder'])+1, by=1)
-
-# Also show more information
-# Split Data by Urban Population above/below mean
-pop_mean <- mean(USArrests[,'UrbanPop'])
-pop_cut <- USArrests[,'UrbanPop']< pop_mean
-murder_lowpop <- USArrests[pop_cut,'Murder']
-murder_highpop <- USArrests[!pop_cut,'Murder']
-cols <- c(low=rgb(0,0,1,.75), high=rgb(1,0,0,.75))
-
-par(mfrow=c(1,2))
-hist(murder_lowpop,
-    breaks=xbks, col=cols[1],
-    main='Urban Pop >= Mean', font.main=1,
-    xlab='Murder Arrests', freq=F,
-    border=NA, ylim=ylim)
-
-hist(murder_highpop,
-    breaks=xbks, col=cols[2],
-    main='Urban Pop < Mean', font.main=1,
-    xlab='Murder Arrests', freq=F,
-    border=NA, ylim=ylim)
-```
-
-It is sometimes it is preferable to show the ECDF instead. And you can glue various combinations together to convey more information all at once
-
-```{r}
-layout( t(c(1,2,2)))
-# Full Sample Density
-hist(USArrests[,'Murder'], 
-    main='Full Sample Density', font.main=1,
-    xlab='Murder Arrests',
-    breaks=xbks, freq=F, border=NA)
-
-# Split Sample Distribution Comparison
-F_lowpop <- ecdf(murder_lowpop)
-plot(F_lowpop, col=cols[1],
-    pch=16, xlab='Murder Arrests',
-    main='Split Sample Distributions',
-    font.main=1, bty='n')
-F_highpop <- ecdf(murder_highpop)
-plot(F_highpop, add=T, col=cols[2], pch=16)
-
-legend('bottomright', col=cols,
-    pch=16, bty='n', inset=c(0,.1),
-    title='% Urban Pop.',
-    legend=c('Low (<= Mean)','High (>= Mean)'))
-```
-
-```{r, message=F}
-# Simple Interactive Scatter Plot
-# plot(Assault~UrbanPop, USArrests, col=grey(0,.5), pch=16,
-#    cex=USArrests[,'Murder']/diff(range(USArrests[,'Murder']))*2,
-#    main='US Murder arrests (per 100,000)')
-```
-
-
-You can also split data into grouped boxplots in the same way
-```{r}
-# K Groups with even spacing (not even counts)
-K <- 3
-USArrests[,'UrbanPop_Kcut'] <- cut(USArrests[,'UrbanPop'],K)
-table(USArrests[,'UrbanPop_Kcut'] )
-
-# FUll sample
-#boxplot(USArrests[,'Murder'], main='',
-#    xlab='All Data', ylab='Murder Arrests')
-
-# Boxplots for each group
-Kcols <- hcl.colors(K,alpha=.5)
-boxplot(Murder~UrbanPop_Kcut, USArrests,
-    main='', col=Kcols, 
-    varwidth=T, #show number of obs. per group
-    xlab='Urban Population', ylab='')
-
-# 4 Groups with equal numbers of observations
-#Qcuts <- c(
-#    '0%'=min(USArrests[,'UrbanPop'])-10*.Machine[['double.eps']],
-#    quantile(USArrests[,'UrbanPop'], probs=c(.25,.5,.75,1)))
-#USArrests[,'UrbanPop']_cut <- cut(USArrests[,'UrbanPop'], Qcuts)
-#boxplot(Murder~UrbanPop_cut, USArrests, col=hcl.colors(4,alpha=.5))
-```
-
-
 
 
 ## Statistics of Association
@@ -276,7 +274,7 @@ abline(v=0, col='red')
 
 Importantly, we can also impose the null of hypothesis of no association by reshuffling the data. If we resample without replacement, this is known as a *permutation test*.
 
-:::{.callout-note icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true"}
 ```{r}
 xy <- USArrests[,c('Murder','UrbanPop')]
 xy_cor <- cor(xy[, 1], xy[, 2])

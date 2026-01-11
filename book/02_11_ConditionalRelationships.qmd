@@ -1,9 +1,222 @@
 
-# Comparing Groups
+# Conditional Relationships
 ***
 
+## Conditional Distributions
 
-For mixed data, $\hat{Y}_{i}$ is a cardinal variable and $\hat{X}_{i}$ is a factor variable (typically unordered). For such data, we analyze associations via group comparisons. The basic idea is best seen in a comparison of two samples, which corresponds to an $\hat{X}_{i}$ with two categories. For example, the heights of men and women in Canada or the homicide rates in two different American states. For another example, the wages for people with and without completing a degree.
+#### **Discrete Data**.{-}
+
+In contrast to marginal and joint distributions, *conditional* distributions describe how the distribution of one variable changes when we restrict attention to a subgroup defined by another variable. Formally, if $\hat{p}_{xy}$ denotes the empirical joint distribution, then the empirical conditional distribution of $Y_{i}$ given $X_{i}=x$ is
+\begin{eqnarray}
+\hat{p}_{y \mid x} = \frac{\hat{p}_{xy}}{\hat{p}_x},
+\end{eqnarray}
+where $\hat{p}_{x} = \sum_y \hat{p}_{xy}$.
+
+
+For example, suppose we observe a sample of $n=13$ students with two discrete variables:
+
+* $X_{i}$ depicts years of education, taking values in $\{12, 14\}$
+* $Y_{i}$ depicts sex, where $y=1$ means female and $y=0$ means male
+
+Assume the count data are summarized by the following frequency table:
+
+\begin{array}{c|cc|c}
+ & y=0\ (\text{male}) & y=1\ (\text{female}) & \text{Row total}\\
+\hline
+x=12 & 4/13 & 3/13 & 7/13\\
+x=14 & 1/13 & 5/13 & 6/13\\
+\hline
+\text{Column total} & 5/13 & 7/13 & 1
+\end{array}
+
+We will compute the conditional distribution of $Y_{i}$ given $X_{i}=x$. For $x=12$, we compute
+\begin{eqnarray}
+\hat{p}_{y=0 \mid x=12}
+&=& \frac{\hat{p}_{x=12, y=0}}{\hat{p}_{x=12}}
+= \frac{4/13}{7/13}
+= \frac{4}{7} 
+\approx 0.57. \\
+\hat{p}_{y=1\mid x=12}
+&=& \frac{\hat p_{x=12, y=1}}{\hat{p}_{x=12}}
+= \frac{3/13}{7/13}
+= \frac{3}{7}
+\approx 0.43.
+\end{eqnarray}
+Similarly, for $x=14$, we compute
+\begin{eqnarray}
+\hat{p}_{y=0 \mid x=14}
+&=& \frac{\hat{p}_{x=14, y=0}}{\hat{p}_{x=14}}
+= \frac{1/13}{6/13}
+= \frac{1}{6}
+\approx 0.17. \\
+\hat{p}_{y=1\mid x=14}
+&=& \frac{\hat p_{x=14, y=1}}{\hat{p}_{x=14}}
+= \frac{5/13}{6/13}
+= \frac{5}{6}
+\approx 0.83.
+\end{eqnarray}
+
+In this example, we say that
+
+* conditional on students having $12$ years of education, $\approx 57\%$ are male and $\approx 43\%$ are female.
+* conditional on students having $14$ years of education, $\approx 17\%$ are male and $\approx 83\%$ are female.
+
+
+We can also compute the conditional distribution of $X_{i}$ given $Y_{i}=x$, just as we did above.
+
+:::{.callout-tip icon=false collapse="true"}
+Continuing the example above, show that
+
+* among male students, $\approx 80\%$ have 12 years of education.
+* among female students, $\approx 38\%$ have 12 years of education.
+
+Try programming the results, especially if you are stuck or uncertain
+
+```{r}
+# Counts implied by the table:
+# X=12: 4 male, 3 female
+# X=14: 1 male, 5 female
+X <- c(rep(12,7), rep(14,6))
+Y <- c(rep(0,4), rep(1,3),
+       rep(0,1), rep(1,5))
+
+dat <- data.frame(educ=X, female=Y)
+
+tab <- table(dat)
+tab
+
+# Joint distribution
+round(prop.table(tab), 3)
+
+# Conditional distribution of Y given X
+round(prop.table(tab, 1), 3)
+
+# Conditional distribution of X given Y
+round(prop.table(tab, 2), 3)
+```
+
+:::
+
+Conditional distributions change the unit of analysis:
+
+* $\hat{p}_{y=1 \mid x=14}$ answers "what fraction of student are female within the subgroup with 14 years of education?"
+* $\hat{p}_{x=14 \mid y=1}$ answers "what fraction of students have 14 years of education within the subgroup that is female?"
+
+#### **Simpson's Paradox**.{-}
+
+Frequency tables can be tricky, especially when using percents, so take your time making and interpreting them. Remember that a ratio can change due changes in either the numerator or the denominator.
+
+Consider the following example, which shows that $400$ men and $400$ women applied to university and that only a share were accepted in each department (English or Engineering). If you computed percents for each sex within each cell, you would find men have a higher overall acceptance rate, but women have higher acceptance rates within each department! This counterintuitive phenomena is known as Simpson's Paradox, and the example is part of a real debate about discrimination (<http://homepage.stat.uiowa.edu/~mbognar/1030/Bickel-Berkeley.pdf>). 
+
+Even if women have higher admission rates within both departments, women can still have a lower overall admission rate if women disproportionately apply to the more selective department (English) and men disproportionately apply to the less selective department (Engineering). The same issue is relevant for a variety of labor market issues, such as the gender pay gap, and a great many other social issues, such as why are some countries rich and others poor.
+
+
+| Department   | Men                  | Women                 | Total                 |
+|-------------|-----------------------|-----------------------|-----------------------|
+| English     | 100 (40, **$40\%$**)      | 350 (150, **$43\%$**)     | 450 (190, **$42\%$**)     |
+| Engineering | 300 (160, **$53\%$**)     | 50 (30, **$60\%$**)       | 350 (190, **$54\%$**)     |
+| Total       | 400 (200, **$50\%$**)     | 400 (180, **$45\%$**)     | 800 (380, **$48\%$**)     |
+
+: School Applicants (Admitted), by Sex and Department
+
+
+#### **Continuous Data**.{-}
+
+These describe the relationship between $\hat{Y}_{i}$ and $\hat{X}_{i}$. We show how distribution or density of $Y$ changes according to $X$. When $X$ is continuous, as it often is, we split it into distinct bins and convert it to a factor variable. E.g., 
+
+```{r}
+# Split Data by Urban Population above/below mean
+pop_mean <- mean(USArrests[,'UrbanPop'])
+pop_cut <- USArrests[,'UrbanPop']< pop_mean
+murder_lowpop <- USArrests[pop_cut,'Murder']
+murder_highpop <- USArrests[!pop_cut,'Murder']
+cols <- c(low=rgb(0,0,1,.75), high=rgb(1,0,0,.75))
+
+# Common Histogram 
+ylim <- c(0,.25)
+xbks <-  seq(min(USArrests[,'Murder'])-1, max(USArrests[,'Murder'])+1, by=1)
+
+par(mfrow=c(1,2))
+hist(murder_lowpop,
+    breaks=xbks, col=cols[1],
+    main='Urban Pop >= Mean', font.main=1,
+    xlab='Murder Arrests', freq=F,
+    border=NA, ylim=ylim)
+
+hist(murder_highpop,
+    breaks=xbks, col=cols[2],
+    main='Urban Pop < Mean', font.main=1,
+    xlab='Murder Arrests', freq=F,
+    border=NA, ylim=ylim)
+```
+
+It is sometimes it is preferable to show the ECDF instead. And you can glue various combinations together to convey more information all at once
+
+```{r}
+layout( t(c(1,2,2)))
+# Full Sample Density
+hist(USArrests[,'Murder'], 
+    main='Full Sample Density', font.main=1,
+    xlab='Murder Arrests',
+    breaks=xbks, freq=F, border=NA)
+
+# Split Sample Distribution Comparison
+F_lowpop <- ecdf(murder_lowpop)
+plot(F_lowpop, col=cols[1],
+    pch=16, xlab='Murder Arrests',
+    main='Split Sample Distributions',
+    font.main=1, bty='n')
+F_highpop <- ecdf(murder_highpop)
+plot(F_highpop, add=T, col=cols[2], pch=16)
+
+legend('bottomright', col=cols,
+    pch=16, bty='n', inset=c(0,.1),
+    title='% Urban Pop.',
+    legend=c('Low (<= Mean)','High (>= Mean)'))
+```
+
+```{r, message=F}
+# Simple Interactive Scatter Plot
+# plot(Assault~UrbanPop, USArrests, col=grey(0,.5), pch=16,
+#    cex=USArrests[,'Murder']/diff(range(USArrests[,'Murder']))*2,
+#    main='US Murder arrests (per 100,000)')
+```
+
+You can also split data into more than two groups. For more than three groups, boxplots are often more effective than histograms or ECDF's.
+```{r}
+# K Groups with even spacing (not even counts)
+K <- 4
+USArrests[,'UrbanPop_Kcut'] <- cut(USArrests[,'UrbanPop'],K)
+table(USArrests[,'UrbanPop_Kcut'] )
+
+# Full sample
+#boxplot(USArrests[,'Murder'], main='',
+#    xlab='All Data', ylab='Murder Arrests')
+
+# Boxplots for each group
+Kcols <- hcl.colors(K,alpha=.5)
+boxplot(Murder~UrbanPop_Kcut, USArrests,
+    main='', col=Kcols, 
+    varwidth=T, #show number of obs. per group
+    xlab='Urban Population', ylab='')
+
+# 4 Groups with equal numbers of observations
+#Qcuts <- c(
+#    '0%'=min(USArrests[,'UrbanPop'])-10*.Machine[['double.eps']],
+#    quantile(USArrests[,'UrbanPop'], probs=c(.25,.5,.75,1)))
+#USArrests[,'UrbanPop']_cut <- cut(USArrests[,'UrbanPop'], Qcuts)
+#boxplot(Murder~UrbanPop_cut, USArrests, col=hcl.colors(4,alpha=.5))
+```
+
+
+
+
+
+
+
+## Group Differences
+
+For mixed data, $\hat{Y}_{i}$ is a cardinal variable and $\hat{X}_{i}$ is a factor variable (typically unordered). For such "grouped data", we analyze associations via group comparisons. The basic idea is best seen in a comparison of two samples, which corresponds to an $\hat{X}_{i}$ with two categories. For example, the heights of men and women in Canada or the homicide rates in two different American states. For another example, the wages for people with and without completing a degree.
 
 ```{r}
 library(wooldridge)
@@ -27,15 +240,11 @@ hist(Y2, breaks=bks, ylim=dlim,
      freq=F, border=NA, add=T)
 legend('topright',
        col=cols, pch=15,
-       legend=c('Grade 15', 'Grade 16'),
+       legend=c('15 Years', '16 Years'),
        title='School Completed')
 ```
 
-
-
-## Differences
-
-There may be several differences between these samples. Often, the first summary statistic we investigate is the difference in means. 
+There may be several differences between groups. Often, the first statistic we investigate is the difference in means. 
 
 #### **Mean Differences**. {-}
 
@@ -72,7 +281,6 @@ abline(v=boot_ci, lwd=2)
 abline(v=0, lwd=2, col=2)
 ```
 :::
-
 
 Just as with one sample tests, we can compute a *standardized differences*, where $D$ is converted into a $t$ statistic. Note, however, that we have to compute the standard error for the difference statistic, which is a bit more complicated. However, this allows us to easily conduct one or two sided hypothesis tests using a standard normal approximation.
 
@@ -216,7 +424,11 @@ abline(v=0, lwd=2, col=2)
 
 ## Distributional Comparisons
 
-We can also examine whether there are any differences between the entire *distributions*. Often, we simply plot the two CDF's. Another useful visualization is to plot the quantiles against one another: a quantile-quantile plot. I.e., the first data point on the bottom left shows the first quantile for both distributions. 
+We can also examine whether there are any differences between the entire *distributions*. We typically start by plotting the data using ECDF's or a boxplot, and then calculate a statistic for hypothesis testing. Which plot and test statistic depends on how many groups there are.
+
+#### **Two groups**.{-}
+
+One useful visualization for two groups is to plot the quantiles against one another: a quantile-quantile plot. I.e., the first data point on the bottom left shows the first quantile for both distributions. 
 
 ```{r}
 # Wage Data (same as from before)
@@ -309,8 +521,8 @@ countymurders
 
 :::
 
-#### **Comparing Multiple Groups**. {-}
-For multiple groups, we can tests the equality of all distributions (whether at least one group is different). The *Kruskal-Wallis* test examines $H_0:\; F_1 = F_2 = \dots = F_G$ versus $H_A:\; \text{at least one } F_g \text{ differs}$, where $F_g$ is the continuous distribution of group $g=1,...G$. This test does not tell us which group is different.
+#### **Multiple groups**. {-}
+With multiple groups, you will want to begin with a summary figure (such as a boxplot). We can also tests the equality of all distributions (whether at least one group is different). The *Kruskal-Wallis* test examines $H_0:\; F_1 = F_2 = \dots = F_G$ versus $H_A:\; \text{at least one } F_g \text{ differs}$, where $F_g$ is the continuous distribution of group $g=1,...G$. This test does not tell us which group is different.
 
 To conduct the test, first denote individuals $i=1,...n$ with overall ranks $\hat{r}_1,....\hat{r}_{n}$. Each individual belongs to group $g=1,...G$, and each group $g$ has $n_{g}$ individuals with average rank $\bar{r}_{g} = \sum_{i} \hat{r}_{i} /n_{g}$. The Kruskal Wallis statistic is 
 \begin{eqnarray}

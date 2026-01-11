@@ -7,7 +7,7 @@
 
 1. Increase Depth
  * Provide simple numerical examples for every mathematical expression
- * Add more integrated examples
+ * Add more integrated examples, especially business related
  * Each chapter ends with 3 questions
 2. Ease Digestion
  * Add "definition" callouts to Univariate Data. Definitions are in italics, not quotes or bold, and capitalized.
@@ -16,7 +16,6 @@
 3. Add supplementary materials
  * Create slides
  * Create exam questions, TA review questions
- * Handout for students to use hypothesis.is (examples and nonexamples)
 4. Writing
  * Update the writing
  * Update references/bibliography
