@@ -1,0 +1,688 @@
+# Data Analysis
+***
+
+## Why be reproducible?
+
+First, revist <https://jadamso.github.io/Rbooks/00_01_FirstSteps.html#why-program-in-r>. Then consider the counterfactual below. Future economists should also read <https://core.ac.uk/download/pdf/300464894.pdf>.
+
+#### **An example workflow**. {-}
+
+***First Steps...***
+
+*Step 1*:  Some ideas and data about how variable $X_{1}$ affects variable $Y_{1}$, which we denote as $X_{1}\to Y_{1}$
+
+* You copy some data into a spreadsheet, manually aggregate
+* do some calculations and tables the same spreadsheet
+* some other analysis from here and there, using this software and that.
+
+*Step 2*:  Pursuing the lead for a week or two
+
+* you extend your dataset with more observations
+* copy in a spreadsheet data, manually aggregate
+* do some more calculations and tables, same as before
+
+***A Little Way Down the Road ...***
+
+1 month later: someone asks about another factor: $X_{2} \to Y$.
+
+* you download some other type of data
+* You repeat <u>Step 2</u> with some data on $X_{2}$.
+* The details from your "point and click" method are a bit fuzzy.
+* It takes a little time, but you successfully redo the analysis.
+
+4 months later: someone asks about yet another factor: $X_{3}\to Y_{1}$.
+
+* You again repeat <u>Step 2</u> with some data on $X_{3}$.
+* You're pretty sure none of tables your tried messed up the order of the rows or columns.
+* It takes more time and effort. The data processing was not transparent, but you eventually redo the analysis.
+
+6 months later: you want to explore another outcome: $X_{2} \to Y_{2}$.
+
+* You found out Excel had some bugs in it's statistical calculations (see e.g., <https://biostat.app.vumc.org/wiki/pub/Main/TheresaScott/StatsInExcel.TAScot.handout.pdf>). You now use a new version of the spreadsheet
+* You're not sure you merged everything correctly. After much time and effort, most (but not all) of the numbers match exactly.
+
+2 years later: your boss wants you to replicate your work: $X_{1}, X_{2}, X_{3} \to Y_{1}$.
+
+* A rival has proposed something new. Their idea doesn't actually make any sense, but their figures and statistics look better.
+* You don't even use that computer anymore and a collaborator who handled the data on $X_{2}$ has moved on.
+
+
+#### **An alternative workflow**. {-}
+
+Suppose you decided to code what you did beginning with Step 2.
+
+It does not take much time to update or replicate your results.
+
+* Your computer runs for 2 hours and reproduces the figures and tables.
+* You also rewrote your big calculations to use multiple cores, this took two hours to do but saved 6 hours *each time* you rerun your code.
+* You add some more data. It adds almost no time to see whether much has changed.
+
+Your results are transparent and easier to build on.
+
+
+## Additional Functionality
+
+As part of a data analysis pipeline, we will often use expansion "packages" that allow for more functionality (either codes or datasets). We will discuss these first, before moving to the data analysis pipeline.
+
+#### **Packages**. {-}
+
+Most packages can be easily installed from the internet via [CRAN](https://cran.r-project.org/web/packages/available_packages_by_name.html).
+
+You have already accessed "wage1" dataset from the "wooldridge" package. This package also contains datasets on crime. To use this data, we must first install the package on our computer (which we already did). Then, to use the datasets, we load the package.
+
+```{r, eval=FALSE}
+# Install R Data Package and Load in
+install.packages('wooldridge') # only once
+library('wooldridge') # anytime you want to use the data
+
+data(crime2) # use a crime dataset
+head(crime2)
+
+data(crime4) # use another crime dataset
+head(crime4)
+```
+
+For some packages, you will need to have other software installed on your computer. For example, the "extraDistr" package lets us generate exotic probability distributions. To install it, we must first install some software compilation tools.
+
+* [Rtools-Windows](https://cran.r-project.org/bin/windows/Rtools/)
+* [Xcode-Mac](https://apps.apple.com/us/app/xcode/id497799835)
+
+You only need to install a package and it's pre-requisites once. You load the package via `library` every time you want the extended functionality.
+```{r}
+# install.packages("extraDistr") # once ever
+library(extraDistr) # every time you need it
+
+par(mfrow=c(1,2))
+for(p in c(-.5,0)){
+    x <- rgev(2000, mu=0, sigma=1, xi=p)
+    hist(x, breaks=50, border=NA, main=NA, freq=F)
+}
+title('GEV densities', outer=T, line=-1)
+```
+
+```{r}
+library(extraDistr)
+
+par(mfrow=c(1,3))
+for(p in c(-1, 0,2)){
+    x <- rtlambda(2000, p)
+    hist(x, breaks=100, border=NA, main=NA, freq=F)
+}
+title('Tukey-Lambda densities', outer=T, line=-1)
+```
+
+The most common packages we use are below. Many of the most common packages also have [cheatsheets](https://www.RStudio.com/resources/cheatsheets/) you can use. 
+
+
+```{r, eval=FALSE}
+# common packages for tables/figures
+install.packages("plotly")
+install.packages("stargazer")
+
+# common packages for data/teaching
+install.packages("Ecdat")
+install.packages('wooldridge')
+
+# other packages for statistics and data handling
+# (requires Rtools)
+install.packages("extraDistr")
+install.packages("twosamples")
+install.packages("data.table")
+```
+
+
+
+#### **Base**. {-}
+While additional packages can make your code faster, they also create dependencies that can lead to problems. So learn base R well before becoming dependent on other packages
+
+* <https://bitsofanalytics.org/posts/base-vs-tidy/>
+* <https://jtr13.github.io/cc21fall2/comparison-among-base-r-tidyverse-and-datatable.html>
+
+
+#### **Github Packages**. {-}
+
+Sometimes you will want to install a package from GitHub. For this, you can use [devtools](https://devtools.r-lib.org/) or its light-weight version [remotes](https://remotes.r-lib.org/)
+
+To color terminal output on Linux systems, for example, you can use install the "colorout" package using "devtools"
+```{r, eval=FALSE}
+# install.packages("remotes")
+library(remotes)
+
+# Install <https://github.com/jalvesaq/colorout
+# to .libPaths()[1]
+install_github('jalvesaq/colorout')
+library(colorout)
+```
+
+
+#### **Updating**. {-}
+Make sure R and your packages are up to date. The current version of R and any packages used can be found (and recorded) with 
+
+```{r, eval=F}
+sessionInfo()
+```
+
+To update your R packages, use 
+```{r, eval=F}
+update.packages()
+```
+
+After updating R, you can update *all* packages stored on your computer (in all `.libPaths()`)
+```{r, eval=FALSE}
+update.packages(checkBuilt=T, ask=F)
+# install.packages(old.packages(checkBuilt=T)[,"Package"])
+```
+
+
+
+## Inputs
+
+#### **Reading Data**. {-}
+
+The first step in data analysis is getting data into R. There are many ways to do this, depending on your data structure. Perhaps the most common case is reading in a csv file.
+
+```{r, eval=F}
+# Read in csv (downloaded from online)
+# download source 'http://www.stern.nyu.edu/~wgreene/Text/Edition7/TableF19-3.csv'
+# download destination '~/TableF19-3.csv'
+read.csv('~/TableF19-3.csv')
+ 
+# Can read in csv (directly from online)
+# dat_csv <- read.csv('http://www.stern.nyu.edu/~wgreene/Text/Edition7/TableF19-3.csv')
+```
+
+We can use packages to access many different types of data. To read in a Stata data file, for example, we can use the "haven" package.
+```{r, eval=F}
+# Read in stata data file from online
+#library(haven)
+#dat_stata <- read_dta('https://www.ssc.wisc.edu/~bhansen/econometrics/DS2004.dta')
+#dat_stata <- as.data.frame(dat_stata)
+
+# For More Introductory Econometrics Data, see 
+# https://www.ssc.wisc.edu/~bhansen/econometrics/Econometrics%20Data.zip
+# https://pages.stern.nyu.edu/~wgreene/Text/Edition7/tablelist8new.htm
+# R packages: wooldridge, causaldata, Ecdat, AER, ....
+```
+
+#### **Cleaning Data**. {-}
+
+Data transformation is often necessary before analysis, so remember to be careful and check your code is doing what you want. (If you have large datasets, you can always test out the code on a sample.)
+
+```{r}
+# Function to Create Sample Datasets
+make_noisy_data <- function(n, b=0){
+    # Simple Data Generating Process
+    x <- seq(1,10, length.out=n) 
+    e <- rnorm(n, mean=0, sd=10)
+    y <- b*x + e 
+    # Obervations
+    xy_mat <- data.frame(ID=seq(x), x=x, y=y)
+    return(xy_mat)
+}
+
+# Two simulated datasets
+dat1 <- make_noisy_data(6)
+dat2 <- make_noisy_data(6)
+
+# Merging data in long format
+dat_merged_long <- rbind(
+    cbind(dat1,DF=1),
+    cbind(dat2,DF=2))
+```
+
+Now suppose we want to transform into wide format
+```{r}
+# Merging data in wide format, First Attempt
+dat_merged_wide <- cbind( dat1, dat2)
+names(dat_merged_wide) <- c(paste0(names(dat1),'.1'), paste0(names(dat2),'.2'))
+
+# Merging data in wide format, Second Attempt
+# higher performance
+dat_merged_wide2 <- merge(dat1, dat2,
+    by='ID', suffixes=c('.1','.2'))
+## CHECK they are the same.
+identical(dat_merged_wide, dat_merged_wide2)
+# Inspect any differences
+
+# Merging data in wide format, Third Attempt with dedicated package
+# (highest performance but with new type of object)
+library(data.table)
+dat_merged_longDT <- as.data.table(dat_merged_long)
+dat_melted <- melt(dat_merged_longDT, id.vars=c('ID', 'DF'))
+dat_merged_wide3 <- dcast(dat_melted, ID~DF+variable)
+
+## CHECK they are the same.
+identical(dat_merged_wide, dat_merged_wide3)
+```
+
+Often, however, we ultimately want data in long format
+```{r}
+# Merging data in long format, Second Attempt with dedicated package 
+dat_melted2 <- melt(dat_merged_wide3, measure=c("1_x","1_y","2_x","2_y"))
+melt_vars <- strsplit(as.character(dat_melted2[['variable']]),'_')
+dat_melted2[,'DF'] <- sapply(melt_vars, `[[`,1)
+dat_melted2[,'variable'] <- sapply(melt_vars, `[[`,2)
+dat_merged_long2 <- dcast(dat_melted2, DF+ID~variable)
+dat_merged_long2 <- as.data.frame(dat_merged_long2)
+
+## CHECK they are the same.
+identical( dat_merged_long2, dat_merged_long)
+
+# Further Inspect
+dat_merged_long2 <- dat_merged_long2[,c('ID','x','y','DF')]
+mapply( identical, dat_merged_long2, dat_merged_long)
+```
+
+
+
+#### **Inspecting Data**. {-}
+
+You can find a value by a particular criterion
+```{r}
+y <- 1:10
+
+# Return Y-value with minimum absolute difference from 3
+abs_diff_y <- abs( y - 3 ) 
+abs_diff_y # is this the luckiest number?
+
+min(abs_diff_y)
+which.min(abs_diff_y)
+y[ which.min(abs_diff_y) ]
+```
+
+
+There are also some useful built in functions for standardizing data
+```{r}
+m <- matrix(c(1:3,2*(1:3)),byrow=TRUE,ncol=3)
+m
+
+# normalize rows
+m/rowSums(m)
+
+# normalize columns
+t(t(m)/colSums(m))
+
+# de-mean rows
+sweep(m,1,rowMeans(m), '-')
+
+# de-mean columns
+sweep(m,2,colMeans(m), '-')
+```
+
+
+You can also easily bin and aggregate data
+
+```{r}
+x <- 1:10
+cut(x, 4)
+split(x, cut(x, 4))
+```
+
+```{r}
+xs <- split(x, cut(x, 4))
+sapply(xs, mean)
+
+# shortcut
+aggregate(x, list(cut(x,4)), mean)
+```
+
+See also <https://bookdown.org/rwnahhas/IntroToR/logical.html>
+
+
+
+## Outputs
+
+
+#### **Interactive Figures**. {-}
+
+Notably, [histograms](https://plotly.com/r/histograms/), [boxplots](https://plotly.com/r/box-plots/), and [scatterplots](https://plotly.com/r/line-and-scatter/)
+
+
+```{r}
+library(plotly) #install.packages("plotly")
+USArrests[,'ID'] <- rownames(USArrests)
+
+# Scatter Plot
+fig <- plot_ly(
+    USArrests, x = ~UrbanPop, y = ~Assault,
+    mode='markers',
+    type='scatter',
+    hoverinfo='text',
+    marker=list( color='rgba(0, 0, 0, 0.5)'),
+    text = ~paste('<b>', ID, '</b>',
+        "<br>Urban  :", UrbanPop,
+        "<br>Assault:", Assault))
+fig <- layout(fig,
+    showlegend=F,
+    title='Crime and Urbanization in America 1975',
+    xaxis = list(title = 'Percent of People in an Urban Area'),
+    yaxis = list(title = 'Assault Arrests per 100,000 People'))
+fig
+```
+
+
+
+```{r, message=F, message=F}
+# Box Plot
+fig <- plot_ly(USArrests,
+    y=~Murder, color=~cut(UrbanPop,4),
+    alpha=0.6, type="box",
+    pointpos=0, boxpoints = 'all',
+    hoverinfo='text',    
+    text = ~paste('<b>', ID, '</b>',
+        "<br>Urban  :", UrbanPop,
+        "<br>Assault:", Assault,
+        "<br>Murder :", Murder))    
+fig <- layout(fig,
+    showlegend=FALSE,
+    title='Crime and Urbanization in America 1975',
+    xaxis = list(title = 'Percent of People in an Urban Area'),
+    yaxis = list(title = 'Murders Arrests per 100,000 People'))
+fig
+```
+
+```{r, message=F, message=F}
+pop_mean <- mean(USArrests[,'UrbanPop'])
+pop_cut <- USArrests[,'UrbanPop'] < pop_mean
+murder_lowpop <- USArrests[ pop_cut,'Murder']
+murder_highpop <- USArrests[ !pop_cut,'Murder']
+
+# Overlapping Histograms
+fig <- plot_ly(alpha=0.6, hovertemplate="%{y}")
+fig <- add_histogram(fig, murder_lowpop, name='Low Pop. (< Mean)',
+    histnorm = "probability density",
+    xbins = list(start=0, size=2))
+fig <- add_histogram(fig, murder_highpop, name='High Pop (>= Mean)',
+    histnorm = "probability density",
+    xbins = list(start=0, size=2))
+fig <- layout(fig,
+    barmode="overlay",
+    title="Crime and Urbanization in America 1975",
+    xaxis = list(title='Murders Arrests per 100,000 People'),
+    yaxis = list(title='Density'),
+    legend=list(title=list(text='<b> % Urban Pop. </b>')) )
+fig
+
+# Possible, but less preferable, to stack histograms
+# barmode="stack", histnorm="count"
+```
+
+
+Note that many plots can be made [interactive](https://r-graph-gallery.com/interactive-charts.html) via <https://plotly.com/r/>. For more details, see [examples](https://plotly-r.com/) and then [applications](https://bookdown.org/paulcbauer/applied-data-visualization/10-plotly.html).
+
+If you have many points, for example, you can make a [2D histogram](https://plotly.com/r/2D-Histogram/).
+```{r, eval=F}
+library(plotly)
+fig <- plot_ly(
+    USArrests, x = ~UrbanPop, y = ~Assault)
+fig <- add_histogram2d(fig, nbinsx=25, nbinsy=25)
+fig
+```
+
+
+#### **Interactive Tables**. {-}
+
+You can create an interactive table to explore raw data.
+```{r}
+data("USArrests")
+library(reactable)
+reactable(USArrests, filterable=T, highlight=T)
+```
+
+You can create an interactive table that summarizes the data too.
+```{r}
+# Compute summary statistics
+vars <- names(USArrests)
+stats_list <- lapply(vars, function(v) {
+  x <- USArrests[[v]]
+  c(
+    Variable = v,
+    N       = sum(!is.na(x)),
+    Mean    = mean(x, na.rm = TRUE),
+    SD      = sd(x, na.rm = TRUE),
+    Min     = min(x, na.rm = TRUE),
+    Q1      = as.numeric(quantile(x, 0.25, na.rm = TRUE)),
+    Median  = median(x, na.rm = TRUE),
+    Q3      = as.numeric(quantile(x, 0.75, na.rm = TRUE)),
+    Max     = max(x, na.rm = TRUE)
+  )
+})
+
+# Convert list to data frame with numeric columns 
+stats_df <- as.data.frame(do.call(rbind, stats_list), stringsAsFactors = FALSE)
+num_cols <- setdiff(names(stats_df), "Variable")
+stats_df[num_cols] <- lapply(stats_df[num_cols], function(i){
+    round(as.numeric(i), 3)
+})
+
+# Display interactively
+reactable(stats_df)
+```
+
+
+
+#### **Polishing**.{-}
+
+Your first figures are typically standard, and probably not as good as they should be. Edit your plot to focus on the most useful information. For others to easily comprehend your work, you must also polish the plot. When polishing, you must do two things:
+
+* Add details that are necessary.
+* Remove details that are not necessary. 
+
+```{r}
+# Random Data
+x <- seq(1, 10, by=.0002)
+e <- rnorm(length(x), mean=0, sd=1)
+y <- .25*x + e 
+
+# First Draft
+# plot(x, y)
+
+# Second Draft: Focus
+# (In this example: relationship magnitude)
+xs <- scale(x)
+ys <- scale(y)
+plot(ys, xs, 
+    xlab='', ylab='',
+    pch=16, cex=.5, col=grey(0,.2))
+mtext(expression('['~X[i]-hat(M)[X]~'] /'~hat(S)[X]), 1, line=2.5)
+mtext(expression('['~Y[i]-hat(M)[Y]~'] /'~hat(S)[Y]), 2, line=2.5)
+# Add a 45 degree line
+abline(a=0, b=1, lty=2, col='red')
+legend('topleft', 
+    legend=c('data point', '45 deg. line'),
+    pch=c(16,NA), lty=c(NA,2), col=c(grey(0,.2), 'red'), 
+    bty='n')
+title('Standardized Relationship')
+```
+
+
+```{r}
+# Another Example
+xy_dat <- data.frame(x=x, y=y)
+par(fig=c(0,1,0,0.9), new=F)
+plot(y~x, xy_dat, pch=16, col=rgb(0,0,0,.05), cex=.5,
+    xlab='', ylab='') # Format Axis Labels Seperately
+mtext( 'y=0.25 x + e\n e ~ standard-normal', 2, line=2.2)
+mtext( expression(x%in%~'[0,10]'), 1, line=2.2)
+#abline( lm(y~x, data=xy_dat), lty=2)
+title('Plot with good features, but too excessive in several ways',
+    adj=0, font.main=1)
+
+# Outer Legend (https://stackoverflow.com/questions/3932038/)
+outer_legend <- function(...) {
+  opar <- par(fig=c(0, 1, 0, 1), oma=c(0, 0, 0, 0), 
+    mar=c(0, 0, 0, 0), new=TRUE)
+  on.exit(par(opar))
+  plot(0, 0, type='n', bty='n', xaxt='n', yaxt='n')
+  legend(...)
+}
+outer_legend('topright', legend='single data point',
+    title='do you see the normal distribution?',
+    pch=16, col=rgb(0,0,0,.1), cex=1, bty='n')
+```
+
+Learn to edit your figures:
+
+* <https://websites.umich.edu/~jpboyd/eng403_chap2_tuftegospel.pdf>
+* <https://jtr13.github.io/cc19/tuftes-principles-of-data-ink.html>
+* <https://github.com/cxli233/FriendsDontLetFriends>
+* <https://www.edwardtufte.com/notebook/chartjunk/> 
+* <https://www.biostat.wisc.edu/~kbroman/topten_worstgraphs/> 
+* <https://www.businessinsider.com/the-27-worst-charts-of-all-time-2013-6>
+
+Which features are most informative depends on what you want to show, and you can always mix and match. Ne aware that each type has benefits and costs. E.g., see
+
+* <https://www.data-to-viz.com/caveats.html>
+* <https://x.com/EdwardTufte/status/1092717905156993024/photo/1>
+* <https://towardsdatascience.com/why-a-box-plot-should-not-be-used-alone-and-some-plots-to-use-it-with-23381f7e3cb6/>
+
+For small datasets, you can plot individual data points with a strip chart.
+For datasets with spatial information, a map is also helpful.
+Sometime tables are better than graphs (see <https://www.edwardtufte.com/notebook/boxplots-data-test>). For useful tips, see C. Wilke (2019) "Fundamentals of Data Visualization: A Primer on Making Informative and
+Compelling Figures" <https://clauswilke.com/dataviz/>
+
+For plotting math, which should be done very sparingly, see
+<https://astrostatistics.psu.edu/su07/R/html/grDevices/html/plotmath.html> and 
+<https://library.virginia.edu/data/articles/mathematical-annotation-in-r>
+
+
+
+
+
+#### **Static Publishing**. {-}
+<details>
+<summary> Advanced and Optional </summary>
+  <p>
+
+You can export figures with specific dimensions
+```{r, eval=FALSE}
+pdf( 'Figures/plot_example.pdf', height=5, width=5)
+# plot goes here
+dev.off()
+```
+
+For exporting options, see `?pdf`. For saving other types of files, see `png("*.png")`, `tiff("*.tiff")`, and  `jpeg("*.jpg")`
+
+You can also export tables in a variety of formats, including many that other software programs can easily read 
+```{r, message=F, warning=F, results='asis'}
+library(stargazer)
+# summary statistics
+stargazer(USArrests,
+    type='html', 
+    summary=T,
+    title='Summary Statistics for USArrests')
+```
+
+Note that many of the best plots are custom made (see <https://www.r-graph-gallery.com/>).
+Here are some ones that I have made over the years.
+
+
+```{r, echo=F}
+ knitr::include_graphics("Figures_Manual/Vegetation.png")
+```
+
+```{r, echo=F}
+ knitr::include_graphics("Figures_Manual/Balances_Trial.png")
+```
+
+```{r, echo=F}
+ knitr::include_graphics("Figures_Manual/PopulationDensity2.png")
+```
+
+```{r, echo=F}
+ knitr::include_graphics("Figures_Manual/SampleExample.png")
+```
+
+```{r, echo=F}
+ knitr::include_graphics("Figures_Manual/SemiInclusive_Example.png")
+```
+
+```{r, echo=F}
+ knitr::include_graphics("Figures_Manual/Stability_3.png")
+```
+
+```{r, echo=F}
+ knitr::include_graphics("Figures_Manual/EvolutionaryDynamics.png")
+```
+
+```{r, echo=F}
+ knitr::include_graphics("Figures_Manual/Experiment_Timeline.png")
+```
+  </p>
+</details>
+
+
+
+## R-Markdown Reports
+
+We will use R Markdown for communicating results to each other. Note that R and R Markdown are both languages. RStudio interprets R code make statistical computations and interprets R Markdown code to produce pretty documents that contain both writing and statistics. Altogether, your project will use
+
+* R: does statistical computations
+* R Markdown: formats statistical computations for sharing
+* RStudio: graphical user interface that allows you to easily use both R and R Markdown.
+
+Homework reports are probably the smallest document you can create. They are simple reproducible reports made via R Markdown, which are almost entirely self-contained (showing both code and output). To make them, you need two additional packages
+```{r, eval=FALSE}
+# Packages for Rmarkdown
+install.packages("knitr")
+install.packages("rmarkdown")
+
+# Other packages frequently used
+#install.packages("plotly") #for interactive plots
+#install.packages("sf") #for spatial data
+```
+
+You will need to first install additional software on your computer
+
+* [Pandoc](http://pandoc.org)
+
+
+
+
+#### **Example 1: Simple Report**. {-}
+
+Download the source file [ReportTemplate_1Descriptive.Rmd](https://github.com/Jadamso/Rbooks/blob/main/Templates/ReportTemplate_1Descriptive.Rmd) and then then create it by following these steps
+
+* Open with RStudio
+* Change the name to your own
+* Then either point-and-click "knit" or use the console to run `rmarkdown::render('ReportTemplate_1Descriptive.Rmd')`
+* Open the new .html file in your web browser (e.g., firefox).
+
+## Further Reading
+
+For more on data cleaning, see
+
+* <https://raw.githubusercontent.com/RStudio/cheatsheets/main/data-import.pdf>
+* <https://cran.r-project.org/web/packages/data.table/vignettes/datatable-reshape.html>
+
+For more guidance on how to create Rmarkdown documents, see
+
+* <https://github.com/RStudio/cheatsheets/blob/main/rmarkdown.pdf>
+* <https://cran.r-project.org/web/packages/rmarkdown/vignettes/rmarkdown.html>
+* <http://rmarkdown.RStudio.com>
+* <https://bookdown.org/yihui/rmarkdown/>
+* <https://bookdown.org/yihui/rmarkdown-cookbook/>
+* <https://dept.stat.lsa.umich.edu/~jerrick/courses/stat701/notes/rmarkdown.html>
+* An Introduction to the Advanced Theory and Practice of Nonparametric Econometrics. Raccine 2019. Appendices B \& D.
+* <https://rmd4sci.njtierney.com/using-rmarkdown.html>
+* <https://alexd106.github.io/intro2R/Rmarkdown_intro.html>
+
+If you are still lost, try one of the many online tutorials (such as these)
+
+* <https://www.RStudio.com/wp-content/uploads/2015/03/rmarkdown-reference.pdf>
+* <https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet>
+* <https://www.neonscience.org/resources/learning-hub/tutorials/rmd-code-intro>
+* <https://m-clark.github.io/Introduction-to-Rmarkdown/>
+* <https://www.stat.cmu.edu/~cshalizi/rmarkdown/>
+* <http://math.wsu.edu/faculty/xchen/stat412/HwWriteUp.Rmd>
+* <http://math.wsu.edu/faculty/xchen/stat412/HwWriteUp.html>
+* <https://holtzy.github.io/Pimp-my-rmd/>
+* <https://ntaback.github.io/UofT_STA130/Rmarkdownforclassreports.html>
+* <https://crd150.github.io/hw_guidelines.html>
+* <https://r4ds.had.co.nz/r-markdown.html>
+* <http://www.stat.cmu.edu/~cshalizi/rmarkdown>
+* <http://www.ssc.wisc.edu/sscc/pubs/RFR/RFR_RMarkdown.html>
+* <http://kbroman.org/knitr_knutshell/pages/Rmarkdown.html>
+
+
+

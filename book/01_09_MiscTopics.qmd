@@ -78,6 +78,93 @@ X[c(1,2,3)]
 ```
 
 
+## Kernel Density Estimation
+
+A kernel density is a "smooth" version of a histogram. 
+
+The general idea behind kernel density is to use small windows around each $x$ that potentially overlap, rather than partitioning the range of $X$ into exclusive bins. The "uniform" kernel density is 
+\begin{eqnarray}
+\label{eqn:uniform}
+\hat{f}_{U}(x) &=& \frac{1}{n} \sum_{i}^{n} \frac{k_{U}(\hat{X}_{i}, x, h) }{2h} \\
+k_{U}\left( \hat{X}_{i}, x, h \right) &=& \mathbf{1}\left(\frac{|\hat{X}_{i}-x|}{h}<1\right)
+= \mathbf{1}\left( \hat{X}_{i} \in \left( x-h, x + h\right) \right).
+\end{eqnarray} 
+Notice that the uniform kernel is essentially the histogram but without the restriction that $x$ must be a midpoint of *exclusive* bins. Typically, the points $x$ are chosen to be either the unique observations or some equidistant set of "design points" (e.g., at $512$ evenly spaced values of $x$ the dataset, not just the midpoints of exclusive bins).
+
+```{r}
+# Practical Example
+X <- USArrests[,'Murder']
+hist(X,
+    breaks=seq(0,20,by=2), #bin width=1
+    freq=F,
+    border=NA, 
+    main='',
+    xlab='Murder Arrests')
+# Density Estimate
+lines( density(X, bw=3, kernel='rectangular') )
+# Raw Observations
+rug(X, col=grey(0,.5))
+```
+
+We can also replace the uniform kernel with a more general kernel function. There are many [kernels](https://en.wikipedia.org/wiki/Kernel_(statistics)#In_non-parametric_statistics), but these are the most intuitive and commonly used.
+```{r}
+# Kernel Density Functions
+
+X <- seq(-2,2, length.out=1001)
+
+plot.new()
+plot.window(xlim=c(-1.2,1.2), ylim=c(0,1))
+
+h <- 1
+lines( dunif(X,-h,h)~X, col=1, lty=1)
+
+h <- 1/2
+lines( dnorm(X,0,h)~X, col=2, lty=1)
+
+dtricub <- function(X, x=0, h){
+    u <- abs(X-x)/h
+    fu <- 70/81*(1-u^3)^3/h*(u <= 1)
+    return(fu)
+}
+h <- 1
+lines( dtricub(X,0,h)~X, col=3, lty=1)
+
+h <- 1/2
+lines(density(x=0, bw=h, kernel="epanechnikov"), col=4, lty=1)
+## Note that "density" defines h slightly differently
+
+rug(0, lwd=2)
+axis(1)
+axis(2)
+
+legend('topright', lty=1, col=1:4,
+    legend=c('uniform(1)', 'gaussian(1/2)', 'tricubic(1)', 'epanechnikov(1)'))
+
+
+## Try others:
+## lines(density(x=0, bw=1/2, kernel="triangular"),col=4, lty=1)
+```
+
+Once we have picked a kernel (which particular one is not particularly important) we can use it to compute density estimates at each design point.
+
+:::{.callout-tip icon=false collapse="true"}
+Try out different kernels
+```{r}
+# Practical Example
+X <- USArrests[,'Murder']
+hist(X,
+    breaks=seq(0,20,by=2), #bin width=1
+    freq=F,
+    border=NA, 
+    main='',
+    xlab='Murder Arrests')
+# Density Estimate
+lines( density(X, bw=2, kernel='epanechnikov') )
+# Raw Observations
+rug(X, col=grey(0,.5))
+```
+:::
+
 
 ## Factorial Distributions
 

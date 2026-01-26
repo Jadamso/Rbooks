@@ -219,119 +219,6 @@ legend('topleft',
 For many things, a simple linear regression, regressograms, or piecewise regression is "good enough". Simple linear regressions struggle with nonlinear relationships but are very easy to run with a computer. Regressograms and piecewise regressions are intuitive ways to capture nonlinear relationships that are computationally efficient but have obvious problems where the bins change. Sometimes we want smoother predictions or to estimate derivatives (gradients). To cover more advanced regression methods that do those things, we will need to first learn about kernel density estimation.
 
 
-## Kernel Density Estimation
-
-A kernel density is generally a "smooth" version of a histogram. We estimate the density at many points (e.g., all unique values $x$ in the dataset), not just the midpoints of exclusive bins. The uniform kernel and density estimator is 
-\begin{eqnarray}
-\label{eqn:uniform}
-\hat{f}_{U}(x) &=& \frac{1}{n} \sum_{i}^{n} \frac{k_{U}(\hat{X}_{i}, x, h) }{2h} \\
-k_{U}\left( \hat{X}_{i}, x, h \right) &=& \mathbf{1}\left(\frac{|\hat{X}_{i}-x|}{h}<1\right)
-= \mathbf{1}\left( \hat{X}_{i} \in \left( x-h, x + h\right) \right).
-\end{eqnarray} 
-Notice that the uniform kernel is essentially the histogram but without the restriction that $x$ must be a midpoint of *exclusive* bins. Typically, the points $x$ are chosen to be either the unique observations or some equidistant set of "design points".
-
-
-We can also replace the uniform kernel with a more general kernel function $k$, which is then normalized to an easier to read and program $K$ function: $k\left( \hat{X}_{i}, x, h \right)= K\left( \frac{|\hat{X}_{i}-x|}{h} \right)$. We can then define a general kernel function as a non-negative real-valued function $K$ that integrates to unity:
-\begin{eqnarray}
-\int_{-\infty}^{\infty} K(v) dv &=& 1
-\end{eqnarray}
-The general idea behind kernel density is to use windows around each $x$ that potentially overlap, rather than partitioning the range of $X$ into exclusive bins.^[We only examine symmetric kernels, as some texts also include symmetric in the definition of a kernel; $K(v) = K(-v)$.] There are many [kernels](https://en.wikipedia.org/wiki/Kernel_(statistics)#In_non-parametric_statistics), but these are the most intuitive and commonly used.
-```{r}
-# Kernel Density Functions
-
-X <- seq(-2,2, length.out=1001)
-
-plot.new()
-plot.window(xlim=c(-1.2,1.2), ylim=c(0,1))
-
-h <- 1
-lines( dunif(X,-h,h)~X, col=1, lty=1)
-
-h <- 1/2
-lines( dnorm(X,0,h)~X, col=2, lty=1)
-
-dtricub <- function(X, x=0, h){
-    u <- abs(X-x)/h
-    fu <- 70/81*(1-u^3)^3/h*(u <= 1)
-    return(fu)
-}
-h <- 1
-lines( dtricub(X,0,h)~X, col=3, lty=1)
-
-h <- 1/2
-lines(density(x=0, bw=h, kernel="epanechnikov"), col=4, lty=1)
-## Note that "density" defines h slightly differently
-
-rug(0, lwd=2)
-axis(1)
-axis(2)
-
-legend('topright', lty=1, col=1:4,
-    legend=c('uniform(1)', 'gaussian(1/2)', 'tricubic(1)', 'epanechnikov(1)'))
-
-
-## Try others:
-## lines(density(x=0, bw=1/2, kernel="triangular"),col=4, lty=1)
-```
-
-Once we have picked a kernel (which particular one is not particularly important) we can use it to compute density estimates at each design point.
-```{r}
-# Practical Example
-X <- wage1[,'educ']
-hist(X,
-    breaks=seq(0,20,by=2), #bin width=1
-    freq=F,
-    border=NA, 
-    main='',
-    xlab='Murder Arrests')
-# Density Estimate
-lines(density(X, bw=1))
-# Raw Observations
-rug(wage1[,'educ'], col=grey(0,.5))
-```
-
-:::{.callout-note icon=false collapse="true"}
-Here is an example going into the details of KDE.
-```{r}
-# Kernel Density Estimation
-
-N <- 1000
-e <- rweibull(N,100,100)
-ebins <- seq(floor(min(e)), ceiling(max(e)), length.out=12)
-
-## Histogram Estimates at 12 points
-xbks <- c(ebins[1]-diff(ebins)[1]/2, ebins+diff(ebins)[1]/2)
-hist(e, freq=F, main='', breaks=xbks, ylim=c(0,.4), border=NA)
-rug(e, lwd=.07, col=grey(0,.5))  ## Sample
-
-
-## Manually Compute Uniform Estimate at X=100 with h=2
-# w100 <- (e < 101)*(e > 99)
-# sum(w100)/(N*2)
-
-## Gaussian Estimates at same points as histogram
-F_hat <- sapply(ebins, function(x,h=.5){
-    kx <- dnorm( abs(e-x)/h )
-    fx <- sum(kx,na.rm=T)/(h*N)
-    fx
-})
-## Verify the same
-fhat1 <- density(e, n=12, from=min(ebins), to=max(ebins), bw=.5)
-points(fhat1[['x']], fhat1[['y']], pch=16, col=rgb(0,0,1,.5), cex=1.5)
-
-## Gaussian Estimates at all sample points
-fhat2 <- density(e, n=1000, from=min(ebins), to=max(ebins), bw=.5)
-points(fhat2[['x']], fhat2[['y']], pch=16, col=rgb(1,0,0,.25), cex=.5)
-
-legend('topleft', pch=c(15,16,16),
-    col=c(grey(0,.5),rgb(0,0,1,.5), rgb(1,0,0,.25)),
-    title='Type (# Design Points)', bty='n',
-    legend=c('Histogram (12)',
-    'Gaussian-Kernel (12)',
-    'Gaussian-Kernel (1000)'))
-```
-:::
-
 ## Local Linear Regression
 
 
@@ -380,7 +267,7 @@ A less simple case is a *local linear regression* which conducts a linear regres
 \begin{eqnarray}
 & & \min_{b_{0}(x,h),b_{1}(x,h)}~ \sum_{i}^{n}\left[\hat{Y}_{i}- b_{0}(x,h) - b_{1}(x,h) \hat{X}_{i} \right]^2 K\left(\frac{|\hat{X}_{i}-x|}{h}\right)
 \end{eqnarray} 
-Deriving the optimal values $\hat{b}_{0}(x,h)$ and  $\hat{b}_{1}(x,h)$ for $k_{U}$ is left as a homework exercise.^[Note that one general benefit of LLLS is with edge effects (see homework). Another is that it is theoretically motivated: assuming that $Y_{i}=m(X_{i}) + \epsilon_{i}$, we can then take a Taylor approximation: $m(X_{i}) + \epsilon_{i} \approx m(x) + m'(x)[X_{i}-x] + \epsilon_{i} = [m(x) - m'(x)x ] + m'(x)X_{i} + \epsilon_{i} = b_{0}(x,h) + b_{1}(x,h) X_{i}$. As such, a third benefit is that the estimated slope coefficient $\hat{b}_{1}(x,h)$ can be interpreted as the estimated gradient at $x$.]
+Deriving the optimal values $\hat{b}_{0}(x,h)$ and  $\hat{b}_{1}(x,h)$ for $k_{U}$ is left as a homework exercise.^[One benefit of LLLS is that it is theoretically motivated: assuming that $Y_{i}=m(X_{i}) + \epsilon_{i}$, we can then take a Taylor approximation: $m(X_{i}) + \epsilon_{i} \approx m(x) + m'(x)[X_{i}-x] + \epsilon_{i} = [m(x) - m'(x)x ] + m'(x)X_{i} + \epsilon_{i} = b_{0}(x,h) + b_{1}(x,h) X_{i}$.]
 
 
 ```{r}

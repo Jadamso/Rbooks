@@ -1,0 +1,307 @@
+# Local Relationships
+***
+
+## Regressograms
+
+You can estimate a nonparametric model with multiple $X$ variables with a multivariate regressogram. Here, we cut the data into exclusive bins along each dimension (called dummy variables), and then run a regression on all dummy variables. 
+
+```{r}
+## Simulate Data
+N <- 10000
+e <- rnorm(N)
+x1 <- seq(.1,20,length.out=N)
+x2 <- runif(N, 0,1)
+y  <- 3*exp(-2*x2 + 1.5*x1 - .1*x1^2)*x1 + e
+dat <- data.frame(x1, x2, y)
+
+## Create color palette (reused in later examples)
+col_scale <- seq(min(y)*1.1, max(y)*1.1, length.out=401)
+ycol_pal <- hcl.colors(length(col_scale),alpha=.5)
+names(ycol_pal) <- sort(col_scale)
+
+## Add legend (reused in later examples)
+add_legend <- function(col_scale,
+    yl=11,
+    colfun=function(x){ hcl.colors(x,alpha=.5) },
+    ...) {
+  opar <- par(fig=c(0, 1, 0, 1), oma=c(0, 0, 0, 0), 
+              mar=c(0, 0, 0, 0), new=TRUE)
+  on.exit(par(opar))
+  h <- hist(col_scale, plot=F, breaks=yl-1)$mids
+  plot(0, 0, type='n', bty='n', xaxt='n', yaxt='n')
+  legend(...,
+    legend=h,
+    fill=colfun(length(h)),
+    border=NA,
+    bty='n')
+}
+
+
+## Plot Data
+par(oma=c(0,0,0,2))
+plot(x1~x2, dat,
+    col=ycol_pal[cut(y,col_scale)],
+    pch=16, cex=.5, 
+    main='Raw Data', font.main=1)
+add_legend(x='topright', col_scale=col_scale,
+    yl=6, inset=c(0,.05), title='y')
+```
+
+```{r}
+## OLS 
+reg <- lm(y~x1*x2, data=dat) #(with simple interaction)
+reg <- lm(y~x1+x2, data=dat) #(without interaction)
+
+## Grid Points for Prediction
+# X1 bins
+l1 <- 11
+bks1 <- seq(0,20, length.out=l1)
+h1 <- diff(bks1)[1]/2
+mids1 <- bks1[-1]-h1
+# X2 bins
+l2 <- 11
+bks2 <- seq(0,1, length.out=l2)
+h2 <- diff(bks2)[1]/2
+mids2 <- bks2[-1]-h2
+# Grid
+pred_x <- expand.grid(x1=mids1, x2=mids2)
+
+## OLS Predictions
+pred_ols <- predict(reg, newdata=pred_x)
+pred_df_ols  <- cbind(pred_ols, pred_x)
+
+## Plot Predictions
+par(oma=c(0,0,0,2))
+plot(x1~x2, pred_df_ols,
+    col=ycol_pal[cut(pred_ols,col_scale)],
+    pch=15, cex=2,
+    main='OLS Predictions', font.main=1)
+add_legend(x='topright', col_scale=col_scale,
+    yl=6, inset=c(0,.05),title='y')
+```
+
+```{r}
+##################
+# Multivariate Regressogram
+##################
+
+## Regressogram Bins
+dat$x1c <- cut(dat$x1, bks1)
+#head(dat$x1c,3)
+dat$x2c <- cut(dat$x2, bks2)
+
+## Regressogram
+reg <- lm(y~x1c*x2c, data=dat) #nonlinear w/ complex interactions
+
+## Predicted Values
+## For Points in Middle of Each Bin
+pred_df_rgrm <- expand.grid(
+    x1c=levels(dat$x1c),
+    x2c=levels(dat$x2c))
+pred_df_rgrm$yhat <- predict(reg, newdata=pred_df_rgrm)
+pred_df_rgrm <- cbind(pred_df_rgrm, pred_x)
+
+## Plot Predictions
+par(oma=c(0,0,0,2))
+plot(x1~x2, pred_df_rgrm,
+    col=ycol_pal[cut(pred_df_rgrm$yhat,col_scale)],
+    pch=15, cex=2,
+    main='Regressogram Predictions', font.main=1)
+add_legend(x='topright', col_scale=col_scale,
+    yl=6, inset=c(0,.05),title='y')
+```
+
+
+## Local Regressions
+Just like with bivariate data, you can also use split-sample (or peicewise) regressions for multivariate data.
+
+```{r}
+
+```
+
+
+#### **Break Points**. {-}
+Incorporating Kinks and Discontinuities in $X$ are a type of transformation that can be modeled using factor variables. As such, $F$-tests can be used to examine whether a breaks is statistically significant.
+```{r, eval=F}
+library(Ecdat)
+data(Caschool)
+Caschool$score <- (Caschool$readscr + Caschool$mathscr) / 2
+reg <- lm(score~avginc, data=Caschool)
+
+# F Test for Break
+reg2 <- lm(score ~ avginc*I(avginc>15), data=Caschool)
+anova(reg, reg2)
+
+# Chow Test for Break
+data_splits <- split(Caschool, Caschool$avginc <= 15)
+resids <- sapply(data_splits, function(dat){
+    reg <- lm(score ~ avginc, data=dat)
+    sum( resid(reg)^2)
+})
+Ns <-  sapply(data_splits, function(dat){ nrow(dat)})
+Rt <- (sum(resid(reg)^2) - sum(resids))/sum(resids)
+Rb <- (sum(Ns)-2*reg$rank)/reg$rank
+Ft <- Rt*Rb
+pf(Ft,reg$rank, sum(Ns)-2*reg$rank,lower.tail=F)
+
+# See also
+# strucchange::sctest(y~x, data=xy, type="Chow", point=.5)
+# strucchange::Fstats(y~x, data=xy)
+
+# To Find Changes
+# segmented::segmented(reg)
+```
+
+
+
+## Model Selection
+
+One of the most common approaches to selecting a model or bandwidth is to minimize \textit{prediction} error. *Leave-one-out Cross-validation* minimizes the average "leave-one-out" mean square prediction errors:
+\begin{eqnarray}
+\min_{\mathbf{H}} \quad \frac{1}{n} \sum_{i=1}^{n} \left[ \hat{Y}_{i} - \hat{y_{[i]}}(\mathbf{X},\mathbf{H}) \right]^2,
+\end{eqnarray}
+where $\hat{y}_{[i]}(\mathbf{X},\mathbf{H})$ is the model predicted value at $\mathbf{X}_{i}$ based on a dataset that excludes $\mathbf{X}_{i}$, and $\mathbf{H}$ is matrix of bandwidths. With a weighted least squares regression on three explanatory variables, for example, the matrix is
+\begin{eqnarray}
+\mathbf{H}=\begin{pmatrix}
+h_{1} & 0 & 0  \\ 
+ 0    & h_{2} & 0 \\
+ 0    & 0 & h_{3} \\
+\end{pmatrix},
+\end{eqnarray}
+where each $h_{k}$ is the bandwidth for variable $X_{k}$.
+
+There are many types of cross-validation \parencite{ArlotCelisse2010, BatesEtAl2023}. For example, one extension is *k-fold cross validation*, which splits $N$ datapoints into $k=1...K$ groups, each sized $B$, and predicts values for the left-out group. \textit{Generalized cross-validation} adjusts for the degrees of freedom, whereas the \texttt{npreg} function in R uses \textit{least-squares cross-validation} \parencite[p.74]{racine2019} by default. You can refer to extensions on a case by case basis.
+
+
+
+
+
+## Hypothesis Testing
+
+There are two main ways to summarize gradients: how $Y$ changes with $X$.
+
+1. For regressograms, you can approximate gradients with small finite differences. For some small $h_{p}$, we can compute
+\begin{eqnarray}
+\hat{\beta}_{p}(\mathbf{x}) &=& \frac{ \hat{y}(x_{1},...,x_{p}+ \frac{h_{p}}{2}...,x_{P})-\hat{y}(x_{1},...,x_{p}-\frac{h_{p}}{2}...,x_{P})}{h_{p}},
+\end{eqnarray}
+
+2. When using split-sample regressions or local linear regressions, you can use the estimated slope coefficients $\hat{\beta}_{p}(\mathbf{x})$ as gradient estimates in each direction.
+
+After computing gradients, you can summarize them in various plots:  Histogram of $\hat{\beta}_{p}(\mathbf{x})$, Scatterplot of $\hat{\beta}_{p}(\mathbf{x})$ vs. $X_{p}$, or the CI of $\hat{\beta}_{p}(\mathbf{x})$ vs $\hat{\beta}_{p}(\mathbf{x})$ after sorting the gradients \cite{Chaudhuri1999, HendersonEtAl2012}
+
+
+You may also be interested in a particular gradient or a single summary statistic.
+For example, a bivariate regressogram can estimate the marginal effect of $X_{1}$ at the means; $\hat{\beta_{1}}(\bar{\mathbf{x}}=[\bar{x_{1}}, \bar{x_{2}}])$.
+You may also be interested in the mean of the marginal effects (sometimes said simply as "average effect"), which averages the marginal effect over all datapoints in the dataset: $1/n \sum_{i}^{n} \hat{\beta_{1}}(\mathbf{X}_{i})$, or the median marginal effect.
+Such statistics are single numbers that can be presented similar to an OLS regression table where each row corresponds a variable and each cell has two elements: "mean gradient (sd gradient)".
+
+#### **Example with Bivariate Data**.{-}
+
+Often, we are interested in gradients: how $Y$ changes with $X$. The linear model depicts this as a simple constant, $\hat{b}_{1}$, whereas other models do not. A great first way to assess gradients is to plot the predicted values over the explanatory values.
+
+```{r}
+# Adaptive-width subsamples with non-uniform weights
+xy <- USArrests[,c('UrbanPop','Murder')]
+xy0 <- xy[order(xy[,'UrbanPop']),]
+names(xy0) <- c('x','y')
+
+
+plot(y~x, pch=16, col=grey(0,.5), dat=xy0)
+reg_lo <- loess(y~x, data=xy0, span=.6)
+
+red_col <- rgb(1,0,0,.5)
+lines(xy0[,'x'], predict(reg_lo),
+    col=red_col, type='o', pch=2)
+```
+
+More formally, there are two ways to summarize gradients
+
+1. For all methods, including regressograms, you can approximate gradients with small finite differences. For some small difference $d$, we can manually compute
+\begin{eqnarray}
+\hat{b}_{1}(x) &=& \frac{ \hat{y}(x+\frac{d}{2}) - \hat{y}(x-\frac{d}{2})}{d},
+\end{eqnarray}
+
+2. When using split-sample regressions or local linear regressions, you can use the estimated slope coefficients $\hat{b}_{1}(x)$ as gradient estimates in each direction.
+
+After computing gradients, you can summarize them in various plots
+
+* Histograms, Scatterplots
+* Plot of gradients and their CI's, \cite{Chaudhuri1999, HendersonEtAl2012}
+
+```{r}
+## Gradients    
+pred_lo <- predict(reg_lo)
+grad_x  <- xy0[,'x'][-1]
+grad_dx <- diff(xy0[,'x'])
+grad_dy <- diff(pred_lo)
+grad_lo <-grad_dy/grad_dx
+
+## Visual Summary
+par(mfrow=c(1,2))
+hist(grad_lo,  breaks=20,
+    border=NA, freq=F,
+    col=red_col,
+    xlab=expression(d~hat(y)/dx),
+    main='') ## Distributional Summary
+plot(grad_x+grad_dx, grad_lo,
+    xlab='x', ylab=expression(d~hat(y)/dx),
+    col=red_col, pch=16) ## Diminishing Returns?
+```
+
+You may also be interested in a particular gradient or a single summary statistic. For example, a bivariate regressogram can estimate the "marginal effect at the mean"; $\hat{b}_{1}( x=\hat{M}_{X} )$. More typically, you would be interested in the "mean of the gradients", sometimes said simply as "average effect", which averages the gradients over all datapoints in the dataset: $1/n \sum_{i}^{n} \hat{b}_{1}(x=\hat{X}_{i})$. Alternatively, you may be interested in the median of the gradients, or measures of "effect heterogeneity": the interquartile range or standard deviation of the gradients. Such statistics are single numbers that can be presented in tabular form: "mean gradient (sd gradient)". You can alternative report standard errors: "mean gradient (estimated se), sd gradient (estimated se)".
+
+```{r}
+## Tabular Summary
+tab_stats <- c(
+    M=mean(grad_lo, na.rm=T),
+    S=sd(grad_lo, na.rm=T))
+tab_stats
+
+## Use bootstrapping to get SE's
+boot_stats <- matrix(NA, nrow=299, ncol=2)
+colnames(boot_stats) <- c('M se', 'S se')
+for(b in 1:nrow(boot_stats)){
+    xy_b <- xy0[sample(1:nrow(xy0), replace=T),]
+    reg_lo <- loess(y~x, data=xy_b, span=.6)
+    pred_lo <- predict(reg_lo)
+    grad_lo <- diff(pred_lo)/diff(xy_b[,'x'])
+    dydx_mean <- mean(grad_lo, na.rm=T)
+    dydx_sd <- sd(grad_lo, na.rm=T)
+    boot_stats[b,1] <- dydx_mean
+    boot_stats[b,2] <- dydx_sd
+}
+apply(boot_stats, 2, sd)
+```
+
+
+#### **Diminishing Returns**. {-}
+
+Just as before, there are diminishing returns to larger sample sizes for bivariate statistics. For example, the slope coefficient in simple OLS varies less from sample to sample when the samples are larger. Same for the gradients in loess. This decreased variability across samples makes hypothesis testing more accurate.
+
+```{r}
+B <- 300
+Nseq <- seq(10,50, by=1)
+SE <- sapply(Nseq, function(n){
+    sample_stat <- sapply(1:B, function(b){
+        x <- rnorm(n)
+        e <- rnorm(n)        
+        y <- x*3 + x + e
+        reg_lo <- loess(y~x)
+        pred_lo <- predict(reg_lo)
+        grad_lo <- diff(pred_lo)/diff(x)
+        dydx_mean <- mean(grad_lo, na.rm=T)
+        #dydx_sd <- sd(grad_lo, na.rm=T)
+        return(dydx_mean)
+    })
+    sd(sample_stat)
+})
+
+plot(Nseq, SE, pch=16, col=grey(0,.5),
+    main='Mean gradient', font.main=1,
+    ylab='standard error',
+    xlab='sample size')
+```
+
+
+
+

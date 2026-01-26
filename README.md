@@ -11,7 +11,7 @@ To compile this book, navigate to the root directory, then
 To publish online, 
 
     quarto render book
-    cp -r ./Templates/Figures_Manual ./docs/Figures_Manual
+    cp -r ./Templates/Figures_Manual/* ./docs/Figures_Manual
     git add .
     git commit -m " "
     git push
@@ -20,3 +20,9 @@ To publish a tagged release,
 
     gh release create v0.0.2 --title "v0.0.2, for ECON 2320"
 
+
+<!-- ## CONVERT IMAGES
+    for pdfile in *.pdf ; do 
+    convert -verbose -density 500  "${pdfile}" "${pdfile%.*}".png;
+    done
+-->
