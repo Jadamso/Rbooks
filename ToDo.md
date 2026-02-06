@@ -156,6 +156,11 @@ d) Fully state your conclusion
 #### Ch 8. Intervals
 * Fail to reject the null. Examples with multiple hypothesis: can't rule out A, also can't rule out B.
 
+
+:::{.callout-tip icon=false collapse="true"}
+Given the sample size, $n$, is large enough for the sample mean to be approximately normally distributed, what confidence interval satisfies the following: the theoretical mean $\mu$ is inside of the interval with probability $95%$ (i.e., for $(1 - 0.05)%$ of samples)?
+:::
+
 #### Ch.9 p-values
 * 8.2. h-tests for mode?
 
@@ -170,6 +175,33 @@ Inequalities
 * 68–95–99.7_rule
 * Samuelsons_inequality
 * Chebyshevs_inequality
+
+
+
+**Mixture Distributions**. {-}
+There are many other combinations of random variables
+
+```{r, echo=F}
+# Another Complicated Random Variable
+r_ugly1 <- function(n, theta1=c(-8,-1), theta2=c(-2,2), rho=.25){
+    omega   <- rbinom(n, size=1, rho)
+    epsilon <- omega * runif(n, theta1[1], theta2[1]) +
+        (1-omega) * rnorm(n, theta1[2], theta2[2])
+    return(epsilon)
+}
+# Very Large Sample
+X <- r_ugly1(1000000)
+hist(X, breaks=1000, freq=F, border=NA,
+    xlab="x", main='')
+
+# Show True Density
+d_ugly1 <- function(x, theta1=c(-8,-1), theta2=c(-2,2), rho=.25){
+    rho     * dunif(x, theta1[1], theta2[1]) +
+    (1-rho) * dnorm(x, theta1[2], theta2[2]) }
+x <- seq(-12,6,by=.001)
+dx <- d_ugly1(x)
+lines(x, dx, col=1)
+```
 
 
 ## Bivariate Data (Stats II)

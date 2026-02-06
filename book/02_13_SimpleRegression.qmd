@@ -1,7 +1,8 @@
 # Simple Regression
+
 ***
 
-Suppose we have some bivariate data: $\hat{X}_{i}, \hat{Y}_{i}$. First, we inspect it as in Part I.
+Suppose we have some bivariate data: $\hat{X}_{i}, \hat{Y}_{i}$. First, we inspect it as in Part I. We then assess the association between variables by fitting a line through the data points using a "regression".
 
 ```{r}
 # Bivariate Data from USArrests
@@ -11,11 +12,16 @@ colnames(xy) <- c('y','x')
 # Inspect Dataset
 # head(xy)
 # summary(xy)
-plot(y~x, xy, col=grey(0,.5), pch=16)
-title('Murder and Urbanization in America 1975', font.main=1)
+plot(y~x, xy, col=grey(0,.5), pch=16,
+	xlab='Population Share in Urban Area',
+	ylab='Murder Arrests per 100K')
+title('Data from American States, 1975', font.main=1)
+
+reg <- lm(y~x, dat=xy)
+abline(reg, lty=2)
 ```
 
-Now we will assess the association between variables by fitting a line through the data points using a "regression".
+
 
 ## Simple Linear Regression
 This refers to fitting a linear model to bivariate data. Specifically, our model is 
@@ -28,27 +34,33 @@ We then find the parameters which best-fit the data. Specifically, our objective
 \begin{eqnarray}
 \min_{b_{0}, b_{1}} \sum_{i=1}^{n} \left( e_{i} \right)^2 &=& \min_{b_{0}, b_{1}} \sum_{i=1}^{n} \left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right)^2.
 \end{eqnarray}
-Minimizing the sum of squared errors then yields two parameter estimates:
-\begin{eqnarray}
-0 &=& \sum_{i=1}^{n} 2\left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right)\\ 
-\hat{b}_{0} &=& \hat{M}_{Y}-\hat{b}_{1}\hat{M}_{X} \\
-\end{eqnarray}
-where $\hat{M}_{Y}$ and $\hat{M}_{X}$ are sample means. Similarly, 
+Minimizing the sum of squared errors then yields two parameter estimates that can be explicitly solved for using math. For the slope coefficient:
 \begin{eqnarray}
 0 &=& \sum_{i=1}^{n} 2\left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right) \hat{X}_{i} \\
-\hat{b}_{1} &=& \frac{\sum_{i}^{n}(\hat{X}_{i}-\hat{M}_{X})(\hat{Y}_{i}-\hat{M}_{Y})}{\sum_{i}^{}(\hat{X}_{i}-\hat{M}_{X})^2} = \frac{\hat{C}_{XY}}{\hat{V}_{X}},
+\Rightarrow \hat{b}_{1} &=& \frac{\sum_{i}^{n}(\hat{X}_{i}-\hat{M}_{X})(\hat{Y}_{i}-\hat{M}_{Y})}{\sum_{i}^{}(\hat{X}_{i}-\hat{M}_{X})^2} = \frac{\hat{C}_{XY}}{\hat{V}_{X}},
 \end{eqnarray}
-the latter term being the estimated covariance between $X$ and $Y$ divided by the variance of $X$. 
-
+the latter term being the estimated covariance between $X$ and $Y$ divided by the variance of $X$. (Recall that $M_{X}$ and $M_{Y}$ are the means.)
+For the intercept coefficient:
+\begin{eqnarray}
+0 &=& \sum_{i=1}^{n} 2\left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right)\\ 
+\Rightarrow \hat{b}_{0} &=& \hat{M}_{Y}-\hat{b}_{1}\hat{M}_{X} .
+\end{eqnarray}
+We could alternatively find the best fitting parameters numerically, by trying out different combinations of $(b_{0}, b_{1})$.
+You can do that in this (example)[https://myshiny.duckdns.org/least-squares/], which can help you understand what is happening.
+The computer uses math to compute the answer directly, because it is much faster.
 
 ```{r}
 # Run a Simple Regression
 reg <- lm(y~x, dat=xy)
 coef(reg)
-# predict(reg)
-# resid(reg)
 
-cov(xy[,'x'],xy[,'y'])/var(xy['x'])
+# Manual verification
+x <- xy[,'x']
+y <- xy[,'y']
+b1 <- cov( x,y)/var(x)
+b1
+b0 <- mean(y) - b1*mean(x)
+b0
 ```
 
 Once we have the coefficient, we can find the predictions
@@ -58,8 +70,18 @@ Once we have the coefficient, we can find the predictions
 \end{eqnarray}
 
 
+```{r, eval=F}
+# Find predicted values and residuals
+predict(reg)
+resid(reg)
 
+# Manual verification
+y_hat <- b0+b1*x
+y_hat
 
+e <- y - y_hat
+e
+```
 
 :::{.callout-tip icon=false collapse="true"}
 Suppose we have a dataset with $n = 3$ observations: $\{(1,2), (2,2.5), (3,4)\}$.
@@ -83,18 +105,17 @@ i & X_i & Y_i & (X_i - \hat{M}_X) & (Y_i - \hat{M}_Y) & (X_i - \hat{M}_X)(Y_i - 
 \end{array}
 
 
-
 \begin{eqnarray}
-\hat{C}_{XY} &=& \sum_{i=1}^3 (X_i - \hat{M}_X)(Y_i - \hat{M}_Y) 
-= \tfrac{5}{6} + \tfrac{7}{6} = 2 \\
-\hat{V}_X &=& \sum_{i=1}^3 (X_i - \hat{M}_X)^2 = 1 + 1 = 2.
+\hat{C}_{XY} &=& \sum_{i=1}^3 (X_i - \hat{M}_X)(Y_i - \hat{M}_Y) /3
+= [\tfrac{5}{6} + \tfrac{7}{6}]/3 = 2/3 \\
+\hat{V}_X &=& \sum_{i=1}^3 (X_i - \hat{M}_X)^2 = [1 + 1]/3 = 2/3.
 \end{eqnarray}
 
 
 Step 3. Slope and Intercept
 
 \begin{eqnarray}
-\hat{b}_1 = \frac{\hat{C}_{XY}}{\hat{V}_X} = \frac{2}{2} = 1,
+\hat{b}_1 = \frac{\hat{C}_{XY}}{\hat{V}_X} = \frac{2/3}{2/3} = 1,
 \end{eqnarray}
 
 \begin{eqnarray}
@@ -121,7 +142,6 @@ i & X_i & Y_i & \hat{y}_i = \tfrac{5}{6} + X_i & \hat{e}_i = Y_i - \hat{y}_i \\ 
 \end{eqnarray}
 
 
-
 ```{r}
 xy0 <- data.frame(
     x=c(1,2,3),
@@ -133,28 +153,6 @@ predict(reg0)
 resid(reg0)
 ```
 
-
-(Optional) Verification of the Normal Equations
-
-\begin{eqnarray}
-\sum_{i=1}^3 \hat{e}_i 
-= \tfrac{1}{6} - \tfrac{1}{3} + \tfrac{1}{6}
-= 0,
-\end{eqnarray}
-
-\begin{eqnarray}
-\sum_{i=1}^3 \hat{e}_i X_i 
-= \left(\tfrac{1}{6}\right)(1)
-+ \left(-\tfrac{1}{3}\right)(2)
-+ \left(\tfrac{1}{6}\right)(3)
-= 0.
-\end{eqnarray}
-
-```{r}
-e0 <- resid(reg0)
-sum(e0)
-sum(e0*xy0[,'x'])
-``` 
 :::
 
 
@@ -195,12 +193,13 @@ add_trace(fig, x=~x, y=~pred,
 #### **Goodness of Fit**. {-}
 First, we qualitatively analyze the ''Goodness of fit'' of our model by plotting it against the data.
 For a quantitative summary, we can also compute the linear correlation between the model predictions and the sample data: $\hat{R}_{yY} = \hat{C}_{yY}/[\hat{S}_{y} \hat{S}_{Y}]$. 
-With linear models, we typically compute the "R-squared" statistic $\hat{R}_{yY}^2$, also known as the "coefficient of determination", using the sums of squared errors (Total, Explained, and Residual)
+With linear models, we typically compute the "R-squared" statistic directly, $[\hat{R}_{yY}]^2$ using the sums of squared errors (Total, Explained, and Residual)
 \begin{eqnarray}
 \underbrace{\sum_{i}(\hat{Y}_{i}-\hat{M}_{Y})^2}_\text{TSS}
 =\underbrace{\sum_{i}(\hat{y}_i-\hat{M}_{Y})^2}_\text{ESS}+\underbrace{\sum_{i}\hat{e}_{i}^2}_\text{RSS}\\
 \hat{R}_{yY}^2 = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}
 \end{eqnarray}
+This is also known as the "coefficient of determination". Intuitively, it is the percentage of all variation explained by our model, and must theorefore fall in $[0,1]$.
 
 
 ```{r}
@@ -219,8 +218,6 @@ summary(reg)$r.squared
 R <- cor(xy[,'y'], predict(reg))
 R^2
 ```
-
-
 
 
 
@@ -339,6 +336,9 @@ TSS0  <- sum((Y0-mean(Y0))^2)
 R2 <- 1 - RSS0/TSS0
 
 # compare with our calculation: 12/13
+
+# compare with our intuitive benchmark
+cor(Y0, predict(reg0))
 ```
 
 :::
@@ -351,90 +351,111 @@ A regression coefficient is a statistic. And, just like all statistics, we can e
 * *standard error*: variability across different samples (c.f.  *standard deviation*: variability within a single sample.)
 * *confidence interval:* range your statistic varies across different samples.
 
-Note that values reported by your computer do not necessarily satisfy this definition. To calculate these statistics, we will estimate variability using *data-driven* methods. (For some theoretical background, see <https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf>.) 
+Note that values reported by your computer do not necessarily satisfy this definition. To calculate these statistics, we will estimate variability using the *data-driven* methods from <https://jadamso.github.io/Rbooks/01_07_Intervals.html>. (For some theoretical background, see also <https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf>.) 
 
 
 #### **Jackknife**. {-}
-We first consider the simplest, the jackknife. In this procedure, we loop through each row of the dataset. And, in each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all subsamples.
+We first consider the simplest, the jackknife. In this procedure, we loop through each row of the dataset. And, in each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all subsamples to get jackknife standard errors and, assuming the data are approximately normal, use the quantiles to construct a CI. Alternatively, we can just take the percentiles of the jackknife distribution directly.
 
 ```{r}
+# Original Estimate
+slope <-  coef(reg)[2]
+ 
 # Jackknife Standard Errors for OLS Coefficient
-jack_regs <- lapply(1:nrow(xy), function(i){
+jack_coefs <- vector(length=nrow(xy))
+for(i in seq_along(jack_coefs)){
     xy_i <- xy[-i,]
     reg_i <- lm(y~x, dat=xy_i)
-})
-jack_coefs <- sapply(jack_regs, coef)['x',]
+    slope_i <- coef(reg_i)[2]
+    jack_coefs[i] <- slope_i
+}
 jack_se <- sd(jack_coefs)
-# classic_se <- sqrt(diag(vcov(reg)))[['x']]
 
 
 # Jackknife Sampling Distribution
 hist(jack_coefs, breaks=25,
-    main=paste0('SE est. = ', round(jack_se,4)),
+    main='Jackknife Distribution with 95% CIs',
     font.main=1, border=NA,
+    freq=F,
     xlab=expression(hat(b)[-i]))
-# Original Estimate
-abline(v=coef(reg)['x'], lwd=2)
-# Jackknife Confidence Intervals
+# Percentile Confidence Intervals
 jack_ci_percentile <- quantile(jack_coefs, probs=c(.025,.975))
 abline(v=jack_ci_percentile, lty=2)
-
-
-# Plot Normal Approximation
-# jack_ci_normal <- jack_mean+c(-1.96, +1.96)*jack_se
-# abline(v=jack_ci_normal, col="red", lty=3)
+# Normal Approx Confidence Intervals
+jack_ci_normal <- qnorm(c(.025,.975), slope, jack_se)
+abline(v=jack_ci_normal, lty=3)
 ```
 
 #### **Bootstrap**. {-}
 
-There are several resampling techniques. The other main one is the bootstrap, which resamples with replacement for an arbitrary number of iterations. When bootstrapping a dataset with $n$ observations, you randomly resample all $n$ rows in your data set $B$ times. 
+There are several resampling techniques. The other main one is the bootstrap, which resamples with replacement for an arbitrary number of iterations. When bootstrapping a dataset with $n$ observations, you randomly resample all $n$ rows in your data set $B$ times. We then calculate the standard deviation of the statistic across all boostrap samples to get bootstrap standard errors and, assuming the data are approximately normal, use the quantiles to construct a CI. Alternatively, we can just take the percentiles of the bootstrap distribution.
+
+
 ```{r}
 # Bootstrap
-boot_regs <- lapply(1:399, function(b){
+boot_coefs <- vector(length=399)
+for(i in seq_along(boot_coefs)){
     b_id <- sample( nrow(xy), replace=T)
     xy_b <- xy[b_id,]
     reg_b <- lm(y~x, dat=xy_b)
-})
-boot_coefs <- sapply(boot_regs, coef)['x',]
+    slope_b <- coef(reg_b)[2]
+    boot_coefs[i] <- slope_b
+}
 boot_se <- sd(boot_coefs)
 
 hist(boot_coefs, breaks=25,
-    main=paste0('SE est. = ', round(boot_se,4)),
+    main='Bootstrap Distribution with 95% CIs',
     font.main=1, border=NA,
+    freq=F,
     xlab=expression(hat(b)[b]))
+# Percentile CI
 boot_ci_percentile <- quantile(boot_coefs, probs=c(.025,.975))
 abline(v=boot_ci_percentile, lty=2)
-abline(v=coef(reg)['x'], lwd=2)
+# Normal Approx Confidence Intervals
+jack_ci_normal <- qnorm(c(.025,.975), slope, boot_se)
+abline(v=jack_ci_normal, lty=3)
 ```
-
-We can also bootstrap other statistics, such as $\hat{t}$ or $\hat{R}^2$. We do such things to test a null hypothesis, which is often ``no relationship''. We are rarely interested in computing standard errors and conducting hypothesis tests for simple linear regressions, but work through the ideas with two variables before moving to analyze multiple variables.
-
-
 
 
 ## Hypothesis Tests
+
+We can also bootstrap other statistics, often to test a null hypothesis of "no relationship". We are rarely interested in computing standard errors and conducting hypothesis tests for simple linear regressions in practice, but work through the ideas with two variables before moving to analyze multiple variables.
 
 #### **Invert a CI**. {-}
 
 One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. Does the slope coefficient equal $0$? For reasons we won't go into in this class, we typically normalize the coefficient by its standard error: $\hat{t} = \frac{\hat{b}}{\hat{s}_{\hat{b}}}$, where $\hat{s}_{\hat{b}}$ is the estimated standard error of the coefficient.
 ```{r}
-tvalue <- coef(reg)['x']/jack_se
+# Create t-stat with jackknife SE
+t_hat <- coef(reg)['x']/jack_se
 
-jack_t <- sapply(jack_regs, function(reg_b){
-    # Data
-    xy_b <- reg_b[['model']]
-    # Coefficient
-    coef_b <- coef(reg_b)[['x']]
-    t_hat_b <- coef_b/jack_se
-    return(t_hat_b)
-})
+boot_t <-  vector(length=399)
+for(b in seq_along(boot_t)){
+	# Bootstrap data
+    b_id <- sample( nrow(xy), replace=T)
+    xy_b <- xy[b_id,]
+    # Redo regression
+    reg_b <- lm(y~x, dat=xy_b)
+    slope_b <- coef(reg_b)[2]
+	# Redo Jackknife SEs
+	jack_coefs_b <- vector(length=nrow(xy_b))
+	for(i in seq_along(jack_coefs_b)){
+		xy_b_i <- xy_b[-i,]
+		reg_b_i <- lm(y~x, dat=xy_b_i)
+		slope_b_i <- coef(reg_b_i)[2]
+		jack_coefs_b[i] <- slope_b_i
+	}
+	jack_se_b <- sd(jack_coefs_b)
+	# Redo t with Jackknife SE
+    t_hat_b <- slope_b/jack_se_b
+	boot_t[b] <- t_hat_b
+}
 
-hist(jack_t, breaks=25,
-    main='Jackknife t Density',
-    font.main=1, border=NA,
+hist(boot_t, breaks=25,
+    main='Bootstrap t with Jackknife SE',
+    font.main=1, border=NA, freq=F,
     xlab=expression(hat(t)[b]), 
-    xlim=range(c(0, jack_t)) )
-abline(v=quantile(jack_t, probs=c(.025,.975)), lty=2)
+    xlim=range(c(0, boot_t)) )
+abline(v=quantile(boot_t, probs=c(.025,.975)), lty=2)
 abline(v=0, col="red", lwd=2)
 ```
 
@@ -452,46 +473,54 @@ We can also compute a null distribution. We focus on the simplest: simulations t
 
 ```{r}
 # Null Distribution for Reg Coef
-null_t <- sapply( 1:399, function(b){
+null_t <-  vector(length=399)
+for(b in seq_along(null_t)){
+	# Permuted data
     xy_b <- xy
-    ## xy_b[,'y'] <- sample( xy_b[,'y'], replace=T) ## Bootstrap
-    xy_b[,'y'] <- sample( xy_b[,'y'], replace=F) ## Permutation
+    xy_b[,'y'] <- sample( xy_b[,'y'], replace=F) #Bootstrap: replace=T
     reg_b <- lm(y~x, dat=xy_b)
-    coef_b <- coef(reg_b)[['x']]
-    t_hat_b <- coef_b/jack_se
-    return(t_hat_b)
-})
+    # Redo regression
+    reg_b <- lm(y~x, dat=xy_b)
+    slope_b <- coef(reg_b)[2]
+	# Redo Jackknife SEs
+	jack_coefs_b <- vector(length=nrow(xy_b))
+	for(i in seq_along(jack_coefs_b)){
+		xy_b_i <- xy_b[-i,]
+		reg_b_i <- lm(y~x, dat=xy_b_i)
+		slope_b_i <- coef(reg_b_i)[2]
+		jack_coefs_b[i] <- slope_b_i
+	}
+	# Redo t with Jackknife SE
+    t_hat_b <- slope_b/ sd(jack_coefs_b)
+	null_t[b] <- t_hat_b
+}
 
 # Null Distribution
-null_ci <- quantile(null_t, probs=c(.025,.975))
 hist(null_t, breaks=25,
     main='Null Distribution',
-    font.main=1, border=NA,
+    font.main=1, border=NA, freq=F,
     xlab=expression(hat(t)[b]),
     xlim=range(null_t))
+# 95% CI
+null_ci <- quantile(null_t, probs=c(.025,.975))
 abline(v=null_ci, lty=2)
-abline(v=tvalue, col="red", lwd=2)
+# Observed value
+abline(v=t_hat, col="red", lwd=2)
 ```
 
-Permutations are common when testing against ``no association'', but the bootstrap allows us to test against other specific hypothesis: $\beta$. To impose the null, you recenter the sampling distribution around the hypothetical value; $\hat{t} = \frac{\hat{b} - \beta}{\hat{s}_{\hat{b}}}$.^[Under some assumptions, the null distribution follows a $t$-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)] 
-
-
-In any case, we can calculate a *$p$-value*: the probability you would see something as at least as extreme as your statistic under the null (assuming your null hypothesis was true). We can always calculate a $p$-value from an explicit null distribution.
+Permutations are common when testing against "no association". From permuted data, we can calculate a *$p$-value*: the probability you would see something as at least as extreme as your statistic under the null (assuming your null hypothesis was true, see <https://jadamso.github.io/Rbooks/01_08_HypothesisTests.html>). We calculate the $p$-value directly from the null distribution. Smaller $p$-values suggest more evidence against the null.
 ```{r}
-# One Sided Test for P(t > boot_t | Null) = 1 - P(t < boot_t | Null of t=0)
-That_NullDist1 <- ecdf(null_t)
-Phat1  <- 1-That_NullDist1(jack_t)
-
-
 # Two Sided Test for P(t > jack_t or t < -jack_t | Null of t=0)
 That_NullDist2 <- ecdf(abs(null_t))
-Phat2  <-  1-That_NullDist2( abs(tvalue))
+Phat2  <-  1-That_NullDist2( abs(t_hat))
 Phat2
-plot(That_NullDist2, xlim=range(null_t, jack_t),
+plot(That_NullDist2, xlim=range(null_t, t_hat),
     xlab=expression( abs(hat(t)[b]) ),
     main='Null Distribution', font.main=1)
-abline(v=tvalue, col='red')
+abline(v=t_hat, col='red')
 ```
+
+
 
 :::{.callout-note icon=false collapse="true"}
 Suppose you have data on grades completed and wages. Conduct a linear regression. Then compute a $p$-value for the null hypothesis of no relationship between education level and wages.
@@ -502,7 +531,15 @@ xy <- wage1[,c('educ','wage')]
 :::
 
 
-#### **Association is not Causation**.{-}
+#### **Caveats**.{-}
+
+We could also use hard decision rules, such as "$p < 0.05$ is a statistically significant finding". However, just like confidence intervals, those hard decision rules can be sensitive to somewhat arbitrary choices (Why Jackknife SE's instead of classical ones? Why test at the $95\%$ level rather than $90\%$?)
+
+"No association" is the most common null hypothesis in practice, but we can also use bootstrapping to test against other specific hypothesis: $\beta$. To impose the null in this case, you recenter the sampling distribution around the hypothetical value; $\hat{t} = \frac{\hat{b} - \beta}{\hat{s}_{\hat{b}}}$.^[Under some additional assumptions, the null distribution follows a $t$-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)]  
+
+Although two-sided hypothesis tests are most common, you can also test one-sided hypotheses.
+
+## Association is not Causation
 
 The same caveats about "correlation is not causation" extend to regression. You may be tempted to use the term "the effect", but that interpretation of a regression coefficient assumes the linear model is true. If you fit a line to a non-linear relationship, then you will still get back a coefficient even though there is no singular *the* effect: the true relationship is non-linear! Also consider a classic example, Anscombe's Quartet, which shows four very different datasets that give the same linear regression coefficient. Notice that you understand the problem because we used scatterplots to visual the data.^[The same principles holds when comparing two groups: <http://www.stat.columbia.edu/~gelman/research/published/causal_quartet_second_revision.pdf>]
 
