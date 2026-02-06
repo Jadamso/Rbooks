@@ -100,7 +100,33 @@ Confidence intervals shrink with more data, as averaging washes out random fluct
 * With $n=100$ apples, individual apples barely move the needle. The average becomes stable.
 
 ```{r}
-X <- c(18,20,22,24) #student ages
+# Create 300 samples, each of size n
+par(mfrow=c(1,3))
+for(n in c(25, 100, 250)){
+x_samples <- matrix(nrow=300, ncol=n)
+for(i in seq(1,nrow(x_samples))){
+    x_samples[i,] <- runif(n)
+}
+# Compute means for each row (for each sample)
+sample_means <- apply(x_samples, 1, mean)
+# 90% Confidence Interval
+mq <- quantile(sample_means, probs=c(.05,.95))
+paste0('we are 90% confident that the mean is between ', 
+    round(mq[1],2), ' and ', round(mq[2],2) )
+hist(sample_means,
+    breaks=seq(.1,.9, by=.005), 
+    border=NA, freq=F, 
+    col=rgb(0,0,0,.25), font.main=1,
+    main=paste0('n=',n))
+abline(v=mq)
+}
+```
+
+:::{.callout-note icon=false collapse="true"}
+Here is an intuitive example, from a small discrete population. Notice the extreme values 
+
+```{r}
+X <- c(18,20,22,24) #student ages (population values)
 # six possible samples of size 2
 m1 <- mean( X[c(1,2)] ) #{1,2}
 m2 <- mean( X[c(1,3)] ) #{1,3}
@@ -109,7 +135,7 @@ m4 <- mean( X[c(2,3)] ) #{2,3}
 m5 <- mean( X[c(2,4)] ) #{2,4}
 m6 <- mean( X[c(3,4)] ) #{3,4}
 means_2 <- c(m1, m2, m3, m4, m5, m6)
-quantile(means_2, probs=c(.25,.75)) ## 50% CI
+sort(means_2)
 
 # four possible samples of size 3
 m1 <- mean( X[c(1,2,3)] ) 
@@ -117,32 +143,17 @@ m2 <- mean( X[c(1,2,4)] )
 m3 <- mean( X[c(1,3,4)] ) 
 m4 <- mean( X[c(2,3,4)] ) 
 means_3 <- c(m1, m2, m3, m4)
-quantile(means_3, probs=c(.25,.75)) ## 50% CI
+sort(means_3)
 ```
+:::
 
-```{r, eval=F}
-# Create 300 samples, each of size n
-n <- 1000
-x_samples <- matrix(nrow=300, ncol=n)
-for(i in seq(1,nrow(x_samples))){
-    x_samples[i,] <- runif(n)
-}
-# Compute means for each row (for each sample)
-sample_means <- apply(x_samples, 1, mean)
-mq <- quantile(sample_means, probs=c(.05,.95))
-paste0('we are 90% confident that the mean is between ', 
-    round(mq[1],2), ' and ', round(mq[2],2) )
-hist(sample_means,
-    breaks=seq(.4,.6, by=.001), 
-    border=NA, freq=F,
-    col=rgb(0,0,0,.25), font.main=1,
-    main='90% Confidence Interval for the Mean (larger n)')
-abline(v=mq)
-```
+
+
+
 
 For a fixed sample size $n$, there is a trade-off between *precision*: the width of a confidence interval, and *accuracy*: the probability that a confidence interval contains the theoretical value.
 
-#### **Percentile Intervals**.  {-}
+#### **Resampling Intervals**.  {-}
 
 Often, we have only one sample. In practice, we can use resampling procedures to estimate a confidence interval. E.g., we repeatedly resample data and construct a bootstrap or jackknife sampling distribution. Then we compute the confidence intervals using the upper and lower quantiles of the sampling distribution. 
 
@@ -205,6 +216,7 @@ For example, suppose you hypothesize the mean is $9$. You then construct a boots
 ```{r}
 hist(bootstrap_means, breaks=25,
     border=NA,
+    freq=F,
     main='',
     xlab='Bootstrap Samples')
 # CI
@@ -280,29 +292,50 @@ abline(v=sample_mean, lwd=2, col=4)
 
 ## Misc. Topics
 
-#### **Prediction Intervals**. {-}
-
-Note that $Z\%$ confidence intervals do not generally cover $Z\%$ of the data (those types of intervals are covered later). In the examples above, notice the confidence interval for the mean differs from the confidence interval of the median, and so both cannot cover $90\%$ of the data. The confidence interval for the mean is roughly $[0.48, 0.52]$, which theoretically covers only a $0.52-0.48=0.04$ proportion of uniform random data, much less than the proportion $0.9$.
-
-In addition to confidence intervals, we can also compute a *prediction interval* which estimate the variability of new data rather than a statistic. To do so, we compute the frequency each value was covered.
-```{r}
-x <- runif(1000)
-# Middle 90% of values
-xq0 <- quantile(x, probs=c(.05,.95))
-paste0('we are 90% confident that the a future data point will be between ', 
-    round(xq0[1],2), ' and ', round(xq0[2],2) )
-
-hist(x,
-    breaks=seq(0,1,by=.01), border=NA,
-    main='Prediction Interval', font.main=1)
-abline(v=xq0)
-```
-
 #### **Normal Approximation**. {-}
 
-Given the sampling distribution is approximately normally, the usual confidence intervals are symmetric. For the sample mean $M$, we can construct the interval $[M - E, M + E]$, where $E$ is a "margin of error" on either side of $M$. A coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$. I.e., if the same sampling procedure were repeated $100$ times from the same population, approximately $95$ of the resulting intervals would be expected to contain the true population mean.^[Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( \mu + E > M > \mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ in $95\%$ of the samples because whenever $M$ is within $10$ of $\mu$, the value $\mu$ is also within $10$ of $M$. But for any particular sample, the interval $[\hat{M}-10, \hat{M}+10]$ either does or does not contain $\mu$.] 
+Given the sampling distribution is approximately normally, the usual confidence intervals are symmetric. For the sample mean $M$, we can then construct the interval $[M - E, M + E]$, where $E$ is a "margin of error" on either side of $M$. A coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$. I.e., if the same sampling procedure were repeated $100$ times from the same population, approximately $95$ of the resulting intervals would be expected to contain the true population mean.^[Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( \mu + E > M > \mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ in $95\%$ of the samples because whenever $M$ is within $10$ of $\mu$, the value $\mu$ is also within $10$ of $M$. But for any particular sample, the interval $[\hat{M}-10, \hat{M}+10]$ either does or does not contain $\mu$. Similarly, if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$.] We can also compute from theory that the $\pm 1.96~ SE(M)$ corresponds to the critical values of the Normal distribution, where $SE(M)$ is estimated using the bootstrap distribution or theory (classical SEs: $\hat{S}/\sqrt{n}$).
 
-Recall that a $95\%$ coverage level does not imply a $95\%$ probability that the true parameter lies within a particular calculated interval. E.g., if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$.
+```{r}
+# Bootstrap Distribution with Percentile CI
+sd_est_boot <- sd(bootstrap_means)
+hist(bootstrap_means, breaks=25,
+    main='Percentile vs Normal 95% CIs',
+    font.main=1, border=NA,
+    freq=F, ylim=c(0,0.7),
+    xlab=expression(hat(b)[b]))
+boot_ci_percentile <- quantile(bootstrap_means, probs=c(.025,.975))
+abline(v=boot_ci_percentile, lty=1)
+
+# Normal Approximation with Bootstrap SEs
+dx <- seq(5,10,by=0.01)
+lines(dx, dnorm(dx,sample_mean,sd_est_boot), col="blue", lty=1)
+boot_ci_normal <- qnorm(c(.025,.975), sample_mean, sd_est_boot) #sample_mean+c(-1.96, +1.96)*sd_est_boot
+abline(v=boot_ci_normal, col="blue", lty=3)
+
+# Normal Approximation with IID Theory SEs
+classic_se <- sd(sample_dat)/sqrt(length(sample_dat))
+lines(dx, dnorm(dx,sample_mean,classic_se), col="red", lty=1)
+ci_normal <-  qnorm(c(.025,.975), sample_mean, classic_se) #sample_mean+c(-1.96, +1.96)*classic_se
+abline(v=ci_normal, col="red", lty=3)
+
+paste0('Bootstrap SE = ', round(sd_est_boot,3))
+paste0('Class SE = ', round(classic_se,3))
+```
+
+The main advantage and disadvantage of the Normal approximation is that it works well for estimating extreme probabilities, where resampling methods tend to be worse, but the sampling distribution might be far from normal. In the example above, they are all quite similar, but that does not always need to be the case.
+
+
+This Normal based interval can also provide an alternative to the Null Bootstrap. While we could also use a Null Jackknife distribution, that is rarely done. Altogether, there are two different types of confidence intervals that "impose the null". 
+
+| Interval | Mechanism |
+| -------- | ------- |
+Bootstrap Percentile | randomly resample $n$ observations with replacement and shift |
+Normal     | assume observations are i.i.d. and normal distribution is a good approximation (can use bootstrap or classical SE's) |
+: Types of Confidence Interval Estimates that "impose the null"
+
+
+
  
 
 ```{r}
@@ -325,20 +358,27 @@ cat(sprintf("Estimated coverage probability: %.2f%%\n", 100 * coverage_rate))
 # Change to [-2 sd, +2 sd] to see Precision-Accuracy tradeoff.
 ```
 
-:::{.callout-tip icon=false collapse="true"}
-Given the sample size, $n$, is large enough for the sample mean to be approximately normally distributed, what confidence interval satisfies the following: the theoretical mean $\mu$ is inside of the interval with probability $95%$ (i.e., for $(1 - 0.05)%$ of samples)?
-:::
-
-This theory based interval is an alternative to the Null Bootstrap. While we could also use a Null Jackknife distribution, that is rarely done. Altogether, there are two different types of confidence intervals that "impose the null". 
-
-| Null Distribution | Mechanism |
-| -------- | ------- |
-Bootstrap   | randomly resample $n$ observations with replacement and shift |
-Theoretical | assume observations are i.i.d. and normal distribution is a good approximation |
-: Types of Confidence Interval Estimates that "impose the null"
 
 
 
+
+#### **Prediction Intervals**. {-}
+
+Note that $Z\%$ confidence intervals do not generally cover $Z\%$ of the data (those types of intervals are covered later). In the examples above, notice the confidence interval for the mean differs from the confidence interval of the median, and so both cannot cover $90\%$ of the data. The confidence interval for the mean is roughly $[0.48, 0.52]$, which theoretically covers only a $0.52-0.48=0.04$ proportion of uniform random data, much less than the proportion $0.9$.
+
+In addition to confidence intervals, we can also compute a *prediction interval* which estimate the variability of new data rather than a statistic. To do so, we compute the frequency each value was covered.
+```{r}
+x <- runif(1000)
+# Middle 90% of values
+xq0 <- quantile(x, probs=c(.05,.95))
+paste0('we are 90% confident that the a future data point will be between ', 
+    round(xq0[1],2), ' and ', round(xq0[2],2) )
+
+hist(x,
+    breaks=seq(0,1,by=.01), border=NA,
+    main='Prediction Interval', font.main=1)
+abline(v=xq0)
+```
 
 
 ## Further Reading

@@ -63,7 +63,7 @@ X1_mean <- mean(X1)
 X1_mean
 
 # visualize on a histogram
-hist(X1, border=NA, main=NA)
+hist(X1, border=NA, main=NA, freq=F,)
 abline(v=X1_mean, col=2, lwd=2)
 title(paste0('mean= ', round(X1_mean,2)), font.main=1)
 ```
@@ -76,7 +76,7 @@ Perhaps the second most common statistic is the empirical variance: the average 
 The empirical standard deviation is simply $\hat{S} = \sqrt{\hat{V} }$.
 
 :::{.callout-note icon=false collapse="true"}
-For example, a dataset of $\{1,4,10\}$ has a mean of $[1+4+10]/3=5$. The variance is $[(1-5)^2+(4-5)^2+(10-5)^2]/3=14$ and the standard deviation is $\sqrt{14}$.
+For example, a dataset of $\{1,4,10\}$ has a mean of $[1+4+10]/3=5$. The variance is $[(1-5)^2+(4-5)^2+(10-5)^2]/3=[16+1+25]/3=42/3=14$ and the standard deviation is $\sqrt{14}$.
 ```{r}
 X <- c(1,4,10)
 X_mean <- mean(X)
@@ -213,10 +213,11 @@ The mean generalizes to a *weighted mean*: an average where different values con
 \begin{eqnarray}
 \hat{M} &=& \frac{\sum_{x} x W_{x}}{\sum_{x} W_{x}} = \sum_{x} x w_{x},
 \end{eqnarray}
-where $w_{x}=\frac{W_{x}}{\sum_{x'} W_{x'}}$ is normalized version of $W_{x}$ that implies $\sum_{x}w_{x}=1$.^[Note that if there are $K$ unique outcomes and $W_{x}=1$ then $\sum_{x}W_{x}=K$ and $w_{x}=1/K$. This means $\hat{M} = \sum_{x} x w_{x} = \sum_{x} x /K$, which is just a simple mean.]
+where $w_{x}=\frac{W_{x}}{\sum_{x'} W_{x'}}$ is normalized version of $W_{x}$ that implies $\sum_{x}w_{x}=1$.
+
 
 :::{.callout-note icon=false collapse="true"}
-For example, suppose a student has these scores
+For another example, suppose a student has these scores
 ```{r}
 Homework1 <- c(score=88, weight=0.25)
 Homework2 <- c(score=92, weight=0.25)
@@ -239,7 +240,26 @@ FinalGrade
 ```
 :::
 
-We can also computed a weighted variance or weighted quantile.
+
+When data are discrete, we can also compute the mean using "probability weights" $w_{x} = \hat{p}_{x}=\sum_{i=1}^{n}\mathbf{1}\left(\hat{X}_{i}=x\right)/n$.
+
+:::{.callout-note icon=false collapse="true"}
+E.g., the dataset $\{1,2,1,3,1\}$ has $\hat{p}_{1}=\frac{3}{5}$, $\hat{p}_{2}=\frac{1}{5}$, $\hat{p}_{3}=\frac{1}{5}$.
+Then, sorting the dataset as \{1,1,1,2,3\}, we can see that $\hat{M} = [1+1+1+2+2+3]/5 =  [1+1+1]/5 + [2+2]/5+ 3/5 = 1 \frac{3}{5} + 2 \frac{3}{5} + 3 \frac{1}{5} = 1 \hat{p}_{1} + 2 \hat{p}_{2} + 3 \hat{p}_{3}$. In either case, we end up with $\frac{3+6+3}{5}=12/5=1.6$
+
+```{r}
+X <- c(1,2,1,3,1)
+mean(X)
+
+proportions <- table(X)/length(X)
+proportions
+vals <- sort(unique(X))
+sum(vals*proportions)
+```
+:::
+
+
+In principle, we can also compute other weighted statistics such as a weighted median.
 
 :::{.callout-tip icon=false collapse="false"}
 See that we can also compute weighted quantiles
@@ -306,8 +326,10 @@ The skewness statistic captures how asymmetric the distribution is by measuring 
 \end{eqnarray}
 
 ```{r}
-X <- rweibull(1000, shape=1)
-hist(X, border=NA, main=NA, freq=F, breaks=20)
+X <- USArrests[,'Murder']
+hist( X^2, border=NA, 
+	xlab='[Murder Rate]^2',
+	main=NA, freq=F, breaks=20)
 
 skewness <-  function(X){
  X_mean <- mean(X)
@@ -317,8 +339,8 @@ skewness <-  function(X){
  return(skew)
 }
 
-skewness( rweibull(1000, shape=1))
-skewness( rweibull(1000, shape=10) )
+skewness( X^2 )
+skewness( X^3 )
 ```
 
 We can automatically compare against the normal distribution, which has a skew of 0.
@@ -330,9 +352,17 @@ This statistic captures how many "outliers" there are like skew but looking at q
 \end{eqnarray}
 Some authors further subtract $3$ to explicitly compare against the normal distribution (the normal distribution has a kurtosis of $3$).
 
+Boxplot whiskers are a great way to examine kurtosis, with more circle ``outliers'' indicating more kurtosis. You can also see skew in the boxplot when one quartile is much further from the median than the other. 
+
 ```{r}
-X <- rweibull(1000, shape=1)
-boxplot(X, main=NA)
+X1 <- X^1/mean(X^1)
+X2 <- X^2/mean(X^2)
+X3 <- X^3/mean(X^3)
+X4 <- X^4/mean(X^4)
+boxplot(X1, X2, X3, X4,
+	names=c(1,2,3,4), xlab='Data Transformations',
+	main=NA)
+
 
 kurtosis <- function(X){  
  X_mean <- mean(X)
@@ -344,8 +374,10 @@ kurtosis <- function(X){
  # excess_kurt <- kurt - 3 
 }
 
-kurtosis( rweibull(1000, shape=1) )
-kurtosis( rweibull(1000, shape=10) )
+kurtosis( X1 )
+kurtosis( X2 )
+kurtosis( X3 )
+kurtosis( X4 )
 ```
 
 
@@ -378,18 +410,8 @@ r_ugly1 <- function(n, theta1=c(-8,-1), theta2=c(-2,2), rho=.25){
 }
 # Very Large Sample
 X <- r_ugly1(1000000)
-hist(X, breaks=1000,  freq=F, border=NA,
+hist(X, breaks=1000, freq=F, border=NA,
     xlab="x", main='')
-```
-
-```{r, eval=F}
-# Show True Density
-d_ugly1 <- function(x, theta1=c(-8,-1), theta2=c(-2,2), rho=.25){
-    rho     * dunif(x, theta1[1], theta2[1]) +
-    (1-rho) * dnorm(x, theta1[2], theta2[2]) }
-x <- seq(-12,6,by=.001)
-dx <- d_ugly1(x)
-lines(x, dx, col=1)
 ```
 
 
