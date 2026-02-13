@@ -1,0 +1,226 @@
+# Local Relationships II
+***
+
+## Variability 
+
+Often, we are interested in gradients: how $Y$ changes with $X$. The linear model depicts this as a simple constant, $\hat{b}_{1}$, whereas other models do not. A great first step to assess gradients is to plot the predicted values over the explanatory values. A great second step is to compute gradients and summarize them. In any case, we compute confidence intervals to account for variability across samples.
+
+#### **Confidence Bands**. {-}
+
+We can construct confidence bands using the jackknife or bootstrap.
+
+```{r}
+## Data
+library("wooldridge")
+dat <- wage1[order(wage1[,'educ']), c('wage','educ')]
+
+# Loess
+reg_lo <- loess(wage~educ, data=dat, span=.8)
+
+# Predictions at design points
+pred_design <- data.frame(educ=unique(dat[,'educ']))
+preds_lo <- predict(reg_lo, newdata=pred_design)
+
+# Plot
+lo_col <- hcl.colors(3,alpha=.5)[2]
+plot(wage~educ, pch=16, col=grey(0,.1), data=dat)
+lines(pred_design[,'educ'], preds_lo,
+    col=lo_col,
+    type='o', pch=2)
+    
+# Boot CI
+boot_lo <- sapply(1:399, function(b){
+    # xy_i <- xy[-i,] #jackknife for i in 1:nrow(xy)
+    xy_b <- dat[sample(nrow(dat), replace=T),]
+    reg_b <- loess(wage~educ, dat=xy_b, span=.8)
+    predict(reg_b, newdata=pred_design)
+})
+boot_cb <- apply(boot_lo,1, quantile,
+    probs=c(.025,.975), na.rm=T)
+    
+
+# Plot CI
+polygon(
+    c(pred_design[[1]], rev(pred_design[[1]])),
+    c(boot_cb[1,], rev(boot_cb[2,])),
+    col=lo_col,
+    border=NA)
+```
+
+
+:::{.callout-note icon=false collapse="true"}
+Construct a bootstrap confidence band for the following loess regression
+```{r}
+# Adaptive-width subsamples with non-uniform weights
+xy <- USArrests[,c('UrbanPop','Murder')]
+xy0 <- xy[order(xy[,'UrbanPop']),]
+names(xy0) <- c('x','y')
+
+plot(y~x, pch=16, col=grey(0,.5), dat=xy0)
+reg_lo2 <- loess(y~x, data=xy0, span=.6)
+
+red_col <- rgb(1,0,0,.5)
+lines(xy0[,'x'], predict(reg_lo2),
+    col=red_col, type='o', pch=2)
+```
+:::
+
+
+#### **Gradients**.{-}
+
+There are two ways to summarize gradients
+
+1. For all methods, including regressograms, you can approximate gradients with small finite differences. For some small difference $d$, we can manually compute
+\begin{eqnarray}
+\hat{b}_{1}(x) &=& \frac{ \hat{y}(x+\frac{d}{2}) - \hat{y}(x-\frac{d}{2})}{d},
+\end{eqnarray}
+
+2. When using split-sample regressions or local linear regressions, you can use the estimated slope coefficients $\hat{b}_{1}(x)$ as gradient estimates in each direction.
+
+After computing gradients, you can summarize them in various plots. These plots show variability within-sample, in contrast to the confidence band which shows variability across samples.
+
+* Histograms, Scatterplots
+* Plot of gradients and their CI's, \cite{Chaudhuri1999, HendersonEtAl2012}
+
+```{r}
+## Gradients    
+pred_lo <- predict(reg_lo)
+grad_x  <- dat[,'educ'][-1]
+grad_dx <- diff(dat[,'educ'])
+grad_dy <- diff(pred_lo)
+grad_lo <-grad_dy/grad_dx
+
+## Visual Summary
+par(mfrow=c(1,2))
+hist(grad_lo,  breaks=20,
+    border=NA, freq=F,
+    col=lo_col,
+    xlab=expression(d~hat(y)/dx),
+    main='') ## Distributional Summary
+plot(grad_x+grad_dx, grad_lo,
+    xlab='x', ylab=expression(d~hat(y)/dx),
+    col=lo_col, pch=16) ## Diminishing Returns?
+```
+
+You may also be interested in a particular gradient or a single summary statistic. For example, a bivariate regressogram can estimate the "marginal effect at the mean"; $\hat{b}_{1}( x=\hat{M}_{X} )$. More typically, you would be interested in the "mean of the gradients", sometimes said simply as "average effect", which averages the gradients over all datapoints in the dataset: $1/n \sum_{i}^{n} \hat{b}_{1}(x=\hat{X}_{i})$. Alternatively, you may be interested in the median of the gradients, or measures of "effect heterogeneity": the interquartile range or standard deviation of the gradients. Such statistics are single numbers that can be presented in tabular form: "mean gradient (sd gradient)". You can also report standard errors: "mean gradient (estimated se), sd gradient (estimated se)".
+
+```{r}
+## Tabular Summary
+tab_stats <- c(
+    M=mean(grad_lo, na.rm=T),
+    S=sd(grad_lo, na.rm=T))
+tab_stats
+
+## Use bootstrapping to get SE's
+boot_stats <- matrix(NA, nrow=299, ncol=2)
+colnames(boot_stats) <- c('M se', 'S se')
+for(b in 1:nrow(boot_stats)){
+    xy_b <- dat[sample(1:nrow(dat), replace=T),]
+    reg_lo <- loess(wage~educ, data=xy_b, span=.6)
+    pred_lo <- predict(reg_lo)
+    grad_lo <- diff(pred_lo)/diff(xy_b[,'educ'])
+    dydx_mean <- mean(grad_lo, na.rm=T)
+    dydx_sd <- sd(grad_lo, na.rm=T)
+    boot_stats[b,1] <- dydx_mean
+    boot_stats[b,2] <- dydx_sd
+}
+apply(boot_stats, 2, sd)
+```
+
+## Theory
+
+
+#### **Confidence Bands**.{-}
+:::{.callout-tip icon=false collapse="true"}
+Note that confidence bands are approximations to what we want: how much do the predicted values vary from sample to sample. To make that clear, we will use a simulation where we can actually generate different samples.
+```{r}
+## Ages
+Xmx <- 70
+Xmn <- 15
+
+##Generate Sample Data
+dat_sim <- function(n=1000){
+    n  <- 1000
+    X <- seq(Xmn,Xmx,length.out=n)
+    ## Random Productivity
+    e <- runif(n, 0, 1E6)
+    beta <-  1E-10*exp(1.4*X -.015*X^2)
+    Y    <-  (beta*X + e)/10
+    return(data.frame(Y,X))
+}
+dat <- dat_sim(1000)
+
+## Data from one sample
+plot(Y~X, data=dat, pch=16, col=grey(0,.1),
+    ylab='Yearly Productivity ($)', xlab='Age' )
+dat0 <- dat[order(dat[,'X']),]
+reg_lo <- loess(Y~X, data=dat0, span=.8)
+
+## Plot Bootstrap CI for Single Sample
+pred_design <- data.frame(X=seq(Xmn, Xmx))
+preds_lo <- predict(reg_lo, newdata=pred_design)
+boot_lo <- sapply(1:399, function(b){
+    dat0_i <- dat0[sample(nrow(dat0), replace=T),]
+    reg_i <- loess(Y~X, dat=dat0_i, span=.8)
+    predict(reg_i, newdata=pred_design)
+})
+boot_cb <- apply(boot_lo,1, quantile,
+    probs=c(.025,.975), na.rm=T)
+polygon(
+    c(pred_design[[1]], rev(pred_design[[1]])),
+    c(boot_cb[1,], rev(boot_cb[2,])),
+    col=hcl.colors(3,alpha=.25)[2],
+    border=NA)
+
+# Construct CI across Multiple Samples
+sample_lo <- sapply(1:399, function(b){
+    xy_b <- dat_sim(1000) #Entirely new sample
+    reg_b <- loess(Y~X, dat=xy_b, span=.8)
+    predict(reg_b, newdata=pred_design)
+})
+ci_lo <- apply(sample_lo,1, quantile,
+    probs=c(.025,.975), na.rm=T)
+polygon(
+    c(pred_design[[1]], rev(pred_design[[1]])),
+    c(ci_lo[1,], rev(ci_lo[2,])),
+    col=grey(0,alpha=.25),
+    border=NA)
+```
+:::
+
+
+#### **Variance (Diminishing Returns)**. {-}
+
+Just as before, there are diminishing returns to larger sample sizes for bivariate statistics. For example, the slope coefficient in simple OLS varies less from sample to sample when the samples are larger. Same for the gradients in loess. This decreased variability across samples makes hypothesis testing more accurate.
+
+```{r}
+B <- 300
+Nseq <- seq(10,50, by=1)
+SE <- sapply(Nseq, function(n){
+    sample_stat <- sapply(1:B, function(b){
+        x <- rnorm(n)
+        e <- rnorm(n)        
+        y <- x*3 + x + e
+        reg_lo <- loess(y~x)
+        pred_lo <- predict(reg_lo)
+        grad_lo <- diff(pred_lo)/diff(x)
+        dydx_mean <- mean(grad_lo, na.rm=T)
+        #dydx_sd <- sd(grad_lo, na.rm=T)
+        return(dydx_mean)
+    })
+    sd(sample_stat)
+})
+
+plot(Nseq, SE, pch=16, col=grey(0,.5),
+    main='Mean gradient', font.main=1,
+    ylab='standard error',
+    xlab='sample size')
+```
+
+#### **Bias**.{-}
+
+
+#### **Bias vs. Variance**.{-}
+
+You could also look at three bins to see if that is a better fit. You can also try finer bins and see what grouping emerges naturally (e.g., whether the main effect on wages is whether your not in school or retired). 
+
