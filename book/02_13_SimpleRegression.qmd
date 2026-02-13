@@ -144,8 +144,8 @@ i & X_i & Y_i & \hat{y}_i = \tfrac{5}{6} + X_i & \hat{e}_i = Y_i - \hat{y}_i \\ 
 
 ```{r}
 xy0 <- data.frame(
-    x=c(1,2,3),
-    y=c(2,2.5,4))
+    x=c(1, 2, 3),
+    y=c(2, 2.5, 4))
 reg0 <- lm(y~x, dat=xy0)
 
 coef(reg0)
@@ -358,10 +358,10 @@ Note that values reported by your computer do not necessarily satisfy this defin
 We first consider the simplest, the jackknife. In this procedure, we loop through each row of the dataset. And, in each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest. We then calculate the standard deviation of the statistic across all subsamples to get jackknife standard errors and, assuming the data are approximately normal, use the quantiles to construct a CI. Alternatively, we can just take the percentiles of the jackknife distribution directly.
 
 ```{r}
-# Original Estimate
+# Original OLS coefficient
 slope <-  coef(reg)[2]
  
-# Jackknife Standard Errors for OLS Coefficient
+# Jackknife Sampling Distribution for OLS Coefficient
 jack_coefs <- vector(length=nrow(xy))
 for(i in seq_along(jack_coefs)){
     xy_i <- xy[-i,]
@@ -369,19 +369,20 @@ for(i in seq_along(jack_coefs)){
     slope_i <- coef(reg_i)[2]
     jack_coefs[i] <- slope_i
 }
-jack_se <- sd(jack_coefs)
 
 
-# Jackknife Sampling Distribution
+# Plot Jackknife Sampling Distribution
+# + Percentile Confidence Interval
 hist(jack_coefs, breaks=25,
     main='Jackknife Distribution with 95% CIs',
     font.main=1, border=NA,
     freq=F,
     xlab=expression(hat(b)[-i]))
-# Percentile Confidence Intervals
 jack_ci_percentile <- quantile(jack_coefs, probs=c(.025,.975))
 abline(v=jack_ci_percentile, lty=2)
-# Normal Approx Confidence Intervals
+
+# Normal Approx Confidence Interval
+jack_se <- sd(jack_coefs)
 jack_ci_normal <- qnorm(c(.025,.975), slope, jack_se)
 abline(v=jack_ci_normal, lty=3)
 ```
@@ -392,7 +393,7 @@ There are several resampling techniques. The other main one is the bootstrap, wh
 
 
 ```{r}
-# Bootstrap
+# Bootstrap Sampling Distribution
 boot_coefs <- vector(length=399)
 for(i in seq_along(boot_coefs)){
     b_id <- sample( nrow(xy), replace=T)
@@ -401,17 +402,19 @@ for(i in seq_along(boot_coefs)){
     slope_b <- coef(reg_b)[2]
     boot_coefs[i] <- slope_b
 }
-boot_se <- sd(boot_coefs)
 
+# Plot Bootstrap Sampling Distribution
+# + Percentile CI
 hist(boot_coefs, breaks=25,
     main='Bootstrap Distribution with 95% CIs',
     font.main=1, border=NA,
     freq=F,
     xlab=expression(hat(b)[b]))
-# Percentile CI
 boot_ci_percentile <- quantile(boot_coefs, probs=c(.025,.975))
 abline(v=boot_ci_percentile, lty=2)
+
 # Normal Approx Confidence Intervals
+boot_se <- sd(boot_coefs)
 jack_ci_normal <- qnorm(c(.025,.975), slope, boot_se)
 abline(v=jack_ci_normal, lty=3)
 ```
