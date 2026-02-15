@@ -1,8 +1,174 @@
+# Statistical Theory
+***
 
+## Theoretical Statistics
+
+#### **Conditional Expectation**. {-}
+
+The conditional expectation function
+\begin{eqnarray}
+m(x) = \mathbb{E}[Y_i|X_i=x]
+\end{eqnarray}
+is the average value of $Y_i$ among observations with $X_i=x$. In empirical work, this is the population object that regressions try to approximate.
+
+For discrete $X_i$, it is a weighted average over conditional probabilities:
+\begin{eqnarray}
+\mathbb{E}[Y_i|X_i=x] = \sum_y y \cdot Prob(Y_i=y|X_i=x).
+\end{eqnarray}
+For continuous $X_i$, we interpret $m(x)$ as a smooth curve indexed by $x$.
+
+The key property is that conditional expectation is the best mean-squared predictor:
+\begin{eqnarray}
+m(x) = \arg\min_{a(x)} \mathbb{E}\left[(Y_i-a(X_i))^2\right].
+\end{eqnarray}
+This is why local and global least-squares methods are central: both are trying to estimate $m(x)$ under different shape restrictions.
+
+Example (discrete):
+
+|  | $x=0$ | $x=1$ |
+|:--:|:--:|:--:|
+| $y=0$ | 0.30 | 0.10 |
+| $y=1$ | 0.10 | 0.20 |
+| $y=2$ | 0.10 | 0.20 |
+
+From the table, $Prob(X_i=0)=0.5$ and $Prob(X_i=1)=0.5$. Then
+\begin{eqnarray}
+\mathbb{E}[Y_i|X_i=0] &=& 0\cdot 0.6 + 1\cdot 0.2 + 2\cdot 0.2 = 0.6,\\
+\mathbb{E}[Y_i|X_i=1] &=& 0\cdot 0.2 + 1\cdot 0.4 + 2\cdot 0.4 = 1.2.
+\end{eqnarray}
+So moving from $x=0$ to $x=1$ increases the conditional mean by $0.6$.
+
+
+```{r}
+# Joint probabilities: rows are y, columns are x
+y_vals <- c(0,1,2)
+x_vals <- c(0,1)
+P_yx <- matrix(c(
+  0.30, 0.10,
+  0.10, 0.20,
+  0.10, 0.20
+), nrow=3, byrow=TRUE)
+
+# Marginal Prob(X_i=x)
+P_x <- colSums(P_yx)
+
+# Conditional probabilities Prob(Y_i=y | X_i=x)
+P_y_given_x <- sweep(P_yx, 2, P_x, "/")
+
+# Conditional expectation m(x)=E[Y_i|X_i=x]
+m_x <- colSums(P_y_given_x * y_vals)
+m_x
+```
+
+#### **Consistency of Local Regression (LLLS/LOESS)**.{-}
+
+Local least squares methods (LLLS, LOESS) estimate $m(x)=\mathbb{E}[Y_i|X_i=x]$ using nearby points. Their consistency comes from two conditions as sample size grows:
+
+* neighborhoods shrink, so local bias decreases
+* local sample size still grows, so local variance decreases
+
+For kernel/local methods this is often written as bandwidth conditions:
+\begin{eqnarray}
+h_n \to 0
+\quad\text{and}\quad
+n h_n \to \infty.
+\end{eqnarray}
+In LOESS language, this corresponds to the span shrinking with $n$, but not too fast.
+
+The simulation below illustrates this at one target point $x_0$: absolute error in estimating $m(x_0)$ tends to decrease with larger $n$.
+
+```{r}
+set.seed(42)
+
+true_m <- function(x) sin(2*x) + 0.5*x
+x0 <- 0.25
+n_grid <- c(60, 120, 240, 480)
+R <- 120
+
+avg_abs_err <- sapply(n_grid, function(n){
+  span_n <- min(0.9, 1.8*n^(-1/4)) # shrinks with n
+  errs <- replicate(R, {
+    x <- runif(n, -1.5, 1.5)
+    y <- true_m(x) + rnorm(n, sd=0.35)
+    fit <- loess(y~x, span=span_n, degree=1)
+    mhat <- predict(fit, newdata=data.frame(x=x0))
+    abs(mhat - true_m(x0))
+  })
+  mean(errs, na.rm=TRUE)
+})
+
+plot(n_grid, avg_abs_err, type='b', pch=16, col=2,
+     xlab='Sample size (n)',
+     ylab='Average |mhat(x0)-m(x0)|',
+     main='LLLS/LOESS consistency illustration',
+     font.main=1)
+```
+
+#### **Bayes' Theorem**. {-}
+
+Bayes' theorem maps predictive statements into inferential statements. In bivariate form,
+\begin{eqnarray}
+Prob(X_i=x \mid Y_i=y)
+&=&
+\frac{Prob(Y_i=y \mid X_i=x)Prob(X_i=x)}{Prob(Y_i=y)}.
+\end{eqnarray}
+
+Interpretation:
+
+* $Prob(X_i=x)$ is the prior probability for $X_i=x$.
+* $Prob(Y_i=y|X_i=x)$ is the likelihood of seeing $Y_i=y$ if $X_i=x$ is true.
+* $Prob(X_i=x|Y_i=y)$ is the posterior, your updated probability after seeing $Y_i=y$.
+
+A useful way to remember this is
+\begin{eqnarray}
+\text{Posterior} \propto \text{Likelihood} \times \text{Prior}.
+\end{eqnarray}
+For two states, posterior odds are prior odds times a likelihood ratio.
+
+For a concrete example, suppose a screening test has sensitivity 0.90 and false positive rate 0.08, while prevalence is 0.12:
+\begin{eqnarray}
+Prob(Y_i=1|X_i=1)=0.90,\quad
+Prob(Y_i=1|X_i=0)=0.08,\quad
+Prob(X_i=1)=0.12,
+\end{eqnarray}
+where $X_i=1$ means "condition present" and $Y_i=1$ means "test positive".
+
+Then
+\begin{eqnarray}
+Prob(X_i=1|Y_i=1)
+&=&
+\frac{0.90\times0.12}{0.90\times0.12 + 0.08\times0.88}
+\approx 0.605.
+\end{eqnarray}
+Even with a good test, posterior probability depends strongly on prevalence.
+
+```{r}
+# States: X in {0,1}, signal Y in {0,1}
+# Prior Prob(X_i=1)
+p_x1 <- 0.12
+
+# Test characteristics
+p_y1_x1 <- 0.90
+p_y1_x0 <- 0.08
+
+# Law of total probability for Prob(Y_i=1)
+p_y1 <- p_y1_x1 * p_x1 + p_y1_x0 * (1 - p_x1)
+
+# Bayes posterior Prob(X_i=1 | Y_i=1)
+p_x1_y1 <- (p_y1_x1 * p_x1) / p_y1
+p_x1_y1
+
+# Also compute Prob(X_i=1 | Y_i=0)
+p_y0_x1 <- 1 - p_y1_x1
+p_y0_x0 <- 1 - p_y1_x0
+p_y0 <- p_y0_x1 * p_x1 + p_y0_x0 * (1 - p_x1)
+p_x1_y0 <- (p_y0_x1 * p_x1) / p_y0
+p_x1_y0
+```
 ## Testing Theory
 
 #### **Theoretical Distributions**. {-}
-Just as with one sample tests, we can compute a standardized differences, where is converted into a statistic. Note, however, that we have to compute the standard error for the difference statistic, which is a bit more complicated. Under the assumption that both populations are independent distributed, we can analytically derive the sampling distribution for the differences between two groups. 
+Just as with one sample tests, we can compute a standardized differences, where is converted into a statistic. Note, however, that we have to compute the standard error for the difference statistic, which is a bit more complicated. Under the assumption that both populations are independent distributed, we can analytically derive the sampling distribution for the differences between two groups.
 
 In particular, the $t$-statistic is used to compare two groups.
 \begin{eqnarray}
@@ -34,6 +200,7 @@ t.test(Y1, Y2, var.equal=F)
 ## Manual T-stat
 n1  <- length(Y1)
 n2  <- length(Y2)
+d <- mean(Y1)-mean(Y2)
 se_hat <- sqrt(var(Y1)/n1 + var(Y2)/n2);
 t_obs <- d/se_hat
 
@@ -78,8 +245,8 @@ kruskal.test(Caschool[,'stratio'], Caschool[,'county'])
 
 When we test a hypothesis, we start with a claim called the null hypothesis $H_0$ and an alternative claim $H_A$. Because we base conclusions on sample data, which has variability, mistakes are possible. There are two types of errors:
 
-* *Type I Error*: Rejecting a true null hypothesis. (False Positive). 
-* *Type II Error*: Failing to reject a false null hypothesis (False Negative). 
+* *Type I Error*: Rejecting a true null hypothesis. (False Positive).
+* *Type II Error*: Failing to reject a false null hypothesis (False Negative).
 
 | True Situation | Decision: Fail to Reject $H_0$ | Decision: Reject $H_0$ |
 |---|---|---|
@@ -97,7 +264,7 @@ Here is a Courtroom example: Someone suspected of committing a crime is at trial
 
 #### **Statistical Power**. {-}
 
-The probability of Type I Error is called *significance level* and denoted by $Prob(\text{Type I Error}) = \alpha$. The probability of correctly rejecting a false null is called *power* and denoted by $\text{Power} = 1 - \beta = 1 -  Prob(\text{Type II Error})$. 
+The probability of Type I Error is called *significance level* and denoted by $Prob(\text{Type I Error}) = \alpha$. The probability of correctly rejecting a false null is called *power* and denoted by $\text{Power} = 1 - \beta = 1 -  Prob(\text{Type II Error})$.
 
 Significance is often chosen by statistical analysts to be $\alpha=0.05$. Power is less often chosen, instead following from a decision about power.
 
@@ -113,7 +280,7 @@ mu <- 0
 alpha <- 0.05
 B <- 299
 
-sim_reps <- 100 
+sim_reps <- 100
 
 p_values <- vector(length=sim_reps)
 for (i in seq(p_values)) {
@@ -142,5 +309,10 @@ power
 There is an important Trade-off for fixed sample sizes: Increasing significance (fewer false positive) often lowers power (more false negatives). Generally, power depends on the effect size and sample size: bigger true effects and larger $n$ make it easier to detect real differences (higher power, lower $\beta$).
 
 
+## Further Reading
 
+Many introductory econometrics textbooks have a good appendix on probability and statistics. There are many useful statistical texts online too
 
+See the Further reading about Probability Theory in the Statistics chapter.
+
+* <https://www.r-bloggers.com/2024/03/calculating-conditional-probability-in-r/>

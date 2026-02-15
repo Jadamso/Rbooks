@@ -37,8 +37,8 @@
  * Note: `_freeze/` should remain tracked on `main` so that cached chunk outputs persist across machines. Periodically clean stale freeze dirs after chapter renames with: `cd book && for d in _freeze/*/; do stem=$(basename "$d"); [ ! -f "${stem}.qmd" ] && rm -rf "$d"; done`
 
 
-
-#### Timeline
+<!--
+#### Timeline for Collaborator
 
 Target 1: 4 Months (December)
     * Setup Rbooks-companion github repo
@@ -63,12 +63,14 @@ Target 4: 16 Months
 Target 5+: 36 Months
     * Work shifts to shaping the textbook itself (new chapters, full integration)
     * Refine the ToDo list together and complete it
-
+--->
 
 #### Markdown/Github (Specifics)
 
 
-Better integrate students with https://web.hypothes.is/hypothesis-for-faculty-instructors/
+Harmonize bandwidth notations (histograms, local regression, kernel density all use $h$ for half-width)
+
+
 
 Callouts
 
@@ -143,14 +145,14 @@ Syllabus, Refresher (Highschool Background, on your own time)
     - Suppose that, from a population of 20 bank accounts, we want to take a random sample of three accounts in order to learn about the population. In this case, the order of selection doesn’t matter. How many different random samples of three accounts are possible? 
     - The HR committee is about to have a busy day. In the morning, the committee plans to choose 2 employees (out of a set of 25 employees) for promotion. The first person they select will become a manager, and the second person they choose will become an assistant manager. Moving on to the afternoon, the HR committee intends to make a separate decision by choosing 5 employees (out of a set of 23 employees) for termination. Note that the decisions made in the morning and afternoon are independent of one another. How many possible outcomes are there for the HR committee’s overall decisions throughout the day?
 
-#### Ch 4. Numerical Statistics
+#### Ch 3. Numerical Statistics
 * https://www.khanacademy.org/math/mappers/statistics-and-probability-220-223
 
-#### Ch 6. Random Variables
+#### Ch 4. Random Variables
 * https://www.khanacademy.org/math/mappers/statistics-and-probability-192-202
 * Further show how F(x) comes from f(x), and vice versa.
 
-#### Ch 7. Statistical Theory
+#### Ch 6. Statistical Theory
 
 * Bootstrap Jackknife theory (iid)
 * Value of new data for Bootstrap?
@@ -224,8 +226,6 @@ More examples
 * other examples from Microeconometrics (Simpsons paradox)
 
 
-
-#### Ch 11. Bivariate Statistics
 
 #### Ch 12. 
 

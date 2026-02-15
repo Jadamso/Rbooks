@@ -158,9 +158,6 @@ outer(x_mat2, x)
 # outer(x_mat1, x_mat2)
 ```
 
-
-## Densities and Distributions
-
 #### **Initial Data Inspection**. {-}
 Regardless of the data types you have, you typically begin by inspecting your data by examining the first few observations.
  
@@ -174,7 +171,15 @@ X <- c(3, 3.1, NA, 0.02) #Small dataset we will use in numerical examples
 sum( is.na(X) )
 ```
 
-To further examine a particular variable, we look at its distribution. In what follows, we will often work with data as vector $\hat{X}=(\hat{X}_{1}, \hat{X}_{2}, ....\hat{X}_{n})$, where there are $n$ observations and $\hat{X}_{i}$ is the value of the $i$th one. We often analyze observations in comparison to some value $x$. 
+
+
+
+## Proportions
+
+
+
+In what follows, we will often work with data as vector, where there are $n$ observations and $\hat{X}_{i}$ is the value of the $i$th one. We often analyze observations in comparison to some value $x$. 
+
 ```{r}
 X <- c(3, 3.1, 0.02) # Data: "big X"
 x <- 2 # particular value: "little x"
@@ -182,26 +187,61 @@ sum(X <= x)
 sum(X == x)
 ```
 
-#### **Histogram Density Estimate**. {-}
-The [histogram](https://en.wikipedia.org/wiki/Histogram) measures the proportion of the data in different bins. It does so by dividing the range of the data into exclusive bins of equal-width $h$, and count the number of observations within each bin. We often rescale the counts, dividing by the number of observations $n$ multiplied by bin-width $h$, so that the total area of the histogram sums to one, which allows us to interpret the numbers as a *density*.
+#### **Empirical Mass Function**  {-}
 
-Mathematically, for an exclusive bin $\left(x-\frac{h}{2}, x+\frac{h}{2} \right]$ defined by their midpoint $x$ and width $h$, we compute
+If you have factor data, or discrete cardinal data, you can directly plot the proportions.
+For each unique outcome $x$ we compute
 \begin{eqnarray}
-\hat{f}(x) &=& \frac{  \sum_{i=1}^{n} \mathbf{1}\left( \hat{X}_{i} \in \left(x-\frac{h}{2}, x+\frac{h}{2} \right] \right) }{n h},
+\hat{p}_{x}=\sum_{i=1}^{n}\mathbf{1}\left(\hat{X}_{i}=x\right)/n.
 \end{eqnarray}
-where $\mathbf{1}()$ is an indicator function that equals $1$ if the expression inside is TRUE and $0$ otherwise. E.g., if $\hat{X}_{i}=3.8$ and $h=1$, then for $x=1$ we have $\mathbf{1}\left( \hat{X}_{i} \in \left(1-\frac{h}{2}, 1+\frac{h}{2} \right] \right)=\mathbf{1}\left( 3.8 \in \left(0.5, 1.5\right] \right)=0$ and for $x=4$ $\mathbf{1}\left( \hat{X}_{i} \in \left(4-\frac{h}{2}, 4+\frac{h}{2} \right] \right)=\mathbf{1}\left(  3.8 \in \left(3.5, 4.5\right] \right)=1$.
+where $n$ is the number of observations and $\sum_{i=1}^{n}\mathbf{1}\left(\hat{X}_{i}=x\right)$ counts the number of observations equal to $x$.
 
-Note that the area of the rectangle is "base x height", which is $h \times \hat{f}(x)= \sum_{i=1}^{n} \mathbf{1}\left( \hat{X}_{i} \in \left(x-\frac{h}{2}, x+\frac{h}{2} \right] \right) /n$.
-This means the rectangle area equals the proportion of data in the bin.
+```{r}
+# Discretized data
+X <- USArrests[,'Murder']
+Xr <- floor(X) #rounded down, to be discrete
+
+#table(Xr)
+proportions <- table(Xr)/length(Xr)
+plot(proportions, col=grey(0,.5),
+    xlab='Murder Arrests (Discretized)',
+    ylab='Proportion of States with each value')
+```
+
+There are several stylistic variations (a *bar plot* uses thick bars for each outcome, a *lollipop plot* uses skinny lines with a circle on top).
+The most important point is that the height of each line equals the proportion of data with a specific value.
+
+#### **Histogram Density**. {-}
+
+If you have continuous data, you can use the [histogram](https://en.wikipedia.org/wiki/Histogram) to measure the proportion of the data in different bins. It does so by dividing the range of the data into exclusive bins of equal "half-width", $h$, and count the number of observations within each bin.
+We often rescale the counts, dividing by the number of observations $n$ multiplied by bin half-width $h$ (equivalently bin width $2h$), so that the total area of the histogram sums to one, which allows us to interpret the numbers as a *density*.
+
+Mathematically, for an exclusive bin $\left(x-h, x+h\right]$ defined by their midpoint $x$ and half-width $h$, we compute
+\begin{eqnarray}
+\hat{f}(x) &=& \frac{  \sum_{i=1}^{n} \mathbf{1}\left( \hat{X}_{i} \in \left(x-h, x+h \right] \right) }{n 2h},
+\end{eqnarray}
+where $\mathbf{1}()$ is an indicator function that equals $1$ if the expression inside is TRUE and $0$ otherwise. 
+
+:::{.callout-tip icon=false collapse="true"}
+E.g., suppose $\hat{X}_{i}=3.8$ and $h=1/2$.
+
+For $x=1$ we have $\mathbf{1}\left( \hat{X}_{i} \in \left(1-h, 1+h \right] \right)=\mathbf{1}\left( 3.8 \in \left(0.5, 1.5\right] \right)=0$.
+
+For $x=4$ $\mathbf{1}\left( \hat{X}_{i} \in \left(4-h, 4+h \right] \right)=\mathbf{1}\left(  3.8 \in \left(3.5, 4.5\right] \right)=1$.
+:::
+
+Note that rectangle area equals the proportion of data in the bin. Recalling that the area of the rectangle is "base x height":
+\begin{eqnarray}
+2h \times \hat{f}(x) &=& \frac{\sum_{i=1}^{n} \mathbf{1}\left( \hat{X}_{i} \in \left(x-h, x+h \right] \right)}{n}.
+\end{eqnarray}
 We compute $\hat{f}(x)$ for each bin midpoint $x$, and the area of all rectangles sums to one.
-^[If $L$ distinct bins exactly span the range, then $h=[\text{max}(\hat{X}_{i}) - \text{min}(\hat{X}_{i})]/L$ and $x\in \left\{ \frac{\ell h}{2} + \text{min}(\hat{X}_{i}) \right\}_{\ell=1}^{L}$.]
+^[If $L$ distinct bins exactly cover the range, then $2h=[\text{max}(\hat{X}_{i}) - \text{min}(\hat{X}_{i})]/L$ and we can write the design points as $x \in \left\{ \ell h + \text{min}(\hat{X}_{i}) \right\}_{\ell=1}^{L}$.]
 
 :::{.callout-note icon=false collapse="true"}
 For example, consider the dataset $\{3,3.1,0.02\}$ and use bins $(0,1], (1,2], (2,3], (3,4]$.
-In this case, the midpoints are $x=(0.5,1.5,2.5,3.5)$ and $h=1$.
+In this case, the midpoints are $x=(0.5,1.5,2.5,3.5)$ and $h=1/2$.
 Then the counts at each midpoints are $(1,0,1,1)$.
-Since $\frac{1}{nh}=\frac{1}{3\times1}=\frac{1}{3}$, we can rescale the counts to compute the density as $\hat{f}(x)=(1,0,1,1) \frac{1}{3}=(1/3,0,1/3,1/3)$.
-
+Since $\frac{1}{n 2h}=\frac{1}{3\times1}=\frac{1}{3}$, we can rescale the counts to compute the density as $\hat{f}(x)=(1,0,1,1) \frac{1}{3}=(1/3,0,1/3,1/3)$.
 
 ```{r}
 # Intuitive Examples
@@ -215,7 +255,12 @@ height <- Xhist[['density']]
 sum(base*height)
 ```
 
-For another example, use the bins $(0,2]$ and $(2,4]$. So the midpoints are $1$ and $3$, and the bin width is $2$. Only one observation, $0.02$, falls in the bin $(0,2]$. The other two observations, $3$ and $3.1$, fall into the bin $(2,4]$. The scaling factor is $\frac{1}{nh}=\frac{1}{3\times 2}=\frac{1}{6}$. So the first bin has density $f(1)=1\frac{1}{6}=1/6$ and the second bin has density $f(3)=2\frac{1}{6}=2/6$. The area of the first bin's rectangle is $2 \times f(1)=2/6=1/3$ and the area of the second rectangle is $2 \times f(3)=4/6=2/3$.
+For another example, use the bins $(0,2]$ and $(2,4]$.
+So the midpoints are $1$ and $3$, and the bin half-width is $1$.
+Only one observation, $0.02$, falls in the bin $(0,2]$. The other two observations, $3$ and $3.1$, fall into the bin $(2,4]$.
+The scaling factor is $\frac{1}{n 2h}=\frac{1}{3\times 2 \times 1}=\frac{1}{6}$.
+So the first bin has density $\hat{f}(1)=1\frac{1}{6}=1/6$ and the second bin has density $\hat{f}(3)=2\frac{1}{6}=2/6$.
+The area of the first bin's rectangle is $2 \times \hat{f}(1)=2/6=1/3$ and the area of the second rectangle is $2 \times \hat{f}(3)=4/6=2/3$.
 
 Now intuitively work through an example with three bins instead of four. Compute the areas 
 ```{r}
@@ -223,7 +268,6 @@ Xhist <- hist(X, breaks=c(0,4/3,8/3,4), plot=F, freq=F)
 base <- 4/3
 height <- Xhist[['density']]
 sum(base*height)
-
 
 # as a default, R uses bins (,] instead of [,)
 # but you can change that with "right=F"
@@ -246,8 +290,8 @@ rug(USArrests[,'Murder'], col=grey(0,.5))
 # Since h=1, the density equals the proportion of states in each bin
 # Redo this example with h=2
 ```
-
-Note that histograms qualitatively depict different proportions (since each bar represents the proportion of data in its bins), but you can also directly compute proportions.
+ 
+Note that histograms qualitatively depict proportions over multiple bins (since each bar represents the proportion of data in its bins), but you can also directly compute proportions.
 
 :::{.callout-tip icon=false collapse="true"}
 E.g., the proportion of murder rates in $(2,4)$ is
@@ -256,24 +300,118 @@ mean( X > 2 & X <4)
 ```
 :::
 
-Also note that if you your data are factor data, or discrete cardinal data, you can directly plot the proportions in a *bar plot*. For each unique outcome $x$ we compute
+#### **Kernel Density**. {-}
+
+A kernel density is a "smooth" version of a histogram. 
+
+The general idea behind kernel density is to use small bins around each $x$ that potentially overlap, rather than partitioning the range of $\hat{X}_{i}$ into exclusive bins.
+The "uniform/rectangular" kernel density places a weight of $1/2$ for all points in the interval $\left[ x-h, x + h\right]$
 \begin{eqnarray}
-\hat{p}_{x}=\sum_{i=1}^{n}\mathbf{1}\left(\hat{X}_{i}=x\right)/n.
+\label{eqn:uniform}
+k_{U}\left( \hat{X}_{i}, x, h \right) 
+&=& \frac{\mathbf{1}\left(\frac{|\hat{X}_{i}-x|}{h} \leq 1\right)}{2} 
+= \frac{\mathbf{1}\left( \hat{X}_{i} \in \left[ x-h, x + h\right] \right) }{2} \\
+\hat{f}_{U}(x) &=& \frac{1}{nh} \sum_{i}^{n} k_{U}(\hat{X}_{i}, x, h)  = \frac{ \sum_{i}^{n} \mathbf{1}\left( \hat{X}_{i} \in \left[ x-h, x + h\right] \right) }{n 2 h}
 \end{eqnarray}
-where $n$ is the number of observations and $\sum_{i=1}^{n}\mathbf{1}\left(\hat{X}_{i}=x\right)$ counts the number of observations equal to $x$. The height of each line equals the proportion of data with a specific value.
+
+Notice that the uniform kernel is essentially the histogram but without the restriction that $x$ must be a midpoint of *exclusive* bins.
+Typically, the points $x$ are chosen to be either the unique observations or some equidistant set of "design points" (e.g., at $512$ evenly spaced values of $x$ the dataset, not just the midpoints of exclusive bins).
 
 ```{r}
-# Discretized data
+# Practical Example
 X <- USArrests[,'Murder']
-Xr <- floor(X) #rounded down
-#table(Xr)
-proportions <- table(Xr)/length(Xr)
-plot(proportions, col=grey(0,.5),
-    xlab='Murder Arrests (Discretized)',
-    ylab='Proportion of States with each value')
+hist(X,
+    breaks=seq(0,20,by=2), #bin width=1
+    freq=F,
+    border=NA, 
+    main='',
+    xlab='Murder Arrests')
+# Density Estimate
+lines( density(X, bw=3, kernel='rectangular') )
+# Raw Observations
+rug(X, col=grey(0,.5))
 ```
 
+We can also replace the uniform kernel with other kernel functions to create even smoother lines. 
 
+:::{.callout-tip icon=false collapse="true"}
+There are many [kernels](https://en.wikipedia.org/wiki/Kernel_(statistics)#In_non-parametric_statistics), but these are the most intuitive and commonly used.
+```{r}
+# Kernel Density Functions
+
+x <- 0 # Design point
+X <- seq(-2,2, length.out=1001) # Where to compute weight
+
+
+plot.new()
+plot.window(xlim=c(-1.2,1.2), ylim=c(0,1))
+
+## Uniform/rectangular
+d_unif <- function(X, x, h){
+    u <- abs(X-x)/h
+    fu <- 1/2*(u <= 1)
+    return(fu)
+}
+h <- 1
+kU <- d_unif(X,x,h)
+lines( kU ~X, col=1, lty=1)
+
+## Epanachnikov
+d_epan <- function(X, x, h){
+    u <- abs(X-x)/h
+    fu <- 3/4*(1-u^2)*(u <= 1)
+    return(fu)
+}
+h <- 1
+kE <- d_epan(X,x,h)
+lines( kE~X, col=2, lty=1)
+## Try others using the "density" function
+# Note a slightly different definition for bandwith 
+#kE <-  density(x=0, bw=h, kernel="epanechnikov")
+
+## Tricubic
+d_tricub <- function(X, x, h){
+    u <- abs(X-x)/h
+    fu <- 70/81*(1-u^3)^3*(u <= 1)/h
+    return(fu)
+}
+h <- 1
+kT <- d_tricub(X,x,h)
+lines( kT~X, col=3, lty=1)
+
+
+rug(0, lwd=2)
+axis(1)
+axis(2)
+
+legend('topright', lty=1, col=1:3,
+    legend=c('Uniform(1)', 'Epanachnikov(1)', 'Tricubic(1)'))
+```
+
+Once we have picked a kernel (which particular one is not particularly important) we can use it to compute density estimates at each design point.
+
+```{r}
+# Practical Example
+X <- USArrests[,'Murder']
+hist(X,
+    breaks=seq(0,20,by=2), #bin width=1
+    freq=F,
+    border=NA, 
+    main='',
+    xlab='Murder Arrests')
+# Density Estimate
+lines( density(X, bw=2, kernel='epanechnikov') )
+# Raw Observations
+rug(X, col=grey(0,.5))
+```
+
+:::
+
+
+
+
+
+## Distributions
 
 #### **Empirical *Cumulative* Distribution Function**. {-}
 The ECDF counts the proportion of observations whose values are less than or equal to $x$; 
@@ -413,5 +551,3 @@ Handling Strings
 
 * <https://meek-parfait-60672c.netlify.app/docs/M1_R-intro_03_text.html>
 * <https://raw.githubusercontent.com/rstudio/cheatsheets/main/regex.pdf>
-
-

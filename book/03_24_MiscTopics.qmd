@@ -1,0 +1,225 @@
+# Misc. Multivariate Topics
+***
+
+#### **Filtering**.{-}
+In some cases, we may want to smooth time series data instead of predict into the future. We can distinguish two types of smoothing, incorporating future observations or not. When only weighting two other observations, the differences can be expressed as trying to estimate the average with different available data:
+
+* Filtering: $\mathbb{E}[Y_{t} | X_{t-1}, X_{t-2}]$
+* Smoothing: $\mathbb{E}[Y_{t} | X_{t-1}, X_{t+1}]$
+
+One example of filtering is Exponential Filtering (sometimes confusingly referred to as "Exponential Smoothing") which weights only previous observations using an exponential kernel.
+```{r}
+##################
+# Time series data
+##################
+
+set.seed(1)
+## Underlying Trend
+x0 <- cumsum(rnorm(500,0,1))
+## Observed Datapoints
+x <- x0 + runif(length(x0),-10,10)
+dat <- data.frame(t=seq(x), x0=x0, x=x)
+
+## Asymmetric Kernel
+#bw <- c(2/3,1/3)
+#s1 <- filter(x, bw/sum(bw), sides=1)
+
+## Symmetric Kernel
+#bw <- c(1/6,2/3,1/6)
+#s2 <- filter(x,  bw/sum(bw), sides=2)
+```
+
+There are several cross-validation procedures for filtering time series data [@OpsomerEtAl2001]. One is called time series cross-validation (TSCV), which is useful for temporally dependent data [@Hart1991; @HaerdlePhilippe1992; @Bergmeir2018].
+```{r, eval=F}
+## Plot Simulated Data
+x <- dat$x
+x0 <- dat$x0
+par(fig = c(0,1,0,1), new=F)
+plot(x, pch=16, col=grey(0,.25))
+lines(x0, col=1, lty=1, lwd=2)
+
+## Work with differenced data?
+#n       <- length(Yt)
+#plot(Yt[1:(n-1)], Yt[2:n],
+#    xlab='d Y (t-1)', ylab='d Y (t)', 
+#    col=grey(0,.5), pch=16)
+#Yt <- diff(Yt)
+
+## TSCV One Sided Moving Average
+filter_bws <- seq(1,20,by=1)
+filter_mape_bws <- sapply(filter_bws, function(h){
+    bw <- c(0,rep(1/h,h)) ## Leave current one out
+    s2 <- filter(x, bw, sides=1)
+    pe <- s2 - x
+    mape <- mean( abs(pe)^2, na.rm=T)
+})
+filter_mape_star <- filter_mape_bws[which.min(filter_mape_bws)]
+filter_h_star <- filter_bws[which.min(filter_mape_bws)]
+filter_tscv <- filter(x,  c(rep(1/filter_h_star,filter_h_star)), sides=1)
+# Plot Optimization Results
+#par(fig = c(0.07, 0.35, 0.07, 0.35), new=T) 
+#plot(filter_bws, filter_mape_bws, type='o', ylab='mape', pch=16)
+#points(filter_h_star, filter_mape_star, pch=19, col=2, cex=1.5)
+
+## TSCV for LLLS
+library(np)
+llls_bws <- seq(8,28,by=1)
+llls_burnin <- 10
+llls_mape_bws <- sapply(llls_bws, function(h){ # cat(h,'\n')
+    pe <- sapply(llls_burnin:nrow(dat), function(t_end){
+        dat_t <- dat[dat$t<t_end, ]
+        reg <- npreg(x~t, data=dat_t, bws=h,
+            ckertype='epanechnikov',
+            bandwidth.compute=F, regtype='ll')
+        edat <- dat[dat$t==t_end,]
+        pred <- predict(reg, newdata=edat)
+        pe <- edat$x - pred
+        return(pe)    
+    })
+    mape <- mean( abs(pe)^2, na.rm=T)
+})
+llls_mape_star <- llls_mape_bws[which.min(llls_mape_bws)]
+llls_h_star <- llls_bws[which.min(llls_mape_bws)]
+#llls_tscv <- predict( npreg(x~t, data=dat, bws=llls_h_star,
+#    bandwidth.compute=F, regtype='ll', ckertype='epanechnikov'))
+llls_tscv <- sapply(llls_burnin:nrow(dat), function(t_end, h=llls_h_star){
+    dat_t <- dat[dat$t<t_end, ]
+    reg <- npreg(x~t, data=dat_t, bws=h,
+        ckertype='epanechnikov',
+        bandwidth.compute=F, regtype='ll')
+    edat <- dat[dat$t==t_end,]
+    pred <- predict(reg, newdata=edat)
+    return(pred)    
+})
+
+## Compare Fits Qualitatively
+lines(filter_tscv, col=2, lty=1, lwd=1)
+lines(llls_burnin:nrow(dat), llls_tscv, col=4, lty=1, lwd=1)
+legend('topleft', lty=1, col=c(1,2,4), bty='n',
+    c('Underlying Trend', 'MA-1sided + TSCV', 'LLLS-1sided + TSCV'))
+
+## Compare Fits Quantitatively
+cbind(
+    bandwidth=c(LLLS=llls_h_star, MA=filter_h_star),
+    mape=round(c(LLLS=llls_mape_star, MA=filter_mape_star),2) )
+
+## See also https://cran.r-project.org/web/packages/smoots/smoots.pdf
+#https://otexts.com/fpp3/tscv.html
+#https://robjhyndman.com/hyndsight/tscvexample/
+```
+
+
+#### **Subsampling**. {-}
+Random subsampling is one of many hybrid approaches that tries to combine the best of the core methods: Bootstrap and Jacknife.
+
+| | Sample Size per Iteration | Number of Iterations | Resample |
+| -------- | ------- | ------- | ------- |
+Bootstrap | $n$     | $B$  | With Replacement |
+Jackknife | $n-1$   | $n$  | Without Replacement |
+Random Subsample | $m < n$ | $B$  | Without Replacement |
+
+```{r}
+xy <- USArrests[,c('Murder','UrbanPop')]
+colnames(xy) <- c('y','x')
+reg <-  lm(y~x, dat=xy)
+coef(reg)
+
+# Random Subsamples
+rs_regs <- lapply(1:399, function(b){
+    b_id <- sample( nrow(xy), nrow(xy)-10, replace=F)
+    xy_b <- xy[b_id,]
+    reg_b <- lm(y~x, dat=xy_b)
+})
+rs_coefs <- sapply(rs_regs, coef)['x',]
+rs_se <- sd(rs_coefs)
+
+hist(rs_coefs, breaks=25,
+    main=paste0('SE est. = ', round(rs_se,4)),
+    font.main=1, border=NA,
+    xlab=expression(hat(b)[b]))
+abline(v=coef(reg)['x'], lwd=2)
+rs_ci_percentile <- quantile(rs_coefs, probs=c(.025,.975))
+abline(v=rs_ci_percentile, lty=2)
+```
+
+
+#### **Matrix Calculations**. {-}
+
+First, not that you can use matrix algebra in R
+```{r}
+x_mat1 <- matrix( seq(2,7), 2, 3)
+x_mat1
+
+x_mat2 <- matrix( seq(4,-1), 2, 3)
+x_mat2
+
+x_mat1*x_mat2 #NOT classical matrix multiplication
+x_mat1^x_mat2
+
+tcrossprod(x_mat1, x_mat2) #x_mat1 %*% t(x_mat2)
+
+crossprod(x_mat1, x_mat2)
+```
+
+Second, note that you can apply functions to matrices
+```{r}
+sum_squared <- function(x1, x2) {
+    y <- (x1 + x2)^2
+    return(y)
+}
+sum_squared(x_mat1, x_mat2)
+
+
+solve(x_mat1[1:2,1:2])
+```
+
+
+Third, note that we can conduct OLS regressions efficiently using matrix algebra. Grouping the coefficients as a vector $B=(b_0 ~~ b_1 ~~... ~~ b_{K})$, we want to find coefficients that minimize the sum of squared errors. The linear model has a fairly simple solution for $\hat{B}^{*}$ if you know linear algebra. Denoting $\hat{\mathbf{X}}_{i} = [1~~  \hat{X}_{i1} ~~...~~ \hat{X}_{iK}]$ as a row vector, we can write the model as $\hat{Y}_{i} = \hat{\mathbf{X}}_{i}B + e_{i}$. We can then write the model in matrix form
+\begin{eqnarray}
+\hat{Y} &=& \hat{\textbf{X}}B + E \\
+\hat{Y} &=& \begin{pmatrix} 
+\hat{Y}_{1} \\ \vdots \\ \hat{Y}_{N}
+\end{pmatrix} \quad
+\hat{\textbf{X}} = \begin{pmatrix} 
+1 & \hat{X}_{11} & ... & \hat{X}_{1K} \\
+& \vdots & & \\
+1 & \hat{X}_{n1} & ... & \hat{X}_{nK} 
+\end{pmatrix}
+\end{eqnarray}
+Minimizing the squared errors: $\min_{B} e_{i}^2 = \min_{B} (E' E)$, yields coefficient estimates and predictions 
+\begin{eqnarray}
+\hat{B^{*}} &=& (\hat{\textbf{X}}'\hat{\textbf{X}})^{-1}\hat{\textbf{X}}'\hat{Y}\\
+\hat{y} &=& \hat{\textbf{X}} \hat{B^{*}} \\
+\hat{E} &=& \hat{Y} - \hat{y} \\
+\end{eqnarray}
+```{r}
+# Manually Compute
+Y <- USArrests[,'Murder']
+X <- USArrests[,c('Assault','UrbanPop')]
+X <- as.matrix(cbind(1,X))
+
+XtXi <- solve(t(X)%*%X)
+Bhat <- XtXi %*% (t(X)%*%Y)
+c(Bhat)
+```
+
+With matrix notation, we can established that OLS is an unbiased estimator for additively separable and linear relationships. Assume
+\begin{eqnarray}
+Y_{i} = X_{i} \beta + \epsilon_{i} &\quad& \mathbb{E}[\epsilon_{i} | X_{i} ]=0,
+\end{eqnarray}
+then notice that
+\begin{eqnarray}
+B^{*} = (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'Y = (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'(\mathbf{X}\beta + \epsilon) = \beta + (X'X)^{-1}X'\epsilon\\
+\mathbb{E}\left[ B^{*} \right] = \mathbb{E}\left[ (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'Y \right] = \beta + (\mathbf{X}'\mathbf{X})^{-1}\mathbb{E}\left[ \mathbf{X}'\epsilon \right] = \beta
+\end{eqnarray}
+
+If we do not know that the data generating process is additively separable and linear, then we do not know how to interpret $\hat{B}^{*}$ (outside of a very mathematical expression, which I do not cover here). If we run a local linear regression analysis, on the other hand, we get the estimator
+\begin{eqnarray}
+\beta(\mathbf{x}) &=& [\mathbf{X}'\mathbf{K}(\mathbf{x})\mathbf{X}]^{-1} \mathbf{X}'\mathbf{K}(\mathbf{x})Y \\
+\mathbf{K}(\mathbf{x}) &=& \begin{pmatrix}
+K\left(\frac{\mathbf{X}_{1}-\mathbf{x}}{h_{1}}\right) & ... & 0\\
+\vdots & & \\
+0 & ... & K\left(\frac{\mathbf{X}_{P}-\mathbf{x}}{h_{P}}\right)
+\end{pmatrix},
+\end{eqnarray}
+which is unbiased far more often.

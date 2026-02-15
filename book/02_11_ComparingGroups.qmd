@@ -131,7 +131,7 @@ For such reasons, applied statisticians consider many statistics
 
 #### **Quantile Differences**. {-}
 The above procedure generalized from differences in means to other quantiles statistics like medians. To start, we plot the [ECDF](
-https://jadamso.github.io/Rbooks/docs/01_02_Data.html#empirical-cumulative-distribution-function)'s for both groups.
+https://jadamso.github.io/Rbooks/01_02_Data.html#empirical-cumulative-distribution-function)'s for both groups.
 
 ```{r}
 # Quantile Comparison
@@ -340,6 +340,39 @@ In the special case with only two groups, the Kruskal Wallis test reduces to the
            \Bigl[\mathbf 1( \hat{Y}_{i} > \hat{Y}_{j}) + \tfrac12\mathbf 1(\hat{Y}_{i} = \hat{Y}_{j})\Bigr].
 \end{eqnarray}
 
+A practical workflow for multiple groups has three steps:
+
+1. Visualize all groups together.
+2. Run one global test ($H_0:\; F_1=\dots=F_G$).
+3. If rejected, run post-hoc pairwise tests with multiplicity correction.
+
+```{r}
+# Built-in dataset with 6 groups
+dat <- InsectSprays
+
+# Step 1: Visual summary
+boxplot(count~spray, data=dat,
+    col=hcl.colors(6, alpha=.45),
+    ylab="Insect count", xlab="Spray", main="")
+title("Multiple-group comparison", font.main=1)
+
+# Step 2: Global null test
+kw <- kruskal.test(count~spray, data=dat)
+kw
+
+# Step 3: Post-hoc pairwise tests, adjusted p-values
+pw <- pairwise.wilcox.test(
+    x = dat$count, g = dat$spray,
+    p.adjust.method = "holm")
+pw$p.value
+```
+
+Interpretation template:
+
+* If the Kruskal-Wallis p-value is large, keep the global null and stop.
+* If the p-value is small, report that at least one group differs and then inspect adjusted pairwise p-values.
+* Report both statistical and practical importance (distribution plots + effect size summaries), not only p-values.
+
 ```{r, eval=F}
 library(Ecdat)
 data(Caschool)
@@ -358,5 +391,3 @@ kruskal_test(stratio~county, Caschool, distribution='approximate')
 Other Statistics 
 
 * <https://cran.r-project.org/web/packages/qualvar/vignettes/wilcox1973.html>
-
-
