@@ -1,0 +1,509 @@
+
+# Random Variables
+***
+
+Previously, we computed a distribution given the data, whereas now we generate individual data points given the distribution. 
+
+Random variables are variables whose values occur according to a frequency distribution. As such, random variables have a
+
+* *sample space* which refers to the set of all possible outcomes, and
+* *probability* for each particular set of outcomes, which is the proportion that those outcomes occur in the long run. 
+
+We think of a data generating process before the data are actually observed. For example, we consider flipping a coin before knowing whether it lands on heads or tails. We denote the random variable, in this case the unflipped coin, as $X_{i}$, and the specific values it can take as $x$ ($x=1$ is heads, $x=0$ is tails) and the probability of each outcome is $1/2$. This differs from a flipped coin that is either heads or tails, and denoted as $\hat{X}_{i}$.
+
+```{r, echo=FALSE}
+x <- c(0,1)
+x_probs <- c(0.5, 0.5)
+X0 <- sample(x, 400, prob=x_probs, replace=T)
+# Plot Cumulative Proportion
+X0_t <- seq(1, length(X0))
+X0_mt <- cumsum(X0)/X0_t
+par(mar=c(4,4,1,4))
+plot(X0_t, X0_mt, type='l',
+    ylab='Cumulative Proportion Heads',
+    xlab='Flip #', 
+    ylim=c(0,1), 
+    lwd=2)
+# Show individual flip outcomes
+points(X0_t, X0, col=grey(0,.5),
+    pch='|', cex=.3)
+# Show theoretical proportions of heads
+abline(h=x_probs[2], col='blue')
+```
+
+There are two basic types of sample spaces: discrete (encompassing cardinal-discrete, factor-ordered, and factor-unordered data) and continuous. This leads to two types of random variables: discrete and continuous. However, each type has many different 
+[probability distributions](https://en.wikipedia.org/wiki/List_of_probability_distributions).
+
+#### **Cumulative Probability**. {-}
+The most common random variables are [easily accessible](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html) and can be described using the Cumulative Distribution Function (CDF)
+\begin{eqnarray}
+F(x) &=& Prob(X_{i} \leq x).
+\end{eqnarray}
+Note that this is just like the Empirical Cumulative Distribution Function (ECDF), $\hat{F}(x)$, except that it is now theoretically known. You can think of $F(x)$ as the ECDF for a dataset with an infinite number of observations. Equivalently, the ECDF is an empirical version of the CDF that is applied to observed data.
+
+#### **Probability Rules**. {-}
+
+After introducing different random variables, we will also cover some basic implications of their CDF. Intuitively, probabilities must sum up to one. So we can compute $Prob(X_{i} > x) = 1- F(x)$. We also have two "in" and "out" probabilities.
+
+The probability of $X_{i}\leq b$ and $X_{i}> a$ can be written in terms of falling into a range $Prob(X_{i} \in (a,b])=Prob(a < X_{i} \leq b) = F(b) - F(a)$. 
+
+The opposite probability of $X_{i} > b$ or $X_{i} \leq a$ is $Prob(X_{i} \leq a \text{ or } X_{i} > b) = F(a) + [1- F(b)]$. Notice that this opposite probability $F(a) + [1- F(b)] =1 - [F(b) - F(a)]$, so that $Prob(X_{i} \text{ out of } (a,b]) = 1 - Prob( X_{i} \in (a,b])$
+
+
+## Discrete Random Variables
+
+A discrete random variable can take one of several values in a set. E.g., any number in $\{1,2,3,...\}$ or any letter in $\{A,B,C,...\}$. Theoretical proportions are referred to as a *probability mass function*, which can be thought of as a proportions bar plot for an infinitely large dataset. Equivalently, the bar plot is an empirical version of the probability mass function that is applied to observed data.
+
+In R, you can simulate random discrete data using the `sample` function. To do so, you must specify each outcome $x$ and its probability $Prob(X_{i}=x)$.
+
+#### **Bernoulli**. {-}
+Think of a Coin Flip: Heads or Tails with equal probability. In general, a Bernoulli random variable denotes heads as the event $x=1$ and tails as the event $x=0$, and allows the probability of heads to vary $p \in [0,1]$.
+\begin{eqnarray}
+X_{i} &\in& \{0,1\} \\
+Prob(X_{i} =0) &=& 1-p \\
+Prob(X_{i} =1) &=& p \\
+F(x) &=& \begin{cases}
+    0   & x<0 \\
+    1-p & x \in [0,1) \\
+    1   & x\geq 1
+\end{cases}
+\end{eqnarray}
+
+Here is an example of the [Bernoulli](https://en.wikipedia.org/wiki/Bernoulli_distribution) distribution. While you might get all heads (or all tails) in the first few coin flips, the ratios level out to their theoretical values after many flips.
+```{r}
+x <- c(0,1)
+x_probs <- c(3/4, 1/4)
+
+sample(x, 1, prob=x_probs, replace=T) # 1 Flip
+sample(x, 4, prob=x_probs, replace=T) # 4 Flips 
+X0 <- sample(x, 400, prob=x_probs, replace=T)
+
+# Plot proportions
+proportions <- table(X0)/length(X0)
+plot(proportions, 
+    col=grey(0, 0.5),
+    xlab='Flip Outcome', 
+    ylab='Proportion',
+    main=NA)
+points(c(0,1), c(.75, .25), pch=16, col='blue') # Theoretical values
+
+# Plot CDF
+plot( ecdf(X0), col=grey(0,.5),
+    pch=16, main=NA) #Empirical
+#points(c(0,1), c(.75, 1), pch=16, col='blue') # Theoretical
+```
+
+
+#### **Discrete Uniform**. {-}
+
+Discrete numbers with equal probability, such as a die with $K$ sides. 
+\begin{eqnarray}
+X_{i} &\in& \{1,...K\} \\
+Prob(X_{i} =1) &=& Prob(X_{i} =2) = ... = 1/K\\
+F(x) &=& \begin{cases}
+    0   & x<1 \\
+    1/K & x \in [1,2) \\
+    2/K & x \in [2,3) \\
+    \vdots & \\
+    1   & x\geq K
+\end{cases}
+\end{eqnarray}
+
+:::{.callout-note icon=false collapse="true"}
+Here is an example with $K=4$. E.g., rolling a four-sided die.
+
+The probability of a value smaller than or equal to $3$ is $Prob(X_{i} \leq 3)=1/4 + 1/4 + 1/4 = 3/4$.
+
+The probability of a value larger than $3$ is $Prob(X_{i} > 3) = 1-Prob(X_{i} \leq 3)=1/4$.
+
+The probability of a value $>$ 1 and $\leq 3$ is $Prob(1 < X_{i} \leq 3) = Prob(X_{i} \leq 3) - Prob(X_{i} \leq 1) = 3/4 - 1/4 = 2/4$.^[This is the general formula using CDFs, and you can verify it works in this instance by directly adding the probability of each 2 or 3 event: $Prob(X_{i} = 2) +  Prob(X_{i} = 3) = 1/4 + 1/4 = 2/4$.]
+
+The probability of a value $\leq$ 1 or $> 3$ is $Prob(X_{i} \leq 1 \text{ or } X_{i} > 3) =  Prob(X_{i} \leq 1) +  \left[ 1- Prob(X_{i} \leq 3) \right] = 1/4 + [1 - 3/4]=2/4$.
+:::
+
+```{r}
+x <- c(1,2,3,4)
+x_probs <- c(1/4, 1/4, 1/4, 1/4)
+# sample(x, 1, prob=x_probs, replace=T) # 1 roll
+X1 <- sample(x, 2000, prob=x_probs, replace=T) # 2000 rolls
+
+# Plot Long run proportions
+proportions <- table(X1)/length(X1)
+plot(proportions, col=grey(0,.5),
+    xlab='Outcome', ylab='Proportion', main=NA)
+points(x, x_probs, pch=16, col='blue') # Theoretical values
+
+# Hist w/ Theoretical Counts
+# hist(X1, breaks=50, border=NA, main=NA, ylab='Count')
+# points(x, x_probs*length(X1), pch='-') 
+
+# Alternative Plot
+plot( ecdf(X1), pch=16, col=grey(0,.5), main=NA)
+
+# Alternative Plot 2
+#props <- table(X1)
+#barplot(props, ylim = c(0, 0.35), ylab = "Proportion", xlab = "Value")
+#abline(h = 1/4, lty = 2)
+```
+
+Note that the [Discrete Uniform](https://en.wikipedia.org/wiki/Discrete_uniform_distribution) distribution generalizes to arbitrary sets, such as $\{0.0, 0.25, 0.5, 0.75, 1.0\}$ instead of $\{1,2,3,4,5\}$. We will not exploit the generalization in this class.
+
+
+
+
+#### **Multinoulli**. {-}
+Numbers $1,...K$ with unequal probabilities.
+\begin{eqnarray}
+X_{i} &\in& \{1,...K\} \\
+Prob(X_{i} =1) &=& p_{1} \\
+Prob(X_{i} =2) &=& p_{2} \\
+        &\vdots& \\
+p_{1} + p_{2} + ... &=& 1\\
+F(x) &=& \begin{cases}
+    0   & x<1 \\
+    p_{1} & x \in [1,2) \\
+    p_{1} + p_{2} & x \in [2,3) \\
+    \vdots & \\
+    1   & x\geq K
+\end{cases}
+\end{eqnarray}
+
+Here is an empirical example with three outcomes
+
+```{r}
+x <- c(1,2,3)
+x_probs <- c(3/10, 1/10, 6/10)
+sum(x_probs)
+X2 <- sample(x, 2000, prob=x_probs, replace=T) # sample of 2000
+
+# Plot Long run proportions
+proportions <- table(X2)/length(X2)
+plot(proportions, col=grey(0,.5), ylim=c(0,0.7),
+    xlab='Outcome', ylab='Proportion', main=NA)
+points(seq(x), x_probs, pch=16, col='blue') # Theoretical values
+
+# Histogram version
+# X2_alt <- X1
+# X2_alt[X2_alt=='A'] <- 1
+#X2_alt[X2_alt=='B'] <- 2
+#X2_alt[X2_alt=='C'] <- 3
+#X2_alt <- as.numeric(X1_alt)
+#hist(X2_alt, breaks=50, border=NA, 
+#    main=NA, ylab='Count')
+#points(x, x_probs*length(X2_alt), pch=16) ## Theoretical Counts
+
+# Alternative Plot
+# plot( ecdf(X2), pch=16, col=grey(0,.5), main=NA)
+```
+
+We can also replace numbers with letters $(A,...Z)$ or names $(John, Jamie, ...)$ although we must be careful with the CDF when there is no longer a natural ordering. When the outcomes are not cardinal data, the Multinoulli random variable is typically referred to as a *Categorical* random variable.
+The CDF $F(x)=Prob(X_{i} \leq x)$ requires an ordering on the outcomes, and with labels like "my car dies" and "it rains next Tuesday", you do not have any inherent order and the CDF is an arbitrary artifact.
+
+:::{.callout-tip icon=false collapse="true"}
+Suppose there are three possible outcomes of an experiment, $\{\text{my car dies}, \text{it rains next Tuesday},\text{a cat is born}\}$, which have corresponding probabilities $\{3/10, 1/10, 6/10 \}$ that are known theoretically. Compute the probability that my car dies or a cat is born.
+:::
+
+:::{.callout-tip icon=false collapse="true"}
+Draw Random Letters with increasing probability
+```{r}
+x <- LETTERS
+x_probs <- seq(1, length(x))
+x_probs <- x_probs/sum(x_probs) # probs must sum to 1
+X <- sample(x, 1, prob=x_probs, replace=T)
+X
+
+# Draw Random Letters 100 Times
+X <- sample(x, 1000, prob=x_probs, replace=T)
+X <- factor(unlist(X), levels=LETTERS, ordered=F)
+```
+:::
+
+
+
+
+## Continuous Random Variables
+
+A continuous random variable can take one value out of an uncountably infinite number. E.g., any number between $0$ and $1$ with any number of decimal points. With a continuous random variable, the probability of any individual point is zero, so we describe these variables with the cumulative distribution function (CDF), $F$, or the probability density function (PDF), $f$. Just as $F$ can be thought of as the ECDF, $\hat{F}$, with an infinite amount of data, $f$ can be thought of as a histogram, $\hat{f}$, with an infinite amount of data.  Equivalently, the histogram is an empirical version of the PDF that is applied to observed data.
+
+Often, the PDF helps you intuitively understand a random variable whereas the CDF helps you calculate numerical values. This is because probabilities are depicted as areas in the PDF and the CDF accumulates those areas: $F(x)$ equals the area under the PDF from $-\infty$ to $x$. For example, $Prob(X_{i} \leq 1)$ is depicted by the PDF as the area under $f(x)$ from the lowest possible value until $x=1$, which is numerically calculated simply as $F(1)$.
+
+
+In R, you work with continuous distributions these using functions
+
+* `dXXX` density, $f(x)$ for particular values $x$
+* `pXXX` distribution, $F(x)$ for particular values $x$
+* `rXXX` generate random variables according to the distribution
+
+where `XXX` is the distribution name (`unif`, `exp`, `norm`)
+
+#### **Continuous Uniform**. {-}
+Any number on a unit interval allowing for any number of decimal points, with every interval of the same size having the same probability.
+\begin{eqnarray}
+X_{i} &\in& [0,1] \\
+f(x) &=& \begin{cases}
+    1 & x \in [0,1] \\
+    0 & \text{Otherwise}
+\end{cases}\\
+F(x) &=& \begin{cases} 
+    0 & x < 0 \\
+    x & x \in [0,1] \\
+    1 & x > 1.
+\end{cases}
+\end{eqnarray}
+
+:::{.callout-note icon=false collapse="true"}
+The probability of a value being exactly $0.25$ is $Prob(X_{i} =0.25)=0$.
+
+The probability of a value smaller than $0.25$ is $F(0.25)=0.25$.
+
+The probability of a value larger than $0.25$ is $1-F(0.25)=0.75$.
+
+The probability of a value in $(0.25,0.75]$ is $Prob(0.25 < X_{i} \leq 0.75) = Prob(X_{i} \leq 0.75) - Prob(X_{i} \leq 0.25) = 0.75 - 0.25 = 0.5$. 
+
+The probability of a value in $(0.2,0.7]$ is $Prob(0.2 < X_{i} \leq 0.7) = Prob(X_{i} \leq 0.7) - Prob(X_{i} \leq 0.2) = 0.7 - 0.2 = 0.5$.
+
+The probability of a value outside of $(0.2,0.7]$ is $Prob(X_{i} \leq 0.2 \text{ or } x > 0.7) = 0.2 + [1-0.7]=0.5$. Alternatively, you can compute $1- Prob(0.2 < X_{i} \leq 0.7)=1-0.5=0.5$.
+
+```{r}
+# Prob. < 0.25
+punif(0.25)
+
+# Prob. > 0.25
+1-punif(0.25)
+
+# Prob. in (0.2,0.7]
+F_two <- punif( c(0.2, 0.7) )
+F_in <- F_two[2] - F_two[1]
+F_in
+
+# Prob. out of (0.2,0.7]
+F_out <- 1- F_in
+F_out
+```
+:::
+
+
+```{r}
+runif(3) # 3 draws
+
+# Empirical Density 
+X3 <- runif(2000)
+hist(X3, breaks=20, border=NA, main=NA, freq=F)
+# Theoretical Density
+x <- seq(-0.1,1.1,by=.001)
+fx <- dunif(x)
+lines(x, fx, col='blue')
+
+# CDF example 1
+P_low <- punif(0.25)
+P_low
+# Uncomment to show via PDF
+# x_low <- seq(0,0.25,by=.001)
+# fx_low <- dunif(x_low)
+# polygon( c(x_low, rev(x_low)), c(fx_low,fx_low*0),
+#    col=rgb(0,0,1,.25), border=NA)
+    
+# CDF example 2
+P_high <- 1-punif(0.25)
+P_high
+# Uncomment to show via PDF
+# x_high <- seq(0.25,1,by=.001)
+# fx_high <- dunif(x_high)
+# polygon( c(x_high, rev(x_high)), c(fx_high,fx_high*0),
+#    col=rgb(0,0,1,.25), border=NA)
+    
+# CDF example 3
+P_mid <- punif(0.75) - punif(0.25)
+P_mid
+# Uncomment to show via PDF
+# x_mid <-  seq(0.25,0.75,by=.001)
+# fx_mid <- dunif(x_mid)
+# polygon( c(x_mid, rev(x_mid)), c(fx_mid,fx_mid*0),
+#    col=rgb(0,0,1,.25), border=NA)
+```
+
+
+Note that the [Continuous Uniform](https://en.wikipedia.org/wiki/Continuous_uniform_distribution) distribution generalizes to an arbitrary interval, $X_{i} \in [a,b]$. In this case, $f(x)=1/[b-a]$ if $x \in [a,b]$ and $F(x)=[x-a]/[b-a]$ if $x \in [a,b]$.
+
+:::{.callout-note icon=false collapse="true"}
+Suppose $X_{i}$ is a random variable continuously distributed over $a=-2$ and $b=2$. What is the probability of a value smaller than $0.25$? First use the computer to suggest an answer: simulate $1000$ draws and then make a histogram and an ECDF. Then find the answer mathematically using the CDF. Finally, verify the answer is intuitively correct in a figure of the PDF. You should draw by hand both the CDF and the PDF with correct axes labels and marking clearly the probability of a value smaller than $0.25$.
+```{r}
+# Simulation
+X <- runif(1000, -2, 2)
+# ... 
+
+# Draw by computer the CDF, F(x)
+x <- seq(-3,3,by=0.005)
+Fx <- punif(x, -2, 2)
+plot(x, Fx, type='l', col='blue')
+# Answer
+Fstar <- punif(0.25, -2, 2)
+# Visualize Answer
+segments(0.25, 0, 0.25, Fstar,
+    col=rgb(0,0,1, 0.25))
+
+# Draw by computer the PDF, f(x)
+fx <- dunif(x, -2, 2)
+plot(x, fx, type='l', col='blue')
+# Visualize Answer
+fstar <- dunif(0.25, -2, 2)
+polygon(
+    c(-2, 0.25, 0.25, -2), 
+    c(0, 0, fstar,fstar),
+    col=rgb(0,0,1, 0.25), border=NA)
+```
+:::
+
+:::{.callout-note icon=false collapse="true"}
+Suppose the flight time between Calgary and Kamloops is Uniformly distributed between $68$ and $78$ minutes. According to Air Canada the flight takes $70$ minutes. What is the probability that the flight will be late?
+:::
+
+
+#### **Exponential**. {-}
+The sample space is any positive number.^[In other classes, you may further distinguish types of random variables based on whether their maximum value is theoretically finite or infinite.] An [Exponential](https://en.wikipedia.org/wiki/Exponential_distribution) random variable has a single parameter, $\lambda>0$, that governs its shape
+\begin{eqnarray}
+X_{i} &\in& [0,\infty) \\
+f(x) &=& \lambda exp\left\{ -\lambda x \right\} \\
+F(x) &=& \begin{cases} 
+    0 & x < 0 \\
+    1-  exp\left\{ -\lambda x \right\} & x \geq 0.
+\end{cases}
+\end{eqnarray}
+```{r}
+rexp(3) # 3 draws
+
+X5 <- rexp(2000)
+hist(X5, breaks=20,
+    border=NA, main=NA,
+    freq=F, ylim=c(0,1), xlim=c(0,10))
+
+x <- seq(0,10,by=.1)
+fx <- dexp(x)
+lines(x, fx, col='blue')
+```
+
+:::{.callout-tip icon=false collapse="true"}
+Suppose the lifetime of a battery is an exponential random variable with $\lambda=1/50$. Using the computer, find the probability that the lifetime is $< 10$ hours.
+Find the probability that the lifetime is $\geq 100$ hours. Use the computer to find the probability that the lifetime is between $10$ and $100$ hours.
+
+```{r}
+pexp(10, 1/50)
+```
+:::
+
+
+:::{.callout-tip icon=false collapse="true"}
+Note that there is a discrete version of the exponential, called the geometric distribution.
+```{r}
+Y <- rexp(5000, rate=.2)
+
+X <- rgeom(5000, 1-exp(-.2))
+
+par(mfrow=c(1,2))
+bks <- seq(0,50,by=0.25)
+hist(X, breaks=bks, freq=F, border=NA)
+hist(floor(Y), breaks=bks, freq=F, border=NA)
+```
+:::
+
+
+#### **Normal (Gaussian)**. {-}
+This distribution is for any number on the real line, with bell shaped probabilities. The [Normal](https://en.wikipedia.org/wiki/Normal_distribution) distribution is mathematically complex and sometimes called the Gaussian distribution. We call it "Normal" because we will encounter it again and again and again. The probability density function $f$ has two parameters $\mu \in (-\infty,\infty)$ and $\sigma > 0$.
+\begin{eqnarray}
+X_{i} &\in& (-\infty,\infty) \\
+f(x) &=& \frac{1}{\sqrt{2\pi \sigma^2}} exp\left\{ \frac{-(x-\mu)^2}{2\sigma^2} \right\}
+\end{eqnarray}
+
+```{r}
+rnorm(3) # 3 draws
+
+X6 <- rnorm(2000)
+hist(X6, breaks=20,
+    border=NA, main=NA,
+    freq=F, ylim=c(0,.4), xlim=c(-4,4))
+
+x <- seq(-10,10,by=.025)
+fx <- dnorm(x)
+lines(x, fx, col='blue')
+```
+
+Even thought the distribution function is complex, we can compute CDF values using the computer.
+```{r}
+pnorm( c(-1.645, 1.645) ) # 10%
+pnorm( c(-2.576, 2.576) ) #  1%
+```
+
+
+:::{.callout-note icon=false collapse="true"}
+Suppose $X_{i}$ is a random variable with a normal distribution with $\mu=0$ and $\sigma=1$. Intuitively depict $Prob(X_{i} \in [0.2, 0.8])$ by drawing an area under the density function. Numerically estimate that same probability using the CDF.
+```{r}
+plot( ecdf(X6), main=NA) # Empirical
+
+x <- seq(-4,4,by=.01) # Theoretical
+Fx <- pnorm(x, 0, 1)
+lines(x, Fx, col='blue')
+
+# Middle Interval Example 
+F2 <- pnorm(0.2, 0, 1)
+F8 <- pnorm(0.8, 0, 1)
+F_2_8 <- F8 - F2
+F_2_8
+
+# Visualize
+title('Middle between 0.2 and 0.8')
+segments( 0.2, F2, -5, F2, col='red')
+segments( 0.8, F8, -5, F8, col='red')
+```
+:::
+
+
+:::{.callout-note icon=false collapse="true"}
+Suppose that your health status is a normally distributed random variable with $\mu=2$ and $\sigma=3$. If we randomly sample one person, what is the probability there health status is higher than $4$?
+```{r}
+# Start with a simulation of 1000 people to build intuition
+X <- rnorm(1000,2,3)
+hist(X, freq=F, border=NA, main=NA)
+sum(X>4)/1000
+
+# Do an exact calculation
+1-pnorm(4,2,3)
+```
+:::
+
+
+:::{.callout-tip icon=false collapse="true"}
+Draw the Middle $90\%$ of a normal distribution
+
+```{r}
+# PDF
+x <- seq(-10,10,by=.025)
+fx <- dnorm(x)
+plot(x, fx,
+    col='blue', type='l',
+    ylab='Theoretical Density: f(x)',
+    main='Middle 90%')
+# Show Middle 90%
+x_90 <- seq(-1.645,1.645,by=.025)
+fx_90 <- dnorm(x_90)
+polygon( c(x_90, rev(x_90)), c(fx_90,fx_90*0),
+    col=rgb(0,0,1,.25), border=NA)
+pnorm(1.645)-pnorm(-1.645)
+```
+:::
+
+
+:::{.callout-tip icon=false collapse="true"}
+Suppose scores in math class are approximately normally distributed with $\mu=50, \sigma=1$. If you selected one student randomly, what is the probability their score is higher than $90$. Is $Prob(X_{i}\geq 90)$ higher if $\mu=25, \sigma=2$? What about $\mu=10, \sigma=5$?
+:::
+
+
+## Further Reading
+
+Note that many random variables are related to each other
+
+* <https://en.wikipedia.org/wiki/Relationships_among_probability_distributions>
+* <https://www.math.wm.edu/~leemis/chart/UDR/UDR.html>
+* <https://qiangbo-workspace.oss-cn-shanghai.aliyuncs.com/2018-11-11-common-probability-distributions/distab.pdf>
+
+Also note that numbers randomly generated on your computer cannot be truly random, they are "Pseudorandom".
+

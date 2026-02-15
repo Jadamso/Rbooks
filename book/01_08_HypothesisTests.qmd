@@ -1,17 +1,135 @@
-# $p$-values
+# Hypothesis Testing
 ***
- 
+
+In this chapter, we test hypotheses using *data-driven* methods that assume much less about the data generating process. There are two main ways to conduct a hypothesis test: inverting a confidence interval and imposing the null. The first treats the distribution of estimates directly; the second explicitly enforces the null hypothesis to evaluate how unusual the observed statistic is. Both approaches rely on the bootstrap: resampling the data to approximate sampling variability. The most typical case is hypothesizing about the mean.
+
+#### **Invert a CI**. {-}
+
+One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value. We then use this decision rule
+
+* reject the null if value falls outside of the interval
+* fail to reject the null if value falls inside of the interval
+
+We typically use a $95\%$ confidence interval to create a *rejection region*: the area that falls outside of the interval.
+
+:::{.callout-note icon=false collapse="true"}
+For example, suppose you hypothesize the mean is $9$. You then construct a bootstrap distribution with $95\%$ confidence interval, and find your hypothesized value falls outside of the confidence interval. Then, after accounting for sampling variability (which you estimate), it still seems extremely unlikely that the theoretical mean actually equals $9$, so you reject that hypothesis. (If the theoretical value landed in the interval, you would "fail to reject" the theoretical mean equals $9$.)
+```{r}
+sample_dat <- USArrests[,'Murder']
+sample_mean <- mean(sample_dat)
+
+# Bootstrap Distribution
+n <- length(sample_dat)
+set.seed(1) # to be replicable
+bootstrap_means <- vector(length=9999)
+for(b in seq_along(bootstrap_means)){
+    dat_id <- seq(1,n)
+    boot_id <- sample(dat_id , replace=T)
+    dat_b  <- sample_dat[boot_id] # c.f. jackknife
+    mean_b <- mean(dat_b)
+    bootstrap_means[b] <-mean_b
+}
+
+hist(bootstrap_means, breaks=25,
+    border=NA,
+    freq=F,
+    main='',
+    xlab='Bootstrap Samples')
+# CI
+ci_95 <- quantile(bootstrap_means, probs=c(.025, .975))
+abline(v=ci_95, lwd=2)
+# H0: mean=9
+abline(v=9, col=2, lwd=2)
+```
+:::
+
+
+:::{.callout-tip icon=false collapse="true"}
+The above procedure also generalizes to many other statistics. Perhaps the most informative additional statistics for spread or shape. E.g., you can conduct hypothesis tests for `sd` and `IQR`, or `skew` and `kurtosis`.
+
+```{r}
+# Bootstrap Distribution for SD
+sd_obs <- sd(sample_dat)
+bootstrap_sd <- vector(length=999)
+for(b in seq_along(bootstrap_sd)){
+    x_b <- sample(sample_dat, replace=T)
+    sd_b <- sd(x_b)
+    bootstrap_sd[b] <- sd_b
+}
+
+# Test for SD Differences (Invert CI)
+sd_null <- 3.6
+hist(bootstrap_sd, freq=F,
+    border=NA, xlab='Bootstrap', font.main=1,
+    main='Standard Deviations (Invert CI)')
+sd_ci <- quantile(bootstrap_sd, probs=c(0.025,.975) )
+abline(v=sd_ci, lwd=2)
+abline(v=sd_null, lwd=2, col=2)
+```
+
+To better your understanding, try redoing the above for any function (such as `IQR(x_b)/median(x_b)`)
+:::
+
+:::{.callout-tip icon=false collapse="true"}
+Suppose you scored $83\%$ on your exam with $50$ questions, but think you are really a $90\%$ student. Explain how you might test your hypothesis to your professor who insists your claim be supported by evidence. What would be the issue if we could not reject your hypothesis? Provide a computer simulation illustrating the issue.
+:::
+
+
+#### **Impose the Null**. {-}
+
+We can also compute a *null distribution*: the sampling distribution of the statistic under the null hypothesis (assuming your null hypothesis was true). We use the bootstrap to loop through a large number of "resamples". In each iteration of the loop, we impose the null hypothesis and re-estimate the statistic of interest. We then calculate the range of the statistic across all resamples and compare how extreme the original value we observed is.
+
+:::{.callout-note icon=false collapse="true"}
+For example, suppose you hypothesize the mean is $9$. You then construct a $95\%$ confidence interval around the *null* bootstrap distribution (resamples centered around $9$). If your sample mean falls outside of that interval, then even after accounting for sampling variability (which you estimate), it seems extremely unlikely that the theoretical mean actually equals $9$, so you reject that hypothesis. (If the sample mean landed in the interval, you would "fail to reject" the theoretical mean equals $9$.)
+
+```{r}
+sample_dat <- USArrests[,'Murder']
+sample_mean <- mean(sample_dat)
+
+# Bootstrap NULL: mean=9
+# Bootstrap shift: center each bootstrap resample so that the distribution satisfies the null hypothesis on average.
+set.seed(1)
+mu <- 9
+bootstrap_means_null <- vector(length=999)
+for(b in seq_along(bootstrap_means_null)){
+    dat_b <- sample(sample_dat, replace=T)
+    mean_b <- mean(dat_b) + (mu - sample_mean) # impose the null via Bootstrap shift
+    bootstrap_means_null[b] <- mean_b
+}
+hist(bootstrap_means_null, breaks=25, border=NA,
+    main='',
+    xlab='Null Bootstrap Samples')
+ci_95 <- quantile(bootstrap_means_null, probs=c(.025, .975)) # critical region
+abline(v=ci_95, lwd=2)
+abline(v=sample_mean, lwd=2, col=4)
+```
+:::
+
+
+
+
+This Normal based interval can also provide an alternative to the Null Bootstrap. While we could also use a Null Jackknife distribution, that is rarely done. Altogether, there are two different types of confidence intervals that "impose the null". Until you know more, a conservative rule-of-thumb is to take the larger estimate.
+
+| Interval | Mechanism |
+| -------- | ------- |
+Bootstrap Percentile | randomly resample $n$ observations with replacement and shift |
+Normal     | assume observations are i.i.d. and normal distribution is a good approximation (can use bootstrap or classical SE's) |
+: Types of Confidence Interval Estimates that "impose the null"
+
+
+
+
 ## $p$-values
 
-A $p$-value is the frequency you see something at least as extreme as your statistic under the null hypothesis (when sampling from the null distribution). We want the probability mass in both tails: the random variable $M$ that is at least as extreme (far from the null mean of $9$) as our observed sample mean $\hat{M}$.
+A $p$-value is the frequency you see something at least as extreme as your statistic under the null hypothesis (when sampling from the null distribution). We want the probability that the random variable $M$ that is at least as extreme (far from the null mean of $9$) as our observed sample mean $\hat{M}$.
 
-Recall from last chapter that we used the bootstrap to estimate the distribution of the sample statistic like the mean, and the null-bootstrap shifted the bootstrap to be centered at a hypothesized value. The bootstrap idea in this chapter is to approximate $M-\mu$, the difference between the sample mean $M$ and the unknown theoretical mean $\mu$, with the difference between the bootstrap mean $M^{\text{boot}}$ and the unknown theoretical mean, $M^{\text{boot}}-\hat{M}$.
+Recall that we used the bootstrap to estimate the distribution of the sample statistic like the mean, and the null-bootstrap shifted the bootstrap to be centered at a hypothesized value. The bootstrap idea here is to approximate $M-\mu$, the difference between the sample mean $M$ and the unknown theoretical mean $\mu$, with the null-bootstrap analogue $M^{\text{boot}}_{0}-\mu$, where $M^{\text{boot}}_{0}=M^{\text{boot}}+(\mu-\hat{M})$.
 \begin{eqnarray}
 & & Prob( |M - \mu| \geq |\hat{M} - \mu| \mid \mu = 9 ) \\
-& & \approx Prob( |M^{\text{boot}}- \mu| \geq |\hat{M}- \mu|  \mid \mu = 9) \\
+& & \approx Prob( |M^{\text{boot}}_{0}- \mu| \geq |\hat{M}- \mu|  \mid \mu = 9) \\
 & & = 1-\hat{F}^{|\text{boot}|}_{0}(|\hat{M}-9|),
 \end{eqnarray}
-where $\hat{F}^{|\text{boot}|}_{0}$ is the ECDF of $|M^{\text{boot}}- \mu|$.
+where $\hat{F}^{|\text{boot}|}_{0}$ is the ECDF of $|M^{\text{boot}}_{0}- \mu|$.
 
 
 :::{.callout-note icon=false collapse="true"}
@@ -26,7 +144,7 @@ set.seed(1)
 mu <- 9
 bootstrap_means_null <- vector(length=999)
 for(b in seq_along(bootstrap_means_null)){
-    dat_b <- sample(sample_dat, replace=T) 
+    dat_b <- sample(sample_dat, replace=T)
     mean_b <- mean(dat_b) + (mu - sample_mean) # impose the null via Bootstrap shift
     bootstrap_means_null[b] <- mean_b
 }
@@ -67,17 +185,17 @@ title( paste0('p=', round(p2,3)))
 
 You can conduct hypothesis test using $p$-values instead of confidence intervals. It is common to use this decision rule:
 
-* reject the null at the $5\%$ level if $p<0.05$
-* fail to reject the null at the $5\%$ level if $p>0.05$
-    
+* reject the null at the $5\%$ level if $p \leq 0.05$
+* fail to reject the null at the $5\%$ level if $p > 0.05$
+
 #### **Caveats**. {-}
 
 Beware that a common misreading of the $p$-value as "the probability the null is true". That is false. A $p$-value is the frequency you see something at least as extreme as your statistic under the null hypothesis.
 
-Often, one may also see or hear "$p<.05$: statistically significant" and "$p>.05$: not statistically significant". That is decision making on purely statistical grounds, and it may or may not be suitable for your context. You simply need to know that whoever says those things is using $5\%$ as a critical value to reject an alternative hypothesis.
+Often, one may also see or hear "$p<.05$: statistically significant" and "$p>.05$: not statistically significant". That is decision making on purely statistical grounds, and it may or may not be suitable for your context. You simply need to know that whoever says those things is using $5\%$ as a critical value to reject a null hypothesis.
 
 ```{r}
-# Purely-Statistical Decision Making 
+# Purely-Statistical Decision Making
 # via Two Sided Test
 if(p2 >.05){
     print('fail to reject the null that mean=9, at the 5% level')
@@ -86,14 +204,14 @@ if(p2 >.05){
 }
 ```
 
-Also note that the $p$-value is itself a function of data, and hence a random variable that changes from sample to sample. Given that the $5\%$ level is somewhat arbitrary, and that the $p$-value both varies from sample to sample and is often misunderstood, it makes sense to give specific $p$-values a limited role in decision making. 
+Also note that the $p$-value is itself a function of data, and hence a random variable that changes from sample to sample. Given that the $5\%$ level is somewhat arbitrary, and that the $p$-value both varies from sample to sample and is often misunderstood, it makes sense to give specific $p$-values a limited role in decision making.
 
 ```{r}
 p_values <- vector(length=300)
 for(b2 in seq(p_values)){
     bootstrap_means_null_p <- vector(length=999)
     for(b in seq_along(bootstrap_means_null_p)){
-        dat_b <- sample(sample_dat, replace=T) 
+        dat_b <- sample(sample_dat, replace=T)
         mean_b <- mean(dat_b) + (mu - sample_mean) # impose the null
         bootstrap_means_null_p[b] <- mean_b
     }
@@ -114,7 +232,7 @@ A *$t$-value* standardizes the approach for hypothesis tests of the mean.
 t = (M - \mu) / SE(M),
 \end{eqnarray}
 
-For any specific sample, we must approximate the standard error. Using the theory-driven approach, we compute $\hat{t}=(\hat{M}-\mu)/(\hat{S}/\sqrt{n})$. Using the data-driven approach, we compute $\hat{t}=(\hat{M}-\mu)/(\hat{SE}^{\text{jack}})$ or $\hat{t}=(\hat{M}-\mu)/(\hat{SE}^{\text{boot}})$. In any case, we can approximate use bootstrapping to estimate the variability of the $t$ statistic, just like we did with the mean.
+For any specific sample, we must approximate the standard error. Using the theory-driven approach, we compute $\hat{t}=(\hat{M}-\mu)/(\hat{S}/\sqrt{n})$. Using the data-driven approach, we compute $\hat{t}=(\hat{M}-\mu)/(\hat{SE}^{\text{jack}})$ or $\hat{t}=(\hat{M}-\mu)/(\hat{SE}^{\text{boot}})$. In any case, we can use bootstrapping to estimate the variability of the $t$ statistic, just like we did with the mean.
 
 :::{.callout-note icon=false collapse="true"}
 
@@ -122,25 +240,26 @@ For any specific sample, we must approximate the standard error. Using the theor
 #null hypothesis
 mu <- 9
 
-# t statistic 
+# t statistic
 jackknife_means <- vector(length=length(sample_dat))
 for(i in seq_along(jackknife_means)){
     dat_i <- sample_dat[-i]
     jackknife_means[i] <- mean(dat_i)
 }
-sample_t <- (sample_mean - mu)/sd(jackknife_means)
+jackknife_se <- sd(jackknife_means)
+sample_t <- (sample_mean - mu)/jackknife_se
 
 # Boostrap Null Distribution
 bootstrap_t_null <- vector(length=999)
 for(b in seq_along(bootstrap_t_null)){
-    dat_b <- sample(sample_dat, replace=T) 
+    dat_b <- sample(sample_dat, replace=T)
     mean_b <- mean(dat_b) + (mu - sample_mean) # impose the null by recentering
     # Compute t stat using jackknife ses (same as above)
     jackknife_means_b <- vector(length=length(dat_b))
     for(i in seq_along(jackknife_means_b)){
         jackknife_means_b[i] <- mean(dat_b[-i])
     }
-    jackknife_se_b <- sd( jackknife_means_b )
+    jackknife_se_b <- sd(jackknife_means_b)
     jackknife_t_b <- (mean_b - mu)/jackknife_se_b
     bootstrap_t_null[b] <- jackknife_t_b
 }
@@ -155,7 +274,7 @@ abline(v=ci_95, lwd=2)
 
 # Compute the p-value for two-sided test
 Fhat0 <- ecdf(abs(bootstrap_t_null))
-plot(Fhat0, 
+plot(Fhat0,
     xlim=range(bootstrap_t_null, sample_t),
     xlab='Null Bootstrap for |t|',
     main='')
@@ -179,7 +298,7 @@ There are several benefits to this statistic:
 * removes dependence on unknown parameters by normalizing with a standard error
 * makes the null distribution theoretically known asymptotically (approximately)
 
-The last point implies we are typically dealing with a normal distribution that is well-studied, or another well-studied distribution derived from it. We will discuss this more when [comparing means](https://jadamso.github.io/Rbooks/02_03_TwoSamples.html#theory).
+The last point implies we are typically dealing with a normal distribution that is well-studied, or another well-studied distribution derived from it. We will discuss this more when [comparing means](https://jadamso.github.io/Rbooks/02_11_ComparingGroups.html).
 
 #### **Quantiles and Shape Statistics**. {-}
 
@@ -197,16 +316,16 @@ for(b in seq_along(bootstrap_quantile_null)){
     x_b <- sample(sample_dat, replace=T) #bootstrap sample
     q_b <- quantile(x_b, probs=.5) # median
     d_b <- q_b - (q_obs-q_null) #impose the null
-    bootstrap_quantile_null[b] <- d_b 
+    bootstrap_quantile_null[b] <- d_b
 }
 
-    # Note that you could also standardize like the t value. E.g., 
+    # Note that you could also standardize like the t value. E.g.,
     # jackknife_quantiles_b <- vector(length=length(dat_b))
     # se_b <- sd(jackknife_quantiles_b)
     # d_b <- d_b/se_b
-    
+
 # 2-Sided Test for Medians
-hist(bootstrap_quantile_null-q_null, 
+hist(bootstrap_quantile_null-q_null,
     border=NA, freq=F, xlab='Null Bootstrap',
     font.main=1, main='Medians (Impose Null)')
 median_ci <- quantile(bootstrap_quantile_null-q_null, probs=c(.025, .975))
@@ -215,7 +334,7 @@ abline(v=q_obs-q_null, lwd=2, col=4)
 
 # 2-Sided Test for Median Difference
 ## Null: No Median Difference
-1 - ecdf( abs(bootstrap_quantile_null-q_null))( abs(q_obs-q_null) ) 
+1 - ecdf( abs(bootstrap_quantile_null-q_null))( abs(q_obs-q_null) )
 ```
 
 :::{.callout-tip icon=false collapse="true"}
@@ -229,46 +348,15 @@ q_obs <- quantile(sample_dat, probs=.75)
 
 Above, we tested whether the observed statistic is either extremely high or low. This is known as a two-sided test. There are also two one-sided tests (left tail: observed statistic is extremely low, right tail: observed statistic is extremely high). For a concrete example, consider whether the mean statistic, $M$, is centered on a theoretical value of $\mu=9$ for the population. If your null hypothesis is that the theoretical mean is nine, $H_{0}: \mu =9$, and you calculated the mean for your sample as $\hat{M}$, then you can consider any one of these three alternative hypotheses:
 
-* $H_{A}​: \mu \neq 9$, a two-tail test
+* $H_{A}: \mu \neq 9$, a two-tail test
 * $H_{A}: \mu < 9$, a left-tail test
-* $H_{A​}: \mu > 9$, a right-tail test
+* $H_{A}: \mu > 9$, a right-tail test
 
-
-#### **One-Sided Intervals**. {-}
-
-A one-sided test is associated with an interval that shifted to one side, containing one tail rather than the middle. For example, a left tail test that "inverts a CI" uses the interval $(-\infty, q_{0.95}]$, where $q_{0.95}$ is the $95^{\text{th}}$ percentile of the bootstrap distribution. If the hypothesized value falls inside that interval, then we fail to reject the null (at the $5\%$ level), otherwise we reject the null (it seems extremely unlikely that we would find such a large value). A left tail test that "inverts a CI" uses the interval $[q_{0.05}, \infty)$, where $q_{0.05}$ is the $5^{\text{th}}$ percentile of the bootstrap distribution.
-
-
-:::{.callout-tip icon=false collapse="true"}
-Here is right-tail Test example
-```{r}
-# Bootstrap Distribution
-set.seed(1) # to be replicable
-bootstrap_means <- vector(length=9999)
-for(b in seq_along(bootstrap_means)){
-    dat_id <- seq(1,length(sample_dat))
-    boot_id <- sample(dat_id, replace=T)
-    dat_b  <- sample_dat[boot_id] # c.f. jackknife
-    mean_b <- mean(dat_b)
-    bootstrap_means[b] <-mean_b
-}
-
-# ALTERNATIVE: mean > 9
-# Visualize One Sided Prob. & reject region boundary
-hist(bootstrap_means, border=NA, breaks=50,
-    freq=F, main=NA, xlab='Null Bootstrap')
-abline(v=sample_mean, col=4)
-ci_95 <- quantile(bootstrap_means, probs=c(0.05,1) )
-abline(v=ci_95, lwd=2)
-```
-:::
-
-
-There are also "Impose the Null" intervals, but "invert a CI" is the most intuitive way to conduct hypothesis test using intervals. Null distributions are most naturally used to create $p$-values.
+One-sided hypothesis tests can be conducted by inverting a one-sided confidence interval (covered in the previous chapter) or by computing a one-sided $p$-value.
 
 #### **One-Sided $p$-values**. {-}
 
-The $p$-value for a one-sided test is more straightforward to implement via a bootstrap null distribution. 
+The $p$-value for a one-sided test is more straightforward to implement via a bootstrap null distribution.
 
 For a left-tail test, we examine \begin{eqnarray}
 p = Prob( M < \hat{M} \mid \mu = 9 )

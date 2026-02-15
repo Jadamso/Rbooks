@@ -1,181 +1,31 @@
 # Advanced Probability
 
-## Drawing Samples
-
-To generate a random variable from known distributions, you can use some type of physical machine. E.g., you can roll a fair die to generate Discrete Uniform data or you can roll weighted die to generate Categorical data.
-
-There are also several ways to computationally generate random variables from a probability distribution. Perhaps the most common one is "inverse sampling". To generate a random variable using inverse sampling, first sample $p$ from a uniform distribution and then find the associated quantile  quantile function $\hat{F}^{-1}(p)$.^[Drawing random uniform samples with computers is actually quite complex and beyond the scope of this course.]
-
-
-#### **Using Data**. {-}
-
-You can generate a random variable from a known empirical distribution. Inverse sampling randomly selects observations from the dataset with equal probabilities. To implement this, we 
-
-* order the data and associate each observation with an ECDF value
-* draw $p \in [0,1]$ as a uniform random variable
-* find the associated quantile via the ECDF
-
-:::{.callout-tip icon=false collapse="true"}
-Here is an example of generating random murder rates for US states.
-```{r}
-# Empirical Distribution
-X <- USArrests[,'Murder']
-FX_hat <- ecdf(X)
-plot(FX_hat, lwd=2, xlim=c(0,20),
-    pch=16, col=grey(0,.5), main='')
-
-# Generating random variables via inverse ECDF
-p <- runif(3000) ## Multiple Draws
-QX_hat <- quantile(FX_hat, p, type=1)
-QX_hat[c(1,2,3)]
-
-## Can also do directly from the data
-QX_hat <- quantile(X, p, type=1)
-QX_hat[c(1,2,3)]
-```
-:::
-
-#### **Using Math**. {-}
-
-If you know the distribution function that generates the data, then you can derive the quantile function and do inverse sampling. 
-That is how computers generate random data from a distribution.
-```{r}
-# 4 random data points from 3 different distributions
-qunif(4)
-qexp(4)
-qnorm(4)
-```
-
-Here is an in-depth example of the [Dagum distribution](https://en.wikipedia.org/wiki/Dagum_distribution). The distribution function is $F(x)=(1+(x/b)^{-a})^{-c}$. For a given probability $p$, we can then solve for the quantile as $F^{-1}(p)=\frac{ b p^{\frac{1}{ac}} }{(1-p^{1/c})^{1/a}}$. Afterwhich, we sample $p$ from a uniform distribution and then find the associated quantile.
-
-```{r}
-# Theoretical Quantile Function (from VGAM::qdagum)
-qdagum <- function(p, scale.b=1, shape1.a, shape2.c) {
-  # Quantile function (theoretically derived from the CDF)
-  ans <- scale.b * (expm1(-log(p) / shape2.c))^(-1 / shape1.a)
-  # Special known cases
-  ans[p == 0] <- 0
-  ans[p == 1] <- Inf
-  # Safety Checks
-  ans[p < 0] <- NaN
-  ans[p > 1] <- NaN
-  if(scale.b <= 0 | shape1.a <= 0 | shape2.c <= 0){ ans <- ans*NaN }
-  # Return
-  return(ans)
-}
-
-# Generate Random Variables (VGAM::rdagum)
-rdagum <-function(n, scale.b=1, shape1.a, shape2.c){
-    p <- runif(n) # generate random probabilities
-    x <- qdagum(p, scale.b=scale.b, shape1.a=shape1.a, shape2.c=shape2.c) #find the inverses
-    return(x)
-}
-
-# Example
-set.seed(123)
-X <- rdagum(3000,1,3,1)
-X[c(1,2,3)]
-```
-
-
-## Kernel Density Estimation
-
-A kernel density is a "smooth" version of a histogram. 
-
-The general idea behind kernel density is to use small windows around each $x$ that potentially overlap, rather than partitioning the range of $X$ into exclusive bins. The "uniform" kernel density is 
-\begin{eqnarray}
-\label{eqn:uniform}
-\hat{f}_{U}(x) &=& \frac{1}{n} \sum_{i}^{n} \frac{k_{U}(\hat{X}_{i}, x, h) }{2h} \\
-k_{U}\left( \hat{X}_{i}, x, h \right) &=& \mathbf{1}\left(\frac{|\hat{X}_{i}-x|}{h}<1\right)
-= \mathbf{1}\left( \hat{X}_{i} \in \left( x-h, x + h\right) \right).
-\end{eqnarray} 
-Notice that the uniform kernel is essentially the histogram but without the restriction that $x$ must be a midpoint of *exclusive* bins. Typically, the points $x$ are chosen to be either the unique observations or some equidistant set of "design points" (e.g., at $512$ evenly spaced values of $x$ the dataset, not just the midpoints of exclusive bins).
-
-```{r}
-# Practical Example
-X <- USArrests[,'Murder']
-hist(X,
-    breaks=seq(0,20,by=2), #bin width=1
-    freq=F,
-    border=NA, 
-    main='',
-    xlab='Murder Arrests')
-# Density Estimate
-lines( density(X, bw=3, kernel='rectangular') )
-# Raw Observations
-rug(X, col=grey(0,.5))
-```
-
-We can also replace the uniform kernel with a more general kernel function. There are many [kernels](https://en.wikipedia.org/wiki/Kernel_(statistics)#In_non-parametric_statistics), but these are the most intuitive and commonly used.
-```{r}
-# Kernel Density Functions
-
-X <- seq(-2,2, length.out=1001)
-
-plot.new()
-plot.window(xlim=c(-1.2,1.2), ylim=c(0,1))
-
-h <- 1
-lines( dunif(X,-h,h)~X, col=1, lty=1)
-
-h <- 1/2
-lines( dnorm(X,0,h)~X, col=2, lty=1)
-
-dtricub <- function(X, x=0, h){
-    u <- abs(X-x)/h
-    fu <- 70/81*(1-u^3)^3/h*(u <= 1)
-    return(fu)
-}
-h <- 1
-lines( dtricub(X,0,h)~X, col=3, lty=1)
-
-h <- 1/2
-lines(density(x=0, bw=h, kernel="epanechnikov"), col=4, lty=1)
-## Note that "density" defines h slightly differently
-
-rug(0, lwd=2)
-axis(1)
-axis(2)
-
-legend('topright', lty=1, col=1:4,
-    legend=c('uniform(1)', 'gaussian(1/2)', 'tricubic(1)', 'epanechnikov(1)'))
-
-
-## Try others:
-## lines(density(x=0, bw=1/2, kernel="triangular"),col=4, lty=1)
-```
-
-Once we have picked a kernel (which particular one is not particularly important) we can use it to compute density estimates at each design point.
-
-:::{.callout-tip icon=false collapse="true"}
-Try out different kernels
-```{r}
-# Practical Example
-X <- USArrests[,'Murder']
-hist(X,
-    breaks=seq(0,20,by=2), #bin width=1
-    freq=F,
-    border=NA, 
-    main='',
-    xlab='Murder Arrests')
-# Density Estimate
-lines( density(X, bw=2, kernel='epanechnikov') )
-# Raw Observations
-rug(X, col=grey(0,.5))
-```
-:::
-
-
-## Factorial Distributions
+## Discrete Factorial Distributions
 
 #### **Binomial**. {-}
 
-The sum of $n$ Bernoulli trials (number of successes)
+The sum of $n$ Bernoulli's (number of successes)
 
-* Discrete, support $\{0,1,\ldots,n\}$
-* Probability Mass Function: $Prob(X_{i}=x)=\binom{n}{x}p^{x}(1-p)^{n-x}$
-* See <https://en.wikipedia.org/wiki/Binomial_distribution>
-* A common use case: How many heads will I get when I flip a coin twice?
+\begin{eqnarray}
+X_{i} \in \{0,1,\ldots,n\} \\
+Prob(X_{i}=x) &=& \binom{n}{x}p^{x}(1-p)^{n-x}
+\end{eqnarray}
+
+The simplest case: how many heads will I get when I flip a coin twice? We can first see that there are four potential outcomes: $\{ (1,1), (1,0), (0,1), (0,0) \}$, each of which are equally likely (assuming the coin is fair). The corresponding sums are $\{2,1,1,0 \}$, which leads to probabilities $Prob(X_{i}=0)=1/4$, $Prob(X_{i}=1)=2/4$, and $Prob(X_{i}=2)=1/4$
+
+:::{.callout-tip icon=false collapse="true"}
+When I flip a coin three times, the potential outcomes are 
+\begin{eqnarray}
+\{
+(1,1,1), (1,1,0), (1,0,1), (1,0,0),\\
+(0,1,1), (0,1,0), (0,0,1), (0,0,0) 
+\}
+\end{eqnarray}
+Assuming the coin is fair, compute the probabilities for each possible sum.
+:::
+
+In general, we use the [Binomial_distribution](https://en.wikipedia.org/wiki/Binomial_distribution).
+
 
 ```{r}
 ## Minimal example
@@ -190,19 +40,34 @@ plot(x, f_x, type = "h", col = "blue",
 title(bquote(paste('Binom(',.(n),', ',.(p), ')' ) ))
 points(x, f_x, pch = 16, col = "blue")
 
-# Simulate:  Compare empirical vs theoretical
-#X <- rbinom(1e4, size = n, prob = p)
-#c(emp_mean = mean(X), th_mean = n*p)
-#c(emp_var  = var(X),  th_var  = n*p*(1-p))
+## Simulation
+X <- rbinom(1000, n, p)
+plot(ecdf(X))
 ```
 
 :::{.callout-tip icon=false collapse="true"}
-Suppose that employees at a company are $70%$ female and $30%$ male. If we select a random sample of eight employees, what is the probability that more than $2$ in the sample are female?
+Suppose that employees at a company are $70%$ female and $30%$ male. If we select a random sample of eight employees, what is the probability that $2$ in the sample are female? That $\geq 2$ are female? 
+
+Try conducting a simulation first, 
+```
+n <- 8
+p <- 0.3
+X <- rbinom(1000, n, p)
+```
 :::
 
+
 :::{.callout-tip icon=false collapse="true"}
-Show that 
-$\mathbb{E}[X_{i}]=np$ and $\mathbb{V}[X_{i}]=np(1-p)$. Start with the case $n=1$, then the case $n=2$, then case $n=3$, then the general case of any $n$.
+For $n$ coin flips, show that $\mathbb{E}[X_{i}]=np$ and $\mathbb{V}[X_{i}]=np(1-p)$. Build on the case $n=2$ above, then consider case $n=3$, and then the general case of any $n$.
+
+```{r}
+# Simulate:  Compare empirical vs theoretical
+x <- c(0,1)
+x_probs <- c(1/4, 3/4)
+X <- sample(x, 1000, prob=x_probs, replace=T)
+#c(emp_mean = mean(X), th_mean = n*p)
+#c(emp_var  = var(X),  th_var  = n*p*(1-p))
+```
 :::
 
 The Binomial Limit Theorem (de Moivre–Laplace theorem) says that as $n$ grows large, with $p \in (0,1)$ staying fixed, the Binomial distribution is approximately normal with mean $np$ and variance $np(1-p)$
@@ -211,10 +76,12 @@ The Binomial Limit Theorem (de Moivre–Laplace theorem) says that as $n$ grows 
 The unemployment rate is $10%$. Suppose that $100$ employable people are selected randomly. What is the probability that this sample contains between $9$ and $12$ unemployed people. Use the normal approximation to binomial probabilities.
 
 Parameters are 
-$\mu \approx n p = 10$
-$\sigma^2= n p (1−p) = 100 (0.1)(0.9)=9$
-$\sigma=\sqrt{9}=3$).
+$\mu \approx n p = 10$ 
+$\sigma^2= n p (1−p) = 100 (0.1)(0.9)=9$ 
+$\sigma=\sqrt{9}=3$.
 :::
+
+
 
 #### **Poisson**. {-}
 
@@ -248,6 +115,8 @@ title(bquote(paste('Pois(',.(lambda), ')')))
 Show that $\mathbb{E}[X_{i}] = \mathbb{V}[X_{i}]= \lambda$.
 :::
 
+
+## Continuous Factorial Distributions
 
 #### **Irwin–Hall**. {-}
 
@@ -394,7 +263,7 @@ round(P_AcondB, 3)
 Consider a six sided die with sample space $\{1,2,3,4,5,6\}$ where each outcome is each equally likely. What is $Prob(\text{die is odd or }<5)$?
 Denote the odd events as $A=\{1,3,5\}$ and the less than five events as  $B=\{1,2,3,4\}$. Then
 
-- $A\cup B=\{1,3\}$, which implies $Prob(A\cap B)=2/6=1/3$.
+- $A\cap B=\{1,3\}$, which implies $Prob(A\cap B)=2/6=1/3$.
 - $Prob(A)=3/6=1/2$ and $Prob(B)=4/6=2/3$.
 - By inclusion–exclusion: $Prob(A\cup B)=Prob(A)+Prob(B)-Prob(A\cap B)=1/2+2/3-1/3=5/6$.
 
@@ -417,5 +286,4 @@ The conditional probability of $Prob(\text{die is} >2 \mid \text{die shows odd n
 
 Then we can see that
 $Prob(A \mid B) Prob(B) + Prob(A \mid \lnot B) Prob(\lnot B) = 2/6 + 2/6 = 2/3 = Prob(A)$.
-
 
