@@ -158,7 +158,6 @@ For a fixed sample size $n$, there is a trade-off between *precision*: the width
 
 ## Resampling Intervals
 
-
 Often, we have only one sample. In practice, we can use resampling procedures to estimate a confidence interval. E.g., we repeatedly resample data and construct a bootstrap or jackknife sampling distribution. Then we compute the confidence intervals using the upper and lower quantiles of the sampling distribution. 
 
 :::{.callout-note icon=false collapse="true"}
@@ -188,11 +187,33 @@ boot_ci
 
 ## Normal Approximation
 
-Given the sampling distribution is approximately normal, the usual confidence intervals are symmetric. For the sample mean $M$, we can then construct the interval $[M - E, M + E]$, where $E$ is a "margin of error" on either side of $M$. A coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$. I.e., if the same sampling procedure were repeated $100$ times from the same population, approximately $95$ of the resulting intervals would be expected to contain the true population mean.^[Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( \mu + E > M > \mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ in $95\%$ of the samples because whenever $M$ is within $10$ of $\mu$, the value $\mu$ is also within $10$ of $M$. But for any particular sample, the interval $[\hat{M}-10, \hat{M}+10]$ either does or does not contain $\mu$. Similarly, if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$.] We can also compute from theory that $\pm 1.96~ SE(M)$ corresponds to the critical values of the Normal distribution, where $SE(M)$ is estimated using the bootstrap distribution or theory (classical SEs: $\hat{S}/\sqrt{n}$).
+Given the sampling distribution is approximately Normal, the usual confidence intervals are symmetric.
+For the sample mean $M$, we can then construct the interval $[M - E, M + E]$, where $E$ is a "margin of error" on either side of $M$.
+The margin of error for the Normal distribution is theoretically known, and can be calculated based on standard errors and the critical values.
+Given a standard error $SE(M)$ and quantiles $q(\alpha/2)$, we know from theory that $E=q(\alpha)\times SE(M)$
+
+
+The critical values, $M \pm q(\alpha) SE(M)$, define the Normal confidence interval associated with $1-\alpha$ coverage.
+A coverage level of $1-\alpha$ means that if the same sampling procedure were repeated $100$ times from the same population, approximately $1-\alpha$ percent of the intervals are expected to contain the true population mean.
+^[Generally, a coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$.
+Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( \mu + E > M > \mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ in $95\%$ of the samples because whenever $M$ is within $10$ of $\mu$, the value $\mu$ is also within $10$ of $M$. But for any particular sample, the interval $[\hat{M}-10, \hat{M}+10]$ either does or does not contain $\mu$. Similarly, if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$.] We can also compute from theory that $\pm 1.96~ SE(M)$ corresponds to the critical values of the Normal distribution, where $SE(M)$ is estimated using the bootstrap distribution or theory (classical SEs: $\hat{S}/\sqrt{n}$).
+The $95\%$ interval is the most common, and has quantile value $q=1.96$. 
+The $90\%$ interval has quantile value $q=1.65$. 
+The values for $M$ and $SE(M)$ are estimated from data.
 
 :::{.callout-note icon=false collapse="true"}
-For example, suppose we sample $n=36$ monthly electricity bills (in dollars) and find $\hat{M}=142$ and $\hat{S}=30$. The classical standard error is $SE(M) \approx \hat{S}/\sqrt{n} = 30/\sqrt{36} = 5$. A $95\%$ confidence interval is
-$$\hat{M} \pm 1.96 \times SE(M) = 142 \pm 1.96 \times 5 = [132.2,~ 151.8].$$
+For example, suppose we sample $n=36$ monthly electricity bills (in dollars) and find $\hat{M}=142$ and $\hat{S}=30$.
+The classical standard error is $SE(M) \approx \hat{S}/\sqrt{n} = 30/\sqrt{36} = 5$.
+From theory, we also know that $95\%$ confidence interval has upper and lower critical value of 
+\begin{eqnarray}
+F^{-1}_{Normal}\left(0.975, SE(M) \right) &=& +1.96 \times SE(M) \\
+F^{-1}_{Normal}\left(0.025, SE(M) \right) &=& -1.96 \times SE(M)
+\end{eqnarray}
+Together, we can calculate
+\begin{eqnarray}
+E &=& q(\alpha) \times SE(M) = 1.96 \times 5 = 9.8\\
+[\hat{M} - E, \hat{M} + E] &=& [142 - 9.8, 142 + 9.8] = [132.2,~ 151.8].
+\end{eqnarray}
 We are $95\%$ confident that the population mean electricity bill is between $\$132.20$ and $\$151.80$.
 ```{r}
 M_hat <- 142
@@ -201,13 +222,26 @@ n <- 36
 SE <- S_hat / sqrt(n)
 SE
 
-# 95% CI
+# 95% CI Manual Calculation
 M_hat + c(-1.96, 1.96) * SE
+
+## 95% CI Intuition
+qnorm( c(0.025, 0.975), M_hat, SE)
 ```
 :::
 
 
-The main advantages of the Normal approximation is that 1) it can be computed formulaically as above and b) it works well for estimating extreme probabilities, where resampling methods tend to be worse. The main disadvantage is that the sampling distribution might be far from normal. In the example below, they are all quite similar, but that does not always need to be the case.
+
+The main advantages of the Normal approximation is that
+
+* can be computed formulaically as above and
+* works well for estimating extreme probabilities, where resampling methods tend to be worse.
+
+The main disadvantage is that 
+
+* the sampling distribution might be far from normal.
+
+In the example below, they are all quite similar, but that does not always need to be the case.
 
 
 ```{r}
