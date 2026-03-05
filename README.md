@@ -7,11 +7,15 @@
 To compile this book, navigate to the root directory, then 
 
     quarto preview book
+    quarto render book
+    
+To Sync files
+
+    cd book && for d in _freeze/*/; do stem=$(basename "$d"); [ ! -f "${stem}.qmd" ] && rm -rf "$d"; done
+    cd .. && cp -r ./Templates/Figures_Manual/* ./docs/Figures_Manual
 
 To publish online, 
 
-    quarto render book
-    cp -r ./Templates/Figures_Manual/* ./docs/Figures_Manual
     git add .
     git commit -m " "
     git push
