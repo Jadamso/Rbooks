@@ -253,9 +253,60 @@ plot(XYjoint,
 The multivariate normal is a workhorse for analytical work on multivariate random variables, but there are many more. See e.g., <https://cran.r-project.org/web/packages/NonNorMvtDist/NonNorMvtDist.pdf>
 
 
+## Statistics
+
+
+#### **Conditional Expectation**. {-}
+
+The conditional expectation function $\mathbb{E}[Y_i|X_i=x]$ is the average value of $Y_i$ among observations with $X_i=x$. In empirical work, this is the population object that regressions try to approximate.
+
+For discrete $X_i$, the conditional expectation function is a weighted average over conditional probabilities:
+\begin{eqnarray}
+\mathbb{E}[Y_i|X_i=x] = \sum_y y \cdot Prob(Y_i=y|X_i=x).
+\end{eqnarray}
+For continuous $X_i$, the conditional expectation function is a smooth curve indexed by $x$.
+
+Example (discrete):
+
+|  | $x=0$ | $x=1$ |
+|:--:|:--:|:--:|
+| $y=0$ | 0.30 | 0.10 |
+| $y=1$ | 0.10 | 0.20 |
+| $y=2$ | 0.10 | 0.20 |
+
+From the table, $Prob(X_i=0)=0.5$ and $Prob(X_i=1)=0.5$. Then
+\begin{eqnarray}
+\mathbb{E}[Y_i|X_i=0] &=& 0\cdot 0.6 + 1\cdot 0.2 + 2\cdot 0.2 = 0.6,\\
+\mathbb{E}[Y_i|X_i=1] &=& 0\cdot 0.2 + 1\cdot 0.4 + 2\cdot 0.4 = 1.2.
+\end{eqnarray}
+So moving from $x=0$ to $x=1$ increases the conditional mean by $0.6$.
+
+
+```{r}
+# Joint probabilities: rows are y, columns are x
+y_vals <- c(0,1,2)
+x_vals <- c(0,1)
+P_yx <- matrix(c(
+  0.30, 0.10,
+  0.10, 0.20,
+  0.10, 0.20
+), nrow=3, byrow=TRUE)
+
+# Marginal Prob(X_i=x)
+P_x <- colSums(P_yx)
+
+# Conditional probabilities Prob(Y_i=y | X_i=x)
+P_y_given_x <- sweep(P_yx, 2, P_x, "/")
+
+# Conditional expectation m(x)=E[Y_i|X_i=x]
+m_x <- colSums(P_y_given_x * y_vals)
+m_x
+```
+
+
 #### **Correlation**. {-}
 
-We will now dig a little deeper theoretically into the statistics we compute. When we know how the data are generated theoretically, we can often compute the theoretical value of the most basic and often-used bivariate statistic: the Pearson correlation. To see this, we focus on two discrete random variables, first showing their covariance, $\mathbb{C}[X_{i}, Y_{i}]$, and then their correlation $\mathbb{R}[X_{i}, Y_{i}]$. Referring to and $\mu_{X}=\mathbb{E}[X_{i}]$ and $\mu_{Y}=\mathbb{E}[Y_{i}]$, we have
+We can also dig a little deeper into the bivariate statistics we compute. When we know how the data are generated, we can often compute theoretical value. To be concrete, will focus on the most basic and often-used bivariate statistic: the Pearson correlation, computed on two discrete random variables. We will first show their covariance, $\mathbb{C}[X_{i}, Y_{i}]$, and then their correlation $\mathbb{R}[X_{i}, Y_{i}]$. Referring to and $\mu_{X}=\mathbb{E}[X_{i}]$ and $\mu_{Y}=\mathbb{E}[Y_{i}]$, we have
 \begin{eqnarray}
 \mathbb{C}[X_{i}, Y_{i}]
 &=& \mathbb{E}[(X_{i} –  \mu_{X})(Y_{i} – \mu_{Y}])]
