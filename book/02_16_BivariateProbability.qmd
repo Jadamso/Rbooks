@@ -12,28 +12,9 @@ The *joint distribution* is defined as
 \begin{eqnarray}
 Prob(X_{i} = x, Y_{i} = y)
 \end{eqnarray}
-For example, consider a bivariate random vector with three outcomes for $X_{i}$ and three outcomes for $Y_{i}$. The plot below shows each outcome $(x,y)$ with deeper colors reflecting higher probability events.
-```{r}
-prob_table <- expand.grid(x=c(0,1,2), y=c(0,10,20))
-prob_table[,'probabilities'] <- c(
-    0.0, 0.1, 0.0,
-    0.1, 0.3, 0.1,
-    0.1, 0.2, 0.2)
-plot(prob_table[,'x'], prob_table[,'y'],
-     xlim=c(-0.5,2.5), ylim=c(-5, 25),
-     pch=21, cex=8, col='blue',
-     bg=rgb(0,0,1, prob_table[,'probabilities']),
-     xlab = "X", ylab = "Y")
-```
 
 Note that variables are *statistically independent* if $Prob(X_{i} = x, Y_{i} = y)= Prob(X_{i} = x) Prob(Y_{i} = y)$ for all $x, y$. Independence is sometimes assumed for mathematical simplicity, not because it generally fits data well.^[The same can be said about assuming normally distributed errors, although at least that can be motivated by the Central Limit Theorems.]
 
-
-The *conditional distributions* are defined as
-\begin{eqnarray}
-Prob(X_{i} = x | Y_{i} = y) = \frac{ Prob(X_{i} = x, Y_{i} = y)}{ Prob( Y_{i} = y )}\\
-Prob(Y_{i} = y | X_{i} = x) = \frac{ Prob(X_{i} = x, Y_{i} = y)}{ Prob( X_{i} = x )}
-\end{eqnarray}
 The *marginal distributions* are then defined as
 \begin{eqnarray}
 Prob(X_{i} = x) = \sum_{y} Prob(X_{i} = x | Y_{i} = y) Prob( Y_{i} = y ) \\
@@ -41,6 +22,11 @@ Prob(Y_{i} = y) = \sum_{x} Prob(Y_{i} = y | X_{i} = x) Prob( X_{i} = x ),
 \end{eqnarray}
 which is also known as the *law of total probability*.
 
+The *conditional distributions* are defined as
+\begin{eqnarray}
+Prob(X_{i} = x | Y_{i} = y) = \frac{ Prob(X_{i} = x, Y_{i} = y)}{ Prob( Y_{i} = y )}\\
+Prob(Y_{i} = y | X_{i} = x) = \frac{ Prob(X_{i} = x, Y_{i} = y)}{ Prob( X_{i} = x )}
+\end{eqnarray}
 
 
 #### **Coin Flips Example**. {-}
@@ -179,8 +165,9 @@ cond_X2_given_X1_unfair
 ```
 :::
 
-
-
+:::{.callout-tip icon=false collapse="true"}
+Are the fair coins statistically independent? Are the unfair coins?
+:::
 
 #### **Definitions for Continuous Data**. {-}
 The *joint distribution* is defined as
@@ -196,7 +183,7 @@ which is also known as the *law of total probability*.
 Variables are statistically independent if $F(x, y) = F_{X}(x)F_{Y}(y)$ for all $x, y$.
 
 
-For example, suppose $(X_{i},Y_{i})$ is bivariate normal with means $(\mu_{X}, \mu_{Y})$, variances $(\sigma_{X}, \sigma_{Y})$ and covariance $\rho$.
+For example, suppose $(X_{i},Y_{i})$ is bivariate normal with means $(\mu_{X}, \mu_{Y})$, variances $(\sigma_{X}^2, \sigma_{Y}^2)$ and correlation $\rho$.
 
 ```{r}
 # Simulate Bivariate Data
@@ -262,45 +249,79 @@ The conditional expectation function $\mathbb{E}[Y_i|X_i=x]$ is the average valu
 
 For discrete $X_i$, the conditional expectation function is a weighted average over conditional probabilities:
 \begin{eqnarray}
-\mathbb{E}[Y_i|X_i=x] = \sum_y y \cdot Prob(Y_i=y|X_i=x).
+\mathbb{E}[Y_i|X_i=x] = \sum_y y Prob(Y_i=y|X_i=x).
 \end{eqnarray}
 For continuous $X_i$, the conditional expectation function is a smooth curve indexed by $x$.
 
-Example (discrete):
 
-|  | $x=0$ | $x=1$ |
-|:--:|:--:|:--:|
-| $y=0$ | 0.30 | 0.10 |
-| $y=1$ | 0.10 | 0.20 |
-| $y=2$ | 0.10 | 0.20 |
+For example, consider a bivariate random vector with three outcomes for $X_{i}$ and three outcomes for $Y_{i}$.
 
-From the table, $Prob(X_i=0)=0.5$ and $Prob(X_i=1)=0.5$. Then
+|    | $x=0$ | $x=1$ | $x=2$ |
+|:--:|:--:|:--:|:--:|
+| $y=0$  | $0.0$ | $0.1$ | $0.0$ |
+| $y=10$ | $0.1$ | $0.3$ | $0.1$ |
+| $y=20$ | $0.1$ | $0.1$ | $0.2$ |
+
+The plot below shows each outcome $(x,y)$ with deeper colors reflecting higher probability events.
+```{r}
+# Make a Probability Table
+x <- c(0,1,2)
+y <- c(0,10,20)
+xy_probs <- matrix(c(
+    0.0, 0.1, 0.0,
+    0.1, 0.3, 0.1,
+    0.1, 0.1, 0.2
+), nrow=3, ncol=3, byrow=TRUE)
+rownames(xy_probs) <- paste0('y=',y)
+colnames(xy_probs) <-  paste0('x=',x)
+xy_probs
+
+
+# Plot joint distribution
+prob_table <- expand.grid(x=x, y=y)
+prob_table[,'probabilities'] <- as.vector(t(xy_probs))
+plot(prob_table[,'x'], prob_table[,'y'],
+     xlim=c(-0.5,2.5), ylim=c(-5, 25),
+     pch=21, cex=8, col='blue',
+     bg=rgb(0,0,1, prob_table[,'probabilities']),
+     xlab = "x", ylab = "y")
+```
+
+
+
+
+We can compute marginals from the table, $Prob(X_i=0)=0.2$, $Prob(X_i=1)=0.5$, and $Prob(X_i=2)=0.3$. This gives us conditional probabilities and hence also conditional expectations;
 \begin{eqnarray}
-\mathbb{E}[Y_i|X_i=0] &=& 0\cdot 0.6 + 1\cdot 0.2 + 2\cdot 0.2 = 0.6,\\
-\mathbb{E}[Y_i|X_i=1] &=& 0\cdot 0.2 + 1\cdot 0.4 + 2\cdot 0.4 = 1.2.
+\mathbb{E}[Y_i|X_i=0] &=& 0\frac{0}{0.2} + 10\frac{0.1}{0.2} + 20\frac{0.1}{0.2} = 0 + \frac{10}{2} + \frac{20}{2} = 15,\\
+\mathbb{E}[Y_i|X_i=1] &=& 0\frac{0.1}{0.5} + 10\frac{0.3}{0.5} + 20\frac{0.1}{0.5} = 0 + \frac{30}{5} + \frac{20}{5} = 10,\\
+\mathbb{E}[Y_i|X_i=2] &=& 0\frac{0}{0.3} + 10\frac{0.1}{0.3} + 20\frac{0.2}{0.3} = 0 + \frac{10}{3} + \frac{40}{3} = \frac{50}{3} \approx 16.67.
 \end{eqnarray}
-So moving from $x=0$ to $x=1$ increases the conditional mean by $0.6$.
+Note that the conditional mean is non-monotonic:
+\begin{eqnarray}
+\frac{\mathbb{E}[Y_i|X_i=1] - \mathbb{E}[Y_i|X_i=0]}{1-0} &=& \frac{10 - 15}{1} = -5,\\
+\frac{\mathbb{E}[Y_i|X_i=2] - \mathbb{E}[Y_i|X_i=1]}{2-1} &=& \frac{\frac{50}{3} - 10}{1} = \frac{20}{3} \approx 6.67.
+\end{eqnarray}
+It decreases from $x=0$ to $x=1$ and then increases from $x=1$ to $x=2$.
 
 
 ```{r}
-# Joint probabilities: rows are y, columns are x
-y_vals <- c(0,1,2)
-x_vals <- c(0,1)
-P_yx <- matrix(c(
-  0.30, 0.10,
-  0.10, 0.20,
-  0.10, 0.20
-), nrow=3, byrow=TRUE)
+# Compute Marginals
+pX <- colSums(xy_probs) #Prob(X_i=x)
+pY <- rowSums(xy_probs) #Prob(Y_i=y)
 
-# Marginal Prob(X_i=x)
-P_x <- colSums(P_yx)
+# Compute Conditionals 
+PY_x <- t( t(xy_probs) / pX ) #Prob(Y_i=y | X_i=x)
+PX_y <- xy_probs / pY  #Prob(X_i=x | Y_i=y)
 
-# Conditional probabilities Prob(Y_i=y | X_i=x)
-P_y_given_x <- sweep(P_yx, 2, P_x, "/")
+# Compute Means
+EX <- sum(x * pX)
+EY <- sum(y * pY)
 
-# Conditional expectation m(x)=E[Y_i|X_i=x]
-m_x <- colSums(P_y_given_x * y_vals)
-m_x
+# Conditional expectation E[Y_i|X_i=x]
+EY_x <- colSums(PY_x * y)
+EY_x
+#EX_y <- colSums(PX_y * x)
+#EX_y
 ```
 
 
@@ -315,16 +336,7 @@ We can also dig a little deeper into the bivariate statistics we compute. When w
 \mathbb{R}[X_{i}, Y_{i}] &=& \frac{\mathbb{C}[X_{i}, Y_{i}] }{ \sqrt{\mathbb{V}[X_{i}]} \sqrt{\mathbb{V}[Y_{i}]} }
 \end{eqnarray}
 
-For example, suppose we have discrete data with the following outcomes and probabilities. Note that cells reflect the probabilities of the outcomes depicted on the row and column labels, e.g. $Prob(X_{i}=1, Y_{i}=0)=0.1$.
-
-|    | $x=0$ | $x=1$ | $x=2$ |
-|:--:|:--:|:--:|:--:|
-| $y=0$  | $0.0$ | $0.1$ | $0.0$ |
-| $y=10$ | $0.1$ | $0.3$ | $0.1$ |
-| $y=20$ | $0.1$ | $0.1$ | $0.2$ |
-
-
-After verifying that the probabilities sum to $1$, we then compute the marginal distributions
+Continuing with the same example from above, we first verify that the probabilities sum to $1$ and then compute the marginal distributions
 \begin{eqnarray}
 Prob(X_{i}=0)=0.2,\quad Prob(X_{i}=1)=0.5,\quad Prob(X_{i}=2) = 0.3 \\
 Prob(Y_{i}=0)=0.1,\quad Prob(Y_{i}=10)=0.5,\quad Prob(Y_{i}=20) = 0.4
@@ -376,24 +388,6 @@ Note that you can do all of the above calculations using the computer instead of
 
 
 ```{r}
-# Make a Probability Table
-x <- c(0,1,2)
-y <- c(0,10,20)
-xy_probs <- matrix(c(
-    0.0, 0.1, 0.0,
-    0.1, 0.3, 0.1,
-    0.1, 0.1, 0.2
-), nrow=3, ncol=3, byrow=TRUE)
-rownames(xy_probs) <- paste0('y=',y)
-colnames(xy_probs) <-  paste0('x=',x)
-xy_probs
-
-# Compute Marginals and Means
-pX  <- colSums(xy_probs)
-pY  <- rowSums(xy_probs)
-EX  <- sum(x * pX)
-EY  <- sum(y * pY)
-
 # Compute Covariance
 dxy_grid <- expand.grid(dy=y-EY, dx=x-EX)[,c(2,1)]
 dxy_grid[,'p'] <- as.vector(xy_probs)

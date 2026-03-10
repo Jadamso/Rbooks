@@ -260,8 +260,10 @@ Often, however, we ultimately want data in long format
 # Merging data in long format, Second Attempt with dedicated package 
 dat_melted2 <- melt(dat_merged_wide3, measure=c("1_x","1_y","2_x","2_y"))
 melt_vars <- strsplit(as.character(dat_melted2[['variable']]),'_')
-dat_melted2[,'DF'] <- sapply(melt_vars, `[[`,1)
-dat_melted2[,'variable'] <- sapply(melt_vars, `[[`,2)
+for (i in seq_along(melt_vars)) {
+    dat_melted2[i,'DF'] <- melt_vars[[i]][1]
+    dat_melted2[i,'variable'] <- melt_vars[[i]][2]
+}
 dat_merged_long2 <- dcast(dat_melted2, DF+ID~variable)
 dat_merged_long2 <- as.data.frame(dat_merged_long2)
 
@@ -314,16 +316,20 @@ You can also easily bin and aggregate data
 
 ```{r}
 x <- 1:10
-cut(x, 4)
-split(x, cut(x, 4))
-```
+x_bins <- cut(x, 4)
+x_bins
 
-```{r}
-xs <- split(x, cut(x, 4))
-sapply(xs, mean)
+# Compute the mean within each bin
+bin_levels <- levels(x_bins)
+bin_means <- numeric(length(bin_levels))
+names(bin_means) <- bin_levels
+for (i in seq_along(bin_levels)) {
+    bin_means[i] <- mean(x[x_bins == bin_levels[i]])
+}
+bin_means
 
 # shortcut
-aggregate(x, list(cut(x,4)), mean)
+aggregate(x, list(x_bins), mean)
 ```
 
 See also <https://bookdown.org/rwnahhas/IntroToR/logical.html>
@@ -433,9 +439,11 @@ You can create an interactive table that summarizes the data too.
 ```{r}
 # Compute summary statistics
 vars <- names(USArrests)
-stats_list <- lapply(vars, function(v) {
+stats_list <- vector("list", length(vars))
+for (i in seq_along(vars)) {
+  v <- vars[i]
   x <- USArrests[[v]]
-  c(
+  stats_list[[i]] <- c(
     Variable = v,
     N       = sum(!is.na(x)),
     Mean    = mean(x, na.rm = TRUE),
@@ -446,14 +454,14 @@ stats_list <- lapply(vars, function(v) {
     Q3      = as.numeric(quantile(x, 0.75, na.rm = TRUE)),
     Max     = max(x, na.rm = TRUE)
   )
-})
+}
 
 # Convert list to data frame with numeric columns 
 stats_df <- as.data.frame(do.call(rbind, stats_list), stringsAsFactors = FALSE)
 num_cols <- setdiff(names(stats_df), "Variable")
-stats_df[num_cols] <- lapply(stats_df[num_cols], function(i){
-    round(as.numeric(i), 3)
-})
+for (col in num_cols) {
+    stats_df[[col]] <- round(as.numeric(stats_df[[col]]), 3)
+}
 
 # Display interactively
 reactable(stats_df)
