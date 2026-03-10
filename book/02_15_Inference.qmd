@@ -31,12 +31,13 @@ lines(pred_design[,'educ'], preds_lo,
     type='o', pch=2)
 
 # Boot CI
-boot_lo <- sapply(1:399, function(b){
+boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
+for (b in 1:399) {
     # xy_i <- xy[-i,] #jackknife for i in 1:nrow(xy)
     xy_b <- dat[sample(nrow(dat), replace=T),]
     reg_b <- loess(wage~educ, dat=xy_b, span=.8)
-    predict(reg_b, newdata=pred_design)
-})
+    boot_lo[,b] <- predict(reg_b, newdata=pred_design)
+}
 boot_cb <- apply(boot_lo,1, quantile,
     probs=c(.025,.975), na.rm=T)
 
@@ -198,11 +199,12 @@ reg_lo <- loess(Y~X, data=dat0, span=.8)
 ## Plot Bootstrap CI for Single Sample
 pred_design <- data.frame(X=seq(Xmn, Xmx))
 preds_lo <- predict(reg_lo, newdata=pred_design)
-boot_lo <- sapply(1:399, function(b){
+boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
+for (b in 1:399) {
     dat0_i <- dat0[sample(nrow(dat0), replace=T),]
     reg_i <- loess(Y~X, dat=dat0_i, span=.8)
-    predict(reg_i, newdata=pred_design)
-})
+    boot_lo[,b] <- predict(reg_i, newdata=pred_design)
+}
 boot_cb <- apply(boot_lo,1, quantile,
     probs=c(.025,.975), na.rm=T)
 polygon(
@@ -212,11 +214,12 @@ polygon(
     border=NA)
 
 # Construct CI across Multiple Samples
-sample_lo <- sapply(1:399, function(b){
+sample_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
+for (b in 1:399) {
     xy_b <- dat_sim(1000) #Entirely new sample
     reg_b <- loess(Y~X, dat=xy_b, span=.8)
-    predict(reg_b, newdata=pred_design)
-})
+    sample_lo[,b] <- predict(reg_b, newdata=pred_design)
+}
 ci_lo <- apply(sample_lo,1, quantile,
     probs=c(.025,.975), na.rm=T)
 polygon(
@@ -249,21 +252,24 @@ pred_lm_bias <- matrix(NA_real_, nrow=length(x0), ncol=B)
 pred_lo_bias <- matrix(NA_real_, nrow=length(x0), ncol=B)
 
 ## One sweep: gradient SEs across all n, plus bias predictions at n_bias
-SE <- sapply(Nseq, function(n){
-    stats <- sapply(1:B, function(b){
+SE <- matrix(NA, nrow=2, ncol=length(Nseq))
+for (ni in seq_along(Nseq)) {
+    n <- Nseq[ni]
+    stats <- matrix(NA, nrow=2, ncol=B)
+    for (b in 1:B) {
         dat_b  <- dat_sim(n)
         fit_lm <- lm(Y~X, data=dat_b)
         fit_lo <- loess(Y~X, data=dat_b, span=0.8)
         grad_lo <- diff(predict(fit_lo))/diff(dat_b[,'X'])
         if(n == n_bias){
-            pred_lm_bias[,b] <<- predict(fit_lm, newdata=pred_design)
+            pred_lm_bias[,b] <- predict(fit_lm, newdata=pred_design)
             fit_lo_b <- loess(Y~X, data=dat_b, span=span_lo)
-            pred_lo_bias[,b] <<- predict(fit_lo_b, newdata=pred_design)
+            pred_lo_bias[,b] <- predict(fit_lo_b, newdata=pred_design)
         }
-        c(coef(fit_lm)[2], mean(grad_lo, na.rm=T))
-    })
-    apply(stats, 1, sd)
-})
+        stats[,b] <- c(coef(fit_lm)[2], mean(grad_lo, na.rm=T))
+    }
+    SE[,ni] <- apply(stats, 1, sd)
+}
 ```
 
 ```{r}
@@ -348,7 +354,9 @@ x0_target <- 40  # mid-career age
 n_grid <- c(60, 120, 240, 480)
 R <- 120
 
-avg_abs_err <- sapply(n_grid, function(n){
+avg_abs_err <- numeric(length(n_grid))
+for (ni in seq_along(n_grid)) {
+  n <- n_grid[ni]
   span_n <- min(0.9, 1.8*n^(-1/4)) # shrinks with n
   errs <- replicate(R, {
     dat_b <- dat_sim(n)
@@ -356,8 +364,8 @@ avg_abs_err <- sapply(n_grid, function(n){
     mhat <- predict(fit, newdata=data.frame(X=x0_target))
     abs(mhat - true_m(x0_target))
   })
-  mean(errs, na.rm=TRUE)
-})
+  avg_abs_err[ni] <- mean(errs, na.rm=TRUE)
+}
 
 plot(n_grid, avg_abs_err, type='b', pch=16,
      xlab='Sample size (n)',

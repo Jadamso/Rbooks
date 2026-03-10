@@ -183,10 +183,12 @@ pred2 <- predict(preg_c)
 
 ## Split Sample Regressions
 dat2 <- split( dat, dat[,'xcc'])
-pred2B <- lapply(dat2, function(d){
-    reg2 <- lm(wage~educ, d)
-    pred_d <- predict(preg_c)
-})
+pred2B <- vector("list", length(dat2))
+names(pred2B) <- names(dat2)
+for (i in seq_along(dat2)) {
+    reg2 <- lm(wage~educ, dat2[[i]])
+    pred2B[[i]] <- predict(preg_c)
+}
 
 # Any differences?
 all( pred2 - unlist(pred2B) < 1e-10 )
@@ -213,33 +215,39 @@ Try to do so on your own before looking at the code below, which compares two pi
 # Linear in 2 Pieces (subsets)
 xcut2 <- cut(xy[,'x'],2)
 xy_list2 <- split(xy, xcut2)
-regs2 <- lapply(xy_list2, function(xy_s){
-    lm(y~x, data=xy_s)
-})
+regs2 <- vector("list", length(xy_list2))
+names(regs2) <- names(xy_list2)
+for (i in seq_along(xy_list2)) {
+    regs2[[i]] <- lm(y~x, data=xy_list2[[i]])
+}
 
 # Linear in 3 Pieces (subsets or bins)
 xcut3 <- cut(xy[,'x'], seq(32,92,by=20)) # Finer Bins
 xy_list3 <- split(xy, xcut3)
-regs3 <- lapply(xy_list3, function(xy_s){
-    lm(y~x, data=xy_s)
-})
+regs3 <- vector("list", length(xy_list3))
+names(regs3) <- names(xy_list3)
+for (i in seq_along(xy_list3)) {
+    regs3[[i]] <- lm(y~x, data=xy_list3[[i]])
+}
 
 ## Make Predictions
 pred1 <- data.frame(yhat=predict(reg),
                     x=reg[['model']][,'x'])
 pred1 <- pred1[order(pred1[,'x']),]
 
-pred2 <- lapply(regs2, function(reg){
-    data.frame(yhat=predict(reg),
-               x=reg[['model']][,'x'])
-})
+pred2 <- vector("list", length(regs2))
+for (i in seq_along(regs2)) {
+    pred2[[i]] <- data.frame(yhat=predict(regs2[[i]]),
+               x=regs2[[i]][['model']][,'x'])
+}
 pred2 <- do.call(rbind,pred2)
 pred2 <- pred2[order(pred2[,'x']),]
 
-pred3 <- lapply(regs3, function(reg){
-    data.frame(yhat=predict(reg),
-               x=reg[['model']][,'x'])
-})
+pred3 <- vector("list", length(regs3))
+for (i in seq_along(regs3)) {
+    pred3[[i]] <- data.frame(yhat=predict(regs3[[i]]),
+               x=regs3[[i]][['model']][,'x'])
+}
 pred3 <- do.call(rbind,pred3)
 pred3 <- pred3[order(pred3[,'x']),]
 
@@ -470,9 +478,15 @@ X0 <- sort(unique(xy[,'UrbanPop']))
 plot(y~x, pch=16, data=xy, col=grey(0,.5),
     ylab='Murder Rate', xlab='Population Density')
 
-pred_lo1 <- sapply(X0, pred_fun, h=2, xy=xy)
+pred_lo1 <- numeric(length(X0))
+for (i in seq_along(X0)) {
+    pred_lo1[i] <- pred_fun(X0[i], h=2, xy=xy)
+}
 
-pred_lo2 <- sapply(X0, pred_fun, h=20, xy=xy)
+pred_lo2 <- numeric(length(X0))
+for (i in seq_along(X0)) {
+    pred_lo2[i] <- pred_fun(X0[i], h=20, xy=xy)
+}
 
 cols <- c(rgb(.8,0,0,.5), rgb(0,0,.8,.5))
 lines(X0, pred_lo1, col=cols[1], lwd=1, type='o')
