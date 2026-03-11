@@ -10,6 +10,8 @@ To preview locally,
 
 To publish online,
 
+    git add <files> && git commit -m "message"
+    git push
     quarto publish gh-pages book --no-browser
 
 To sync files,
