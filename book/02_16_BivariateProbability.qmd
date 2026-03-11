@@ -81,28 +81,29 @@ Altogether, we find
 
 ```{r}
 # Create a 2x2 matrix for the joint distribution.
-# Rows correspond to X1 (coin 1), and columns correspond to X2 (coin 2).
-P_fair <- matrix(1/4, nrow = 2, ncol = 2)
-rownames(P_fair) <- c("X1=0", "X1=1")
-colnames(P_fair) <- c("X2=0", "X2=1")
-P_fair
+# Rows correspond to X (coin 1), and columns correspond to Y (coin 2).
+probs <- c(0.25, 0.25, 0.25, 0.25) # Fair coin
+P_xy <- matrix( probs, nrow = 2, ncol = 2)
+rownames(P_xy) <- c("Y=0", "Y=1")
+colnames(P_xy) <- c("X=0", "X=1")
+P_xy
 
 # Compute the marginal distributions.
-# Marginal for X1: sum across columns.
-P_X1 <- rowSums(P_fair)
-P_X1
-# Marginal for X2: sum across rows.
-P_X2 <- colSums(P_fair)
-P_X2
+# Marginal for X: sum across columns.
+P_x <- colSums(P_xy)
+P_x
+# Marginal for Y: sum across rows.
+P_y <- rowSums(P_xy)
+P_y
 
-# Compute the conditional probabilities Prob(X2 | X1).
-cond_X2_given_X1 <- matrix(0, nrow = 2, ncol = 2)
+# Compute the conditional probabilities Prob(Y | X).
+PY_x <- matrix(0, nrow = 2, ncol = 2)
 for (j in c(1,2)) {
-  cond_X2_given_X1[, j] <- P_fair[, j] / P_X1[j]
+  PY_x[, j] <- P_xy[, j] / P_x[j]
 }
-rownames(cond_X2_given_X1) <- c("X2=0", "X2=1")
-colnames(cond_X2_given_X1) <- c("given X1=0", "given X1=1")
-cond_X2_given_X1
+rownames(PY_x) <- c("Y=0", "Y=1")
+colnames(PY_x) <- c("given X=0", "given X=1")
+PY_x
 ```
 :::
 
@@ -143,26 +144,36 @@ Alltogether, we find
 
 ```{r}
 # Create the joint distribution matrix for the unfair coin case.
-P_unfair <- matrix(c(0.5, 0, 0, 0.5), nrow = 2, ncol = 2, byrow = TRUE)
-rownames(P_unfair) <- c("X1=0", "X1=1")
-colnames(P_unfair) <- c("X2=0", "X2=1")
-P_unfair
+probs <- c(0.5, 0, 0, 0.5) # unfair coin
 
-# Compute the marginal distribution for X2 in the unfair case.
-P_X2_unfair <- colSums(P_unfair)
-P_X1_unfair <- rowSums(P_unfair)
+P_xy <- matrix( probs, nrow = 2, ncol = 2)
+rownames(P_xy) <- c("Y=0", "Y=1")
+colnames(P_xy) <- c("X=0", "X=1")
+P_xy
 
-# Compute the conditional probabilities Prob(X1 | X2) for the unfair coin.
-cond_X2_given_X1_unfair <- matrix(NA, nrow = 2, ncol = 2)
+# Compute the marginal distributions.
+# Marginal for X: sum across columns.
+P_x <- colSums(P_xy)
+P_x
+# Marginal for Y: sum across rows.
+P_y <- rowSums(P_xy)
+P_y
+
+# Compute the conditional probabilities Prob(Y | X).
+PY_x <- matrix(0, nrow = 2, ncol = 2)
 for (j in c(1,2)) {
-  if (P_X1_unfair[j] > 0) {
-    cond_X2_given_X1_unfair[, j] <- P_unfair[, j] / P_X1_unfair[j]
-  }
+  PY_x[, j] <- P_xy[,j] / P_x[j]
 }
-rownames(cond_X2_given_X1_unfair) <- c("X2=0", "X2=1")
-colnames(cond_X2_given_X1_unfair) <- c("given X1=0", "given X1=1")
-cond_X2_given_X1_unfair
+rownames(PY_x) <- c("Y=0", "Y=1")
+colnames(PY_x) <- c("given X=0", "given X=1")
+PY_x
 ```
+
+Try again for another unfair set of coins. 
+```{r}
+probs <- c(0.4, 0.2, 0.1, 0.3)
+```
+
 :::
 
 :::{.callout-tip icon=false collapse="true"}
@@ -186,16 +197,18 @@ Variables are statistically independent if $F(x, y) = F_{X}(x)F_{Y}(y)$ for all 
 For example, suppose $(X_{i},Y_{i})$ is bivariate normal with means $(\mu_{X}, \mu_{Y})$, variances $(\sigma_{X}^2, \sigma_{Y}^2)$ and correlation $\rho$.
 
 ```{r}
+library(mvtnorm)
+
 # Simulate Bivariate Data
 N <- 10000
 Mu <- c(2,2) ## Means
 
-Sigma1 <- matrix(c(2,-.8,-.8,1),2,2) ## CoVariance Matrix
-MVdat1 <- mvtnorm::rmvnorm(N, Mu, Sigma1)
+Sigma1 <- matrix(c(2,-.8,-.8,1),2,2) ## CoVariance Matrix 1
+MVdat1 <- rmvnorm(N, Mu, Sigma1)
 colnames(MVdat1) <- c('X','Y')
 
-Sigma2 <- matrix(c(2,.4,.4,1),2,2) ## CoVariance Matrix
-MVdat2 <- mvtnorm::rmvnorm(N, Mu, Sigma2)
+Sigma2 <- matrix(c(2,.4,.4,1),2,2) ## CoVariance Matrix 2
+MVdat2 <- rmvnorm(N, Mu, Sigma2)
 colnames(MVdat2) <- c('X','Y')
 
 par(mfrow=c(1,2))
@@ -267,19 +280,18 @@ The plot below shows each outcome $(x,y)$ with deeper colors reflecting higher p
 # Make a Probability Table
 x <- c(0,1,2)
 y <- c(0,10,20)
-xy_probs <- matrix(c(
+P_xy <- matrix(c(
     0.0, 0.1, 0.0,
     0.1, 0.3, 0.1,
     0.1, 0.1, 0.2
 ), nrow=3, ncol=3, byrow=TRUE)
-rownames(xy_probs) <- paste0('y=',y)
-colnames(xy_probs) <-  paste0('x=',x)
-xy_probs
-
+rownames(P_xy) <- paste0('y=',y)
+colnames(P_xy) <-  paste0('x=',x)
+P_xy
 
 # Plot joint distribution
 prob_table <- expand.grid(x=x, y=y)
-prob_table[,'probabilities'] <- as.vector(t(xy_probs))
+prob_table[,'probabilities'] <- as.vector(t(P_xy))
 plot(prob_table[,'x'], prob_table[,'y'],
      xlim=c(-0.5,2.5), ylim=c(-5, 25),
      pch=21, cex=8, col='blue',
@@ -306,22 +318,33 @@ It decreases from $x=0$ to $x=1$ and then increases from $x=1$ to $x=2$.
 
 ```{r}
 # Compute Marginals
-pX <- colSums(xy_probs) #Prob(X_i=x)
-pY <- rowSums(xy_probs) #Prob(Y_i=y)
+P_x <- colSums(P_xy) #Prob(X_i=x)
+P_y <- rowSums(P_xy) #Prob(Y_i=y)
 
-# Compute Conditionals 
-PY_x <- t( t(xy_probs) / pX ) #Prob(Y_i=y | X_i=x)
-PX_y <- xy_probs / pY  #Prob(X_i=x | Y_i=y)
+# Compute the conditional probabilities Prob(Y | X).
+PY_x <- matrix(0, nrow = 3, ncol = 3)
+for (j in seq(ncol(P_xy)) ) {
+  PY_x[, j] <- P_xy[,j] / P_x[j]
+}
+rownames(PY_x) <- paste0("Y=", y)
+colnames(PY_x) <- paste0("given X=", x)
+PY_x
 
-# Compute Means
-EX <- sum(x * pX)
-EY <- sum(y * pY)
+# Computational Shortcut
+#PY_x <- t( t(P_xy) / P_x ) #Prob(Y_i=y | X_i=x)
 
 # Conditional expectation E[Y_i|X_i=x]
 EY_x <- colSums(PY_x * y)
 EY_x
-#EX_y <- colSums(PX_y * x)
-#EX_y
+
+# Contrast with Grand Means
+EY <- sum(y * P_y)
+EY
+
+# E[X_i|Y_i=y]
+# P_x_y <- P_xy / P_y  #Prob(X_i=x | Y_i=y)
+# EX_y <- colSums(P_x_y * x)
+# EX <- sum(x * P_x)
 ```
 
 
@@ -390,15 +413,15 @@ Note that you can do all of the above calculations using the computer instead of
 ```{r}
 # Compute Covariance
 dxy_grid <- expand.grid(dy=y-EY, dx=x-EX)[,c(2,1)]
-dxy_grid[,'p'] <- as.vector(xy_probs)
+dxy_grid[,'p'] <- as.vector(P_xy)
 dxy_grid[,'contribution'] <- dxy_grid[,'dx'] * dxy_grid[,'dy'] * dxy_grid[,'p']
 CovXY <- sum(dxy_grid[,'contribution'])
 CovXY
 
 # Compute Variances
-VX <- sum( (x-EX)^2 * pX)
+VX <- sum( (x-EX)^2 * P_x)
 SX <- sqrt(VX)
-VY <- sum( (y-EY)^2 * pY)
+VY <- sum( (y-EY)^2 * P_y)
 SY <- sqrt(VY)
 
 # Compute Correlation
@@ -440,4 +463,5 @@ Also compute the correlation for bivariate data with these probabilities
 
 Explain intuitively when the correlation equals $0$ and when it does not.
 :::
+
 
