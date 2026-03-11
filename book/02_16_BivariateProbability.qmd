@@ -55,6 +55,28 @@ The joint distribution is written generally as
 Prob(X_{i} = x, Y_{i} = y) &=& Prob(X_{i} = x) Prob(Y_{i} = y).
 \end{eqnarray}
 
+
+```{r}
+# Create a 2x2 matrix for the joint distribution.
+# Rows correspond to X (coin 1), and columns correspond to Y (coin 2).
+probs <- c(0.25, 0.25, 0.25, 0.25) # Fair coin
+P_xy <- matrix( probs, nrow = 2, ncol = 2)
+rownames(P_xy) <- c("Y=0", "Y=1")
+colnames(P_xy) <- c("X=0", "X=1")
+P_xy
+
+# Draw N bivariate observations
+N <- 500
+xy_vals <- expand.grid(y = 0:1, x = 0:1)
+draws <- sample(nrow(xy_vals), N, replace = TRUE, prob = P_xy)
+x_draw <- xy_vals[draws, "x"]
+y_draw <- xy_vals[draws, "y"]
+
+# With enough draws, empirical frequencies approach the true probabilities
+table(y_draw, x_draw) / N
+P_xy
+```
+
 The marginal distribution of the second coin is
 \begin{eqnarray}
 Prob(Y_{i} = 0) &=& Prob(Y_{i} = 0 | X_{i} = 0) Prob(X_{i}=0) + Prob(Y_{i} = 0 | X_{i} = 1) Prob(X_{i}=1)\\
@@ -80,14 +102,6 @@ Altogether, we find
 | **Marginal** |$1/2$|$1/2$| $1$ |
 
 ```{r}
-# Create a 2x2 matrix for the joint distribution.
-# Rows correspond to X (coin 1), and columns correspond to Y (coin 2).
-probs <- c(0.25, 0.25, 0.25, 0.25) # Fair coin
-P_xy <- matrix( probs, nrow = 2, ncol = 2)
-rownames(P_xy) <- c("Y=0", "Y=1")
-colnames(P_xy) <- c("X=0", "X=1")
-P_xy
-
 # Compute the marginal distributions.
 # Marginal for X: sum across columns.
 P_x <- colSums(P_xy)
@@ -105,6 +119,8 @@ rownames(PY_x) <- c("Y=0", "Y=1")
 colnames(PY_x) <- c("given X=0", "given X=1")
 PY_x
 ```
+
+Are the coins statistically independent?
 :::
 
 :::{.callout-note icon=false collapse="true"}
@@ -151,6 +167,7 @@ rownames(P_xy) <- c("Y=0", "Y=1")
 colnames(P_xy) <- c("X=0", "X=1")
 P_xy
 
+
 # Compute the marginal distributions.
 # Marginal for X: sum across columns.
 P_x <- colSums(P_xy)
@@ -169,16 +186,30 @@ colnames(PY_x) <- c("given X=0", "given X=1")
 PY_x
 ```
 
-Try again for another unfair set of coins. 
-```{r}
-probs <- c(0.4, 0.2, 0.1, 0.3)
-```
+Are the coins statistically independent?
 
 :::
 
 :::{.callout-tip icon=false collapse="true"}
-Are the fair coins statistically independent? Are the unfair coins?
+Try computing conditional probabilities for another unfair set of coins below.
+Explain why the marginal distribution of the second coin is balanced.
+```{r}
+probs <- c(0.4, 0.2, 0.1, 0.3)
+P_xy <- matrix(probs, nrow = 2,
+  dimnames = list(c("Y=0","Y=1"), c("X=0","X=1")))
+
+# Draw N bivariate observations
+xy_vals <- expand.grid(y = 0:1, x = 0:1)
+N <- 500
+draws <- sample(nrow(xy_vals), N, replace = TRUE, prob = P_xy)
+x_draw <- xy_vals[draws, "x"]
+y_draw <- xy_vals[draws, "y"]
+
+table(y_draw, x_draw) / N
+P_xy
+```
 :::
+
 
 #### **Definitions for Continuous Data**. {-}
 The *joint distribution* is defined as
@@ -321,7 +352,7 @@ It decreases from $x=0$ to $x=1$ and then increases from $x=1$ to $x=2$.
 P_x <- colSums(P_xy) #Prob(X_i=x)
 P_y <- rowSums(P_xy) #Prob(Y_i=y)
 
-# Compute the conditional probabilities Prob(Y | X).
+# Compute the conditional probabilities Prob(Y_i=y | X_i=x).
 PY_x <- matrix(0, nrow = 3, ncol = 3)
 for (j in seq(ncol(P_xy)) ) {
   PY_x[, j] <- P_xy[,j] / P_x[j]
@@ -330,8 +361,7 @@ rownames(PY_x) <- paste0("Y=", y)
 colnames(PY_x) <- paste0("given X=", x)
 PY_x
 
-# Computational Shortcut
-#PY_x <- t( t(P_xy) / P_x ) #Prob(Y_i=y | X_i=x)
+# Computational Shortcut: PY_x <- t( t(P_xy) / P_x )
 
 # Conditional expectation E[Y_i|X_i=x]
 EY_x <- colSums(PY_x * y)
@@ -343,8 +373,8 @@ EY <- sum(y * P_y)
 EY
 
 # E[X_i|Y_i=y]
-# P_x_y <- P_xy / P_y  #Prob(X_i=x | Y_i=y)
-# EX_y <- colSums(P_x_y * x)
+# PX_y <- P_xy / P_y  #Prob(X_i=x | Y_i=y)
+# EX_y <- colSums(PX_y * x)
 ```
 
 
