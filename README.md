@@ -4,21 +4,18 @@
 * The source materials are found at <https://github.com/Jadamso/Rbooks>
 * Things to fix/add are found at <https://github.com/Jadamso/Rbooks/blob/main/ToDo.md>
 
-To compile this book, navigate to the root directory, then 
+To preview locally,
 
     quarto preview book
-    quarto render book
-    
-To Sync files
+
+To publish online,
+
+    quarto publish gh-pages book --no-browser
+
+To sync files,
 
     cd book && for d in _freeze/*/; do stem=$(basename "$d"); [ ! -f "${stem}.qmd" ] && rm -rf "$d"; done
-    cd .. && cp -r ./Templates/Figures_Manual/* ./docs/Figures_Manual
-
-To publish online, 
-
-    git add .
-    git commit -m " "
-    git push
+    cp -r ./Templates/Figures_Manual/* ./book/_book/Figures_Manual
     
 To publish a tagged release, 
 

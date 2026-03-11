@@ -24,18 +24,6 @@
  * Consistent chapter/section title, subsection, paragraph style.
 5. Refine the core content
  * Add content (another chapter to the last part)
-6. Workflow optimization: migrate to `gh-pages` deployment
- * Currently `docs/` is tracked on `main`, which bloats the repo and creates noisy diffs on every render. Migrating to a `gh-pages` branch fixes this and eliminates the `output-dir: ../docs` YAML warning.
- * Steps to migrate:
-   1. Remove `output-dir: ../docs` from `_quarto.yml` (Quarto will use its default `_book/`)
-   2. Add `docs/` and `_book/` to `.gitignore`
-   3. Run `quarto publish gh-pages` — this creates/updates a `gh-pages` branch with only the built site
-   4. In GitHub repo Settings > Pages, set source to the `gh-pages` branch (root)
-   5. Remove the `docs/` directory from `main` branch: `git rm -r docs && git commit`
-   6. Update `README.md` publish instructions to use `quarto publish gh-pages` instead of `quarto render book && cp ... && git push`
- * After migration, the publish workflow becomes simply: `quarto publish gh-pages`
- * Note: `_freeze/` should remain tracked on `main` so that cached chunk outputs persist across machines. Periodically clean stale freeze dirs after chapter renames with: `cd book && for d in _freeze/*/; do stem=$(basename "$d"); [ ! -f "${stem}.qmd" ] && rm -rf "$d"; done`
-
 
 <!--
 #### Timeline for Collaborator
