@@ -65,6 +65,11 @@ git add . && git commit -m "message" && git push
 - **Test Yourself**: `::: {.callout-note icon=false collapse="true"}`
 - **Warning/Important**: `.callout-warning` / `.callout-important`
 
+## Git Conventions
+
+- Commit messages: concise, one line (no multi-paragraph descriptions)
+- Do not add Co-Authored-By lines
+
 ## Current Priorities (from ToDo.md)
 
 1. **gh-pages migration** — eliminates `docs/` bloat on `main`
