@@ -3,7 +3,9 @@
 
 ## Theoretical Distributions
 
-Just as with one sample tests, we can compute a standardized differences, where is converted into a statistic. Note, however, that we have to compute the standard error for the difference statistic, which is a bit more complicated. Under the assumption that both populations are independent distributed, we can analytically derive the sampling distribution for the differences between two groups.
+Just as with one sample tests, we can compute standardized differences. The observed difference is converted into a $t$-statistic by dividing by an estimated standard error. Note, however, that we have to compute the standard error for the difference statistic, which is a bit more complicated than for a single sample. Under the assumption that both populations are independently distributed, we can analytically derive the sampling distribution for the differences between two groups.
+
+#### **Differences in Means**. {-}
 
 In particular, the $t$-statistic is used to compare two groups.
 \begin{eqnarray}
@@ -49,6 +51,7 @@ t_stat <- d/d_se
 t_stat
 ```
 
+#### **Differences in Medians**. {-}
 
 If we want to test for the differences in medians across groups with independent observations, we can also use notches in the boxplot. If the notches of two boxes do not overlap, then there is rough evidence that the difference in medians is statistically significant. The square root of the sample size is also shown as the bin width in each boxplot.^[Let each group $g$ have median $\tilde{M}_{g}$, interquartile range $\hat{IQR}_{g}$, observations $n_{g}$. We can compute standard deviation of the median as $\tilde{S}_{g}= \frac{1.25 \hat{IQR}_{g}}{1.35 \sqrt{n_{g}}}$. As a rough guess, the interval $\tilde{M}_{g} \pm 1.7 \tilde{S}_{g}$ is the historical default and displayed as a *notch* in the boxplot. See also <https://www.tandfonline.com/doi/abs/10.1080/00031305.1978.10479236>.]
 
@@ -64,7 +67,7 @@ boxplot(Y1, Y2, Y3,
     varwidth=T)
 ```
 
-There are also theoretical results for distributional comparisons
+There are also non-parametric alternatives for distributional comparisons. The [Kruskal-Wallis test](https://en.wikipedia.org/wiki/Kruskal%E2%80%93Wallis_test) compares medians across multiple groups using ranks rather than assuming normality.
 ```{r, eval=F}
 library(Ecdat)
 data(Caschool)
@@ -75,71 +78,69 @@ kruskal.test(Caschool[,'stratio'], Caschool[,'county'])
 # pairwise.wilcox.test(Caschool[,'stratio'], Caschool[,'county'])
 ```
 
-## Bayesian Updating
+#### **Regression Slope**. {-}
 
-#### **Bayes' Theorem**. {-}
-
-Bayes' theorem maps predictive statements into inferential statements. In bivariate form,
+The same ideas apply to regression coefficients. Recall that the OLS slope $\hat{b}_1 = \hat{C}_{XY}/\hat{V}_X$ is a statistic computed from the data. In the Simple Regression chapter, we estimated variability using data-driven methods (jackknife and bootstrap). Under standard assumptions, we can instead derive the sampling distribution analytically: the $t$-statistic
 \begin{eqnarray}
-Prob(X_i=x \mid Y_i=y)
-&=&
-\frac{Prob(Y_i=y \mid X_i=x)Prob(X_i=x)}{Prob(Y_i=y)}.
+\hat{t} = \frac{\hat{b}_1}{\hat{s}_{\hat{b}_1}}
 \end{eqnarray}
-
-Interpretation:
-
-* $Prob(X_i=x)$ is the prior probability for $X_i=x$.
-* $Prob(Y_i=y|X_i=x)$ is the likelihood of seeing $Y_i=y$ if $X_i=x$ is true.
-* $Prob(X_i=x|Y_i=y)$ is the posterior, your updated probability after seeing $Y_i=y$.
-
-A useful way to remember this is
-\begin{eqnarray}
-\text{Posterior} \propto \text{Likelihood} \times \text{Prior}.
-\end{eqnarray}
-For two states, posterior odds are prior odds times a likelihood ratio.
-
-For a concrete example, suppose a screening test has sensitivity 0.90 and false positive rate 0.08, while prevalence is 0.12:
-\begin{eqnarray}
-Prob(Y_i=1|X_i=1)=0.90,\quad
-Prob(Y_i=1|X_i=0)=0.08,\quad
-Prob(X_i=1)=0.12,
-\end{eqnarray}
-where $X_i=1$ means "condition present" and $Y_i=1$ means "test positive".
-
-Then
-\begin{eqnarray}
-Prob(X_i=1|Y_i=1)
-&=&
-\frac{0.90\times0.12}{0.90\times0.12 + 0.08\times0.88}
-\approx 0.605.
-\end{eqnarray}
-Even with a good test, posterior probability depends strongly on prevalence.
+follows a $t$-distribution with $n-2$ degrees of freedom, where $\hat{s}_{\hat{b}_1}$ is the standard error of the slope. This allows us to test $H_0: \beta_1 = 0$ using math alone.
 
 ```{r}
-# States: X in {0,1}, signal Y in {0,1}
-# Prior Prob(X_i=1)
-p_x1 <- 0.12
+# USArrests data (same as Simple Regression chapter)
+xy <- USArrests[, c('Murder', 'UrbanPop')]
+colnames(xy) <- c('y', 'x')
+reg <- lm(y ~ x, dat = xy)
 
-# Test characteristics
-p_y1_x1 <- 0.90
-p_y1_x0 <- 0.08
-
-# Law of total probability for Prob(Y_i=1)
-p_y1 <- p_y1_x1 * p_x1 + p_y1_x0 * (1 - p_x1)
-
-# Bayes posterior Prob(X_i=1 | Y_i=1)
-p_x1_y1 <- (p_y1_x1 * p_x1) / p_y1
-p_x1_y1
-
-# Also compute Prob(X_i=1 | Y_i=0)
-p_y0_x1 <- 1 - p_y1_x1
-p_y0_x0 <- 1 - p_y1_x0
-p_y0 <- p_y0_x1 * p_x1 + p_y0_x0 * (1 - p_x1)
-p_x1_y0 <- (p_y0_x1 * p_x1) / p_y0
-p_x1_y0
+# The summary reports theoretical t-statistics and p-values
+summary(reg)$coefficients
 ```
 
-#### **Bayes' Theorem Applied**. {-}
+```{r}
+# Manual verification of the theoretical t-statistic
+n <- nrow(xy)
+b1 <- coef(reg)[2]
+e <- resid(reg)
+s_e <- sqrt(sum(e^2) / (n - 2))               # residual standard error
+s_b1 <- s_e / sqrt(sum((xy[,'x'] - mean(xy[,'x']))^2)) # SE of slope
+t_stat <- b1 / s_b1
+
+# Compare with summary output
+c(manual = t_stat, summary = summary(reg)$coefficients[2, 3])
+
+# Two-sided p-value from t-distribution
+2 * pt(-abs(t_stat), df = n - 2)
+```
+
+We can compare the bootstrap sampling distribution of $\hat{t}$ (histogram) with the theoretical $t_{n-2}$ distribution (curve). They should be similar, but are not identical because the theoretical result assumes normally distributed errors.
+
+```{r}
+# Bootstrap distribution of the t-statistic
+B <- 399
+boot_t <- vector(length = B)
+for (b in seq(B)) {
+    b_id <- sample(nrow(xy), replace = TRUE)
+    xy_b <- xy[b_id, ]
+    reg_b <- lm(y ~ x, dat = xy_b)
+    # Use theoretical SE from summary
+    boot_t[b] <- summary(reg_b)$coefficients[2, 3]
+}
+
+# Overlay: bootstrap histogram vs. theoretical t-distribution
+t_range <- range(c(boot_t, -4, 4))
+hist(boot_t, breaks = 30, freq = FALSE, border = NA,
+    col = grey(0.5, 0.5),
+    xlim = t_range,
+    xlab = expression(hat(t)),
+    main = 'Bootstrap vs. Theoretical Distribution',
+    font.main = 1)
+# Theoretical t(n-2) density
+t_grid <- seq(t_range[1], t_range[2], length = 200)
+lines(t_grid, dt(t_grid, df = n - 2), lwd = 2)
+legend('topright', legend = c('Bootstrap', 't(n-2)'),
+    fill = c(grey(0.5, 0.5), NA), border = NA,
+    lwd = c(NA, 2), lty = c(NA, 1), bty = 'n')
+```
 
 ## Type II Errors
 
@@ -154,7 +155,7 @@ When we test a hypothesis, we start with a claim called the null hypothesis $H_0
 | $H_0$ is False |  Type II Error (False Negative; missed detection) | Correct (effect detected) |
 
 :::{.callout-tip icon=false collapse="true"}
-Here is a Courtroom example: Someone suspected of committing a crime is at trial, and they are either guilty or not (a Bernoulli random variable). You hypothesize that the suspect is innocent, and a jury can either convict them (decide guilty) or free them (decide not-guilty). Recall that fail-to-reject a hypothesis does mean accepting it, so deciding not-guilty does not necessarily mean innocent.
+Here is a Courtroom example: Someone suspected of committing a crime is at trial, and they are either guilty or not (a Bernoulli random variable). You hypothesize that the suspect is innocent, and a jury can either convict them (decide guilty) or free them (decide not-guilty). Recall that fail-to-reject a hypothesis does not mean accepting it, so deciding not-guilty does not necessarily mean innocent.
 
 | True Situation | Decision: Free | Decision: Convict |
 |---|---|---|
@@ -208,11 +209,233 @@ power
 
 There is an important Trade-off for fixed sample sizes: Increasing significance (fewer false positive) often lowers power (more false negatives). Generally, power depends on the effect size and sample size: bigger true effects and larger $n$ make it easier to detect real differences (higher power, lower $\beta$).
 
+#### **Regression Slope Example**. {-}
+
+Continuing the USArrests regression, consider testing $H_0: \beta_1 = 0$. We can simulate Type I and Type II error rates by generating data that resemble the original. When the true slope is $0$ (null is true), rejecting is a Type I Error. When the true slope is nonzero (null is false), failing to reject is a Type II Error.
+
+```{r}
+# DGP calibrated to USArrests regression
+beta0 <- coef(reg)[1]
+beta1_true <- coef(reg)[2]
+sigma_e <- summary(reg)$sigma
+x_mean <- mean(xy[, 'x'])
+x_sd <- sd(xy[, 'x'])
+
+# Function: simulate data, return theoretical p-value for slope
+sim_pval <- function(n, beta1) {
+    X <- rnorm(n, mean = x_mean, sd = x_sd)
+    Y <- beta0 + beta1 * X + rnorm(n, 0, sigma_e)
+    summary(lm(Y ~ X))$coefficients[2, 4]
+}
+
+sim_reps <- 200
+alpha <- 0.05
+
+# Type I Error rate: true slope = 0
+pvals_null <- replicate(sim_reps, sim_pval(n = 50, beta1 = 0))
+type1_rate <- mean(pvals_null < alpha)
+type1_rate  # should be close to alpha
+
+# Power: true slope = beta1_true
+pvals_alt <- replicate(sim_reps, sim_pval(n = 50, beta1 = beta1_true))
+power_est <- mean(pvals_alt < alpha)
+power_est
+```
+
+```{r}
+# Power increases with sample size
+n_grid <- c(10, 25, 50, 100, 200)
+power_by_n <- sapply(n_grid, function(ni) {
+    pvals <- replicate(sim_reps, sim_pval(ni, beta1 = beta1_true))
+    mean(pvals < alpha)
+})
+
+plot(n_grid, power_by_n, type = 'b', pch = 16,
+    xlab = 'Sample size (n)', ylab = 'Power',
+    ylim = c(0, 1),
+    main = 'Power for Regression Slope', font.main = 1)
+abline(h = alpha, lty = 2, col = 'red')
+```
+
+## Bayesian Updating
+
+#### **Bayes' Theorem**. {-}
+
+Bayes' theorem maps predictive statements into inferential statements. In bivariate form,
+\begin{eqnarray}
+Prob(X_i=x \mid Y_i=y)
+&=&
+\frac{Prob(Y_i=y \mid X_i=x)Prob(X_i=x)}{Prob(Y_i=y)}.
+\end{eqnarray}
+
+Interpretation:
+
+* $Prob(X_i=x)$ is the prior probability for $X_i=x$.
+* $Prob(Y_i=y|X_i=x)$ is the likelihood of seeing $Y_i=y$ if $X_i=x$ is true.
+* $Prob(X_i=x|Y_i=y)$ is the posterior, your updated probability after seeing $Y_i=y$.
+
+A useful way to remember this is
+\begin{eqnarray}
+\text{Posterior} \propto \text{Likelihood} \times \text{Prior}.
+\end{eqnarray}
+For two states, posterior odds are prior odds times a likelihood ratio.
+
+Building on the coin-flip examples from the previous chapter, suppose we observe the outcome of the second coin ($Y_i$) and want to update our belief about the first coin ($X_i$).
+
+**Fair coins.** With $Prob(X_i=x,Y_i=y)=1/4$ for all $x,y\in\{0,1\}$, the prior is $Prob(X_i=1)=1/2$ and the likelihoods are
+\begin{eqnarray}
+Prob(Y_i=1|X_i=1)=1/2,\quad Prob(Y_i=1|X_i=0)=1/2.
+\end{eqnarray}
+Applying Bayes' theorem,
+\begin{eqnarray}
+Prob(X_i=1|Y_i=1)
+&=& \frac{Prob(Y_i=1|X_i=1)Prob(X_i=1)}{Prob(Y_i=1)}
+= \frac{(1/2)(1/2)}{1/2} = \frac{1}{2}.
+\end{eqnarray}
+The posterior equals the prior because the coins are independent --- seeing one coin tells you nothing about the other.
+
+```{r}
+# Fair coins
+probs <- c(0.25, 0.25, 0.25, 0.25)
+P_xy <- matrix(probs, nrow = 2,
+  dimnames = list(c("Y=0","Y=1"), c("X=0","X=1")))
+
+# Marginals
+P_x <- colSums(P_xy)
+P_y <- rowSums(P_xy)
+
+# Likelihood: Prob(Y=1 | X=x)
+PY1_x <- P_xy["Y=1", ] / P_x
+PY1_x
+
+# Posterior: Prob(X=1 | Y=1)
+posterior_x1 <- (PY1_x["X=1"] * P_x["X=1"]) / P_y["Y=1"]
+posterior_x1  # equals the prior
+```
+
+**Unfair coins.** Now consider the joint distribution from the previous chapter with `probs <- c(0.4, 0.2, 0.1, 0.3)`:
+
+|    | $x=0$  | $x=1$   | Marginal    |
+|:------:|:---:|:---:|:---:|
+| $y=0$        |$0.4$|$0.1$|$0.5$|
+| $y=1$        |$0.2$|$0.3$|$0.5$|
+| **Marginal** |$0.6$|$0.4$| $1$ |
+
+The prior is $Prob(X_i=1)=0.4$. The likelihoods are
+\begin{eqnarray}
+Prob(Y_i=1|X_i=1) = \frac{0.3}{0.4} = 0.75,\quad
+Prob(Y_i=1|X_i=0) = \frac{0.2}{0.6} = \frac{1}{3}.
+\end{eqnarray}
+Applying Bayes' theorem,
+\begin{eqnarray}
+Prob(X_i=1|Y_i=1)
+&=& \frac{0.75 \times 0.4}{0.75 \times 0.4 + \frac{1}{3}\times 0.6}
+= \frac{0.3}{0.3+0.2} = 0.6.
+\end{eqnarray}
+The prior probability of heads on the first coin was $0.4$, but after seeing heads on the second coin, it increases to $0.6$. The coins are *not* independent: when the second coin shows heads, it is more likely that the first coin also shows heads.
+
+```{r}
+# Unfair coins
+probs <- c(0.4, 0.2, 0.1, 0.3)
+P_xy <- matrix(probs, nrow = 2,
+  dimnames = list(c("Y=0","Y=1"), c("X=0","X=1")))
+P_xy
+
+# Marginals
+P_x <- colSums(P_xy)
+P_y <- rowSums(P_xy)
+
+# Likelihood: Prob(Y=1 | X=x)
+PY1_x <- P_xy["Y=1", ] / P_x
+PY1_x
+
+# Posterior: Prob(X=1 | Y=1)
+posterior_x1 <- (PY1_x["X=1"] * P_x["X=1"]) / P_y["Y=1"]
+posterior_x1  # prior was 0.4, posterior is 0.6
+
+# Also compute Prob(X=1 | Y=0)
+PY0_x <- P_xy["Y=0", ] / P_x
+posterior_x1_y0 <- (PY0_x["X=1"] * P_x["X=1"]) / P_y["Y=0"]
+posterior_x1_y0  # seeing tails lowers belief to 0.2
+```
+
+#### **Bayes' Theorem Applied**. {-}
+
+Suppose a screening test has sensitivity 0.90 and false positive rate 0.08, while prevalence is 0.12:
+\begin{eqnarray}
+Prob(Y_i=1|X_i=1)=0.90,\quad
+Prob(Y_i=1|X_i=0)=0.08,\quad
+Prob(X_i=1)=0.12,
+\end{eqnarray}
+where $X_i=1$ means "condition present" and $Y_i=1$ means "test positive".
+
+Then
+\begin{eqnarray}
+Prob(X_i=1|Y_i=1)
+&=&
+\frac{0.90\times0.12}{0.90\times0.12 + 0.08\times0.88}
+\approx 0.605.
+\end{eqnarray}
+Even with a good test, posterior probability depends strongly on prevalence.
+
+```{r}
+# States: X in {0,1}, signal Y in {0,1}
+# Prior Prob(X_i=1)
+p_x1 <- 0.12
+
+# Test characteristics
+p_y1_x1 <- 0.90
+p_y1_x0 <- 0.08
+
+# Law of total probability for Prob(Y_i=1)
+p_y1 <- p_y1_x1 * p_x1 + p_y1_x0 * (1 - p_x1)
+
+# Bayes posterior Prob(X_i=1 | Y_i=1)
+p_x1_y1 <- (p_y1_x1 * p_x1) / p_y1
+p_x1_y1
+
+# Also compute Prob(X_i=1 | Y_i=0)
+p_y0_x1 <- 1 - p_y1_x1
+p_y0_x0 <- 1 - p_y1_x0
+p_y0 <- p_y0_x1 * p_x1 + p_y0_x0 * (1 - p_x1)
+p_x1_y0 <- (p_y0_x1 * p_x1) / p_y0
+p_x1_y0
+```
+
+#### **Regression Slope Example**. {-}
+
+The screening test has the same structure as testing a regression slope. Let $X_i=1$ mean "slope is truly nonzero" and $Y_i=1$ mean "the test rejects $H_0$." Then sensitivity equals power, the false positive rate equals $\alpha$, and prevalence is your prior belief that the slope is nonzero. Using the simulation results from the previous section:
+
+```{r}
+# Prior: 50-50 chance the slope is nonzero
+prior_nonzero <- 0.5
+
+# "Sensitivity" = power, "False positive rate" = alpha
+p_reject <- power_est * prior_nonzero + alpha * (1 - prior_nonzero)
+
+# Posterior: Prob(slope nonzero | test rejects)
+post_nonzero <- (power_est * prior_nonzero) / p_reject
+post_nonzero
+```
+
+Even with moderate power, a rejection substantially updates the posterior probability that the slope is nonzero. A weaker prior (e.g., $Prob(\beta_1 \neq 0) = 0.1$) would require stronger evidence to reach the same posterior.
+
+```{r}
+# How the posterior changes with different priors
+prior_grid <- seq(0.01, 0.99, by = 0.01)
+post_grid <- (power_est * prior_grid) /
+    (power_est * prior_grid + alpha * (1 - prior_grid))
+
+plot(prior_grid, post_grid, type = 'l', lwd = 2,
+    xlab = 'Prior Prob(slope nonzero)',
+    ylab = 'Posterior Prob(slope nonzero | reject)',
+    main = 'Bayesian Interpretation of Rejection',
+    font.main = 1)
+abline(0, 1, lty = 2, col = grey(0.5))
+```
 
 ## Further Reading
 
-Many introductory econometrics textbooks have a good appendix on probability and statistics. There are many useful statistical texts online too
-
-See the Further reading about Probability Theory in the Statistics chapter.
+Many introductory econometrics textbooks have a good appendix on probability and statistics. See also the further reading about Probability Theory in the Statistics chapter.
 
 * <https://www.r-bloggers.com/2024/03/calculating-conditional-probability-in-r/>

@@ -3,6 +3,45 @@
 ## Quarto/Bookdown
 ***
 
+#### Content Breakdown by Chapter (lines, 2026-03-11)
+
+| Chapter | Total | Math | Code | Text |
+|---|---:|---:|---:|---:|
+| **Part 0 — Getting Started** |
+| 00_01 First Steps | 465 | 1 (0%) | 248 (53%) | 216 (46%) |
+| **Part 1 — Univariate Data** |
+| 01_02 Data | 561 | 46 (8%) | 331 (59%) | 184 (33%) |
+| 01_03 Descriptive Statistics | 519 | 25 (5%) | 315 (61%) | 179 (34%) |
+| 01_04 Random Variables | 509 | 40 (8%) | 263 (52%) | 206 (40%) |
+| 01_05 Sampling | 728 | 29 (4%) | 500 (69%) | 199 (27%) |
+| 01_06 Pop Statistics | 461 | 42 (9%) | 147 (32%) | 272 (59%) |
+| 01_07 Intervals | 368 | 86 (23%) | 223 (61%) | 59 (16%) |
+| 01_08 Hypothesis Tests | 406 | 29 (7%) | 252 (62%) | 125 (31%) |
+| 01_09 Misc Topics | 291 | 48 (16%) | 129 (44%) | 114 (39%) |
+| **Part 2 — Bivariate Data** |
+| 02_10 Bivariate Distributions | 398 | 29 (7%) | 192 (48%) | 177 (44%) |
+| 02_11 Comparing Groups | 487 | 38 (8%) | 263 (54%) | 186 (38%) |
+| 02_12 Associations | 490 | 16 (3%) | 279 (57%) | 195 (40%) |
+| 02_13 Simple Regression | 596 | 21 (4%) | 286 (48%) | 289 (48%) |
+| 02_14 Local Regression | 523 | 24 (5%) | 304 (58%) | 195 (37%) |
+| 02_15 Inference | 376 | 9 (2%) | 280 (74%) | 87 (23%) |
+| 02_16 Bivariate Probability | 511 | 47 (9%) | 199 (39%) | 265 (52%) |
+| 02_17 Statistical Theory | 218 | 15 (7%) | 105 (48%) | 98 (45%) |
+| 02_18 Data Analysis | 694 | 8 (1%) | 385 (55%) | 301 (43%) |
+| **Part 3 — Multivariate Data** |
+| 03_19 Multiple Regression | 341 | 21 (6%) | 196 (57%) | 124 (36%) |
+| 03_20 Interpreting Regression | 300 | 24 (8%) | 182 (61%) | 94 (31%) |
+| 03_21 Regressograms | 196 | 16 (8%) | 135 (69%) | 45 (23%) |
+| 03_22 Observational Data | 436 | 14 (3%) | 298 (68%) | 124 (28%) |
+| 03_23 Experimental Data | 375 | 15 (4%) | 231 (62%) | 129 (34%) |
+| 03_24 Data Scientism | 333 | 9 (3%) | 240 (72%) | 84 (25%) |
+| 03_25 Misc Topics | 472 | 14 (3%) | 299 (63%) | 159 (34%) |
+| **Appendices (Unused)** |
+| 04_01 Reproducible | 1404 | 8 (1%) | 621 (44%) | 775 (55%) |
+| 04_16 Probability Theory | 578 | 55 (10%) | 236 (41%) | 287 (50%) |
+
+**Note:** Ch 17 Statistical Theory (218 lines) and Ch 21 Regressograms (196 lines) are the smallest chapters and should be expanded.
+
 #### Big Picture Tasks
 
 1. Increase Depth
