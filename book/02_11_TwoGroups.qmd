@@ -1,4 +1,4 @@
-# Comparing Groups
+# Comparing Two Groups
 ***
 
 ## Discrete Data
@@ -248,7 +248,7 @@ boot_quant <- function(Y1, Y2, B=9999, probs=0.5, ...){
 
 # 2-Sided Test for Median Differences
 # d <- quantile(Y2, probs=0.5) - quantile(Y1, probs=0.5)
-boot_d <- boot_quant(Y1, Y1, B=999, probs=0.5)
+boot_d <- boot_quant(Y1, Y2, B=999, probs=0.5)
 hist(boot_d, border=NA, font.main=1,
     main='Bootstrap Difference in Medians')
 abline(v=quantile(boot_d, probs=c(.025, .975)), lwd=2)
@@ -415,68 +415,6 @@ countymurders
 ```
 
 :::
-
-## Multiple groups
-With multiple groups, you will want to begin with a summary figure (such as a boxplot). We can also tests the equality of all distributions (whether at least one group is different). The *Kruskal-Wallis* test examines $H_0:\; F_1 = F_2 = \dots = F_G$ versus $H_A:$ at least one  $F_g$ differs, where $F_g$ is the continuous distribution of group $g=1,...G$. This test does not tell us which group is different.
-
-To conduct the test, first denote individuals $i=1,...n$ with overall ranks $\hat{r}_1,....\hat{r}_{n}$. Each individual belongs to group $g=1,...G$, and each group $g$ has $n_{g}$ individuals with average rank $\bar{r}_{g} = \sum_{i} \hat{r}_{i} /n_{g}$. The Kruskal Wallis statistic is 
-\begin{eqnarray}
-\hat{KW} &=& (n-1) \frac{\sum_{g=1}^{G} n_{g}( \bar{r}_{g} - \bar{r}  )^2  }{\sum_{i=1}^{n} ( \hat{r}_{i} - \bar{r}  )^2}, 
-\end{eqnarray}
-where  $\bar{r} = \frac{n+1}{2}$ is the grand mean rank.
-
-In the special case with only two groups, the Kruskal Wallis test reduces to the *Mann–Whitney U* test (also known as the *Wilcoxon rank-sum* test). In this case, we can write the hypotheses in terms of individual outcomes in each group, $Y_i$ in one group $Y_j$ in the other; $H_0: Prob(Y_i > Y_j)=Prob(Y_i > Y_i)$  versus $H_A: Prob(Y_i > Y_j) \neq Prob(Y_i > Y_j)$. The corresponding test statistic is
-\begin{eqnarray}
-\hat{U}   &=& \min(\hat{U}_1, \hat{U}_2) \\
-\hat{U}_g &=& \sum_{i\in g}\sum_{j\in -g}
-           \Bigl[\mathbf 1( \hat{Y}_{i} > \hat{Y}_{j}) + \tfrac12\mathbf 1(\hat{Y}_{i} = \hat{Y}_{j})\Bigr].
-\end{eqnarray}
-
-#### **Practical Workflow** {-}
-
-A practical workflow for multiple groups has three steps:
-
-1. Visualize all groups together.
-2. Run one global test ($H_0:\; F_1=\dots=F_G$).
-3. Run post-hoc pairwise tests with multiplicity correction.
-
-```{r}
-# Built-in dataset with 6 groups
-dat <- InsectSprays
-
-# Step 1: Visual summary
-boxplot(count~spray, data=dat,
-    col=hcl.colors(6, alpha=.45),
-    ylab="Insect count", xlab="Spray", main="")
-title("Multiple-group comparison", font.main=1)
-
-# Step 2: Global null test
-kw <- kruskal.test(count~spray, data=dat)
-kw
-
-# Step 3: Post-hoc pairwise tests, adjusted p-values
-pw <- pairwise.wilcox.test(
-    x = dat$count, g = dat$spray,
-    p.adjust.method = "bonferroni")
-pw$p.value
-```
-
-Interpretation template:
-
-* If the Kruskal-Wallis p-value is large, keep the global null and stop.
-* If the p-value is small, report that at least one group differs and then inspect adjusted pairwise p-values.
-* Report both statistical and practical importance (distribution plots + effect size summaries), not only p-values.
-
-```{r, eval=F}
-library(Ecdat)
-data(Caschool)
-Caschool[,'stratio'] <- Caschool[,'enrltot']/Caschool[,'teachers']
-
-# Do student/teacher ratio differ for at least 1 county?
-# Single test of multiple distributions
-library(coin)
-kruskal_test(stratio~county, Caschool, distribution='approximate')
-```
 
 
 
