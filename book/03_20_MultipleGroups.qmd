@@ -121,25 +121,10 @@ fit_lm <- lm(Murder ~ Region, data = dat)
 anova(fit_lm)
 ```
 
-#### **Connection to regression**. {-}
-
-ANOVA is a special case of linear regression where the only explanatory variables are group indicators. The model $\hat{Y}_{ig} = b_0 + \sum_{g=2}^{G} b_g \hat{D}_{ig} + e_{ig}$ produces the same F-statistic as above. Here $b_0$ estimates the mean of the reference group and each $b_g$ estimates the difference between group $g$ and the reference.
-
-```{r}
-# Regression coefficients = group mean differences
-coef(fit_lm)
-
-# Compare to group means
-M_g <- tapply(dat$Murder, dat$Region, mean)
-M_g
-
-# b0 = mean of reference group; b_g = mean(g) - mean(reference)
-M_g - M_g[1]
-```
 
 #### **Assumptions and alternatives**. {-}
 
-The parametric F-test assumes (i) independent observations, (ii) normal errors within each group, and (iii) equal variances across groups (*homoscedasticity*). When these assumptions are doubtful --- especially equal variances --- the nonparametric Kruskal-Wallis test (below) is a safer alternative. As a quick diagnostic, compare side-by-side boxplots: if the spread differs visibly across groups, be cautious with the parametric test.
+The parametric F-test assumes (i) independent observations, (ii) normal errors within each group, and (iii) equal variances across groups (*homoscedasticity*). If these assumptions are doubtful, then the nonparametric Kruskal-Wallis test (below) is a safer alternative. As a quick diagnostic, visually compare side-by-side boxplots: if the spread differs across groups or the distribution has excessive skew/kurtosis, be cautious with the parametric test.
 
 
 ## Equal Distributions
@@ -179,6 +164,9 @@ pw$p.value
 
 ## Regression
 
+ANOVA is a special case of linear regression where the only explanatory variables are group indicators. To see this, we first introduce factor variables and then make the connection.
+
+
 #### **Factor Variables**. {-}
 
 So far, we have discussed cardinal data where the difference between units always means the same thing: e.g., $4-3=2-1$. There are also factor variables
@@ -189,6 +177,24 @@ So far, we have discussed cardinal data where the difference between units alway
 To analyze either factor, we often convert them into indicator variables or dummies; $\hat{D}_{c}=\mathbf{1}( \text{Factor} = c)$. One common case is if you have observations of individuals over time periods, then you may have two factor variables. An unordered factor that indicates who an individual is; for example $\hat{D}_{i}=\mathbf{1}( \text{Individual} = i)$, and an order factor that indicates the time period; for example $\hat{D}_{t}=\mathbf{1}( \text{Time} \in [\text{month}~ t, \text{month}~ t+1) )$. There are many other cases you see factor variables, including spatial ID's in purely cross sectional data.
 
 Be careful not to handle categorical data as if they were cardinal. E.g., generate city data with Leipzig=1, Lausanne=2, LosAngeles=3, ... and then include city as if it were a cardinal number (that's a big no-no). The same applied to ordinal data; PopulationLeipzig=2, PopulationLausanne=3, PopulationLosAngeles=1.
+
+#### **ANOVA**. {-}
+
+The model $\hat{Y}_{ig} = b_0 + \sum_{g=2}^{G} b_g \hat{D}_{ig} + e_{ig}$ produces the same F-statistic as above. Here $b_0$ estimates the mean of the reference group and each $b_g$ estimates the difference between group $g$ and the reference.
+
+```{r}
+# Regression coefficients = group mean differences
+coef(fit_lm)
+
+# Compare to group means
+M_g <- tapply(dat$Murder, dat$Region, mean)
+M_g
+
+# b0 = mean of reference group; b_g = mean(g) - mean(reference)
+M_g - M_g[1]
+```
+
+#### **Regression**. {-}
 
 ```{r}
 N <- 1000
@@ -210,14 +216,14 @@ When, as commonly done, the factors are modeled as being additively seperable, t
 In fact, if the fixed effect is ``fully unstructured then the only way to consistently estimate the coefficient $\beta$ is by an estimator which is invariant'' (Hansen Econometrics, p). 
 -->
 ```{r}
+# Compare Coefficients
+fe_reg0 <- lm(y~-1+x+fo+fu, dat_f)
+coef(fe_reg0)[1]
+
 library(fixest)
 fe_reg1 <- feols(y~x|fo+fu, dat_f)
 coef(fe_reg1)
-fixef(fe_reg1)[1:2]
-
-# Compare Coefficients
-fe_reg0 <- lm(y~-1+x+fo+fu, dat_f)
-coef( fe_reg0 )
+#fixef(fe_reg1)[1:2]
 ```
 
 With fixed effects, we can also compute averages for each group: $\hat{M}_{Yt}=\sum_{i}^{n_{t}} \hat{Y}_{it}/n_{t}$, where each period $t$ has $n_{t}$ observations denoted $\hat{Y}_{it}$. We can then construct a *between estimator*: $\hat{M}_{Yt} = b_{0} + \hat{M}_{Xt} b_{1}$. Or we can subtract the average from each group to construct a *within estimator*: $(\hat{Y}_{it} - \hat{M}_{Yt}) = (\hat{X}_{it}-\hat{M}_{Xt})b_{1}$. 
@@ -225,7 +231,6 @@ With fixed effects, we can also compute averages for each group: $\hat{M}_{Yt}=\
 <!-- 
 > The labels "random effects" and "fixed effects" are misleading. These are labels which arose in the early literature and we are stuck with these labels today. In a previous era regressors were viewed as "fixed". Viewing the individual effect as an unobserved regressor leads to the label of the individual effect as "fixed". Today, we rarely refer to regressors as "fixed" when dealing with observational data. We view all variables as random. Consequently describing u i as "fixed" does not make much sense and it is hardly a contrast with the "random effect" label since under either assumption u i is treated as random. Once again, the labels are unfortunate but the key difference is whether u i is correlated with the regressors.
 -->
-
 
 
 #### **Comparing Models** {-}

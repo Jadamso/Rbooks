@@ -6,21 +6,21 @@
 Scatterplots are a great and simplest plot for bivariate data that simply plots each observation. There are many extensions and similar tools. The example below helps understand how both the central tendency and dispersion change. 
 ```{r}
 # Local relationship: wages and education
-library(wooldridge)
+library(Ecdat)
 
 ## Plot 1
-plot(wage~educ, data=wage1, pch=16, col=grey(0,.1))
-educ_means <- aggregate(wage~educ, data=wage1, mean)
-points(wage~educ, data=educ_means, pch=17, col='blue', type='b')
+plot(wage~school, data=Wages1, pch=16, col=grey(0,.1))
+school_means <- aggregate(wage~school, data=Wages1, mean)
+points(wage~school, data=school_means, pch=17, col='blue', type='b')
 title("Grouped Means and Scatterplot", font.main=1)
 
 ## Plot 2 (Alternative for big datasets)
-# boxplot(wage~educ, data=wage1, 
+# boxplot(wage~school, data=Wages1,
 #    pch=16, col=grey(0,.1), varwidth=T)
 #title("Boxplots", font.main=1)
 
 ## Plot 3 (Less informative!)
-#barplot(wage~educ, data=educ_means)
+#barplot(wage~school, data=school_means)
 #title("Bar Plot of Grouped Means", font.main=1)
 ```
 
@@ -45,27 +45,27 @@ Just as we use histograms to describe the distribution of a random variable, we 
 Specifically, we can use dummies for exclusive intervals or "bins" to estimate the average value of $\hat{Y}_{i}$ for data inside the bin.
 ```{r}
 # Data
-plot(wage~educ, data=wage1, pch=16, col=grey(0,.1))
-dat <- wage1[order(wage1[,'educ']), c('wage','educ')]
+plot(wage~school, data=Wages1, pch=16, col=grey(0,.1))
+dat <- Wages1[order(Wages1[,'school']), c('wage','school')]
 
 ## Simple Regression
-reg  <- lm(wage~educ, data=dat) ## OLS
+reg  <- lm(wage~school, data=dat) ## OLS
 
 # Regressogram: Course Age Bins
-dat[,'xcc'] <- cut(dat[,'educ'], 2)
+dat[,'xcc'] <- cut(dat[,'school'], 2)
 rgram_c  <- lm(wage~xcc, data=dat)
 
 # Regressogram: Fine Age Bins
-dat[,'xcf']   <- cut(dat[,'educ'], 3)
+dat[,'xcf']   <- cut(dat[,'school'], 3)
 rgram_f  <- lm(wage~xcf, data=dat)
 
 # Regressogram (Means for each level)
-dat[,'xd']   <- as.factor(dat[,'educ'])
+dat[,'xd']   <- as.factor(dat[,'school'])
 rgram_d  <- lm(wage~xd, data=dat)
 
 ## Compare Models (Only 2 for simplicity)
-lines( dat[,'educ'], predict(reg), lwd=2, col=2)
-lines( dat[,'educ'], predict(rgram_f), lwd=2, col=4, type='s')
+lines( dat[,'school'], predict(reg), lwd=2, col=2)
+lines( dat[,'school'], predict(rgram_f), lwd=2, col=4, type='s')
 legend('topleft',
     legend=c('Linear Regression','Regressogram (3)'),
     col=c(2,4),
@@ -141,20 +141,20 @@ The regressogram depicts locally constant relationships. We can also included sl
 
 ```{r}
 # Data
-plot(wage~educ, data=wage1, pch=16, col=grey(0,.1))
-dat <- wage1[order(wage1[,'educ']), c('wage','educ')]
+plot(wage~school, data=Wages1, pch=16, col=grey(0,.1))
+dat <- Wages1[order(Wages1[,'school']), c('wage','school')]
 
 # Piecewise: Course Age Bins
-dat[,'xcc'] <- cut(dat[,'educ'], 2)
-preg_c  <- lm(wage~xcc*educ, data=dat)
+dat[,'xcc'] <- cut(dat[,'school'], 2)
+preg_c  <- lm(wage~xcc*school, data=dat)
 
 # Piecewise: Fine Age Bins
-dat[,'xcf']   <- cut(dat[,'educ'], 3) 
-preg_f  <- lm(wage~xcf*educ, data=dat)
+dat[,'xcf']   <- cut(dat[,'school'], 3)
+preg_f  <- lm(wage~xcf*school, data=dat)
 
 ## Compare Models
-lines( dat[,'educ'], predict(preg_c), lwd=2, col=5)
-lines( dat[,'educ'], predict(preg_f), lwd=2, col=6)
+lines( dat[,'school'], predict(preg_c), lwd=2, col=5)
+lines( dat[,'school'], predict(preg_f), lwd=2, col=6)
 legend('topleft',
     legend=c('2 bins','3 bins'),
     lty=1, col=5:6, cex=.8)
@@ -177,8 +177,8 @@ From the previous chapter on simple linear regression, we know the solutions are
 ```{r}
 # See that two methods give the same predictions
 # Piecewise: Course Age Bins
-dat[,'xcc'] <- cut(dat[,'educ'], 2)
-preg_c  <- lm(wage~xcc*educ, data=dat)
+dat[,'xcc'] <- cut(dat[,'school'], 2)
+preg_c  <- lm(wage~xcc*school, data=dat)
 pred2 <- predict(preg_c)
 
 ## Split Sample Regressions
@@ -186,7 +186,7 @@ dat2 <- split( dat, dat[,'xcc'])
 pred2B <- vector("list", length(dat2))
 names(pred2B) <- names(dat2)
 for (i in seq_along(dat2)) {
-    reg2 <- lm(wage~educ, dat2[[i]])
+    reg2 <- lm(wage~school, dat2[[i]])
     pred2B[[i]] <- predict(preg_c)
 }
 
@@ -310,21 +310,21 @@ yhat_3
 
 
 ```{r}
-#library(wooldridge) # Data from before
-#dat <- wage1[order(wage1[,'educ']), c('wage','educ')]
+library(Ecdat) # Data from before
+dat <- Wages1[order(Wages1[,'school']), c('wage','school')]
 
 ## Weighted Regression
 x <- 4.5
 h <- 9.036/2 #makes bin large enough to include 0: (-0.018, 9]
-k <- abs(dat[,'educ']-x) /h
+k <- abs(dat[,'school']-x) /h
 k_weights <- dunif(k) / (2*h)
-preg_k  <- lm(wage~educ, data=dat, weights=k_weights)
-predict(preg_k, newdata=data.frame(educ=x))
+preg_k  <- lm(wage~school, data=dat, weights=k_weights)
+predict(preg_k, newdata=data.frame(school=x))
 
 # Compare to Piecewise
-dat[,'xcc'] <- cut(dat[,'educ'], 2)
-preg_c  <- lm(wage~xcc*educ, data=dat)
-predict(preg_c, newdata=data.frame(educ=x, xcc='(-0.018,9]'))
+dat[,'xcc'] <- cut(dat[,'school'], 2)
+preg_c  <- lm(wage~xcc*school, data=dat)
+predict(preg_c, newdata=data.frame(school=x, xcc='(9.5,16]'))
 ```
 :::
 
@@ -356,20 +356,20 @@ As such, the regressogram is more crude but can be estimated more easily.
 :::{.callout-note icon=false collapse="true"}
 See how the results are nearly identical below. Then consider different design points.
 ```{r}
-#library(wooldridge) # Data from before
-#dat <- wage1[order(wage1[,'educ']), c('wage','educ')]
+#library(Ecdat) # Data from before
+#dat <- Wages1[order(Wages1[,'school']), c('wage','school')]
 
 # Piecewise Regression
-dat[,'xcc'] <- cut(dat[,'educ'], 2)
-preg_c  <- lm(wage~xcc*educ, data=dat)
-predict(preg_c, newdata=data.frame(educ=x, xcc='(-0.018,9]'))
+dat[,'xcc'] <- cut(dat[,'school'], 2)
+preg_c  <- lm(wage~xcc*school, data=dat)
+predict(preg_c, newdata=data.frame(school=x, xcc='(9.5,16]'))
 
 ## Weighted Regression
 x <- 4.5 # regressogram bin1 midpoint
 h <- 9.036/2 #regressogram half-width
-k_weights <- dunif( abs(dat[,'educ']-x)/h, -1, 1)
-preg_k  <- lm(wage~educ, data=dat, weights=k_weights)
-predict(preg_k, newdata=data.frame(educ=x))
+k_weights <- dunif( abs(dat[,'school']-x)/h, -1, 1)
+preg_k  <- lm(wage~school, data=dat, weights=k_weights)
+predict(preg_k, newdata=data.frame(school=x))
 ```
 
 :::
@@ -434,15 +434,15 @@ Deriving the optimal values $\hat{b}_{0}(x, h)$ and  $\hat{b}_{1}(x,h)$ for $k_{
 pred_fun <- function(x0, h){
     # Assign equal weight to observations within h distance to x0
     # 0 weight for all other observations
-    ki <- abs(dat[,'educ']-x0)/h
+    ki <- abs(dat[,'school']-x0)/h
     ki <- dunif(ki)/(2*h) ## Could change, e.g. dnorm(ki)/h
     wi <- ki/sum(ki, na.rm=T) # always sum to 1 (for edge-effects)
     # run regression with weighted data
-    llls_i <- lm(wage~educ, data=dat, weights=wi)
-    yhat_i <- predict(llls_i, newdata=data.frame(educ=x0))
+    llls_i <- lm(wage~school, data=dat, weights=wi)
+    yhat_i <- predict(llls_i, newdata=data.frame(school=x0))
 }
 
-X0 <- seq(0,18, by=0.5) # Design points
+X0 <- seq(4,16, by=1) # Design points
 # Fine Bins
 pred_lo1 <- vector(length=length(X0))
 for(i in seq_along(X0)){
@@ -455,7 +455,7 @@ for(i in seq_along(X0)){
 }
 
 # Plot
-plot(wage~educ, pch=16, data=wage1, col=grey(0,.1),
+plot(wage~school, pch=16, data=Wages1, col=grey(0,.1),
     ylab='Murder Rate', xlab='Population Density')
 cols <- c(rgb(.8,0,0,.5), rgb(0,0,.8,.5))
 lines(X0, pred_lo1, col=cols[1], lwd=1, type='o')
@@ -504,16 +504,16 @@ This is especially useful when $\hat{X}_{i}$ is not uniform.
 
 ```{r}
 # Adaptive-width subsamples with non-uniform weights
-dat <- wage1[order(wage1[,'educ']), c('wage','educ')]
-plot(wage~educ, pch=16, col=grey(0,.1), data=dat)
+dat <- Wages1[order(Wages1[,'school']), c('wage','school')]
+plot(wage~school, pch=16, col=grey(0,.1), data=dat)
 
-reg_lo4 <- loess(wage~educ, data=dat, span=.4)
-reg_lo8 <- loess(wage~educ, data=dat, span=.8)
+reg_lo4 <- loess(wage~school, data=dat, span=.4)
+reg_lo8 <- loess(wage~school, data=dat, span=.8)
 
 cols <- hcl.colors(3,alpha=.75)[-3]
-lines(dat[,'educ'], predict(reg_lo4),
+lines(dat[,'school'], predict(reg_lo4),
     col=cols[1], type='o', pch=2)
-lines(dat[,'educ'], predict(reg_lo8),
+lines(dat[,'school'], predict(reg_lo8),
     col=cols[2], type='o', pch=2)
 
 legend('topleft', title='Loess',

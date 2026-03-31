@@ -1,137 +1,22 @@
 # Confidence Intervals
 ***
 
-
-## Confidence Intervals
-
-The sampling distribution describes how the statistic varies across samples. The *confidence interval* is a way to turn knowledge about that sampling distribution into a statement about the unknown parameter. A $Z\%$ confidence interval for the mean is an interval where $Z\%$ of the intervals generated on different samples will contain the population mean $\mu$.
-
-```{r, echo=T}
-B <- 100
-n <- 1000
-x_samples <- matrix(nrow=B, ncol=n)
-for(i in seq(1,nrow(x_samples))){
-    x_samples[i,] <- runif(n)
-}
-
-# Confidence Interval for each sample
-xq <- apply(x_samples, 1, function(r){ #theoretical se's 
-    mean(r) + c(-1,1)*sd(r)/sqrt(n)
-})
-
-# Explicit calculation: whether the true mean is in each CI
-mu_true <- 0.5 # theoretical result for uniform samples
-covered <- mu_true >= xq[1, ] & mu_true <= xq[2, ]
-
-# Visualize confidence intervals
-plot.new()
-plot.window(xlim = range(xq), ylim = c(0,B))
-for(i in seq(1,B) ) {
-  col_i <- if (covered[i]) rgb(0, 0, 0, 0.3) else rgb(1, 0, 0, 0.5)
-  segments(xq[1, i], i, xq[2, i], i, col = col_i, lwd = 2)
-}
-abline(v = mu_true, col = "blue", lwd = 2)
-axis(1)
-title("68% Coverage (Red = Missed)", font.main=1)
-```
+The sampling distribution describes how the statistic varies across samples. The *confidence interval* is a way to turn knowledge about that sampling distribution into a statement about the unknown parameter. We use our sample data to construct an interval that says "we are $Z\%$ confident that the mean is in this interval". Just as with standard errors, we can make confidence intervals using theory-driven or data-driven approaches. We will focus on data-driven approaches first, then theory-driven approaches, then theoretical properties of confidence intervals.
 
 
-We typically have only one sample and compute a single confidence interval with the data we have. Once doing so, we say that "we are $Z\%$ confident that the mean is in this interval". The interval you computed either contains the true mean or it does not.^[As such, a $Z\%$ confidence interval does not imply a $Z\%$ probability that the true parameter lies within a particular calculated interval. In practice, people often interpret confidence intervals informally as "showing the uncertainty around our estimate": wider intervals correspond to higher sampling variability and less precise information about $\mu$. ] So "$Z\%$ confident" translates to "$Z\%$ of intervals constructed on different samples will contain $\mu$".
+## Resampling Intervals
 
-Just as with standard errors, we can estimate confidence intervals using theory-driven or data-driven approaches. We will focus on data-driven approaches first, which can be easily extended to other statistics. For example, a $Z\%$ confidence interval for the median is an interval where $Z\%$ of those generated will contain the population median. 
-
-
-#### **Computation**. {-}
-
-We construct a $90\%$ confidence interval by taking the $5^{th}$ and $95^{th}$ percentiles of the sampling distribution. For example, consider the mean of a uniform random sample with a sample size of $n=1000$. We first conduct a simulation that shows the sampling distribution of the sample mean, and then construct a confidence interval using quantiles.
-```{r}
-# Create 300 samples, each with 1000 random uniform variables
-x_samples <- matrix(nrow=300, ncol=1000)
-for(i in seq(1,nrow(x_samples))){
-    x_samples[i,] <- runif(1000)
-}
-sample_means <- apply(x_samples, 1, mean) # mean for each sample (row)
-
-# Middle 90%
-mq <- quantile(sample_means, probs=c(.05,.95))
-paste0('we are 90% confident that the mean is between ', 
-    round(mq[1],2), ' and ', round(mq[2],2) )
-
-hist(sample_means,
-    breaks=seq(.4,.6, by=.001), 
-    border=NA, freq=F,
-    col=rgb(0,0,0,.25), font.main=1,
-    main='90% Confidence Interval for the Mean')
-abline(v=mq)
-```
-
-:::{.callout-tip icon=false collapse="true"}
-For another example, consider the median. We now repeat the above process to estimate the median for each sample, instead of the mean. 
-```{r}
-## Sample Quantiles (medians)
-sample_quants <- apply(x_samples, 1, quantile, probs=0.5) #quantile for each sample (row)
-
-# Middle 90% of estimates
-mq <- quantile(sample_quants, probs=c(.05,.95))
-paste0('we are 90% confident that the median is between ', 
-    round(mq[1],2), ' and ', round(mq[2],2) )
-
-hist(sample_quants,
-    breaks=seq(.4,.6, by=.001),
-    border=NA, freq=F,
-    col=rgb(0,0,0,.25), font.main=1,
-    main='90% Confidence Interval for the Median')
-abline(v=mq)
-```
-:::
-
-The quantiles associated with $Z\%$ are called the "critical values" 
+Often, we have only one sample. In practice, we can use resampling procedures to estimate a confidence interval. E.g., we repeatedly resample data and construct a bootstrap or jackknife sampling distribution. Then we compute the confidence intervals using the upper and lower quantiles of the sampling distribution. The quantiles associated with $Z\%$ are called the "critical values" 
 
 * The $5^{th}$ and $95^{th}$ percentiles are the critical values for the $90\%$ confidence interval.
 * The $2.5^{th}$ and $97.5^{th}$ percentiles are the critical values for the $95\%$ confidence interval.
 * The $0.5^{th}$ and $99.5^{th}$ percentiles are the critical values for the $99\%$ confidence interval.
-
-#### **Interval Size**.  {-}
-
-Confidence intervals shrink with more data, as averaging washes out random fluctuations. 
-
-```{r}
-# Create 300 samples, each of size n
-par(mfrow=c(1,3))
-for(n in c(25, 100, 250)){
-    # Simulate 300 samples
-    x_samples <- matrix(nrow=300, ncol=n)
-    for(i in seq(1,nrow(x_samples))){
-        x_samples[i,] <- runif(n)
-    }
-
-    # Compute means for each sample (row)
-    sample_means <- apply(x_samples, 1, mean)
-    # 90% Confidence Interval
-    mq <- quantile(sample_means, probs=c(.05,.95))
-    paste0('we are 90% confident that the mean is between ', 
-        round(mq[1],2), ' and ', round(mq[2],2) )
-    hist(sample_means,
-        breaks=seq(.1,.9, by=.005), 
-        border=NA, freq=F, 
-        col=rgb(0,0,0,.25), font.main=1,
-        main=paste0('n=',n))
-    abline(v=mq)
-}
-```
-
-Confidence intervals also shrink with lower probabilities of containing the theoretical value. For a fixed sample size $n$, there is a trade-off between *precision*: the width of a confidence interval, and *accuracy*: the probability that a confidence interval contains the theoretical value.
-
-## Resampling Intervals
-
-Often, we have only one sample. In practice, we can use resampling procedures to estimate a confidence interval. E.g., we repeatedly resample data and construct a bootstrap or jackknife sampling distribution. Then we compute the confidence intervals using the upper and lower quantiles of the sampling distribution. 
 
 
 ```{r}
 sample_dat <- USArrests[,'Murder']
 sample_mean <- mean(sample_dat)
 sample_mean
-
 
 # Bootstrap Distribution
 set.seed(1) # to be replicable
@@ -155,11 +40,11 @@ hist(bootstrap_means, freq=F,
 abline(v=boot_ci) 
 ```
 
-
 :::{.callout-note icon=false collapse="true"}
 Compute a $90%$ CI and a $99%$ CI. Interpret each one separately, then compare the two.
 :::
 
+This approach can be easily extended to other statistics. For example, a $Z\%$ confidence interval for the median is an interval where $Z\%$ of those generated will contain the population median. 
 
 :::{.callout-tip icon=false collapse="true"}
 The following code creates a bootstrap CI for the median. 
@@ -294,11 +179,131 @@ abline(v=boot_ci_normal, col="blue", lty=3)
 ```
 :::
 
+
+
+## Theoretical Properties
+
+A $Z\%$ confidence interval for the mean is an interval where $Z\%$ of the intervals generated on different samples will contain the population mean $\mu$.
+
+```{r, echo=T}
+n <- 30
+B <- 100
+sample_CIs <- matrix(nrow=B, ncol=2)
+for(i in seq(1,B)){
+    # Random Sample
+    X <- runif(n)
+    # Confidence Interval for each sample
+    M <- mean(X)
+    SE <- sd(X)/sqrt(n)
+    CI <- qnorm( c(0.05, 0.95), M, SE)
+    sample_CIs[i,] <- CI
+}
+
+
+# Explicit calculation: whether the true mean is in each CI
+mu_true <- 0.5 # theoretical result for uniform samples
+covered <- mu_true >= sample_CIs[,1] & mu_true <= sample_CIs[,2]
+
+# Visualize confidence intervals
+plot.new()
+plot.window(xlim = range(sample_CIs), ylim = c(0,B))
+for(i in seq(1,B) ) {
+  col_i <- if (covered[i]) rgb(0, 0, 0, 0.3) else rgb(1, 0, 0, 0.5)
+  segments(
+    sample_CIs[i, 1], i,
+    sample_CIs[i, 2], i,
+    col = col_i, lwd = 2)
+}
+abline(v = mu_true, col = "blue", lwd = 2)
+axis(1)
+title("90% Coverage (Red = Missed)", font.main=1)
+```
+
+We typically have only one sample and compute a single confidence interval with the data we have. The interval you computed either contains the true mean or it does not.^[As such, a $Z\%$ confidence interval does not imply a $Z\%$ probability that the true parameter lies within a particular calculated interval. In practice, people often interpret confidence intervals informally as "showing the uncertainty around our estimate": wider intervals correspond to higher sampling variability and less precise information about $\mu$. ] So "$Z\%$ confident" translates to "$Z\%$ of intervals constructed on different samples will contain $\mu$".
+
+#### **Sampling Distribution Quantiles**. {-}
+
+To better understand the link between our theoretical interpretation and our calculations, we will compute the quantiles of the sampling distribution. E.g., We construct a $90\%$ confidence interval of the mean by taking the $5^{th}$ and $95^{th}$ percentiles of the sampling distribution of the mean. We conduct a simulation that shows the sampling distribution of the sample mean for a uniform random sample with a sample size of $n=1000$, and then construct a confidence interval using quantiles.
+```{r}
+# Create 300 samples, each with 1000 random uniform variables
+X_samples <- matrix(nrow=300, ncol=1000)
+for(i in seq(1,nrow(X_samples))){
+    X_samples[i,] <- runif(1000)
+}
+sample_means <- apply(X_samples, 1, mean) # mean for each sample (row)
+
+# Middle 90%
+mq <- quantile(sample_means, probs=c(.05,.95))
+paste0('we are 90% confident that the mean is between ', 
+    round(mq[1],2), ' and ', round(mq[2],2) )
+
+hist(sample_means,
+    breaks=seq(.4,.6, by=.001), 
+    border=NA, freq=F,
+    col=rgb(0,0,0,.25), font.main=1,
+    main='90% Confidence Interval for the Mean')
+abline(v=mq)
+```
+
 :::{.callout-tip icon=false collapse="true"}
-Here is an example showing what a Normal CI estimates
+For another example, consider the median. We now repeat the above process to estimate the median for each sample, instead of the mean. 
+```{r}
+## Sample Quantiles (medians)
+sample_quants <- apply(X_samples, 1, quantile, probs=0.5) #quantile for each sample (row)
+
+# Middle 90% of estimates
+mq <- quantile(sample_quants, probs=c(.05,.95))
+paste0('we are 90% confident that the median is between ', 
+    round(mq[1],2), ' and ', round(mq[2],2) )
+
+hist(sample_quants,
+    breaks=seq(.4,.6, by=.001),
+    border=NA, freq=F,
+    col=rgb(0,0,0,.25), font.main=1,
+    main='90% Confidence Interval for the Median')
+abline(v=mq)
+```
+:::
+
+
+#### **Interval Size**.  {-}
+
+Confidence intervals shrink with more data, as averaging washes out random fluctuations. 
+
+```{r}
+# Create 300 samples, each of size n
+par(mfrow=c(1,3))
+for(n in c(25, 100, 250)){
+    # Simulate 300 samples
+    X_samples <- matrix(nrow=300, ncol=n)
+    for(i in seq(1,nrow(X_samples))){
+        X_samples[i,] <- runif(n)
+    }
+
+    # Compute means for each sample (row)
+    sample_means <- apply(X_samples, 1, mean)
+    # 90% Confidence Interval
+    mq <- quantile(sample_means, probs=c(.05,.95))
+    hist(sample_means,
+        breaks=seq(.1,.9, by=.005), 
+        border=NA, freq=F, 
+        col=rgb(0,0,0,.25), font.main=1,
+        main=paste0('n=',n))
+    abline(v=mq)
+}
+```
+
+Confidence intervals also shrink with lower probabilities of containing the theoretical value. For a fixed sample size $n$, there is a trade-off between *precision*: the width of a confidence interval, and *accuracy*: the probability that a confidence interval contains the theoretical value.
+
+
+:::{.callout-tip icon=false collapse="true"}
+Here is an example showing what a Normal CI estimates. 
+Theoretically, $\pm 1 sd$ has 2/3 coverage.
+Change to $\pm 2 sd $ to see Precision-Accuracy tradeoff.
+
 ```{r}
 # Normal CI for each sample
-xq <- apply(x_samples, 1, function(r){ #theoretical se's
+xq <- apply(X_samples, 1, function(r){ #theoretical se's
     mean(r) + c(-1,1)*sd(r)/sqrt(length(r))
 })
 # First 3 interval estimates
@@ -311,12 +316,8 @@ covered <- mu_true >= xq[1, ] & mu_true <= xq[2, ]
 # Empirical coverage rate
 coverage_rate <- mean(covered)
 cat(sprintf("Estimated coverage probability: %.2f%%\n", 100 * coverage_rate))
-
-# Theoretically: [-1 sd, +1 sd] has 2/3 coverage
-# Change to [-2 sd, +2 sd] to see Precision-Accuracy tradeoff.
 ```
 :::
-
 
 ## Misc. Topics
 

@@ -1,6 +1,8 @@
 # Hypothesis Testing
 ***
 
+## Testing Methods
+  
 In this chapter, we test hypotheses using *data-driven* methods that assume much less about the data generating process. There are two main ways to conduct a hypothesis test: inverting a confidence interval and imposing the null. The first treats the distribution of estimates directly; the second explicitly enforces the null hypothesis to evaluate how unusual the observed statistic is. Both approaches rely on the bootstrap: resampling the data to approximate sampling variability. The most typical case is hypothesizing about the mean.
 
 #### **Invert a CI**. {-}
@@ -21,13 +23,13 @@ sample_mean <- mean(sample_dat)
 # Bootstrap Distribution
 n <- length(sample_dat)
 set.seed(1) # to be replicable
-bootstrap_means <- vector(length=9999)
+bootstrap_means <- vector(length=999)
 for(b in seq_along(bootstrap_means)){
-    dat_id <- seq(1,n)
-    boot_id <- sample(dat_id , replace=T)
-    dat_b  <- sample_dat[boot_id] # c.f. jackknife
+    dat_id <- seq_along(sample_dat)
+    boot_id <- sample(dat_id, replace=T)
+    dat_b <- sample_dat[boot_id] # c.f. jackknife
     mean_b <- mean(dat_b)
-    bootstrap_means[b] <-mean_b
+    bootstrap_means[b] <- mean_b
 }
 
 hist(bootstrap_means, breaks=25,
@@ -45,7 +47,7 @@ abline(v=9, col=2, lwd=2)
 
 
 :::{.callout-tip icon=false collapse="true"}
-The above procedure also generalizes to many other statistics. Perhaps the most informative additional statistics for spread or shape. E.g., you can conduct hypothesis tests for `sd` and `IQR`, or `skew` and `kurtosis`.
+The above procedure also generalizes to many other statistics. Perhaps the most informative are those for spread or shape. E.g., you can conduct hypothesis tests for `sd` and `IQR`, or `skew` and `kurtosis`.
 
 ```{r}
 # Bootstrap Distribution for SD
@@ -108,22 +110,21 @@ abline(v=sample_mean, lwd=2, col=4)
 
 
 
-This Normal based interval can also provide an alternative to the Null Bootstrap. While we could also use a Null Jackknife distribution, that is rarely done. Altogether, there are two different types of confidence intervals that "impose the null". Until you know more, a conservative rule-of-thumb is to take the larger estimate.
+The Normal approximation from the previous chapter can also impose the null: center the interval at the hypothesized value $\mu$ and use $\mu \pm q(\alpha/2) \cdot SE(M)$, where $SE(M)$ is estimated via bootstrap or classical formulas. While we could also use a Null Jackknife distribution, that is rarely done. Altogether, there are two different types of confidence intervals that "impose the null". Until you know more, a conservative rule-of-thumb is to take the larger estimate.
 
 | Interval | Mechanism |
 | -------- | ------- |
-Bootstrap Percentile | randomly resample $n$ observations with replacement and shift |
-Normal     | assume observations are i.i.d. and normal distribution is a good approximation (can use bootstrap or classical SE's) |
+| Bootstrap Percentile | randomly resample $n$ observations with replacement and shift |
+| Normal | assume observations are i.i.d. and use formula $ \pm q(\alpha/2) \cdot SE$ |
 : Types of Confidence Interval Estimates that "impose the null"
-
 
 
 
 ## $p$-values
 
-A $p$-value is the frequency you see something at least as extreme as your statistic under the null hypothesis (when sampling from the null distribution). We want the probability that the random variable $M$ that is at least as extreme (far from the null mean of $9$) as our observed sample mean $\hat{M}$.
+A $p$-value is the frequency you see something at least as extreme as your statistic under the null hypothesis (when sampling from the null distribution). We want the probability that the random variable $M$ is at least as extreme (far from the null mean of $9$) as our observed sample mean $\hat{M}$.
 
-Recall that we used the bootstrap to estimate the distribution of the sample statistic like the mean, and the null-bootstrap shifted the bootstrap to be centered at a hypothesized value. The bootstrap idea here is to approximate $M-\mu$, the difference between the sample mean $M$ and the unknown theoretical mean $\mu$, with the null-bootstrap analogue $M^{\text{boot}}_{0}-\mu$, where $M^{\text{boot}}_{0}=M^{\text{boot}}+(\mu-\hat{M})$.
+Recall that we used the bootstrap to estimate the distribution of the sample statistic like the mean, and the null-bootstrap shifted the bootstrap to be centered at a hypothesized value. The bootstrap idea here is to approximate $M-\mu$, the difference between the sample mean $M$ and the unknown theoretical mean $\mu$, with the null-bootstrap analogue $M^{\text{boot}}_{0}-\mu$, where $M^{\text{boot}}_{0}=M^{\text{boot}}+(\mu-\hat{M})$ is the recentered bootstrap mean.
 \begin{eqnarray}
 & & Prob( |M - \mu| \geq |\hat{M} - \mu| \mid \mu = 9 ) \\
 & & \approx Prob( |M^{\text{boot}}_{0}- \mu| \geq |\hat{M}- \mu|  \mid \mu = 9) \\
@@ -133,6 +134,7 @@ where $\hat{F}^{|\text{boot}|}_{0}$ is the ECDF of $|M^{\text{boot}}_{0}- \mu|$.
 
 
 :::{.callout-note icon=false collapse="true"}
+(Repeating the null bootstrap from above for reference.)
 
 ```{r}
 sample_dat <- USArrests[,'Murder']
@@ -298,7 +300,7 @@ There are several benefits to this statistic:
 * removes dependence on unknown parameters by normalizing with a standard error
 * makes the null distribution theoretically known asymptotically (approximately)
 
-The last point implies we are typically dealing with a normal distribution that is well-studied, or another well-studied distribution derived from it. We will discuss this more when [comparing means](https://jadamso.github.io/Rbooks/02_11_ComparingGroups.html).
+The last point implies we are typically dealing with a normal distribution that is well-studied, or another well-studied distribution derived from it. We will discuss this more when [comparing means](https://jadamso.github.io/Rbooks/02_11_TwoGroups.html).
 
 #### **Quantiles and Shape Statistics**. {-}
 
@@ -315,14 +317,9 @@ bootstrap_quantile_null <- vector(length=999)
 for(b in seq_along(bootstrap_quantile_null)){
     x_b <- sample(sample_dat, replace=T) #bootstrap sample
     q_b <- quantile(x_b, probs=.5) # median
-    d_b <- q_b - (q_obs-q_null) #impose the null
-    bootstrap_quantile_null[b] <- d_b
+    q_b_null <- q_b + (q_null - q_obs) # impose the null
+    bootstrap_quantile_null[b] <- q_b_null
 }
-
-    # Note that you could also standardize like the t value. E.g.,
-    # jackknife_quantiles_b <- vector(length=length(dat_b))
-    # se_b <- sd(jackknife_quantiles_b)
-    # d_b <- d_b/se_b
 
 # 2-Sided Test for Medians
 hist(bootstrap_quantile_null-q_null,
@@ -343,6 +340,7 @@ Conduct a hypothesis test for whether the upper quartile is statistically differ
 q_obs <- quantile(sample_dat, probs=.75)
 ```
 :::
+
 
 ## One-Sided Tests
 
@@ -383,8 +381,8 @@ if(p1 >.05){
 } else {
     print('reject the null that mean=9 in favor of >9, at the 5% level')
 }
-
 ```
+
 
 :::{.callout-tip icon=false collapse="true"}
 Notice that the recentering adjustment affects two-sided tests (because they depend on distance from the null mean) but not one-sided tests (because adding a constant does not change rank order). Specifically, $p = Prob( M < \hat{M} \mid \mu = 9 ) =  Prob( M - \mu < \hat{M} - \mu \mid \mu = 9 )$. That is intuitively also why the $t$-value can be used for both one and two-sided hypothesis tests.

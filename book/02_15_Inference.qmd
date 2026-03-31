@@ -12,21 +12,21 @@ We can construct confidence bands using the jackknife or bootstrap.
 
 ```{r}
 ## Data
-library("wooldridge")
-dat <- wage1[, c('wage','educ')]
-dat <- dat[order(wage1[,'educ']), ]
+library(Ecdat)
+dat <- Wages1[, c('wage','school')]
+dat <- dat[order(Wages1[,'school']), ]
 
 # Loess
-reg_lo <- loess(wage~educ, data=dat, span=.8)
+reg_lo <- loess(wage~school, data=dat, span=.8)
 
 # Predictions at design points
-pred_design <- data.frame(educ=unique(dat[,'educ']))
+pred_design <- data.frame(school=unique(dat[,'school']))
 preds_lo <- predict(reg_lo, newdata=pred_design)
 
 # Plot
 lo_col <- hcl.colors(3,alpha=.5)[2]
-plot(wage~educ, pch=16, col=grey(0,.1), data=dat)
-lines(pred_design[,'educ'], preds_lo,
+plot(wage~school, pch=16, col=grey(0,.1), data=dat)
+lines(pred_design[,'school'], preds_lo,
     col=lo_col,
     type='o', pch=2)
 
@@ -35,7 +35,7 @@ boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
 for (b in 1:399) {
     # xy_i <- xy[-i,] #jackknife for i in 1:nrow(xy)
     xy_b <- dat[sample(nrow(dat), replace=T),]
-    reg_b <- loess(wage~educ, data=xy_b, span=.8)
+    reg_b <- loess(wage~school, data=xy_b, span=.8)
     boot_lo[,b] <- predict(reg_b, newdata=pred_design)
 }
 boot_cb <- apply(boot_lo,1, quantile,
@@ -86,7 +86,7 @@ After computing gradients, you can summarize them in various plots: Histograms a
 ```{r}
 ## Gradients
 pred_lo <- predict(reg_lo)
-grad_dx <- diff(dat[,'educ'])
+grad_dx <- diff(dat[,'school'])
 grad_dy <- diff(pred_lo)
 grad_lo <-grad_dy/grad_dx
 
@@ -99,7 +99,7 @@ hist(grad_lo,  breaks=20,
     main='') ## Distributional Summary
   
 ## Visual Summary 2
-grad_x  <- dat[,'educ'][-1]
+grad_x  <- dat[,'school'][-1]
 plot(grad_x+grad_dx, grad_lo,
     xlab='x', ylab=expression(d~hat(y)/dx),
     col=lo_col, pch=16) ## Diminishing Returns?
@@ -118,9 +118,9 @@ boot_stats <- matrix(NA, nrow=299, ncol=2)
 colnames(boot_stats) <- c('Mean SE', 'SD SE')
 for(b in 1:nrow(boot_stats)){
     xy_b <- dat[sample(1:nrow(dat), replace=T),]
-    reg_lo <- loess(wage~educ, data=xy_b, span=.6)
+    reg_lo <- loess(wage~school, data=xy_b, span=.6)
     pred_lo <- predict(reg_lo)
-    grad_lo <- diff(pred_lo)/diff(xy_b[,'educ'])
+    grad_lo <- diff(pred_lo)/diff(xy_b[,'school'])
     dydx_mean <- mean(grad_lo, na.rm=T)
     dydx_sd <- sd(grad_lo, na.rm=T)
     boot_stats[b,1] <- dydx_mean
