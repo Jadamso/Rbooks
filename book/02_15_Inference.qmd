@@ -4,65 +4,67 @@
 
 ## Applied Methods
 
-Often, we are interested in gradients: how $Y$ changes with $X$. The linear model depicts this as a simple constant, $\hat{b}_{1}$, whereas other models do not. A great first step to assess gradients is to plot the predicted values over the explanatory values. A great second step is to compute gradients and summarize them. In any case, we compute confidence intervals to account for variability across samples.
+Often, we are interested in *gradients*: how $Y$ changes with $X$. The linear model depicts this as a simple constant, $\hat{b}_{1}$, whereas other models do not. A great first step to assess gradients is to plot the predicted values over the explanatory values. A great second step is to compute gradients and summarize them. In any case, we compute confidence intervals to account for variability across samples.
 
 #### **Confidence Bands**. {-}
 
-We can construct confidence bands using the jackknife or bootstrap.
+We can construct *confidence bands* using the jackknife or bootstrap.
 
 ```{r}
 ## Data
 library(Ecdat)
-dat <- Wages1[, c('wage','school')]
-dat <- dat[order(Wages1[,'school']), ]
+dat <- Wages1[, c('wage', 'school')]
+dat <- dat[order(Wages1[, 'school']), ]
 
 # Loess
-reg_lo <- loess(wage~school, data=dat, span=.8)
+reg_lo <- loess(wage ~ school, data=dat, span=.8)
 
 # Predictions at design points
-pred_design <- data.frame(school=unique(dat[,'school']))
+pred_design <- data.frame(school=unique(dat[, 'school']))
 preds_lo <- predict(reg_lo, newdata=pred_design)
 
 # Plot
-lo_col <- hcl.colors(3,alpha=.5)[2]
-plot(wage~school, pch=16, col=grey(0,.1), data=dat)
-lines(pred_design[,'school'], preds_lo,
+lo_col <- hcl.colors(3, alpha=.5)[2]
+plot(wage ~ school, pch=16, col=grey(0, .1), data=dat,
+    main=NA, xlab='School', ylab='Wage')
+lines(pred_design[, 'school'], preds_lo,
     col=lo_col,
     type='o', pch=2)
 
 # Boot CI
 boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
 for (b in 1:399) {
-    # xy_i <- xy[-i,] #jackknife for i in 1:nrow(xy)
-    xy_b <- dat[sample(nrow(dat), replace=T),]
-    reg_b <- loess(wage~school, data=xy_b, span=.8)
-    boot_lo[,b] <- predict(reg_b, newdata=pred_design)
+    # xy_i <- xy[-i, ] #jackknife for i in 1:nrow(xy)
+    xy_b <- dat[sample(nrow(dat), replace=T), ]
+    reg_b <- loess(wage ~ school, data=xy_b, span=.8)
+    boot_lo[, b] <- predict(reg_b, newdata=pred_design)
 }
-boot_cb <- apply(boot_lo,1, quantile,
-    probs=c(.025,.975), na.rm=T)
+boot_cb <- apply(boot_lo, 1, quantile,
+    probs=c(.025, .975), na.rm=T)
 
 # Plot CI
 polygon(
     c(pred_design[[1]], rev(pred_design[[1]])),
-    c(boot_cb[1,], rev(boot_cb[2,])),
+    c(boot_cb[1, ], rev(boot_cb[2, ])),
     col=lo_col,
     border=NA)
 ```
 
 
-:::{.callout-note icon=false collapse="true"}
+:::{.callout-note icon=false collapse="true" title="Must Know"}
 Construct a bootstrap confidence band for the following loess regression
 ```{r}
 # Adaptive-width subsamples with non-uniform weights
-xy <- USArrests[,c('UrbanPop','Murder')]
-xy0 <- xy[order(xy[,'UrbanPop']),]
-names(xy0) <- c('x','y')
+xy <- USArrests[, c('UrbanPop', 'Murder')]
+xy0 <- xy[order(xy[, 'UrbanPop']), ]
+names(xy0) <- c('x', 'y')
 
-plot(y~x, pch=16, col=grey(0,.5), data=xy0)
-reg_lo2 <- loess(y~x, data=xy0, span=.6)
+plot(y ~ x, pch=16, col=grey(0, .5), data=xy0,
+    main=NA, xlab='Urban Population', ylab='Murder Arrests')
+reg_lo2 <- loess(y ~ x, data=xy0, span=.6)
 
-red_col <- rgb(1,0,0,.5)
-lines(xy0[,'x'], predict(reg_lo2),
+red_col <- rgb(1, 0, 0, .5)
+lines(xy0[, 'x'], predict(reg_lo2),
     col=red_col, type='o', pch=2)
 ```
 :::
@@ -86,23 +88,23 @@ After computing gradients, you can summarize them in various plots: Histograms a
 ```{r}
 ## Gradients
 pred_lo <- predict(reg_lo)
-grad_dx <- diff(dat[,'school'])
+grad_dx <- diff(dat[, 'school'])
 grad_dy <- diff(pred_lo)
 grad_lo <-grad_dy/grad_dx
 
 ## Visual Summary
-par(mfrow=c(1,2))
+par(mfrow=c(1, 2))
 hist(grad_lo,  breaks=20,
     border=NA, freq=F,
     col=lo_col,
     xlab=expression(d~hat(y)/dx),
-    main='') ## Distributional Summary
+    main=NA) ## Distributional Summary
   
 ## Visual Summary 2
-grad_x  <- dat[,'school'][-1]
+grad_x  <- dat[, 'school'][-1]
 plot(grad_x+grad_dx, grad_lo,
     xlab='x', ylab=expression(d~hat(y)/dx),
-    col=lo_col, pch=16) ## Diminishing Returns?
+    col=lo_col, pch=16, main=NA) ## Diminishing Returns?
 ```
 
 You may also be interested in a particular gradient or a single summary statistic. For example, a bivariate regressogram can estimate the "marginal effect at the mean"; $\hat{b}_{1}( x=\hat{M}_{X} )$. More typically, you would be interested in the "mean of the gradients", sometimes said simply as "average effect", which averages the gradients over all datapoints in the dataset: $1/n \sum_{i}^{n} \hat{b}_{1}(x=\hat{X}_{i})$. Alternatively, you may be interested in the median of the gradients, or measures of "effect heterogeneity": the interquartile range or standard deviation of the gradients. Such statistics are single numbers that can be presented in tabular form: "mean gradient (sd gradient)". You can also report standard errors: "mean gradient (estimated se), sd gradient (estimated se)".
@@ -117,19 +119,19 @@ tab_stats <- c(
 boot_stats <- matrix(NA, nrow=299, ncol=2)
 colnames(boot_stats) <- c('Mean SE', 'SD SE')
 for(b in 1:nrow(boot_stats)){
-    xy_b <- dat[sample(1:nrow(dat), replace=T),]
-    reg_lo <- loess(wage~school, data=xy_b, span=.6)
+    xy_b <- dat[sample(1:nrow(dat), replace=T), ]
+    reg_lo <- loess(wage ~ school, data=xy_b, span=.6)
     pred_lo <- predict(reg_lo)
-    grad_lo <- diff(pred_lo)/diff(xy_b[,'school'])
+    grad_lo <- diff(pred_lo)/diff(xy_b[, 'school'])
     dydx_mean <- mean(grad_lo, na.rm=T)
     dydx_sd <- sd(grad_lo, na.rm=T)
-    boot_stats[b,1] <- dydx_mean
-    boot_stats[b,2] <- dydx_sd
+    boot_stats[b, 1] <- dydx_mean
+    boot_stats[b, 2] <- dydx_sd
 }
 ## SEs and CIs
 boot_se <- apply(boot_stats, 2, sd)
-boot_quants <- apply(boot_stats, 2, quantile, probs=c(0.025,0.975))
-boot_quants <- apply( round(boot_quants,3), 2, paste0, collapse=', ')
+boot_quants <- apply(boot_stats, 2, quantile, probs=c(0.025, 0.975))
+boot_quants <- apply( round(boot_quants, 3), 2, paste0, collapse=', ')
 
 ## Printing
 tab_regstyle <- data.frame(
@@ -149,7 +151,7 @@ tab_regstyle
 
 library(knitr)
 tab <- data.frame(
-  'Estimate' = round(tab_stats,2),
+  'Estimate' = round(tab_stats, 2),
   'Bootstrap SE'  =  paste0('(', round(boot_se, 3), ')'),
   'Bootstrap 95 CI' = paste0('[', boot_quants, ']')
  )
@@ -157,8 +159,8 @@ kable(
   tab,
   format='html',
   digits = 3,
-  align = "l",
-  caption = "Summary of Local Gradients")
+  align = 'l',
+  caption = 'Summary of Local Gradients')
 ```
 
 
@@ -181,51 +183,51 @@ Xmn <- 15
 
 ##Generate Sample Data
 dat_sim <- function(n=1000){
-    X <- seq(Xmn,Xmx,length.out=n)
+    X <- seq(Xmn, Xmx, length.out=n)
     ## Random Productivity
     e <- runif(n, 0, 1E6)
     beta <-  1E-10*exp(1.4*X -.015*X^2)
     Y    <-  (beta*X + e)/10
-    return(data.frame(Y,X))
+    return(data.frame(Y, X))
 }
 dat0 <- dat_sim(1000)
-dat0 <- dat0[order(dat0[,'X']),]
+dat0 <- dat0[order(dat0[, 'X']), ]
 
 ## Data from one sample
-plot(Y~X, data=dat0, pch=16, col=grey(0,.1),
-    ylab='Yearly Productivity ($)', xlab='Age' )
-reg_lo <- loess(Y~X, data=dat0, span=.8)
+plot(Y ~ X, data=dat0, pch=16, col=grey(0, .05),
+    main=NA, ylab='Yearly Productivity ($)', xlab='Age' )
+reg_lo <- loess(Y ~ X, data=dat0, span=.8)
 
 ## Plot Bootstrap CI for Single Sample
 pred_design <- data.frame(X=seq(Xmn, Xmx))
 preds_lo <- predict(reg_lo, newdata=pred_design)
 boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
 for (b in 1:399) {
-    dat0_i <- dat0[sample(nrow(dat0), replace=T),]
-    reg_i <- loess(Y~X, data=dat0_i, span=.8)
-    boot_lo[,b] <- predict(reg_i, newdata=pred_design)
+    dat0_i <- dat0[sample(nrow(dat0), replace=T), ]
+    reg_i <- loess(Y ~ X, data=dat0_i, span=.8)
+    boot_lo[, b] <- predict(reg_i, newdata=pred_design)
 }
-boot_cb <- apply(boot_lo,1, quantile,
-    probs=c(.025,.975), na.rm=T)
+boot_cb <- apply(boot_lo, 1, quantile,
+    probs=c(.025, .975), na.rm=T)
 polygon(
     c(pred_design[[1]], rev(pred_design[[1]])),
-    c(boot_cb[1,], rev(boot_cb[2,])),
-    col=hcl.colors(3,alpha=.25)[2],
+    c(boot_cb[1, ], rev(boot_cb[2, ])),
+    col=hcl.colors(3, alpha=.25)[2],
     border=NA)
 
 # Construct CI across Multiple Samples
 sample_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
 for (b in 1:399) {
     xy_b <- dat_sim(1000) #Entirely new sample
-    reg_b <- loess(Y~X, data=xy_b, span=.8)
-    sample_lo[,b] <- predict(reg_b, newdata=pred_design)
+    reg_b <- loess(Y ~ X, data=xy_b, span=.8)
+    sample_lo[, b] <- predict(reg_b, newdata=pred_design)
 }
-ci_lo <- apply(sample_lo,1, quantile,
-    probs=c(.025,.975), na.rm=T)
+ci_lo <- apply(sample_lo, 1, quantile,
+    probs=c(.025, .975), na.rm=T)
 polygon(
     c(pred_design[[1]], rev(pred_design[[1]])),
-    c(ci_lo[1,], rev(ci_lo[2,])),
-    col=grey(0,alpha=.25),
+    c(ci_lo[1, ], rev(ci_lo[2, ])),
+    col=grey(0, alpha=.25),
     border=NA)
 ```
 
@@ -258,17 +260,17 @@ for (ni in seq_along(Nseq)) {
     stats <- matrix(NA, nrow=2, ncol=B)
     for (b in 1:B) {
         dat_b  <- dat_sim(n)
-        fit_lm <- lm(Y~X, data=dat_b)
-        fit_lo <- loess(Y~X, data=dat_b, span=0.8)
-        grad_lo <- diff(predict(fit_lo))/diff(dat_b[,'X'])
+        fit_lm <- lm(Y ~ X, data=dat_b)
+        fit_lo <- loess(Y ~ X, data=dat_b, span=0.8)
+        grad_lo <- diff(predict(fit_lo))/diff(dat_b[, 'X'])
         if(n == n_bias){
-            pred_lm_bias[,b] <- predict(fit_lm, newdata=pred_design)
-            fit_lo_b <- loess(Y~X, data=dat_b, span=span_lo)
-            pred_lo_bias[,b] <- predict(fit_lo_b, newdata=pred_design)
+            pred_lm_bias[, b] <- predict(fit_lm, newdata=pred_design)
+            fit_lo_b <- loess(Y ~ X, data=dat_b, span=span_lo)
+            pred_lo_bias[, b] <- predict(fit_lo_b, newdata=pred_design)
         }
-        stats[,b] <- c(coef(fit_lm)[2], mean(grad_lo, na.rm=T))
+        stats[, b] <- c(coef(fit_lm)[2], mean(grad_lo, na.rm=T))
     }
-    SE[,ni] <- apply(stats, 1, sd)
+    SE[, ni] <- apply(stats, 1, sd)
 }
 ```
 
@@ -277,14 +279,14 @@ m_lm <- rowMeans(pred_lm_bias, na.rm=TRUE)
 m_lo <- rowMeans(pred_lo_bias, na.rm=TRUE)
 
 y_rng <- range(c(m0, m_lm, m_lo), na.rm=TRUE)
-plot(x0, m0, type='l', lwd=2, col=1, ylim=y_rng,
-  xlab="Age", ylab=" Mean Productivity ($)", main="")
-lines(x0[is.finite(m_lm)], m_lm[is.finite(m_lm)], lwd=2, col=2)
-lines(x0[is.finite(m_lo)], m_lo[is.finite(m_lo)], lwd=2, col=4)
-legend("topright", lty=1, lwd=2, col=c(1,2,4),
-  legend=c("True mean",
-    "Linear",
-    paste0("Loess(",span_lo,")")
+plot(x0, m0, type='l', lwd=2, col=rgb(0, 0, 0, .8), ylim=y_rng,
+  xlab='Age', ylab=' Mean Productivity ($)', main=NA)
+lines(x0[is.finite(m_lm)], m_lm[is.finite(m_lm)], lwd=2, col=rgb(1, 0, 0, .8))
+lines(x0[is.finite(m_lo)], m_lo[is.finite(m_lo)], lwd=2, col=rgb(0, 0, 1, .8))
+legend('topright', lty=1, lwd=2, col=c(rgb(0, 0, 0, .8), rgb(1, 0, 0, .8), rgb(0, 0, 1, .8)),
+  legend=c('True mean',
+    'Linear',
+    paste0('Loess(', span_lo, ')')
 ))
 ```
 
@@ -296,10 +298,11 @@ The model estimates also vary from sample to sample. Notice that the OLS slope c
 Also notice that there are diminishing returns to larger sample sizes. Both the OLS slope coefficient and the loess mean gradient vary less from sample to sample as $n$ grows, making hypothesis tests more accurate.
 
 ```{r}
-cols <- c(2,4)
+cols <- c(rgb(1, 0, 0, .8), rgb(0, 0, 1, .8))
 matplot(Nseq, t(SE), type='b', pch=16,
     lty=1, lwd=2, col=cols,
-    ylab='standard error', xlab='sample size')
+    ylab='standard error', xlab='sample size',
+    main=NA)
 legend('topright',
     lty=1, lwd=2, col=cols,
     legend=c('OLS slope', 'Loess mean gradient'))
@@ -310,12 +313,12 @@ legend('topright',
 
 #### **Bias-Variance Tradeoff**.{-}
 
-Models face a bias-variance tradeoff.
+Models face a *bias-variance tradeoff*.
 
 * High-bias / low-variance models. E.g., strict linear models are stable across samples but can miss curvature.
 * Low-bias / high-variance models. E.g., very flexible local linear models can capture curvature but may overfit noise.
 
-:::{.callout-note icon=false collapse="true"}
+:::{.callout-note icon=false collapse="true" title="Must Know"}
 ```{r}
 # Bias functions
 mean_pred <- function(P) rowMeans(P, na.rm=TRUE)
@@ -329,8 +332,8 @@ metrics <- rbind(
   c(avg_bias2(pred_lm_bias),  avg_var(pred_lm_bias)),
   c(avg_bias2(pred_lo_bias),  avg_var(pred_lo_bias))
 )
-colnames(metrics) <- c("Avg Bias^2", "Avg Variance")
-rownames(metrics) <- c("Linear", "Loess")
+colnames(metrics) <- c('Avg Bias^2', 'Avg Variance')
+rownames(metrics) <- c('Linear', 'Loess')
 round(metrics, 4)
 ```
 :::
@@ -360,7 +363,7 @@ for (ni in seq_along(n_grid)) {
   span_n <- min(0.9, 1.8*n^(-1/4)) # shrinks with n
   errs <- replicate(R, {
     dat_b <- dat_sim(n)
-    fit <- loess(Y~X, data=dat_b, span=span_n, degree=1)
+    fit <- loess(Y ~ X, data=dat_b, span=span_n, degree=1)
     mhat <- predict(fit, newdata=data.frame(X=x0_target))
     abs(mhat - true_m(x0_target))
   })
@@ -370,7 +373,22 @@ for (ni in seq_along(n_grid)) {
 plot(n_grid, avg_abs_err, type='b', pch=16,
      xlab='Sample size (n)',
      ylab='Average Bias',
-     font.main=1)
+     main=NA)
 ```
 
 A similar result holds for OLS when the true relationship is linear. Even with unlimited data, however, a misspecified model cannot recover the true conditional mean.
+
+
+## Exercises
+
+1. A linear regression has low variance but can have high bias when the true relationship is nonlinear. A loess regression with a small span has low bias but high variance. Explain why increasing the sample size $n$ helps reduce the standard error for both models, but only helps reduce bias for loess (with an appropriate bandwidth rule).
+
+2. Using the `USArrests` dataset, fit a loess regression of `Murder` on `UrbanPop` with `span = 0.6`. Compute the finite-difference gradients $\hat{b}_{1}(x)$ and report their mean and standard deviation. Compare these to the OLS slope $\hat{b}_{1}$ from a simple linear regression.
+
+3. Using the `USArrests` dataset and the loess fit from the previous question, write R code to construct a bootstrap confidence band with $B = 399$ replicates. Plot the scatterplot, the loess curve, and the shaded 95% confidence band.
+
+#### **Further Reading**. {-}
+
+* <https://www.econometrics-with-r.org/5-htaciam.html> -- hypothesis tests and confidence intervals for regression coefficients, with worked R examples.
+* <https://learningstatisticswithr.com/book/regression.html#hypothesistestsforregressionmodels> -- testing regression slopes, interpreting p-values, and understanding standard errors.
+* <https://www.khanacademy.org/math/statistics-probability/significance-tests-one-sample/more-significance-testing-videos/v/hypothesis-testing-and-p-values> -- video introduction to hypothesis testing logic and p-values.

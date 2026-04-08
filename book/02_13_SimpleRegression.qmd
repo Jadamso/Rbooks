@@ -2,22 +2,32 @@
 
 ***
 
-Suppose we have some bivariate data: $\hat{X}_{i}, \hat{Y}_{i}$. First, we inspect it as in Part I. We then assess the association between variables by fitting a line through the data points using a "regression".
+## Introduction
+
+Suppose we have some bivariate data: $\hat{X}_{i}, \hat{Y}_{i}$. In the previous chapter, we summarized the strength of association between two variables using correlation. Correlation tells us *how strongly* $X$ and $Y$ move together, but not *by how much* $Y$ changes per unit change in $X$. Regression answers that question by fitting a line through the data.
 
 ```{r}
 # Bivariate Data from USArrests
-xy <- USArrests[,c('Murder','UrbanPop')]
-colnames(xy) <- c('y','x')
+xy <- USArrests[, c('Murder', 'UrbanPop')]
+colnames(xy) <- c('y', 'x')
 
 # Inspect Dataset
 # head(xy)
 # summary(xy)
-plot(y~x, xy, col=grey(0,.5), pch=16,
+plot(y ~ x, xy, col=grey(0, .5), pch=16,
+	main=NA,
 	xlab='Population Share in Urban Area',
 	ylab='Murder Arrests per 100K')
 title('Data from American States, 1975', font.main=1)
 
-reg <- lm(y~x, data=xy)
+# Correlation
+cor(xy$x, xy$y)
+
+# Slope from correlation
+cor(xy$x, xy$y) * sd(xy$y)/sd(xy$x)
+
+# Regression
+reg <- lm(y ~ x, data=xy)
 abline(reg, lty=2)
 ```
 
@@ -34,20 +44,20 @@ Specifically, our *model* is
 \begin{eqnarray}
 \hat{Y}_{i}=b_{0}+b_{1} \hat{X}_{i}+e_{i},
 \end{eqnarray}
-where $b_{0}$ and $b_{1}$ are parameters, often referred to as "coefficients", and $\hat{X}_{i}, \hat{Y}_{i}$ are data for observation $i$, and $e_{i}$ is a residual error term that represents the difference between the model and the data.
+where $b_{0}$ and $b_{1}$ are parameters, often referred to as "coefficients", and $\hat{X}_{i}, \hat{Y}_{i}$ are data for observation $i$, and $e_{i}$ is a *residual* error term that represents the difference between the model and the data.
 
 
 We then find the parameters which best-fit the data. Specifically, our *objective* is to
 \begin{eqnarray}
 \min_{b_{0}, b_{1}} \sum_{i=1}^{n} \left( e_{i} \right)^2 &=& \min_{b_{0}, b_{1}} \sum_{i=1}^{n} \left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right)^2.
 \end{eqnarray}
-Minimizing the sum of squared errors then yields two *optimal coefficients* that can be explicitly solved for using math. For the slope coefficient:
+Minimizing the sum of squared errors then yields two *optimal coefficients* that can be explicitly solved for using math. For the *slope* coefficient:
 \begin{eqnarray}
 0 &=& \sum_{i=1}^{n} 2\left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right) \hat{X}_{i} \\
 \Rightarrow \hat{b}_{1} &=& \frac{\sum_{i}^{n}(\hat{X}_{i}-\hat{M}_{X})(\hat{Y}_{i}-\hat{M}_{Y})}{\sum_{i}^{}(\hat{X}_{i}-\hat{M}_{X})^2} = \frac{\hat{C}_{XY}}{\hat{V}_{X}},
 \end{eqnarray}
-the latter term being the estimated covariance between $X$ and $Y$ divided by the variance of $X$. (Recall that $M_{X}$ and $M_{Y}$ are the means.)
-For the intercept coefficient:
+the latter term being the estimated covariance between $X$ and $Y$ divided by the variance of $X$. (Recall that $M_{X}$ and $M_{Y}$ are the means.) Equivalently, $\hat{b}_{1} = \hat{R}_{XY} \cdot \hat{S}_{Y}/\hat{S}_{X}$, so the slope is just the correlation rescaled by the ratio of standard deviations.
+For the *intercept* coefficient:
 \begin{eqnarray}
 0 &=& \sum_{i=1}^{n} 2\left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right)\\ 
 \Rightarrow \hat{b}_{0} &=& \hat{M}_{Y}-\hat{b}_{1}\hat{M}_{X} .
@@ -58,13 +68,13 @@ The computer uses math to compute the answer directly, because it is much faster
 
 ```{r}
 # Run a Simple Regression
-reg <- lm(y~x, data=xy)
+reg <- lm(y ~ x, data=xy)
 coef(reg)
 
 # Manual verification
-x <- xy[,'x']
-y <- xy[,'y']
-b1 <- cov( x,y)/var(x)
+x <- xy[, 'x']
+y <- xy[, 'y']
+b1 <- cov( x, y)/var(x)
 b1
 b0 <- mean(y) - b1*mean(x)
 b0
@@ -93,7 +103,7 @@ e <- y - y_hat
 e
 ```
 
-:::{.callout-note icon=false collapse="true"}
+:::{.callout-note icon=false collapse="true" title="Must Know"}
 Suppose we have a dataset with $n = 3$ observations: $\{(1,2), (2,2.5), (3,4)\}$.
 
 We can compute the regression coefficients and model predictions in five steps.
@@ -163,7 +173,7 @@ xy0 <- data.frame(
     y=c(2, 2.5, 4))
 
 ## Simple Linear Regression
-reg0 <- lm(y~x, data=xy0)
+reg0 <- lm(y ~ x, data=xy0)
 coef(reg0)
 
 ## Sample Predictions
@@ -180,28 +190,28 @@ predict(reg0, newdata=data.frame(x=c(2.5)))
 ```{r, echo=F}
 # Plot Data and Predictions
 library(plotly)
-xy[,'ID'] <- rownames(USArrests)
-xy[,'pred'] <- predict(reg)
-xy[,'resid'] <- resid(reg)
+xy[, 'ID'] <- rownames(USArrests)
+xy[, 'pred'] <- predict(reg)
+xy[, 'resid'] <- resid(reg)
 fig <- plotly::plot_ly(
-  xy, x=~x, y=~y,
+  xy, x= ~ x, y= ~ y,
   mode='markers',
   type='scatter',
   hoverinfo='text',
-  marker=list(color=grey(0,.25), size=10),
-  text=~paste('<b>', ID, '</b>',
+  marker=list(color=grey(0, .25), size=10),
+  text= ~ paste('<b>', ID, '</b>',
               '<br>Urban  :', x,
               '<br>Murder :', y,
-              '<br>Predicted Murder :', round(pred,2),
-              '<br>Residual :', round(resid,2)))              
+              '<br>Predicted Murder :', round(pred, 2),
+              '<br>Residual :', round(resid, 2)))              
 # Add Legend
 fig <- plotly::layout(fig,
           showlegend=F,
           title='Crime and Urbanization in America 1975',
           xaxis = list(title='Percent of People in an Urban Area'),
-          yaxis = list(title='Homicide Arrests per 100,000 People'))
+          yaxis = list(title='Homicide Arrests per 100, 000 People'))
 # Plot Model Predictions
-add_trace(fig, x=~x, y=~pred,
+add_trace(fig, x= ~ x, y= ~ pred,
     inherit=F, hoverinfo='none',
     mode='lines+markers', type='scatter',
     color=I('black'),
@@ -212,22 +222,22 @@ add_trace(fig, x=~x, y=~pred,
 
 
 #### **Goodness of Fit**. {-}
-First, we qualitatively analyze the ''Goodness of fit'' of our model by plotting it against the data.
+First, we qualitatively analyze the *goodness of fit* of our model by plotting it against the data.
 For a quantitative summary, we can also compute the linear correlation between the model predictions and the sample data: $\hat{R}_{yY} = \hat{C}_{yY}/[\hat{S}_{y} \hat{S}_{Y}]$. 
-With linear models, we typically compute the "R-squared" statistic directly, $[\hat{R}_{yY}]^2$ using the sums of squared errors (Total, Explained, and Residual)
+With linear models, we typically compute the *R-squared* statistic directly, $[\hat{R}_{yY}]^2$ using the sums of squared errors (Total, Explained, and Residual)
 \begin{eqnarray}
 \underbrace{\sum_{i}(\hat{Y}_{i}-\hat{M}_{Y})^2}_\text{TSS}
 =\underbrace{\sum_{i}(\hat{y}_i-\hat{M}_{Y})^2}_\text{ESS}+\underbrace{\sum_{i}\hat{e}_{i}^2}_\text{RSS}\\
 \hat{R}_{yY}^2 = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}
 \end{eqnarray}
-This is also known as the "coefficient of determination". Intuitively, it is the percentage of all variation explained by our model, and must theorefore fall in $[0,1]$.
+This is also known as the *coefficient of determination*. Intuitively, it is the percentage of all variation explained by our model, and must theorefore fall in $[0,1]$.
 
 
 ```{r}
 # Manually Compute R2
 Ehat <- resid(reg)
 RSS  <- sum(Ehat^2)
-Y <- xy[,'y']
+Y <- xy[, 'y']
 TSS  <- sum((Y-mean(Y))^2)
 R2 <- 1 - RSS/TSS
 R2
@@ -236,23 +246,23 @@ R2
 summary(reg)$r.squared
 
 # Double Check R2
-R <- cor(xy[,'y'], predict(reg))
+R <- cor(xy[, 'y'], predict(reg))
 R^2
 ```
 
 
 
-:::{.callout-note icon=false collapse="true"}
+:::{.callout-note icon=false collapse="true" title="Must Know"}
 Suppose you have data on education level and wages. Conduct a linear regression. Then summarize the model relationship and how well it fits the data. 
 ```{r, eval=F}
 library(Ecdat)
-xy <- Wages1[,c('school','wage')]
+xy <- Wages1[, c('school', 'wage')]
 ```
 :::
 
 
 
-:::{.callout-tip icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 We use the dataset $\{(1,2), (2,2.5), (3,4)\}$ to compute Goodness of fit.
 
 From before, we know that $\hat{M}_Y = \frac{17}{6}$ and the fitted values and residuals from the regression are
@@ -352,7 +362,7 @@ Step 5. Coefficient of Determination
 # Compute R2
 Ehat0 <- resid(reg0)
 RSS0  <- sum(Ehat0^2)
-Y0 <- xy0[,'y']
+Y0 <- xy0[, 'y']
 TSS0  <- sum((Y0-mean(Y0))^2)
 R2 <- 1 - RSS0/TSS0
 
@@ -369,10 +379,10 @@ cor(Y0, predict(reg0))
 
 A regression coefficient is a statistic. And, just like all statistics, we can estimate it's variability using a
 
-* *standard error*: variability across different samples (c.f.  *standard deviation*: variability within a single sample.)
-* *confidence interval:* range your statistic varies across different samples.
+* standard error: variability across different samples (c.f.  standard deviation: variability within a single sample.)
+* confidence interval: range your statistic varies across different samples.
 
-Note that values reported by your computer do not necessarily satisfy this definition. To calculate these statistics, we will estimate variability using the *data-driven* methods from <https://jadamso.github.io/Rbooks/01_07_Intervals.html>. (For some theoretical background, see also <https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf>.) 
+Note that values reported by your computer do not necessarily satisfy this definition. To calculate these statistics, we will estimate variability using the data-driven methods from <https://jadamso.github.io/Rbooks/01_07_Intervals.html>. (For some theoretical background, see also <https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf>.) 
 
 
 #### **Jackknife**. {-}
@@ -383,10 +393,10 @@ We first consider the simplest, the jackknife. In this procedure, we loop throug
 slope <-  coef(reg)[2]
  
 # Jackknife Sampling Distribution for OLS Coefficient
-jack_coefs <- vector(length=nrow(xy))
+jack_coefs <- rep(NA, nrow(xy))
 for(i in seq_along(jack_coefs)){
-    xy_i <- xy[-i,]
-    reg_i <- lm(y~x, data=xy_i)
+    xy_i <- xy[-i, ]
+    reg_i <- lm(y ~ x, data=xy_i)
     slope_i <- coef(reg_i)[2]
     jack_coefs[i] <- slope_i
 }
@@ -395,16 +405,16 @@ for(i in seq_along(jack_coefs)){
 # Plot Jackknife Sampling Distribution
 # + Percentile Confidence Interval
 hist(jack_coefs, breaks=25,
-    main='Jackknife Distribution with 95% CIs',
-    font.main=1, border=NA,
+    main=NA, border=NA,
     freq=F,
     xlab=expression(hat(b)[-i]))
-jack_ci_percentile <- quantile(jack_coefs, probs=c(.025,.975))
+title('Jackknife Distribution with 95% CIs', font.main=1)
+jack_ci_percentile <- quantile(jack_coefs, probs=c(.025, .975))
 abline(v=jack_ci_percentile, lty=2)
 
 # Normal Approx Confidence Interval
-jack_se <- sd(jack_coefs)
-jack_ci_normal <- qnorm(c(.025,.975), slope, jack_se)
+jack_se <- sd(jack_coefs)*sqrt(nrow(xy))
+jack_ci_normal <- qnorm(c(.025, .975), slope, jack_se)
 abline(v=jack_ci_normal, lty=3)
 ```
 
@@ -415,11 +425,11 @@ There are several resampling techniques. The other main one is the bootstrap, wh
 
 ```{r}
 # Bootstrap Sampling Distribution
-boot_coefs <- vector(length=399)
+boot_coefs <- rep(NA, 399)
 for(i in seq_along(boot_coefs)){
     b_id <- sample( nrow(xy), replace=T)
-    xy_b <- xy[b_id,]
-    reg_b <- lm(y~x, data=xy_b)
+    xy_b <- xy[b_id, ]
+    reg_b <- lm(y ~ x, data=xy_b)
     slope_b <- coef(reg_b)[2]
     boot_coefs[i] <- slope_b
 }
@@ -427,16 +437,16 @@ for(i in seq_along(boot_coefs)){
 # Plot Bootstrap Sampling Distribution
 # + Percentile CI
 hist(boot_coefs, breaks=25,
-    main='Bootstrap Distribution with 95% CIs',
-    font.main=1, border=NA,
+    main=NA, border=NA,
     freq=F,
     xlab=expression(hat(b)[b]))
-boot_ci_percentile <- quantile(boot_coefs, probs=c(.025,.975))
+title('Bootstrap Distribution with 95% CIs', font.main=1)
+boot_ci_percentile <- quantile(boot_coefs, probs=c(.025, .975))
 abline(v=boot_ci_percentile, lty=2)
 
 # Normal Approx Confidence Intervals
 boot_se <- sd(boot_coefs)
-jack_ci_normal <- qnorm(c(.025,.975), slope, boot_se)
+jack_ci_normal <- qnorm(c(.025, .975), slope, boot_se)
 abline(v=jack_ci_normal, lty=3)
 ```
 
@@ -452,43 +462,43 @@ One main way to conduct hypothesis tests is to examine whether a confidence inte
 # Create t-stat with jackknife SE
 t_hat <- coef(reg)['x']/jack_se
 
-boot_t <-  vector(length=399)
+boot_t <-  rep(NA, 399)
 for(b in seq_along(boot_t)){
 	# Bootstrap data
     b_id <- sample( nrow(xy), replace=T)
-    xy_b <- xy[b_id,]
+    xy_b <- xy[b_id, ]
     # Redo regression
-    reg_b <- lm(y~x, data=xy_b)
+    reg_b <- lm(y ~ x, data=xy_b)
     slope_b <- coef(reg_b)[2]
 	# Redo Jackknife SEs
-	jack_coefs_b <- vector(length=nrow(xy_b))
+	jack_coefs_b <- rep(NA, nrow(xy_b))
 	for(i in seq_along(jack_coefs_b)){
-		xy_b_i <- xy_b[-i,]
-		reg_b_i <- lm(y~x, data=xy_b_i)
+		xy_b_i <- xy_b[-i, ]
+		reg_b_i <- lm(y ~ x, data=xy_b_i)
 		slope_b_i <- coef(reg_b_i)[2]
 		jack_coefs_b[i] <- slope_b_i
 	}
-	jack_se_b <- sd(jack_coefs_b)
+	jack_se_b <- sd(jack_coefs_b)*sqrt(nrow(xy_b))
 	# Redo t with Jackknife SE
     t_hat_b <- slope_b/jack_se_b
 	boot_t[b] <- t_hat_b
 }
 
 hist(boot_t, breaks=25,
-    main='Bootstrap t with Jackknife SE',
-    font.main=1, border=NA, freq=F,
-    xlab=expression(hat(t)[b]), 
+    main=NA, border=NA, freq=F,
+    xlab=expression(hat(t)[b]),
     xlim=range(c(0, boot_t)) )
-abline(v=quantile(boot_t, probs=c(.025,.975)), lty=2)
-abline(v=0, col="red", lwd=2)
+title('Bootstrap t with Jackknife SE', font.main=1)
+abline(v=quantile(boot_t, probs=c(.025, .975)), lty=2)
+abline(v=0, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 
-:::{.callout-note icon=false collapse="true"}
+:::{.callout-note icon=false collapse="true" title="Must Know"}
 Suppose you have data on education level and wages. Conduct a linear regression. Then construct a $95\%$ confidence interval for the slope coefficient and test the hypothesis of no relationship.
 ```{r, eval=F}
 library(Ecdat)
-xy <- Wages1[,c('school','wage')]
+xy <- Wages1[, c('school', 'wage')]
 ```
 :::
 
@@ -497,39 +507,39 @@ We can also compute a null distribution. We focus on the simplest: simulations t
 
 ```{r}
 # Null Distribution for Reg Coef
-null_t <-  vector(length=399)
+null_t <-  rep(NA, 399)
 for(b in seq_along(null_t)){
 	# Permuted data
     xy_b <- xy
-    xy_b[,'y'] <- sample( xy_b[,'y'], replace=F) #Bootstrap: replace=T
-    reg_b <- lm(y~x, data=xy_b)
+    xy_b[, 'y'] <- sample( xy_b[, 'y'], replace=F) #Bootstrap: replace=T
+    reg_b <- lm(y ~ x, data=xy_b)
     # Redo regression
-    reg_b <- lm(y~x, data=xy_b)
+    reg_b <- lm(y ~ x, data=xy_b)
     slope_b <- coef(reg_b)[2]
 	# Redo Jackknife SEs
-	jack_coefs_b <- vector(length=nrow(xy_b))
+	jack_coefs_b <- rep(NA, nrow(xy_b))
 	for(i in seq_along(jack_coefs_b)){
-		xy_b_i <- xy_b[-i,]
-		reg_b_i <- lm(y~x, data=xy_b_i)
+		xy_b_i <- xy_b[-i, ]
+		reg_b_i <- lm(y ~ x, data=xy_b_i)
 		slope_b_i <- coef(reg_b_i)[2]
 		jack_coefs_b[i] <- slope_b_i
 	}
 	# Redo t with Jackknife SE
-    t_hat_b <- slope_b/ sd(jack_coefs_b)
+    t_hat_b <- slope_b/ (sd(jack_coefs_b)*sqrt(nrow(xy_b)))
 	null_t[b] <- t_hat_b
 }
 
 # Null Distribution
 hist(null_t, breaks=25,
-    main='Null Distribution',
-    font.main=1, border=NA, freq=F,
+    main=NA, border=NA, freq=F,
     xlab=expression(hat(t)[b]),
     xlim=range(null_t))
+title('Null Distribution', font.main=1)
 # 95% CI
-null_ci <- quantile(null_t, probs=c(.025,.975))
+null_ci <- quantile(null_t, probs=c(.025, .975))
 abline(v=null_ci, lty=2)
 # Observed value
-abline(v=t_hat, col="red", lwd=2)
+abline(v=t_hat, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 Permutations are common when testing against "no association". From permuted data, we can calculate a *$p$-value*: the probability you would see something as at least as extreme as your statistic under the null (assuming your null hypothesis was true, see <https://jadamso.github.io/Rbooks/01_08_HypothesisTests.html>). We calculate the $p$-value directly from the null distribution. Smaller $p$-values suggest more evidence against the null.
@@ -540,17 +550,18 @@ Phat2  <-  1-That_NullDist2( abs(t_hat))
 Phat2
 plot(That_NullDist2, xlim=range(null_t, t_hat),
     xlab=expression( abs(hat(t)[b]) ),
-    main='Null Distribution', font.main=1)
-abline(v=t_hat, col='red')
+    main=NA)
+title('Null Distribution', font.main=1)
+abline(v=t_hat, col=rgb(1, 0, 0, .8))
 ```
 
 
 
-:::{.callout-note icon=false collapse="true"}
+:::{.callout-note icon=false collapse="true" title="Must Know"}
 Suppose you have data on grades completed and wages. Conduct a linear regression. Then compute a $p$-value for the null hypothesis of no relationship between education level and wages.
 ```{r, eval=F}
 library(Ecdat)
-xy <- Wages1[,c('school','wage')]
+xy <- Wages1[, c('school', 'wage')]
 ```
 :::
 
@@ -565,22 +576,23 @@ Although two-sided hypothesis tests are most common, you can also test one-sided
 
 ## Association is not Causation
 
-The same caveats about "correlation is not causation" extend to regression. You may be tempted to use the term "the effect", but that interpretation of a regression coefficient assumes the linear model is true. If you fit a line to a non-linear relationship, then you will still get back a coefficient even though there is no singular *the* effect: the true relationship is non-linear! Also consider a classic example, Anscombe's Quartet, which shows four very different datasets that give the same linear regression coefficient. Notice that you understand the problem because we used scatterplots to visual the data.^[The same principles holds when comparing two groups: <http://www.stat.columbia.edu/~gelman/research/published/causal_quartet_second_revision.pdf>]
+The same caveats about "correlation is not causation" extend to regression. You may be tempted to use the term "the effect", but that interpretation of a regression coefficient assumes the linear model is true. If you fit a line to a non-linear relationship, then you will still get back a coefficient even though there is no singular *the* effect: the true relationship is non-linear! Also consider a classic example, *Anscombe's Quartet*, which shows four very different datasets that give the same linear regression coefficient. Notice that you understand the problem because we used scatterplots to visual the data.^[The same principles holds when comparing two groups: <http://www.stat.columbia.edu/~gelman/research/published/causal_quartet_second_revision.pdf>]
 
 ```{r}
 # Anscombe's Quartet 
 
-par(mfrow=c(2,2))
+par(mfrow=c(2, 2))
 for(i in 1:4){
-    xi <- anscombe[,paste0('x',i)]
-    yi <- anscombe[,paste0('y',i)]
-    plot(xi, yi, ylim=c(4,13), xlim=c(4,20),
-        pch=16, col=grey(0,.6))
-    reg <- lm(yi~xi)
-    b <- round(coef(reg)[2],2)
-    p <- round(summary(reg)$coefficients[2,4],4)
-    abline(reg, col='orange')
-    title(paste0("Slope=", b,', p=',p), font.main=1)
+    xi <- anscombe[, paste0('x', i)]
+    yi <- anscombe[, paste0('y', i)]
+    plot(xi, yi, ylim=c(4, 13), xlim=c(4, 20),
+        pch=16, col=grey(0, .6), main=NA,
+        xlab=paste0('x', i), ylab=paste0('y', i))
+    reg <- lm(yi ~ xi)
+    b <- round(coef(reg)[2], 2)
+    p <- round(summary(reg)$coefficients[2, 4], 4)
+    abline(reg, col=rgb(1, 0.6, 0, .8))
+    title(paste0('Slope=', b, ', p=', p), font.main=1)
 }
 
 ## For an even better example, see `Datasaurus Dozen'F
@@ -594,3 +606,18 @@ It is true that linear regression "is the best linear predictor of the nonlinear
 While adding interaction terms or squared terms allows one incorporate heterogeneity and non-linearity, they change several features of the model (most of which are not intended). Often, there are nonsensical predicted values. For example, if the most of your age data are between $[23,65]$, a quadratic term can imply silly things for people aged $10$ or $90$. 
 
 Nonetheless, linear regression provides an important piece of quantitative information that is understood by many. All models are an approximation, and sometimes only unimportant nuances are missing from a vanilla linear model. Other times, that model can be seriously misleading. (This is especially true if your making policy recommendations based on a universal "the effect".) As an exploratory tool, linear regession is a good guess but one whose point estimates should not be taken too seriously (in which case, the standard errors are also much less important).  Before trying to find a regression specification that makes sense for the entire dataset, explore local relationships.
+
+
+## Exercises
+
+1. Explain in words what the $R^2$ statistic measures. A researcher runs a regression and finds $\hat{R}^2 = 0.95$. Does this mean the model is correctly specified or that $X$ causes $Y$? Why or why not?
+
+2. Suppose you have $n=4$ observations: $\{(1, 3),\ (2, 5),\ (3, 6),\ (4, 10)\}$. Compute $\hat{b}_0$ and $\hat{b}_1$ by hand using $\hat{b}_1 = \hat{C}_{XY}/\hat{V}_X$ and $\hat{b}_0 = \hat{M}_Y - \hat{b}_1 \hat{M}_X$. Then compute the fitted values $\hat{y}_i$, the residuals $\hat{e}_i$, and $\hat{R}^2$.
+
+3. Using the `mtcars` dataset, regress `mpg` on `wt` with `lm()`. Report $\hat{b}_0$, $\hat{b}_1$, and $\hat{R}^2$. Then write a bootstrap with $B = 999$ iterations to construct a $95\%$ percentile confidence interval for $\hat{b}_1$ and check whether it contains zero.
+
+#### **Further Reading**. {-}
+
+* <https://www.econometrics-with-r.org/4-lrwor.html> -- OLS estimation, fitted values, and residuals explained step by step with R.
+* <https://learningstatisticswithr.com/book/regression.html> -- accessible introduction to simple linear regression including interpretation of coefficients and $R^2$.
+* <https://www.khanacademy.org/math/statistics-probability/describing-relationships-quantitative-data/regression-library/v/introduction-to-residuals-and-least-squares-regression> -- video walkthrough of least-squares fitting and residual plots.

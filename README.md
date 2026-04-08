@@ -7,7 +7,8 @@
 To preview locally,
 
     quarto preview book
-
+    quarto render book
+    
 To publish online,
 
     git add <files> && git commit -m "message"

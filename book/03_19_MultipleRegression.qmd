@@ -17,22 +17,27 @@ Our objective is to minimize the sum of squared errors:
 \begin{eqnarray}
 \min_{b_0 ~~ b_1 ~~... ~~ b_{K}} \sum_{i=1}^{n} e_{i}^2,
 \end{eqnarray}
-hence the common term ``Ordinary Least Squares'' regression.
+hence the common term *Ordinary Least Squares* regression.
 
-We can analytically solve this problem using [matrix-calculations](https://jadamso.github.io/Rbooks/03_26_MiscTopics.html#matrix-calculations), although we do not do that here. Solving yields the best fitting model with coefficients $B^{*}=(b_0^{*} ~~ b_1^{*} ~~... ~~ b_{K}^{*})$.
+We can analytically solve this problem using [matrix-calculations](https://jadamso.github.io/Rbooks/03_26_MiscTopics.html#matrix-calculations), although we do not do that here (for a detailed derivation, see [these notes](https://jrnold.github.io/intro-methods-notes/ols-in-matrix-form.html)). Solving yields the best fitting model with coefficients $B^{*}=(b_0^{*} ~~ b_1^{*} ~~... ~~ b_{K}^{*})$.
 
 ```{r}
 # Check
-reg <- lm(Murder~Assault+UrbanPop, data=USArrests)
+reg <- lm(Murder ~ Assault+UrbanPop, data=USArrests)
 coef(reg)
 ```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Add `Rape` as a third explanatory variable: run `lm(Murder ~ Assault + UrbanPop + Rape, data=USArrests)` and compare the coefficients to those above. Which coefficients change the most? Does the sign of any coefficient change? What does this tell you about the relationship between the explanatory variables?
+:::
 
 #### **Goodness of fit**. {-}
 
 To measure how well the model fits the data, we can again plot our predictions.
 ```{r}
-plot(USArrests$Murder, predict(reg), pch=16, col=grey(0,.5))
-abline(a=0,b=1, lty=2)
+plot(USArrests$Murder, predict(reg), pch=16, col=grey(0, .5),
+    main=NA, xlab='Observed Murder', ylab='Predicted Murder')
+abline(a=0, b=1, lty=2)
 ```
 
 We can also again compute sums of squared errors. Adding random data may sometimes improve the fit, however, so we adjust the $\hat{R}^2$ by the number of covariates $K$.
@@ -41,31 +46,37 @@ We can also again compute sums of squared errors. Adding random data may sometim
 \hat{R}^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-\hat{R}_{yY}^2)
 \end{eqnarray}
 
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Suppose $n=50$, $K=3$, and $\hat{R}^2=0.70$. Then
+$$\hat{R}^2_{\text{adj.}} = 1 - \frac{49}{47}(1-0.70) = 1 - 1.043 \times 0.30 \approx 0.687.$$
+The adjustment reduces $\hat{R}^2$ slightly. With more covariates the penalty grows: if instead $K=10$, then $\hat{R}^2_{\text{adj.}} = 1 - \frac{49}{40}(0.30) = 1 - 0.3675 = 0.6325$.
+:::
+
 ```{r}
 ksims <- 1:30
 for(k in ksims){ 
-    USArrests[,paste0('R',k)] <- runif(nrow(USArrests),0,20)
+    USArrests[, paste0('R', k)] <- runif(nrow(USArrests), 0, 20)
 }
-R2_sim <- vector(length=length(ksims))
-R2adj_sim <- vector(length=length(ksims))
+R2_sim <- rep(NA, length(ksims))
+R2adj_sim <- rep(NA, length(ksims))
 for(k in ksims){
-    rvars <- c('Assault','UrbanPop', paste0('R',1:k))
+    rvars <- c('Assault', 'UrbanPop', paste0('R', 1:k))
     rvars2 <- paste0(rvars, collapse='+')
-    reg_k <- lm( paste0('Murder~',rvars2), data=USArrests)
+    reg_k <- lm( paste0('Murder ~ ', rvars2), data=USArrests)
     R2_sim[k] <- summary(reg_k)$r.squared
     R2adj_sim[k] <- summary(reg_k)$adj.r.squared
 }
 
 plot.new()
-plot.window(xlim=c(0,30), ylim=c(0,1))
+plot.window(xlim=c(0, 30), ylim=c(0, 1))
 points(ksims, R2_sim)
 points(ksims, R2adj_sim, pch=16)
 axis(1)
 axis(2)
-mtext(expression(R^2),2, line=3)
+mtext(expression(R^2), 2, line=3)
 mtext('Additional Random Covariates', 1, line=3)
 legend('topleft', horiz=T,
-    legend=c('Unadjusted', 'Adjusted'), pch=c(1,16))
+    legend=c('Unadjusted', 'Adjusted'), pch=c(1, 16))
 ```
 
 
@@ -73,7 +84,7 @@ legend('topleft', horiz=T,
 
 ## Variability Estimates and Hypothesis Tests
 
-Above, we computed the coefficient $\hat{B}$ for a particular sample: $\hat{X}_{1i}, \hat{X}_{2i}, ..., \hat{Y}_{i}$. We now seek to know how much the best-fitting coefficients $B^{*}$ varies from sample to sample. I.e., $\hat{B}$ is our estimate and we want to know the standard error of our estimator: $SE(B^{*})$. To estimate this variability, we can use the same *data-driven* methods introduced previously. 
+Above, we computed the coefficient $\hat{B}$ for a particular sample: $\hat{X}_{1i}, \hat{X}_{2i}, ..., \hat{Y}_{i}$. We now seek to know how much the best-fitting coefficients $B^{*}$ varies from sample to sample. I.e., $\hat{B}$ is our estimate and we want to know the standard error of our estimator: $SE(B^{*})$. To estimate this variability, we can use the same data-driven methods introduced previously. 
 
 As before, we can also conduct independent hypothesis tests using t-values. However, we can also conduct *joint tests* that account for interdependancies in our estimates. For example, to test whether two coefficients both equal $0$, we bootstrap the joint distribution of coefficients.
 
@@ -82,9 +93,9 @@ As before, we can also conduct independent hypothesis tests using t-values. Howe
 boot_coefs <- matrix(NA, nrow=399, ncol=3)
 for(b in seq(nrow(boot_coefs))){
     b_id <- sample( nrow(USArrests), replace=T)
-    dat_b <- USArrests[b_id,]
-    reg_b <- lm(Murder~Assault+UrbanPop, data=dat_b)
-    boot_coefs[b,] <- coef(reg_b)
+    dat_b <- USArrests[b_id, ]
+    reg_b <- lm(Murder ~ Assault+UrbanPop, data=dat_b)
+    boot_coefs[b, ] <- coef(reg_b)
 }
 colnames(boot_coefs) <- names(coef(reg))
 
@@ -99,11 +110,11 @@ boot_coef_df <- as.data.frame(cbind(
     boot_coefs))
 fig <- plotly::plot_ly(boot_coef_df,
     type = 'scatter', mode = 'markers',
-    x = ~UrbanPop, y = ~Assault,
-    text = ~paste('<b> bootstrap dataset: ', ID, '</b>',
-            '<br>Coef. Urban  :', round(UrbanPop,3),
-            '<br>Coef. Murder :', round(Assault,3),
-            '<br>Coef. Intercept :', round(`(Intercept)`,3)),
+    x = ~ UrbanPop, y = ~ Assault,
+    text = ~ paste('<b> bootstrap dataset: ', ID, '</b>',
+            '<br>Coef. Urban  :', round(UrbanPop, 3),
+            '<br>Coef. Murder :', round(Assault, 3),
+            '<br>Coef. Intercept :', round(`(Intercept)`, 3)),
     hoverinfo='text',
     showlegend=F,
     marker=list( color='rgba(0, 0, 0, 0.5)'))
@@ -129,11 +140,17 @@ If you test whether all $K$ variables are jointly significant, the restricted mo
 \end{eqnarray}
 Notice that $\hat{F}_{K}=1$ when $\hat{R}^2_{\text{adj.}}=0$, meaning the model does not improve fit beyond what random covariates would achieve. The F-statistic exceeds $1$ when $\hat{R}^2_{\text{adj.}}>0$ and falls below $1$ when $\hat{R}^2_{\text{adj.}}<0$.
 
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Suppose $\hat{R}^2_{\text{adj.}}=0.50$, $K=3$, $n=50$. Then
+$$\hat{F}_K = \frac{(K-1) + (n-K)\hat{R}^2_{\text{adj.}}}{(K-1)(1 - \hat{R}^2_{\text{adj.}})} = \frac{(3-1) + (50-3)(0.50)}{(3-1)(1-0.50)} = \frac{2+23.5}{2 \times 0.5} = \frac{25.5}{1} = 25.5.$$
+This is well above $1$, indicating that the model explains substantially more variation than random covariates. You can verify: `qf(0.95, 2, 47)` $\approx 3.20$, so $\hat{F}_K = 25.5$ is highly significant.
+:::
+
 To conduct a hypothesis test, first compute a null distribution by randomly reshuffling the outcomes and recompute the F statistic, and then compare how often random data give something as extreme as your initial statistic. For some intuition on this F test, examine how the adjusted $\hat{R}^2$ statistic varies with bootstrap samples. 
 ```{r}
 # Bootstrap under the null
 boots <- 1:399
-R2adj_sim0 <- vector(length=length(boots))
+R2adj_sim0 <- rep(NA, length(boots))
 for(b in boots){
   # Generate bootstrap sample
   xy_b <- USArrests
@@ -141,14 +158,15 @@ for(b in boots){
   # Impose the null
   xy_b$Murder <- xy_b$Murder[b_id]
   # Run regression
-  reg_b <- lm(Murder~Assault+UrbanPop, data=xy_b)
+  reg_b <- lm(Murder ~ Assault+UrbanPop, data=xy_b)
   R2adj_sim0[b] <- summary(reg_b)$adj.r.squared
 }
-hist(R2adj_sim0, xlim=c(-.1,1), breaks=25, border=NA,
-    main='', xlab=expression('adj.'~R[b]^2))
+hist(R2adj_sim0, xlim=c(-.1, 1), breaks=25, border=NA,
+    freq=F, main=NA, xlab=expression('adj.'~R[b]^2))
+title('Bootstrap F-test', font.main=1)
 
 # Compare to initial statistic
-abline(v=summary(reg)$adj.r.squared, lwd=2, col=2)
+abline(v=summary(reg)$adj.r.squared, lwd=2, col=rgb(1, 0, 0, .8))
 ```
 
 Note that *hypothesis testing is not to be done routinely*, as additional complications arise when testing multiple hypothesis sequentially.
@@ -167,12 +185,12 @@ N <- 30
 B <- c(10, 2, -1)
 
 x1 <- runif(N, 0, 5)
-x2 <- rbinom(N,1,.7)
-X <- cbind(1,x1,x2)
-e <- rnorm(N,0,3)
+x2 <- rbinom(N, 1, .7)
+X <- cbind(1, x1, x2)
+e <- rnorm(N, 0, 3)
 Y <- X%*%B + e
-dat <- data.frame(Y,X)
-coef(lm(Y~x1+x2, data=dat))
+dat <- data.frame(Y, X)
+coef(lm(Y ~ x1+x2, data=dat))
 ```
 
 Simulate the distribution of coefficients under a correctly specified model. Interpret the average.
@@ -183,19 +201,19 @@ B <- c(10, 2, -1)
 Coefs <- matrix(NA, nrow=3, ncol=400)
 for(sim in 1:400){
     x1 <- runif(N, 0, 5)
-    x2 <- rbinom(N,1,.7)
-    X <- cbind(1,x1,x2)
-    e <- rnorm(N,0,3)
+    x2 <- rbinom(N, 1, .7)
+    X <- cbind(1, x1, x2)
+    e <- rnorm(N, 0, 3)
     Y <- X%*%B + e
-    dat <- data.frame(Y,x1,x2)
-    Coefs[,sim] <- coef(lm(Y~x1+x2, data=dat))
+    dat <- data.frame(Y, x1, x2)
+    Coefs[, sim] <- coef(lm(Y ~ x1+x2, data=dat))
 }
 
-par(mfrow=c(1,2))
+par(mfrow=c(1, 2))
 for(i in 2:3){
-    hist(Coefs[i,], xlab=bquote(beta[.(i)]), main='', border=NA)
-    abline(v=mean(Coefs[i,]), lwd=2)
-    abline(v=B[i], col=rgb(1,0,0))
+    hist(Coefs[i, ], xlab=bquote(beta[.(i)]), main=NA, border=NA, freq=F)
+    abline(v=mean(Coefs[i, ]), lwd=2, col=rgb(1, 0, 0, .8))
+    abline(v=B[i], col=rgb(0, 0, 1, .8), lty=2)
 }
 ```
 
@@ -207,50 +225,37 @@ N <- 30
 Coefs <- matrix(NA, nrow=3, ncol=600)
 for(sim in 1:600){
     x2 <- runif(N, 0, 5)
-    x3 <- rbinom(N,1,.7)
-    e <- rnorm(N,0,3)
+    x3 <- rbinom(N, 1, .7)
+    e <- rnorm(N, 0, 3)
     Y <- 10*x3 + 2*log(x2)^x3 + e
-    dat <- data.frame(Y,x2,x3)
-    Coefs[,sim] <- coef(lm(Y~x2+x3, data=dat))
+    dat <- data.frame(Y, x2, x3)
+    Coefs[, sim] <- coef(lm(Y ~ x2+x3, data=dat))
 }
 
-par(mfrow=c(1,2))
+par(mfrow=c(1, 2))
 for(i in 2:3){
-    hist(Coefs[i,],  xlab=bquote(beta[.(i)]), main='', border=NA)
-    abline(v=mean(Coefs[i,]), col=1, lwd=2)
+    hist(Coefs[i, ],  xlab=bquote(beta[.(i)]), main=NA, border=NA, freq=F)
+    abline(v=mean(Coefs[i, ]), col=rgb(1, 0, 0, .8), lwd=2)
 }
 ```
 
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Compare the two simulation results. In the correctly specified case, the estimated coefficients center on the true values. What happens in the misspecified case? Why might OLS still be useful even when the model is misspecified?
+:::
+
 In general, you can interpret your regression coefficients as "adjusted correlations". There are (many) tests for whether the relationships in your dataset are actually additively separable and linear.
 
-## Further Reading
+## Exercises
 
-For OLS, see
+1. Explain in your own words why $\hat{R}^2$ can increase when you add a random noise variable to a regression, but $\hat{R}^2_{\text{adj.}}$ generally does not. What does this imply about using $\hat{R}^2$ alone to choose between models with different numbers of covariates?
 
-* <https://bookdown.org/josiesmith/qrmbook/linear-estimation-and-minimizing-error.html>
-* <https://www.econometrics-with-r.org/4-lrwor.html>
-* <https://www.econometrics-with-r.org/6-rmwmr.html>
-* <https://www.econometrics-with-r.org/7-htaciimr.html>
-* <https://bookdown.org/ripberjt/labbook/bivariate-linear-regression.html>
-* <https://bookdown.org/ripberjt/labbook/multivariable-linear-regression.html>
-* <https://online.stat.psu.edu/stat462/node/137/>
-* <https://book.stat420.org/>
-* Hill, Griffiths & Lim (2007), Principles of Econometrics, 3rd ed., Wiley, S. 86f.
-* Verbeek (2004), A Guide to Modern Econometrics, 2nd ed., Wiley, S. 51ff.
-* Asteriou & Hall (2011), Applied Econometrics, 2nd ed., Palgrave MacMillan, S. 177ff.
-* <https://online.stat.psu.edu/stat485/lesson/11/>
+2. Using the `USArrests` dataset, regress `Murder` on `Assault`, `UrbanPop`, and `Rape`. Report the $\hat{R}^2_{\text{adj.}}$ and the $F$-statistic. Then test whether `Rape` is jointly significant with the other variables by comparing the full model to a restricted model that excludes `Rape`.
 
-To derive OLS coefficients in Matrix form, see
+3. Using `lm()`, fit the model `Murder ~ Assault + UrbanPop` on the `USArrests` data. Write a bootstrap loop (at least 200 replications) to estimate the standard error of the `Assault` coefficient. Compare your bootstrap standard error to the one reported by `summary()`.
 
-* <https://jrnold.github.io/intro-methods-notes/ols-in-matrix-form.html>
-* <https://www.fsb.miamioh.edu/lij14/411_note_matrix.pdf>
-* <https://web.stanford.edu/~mrosenfe/soc_meth_proj3/matrix_OLS_NYU_notes.pdf>
+#### **Further Reading**. {-}
 
-For fixed effects, see
-
-* <https://www.econometrics-with-r.org/10-rwpd.html>
-* <https://bookdown.org/josiesmith/qrmbook/topics-in-multiple-regression.html>
-* <https://bookdown.org/ripberjt/labbook/multivariable-linear-regression.html>
-* <https://www.princeton.edu/~otorres/Panel101.pdf>
-* <https://www.stata.com/manuals13/xtxtreg.pdf>
+* <https://www.econometrics-with-r.org/6-rmwmr.html> -- multiple regression in R with worked examples, hypothesis tests, and diagnostics.
+* <https://book.stat420.org/> -- a full applied-statistics textbook covering OLS theory, matrix derivations, and model selection in R.
+* <https://www.econometrics-with-r.org/10-rwpd.html> -- panel data and fixed-effects estimation with practical R code.
 

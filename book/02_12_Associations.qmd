@@ -8,17 +8,17 @@ There are several ways to statistically assess the relationship between two vari
 
 #### **Pearson (Linear) Correlation**. {-}
 
-Suppose you have two vectors, $\hat{X}$ and $\hat{Y}$, that are both cardinal data. As such, you can compute the most famous measure of association, the covariance. Letting $\hat{M}_{X}$ and $\hat{M}_{Y}$ denote the mean of $\hat{X}$ and $\hat{Y}$, we have
+Suppose you have two vectors, $\hat{X}$ and $\hat{Y}$, that are both cardinal data. As such, you can compute the most famous measure of association, the *covariance*. Letting $\hat{M}_{X}$ and $\hat{M}_{Y}$ denote the mean of $\hat{X}$ and $\hat{Y}$, we have
 \begin{eqnarray}
 \hat{C}_{XY} =  \sum_{i=1}^{n} [\hat{X}_{i} - \hat{M}_{X}] [\hat{Y}_i - \hat{M}_{Y}] / n
 \end{eqnarray}
 
-Note that covariance of $\hat{X}$ and $\hat{X}$ is just the variance of $\hat{X}$; $\hat{C}_{XX}=\hat{V}_{X}$, and recall that the standard deviation is $\hat{S}_{X}=\sqrt{\hat{V}_X}$. For ease of interpretation and comparison, we rescale the correlation statistic to always lay on a scale $-1$ and $+1$. A value close to $-1$ suggests negative association, a value close to $0$ suggests no association, and a value close to $+1$ suggests positive association.
+Note that covariance of $\hat{X}$ and $\hat{X}$ is just the variance of $\hat{X}$; $\hat{C}_{XX}=\hat{V}_{X}$, and recall that the standard deviation is $\hat{S}_{X}=\sqrt{\hat{V}_X}$. For ease of interpretation and comparison, we rescale the *correlation* statistic to always lay on a scale $-1$ and $+1$. A value close to $-1$ suggests negative association, a value close to $0$ suggests no association, and a value close to $+1$ suggests positive association.
 \begin{eqnarray}
 \hat{R}_{XY} = \frac{ \hat{C}_{XY} }{ \hat{S}_{X} \hat{S}_{Y}}
 \end{eqnarray}
 
-:::{.callout-note icon=false collapse="true"}
+:::{.callout-note icon=false collapse="true" title="Must Know"}
 What is the correlation for the dataset $\{ (0,0.1) , (1, 0.3), (2, 0.2) \}$? Find the answer both mathematically and computationally.
 
 Mathematically, there are five steps.
@@ -74,9 +74,9 @@ Note that this value suggests a positive relationship between the variables.
 Computationally, we do the same steps
 ```{r}
 # Create the Data
-X <- c(0,1,2)
+X <- c(0, 1, 2)
 X
-Y <- c(0.1,0.3,0.2)
+Y <- c(0.1, 0.3, 0.2)
 Y
 
 # Compute the Means
@@ -101,68 +101,70 @@ cor_manual <- cov_manual / (sd_X * sd_Y)
 cor_manual
 
 # Verify with the built-in function
-cor(X,Y)
+cor(X, Y)
 ```
 :::
 
+#### **Hypothesis Testing**. {-}
 
+You can conduct hypothesis tests for these statistics using the same procedures we learned for univariate data, [ch.5](https://jadamso.github.io/Rbooks/01_07_Intervals.html). For example, by inverting a confidence interval.
 
-You can conduct hypothesis tests for these statistics using the same procedures we learned for univariate data. For example, by inverting a confidence interval.
-
-:::{.callout-note icon=false collapse="true"}
+:::{.callout-note icon=false collapse="true" title="Must Know"}
 ```{r}
 # Load the Data
-xy <- USArrests[,c('Murder','UrbanPop')]
+xy <- USArrests[, c('Murder', 'UrbanPop')]
 xy_cor <- cor(xy[, 1], xy[, 2])
-#plot(xy, pch=16, col=grey(0,.25))
+#plot(xy, pch=16, col=grey(0, .25))
     
 # Bootstrap Distribution of Correlation
 n <- nrow(xy)
-bootstrap_cor <- vector(length=9999)
+bootstrap_cor <- rep(NA, 9999)
 for(b in seq(bootstrap_cor) ){
-    xy_b <- xy[sample(n, replace=T),]
+    xy_b <- xy[sample(n, replace=T), ]
     xy_cor_b <- cor(xy_b[, 1], xy_b[, 2])
     bootstrap_cor[b] <- xy_cor_b
 }
 hist(bootstrap_cor, breaks=100,
-    border=NA, font.main=1,
+    border=NA, freq=F,
     xlab='Correlation',
-    main='Bootstrap Distribution')
+    main=NA)
+title('Bootstrap Distribution', font.main=1)
 
 ## Test whether correlation is statistically different from 0
 boot_ci <- quantile(bootstrap_cor, probs=c(0.025, 0.975))
 abline(v=boot_ci)
-abline(v=0, col='red')
+abline(v=0, col=rgb(1, 0, 0, .8))
 ```
 :::
 
 
 Importantly, we can also impose the null of hypothesis of no association by reshuffling the data. If we resample without replacement, this is known as a *permutation test*.
 
-:::{.callout-tip icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 ```{r}
-xy <- USArrests[,c('Murder','UrbanPop')]
+xy <- USArrests[, c('Murder', 'UrbanPop')]
 xy_cor <- cor(xy[, 1], xy[, 2])
-#plot(xy, pch=16, col=grey(0,.25))
+#plot(xy, pch=16, col=grey(0, .25))
     
 # Null Bootstrap Distribution of Correlation
 n <- nrow(xy)
-null_bootstrap_cor <- vector(length=9999)
+null_bootstrap_cor <- rep(NA, 9999)
 for(b in seq(null_bootstrap_cor) ){
     xy_b <- xy
-    xy_b[,'UrbanPop'] <- xy[sample(n, replace=T),'UrbanPop'] ## Reshuffle X
+    xy_b[, 'UrbanPop'] <- xy[sample(n, replace=T), 'UrbanPop'] ## Reshuffle X
     xy_cor_b <- cor(xy_b[, 1], xy_b[, 2])
     null_bootstrap_cor[b] <- xy_cor_b
 }
 hist(null_bootstrap_cor, breaks=100,
-    border=NA, font.main=1,
+    border=NA, freq=F,
     xlab='Correlation',
-    main='Null Bootstrap Distribution')
+    main=NA)
+title('Null Bootstrap Distribution', font.main=1)
 
 ## Test whether correlation is statistically different from 0
 boot_ci <- quantile(null_bootstrap_cor, probs=c(0.025, 0.975))
 abline(v=boot_ci)
-abline(v=xy_cor, col='blue')
+abline(v=xy_cor, col=rgb(0, 0, 1, .8))
 ```
 Because all dependence resides in the pairing, and permuting one margin destroys the pairing completely.
 
@@ -173,16 +175,16 @@ So the bootstrap evaluates sampling variability in the world that generated your
 
 | Distribution| Sample Size per Iteration | Number of Iterations | Mechanism | Typical Purpose |
 | -------- | ------- | ------- | ------- |----------------|
-Jackknife  | $n-1$   | $n$  | $X,Y$: Deterministically leave-one-out observation | Variance estimate |
-Bootstrap  | $n$     | $B$  | $X,Y$: Random resample with replacement | Variance and CI estimate |
-Null Bootstrap | $n$ | $B$  | $X,Y$: Random resample with replacement and shifted | CI under imposed null, $p$-values |
-Permutation    | $n$ | $B$  | $X$: Random resample without replacement | CI under imposed null of no association, $p$-values |
+Jackknife       | $n-1$ | $n$  | $X,Y$: Deterministically leave-one-out observation | Variance estimate (after rescaling) and Normal CI estimate |
+Bootstrap       | $n$   | $B$  | $X,Y$: Random resample with replacement | Percentile CI estimate |
+Null Bootstrap  | $n$   | $B$  | $X,Y$: Random resample with replacement and shifted | Percentile CI under imposed null, $p$-values |
+Permutation     | $n$   | $B$  | $X$: Random resample without replacement | Percentile CI under imposed null of no association, $p$-values |
 : Types of resampling
 
 
 #### **Falk Codeviance**. {-}
 
-The Codeviance, $\tilde{C}_{XY}$, is a robust alternative to Covariance. Instead of relying on means (which can be sensitive to outliers), it uses medians.^[See <https://jadamso.github.io/Rbooks/01_03_DescriptiveStatistics.html#medians-and-absolute-deviations>. See also *Theil-Sen Estimator*, which may be seen as a precursor.] We can also scale the Codeviance by the median absolute deviation to compute the median correlation, $\tilde{R}_{XY}$, which typically lies in $[-1,1]$ but not always. Letting $\tilde{M}_{X}$ and $\tilde{M}_{Y}$ denote the median of $\hat{X}$ and $\hat{Y}$, we have
+The *Codeviance*, $\tilde{C}_{XY}$, is a robust alternative to Covariance. Instead of relying on means (which can be sensitive to outliers), it uses medians.^[See <https://jadamso.github.io/Rbooks/01_03_DescriptiveStatistics.html#medians-and-absolute-deviations>. See also *Theil-Sen Estimator*, which may be seen as a precursor.] We can also scale the Codeviance by the median absolute deviation to compute the *median correlation*, $\tilde{R}_{XY}$, which typically lies in $[-1,1]$ but not always. Letting $\tilde{M}_{X}$ and $\tilde{M}_{Y}$ denote the median of $\hat{X}$ and $\hat{Y}$, we have
 \begin{eqnarray} 
 \tilde{C}_{XY} = \text{Med}\left\{ |\hat{X}_{i} - \tilde{M}_{X}| |\hat{Y}_i - \tilde{M}_{Y}| \right\} \\
 \tilde{R}_{XY} = \frac{ \tilde{C}_{XY} }{ \hat{\text{MAD}}_{X} \hat{\text{MAD}}_{Y}}. 
@@ -192,7 +194,7 @@ codev <- function(xy) {
   # Compute medians for each column
   med <- apply(xy, 2, median)
   # Subtract the medians from each column
-  xm <- sweep(xy, 2, med, "-")
+  xm <- sweep(xy, 2, med, '-')
   # Compute CoDev
   CoDev <- median(xm[, 1] * xm[, 2])
   # Compute the medians of absolute deviation
@@ -206,29 +208,30 @@ xy_codev
 
 You construct sampling distributions and conduct hypothesis tests for Falk's Codeviance statistic in the same way you do for Pearson's Correlation statistic.
 
-:::{.callout-tip icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 ```{r}
-xy <- USArrests[,c('Murder','UrbanPop')]
+xy <- USArrests[, c('Murder', 'UrbanPop')]
 xy_cor <- cor(xy[, 1], xy[, 2])
-#plot(xy, pch=16, col=grey(0,.25))
+#plot(xy, pch=16, col=grey(0, .25))
     
 # Null Permutation Distribution of Codeviance
 n <- nrow(xy)
-null_permutation_codev <- vector(length=9999)
+null_permutation_codev <- rep(NA, 9999)
 for(b in seq(null_permutation_codev) ){
     xy_b <- xy
-    xy_b[,'UrbanPop'] <- xy[sample(n, replace=F),'UrbanPop'] ## Reshuffle X
+    xy_b[, 'UrbanPop'] <- xy[sample(n, replace=F), 'UrbanPop'] ## Reshuffle X
     xy_codev_b <- codev(xy_b)
     null_permutation_codev[b] <- xy_codev_b
 }
 hist(null_permutation_codev, breaks=100,
-    border=NA, font.main=1,
+    border=NA, freq=F,
     xlab='Codeviance',
-    main='Null Permutation Distribution')
+    main=NA)
+title('Null Permutation Distribution', font.main=1)
 
 ## Test whether correlation is statistically different from 0
 abline(v=quantile(null_permutation_codev, probs=c(0.025, 0.975)))
-abline(v=xy_codev, col='blue')
+abline(v=xy_codev, col=rgb(0, 0, 1, .8))
 ```
 :::
 
@@ -250,22 +253,22 @@ where the sign function is:
 \end{cases}.
 \end{eqnarray}
 ```{r}
-xy <- USArrests[,c('Murder','UrbanPop')]
-xy[,1] <- rank(xy[,1] )
-xy[,2] <- rank(xy[,2] )
-# plot(xy, pch=16, col=grey(0,.25))
-KT <- cor(xy[, 1], xy[, 2], method = "kendall")
+xy <- USArrests[, c('Murder', 'UrbanPop')]
+xy[, 1] <- rank(xy[, 1] )
+xy[, 2] <- rank(xy[, 2] )
+# plot(xy, pch=16, col=grey(0, .25))
+KT <- cor(xy[, 1], xy[, 2], method = 'kendall')
 round(KT, 3)
 ```
 
 
 You construct sampling distributions and conduct hypothesis tests for Kendall's rank correlation statistic in the same way you do as for Pearson's Correlation statistic and Falk's Codeviance statistic.
 
-:::{.callout-tip icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Test whether Kendal's correlation statistic is statistically different from $0$. Expand on the example below to use bootstrapping.
 ```{r}
-xy <- USArrests[,c('Murder','UrbanPop')]
-KT <- cor(xy[, 1], xy[, 2], method="kendall")
+xy <- USArrests[, c('Murder', 'UrbanPop')]
+KT <- cor(xy[, 1], xy[, 2], method='kendall')
 ```
 :::
 
@@ -276,21 +279,21 @@ Kendall's rank correlation coefficient can also be used for non-linear relations
 #| fig-height: 8
 ## https://commons.wikimedia.org/wiki/File:Correlation_examples2.svg
 
-MyPlot <- function(xy, xlim = c(-4, 4), ylim = c(-3,3)) {
-   plot(xy, main ='', xlab = "", ylab = "",
-        col = grey(0,.25), pch=16, cex=.5,
-        xaxt = "n", yaxt = "n", bty = "n",
+MyPlot <- function(xy, xlim = c(-4, 4), ylim = c(-3, 3)) {
+   plot(xy, main = NA, xlab = '', ylab = '',
+        col = grey(0, .25), pch=16, cex=.5,
+        xaxt = 'n', yaxt = 'n', bty = 'n',
         xlim = xlim, ylim = ylim)
     box(lwd=.1)
     
-    cor1 <- cor(xy[,1], xy[,2])
+    cor1 <- cor(xy[, 1], xy[, 2])
     cor2 <- codev(xy)
-    cor3 <- cor(xy[,1], xy[,2], method='kendall')
+    cor3 <- cor(xy[, 1], xy[, 2], method='kendall')
     cors <- c(cor1, cor2, cor3)
     
-    #cor3 <- abs(generalCorr::gmcmtx0( xy[,c(1,2)])[2])
-    #cor4 <- Rfast::dcor( xy[,1], xy[,2])[[4]]
-    #cor5 <- XICOR::xicor( xy[,1], xy[,2]) ## cor( xy[,1], xy[,2], method='kendall') 
+    #cor3 <- abs(generalCorr::gmcmtx0( xy[, c(1, 2)])[2])
+    #cor4 <- Rfast::dcor( xy[, 1], xy[, 2])[[4]]
+    #cor5 <- XICOR::xicor( xy[, 1], xy[, 2]) ## cor( xy[, 1], xy[, 2], method='kendall') 
 
     fm <- cors*0 + 1
     fm[which.max(abs(cors))] <- 2
@@ -306,13 +309,13 @@ MvNormal <- function(n = 1000, cor, f) {
    for (i in cor) {
       sd = matrix(c(1, i, i, 1), ncol = 2)
       x = mvtnorm::rmvnorm(n, c(0, 0), sd)
-      x[,2] <- f(x[,2])
+      x[, 2] <- f(x[, 2])
       MyPlot(x)
    }
 }
 
 output <- function() {
-   par(mfrow = c(3, 2), oma = c(0,0,0,0), mar=c(3,2,6,1))
+   par(mfrow = c(3, 2), oma = c(0, 0, 0, 0), mar=c(3, 2, 6, 1))
    cor <- c(0.99, 0.9)
    MvNormal(800, cor, function(y){y});
    MvNormal(800, cor, function(y){(y/2)^3});
@@ -324,7 +327,7 @@ output()
 
 
 #### **Two Unordered Factors**. {-}
-Suppose $\hat{X}$ and $\hat{Y}$ are both *categorical* variables; the value of $\hat{X}$ is one of $1...K$ categories and the value of $\hat{Y}$ is one of $1...J$ categories. We organize such data as a contingency table with $K$ rows and $J$ columns and use *Cramer's V* to quantify the strength of association by adjusting a *chi-squared* statistic to provide a measure that ranges from $0$ to $1$; $0$ suggests no association while a value closer to $1$ suggests a strong association. 
+Suppose $\hat{X}$ and $\hat{Y}$ are both *categorical* variables; the value of $\hat{X}$ is one of $1...K$ categories and the value of $\hat{Y}$ is one of $1...J$ categories. We organize such data as a *contingency table* with $K$ rows and $J$ columns and use *Cramer's V* to quantify the strength of association by adjusting a *chi-squared* statistic to provide a measure that ranges from $0$ to $1$; $0$ suggests no association while a value closer to $1$ suggests a strong association. 
 
 First, compute the chi-square statistic:
 \begin{eqnarray}
@@ -345,9 +348,9 @@ Second, normalize the chi-square statistic with the sample size and the degrees 
 \end{eqnarray}
 
 ```{r}
-xy <- USArrests[,c('Murder','UrbanPop')]
-xy[,1] <- cut(xy[,1],3)
-xy[,2] <- cut(xy[,2],4)
+xy <- USArrests[, c('Murder', 'UrbanPop')]
+xy[, 1] <- cut(xy[, 1], 3)
+xy[, 2] <- cut(xy[, 2], 4)
 table(xy)
 
 CV <- function(xy){
@@ -393,7 +396,8 @@ n <- 10000
 X <- runif(n, min = -1, max = 1)
 epsilon <- rnorm(n, mean = 0, sd = 0.1)
 Y <- X^2 + epsilon  # clear causal effect of X on Y
-plot(X,Y, pch=16, col=grey(0,.1))
+plot(X, Y, pch=16, col=grey(0, .05),
+    main=NA, xlab='X', ylab='Y')
 
 # Correlation over the entire range
 title( paste0('Cor: ', round( cor(X, Y), 1) ) ,
@@ -402,7 +406,7 @@ title( paste0('Cor: ', round( cor(X, Y), 1) ) ,
 
 ```{r}
 # Heterogeneous Effects
-X <- rnorm(n) # Randomized "treatment"
+X <- rnorm(n) # Randomized 'treatment'
 
 # Heterogeneous effects based on group
 group <- rbinom(n, size = 1, prob = 0.5)
@@ -410,7 +414,8 @@ epsilon <- rnorm(n, mean = 0, sd = 1)
 Y <- ifelse(group == 1,
             X + epsilon,   # positive effect
             -X + epsilon)  # negative effect
-plot(X,Y, pch=16, col=grey(0,.1))
+plot(X, Y, pch=16, col=grey(0, .05),
+    main=NA, xlab='X', ylab='Y')
 
 # Correlation in the pooled sample
 title( paste0('Cor: ', round( cor(X, Y), 1) ),
@@ -431,14 +436,16 @@ n <- 20000
 A <- runif(n)
 B <- runif(n)
 C <- runif(n)
-par(mfrow=c(1,2))
-plot(A,B, pch=16, col=grey(0,.1))
+par(mfrow=c(1, 2))
+plot(A, B, pch=16, col=grey(0, .05),
+    main=NA, xlab='A', ylab='B')
 title('Independent Variables', font.main=1)
 
 # Ratios with a shared denominator
 X <- A / C
 Y <- B / C
-plot(X,Y, pch=16, col=grey(0,.1))
+plot(X, Y, pch=16, col=grey(0, .05),
+    main=NA, xlab='X', ylab='Y')
 title('With Common Divisor', font.main=1)
 
 # Correlation
@@ -461,21 +468,24 @@ mean(admitted)  # admission rate
 par(mfrow = c(1, 2))
 # Full population
 plot(test_score, extracurriculars,
-     pch=16, col=grey(0,.1))
+     pch=16, col=grey(0, .05),
+     main=NA, xlab='Test Score', ylab='Extracurriculars')
 title('General Sample', font.main=1)
 # Admitted only
 plot(test_score[admitted], extracurriculars[admitted],
-     pch=16, col=grey(0,.1))
+     pch=16, col=grey(0, .05),
+     main=NA, xlab='Test Score', ylab='Extracurriculars')
 title('University Sample', font.main=1)
 # Correlation among admitted applicants only
 cor(test_score[admitted], extracurriculars[admitted])
 ```
 
 
-:::{.callout-note icon=false collapse="true"}
+:::{.callout-note icon=false collapse="true" title="Must Know"}
 In the dataset below, compute the correlation statistic and comment on whether any relationship is causal. 
 ```{r}
-plot(Murder~Assault, USArrests, pch=16, col=grey(0.,.5))
+plot(Murder ~ Assault, USArrests, pch=16, col=grey(0, .5),
+    main=NA, xlab='Assault Arrests', ylab='Murder Arrests')
 ```
 :::
 
@@ -483,8 +493,16 @@ Note that the above examples below are not the only examples of "correlation doe
 
 
 
-## Further Reading 
+## Exercises
 
-Other Statistics 
+1. Give an example of a dataset where Pearson's correlation $\hat{R}_{XY}$ is close to zero but there is a clear causal relationship between $X$ and $Y$. What feature of the relationship causes the correlation to miss it, and which alternative statistic from this chapter might detect it?
 
-* <https://cran.r-project.org/web/packages/qualvar/vignettes/wilcox1973.html>
+2. For the dataset $\{(1, 5),\ (2, 3),\ (3, 4),\ (4, 2),\ (5, 1)\}$, compute the Pearson correlation $\hat{R}_{XY}$ by hand. Show all five steps: means, deviances, covariance $\hat{C}_{XY}$, standard deviations $\hat{S}_{X}$ and $\hat{S}_{Y}$, and the final correlation.
+
+3. Using the `USArrests` dataset, compute both the Pearson correlation and Kendall's rank correlation between `Murder` and `Assault`. Then write a bootstrap with $B = 9999$ iterations to construct a $95\%$ confidence interval for the Pearson correlation. Does the interval contain zero?
+
+#### **Further Reading**. {-}
+
+* <https://www.econometrics-with-r.org/2-2-an-application-to-the-gender-gap-of-earnings.html> -- worked example of computing and interpreting correlation in an economics setting.
+* <https://learningstatisticswithr.com/book/regression.html#correlations> -- clear introduction to Pearson, Spearman, and other correlation measures with R code.
+* <https://www.khanacademy.org/math/statistics-probability/describing-relationships-quantitative-data/scatterplots-and-correlation/v/correlation-and-causality> -- short video on why correlation does not imply causation.

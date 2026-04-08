@@ -27,6 +27,9 @@ Here is an example for minimum wages.
 
 The distinctions matter, as they help you recognize that predictive accuracy or good data visualization does not equal causal insight. You can then better align statistical tools with questions. Try remembering this: Describe reality, Explain causes, Predict futures
 
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Consider the relationship between class size and student test scores. Write one sentence for each: (a) a descriptive finding, (b) an explanatory hypothesis, and (c) a predictive statement. Which of the three requires the strongest assumptions?
+:::
 
 
 #### **Prediction Intervals**. {-}
@@ -34,9 +37,9 @@ The distinctions matter, as they help you recognize that predictive accuracy or 
 Here, we consider a range for $Y_{i}$ rather than for $m(X_{i})$. These intervals also take into account the residuals, the variability of individuals rather than the variability of their mean.
 ```{r}
 # Bivariate Data from USArrests
-xy <- USArrests[,c('Murder','UrbanPop')]
-colnames(xy) <- c('y','x')
-xy0 <- xy[order(xy[,'x']),]
+xy <- USArrests[, c('Murder', 'UrbanPop')]
+colnames(xy) <- c('y', 'x')
+xy0 <- xy[order(xy[, 'x']), ]
 ```
 
 For a nice overview of different types of intervals, see <https://www.jstor.org/stable/2685212>. For an in-depth view, see "Statistical Intervals: A Guide for Practitioners and Researchers" or "Statistical Tolerance Regions: Theory, Applications, and Computation". See <https://robjhyndman.com/hyndsight/intervals/> for constructing intervals for future observations in a time-series context. See Davison and Hinkley, chapters 5 and 6 (also Efron and Tibshirani, or Wehrens et al.)
@@ -45,47 +48,47 @@ For a nice overview of different types of intervals, see <https://www.jstor.org/
 ```{r}
 
 ## Data
-library("wooldridge")
-dat <- wage1[, c('wage','educ')]
-dat <- dat[order(wage1[,'educ']), ]
+library('wooldridge')
+dat <- wage1[, c('wage', 'educ')]
+dat <- dat[order(wage1[, 'educ']), ]
 
 
 # Design Points
-X0 <- unique(dat[,'educ'])
+X0 <- unique(dat[, 'educ'])
 # Regression
-reg_lo <- loess(wage~educ, data=dat, span=.8)
+reg_lo <- loess(wage ~ educ, data=dat, span=.8)
 preds_lo <- predict(reg_lo, newdata=data.frame(educ=X0))
 
 # Bootstrap Residuals
 n <- nrow(dat)
 res_lo <- lapply(1:399, function(i){
-    dat_b <- dat[sample(n, replace=T),]
-    reg_b <- loess(wage~educ, data=dat_b, span=.8)
+    dat_b <- dat[sample(n, replace=T), ]
+    reg_b <- loess(wage ~ educ, data=dat_b, span=.8)
     resids_b <- resid(reg_b)
-    cbind(e=resids_b, educ=dat_b[,'educ'])
+    cbind(e=resids_b, educ=dat_b[, 'educ'])
 })
 res_lo <- do.call(rbind, res_lo)
 
 ## Smooth residuals
 res_fun <- function(x0, h){
 	# Include only residuals within h distance to x0
-    ki0 <- abs(res_lo[,'educ']-x0)/h
+    ki0 <- abs(res_lo[, 'educ']-x0)/h
     ki0 <- dunif(ki0)/h
     ei0 <- res_lo[ki0 != 0, 'e'] #subset estimates   
     ## Local quantiles
-    res_i <- quantile(ei0, probs=c(.025,.975), na.rm=T)
+    res_i <- quantile(ei0, probs=c(.025, .975), na.rm=T)
     res_i
 }
 res_ci <- sapply(X0, res_fun, h=5)
 
 ## Prediction Interval
-pi_lo1 <- preds_lo + res_ci[1,]
-pi_lo2 <- preds_lo + res_ci[2,]
+pi_lo1 <- preds_lo + res_ci[1, ]
+pi_lo2 <- preds_lo + res_ci[2, ]
 
 #Plot
-col <- hcl.colors(3,alpha=.5)[2]
-plot(wage~educ, pch=16, col=grey(0,.5),
-    data=dat, ylim=c(0, 20))
+col <- hcl.colors(3, alpha=.5)[2]
+plot(wage ~ educ, pch=16, col=grey(0, .25),
+    data=dat, ylim=c(0, 20), main=NA)
 lines(X0, preds_lo,
     col=col, type='o', pch=2)
 polygon( c(X0, rev(X0)),
@@ -94,17 +97,17 @@ polygon( c(X0, rev(X0)),
 ```
 
 
-:::{.callout-tip icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Consider also this example below with a linear model. Expand on it by using the Normal Approximation for the residuals (hint: use `qnorm`).
 
 ```{r}
-reg <- lm(wage~educ, data=dat)
+reg <- lm(wage ~ educ, data=dat)
 
 # Bootstrap Prediction Interval
 boot_resids <- lapply(1:399, function(b){
     b_id <- sample( nrow(dat), replace=T)
-    dat_b <- dat[b_id,]
-    reg_b <- lm(wage~educ, data=dat_b)
+    dat_b <- dat[b_id, ]
+    reg_b <- lm(wage ~ educ, data=dat_b)
     e_b <- resid(reg_b)
     x_b <- reg_b[['model']][['educ']]
     res_b <- cbind(e_b, x_b)
@@ -112,31 +115,32 @@ boot_resids <- lapply(1:399, function(b){
 boot_resids <- as.data.frame(do.call(rbind, boot_resids))
 
 # Errors do not vary with x
-ehat <- quantile(boot_resids[,'e_b'], probs=c(.025, .975))
+ehat <- quantile(boot_resids[, 'e_b'], probs=c(.025, .975))
 
 # PI
 phat <- predict(reg)
 boot_pi <- cbind(phat + ehat[1], phat + ehat[2])
 
 # Plot Bootstrap PI
-plot(wage~educ, data=dat, pch=16, main='Prediction Intervals',
-    ylim=c(-5,20), font.main=1)
-x <- dat[,'educ']
+plot(wage ~ educ, data=dat, pch=16, col=grey(0, .25), main=NA,
+    ylim=c(-5, 20))
+title('Prediction Intervals', font.main=1)
+x <- dat[, 'educ']
 lines(x, phat, type='o', pch=2)
 polygon( c(x, rev(x)),
-    c(boot_pi[,1], rev(boot_pi[,2])),
-    col=grey(0,.2), border=NA)
+    c(boot_pi[, 1], rev(boot_pi[, 2])),
+    col=grey(0, .2), border=NA)
 
 # Normal PI (Make by hand)
 #pi <- predict(reg, interval='prediction')
-#lines( x, pi[,'lwr'], lty=2)
-#lines( x, pi[,'upr'], lty=2)
+#lines( x, pi[, 'lwr'], lty=2)
+#lines( x, pi[, 'upr'], lty=2)
 ```
 :::
 
 #### **Cross Validation**.{-}
 
-Perhaps the most common approach to selecting a bandwidth is to minimize \textit{prediction} error. *Leave-one-out Cross-validation* minimizes the average "leave-one-out" mean square prediction errors:
+Perhaps the most common approach to selecting a bandwidth is to minimize \textit{prediction} error. Leave-one-out Cross-validation minimizes the average "leave-one-out" mean square prediction errors:
 \begin{eqnarray}
 \min_{h} \quad \frac{1}{n} \sum_{i=1}^{n} \left[ \hat{Y}_{i} - \hat{y_{[i]}}(X,h) \right]^2,
 \end{eqnarray}
@@ -149,36 +153,36 @@ In practice, compare models with cross-validation (below). The preferred model i
 ```{r}
 library(wooldridge)
 # Crossvalidated bandwidth for regression
-xy_mat <- data.frame(x=wage1[,'educ'], y=wage1[,'wage'])
+xy_mat <- data.frame(x=wage1[, 'educ'], y=wage1[, 'wage'])
 
 ## Grid Search
-BWS <- c(0.5,0.6,0.7,0.8)
+BWS <- c(0.5, 0.6, 0.7, 0.8)
 BWS_CV <- sapply(BWS, function(h){
     E_bw <- sapply(1:nrow(xy_mat), function(i){
-        llls <- loess(y~x, data=xy_mat[-i,], span=h,
+        llls <- loess(y ~ x, data=xy_mat[-i, ], span=h,
             degree=1, surface='direct')
-        pred_i <- predict(llls, newdata=xy_mat[i,])
-        e_i <-  (pred_i- xy_mat[i,'y'])
+        pred_i <- predict(llls, newdata=xy_mat[i, ])
+        e_i <-  (pred_i- xy_mat[i, 'y'])
         return(e_i)
     })
     return( mean(E_bw^2) )
 })
 
 ## Plot MSE
-par(mfrow=c(1,2))
+par(mfrow=c(1, 2))
 plot(BWS, BWS_CV, ylab='CV error', pch=3,
     xlab='bandwidth (h)')
 
 ## Plot Optimal Predictions
 h_star <- BWS[which.min(BWS_CV)]
-llls <- loess(y~x, data=xy_mat, span=h_star,
+llls <- loess(y ~ x, data=xy_mat, span=h_star,
     degree=1, surface='direct')
-plot(xy_mat, pch=16, col=grey(0,.5),
-    xlab='X', ylab='Predictions')
+plot(xy_mat, pch=16, col=grey(0, .25),
+    xlab='X', ylab='Predictions', main=NA)
 
-pred_id <- order(xy_mat[,'x'])
-lines(xy_mat[pred_id,'x'], predict(llls)[pred_id],
-    col=2, lwd=2)
+pred_id <- order(xy_mat[, 'x'])
+lines(xy_mat[pred_id, 'x'], predict(llls)[pred_id],
+    col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 ## Filtering 
@@ -189,52 +193,52 @@ In some cases, we may want to smooth time series data instead of predict into th
 * Filtering: $\mathbb{E}[Y_{t} | X_{t-1}, X_{t-2}]$
 * Smoothing: $\mathbb{E}[Y_{t} | X_{t-1}, X_{t+1}]$
 
-One example of filtering is Exponential Filtering (sometimes confusingly referred to as "Exponential Smoothing") which weights only previous observations using an exponential kernel.
+One example of *filtering* is *Exponential Filtering* (sometimes confusingly referred to as "Exponential Smoothing") which weights only previous observations using an exponential kernel.
 ```{r}
 # Time series data
 set.seed(1)
 ## Underlying Trend
-x0 <- cumsum(rnorm(500,0,1))
+x0 <- cumsum(rnorm(500, 0, 1))
 ## Observed Datapoints
-x <- x0 + runif(length(x0),-10,10)
+x <- x0 + runif(length(x0), -10, 10)
 dat <- data.frame(t=seq(x), x0=x0, x=x)
 
 ## Asymmetric Kernel
-#bw <- c(2/3,1/3)
+#bw <- c(2/3, 1/3)
 #s1 <- filter(x, bw/sum(bw), sides=1)
 
 ## Symmetric Kernel
-#bw <- c(1/6,2/3,1/6)
+#bw <- c(1/6, 2/3, 1/6)
 #s2 <- filter(x,  bw/sum(bw), sides=2)
 ```
 
-There are several cross-validation procedures for filtering time series data [@OpsomerEtAl2001]. One is called time series cross-validation (TSCV), which is useful for temporally dependent data [@Hart1991; @HaerdlePhilippe1992; @Bergmeir2018].
+There are several cross-validation procedures for filtering time series data [@OpsomerEtAl2001]. One is called *time series cross-validation* (TSCV), which is useful for temporally dependent data [@Hart1991; @HaerdlePhilippe1992; @Bergmeir2018].
 ```{r, eval=F}
 ## Plot Simulated Data
 x <- dat$x
 x0 <- dat$x0
-par(fig = c(0,1,0,1), new=F)
-plot(x, pch=16, col=grey(0,.25))
+par(fig = c(0, 1, 0, 1), new=F)
+plot(x, pch=16, col=grey(0, .25))
 lines(x0, col=1, lty=1, lwd=2)
 
 ## Work with differenced data?
 #n       <- length(Yt)
 #plot(Yt[1:(n-1)], Yt[2:n],
 #    xlab='d Y (t-1)', ylab='d Y (t)', 
-#    col=grey(0,.5), pch=16)
+#    col=grey(0, .5), pch=16)
 #Yt <- diff(Yt)
 
 ## TSCV One Sided Moving Average
-filter_bws <- seq(1,20,by=1)
+filter_bws <- seq(1, 20, by=1)
 filter_mape_bws <- sapply(filter_bws, function(h){
-    bw <- c(0,rep(1/h,h)) ## Leave current one out
+    bw <- c(0, rep(1/h, h)) ## Leave current one out
     s2 <- filter(x, bw, sides=1)
     pe <- s2 - x
     mape <- mean( abs(pe)^2, na.rm=T)
 })
 filter_mape_star <- filter_mape_bws[which.min(filter_mape_bws)]
 filter_h_star <- filter_bws[which.min(filter_mape_bws)]
-filter_tscv <- filter(x,  c(rep(1/filter_h_star,filter_h_star)), sides=1)
+filter_tscv <- filter(x,  c(rep(1/filter_h_star, filter_h_star)), sides=1)
 # Plot Optimization Results
 #par(fig = c(0.07, 0.35, 0.07, 0.35), new=T) 
 #plot(filter_bws, filter_mape_bws, type='o', ylab='mape', pch=16)
@@ -242,15 +246,15 @@ filter_tscv <- filter(x,  c(rep(1/filter_h_star,filter_h_star)), sides=1)
 
 ## TSCV for LLLS
 library(np)
-llls_bws <- seq(8,28,by=1)
+llls_bws <- seq(8, 28, by=1)
 llls_burnin <- 10
-llls_mape_bws <- sapply(llls_bws, function(h){ # cat(h,'\n')
+llls_mape_bws <- sapply(llls_bws, function(h){ # cat(h, '\n')
     pe <- sapply(llls_burnin:nrow(dat), function(t_end){
         dat_t <- dat[dat$t<t_end, ]
-        reg <- npreg(x~t, data=dat_t, bws=h,
+        reg <- npreg(x ~ t, data=dat_t, bws=h,
             ckertype='epanechnikov',
             bandwidth.compute=F, regtype='ll')
-        edat <- dat[dat$t==t_end,]
+        edat <- dat[dat$t==t_end, ]
         pred <- predict(reg, newdata=edat)
         pe <- edat$x - pred
         return(pe)    
@@ -259,14 +263,14 @@ llls_mape_bws <- sapply(llls_bws, function(h){ # cat(h,'\n')
 })
 llls_mape_star <- llls_mape_bws[which.min(llls_mape_bws)]
 llls_h_star <- llls_bws[which.min(llls_mape_bws)]
-#llls_tscv <- predict( npreg(x~t, data=dat, bws=llls_h_star,
+#llls_tscv <- predict( npreg(x ~ t, data=dat, bws=llls_h_star,
 #    bandwidth.compute=F, regtype='ll', ckertype='epanechnikov'))
 llls_tscv <- sapply(llls_burnin:nrow(dat), function(t_end, h=llls_h_star){
     dat_t <- dat[dat$t<t_end, ]
-    reg <- npreg(x~t, data=dat_t, bws=h,
+    reg <- npreg(x ~ t, data=dat_t, bws=h,
         ckertype='epanechnikov',
         bandwidth.compute=F, regtype='ll')
-    edat <- dat[dat$t==t_end,]
+    edat <- dat[dat$t==t_end, ]
     pred <- predict(reg, newdata=edat)
     return(pred)    
 })
@@ -274,13 +278,13 @@ llls_tscv <- sapply(llls_burnin:nrow(dat), function(t_end, h=llls_h_star){
 ## Compare Fits Qualitatively
 lines(filter_tscv, col=2, lty=1, lwd=1)
 lines(llls_burnin:nrow(dat), llls_tscv, col=4, lty=1, lwd=1)
-legend('topleft', lty=1, col=c(1,2,4), bty='n',
+legend('topleft', lty=1, col=c(1, 2, 4), bty='n',
     c('Underlying Trend', 'MA-1sided + TSCV', 'LLLS-1sided + TSCV'))
 
 ## Compare Fits Quantitatively
 cbind(
     bandwidth=c(LLLS=llls_h_star, MA=filter_h_star),
-    mape=round(c(LLLS=llls_mape_star, MA=filter_mape_star),2) )
+    mape=round(c(LLLS=llls_mape_star, MA=filter_mape_star), 2) )
 
 ## See also https://cran.r-project.org/web/packages/smoots/smoots.pdf
 #https://otexts.com/fpp3/tscv.html
@@ -329,7 +333,7 @@ Prob(X_i=1|Y_i=1)
 Even with a good test, posterior probability depends strongly on prevalence.
 
 ```{r}
-# States: X in {0,1}, signal Y in {0,1}
+# States: X in {0, 1}, signal Y in {0, 1}
 # Prior Prob(X_i=1)
 p_x1 <- 0.12
 
@@ -352,8 +356,12 @@ p_x1_y0 <- (p_y0_x1 * p_x1) / p_y0
 p_x1_y0
 ```
 
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Notice that a positive test result raises the probability of having the condition from $12\%$ (prior) to about $60\%$ (posterior). A negative test result lowers it from $12\%$ to about $1.4\%$. If prevalence were higher, say $50\%$, the posterior after a positive test would be $\frac{0.90 \times 0.50}{0.90 \times 0.50 + 0.08 \times 0.50} = \frac{0.45}{0.49} \approx 0.92$. The same test is far more informative when prevalence is higher.
+:::
+
 ## Subsampling
-Random subsampling is one of many hybrid approaches that tries to combine the best of the core methods: Bootstrap and Jacknife.
+Random *subsampling* is one of many hybrid approaches that tries to combine the best of the core methods: Bootstrap and Jacknife.
 
 | | Sample Size per Iteration | Number of Iterations | Resample |
 | -------- | ------- | ------- | ------- |
@@ -362,28 +370,32 @@ Jackknife | $n-1$   | $n$  | Without Replacement |
 Random Subsample | $m < n$ | $B$  | Without Replacement |
 
 ```{r}
-xy <- USArrests[,c('Murder','UrbanPop')]
-colnames(xy) <- c('y','x')
-reg <-  lm(y~x, data=xy)
+xy <- USArrests[, c('Murder', 'UrbanPop')]
+colnames(xy) <- c('y', 'x')
+reg <-  lm(y ~ x, data=xy)
 coef(reg)
 
 # Random Subsamples
 rs_regs <- lapply(1:399, function(b){
     b_id <- sample( nrow(xy), nrow(xy)-10, replace=F)
-    xy_b <- xy[b_id,]
-    reg_b <- lm(y~x, data=xy_b)
+    xy_b <- xy[b_id, ]
+    reg_b <- lm(y ~ x, data=xy_b)
 })
-rs_coefs <- sapply(rs_regs, coef)['x',]
+rs_coefs <- sapply(rs_regs, coef)['x', ]
 rs_se <- sd(rs_coefs)
 
 hist(rs_coefs, breaks=25,
-    main=paste0('SE est. = ', round(rs_se,4)),
-    font.main=1, border=NA,
+    main=NA, border=NA, freq=F,
     xlab=expression(hat(b)[b]))
-abline(v=coef(reg)['x'], lwd=2)
-rs_ci_percentile <- quantile(rs_coefs, probs=c(.025,.975))
-abline(v=rs_ci_percentile, lty=2)
+title(paste0('SE est. = ', round(rs_se, 4)), font.main=1)
+abline(v=coef(reg)['x'], lwd=2, col=rgb(1, 0, 0, .8))
+rs_ci_percentile <- quantile(rs_coefs, probs=c(.025, .975))
+abline(v=rs_ci_percentile, lty=2, col=rgb(0, 0, 1, .8))
 ```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+The random subsample uses $n-10$ observations per iteration. How would you expect the standard error estimate to change if you used $n-20$ instead? What is the trade-off between subsample size $m$ and the number of iterations $B$?
+:::
 
 
 ## Inference.
@@ -392,10 +404,10 @@ abline(v=rs_ci_percentile, lty=2)
 
 First, not that you can use matrix algebra in R
 ```{r}
-x_mat1 <- matrix( seq(2,7), 2, 3)
+x_mat1 <- matrix( seq(2, 7), 2, 3)
 x_mat1
 
-x_mat2 <- matrix( seq(4,-1), 2, 3)
+x_mat2 <- matrix( seq(4, -1), 2, 3)
 x_mat2
 
 x_mat1*x_mat2 #NOT classical matrix multiplication
@@ -406,6 +418,10 @@ tcrossprod(x_mat1, x_mat2) #x_mat1 %*% t(x_mat2)
 crossprod(x_mat1, x_mat2)
 ```
 
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Matrix multiplication `%*%` follows the rule that element $(i,j)$ of the product equals the dot product of row $i$ of the first matrix and column $j$ of the second. For `crossprod(A, B)`, R computes $A'B$ efficiently without explicitly transposing. This is useful in OLS where we need $(\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{Y}$ repeatedly.
+:::
+
 Second, note that you can apply functions to matrices
 ```{r}
 sum_squared <- function(x1, x2) {
@@ -415,7 +431,7 @@ sum_squared <- function(x1, x2) {
 sum_squared(x_mat1, x_mat2)
 
 
-solve(x_mat1[1:2,1:2])
+solve(x_mat1[1:2, 1:2])
 ```
 
 
@@ -439,9 +455,9 @@ Minimizing the squared errors: $\min_{B} e_{i}^2 = \min_{B} (E' E)$, yields coef
 \end{eqnarray}
 ```{r}
 # Manually Compute
-Y <- USArrests[,'Murder']
-X <- USArrests[,c('Assault','UrbanPop')]
-X <- as.matrix(cbind(1,X))
+Y <- USArrests[, 'Murder']
+X <- USArrests[, c('Assault', 'UrbanPop')]
+X <- as.matrix(cbind(1, X))
 
 XtXi <- solve(t(X)%*%X)
 Bhat <- XtXi %*% (t(X)%*%Y)
@@ -470,3 +486,18 @@ K\left(\frac{\mathbf{X}_{1}-\mathbf{x}}{h_{1}}\right) & ... & 0\\
 \end{pmatrix},
 \end{eqnarray}
 which is unbiased far more often.
+
+
+## Exercises
+
+1. Explain the distinction between description, explanation, and prediction using a concrete example other than minimum wages. For each objective, state what statistical tools you would use and what kind of evidence would be needed.
+
+2. Using the `USArrests` dataset, regress `Murder` on `Assault` and `UrbanPop`. Compute $\hat{B}^{*}$ both with `lm()` and manually via $(\hat{\mathbf{X}}'\hat{\mathbf{X}})^{-1}\hat{\mathbf{X}}'\hat{Y}$ using matrix operations in R. Verify that the two approaches give the same coefficients.
+
+3. Using the `wage1` dataset from the `wooldridge` package, fit a `loess` regression of `wage` on `educ` for three different span values (e.g., 0.4, 0.6, 0.8). Use leave-one-out cross-validation to compute the mean squared prediction error for each span. Which span minimizes prediction error, and does a more flexible fit always predict better?
+
+#### **Further Reading**. {-}
+
+* <https://otexts.com/fpp3/> -- Hyndman and Athanasopoulos, *Forecasting: Principles and Practice* (3rd ed.), covering time-series smoothing, cross-validation, and prediction in R.
+* <https://cran.r-project.org/web/packages/np/vignettes/np.pdf> -- the `np` package vignette for nonparametric kernel estimation and bandwidth selection.
+* Shmueli, G. (2010). To explain or to predict? *Statistical Science*, 25(3), 289--310. <https://doi.org/10.1214/10-STS330> -- a clear discussion of the describe/explain/predict distinction in statistical modeling.

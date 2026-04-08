@@ -12,9 +12,11 @@ Prob(X_{i}=x) &=& \binom{n}{x}p^{x}(1-p)^{n-x} \\
 F(x) = Prob(X_{i} \leq x) &=& \sum_{k=0}^{\lfloor x \rfloor} Prob(X_{i}=x) 
 \end{eqnarray}
 
-The simplest case: how many heads will I get when I flip a coin twice? We can first see that there are four potential outcomes: $\{ (1,1), (1,0), (0,1), (0,0) \}$, each of which are equally likely (assuming the coin is fair). The corresponding sums are $\{2,1,1,0 \}$, which leads to probabilities $Prob(X_{i}=0)=1/4$, $Prob(X_{i}=1)=2/4$, and $Prob(X_{i}=2)=1/4$.
+The simplest case: how many heads will I get when I flip a fair coin twice? We can first see that there are four potential outcomes: $\{ (1,1), (1,0), (0,1), (0,0) \}$, each of which are equally likely. The corresponding sums of $\{2,1,1,0\}$ are equally likely, which leads to probabilities $Prob(X_{i}=0)=1/4$, $Prob(X_{i}=1)=2/4$, and $Prob(X_{i}=2)=1/4$.
 
-:::{.callout-tip icon=false collapse="true"}
+If the coin is unfair; probability of heads equals $0.25$, then the corresponding outcomes $\{2,1,1,0\}$ have probability 
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 When I flip a coin three times, the potential outcomes are 
 \begin{eqnarray}
 \{
@@ -23,9 +25,12 @@ When I flip a coin three times, the potential outcomes are
 \}
 \end{eqnarray}
 Assuming the coin is fair, compute the probabilities for each possible sum.
+Assuming the coin is unfair, with probability of heads equal to $0.25$, compute the probabilities for each possible sum.
 :::
 
-In general, we use the [Binomial_distribution](https://en.wikipedia.org/wiki/Binomial_distribution). For example, suppose $n=15$ people walk past a store each hour and each has a $p=30\%$ chance of entering. The number of customers who enter is $X_{i} \sim \text{Binom}(15, 0.3)$.
+In general, we use the *[Binomial distribution](https://en.wikipedia.org/wiki/Binomial_distribution)*. The $\binom{n}{x}$ term is called the [binomial coefficient](https://jadamso.github.io/Rbooks/01_05_Sampling.html#sampling-distributions) and it counts all the different groups lead to the same sum. The other terms intuitively reflect the probabilities of getting $x$ success and $n-x$ failures.  
+
+For example, suppose $n=15$ people walk past a store each hour and each has a $p=30\%$ chance of entering. The number of customers who enter is $X_{i} \sim \text{Binom}(15, 0.3)$.
 
 ```{r}
 ## Store: 15 passers-by, 30% chance each enters
@@ -35,20 +40,20 @@ p <- 0.3
 # PMF plot
 x <- seq(0, n)
 f_x <- dbinom(x, n, p)
-plot(x, f_x, type = "h", col = "blue",
-    main='',  xlab = "Customers entering", ylab = "Prob(X = x)")
-title(bquote(paste('Binom(',.(n),', ',.(p), ')' ) ))
-points(x, f_x, pch = 16, col = "blue")
+plot(x, f_x, type = 'h', col = rgb(0, 0, 1, .8),
+    main=NA, xlab = 'Customers entering', ylab = 'Prob(X = x)')
+title(bquote(paste('Binom(', .(n), ', ', .(p), ')')), font.main=1)
+points(x, f_x, pch = 16, col = rgb(0, 0, 1, .8))
 
 ## Theoretical CDF
 F_x <- pbinom(x, n, p)
-plot(x, F_x, type="s", col="blue",
-    xlab = "Customers entering", ylab = "F(x)")
-points(x, F_x, pch=16, col="blue")
-title(bquote(paste('Binom(',.(n),', ',.(p), ') CDF')))
+plot(x, F_x, type='s', col=rgb(0, 0, 1, .8),
+    xlab = 'Customers entering', ylab = 'F(x)', main=NA)
+points(x, F_x, pch=16, col=rgb(0, 0, 1, .8))
+title(bquote(paste('Binom(', .(n), ', ', .(p), ') CDF')), font.main=1)
 ```
 
-:::{.callout-note icon=false collapse="true"}
+:::{.callout-note icon=false collapse="true" title="Must Know"}
 A quality inspector checks $n=20$ items from a production line with a $5\%$ defect rate ($p=0.05$). What is the probability of finding $2$ or fewer defectives?
 
 We need $Prob(X_{i} \leq 2) = F(2)$ where $X_{i} \sim \text{Binom}(20, 0.05)$. By hand, the first few terms are
@@ -60,16 +65,16 @@ Prob(X_{i}=2) &=& \binom{20}{2}(0.05)^{2}(0.95)^{18} \approx 0.19
 So $Prob(X_{i} \leq 2) \approx 0.36 + 0.38 + 0.19 = 0.93$. There is roughly a $93\%$ chance the inspector finds $2$ or fewer defectives.
 ```{r}
 # Individual terms
-x <- c(0,1,2)
+x <- c(0, 1, 2)
 px <- dbinom(x, size=20, prob=0.05)
-round(px,2)
+round(px, 2)
 
 # CDF: Prob(X <= 2)
 pbinom(2, size=20, prob=0.05)
 ```
 :::
 
-:::{.callout-tip icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Suppose that employees at a company are $70%$ female and $30%$ male. If we select a random sample of eight employees, what is the probability that $2$ in the sample are female? That $\geq 2$ are female? 
 
 Try conducting a simulation first, 
@@ -81,7 +86,7 @@ X <- rbinom(1000, n, p)
 :::
 
 
-:::{.callout-tip icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 For $n$ coin flips, show that $\mathbb{E}[X_{i}]=np$ and $\mathbb{V}[X_{i}]=np(1-p)$. Build on the case $n=2$ above, then consider case $n=3$, and then the general case of any $n$.
 
 ```{r}
@@ -101,7 +106,7 @@ c(empirical  = var(X),  theoretical  = n*p*(1-p))
 
 #### **Poisson**. {-}
 
-The Poisson distribution models how many events occur in a fixed interval, when each individual event is rare and independent and has equal probabilities at any point on the interval.
+The *Poisson distribution* models how many events occur in a fixed interval, when each individual event is rare and independent and has equal probabilities at any point on the interval.
 
 In general, the [Poisson distribution](https://en.wikipedia.org/wiki/Poisson_distribution) gives
 \begin{eqnarray}
@@ -136,20 +141,20 @@ lambda <- 3.5
 # PMF plot
 x <- seq(0, 15)
 f_x <- dpois(x, lambda)
-plot(x, f_x, type="h", col="blue",
-     xlab = "Customers per hour", ylab = "Prob(X = x)")
-points(x, f_x, pch = 16, col = "blue")
-title(bquote(paste('Pois(',.(lambda), ')')))
+plot(x, f_x, type='h', col=rgb(0, 0, 1, .8),
+     xlab = 'Customers per hour', ylab = 'Prob(X = x)', main=NA)
+points(x, f_x, pch = 16, col = rgb(0, 0, 1, .8))
+title(bquote(paste('Pois(', .(lambda), ')')), font.main=1)
 
 # CDF plot
 F_x <- ppois(x, lambda)
-plot(x, F_x, type="s", col="blue",
-    xlab = "Customers per hour", ylab = "F(x)")
-points(x, F_x, pch=16, col="blue")
-title(bquote(paste('Pois(',.(lambda), ') CDF')))
+plot(x, F_x, type='s', col=rgb(0, 0, 1, .8),
+    xlab = 'Customers per hour', ylab = 'F(x)', main=NA)
+points(x, F_x, pch=16, col=rgb(0, 0, 1, .8))
+title(bquote(paste('Pois(', .(lambda), ') CDF')), font.main=1)
 ```
 
-:::{.callout-tip icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Show that $\mathbb{E}[X_{i}] = \mathbb{V}[X_{i}]= \lambda$. That is, the Poisson mean and variance are both equal to the rate parameter.
 ```{r}
 # Compare empirical simulation vs theoretical
@@ -160,7 +165,7 @@ c(emp_var  = var(X),  th_var  = lambda)
 ```
 :::
 
-:::{.callout-note icon=false collapse="true"}
+:::{.callout-note icon=false collapse="true" title="Must Know"}
 During the lunch rush, the store averages $\lambda=4.5$ customers per hour. What is the probability that more than $7$ customers arrive in a given hour?
 
 We need $Prob(X_{i} > 7) = 1 - Prob(X_{i} \leq 7) = 1 - F(7)$.
@@ -178,48 +183,28 @@ There is roughly a $9\%$ chance of more than $7$ arrivals in a given hour.
 :::
 
 
-:::{.callout-tip icon=false collapse="true"}
-The `warpbreaks` dataset records the number of warp breaks per loom in a textile factory. We can check whether a Poisson distribution fits this count data by overlaying the fitted PMF on a histogram.
-```{r}
-# Count data: number of warp breaks per loom
-breaks <- warpbreaks$breaks
-hist(breaks, breaks=20, border=NA, freq=F,
-    main='Warp Breaks per Loom', font.main=1,
-    xlab='Number of breaks')
-
-# Fit a Poisson and overlay
-lambda_hat <- mean(breaks)
-x <- seq(0, max(breaks))
-points(x, dpois(x, lambda_hat), pch=16, col="blue")
-legend("topright",
-    legend=bquote(hat(lambda) == .(round(lambda_hat,1))),
-    pch=16, col="blue")
-```
-:::
-
-
 
 The shape of the Poisson also changes with $\lambda$. A quiet specialty shop ($\lambda=1$) has a strongly right-skewed arrival pattern, while a busy supermarket ($\lambda=15$) looks nearly Normal.
 
 ```{r}
 # Shape varies with lambda
-par(mfrow=c(1,3))
+par(mfrow=c(1, 3))
 for(lam in c(1, 5, 15)) {
     x <- seq(0, 30)
     f_x <- dpois(x, lam)
-    plot(x, f_x, type="h", col="blue",
-        xlab = "Customers per hour", ylab = "Prob(X = x)")
-    points(x, f_x, pch=16, col="blue")
-    title(bquote(paste('Pois(',.(lam), ')')))
+    plot(x, f_x, type='h', col=rgb(0, 0, 1, .8),
+        xlab = 'Customers per hour', ylab = 'Prob(X = x)', main=NA)
+    points(x, f_x, pch=16, col=rgb(0, 0, 1, .8))
+    title(bquote(paste('Pois(', .(lam), ')')), font.main=1)
 }
 ```
 
 
 #### **Large Sample Approximations**. {-}
 
-The de Moivre–Laplace Theorem says that as $n$ grows large, with $p \in (0,1)$ staying fixed, the Binomial distribution is approximately Normal with mean $np$ and variance $np(1-p)$
+The *de Moivre–Laplace Theorem* says that as $n$ grows large, with $p \in (0,1)$ staying fixed, the Binomial distribution is approximately Normal with mean $np$ and variance $np(1-p)$
 
-:::{.callout-tip icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 The unemployment rate is $10%$. Suppose that $100$ employable people are selected randomly. What is the probability that this sample contains between $9$ and $12$ unemployed people. Use the normal approximation to binomial probabilities.
 
 Parameters are 
@@ -230,9 +215,9 @@ Parameters are
 \end{eqnarray}
 :::
 
-The Poisson Limit Theorem says that as $n$ grows large, with $p$ growing smaller at the same time, and $n p$ converging to a fixed number $\lambda$, the Binomial distribution is approximately Poisson with parameter $\lambda$.
+The *Poisson Limit Theorem* says that as $n$ grows large, with $p$ growing smaller at the same time, and $n p$ converging to a fixed number $\lambda$, the Binomial distribution is approximately Poisson with parameter $\lambda$.
 
-:::{.callout-tip icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Imagine dividing one hour into $n$ tiny intervals. If the store averages $\lambda = 3.5$ customers per hour, each interval has a small probability $p = \lambda/n = 3.5/n$ of an arrival. With $n$ independent intervals, the number of arrivals is Binomial:
 $$Prob(X=x) = \binom{n}{x} \left(\frac{\lambda}{n}\right)^{x} \left(1-\frac{\lambda}{n}\right)^{n-x}$$
 
@@ -250,22 +235,23 @@ lambda <- 3.5
 x <- seq(0, 12)
 f_pois <- dpois(x, lambda)
 
-par(mfrow=c(1,3))
+par(mfrow=c(1, 3))
 for(n in c(10, 50, 1000)) {
     f_binom <- dbinom(x, size=n, prob=lambda/n)
-    plot(x, f_binom, type="h", col="grey60", lwd=4,
-        xlab="Customers", ylab="Prob(X = x)")
-    points(x + 0.2, f_pois, type="h", col="blue", lwd=2)
-    points(x + 0.2, f_pois, pch=16, col="blue", cex=0.7)
-    title(bquote(paste('Binom(',.(n),', ',.(round(lambda/n,4)),')')))
+    comp_cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
+    plot(x, f_binom, type='h', col=comp_cols[1], lwd=4,
+        xlab='Customers', ylab='Prob(X = x)', main=NA)
+    points(x + 0.2, f_pois, type='h', col=comp_cols[2], lwd=2)
+    points(x + 0.2, f_pois, pch=16, col=comp_cols[2], cex=0.7)
+    title(bquote(paste('Binom(', .(n), ', ', .(round(lambda/n, 4)), ')')), font.main=1)
 }
-legend("topright", c("Binomial","Poisson"),
-    col=c("grey60","blue"), lwd=c(4,2), cex=0.8)
+legend('topright', c('Binomial', 'Poisson'),
+    col=comp_cols, lwd=c(4, 2), cex=0.8)
 ```
 :::
 
 
-:::{.callout-tip icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 For another example, consider $n=1000$ independent trials each with probability $p=0.004$, so $\lambda = np = 4$. We can compare the exact Binomial to both approximations at once: the Poisson ($\lambda=4$) and the Normal ($\mu=np=4$, $\sigma^{2}=np(1-p)\approx 3.98$).
 ```{r}
 # Binom(1000, 0.004) vs Pois(4) vs Normal(4, 3.98)
@@ -276,14 +262,16 @@ f_binom <- dbinom(x, size=n, prob=p)
 f_pois  <- dpois(x, lambda=n*p)
 f_norm  <- dnorm(x, mean=n*p, sd=sqrt(n*p*(1-p)))
 
-plot(x, f_binom, type="h", col="blue", lwd=4,
-    xlab="x", ylab="Prob(X = x)",
-    main="Approximating the Binomial", font.main=1)
-points(x + 0.15, f_pois, type="h", col="red", lwd=2)
-lines(x, f_norm, col="darkgreen", lwd=2)
-legend("topright",
-    c("Binom(1000, 0.004)", "Pois(4)", "Normal(4, 3.98)"),
-    col=c("blue","red","darkgreen"), lwd=c(4,2,2))
+approx_cols <- hcl.colors(3, alpha=.45)
+plot(x, f_binom, type='h', col=approx_cols[1], lwd=4,
+    xlab='x', ylab='Prob(X = x)',
+    main=NA)
+title('Approximating the Binomial', font.main=1)
+points(x + 0.15, f_pois, type='h', col=approx_cols[2], lwd=2)
+lines(x, f_norm, col=approx_cols[3], lwd=2)
+legend('topright',
+    c('Binom(1000, 0.004)', 'Pois(4)', 'Normal(4, 3.98)'),
+    col=approx_cols, lwd=c(4, 2, 2))
 ```
 The Poisson is nearly exact here because $p$ is very small. The Normal is a rougher fit because $\lambda=4$ is still fairly small and the distribution is noticeably skewed. As $\lambda$ grows, the Poisson itself becomes more symmetric and the Normal approximation improves.
 :::
@@ -294,24 +282,21 @@ The Poisson is nearly exact here because $p$ is very small. The Normal is a roug
 
 #### **Irwin–Hall**. {-}
 
-The sum of $n$ i.i.d. $\text{Uniform}(0,1)$.  
+Suppose the store has a tip jar and each customer drops in a random amount between $\$0$ and $\$1$. If $n=2$ customers visit, the total tips are the sum of two independent $\text{Uniform}(0,1)$ random variables. The [Irwin-Hall distribution](https://en.wikipedia.org/wiki/Irwin%E2%80%93Hall_distribution) describes this sum for any $n$.
 
-* Continuous, support $[0,n]$
-* Probability Density Function: $f(x) = \dfrac{1}{(n-1)!}
-\displaystyle\sum_{k=0}^{\lfloor x \rfloor} (-1)^k
-\binom{n}{k} (x - k)^{n-1}$ for $x \in [0,n]$, and $0$ otherwise
-* See <https://en.wikipedia.org/wiki/Irwin%E2%80%93Hall_distribution>
-* A common use case: representing the sum of many small independent financial shocks
+The support is continuous on $[0,n]$ and the probability density function is
+$$f(x) = \dfrac{1}{(n-1)!} \displaystyle\sum_{k=0}^{\lfloor x \rfloor} (-1)^k \binom{n}{k} (x - k)^{n-1}$$
+for $x \in [0,n]$, and $0$ otherwise. The parameter $n$ is the number of independent uniform contributions. When $n=1$ this is just the Uniform density; when $n=2$ it is a triangle peaking at $1$.
 
 ```{r}
-## Minimal example (base R)
-# Irwin–Hall PDF function
+## Tip jar: total tips from n customers, each Uniform(0, 1)
+# Irwin-Hall PDF function
 dirwinhall <- function(x, n) {
-    f_x <- vector(length=length(x))
+    f_x <- rep(NA, length(x))
     for(i in seq(x)) {
         xx <- x[i]
         if(xx < 0 | xx > n){
-            f_x[i] <- 0 
+            f_x[i] <- 0
         } else {
             k <- seq(0, floor(xx))
             f_k <- sum((-1)^k*choose(n, k)*(xx-k)^(n-1))/factorial(n-1)
@@ -321,77 +306,79 @@ dirwinhall <- function(x, n) {
     return(f_x)
 }
 
-# Parameters
+# Two customers
 n <- 2
 x <- seq(0, n, length.out = 500)
 
 # Compute and plot PDF
 f_x <- dirwinhall(x, n)
-plot(x, f_x, type="l", col="blue",
-    main='', xlab = "x", ylab = "f(x)")
-title(bquote(paste('IrwinHall(',.(n), ')')))
+plot(x, f_x, type='l', col=rgb(0, 0, 1, .8),
+    main=NA, xlab = 'Total tips ($)', ylab = 'f(x)')
+title(bquote(paste('IrwinHall(', .(n), ')')), font.main=1)
 ```
 
-See also the [Bates](https://en.wikipedia.org/wiki/Bates_distribution) distribution, which is for the mean  of $n$ i.i.d. $\text{Uniform}(0,1)$ random variables. It essentially rescales the Irwin-Hall distribution to range between $0$ and $1$.
+See also the [Bates](https://en.wikipedia.org/wiki/Bates_distribution) distribution, which is for the mean of $n$ i.i.d. $\text{Uniform}(0,1)$ random variables. It essentially rescales the Irwin-Hall distribution to range between $0$ and $1$.
 
 
 #### **Beta**. {-}
-The sample space is any number on the unit interval, $X_{i} \in [0,1]$, but with non-uniform probabilities. 
 
+The fraction of customers who make a purchase varies from day to day. Some days 80% buy something; other days only 30%. The [Beta distribution](https://en.wikipedia.org/wiki/Beta_distribution) models this kind of proportion: a random variable on the unit interval $X_{i} \in [0,1]$ with flexible shape.
+
+The Beta has two shape parameters. When both equal 2, the distribution is symmetric and bell-shaped on $[0,1]$, centering the purchase rate around $50\%$. The density formula is mathematically involved, so we omit it and work graphically instead.
 
 ```{r}
-X4 <- rbeta(2000,2,2) ## two shape parameters
-hist(X4, breaks=20, border=NA, main=NA, freq=F)
+## Daily purchase rate: Beta(2, 2)
+X4 <- rbeta(2000, 2, 2)
+hist(X4, breaks=20, border=NA, main=NA, freq=F,
+    xlab='Purchase rate')
 
-#See the underlying probabilities
-#f_25 <- dbeta(.25, 2, 2)
-
-x <- seq(0,1,by=.01)
+x <- seq(0, 1, by=.01)
 fx <- dbeta(x, 2, 2)
-lines(x, fx, col='blue')
+lines(x, fx, col=rgb(0, 0, 1, .8))
 ```
 
-The [Beta](https://en.wikipedia.org/wiki/Beta_distribution) distribution is mathematically complicated to write, and so we omit it. However, we can find the probability graphically using either the probability density function or cumulative distribution function. 
+We can find probabilities using either the density (area under the curve) or the CDF.
 
-:::{.callout-tip icon=false collapse="true"}
-Suppose $X_{i}$ is a random variable with a beta distribution. Intuitively depict $Prob(X_{i} \in [0.2, 0.8])$ by drawing an area under the density function. Numerically estimate that same probability using the CDF.
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+What is the probability that the daily purchase rate falls between $20\%$ and $80\%$? Intuitively depict this as the area under the density. Then compute it numerically using the CDF.
 ```{r}
-plot( ecdf(X4), main=NA) # Empirical
+plot(ecdf(X4), main=NA,
+    xlab='Purchase rate') # Empirical
 
-x <- seq(0,1,by=.01) # Theoretical
+x <- seq(0, 1, by=.01) # Theoretical
 Fx <- pbeta(x, 2, 2)
-lines(x, Fx, col='blue')
+lines(x, Fx, col=rgb(0, 0, 1, .8))
 
-# Middle Interval Example 
+# Middle Interval Example
 F2 <- pbeta(0.2, 2, 2)
 F8 <- pbeta(0.8, 2, 2)
 F_2_8 <- F8 - F2
 F_2_8
 
 # Visualize
-title('Middle between 0.2 and 0.8')
-segments( 0.2, F2, -1, F2, col='red')
-segments( 0.8, F8, -1, F8, col='red')
+title('Purchase rate between 0.2 and 0.8', font.main=1)
+segments(0.2, F2, -1, F2, col=rgb(1, 0, 0, .8))
+segments(0.8, F8, -1, F8, col=rgb(1, 0, 0, .8))
 ```
 :::
 
-This distribution is often used, as the probability density function has two parameters that allow it to take many different shapes.
+The two shape parameters allow the Beta to take many different shapes, making it useful whenever the quantity of interest is a proportion.
 
-:::{.callout-tip icon=false collapse="true"}
-For each example below, intuitively depict $Prob(X_{i} \leq 0.5)$ using the PDF. Repeat the exercise using a CDF instead of a PDF to calculate a numerical value.
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Different shape parameters represent different beliefs about the store's purchase rate. For each density below, intuitively depict $Prob(X_{i} \leq 0.5)$ using the PDF. Repeat the exercise using a CDF instead of a PDF to calculate a numerical value.
 ```{r, results='hide'}
 #| fig-width: 8
 #| fig-height: 6
 op <- par(no.readonly = TRUE); on.exit(par(op), add = TRUE)
-x <- seq(0,1,by=.01)
-pars <- expand.grid( c(.5,1,2), c(.5,1,2) )
-par(mfrow=c(3,3))
+x <- seq(0, 1, by=.01)
+pars <- expand.grid(c(.5, 1, 2), c(.5, 1, 2))
+par(mfrow=c(3, 3))
 apply(pars, 1, function(p){
-    fx <- dbeta( x,p[1], p[2])
-    plot(x, fx, type='l', xlim=c(0,1), ylim=c(0,4), lwd=2, col='blue')
-    #hist(rbeta(2000, p[1], p[2]), breaks=50, border=NA, main=NA, freq=F)
+    fx <- dbeta(x, p[1], p[2])
+    plot(x, fx, type='l', xlim=c(0, 1), ylim=c(0, 4), lwd=2, col=rgb(0, 0, 1, .8),
+        xlab='Purchase rate', ylab='f(x)', main=NA)
 })
-title('Beta densities', outer=T, line=-1)
+title('Beta densities', outer=T, line=-1, font.main=1)
 ```
 :::
 
@@ -425,7 +412,7 @@ Further assuming the die are fair, each side has an equal $1/6$ probability. Thi
 ```{r}
 # Simulation verification
 set.seed(123)
-x <- seq(1,6)
+x <- seq(1, 6)
 rolls <- sample(x, 1e6, replace = TRUE)
 A <- rolls > 2
 B <- rolls %% 2 == 0
@@ -433,7 +420,7 @@ P_AcondB <- mean(A & B) / mean(B)
 round(P_AcondB, 3)
 ```
 
-:::{.callout-tip icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Consider a six sided die with sample space $\{1,2,3,4,5,6\}$ where each outcome is each equally likely. What is $Prob(\text{die is odd or }<5)$?
 Denote the odd events as $A=\{1,3,5\}$ and the less than five events as  $B=\{1,2,3,4\}$. Then
 
@@ -444,6 +431,62 @@ Denote the odd events as $A=\{1,3,5\}$ and the less than five events as  $B=\{1,
 Now find $Prob(\text{die is even and }<5)$. Verify your answer with a computer simulation.
 :::
 
+
+
+
+#### **Bayes' Theorem**. {-}
+
+*Bayes' theorem* reverses the direction of a conditional probability. From the definition, $Prob(A \cap B) = Prob(B \mid A) \cdot Prob(A)$. Substituting into $Prob(A \mid B) = Prob(A \cap B) / Prob(B)$ gives
+\begin{eqnarray}
+Prob(A \mid B) &=& \frac{Prob(B \mid A) \cdot Prob(A)}{Prob(B)}
+\end{eqnarray}
+
+In the die example above, we computed $Prob(A \mid B) = 2/3$: the probability the die is $>2$, given it is even. We can use Bayes' theorem to reverse this: what is the probability the die is even, given it is $>2$?
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Using the same die with $A=\{3,4,5,6\}$ and $B=\{2,4,6\}$, we know $Prob(A \mid B)=2/3$, $Prob(B)=1/2$, and $Prob(A)=2/3$. By Bayes' theorem,
+\begin{eqnarray}
+Prob(B \mid A) &=& \frac{Prob(A \mid B) \cdot Prob(B)}{Prob(A)} = \frac{(2/3)(1/2)}{2/3} = \frac{1}{2}.
+\end{eqnarray}
+We can verify directly: given $A=\{3,4,5,6\}$, the even outcomes are $\{4,6\}$, so $Prob(B \mid A)=2/4=1/2$. Since $A$ and $B$ are independent, $Prob(B \mid A) = Prob(B)$ and flipping the conditioning changes nothing.
+```{r}
+# Simulation verification
+set.seed(123)
+rolls <- sample(seq(1, 6), 1e6, replace=TRUE)
+A <- rolls > 2
+B <- rolls %% 2 == 0
+# Prob(B | A)
+mean(B[A])
+```
+:::
+
+Bayes' theorem is most useful when events are not independent, so that knowing $B$ occurred changes what we believe about $A$.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+A company sources parts from two suppliers. Supplier $A$ provides $60\%$ of parts and supplier $B$ provides $40\%$. The defect rate from supplier $A$ is $3\%$ and from supplier $B$ is $5\%$. If a randomly selected part is defective ($D$), what is the probability it came from supplier $A$?
+
+We know $Prob(A)=0.6$, $Prob(\lnot A)=0.4$, $Prob(D \mid A)=0.03$, and $Prob(D \mid \lnot A)=0.05$. By the Law of Total Probability,
+\begin{eqnarray}
+Prob(D) &=& Prob(D \mid A) \cdot Prob(A) + Prob(D \mid \lnot A) \cdot Prob(\lnot A) \\
+&=& 0.03 \times 0.6 + 0.05 \times 0.4 = 0.038.
+\end{eqnarray}
+By Bayes' theorem,
+\begin{eqnarray}
+Prob(A \mid D) &=& \frac{Prob(D \mid A) \cdot Prob(A)}{Prob(D)} = \frac{0.03 \times 0.6}{0.038} \approx 0.474.
+\end{eqnarray}
+Even though supplier $A$ provides $60\%$ of all parts, they account for only about $47\%$ of defectives because their defect rate is lower.
+```{r}
+# Simulation verification
+set.seed(42)
+n <- 1e6
+supplier <- sample(c('A', 'B'), n, replace=TRUE, prob=c(0.6, 0.4))
+defect_rate <- ifelse(supplier == 'A', 0.03, 0.05)
+defective <- runif(n) < defect_rate
+
+# Prob(A | D)
+mean(supplier[defective] == 'A')
+```
+:::
 
 
 #### **Law of Total Probability**. {-}
@@ -462,61 +505,23 @@ Then we can see that
 $Prob(A \mid B) Prob(B) + Prob(A \mid \lnot B) Prob(\lnot B) = 2/6 + 2/6 = 2/3 = Prob(A)$.
 
 
-#### **Bayes' Theorem**. {-}
-
-*Bayes' theorem* reverses the direction of a conditional probability. From the definition, $Prob(A \cap B) = Prob(B \mid A) \cdot Prob(A)$. Substituting into $Prob(A \mid B) = Prob(A \cap B) / Prob(B)$ gives
-\begin{eqnarray}
-Prob(A \mid B) &=& \frac{Prob(B \mid A) \cdot Prob(A)}{Prob(B)}
-\end{eqnarray}
-Substituting the Law of Total Probability into the denominator,
+Note that substituting the Law of Total Probability into the denominator of Bayes Theorem yields
 \begin{eqnarray}
 Prob(A \mid B) &=& \frac{Prob(B \mid A) \cdot Prob(A)}{Prob(B \mid A) \cdot Prob(A) + Prob(B \mid \lnot A) \cdot Prob(\lnot A)}
 \end{eqnarray}
 
-In the die example above, we computed $Prob(A \mid B) = 2/3$: the probability the die is $>2$, given it is even. We can use Bayes' theorem to reverse this: what is the probability the die is even, given it is $>2$?
 
-:::{.callout-note icon=false collapse="true"}
-Using the same die with $A=\{3,4,5,6\}$ and $B=\{2,4,6\}$, we know $Prob(A \mid B)=2/3$, $Prob(B)=1/2$, and $Prob(A)=2/3$. By Bayes' theorem,
-\begin{eqnarray}
-Prob(B \mid A) &=& \frac{Prob(A \mid B) \cdot Prob(B)}{Prob(A)} = \frac{(2/3)(1/2)}{2/3} = \frac{1}{2}.
-\end{eqnarray}
-We can verify directly: given $A=\{3,4,5,6\}$, the even outcomes are $\{4,6\}$, so $Prob(B \mid A)=2/4=1/2$. Since $A$ and $B$ are independent, $Prob(B \mid A) = Prob(B)$ and flipping the conditioning changes nothing.
-```{r}
-# Simulation verification
-set.seed(123)
-rolls <- sample(seq(1,6), 1e6, replace=TRUE)
-A <- rolls > 2
-B <- rolls %% 2 == 0
-# Prob(B | A)
-mean(B[A])
-```
-:::
+## Exercises
 
-Bayes' theorem is most useful when events are not independent, so that knowing $B$ occurred changes what we believe about $A$.
+1. The Poisson distribution assumes events are independent and occur at a constant rate. Give an example of a real-world count variable where these assumptions are likely violated, and explain which assumption fails.
 
-:::{.callout-tip icon=false collapse="true"}
-A company sources parts from two suppliers. Supplier $A$ provides $60\%$ of parts and supplier $B$ provides $40\%$. The defect rate from supplier $A$ is $3\%$ and from supplier $B$ is $5\%$. If a randomly selected part is defective ($D$), what is the probability it came from supplier $A$?
+2. A call center receives an average of $\lambda = 6$ calls per hour. Using the Poisson distribution, compute $Prob(X_{i} \leq 3)$ and $Prob(X_{i} > 10)$ by hand (set up the sums) and then verify with `ppois` in R.
 
-We know $Prob(A)=0.6$, $Prob(\lnot A)=0.4$, $Prob(D \mid A)=0.03$, and $Prob(D \mid \lnot A)=0.05$. By the Law of Total Probability,
-\begin{eqnarray}
-Prob(D) &=& Prob(D \mid A) \cdot Prob(A) + Prob(D \mid \lnot A) \cdot Prob(\lnot A) \\
-&=& 0.03 \times 0.6 + 0.05 \times 0.4 = 0.038.
-\end{eqnarray}
-By Bayes' theorem,
-\begin{eqnarray}
-Prob(A \mid D) &=& \frac{Prob(D \mid A) \cdot Prob(A)}{Prob(D)} = \frac{0.03 \times 0.6}{0.038} \approx 0.474.
-\end{eqnarray}
-Even though supplier $A$ provides $60\%$ of all parts, they account for only about $47\%$ of defectives because their defect rate is lower.
-```{r}
-# Simulation verification
-set.seed(42)
-n <- 1e6
-supplier <- sample(c("A","B"), n, replace=TRUE, prob=c(0.6, 0.4))
-defect_rate <- ifelse(supplier == "A", 0.03, 0.05)
-defective <- runif(n) < defect_rate
+3. Using the `warpbreaks` dataset in R, compute the sample mean and variance of `breaks`. Compare their ratio to what the Poisson distribution predicts (i.e., $\mathbb{E}[X_{i}] = \mathbb{V}[X_{i}] = \lambda$). Does the Poisson seem like a good fit? Simulate 10000 draws from a Poisson with $\lambda = \bar{X}$ and compare the simulated histogram to the observed data.
 
-# Prob(A | D)
-mean(supplier[defective] == "A")
-```
-:::
+#### **Further Reading**. {-}
+
+* <https://learningstatisticswithr.com/book/probability.html#the-binomial-distribution> -- Binomial distribution mechanics and connection to Bernoulli trials, with R code.
+* <https://www.khanacademy.org/math/statistics-probability/random-variables-stats-library/poisson-distribution/a/poisson-distribution> -- Intuition and examples for the Poisson distribution.
+* <https://www.econometrics-with-r.org/2.1-random-variables-and-probability-distributions.html> -- Probability distributions including discrete families used in econometrics.
 

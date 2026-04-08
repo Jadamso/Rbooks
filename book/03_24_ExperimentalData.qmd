@@ -6,7 +6,7 @@
 
 #### **Control and Randomize**. {-}
 
-Perhaps the main feature that distinguishes experimental data from observational data is "control". You can manipulate one of the explanatory variables, and also ensure that other factors are not changing at the same time.
+Perhaps the main feature that distinguishes experimental data from observational data is *control*. You can manipulate one of the explanatory variables, and also ensure that other factors are not changing at the same time.
 
 Another distinguishing feature of experiments is "randomization". You can ensure that a manipulated variable is not systematically associated with other variables.
 
@@ -17,13 +17,13 @@ To be concrete, we will continue with our supply and demand example from the las
 ```{r}
 # Demand Curve Simulator
 qd_fun <- function(p, Ad=8, Bd=-.8, Ed_sigma=.25){
-    Qd <- Ad + Bd*p + rnorm(1,0,Ed_sigma)
+    Qd <- Ad + Bd*p + rnorm(1, 0, Ed_sigma)
     return(Qd)
 }
 
 # Supply Curve Simulator
 qs_fun <- function(p, As=-8, Bs=1, Es_sigma=.25){
-    Qs <- As + Bs*p + rnorm(1,0,Es_sigma)
+    Qs <- As + Bs*p + rnorm(1, 0, Es_sigma)
     return(Qs)
 }
 
@@ -41,7 +41,7 @@ eq_fun <- function(demand, supply, P){
 
 ```{r}
 N <- 300 # Number of Market Interactions
-P <- seq(5,10,by=.01) # Price Range to Consider
+P <- seq(5, 10, by=.01) # Price Range to Consider
 EQ1 <- sapply(1:N, function(n){
     # Market Data Generating Process
     demand <- qd_fun(P)
@@ -64,6 +64,11 @@ In the experiment, sellers are given linear "cost functions" that theoretically 
 \frac{d Q^{*}}{d \alpha_{S}} = \frac{\beta_{D}}{\beta_{D}+\beta_{S}}.
 \end{eqnarray}
 In this case, the supply shock has identified the demand slope: $-\beta_{D}=d Q^{*}/d P^{*}$.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+With the parameters in the simulation ($\beta_D = 0.8$, $\beta_S = 1$), the comparative statics predict $dP^*/d\alpha_S = -1/(0.8+1) \approx -0.56$ and $dQ^*/d\alpha_S = 0.8/1.8 \approx 0.44$. Shifting $\alpha_S$ from $-8$ to $-6.5$ (a change of $1.5$) predicts a price decrease of about $0.83$ and a quantity increase of about $0.67$.
+:::
+
 ```{r}
 # New Observations After Cost Change
 EQ2 <- sapply(1:N, function(n){
@@ -71,21 +76,21 @@ EQ2 <- sapply(1:N, function(n){
     supply2 <- qs_fun(P, As=-6.5) # More Supplied at Given Price
     eq <- eq_fun(demand, supply2, P)
     return(eq)
-    # lines(supply2, P, col=rgb(0,0,1,.01))
-    #points(eq[2], eq[1], col=rgb(0,0,1,.05), pch=16)
+    # lines(supply2, P, col=rgb(0, 0, 1, .01))
+    #points(eq[2], eq[1], col=rgb(0, 0, 1, .05), pch=16)
 })
 dat2 <- data.frame(t(EQ2), cost='2', T=(1:N) + N)
 dat2 <- rbind(dat1, dat2)
 
 # Plot Simulated Market Data
-cols <- ifelse(as.numeric(dat2$cost)==2, rgb(0,0,1,.2), rgb(0,0,0,.2))
+cols <- ifelse(as.numeric(dat2$cost)==2, rgb(0, 0, 1, .2), rgb(0, 0, 0, .2))
 plot.new()
-plot.window(xlim=c(0,2), ylim=range(P))
+plot.window(xlim=c(0, 2), ylim=range(P))
 points(dat2$Q, dat2$P, col=cols, pch=16)
 axis(1)
 axis(2)
-mtext('Quantity',1, line=2)
-mtext('Price',2, line=2)
+mtext('Quantity', 1, line=2)
+mtext('Price', 2, line=2)
 ```
 
 If the function forms for supply and demand are different from what we predicted, we can still measure how much the experimental manipulation of production costs affects the equilibrium quantity sold (and compare that to what was predicted).^[Notice that even in this linear model, however, all effects are conditional: *The* effect of a cost change on quantity or price depends on the demand curve. A change in costs affects quantity supplied but not quantity demanded (which then affects equilibrium price) but the demand side of the market still matters! The change in price from a change in costs depends on the elasticity of demand.]
@@ -96,38 +101,38 @@ If the function forms for supply and demand are different from what we predicted
 
 #### **Regression Discontinuities/Kinks**. {-}
 
-The basic idea of RDD/RKD is to examine how a variable changes just before and just after a treatment. RDD estimates the difference in the levels of an outcome variable, whereas RKD estimates the difference in the slope. Turning to our canonical competitive market example, the RDD estimate is the difference between the lines at $T=300$.
+The basic idea of RDD/RKD is to examine how a variable changes just before and just after a treatment (for a thorough introduction, see [The Effect, Ch. Regression Discontinuity](https://theeffectbook.net/ch-RegressionDiscontinuity.html)). RDD estimates the difference in the levels of an outcome variable, whereas RKD estimates the difference in the slope. Turning to our canonical competitive market example, the RDD estimate is the difference between the lines at $T=300$.
 
 ```{r}
 # Locally Linear Regression 
 # (Compare means near break)
 
-cols <- ifelse(as.numeric(dat2$cost)==2, rgb(0,0,1,.5), rgb(0,0,0,.5))
-plot(P~T, dat2, main='Effect of Cost Shock on Price', 
-    font.main=1, pch=16, col=cols)
-regP1 <- loess(P~T, dat2[dat2$cost==1,]) 
+cols <- ifelse(as.numeric(dat2$cost)==2, rgb(0, 0, 1, .5), rgb(0, 0, 0, .5))
+plot(P ~ T, dat2, main=NA, pch=16, col=cols)
+title('Effect of Cost Shock on Price', font.main=1)
+regP1 <- loess(P ~ T, dat2[dat2$cost==1, ])
 x1 <- regP1$x
-#lm(): x1 <- regP1$model$T 
-lines(x1, predict(regP1), col=rgb(0,0,0), lwd=2)
-regP2 <- loess(P~T, dat2[dat2$cost==2,])
+#lm(): x1 <- regP1$model$T
+lines(x1, predict(regP1), col=rgb(0, 0, 0, .8), lwd=2)
+regP2 <- loess(P ~ T, dat2[dat2$cost==2, ])
 x2 <- regP2$x #regP1$model$T
-lines(x2, predict(regP2), col=rgb(0,0,1), lwd=2)
+lines(x2, predict(regP2), col=rgb(0, 0, 1, .8), lwd=2)
 
-plot(Q~T, dat2, main='Effect of Cost Shock on Quantity',
-    font.main=1, pch=16, col=cols)
-regQ1 <- loess(Q~T, dat2[dat2$cost==1,]) 
-lines(x1, predict(regQ1), col=rgb(0,0,0), lwd=2)
-regQ2 <- loess(Q~T, dat2[dat2$cost==2,])
+plot(Q ~ T, dat2, main=NA, pch=16, col=cols)
+title('Effect of Cost Shock on Quantity', font.main=1)
+regQ1 <- loess(Q ~ T, dat2[dat2$cost==1, ])
+lines(x1, predict(regQ1), col=rgb(0, 0, 0, .8), lwd=2)
+regQ2 <- loess(Q ~ T, dat2[dat2$cost==2, ])
 x2 <- regP2$x #regP1$model$T
-lines(x2, predict(regQ2), col=rgb(0,0,1), lwd=2)
+lines(x2, predict(regQ2), col=rgb(0, 0, 1, .8), lwd=2)
 ```
 
 ```{r, message=F, warning=F, results='asis'}
 # Linear Regression Alternative
 sub_id <- (dat2$cost==1 & dat2$T > 250) | (dat2$cost==2 & dat2$T < 300)
 dat2W <- dat2[sub_id,  ]
-regP <- lm(P~T*cost, dat2)
-regQ <- lm(Q~T*cost, dat2)
+regP <- lm(P ~ T*cost, dat2)
+regQ <- lm(Q ~ T*cost, dat2)
 stargazer::stargazer(regP, regQ, 
     type='html',
     title='Recipe RDD',
@@ -136,10 +141,14 @@ stargazer::stargazer(regP, regQ,
 
 Remember that this is effect is *local*: different magnitudes of the cost shock or different demand curves generally yield different estimates.
 
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+The RDD estimate measures the effect *at the discontinuity*. Why might the effect differ for observations far from the cutoff? Give an economic example where a treatment effect varies with distance from the threshold.
+:::
+
 Moreover, note that more than just costs have changed over time: subjects in the later periods have history experience behind them while they do not in earlier periods. So hidden variables like "beliefs" are implicitly treated as well. This is one concrete reason to have an explicit control group.
 
 #### **Difference in Differences**. {-}
-The basic idea of DID is to examine how a variable changes in response to an exogenous shock, *compared to a control group*.
+The basic idea of DID is to examine how a variable changes in response to an exogenous shock, *compared to a control group* (see [The Effect, Ch. Difference-in-Differences](https://theeffectbook.net/ch-DifferenceinDifference.html) for more detail).
 
 ```{r}
 EQ3 <- sapply(1:(2*N), function(n){
@@ -156,36 +165,36 @@ EQ3 <- sapply(1:(2*N), function(n){
     return(eq)
 })
 dat3 <- data.frame(t(EQ3), cost='1', T=1:ncol(EQ3))
-dat3_pre  <- dat3[dat3$T <= N ,]
-dat3_post <- dat3[dat3$T > N ,]
+dat3_pre  <- dat3[dat3$T <= N , ]
+dat3_post <- dat3[dat3$T > N , ]
 
 # Plot Price Data
-par(mfrow=c(1,2))
-plot(P~T, dat2, main='Effect of Cost Shock on Price', 
-    font.main=1, pch=16, col=cols, cex=.5)
-lines(x1, predict(regP1), col=rgb(0,0,0), lwd=2)
-lines(x2, predict(regP2), col=rgb(0,0,1), lwd=2)
+par(mfrow=c(1, 2))
+plot(P ~ T, dat2, main=NA, pch=16, col=cols, cex=.5)
+title('Effect of Cost Shock on Price', font.main=1)
+lines(x1, predict(regP1), col=rgb(0, 0, 0, .8), lwd=2)
+lines(x2, predict(regP2), col=rgb(0, 0, 1, .8), lwd=2)
 # W/ Control group
-points(P~T, dat3, pch=16, col=rgb(1,0,0,.5), cex=.5)
-regP3a <- loess(P~T, dat3_pre)
+points(P ~ T, dat3, pch=16, col=rgb(1, 0, 0, .5), cex=.5)
+regP3a <- loess(P ~ T, dat3_pre)
 x3a <- regP3a$x
-lines(x3a, predict(regP3a), col=rgb(1,0,0), lwd=2)
-regP3b <- loess(P~T, dat3_post)
+lines(x3a, predict(regP3a), col=rgb(1, 0, 0, .8), lwd=2)
+regP3b <- loess(P ~ T, dat3_post)
 x3b <- regP3b$x
-lines(x3b, predict(regP3b), col=rgb(1,0,0), lwd=2)
+lines(x3b, predict(regP3b), col=rgb(1, 0, 0, .8), lwd=2)
 
 
 # Plot Quantity Data
-plot(Q~T, dat2, main='Effect of Cost Shock on Quantity',
-    font.main=1, pch=17, col=cols, cex=.5)
-lines(x1, predict(regQ1), col=rgb(0,0,0), lwd=2)
-lines(x2, predict(regQ2), col=rgb(0,0,1), lwd=2)
+plot(Q ~ T, dat2, main=NA, pch=17, col=cols, cex=.5)
+title('Effect of Cost Shock on Quantity', font.main=1)
+lines(x1, predict(regQ1), col=rgb(0, 0, 0, .8), lwd=2)
+lines(x2, predict(regQ2), col=rgb(0, 0, 1, .8), lwd=2)
 # W/ Control group
-points(Q~T, dat3, pch=16, col=rgb(1,0,0,.5), cex=.5)
-regQ3a <- loess(Q~T, dat3_pre) 
-lines(x3a, predict(regQ3a), col=rgb(1,0,0), lwd=2)
-regQ3b <- loess(Q~T, dat3_post) 
-lines(x3b, predict(regQ3b), col=rgb(1,0,0), lwd=2)
+points(Q ~ T, dat3, pch=16, col=rgb(1, 0, 0, .5), cex=.5)
+regQ3a <- loess(Q ~ T, dat3_pre)
+lines(x3a, predict(regQ3a), col=rgb(1, 0, 0, .8), lwd=2)
+regQ3b <- loess(Q ~ T, dat3_post)
+lines(x3b, predict(regQ3b), col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 Linear Regression Estimates
@@ -198,13 +207,17 @@ dat_pooled$EverTreated <- as.factor(dat_pooled$EverTreated)
 dat_pooled$PostPeriod <- as.factor(dat_pooled$PostPeriod)
 
 # Estimate Level Shift for Different Groups after T=300
-regP <- lm(P~PostPeriod*EverTreated, dat_pooled)
-regQ <- lm(Q~PostPeriod*EverTreated, dat_pooled)
+regP <- lm(P ~ PostPeriod*EverTreated, dat_pooled)
+regQ <- lm(Q ~ PostPeriod*EverTreated, dat_pooled)
 stargazer::stargazer(regP, regQ, 
     type='html',
     title='Recipe DiD',
     header=F)
 ```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+The DID estimate relies on the *parallel trends* assumption: absent treatment, the treatment and control groups would have followed the same trajectory. Look at the pre-treatment period in the plots above. Do the treated (black) and control (red) series appear to have parallel trends? What would violate this assumption?
+:::
 
 
 
@@ -212,20 +225,20 @@ stargazer::stargazer(regP, regQ,
 
 Randomization is the process of randomly manipulating an explanatory variable of (assigning treatments to units).
 
-A completely randomized design is useful when the experimental units are homogeneous. If the experimental units are heterogeneous, blocking is often used to form homogeneous groups.
+A completely randomized design is useful when the experimental units are homogeneous. If the experimental units are heterogeneous, *blocking* is often used to form homogeneous groups.
 
 Continuing with supply and demand example, we might manipulate costs (randomize high or low treatments) for companies in different industries (computer services, lumber harvesting).
 
 ## Quasi Experiments
 
-Quasi or "Natural" experiments are historical case studies have the second distinguishing feature of experiments: randomization, but not the first: control. This helps remedy the endogeneity issues in observational data. "Intrumental Variables", "RDD", "DID" methods discussed above are used in historical event studies. The elementary versions use linear regression, so I can cover them here using our competitive equilibrium example from before.
+*Quasi* or *natural experiments* are historical case studies have the second distinguishing feature of experiments: randomization, but not the first: control. This helps remedy the endogeneity issues in observational data. "Intrumental Variables", "RDD", "DID" methods discussed above are used in historical event studies. The elementary versions use linear regression, so I can cover them here using our competitive equilibrium example from before.
 
 
 #### **Two Stage Least Squares (2SLS)**. {-}
-Consider the market equilibrium example, which contains a cost shock. We can simply run another regression, but there will still be a problem. 
+Consider the market equilibrium example, which contains a cost shock (for a broader treatment of IV methods, see [The Effect, Ch. Instrumental Variables](https://theeffectbook.net/ch-InstrumentalVariables.html)). We can simply run another regression, but there will still be a problem. 
 ```{r}
 # Not exactly right, but at least right sign
-reg2 <- lm(Q~P, data=dat2)
+reg2 <- lm(Q ~ P, data=dat2)
 summary(reg2)
 ```
 It turns out that the noisiness of the process within each group affects our OLS estimate: $\hat{B^{*}}=\hat{C}_{Q^{*}P^{*}} / \hat{V}_{P^{*}}$. For details, see
@@ -237,16 +250,16 @@ You can experiment with the effect of different variances on both OLS and IV in 
 Egrid <- expand.grid(Ed_sigma=c(.001, .25, 1), Es_sigma=c(.001, .25, 1))
 
 Egrid_regs <- lapply(1:nrow(Egrid), function(i){
-    Ed_sigma <- Egrid[i,1]
-    Es_sigma <- Egrid[i,2]    
+    Ed_sigma <- Egrid[i, 1]
+    Es_sigma <- Egrid[i, 2]    
     EQ1 <- sapply(1:N, function(n){
         demand <- qd_fun(P, Ed_sigma=Ed_sigma)
         supply <- qs_fun(P, Es_sigma=Es_sigma)
         return(eq_fun(demand, supply, P))
     })
     EQ2 <- sapply(1:N, function(n){
-        demand <- qd_fun(P,Ed_sigma=Ed_sigma)
-        supply2 <- qs_fun(P, As=-6.5,Es_sigma=Es_sigma)
+        demand <- qd_fun(P, Ed_sigma=Ed_sigma)
+        supply2 <- qs_fun(P, As=-6.5, Es_sigma=Es_sigma)
         return(eq_fun(demand, supply2, P))
     })
     dat <- rbind(
@@ -254,15 +267,15 @@ Egrid_regs <- lapply(1:nrow(Egrid), function(i){
         data.frame(t(EQ2), cost='2'))
     return(dat)
 })
-Egrid_OLS <- sapply(Egrid_regs, function(dat) coef( lm(Q~P, data=dat)))
-Egrid_IV <- sapply(Egrid_regs, function(dat) coef( feols(Q~1|P~cost, data=dat)))
+Egrid_OLS <- sapply(Egrid_regs, function(dat) coef( lm(Q ~ P, data=dat)))
+Egrid_IV <- sapply(Egrid_regs, function(dat) coef( feols(Q ~ 1|P ~ cost, data=dat)))
 
-#cbind(Egrid, coef_OLS=t(Egrid_OLS)[,2], coef_IV=t(Egrid_IV)[,2])
+#cbind(Egrid, coef_OLS=t(Egrid_OLS)[, 2], coef_IV=t(Egrid_IV)[, 2])
 lapply( list(Egrid_OLS, Egrid_IV), function(ei){
-    Emat <- matrix(ei[2,],3,3)
-    rownames(Emat) <- paste0('Ed_sigma.',c(.001, .25, 1))
-    colnames(Emat) <- paste0('Es_sigma.',c(.001, .25, 1))
-    return( round(Emat,2))
+    Emat <- matrix(ei[2, ], 3, 3)
+    rownames(Emat) <- paste0('Ed_sigma.', c(.001, .25, 1))
+    colnames(Emat) <- paste0('Es_sigma.', c(.001, .25, 1))
+    return( round(Emat, 2))
 })
 ```
 </details>
@@ -270,10 +283,10 @@ To overcome this issue, we can compute the change in the expected values $d \mat
 ```{r}
 # Wald (1940) Estimate
 dat_mean <- rbind(
-    colMeans(dat2[dat2$cost==1,1:2]),
-    colMeans(dat2[dat2$cost==2,1:2]))
+    colMeans(dat2[dat2$cost==1, 1:2]),
+    colMeans(dat2[dat2$cost==2, 1:2]))
 dat_mean
-B_est <- diff(dat_mean[,2])/diff(dat_mean[,1])
+B_est <- diff(dat_mean[, 2])/diff(dat_mean[, 1])
 round(B_est, 2)
 ```
 
@@ -281,12 +294,12 @@ round(B_est, 2)
 We can also separately recover $d \mathbb{E}[Q^{*}] / d \mathbb{E}[\alpha_{S}]$ and $d \mathbb{E}[P^{*}] / d \mathbb{E}[\alpha_{S}]$ from separate regressions.^[Mathematically, we can also do this in a single step by exploiting linear algebra: $\frac{\frac{ Cov(Q^{*},\alpha_{S})}{ V(\alpha_{S}) } }{\frac{ Cov(P^{*},\alpha_{S})}{ V(\alpha_{S}) }} = \frac{Cov(Q^{*},\alpha_{S} )}{ Cov(P^{*},\alpha_{S})}.$]
 ```{r}
 # Heckman (2000, p.58) Estimate
-ols_1 <- lm(P~cost, data=dat2)
-ols_2 <- lm(Q~cost, data=dat2)
+ols_1 <- lm(P ~ cost, data=dat2)
+ols_2 <- lm(Q ~ cost, data=dat2)
 B_est2 <- coef(ols_2)/coef(ols_1)
-round(B_est2[[2]],2)
+round(B_est2[[2]], 2)
 ```
-Alternatively, we can recover the same estimate using an 2SLS regression with two equations:
+Alternatively, we can recover the same estimate using a *2SLS* regression with two equations:
 \begin{eqnarray}
 \hat{P} &=& b_{0p} + b_{1p} \alpha_{S} + e_{p} \\
 \hat{Q} &=& b_{0q} + b_{1q} \hat{p}  + e_{q}.
@@ -302,16 +315,20 @@ Q_{D} &=& \alpha_{D} + \beta_{D} P  + E_{D}.
 \end{eqnarray}
 ```{r}
 # Two Stage Least Squares Estimate
-ols_1 <- lm(P~cost, data=dat2)
+ols_1 <- lm(P ~ cost, data=dat2)
 dat2_new  <- cbind(dat2, Phat=predict(ols_1))
-reg_2sls <- lm(Q~Phat, data=dat2_new)
+reg_2sls <- lm(Q ~ Phat, data=dat2_new)
 summary(reg_2sls)
 
 # One Stage Instrumental Variables Estimate
 library(fixest)
-reg2_iv <- feols(Q~1|P~cost, data=dat2)
+reg2_iv <- feols(Q ~ 1|P ~ cost, data=dat2)
 summary(reg2_iv)
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+The 2SLS procedure works in two steps. First, regress the endogenous variable (price) on the instrument (cost): this isolates the part of price variation driven by supply shifts. Second, regress quantity on the predicted prices from step 1. Because predicted prices reflect only supply-side variation, the second-stage coefficient estimates the demand slope. The key requirement is that cost shifts affect quantity *only* through price (the exclusion restriction).
+:::
 
 
 #### **Caveats**. {-}
@@ -331,45 +348,28 @@ We always get coefficients back when running `feols`, and sometimes the computed
 
 ```{r, eval=F, results='hide', echo=F}
 We could also use a nonparametric estimator to diagnose linearity at each stage.
-#reg2_alt_fs <- lm(Q~cost, data=dat2)
+#reg2_alt_fs <- lm(Q ~ cost, data=dat2)
 #summary(reg2_alt_fs)
-#lo2_alt_fs <- loess(Q~cost, data=dat2)
+#lo2_alt_fs <- loess(Q ~ cost, data=dat2)
 
 
 # Many packages can do IV
-# ivreg::ivreg(Q~P|cost, data=dat2)
+# ivreg::ivreg(Q ~ P|cost, data=dat2)
 ```
 
 
-## Further Reading
+## Exercises
 
+1. In the competitive market simulation, a supply cost shock is used to identify the demand slope via 2SLS. Explain why simply regressing $Q$ on $P$ with both cost regimes pooled does not recover the demand slope $-\beta_D$, and what role the exclusion restriction plays in the 2SLS approach.
 
-You are directed to the following resources which discusses endogeneity in more detail and how it applies generally.
+2. Using the pooled market data (`dat2`) from the chapter, compute the Wald estimate of the demand slope by hand: take the difference in mean quantity across cost groups divided by the difference in mean price. Compare this to the 2SLS estimate from `fixest::feols(Q ~ 1 | P ~ cost, data = dat2)`. Are they the same? Why or why not?
 
-* Causal Inference for Statistics, Social, and Biomedical Sciences: An Introduction
-* <https://www.mostlyharmlesseconometrics.com/>
-* <https://www.econometrics-with-r.org>
-* <https://bookdown.org/paul/applied-causal-analysis/>
-* <https://mixtape.scunning.com/>
-* <https://theeffectbook.net/>
-* <https://www.r-causal.org/>
-* <https://matheusfacure.github.io/python-causality-handbook/landing-page.html>
+3. Simulate a difference-in-differences setup in R. Generate two groups of 100 observations each over 200 time periods, where one group receives a treatment (a level shift of +2) at $T = 100$. Estimate the DID coefficient using `lm(y ~ PostPeriod * EverTreated, data = dat)` and verify that it recovers the treatment effect.
 
-For RDD and DID methods in natural experiments, see
+#### **Further Reading**. {-}
 
-* <https://bookdown.org/paul/applied-causal-analysis/rdd-regression-discontinuity-design.html>
-* <https://mixtape.scunning.com/06-regression_discontinuity>
-* <https://theeffectbook.net/ch-RegressionDiscontinuity.html>
-* <https://mixtape.scunning.com/09-difference_in_differences>
-* <https://theeffectbook.net/ch-DifferenceinDifference.html>
-    
+The following resources discuss causal inference methods (IV, RDD, DID) in more detail.
 
-For IV methods in natural experiments, see
-
-* <https://cameron.econ.ucdavis.edu/e240a/ch04iv.pdf>
-* <https://mru.org/courses/mastering-econometrics/introduction-instrumental-variables-part-one>
-* <https://www.econometrics-with-r.org/12-ivr.html>
-* <https://bookdown.org/paul/applied-causal-analysis/estimation-2.html>
-* <https://mixtape.scunning.com/07-instrumental_variables>
-* <https://theeffectbook.net/ch-InstrumentalVariables.html>
-
+* <https://mixtape.scunning.com/> -- Cunningham's *Causal Inference: The Mixtape*, a free online textbook covering IV, RDD, DID, and synthetic control with code examples.
+* <https://theeffectbook.net/> -- Huntington-Klein's *The Effect*, an accessible introduction to research design and causal identification.
+* <https://www.econometrics-with-r.org/12-ivr.html> -- instrumental variables regression in R with practical worked examples.

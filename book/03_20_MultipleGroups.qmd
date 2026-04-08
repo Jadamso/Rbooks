@@ -1,29 +1,42 @@
 # Comparing Multiple Groups
 ***
 
-With multiple groups, you will want to begin with a summary figure (such as a boxplot). We can also test the equality of all means or all distributions (whether at least one group is different). 
+## Introduction
 
-A practical workflow for multiple groups has three steps:
+#### **Factor Variables**. {-}
 
-1. Visualize all groups together.
-2. Run one global test
-3. Run post-hoc pairwise tests with multiplicity correction.
+So far, we have discussed cardinal data where the difference between units always means the same thing: e.g., $4-3=2-1$. There are also factor variables
+
+* Ordered: refers to Ordinal data. The difference between units means something, but not always the same thing. For example, $4th - 3rd \neq 2nd - 1st$.
+* Unordered: refers to Categorical data. The difference between units is meaningless. For example, $D-C=?$
+
+To analyze either factor, we often convert them into *indicator variables* or *dummies*; $\hat{D}_{c}=\mathbf{1}( \text{Factor} = c)$. One common case is if you have observations of individuals over time periods, then you may have two factor variables. An unordered factor that indicates who an individual is; for example $\hat{D}_{i}=\mathbf{1}( \text{Individual} = i)$, and an order factor that indicates the time period; for example $\hat{D}_{t}=\mathbf{1}( \text{Time} \in [\text{month}~ t, \text{month}~ t+1) )$. There are many other cases you see factor variables, including spatial ID's in purely cross sectional data.
+
+Be careful not to handle categorical data as if they were cardinal. E.g., generate city data with Leipzig=1, Lausanne=2, LosAngeles=3, ... and then include city as if it were a cardinal number (that's a big no-no). The same applied to ordinal data; PopulationLeipzig=2, PopulationLausanne=3, PopulationLosAngeles=1.
+
+In this chapter, we use `state.region` (Northeast, South, North Central, West) as an unordered factor to group the `USArrests` data by US Census region.
 
 ```{r}
-# USArrests grouped by US Census region
 dat <- USArrests
 dat$Region <- state.region
+levels(dat$Region)
+```
 
+#### **Multiple Groups**. {-}
+
+With multiple groups, begin with a summary figure (such as a boxplot) and then run a global test of whether at least one group differs.
+
+```{r}
 # Step 1: Visual summary
 boxplot(Murder ~ Region, data = dat,
     col = hcl.colors(4, alpha = .45),
-    ylab = "Murder arrests (per 100k)", xlab = "Region", main = "")
-title("Murder rates by region", font.main = 1)
+    ylab = 'Murder arrests (per 100k)', xlab = 'Region', main = NA)
+title('Murder rates by region', font.main = 1)
 ```
 
 ## Equal Means (ANOVA)
 
-In [Comparing Groups](https://jadamso.github.io/Rbooks/02_11_ComparingGroups.html), we tested whether two groups had the same mean. We now extend this to $G$ groups. The *Analysis of Variance* (ANOVA) approach asks: are the observed differences in group means larger than we would expect from random variation alone?
+In [Comparing Groups](https://jadamso.github.io/Rbooks/02_11_TwoGroups.html), we tested whether two groups had the same mean. We now extend this to $G$ groups. The *Analysis of Variance* (ANOVA) approach asks: are the observed differences in group means larger than we would expect from random variation alone?
 
 #### **Decomposition**. {-}
 
@@ -35,7 +48,7 @@ The key idea is to decompose total variation into *between-group* and *within-gr
 \;+\;
 \underbrace{\sum_{g=1}^{G}\sum_{i=1}^{n_g}(\hat{Y}_{ig}-\hat{M}_{g})^2}_{\hat{WSS}},
 \end{eqnarray}
-where $\hat{BSS}$ is the *between-group* sum of squares (variation in group means around the grand mean) and $\hat{WSS}$ is the *within-group* sum of squares (variation of observations around their own group mean).
+where $\hat{BSS}$ is the between-group sum of squares (variation in group means around the grand mean) and $\hat{WSS}$ is the within-group sum of squares (variation of observations around their own group mean).
 
 If the group means are all equal, then $\hat{BSS}$ should be small relative to $\hat{WSS}$.
 
@@ -50,7 +63,7 @@ The numerator is the average between-group variation (per degree of freedom), an
 Under additional parametric assumptions (independent observations, equal variances, normal errors), $\hat{F}$ follows an $F_{G-1,\;n-G}$ distribution. In practice, we can also use permutation or bootstrap methods to build a null distribution, just as in previous chapters.
 
 
-:::{.callout-tip icon=false collapse="true"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 #### Numerical example
 
 Suppose we have $G=3$ groups with the following data:
@@ -81,16 +94,17 @@ F-statistic: $\hat{F} = \frac{14/2}{6/6} = 7$. With $G-1=2$ and $n-G=6$ degrees 
 
 ```{r}
 # Verify by hand
-Y <- c(4,5,6, 8,7,9, 5,6,7)
-g <- factor(c('A','A','A','B','B','B','C','C','C'))
+Y <- c(4, 5, 6, 8, 7, 9, 5, 6, 7)
+g <- factor(c('A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C'))
 n <- length(Y)
 G <- nlevels(g)
 
 M_Y <- mean(Y)
-M_g <- tapply(Y, g, mean)
+M_g <- aggregate(Y, list(g), mean)$x
+n_g <- aggregate(Y, list(g), length)$x
 
-BSS <- sum(tapply(Y, g, length) * (M_g - M_Y)^2)
-WSS <- sum(tapply(Y, g, function(y) sum((y - mean(y))^2)))
+BSS <- sum(n_g * (M_g - M_Y)^2)
+WSS <- sum(aggregate(Y, list(g), function(y) sum((y - mean(y))^2))$x)
 
 Fstat <- (BSS/(G-1)) / (WSS/(n-G))
 pval  <- 1 - pf(Fstat, G-1, n-G)
@@ -104,10 +118,6 @@ cbind(BSS, WSS, Fstat, pval)
 In R, `aov()` fits the ANOVA model and `summary()` returns the standard ANOVA table. Equivalently, `anova()` applied to a regression with a single factor gives the same result.
 
 ```{r}
-# USArrests grouped by US Census region
-dat <- USArrests
-dat$Region <- state.region
-
 # Fit ANOVA
 fit_aov <- aov(Murder ~ Region, data = dat)
 summary(fit_aov)
@@ -125,6 +135,45 @@ anova(fit_lm)
 #### **Assumptions and alternatives**. {-}
 
 The parametric F-test assumes (i) independent observations, (ii) normal errors within each group, and (iii) equal variances across groups (*homoscedasticity*). If these assumptions are doubtful, then the nonparametric Kruskal-Wallis test (below) is a safer alternative. As a quick diagnostic, visually compare side-by-side boxplots: if the spread differs across groups or the distribution has excessive skew/kurtosis, be cautious with the parametric test.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+#### Bootstrap F-test
+
+Rather than relying on the $F_{G-1,\;n-G}$ distribution, we can bootstrap the $F$-statistic directly. The pairs bootstrap resamples entire observations (Murder, Region) with replacement, preserving whatever joint structure exists in the data.
+
+```{r}
+# Observed F-statistic
+fit_aov   <- aov(Murder ~ Region, data = dat)
+F_obs     <- summary(fit_aov)[[1]]['Region', 'F value']
+
+# Pairs bootstrap: resample rows with replacement
+B <- 5000
+n <- nrow(dat)
+
+F_boot <- replicate(B, {
+    idx <- sample(n, replace = TRUE)
+    dat_boot <- dat[idx, ]
+    summary(aov(Murder ~ Region, data = dat_boot))[[1]]['Region', 'F value']
+})
+
+# Bootstrap p-value
+p_boot <- mean(F_boot >= F_obs)
+
+# Compare parametric and bootstrap p-values
+p_param <- summary(fit_aov)[[1]]['Region', 'Pr(>F)']
+cbind(F_obs, p_param, p_boot)
+```
+
+```{r}
+hist(F_boot, breaks = 40,
+    col = hcl.colors(1, alpha = .45), border = NA,
+    freq = F, main = NA, xlab = 'Bootstrap F-statistic',
+    xlim = c(0, max(F_obs * 1.2, quantile(F_boot, .99))))
+title('Bootstrap F-test', font.main = 1)
+abline(v = F_obs, col = rgb(1, 0, 0, .8), lwd = 2)
+legend('topright', legend = 'Observed F', col = rgb(1, 0, 0, .8), lwd = 2)
+```
+:::
 
 
 ## Equal Distributions
@@ -147,36 +196,21 @@ In the special case with only two groups, the Kruskal Wallis test reduces to the
 Interpretation template:
 
 * If the Kruskal-Wallis p-value is large, keep the global null and stop.
-* If the p-value is small, report that at least one group differs and then inspect adjusted pairwise p-values.
+* If the p-value is small, report that at least one group differs.
 * Report both statistical and practical importance (distribution plots + effect size summaries), not only p-values.
 
 ```{r}
-# Step 2: Global null test
 kw <- kruskal.test(Murder ~ Region, data = dat)
 kw
-
-# Step 3: Post-hoc pairwise tests, adjusted p-values
-pw <- pairwise.wilcox.test(
-    x = dat$Murder, g = dat$Region,
-    p.adjust.method = "bonferroni")
-pw$p.value
 ```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+The Kruskal-Wallis test rejected the null, so at least one region has a different distribution of murder rates. Looking back at the boxplot, which region stands out?
+:::
 
 ## Regression
 
-ANOVA is a special case of linear regression where the only explanatory variables are group indicators. To see this, we first introduce factor variables and then make the connection.
-
-
-#### **Factor Variables**. {-}
-
-So far, we have discussed cardinal data where the difference between units always means the same thing: e.g., $4-3=2-1$. There are also factor variables
-
-* Ordered: refers to Ordinal data. The difference between units means something, but not always the same thing. For example, $4th - 3rd \neq 2nd - 1st$.
-* Unordered: refers to Categorical data. The difference between units is meaningless. For example, $D-C=?$
-
-To analyze either factor, we often convert them into indicator variables or dummies; $\hat{D}_{c}=\mathbf{1}( \text{Factor} = c)$. One common case is if you have observations of individuals over time periods, then you may have two factor variables. An unordered factor that indicates who an individual is; for example $\hat{D}_{i}=\mathbf{1}( \text{Individual} = i)$, and an order factor that indicates the time period; for example $\hat{D}_{t}=\mathbf{1}( \text{Time} \in [\text{month}~ t, \text{month}~ t+1) )$. There are many other cases you see factor variables, including spatial ID's in purely cross sectional data.
-
-Be careful not to handle categorical data as if they were cardinal. E.g., generate city data with Leipzig=1, Lausanne=2, LosAngeles=3, ... and then include city as if it were a cardinal number (that's a big no-no). The same applied to ordinal data; PopulationLeipzig=2, PopulationLausanne=3, PopulationLosAngeles=1.
+ANOVA is a special case of linear regression where the only explanatory variables are group indicators.
 
 #### **ANOVA**. {-}
 
@@ -187,46 +221,54 @@ The model $\hat{Y}_{ig} = b_0 + \sum_{g=2}^{G} b_g \hat{D}_{ig} + e_{ig}$ produc
 coef(fit_lm)
 
 # Compare to group means
-M_g <- tapply(dat$Murder, dat$Region, mean)
+M_g <- aggregate(Murder ~ Region, dat, mean)$Murder
 M_g
 
 # b0 = mean of reference group; b_g = mean(g) - mean(reference)
 M_g - M_g[1]
 ```
 
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Suppose there are $G=3$ groups with means $\hat{M}_1=4$, $\hat{M}_2=7$, $\hat{M}_3=5$. Using group 1 as the reference, the regression coefficients are $b_0=4$, $b_2=7-4=3$, $b_3=5-4=1$. The intercept equals the reference group mean, and each slope equals the difference from the reference.
+
+```{r}
+# Verify
+Y <- c(3, 4, 5, 6, 7, 8, 4, 5, 6)
+g <- factor(c(1, 1, 1, 2, 2, 2, 3, 3, 3))
+coef(lm(Y ~ g))
+```
+:::
+
 #### **Regression**. {-}
 
+We can extend the group-comparison model by adding continuous predictors alongside the factor. For example, we might ask: after controlling for `Assault`, do regional differences in murder rates persist?
+
 ```{r}
-N <- 1000
-x <- runif(N,3,8)
-e <- rnorm(N,0,0.4)
-fo <- factor(rbinom(N,4,.5), ordered=T)
-fu <- factor(rep(c('A','B'),N/2), ordered=F)
-dA <- 1*(fu=='A')
-y <- (2^as.integer(fo)*dA )*sqrt(x)+ 2*as.integer(fo)*e
-dat_f <- data.frame(y,x,fo,fu)
+# Extend the model: add Assault as a continuous predictor
+reg_combined <- lm(Murder ~ Region + Assault, data = dat)
+summary(reg_combined)
 ```
 
-With factors, you can still include them in the design matrix of an OLS regression. For example, 
+With factors, you can still include them in the design matrix of an OLS regression. For example,
 \begin{eqnarray}
-\hat{Y}_{i} = \sum_{k=0}^{K} b_k \hat{X}_{ik} + \sum_{t}\hat{D}_{t}b_{t}
+\hat{Y}_{i} = \sum_{k=0}^{K} b_k \hat{X}_{ik} + \sum_{g}\hat{D}_{g}b_{g}
 \end{eqnarray}
-When, as commonly done, the factors are modeled as being additively seperable, they are modeled "fixed effects".^[There are also *random effects*: the factor variable comes from a distribution that is uncorrelated with the regressors. This is rarely used in economics today, however, and are mostly included for historical reasons and special cases where fixed effects cannot be estimated due to data limitations.] Simply including the factors into the OLS regression yields a "dummy variable" fixed effects estimator. The fixed effects and dummy variable approach are algebraically equal: same coefficients and same residuals. (See Hansen Econometrics, Theorem 17.1)
+When, as commonly done, the factors are modeled as being additively separable, they are modeled as *fixed effects*.^[There are also *random effects*: the factor variable comes from a distribution that is uncorrelated with the regressors. This is rarely used in economics today, however, and are mostly included for historical reasons and special cases where fixed effects cannot be estimated due to data limitations.] Simply including the factors into the OLS regression yields a "dummy variable" fixed effects estimator. The fixed effects and dummy variable approach are algebraically equal: same coefficients and same residuals. (See Hansen Econometrics, Theorem 17.1)
 <!--
-In fact, if the fixed effect is ``fully unstructured then the only way to consistently estimate the coefficient $\beta$ is by an estimator which is invariant'' (Hansen Econometrics, p). 
+In fact, if the fixed effect is ``fully unstructured then the only way to consistently estimate the coefficient $\beta$ is by an estimator which is invariant'' (Hansen Econometrics, p).
 -->
 ```{r}
-# Compare Coefficients
-fe_reg0 <- lm(y~-1+x+fo+fu, dat_f)
-coef(fe_reg0)[1]
+# Dummy variable approach
+reg_dv <- lm(Murder ~ -1 + Assault + Region, data = dat)
+coef(reg_dv)['Assault']
 
+# Fixed effects approach
 library(fixest)
-fe_reg1 <- feols(y~x|fo+fu, dat_f)
-coef(fe_reg1)
-#fixef(fe_reg1)[1:2]
+reg_fe <- feols(Murder ~ Assault | Region, data = dat)
+coef(reg_fe)
 ```
 
-With fixed effects, we can also compute averages for each group: $\hat{M}_{Yt}=\sum_{i}^{n_{t}} \hat{Y}_{it}/n_{t}$, where each period $t$ has $n_{t}$ observations denoted $\hat{Y}_{it}$. We can then construct a *between estimator*: $\hat{M}_{Yt} = b_{0} + \hat{M}_{Xt} b_{1}$. Or we can subtract the average from each group to construct a *within estimator*: $(\hat{Y}_{it} - \hat{M}_{Yt}) = (\hat{X}_{it}-\hat{M}_{Xt})b_{1}$. 
+With fixed effects, we can also compute averages for each group: $\hat{M}_{Yg}=\sum_{i}^{n_{g}} \hat{Y}_{ig}/n_{g}$, where each group $g$ has $n_{g}$ observations denoted $\hat{Y}_{ig}$. We can then construct a *between estimator*: $\hat{M}_{Yg} = b_{0} + \hat{M}_{Xg} b_{1}$. Or we can subtract the average from each group to construct a *within estimator*: $(\hat{Y}_{ig} - \hat{M}_{Yg}) = (\hat{X}_{ig}-\hat{M}_{Xg})b_{1}$.
 
 <!-- 
 > The labels "random effects" and "fixed effects" are misleading. These are labels which arose in the early literature and we are stuck with these labels today. In a previous era regressors were viewed as "fixed". Viewing the individual effect as an unobserved regressor leads to the label of the individual effect as "fixed". Today, we rarely refer to regressors as "fixed" when dealing with observational data. We view all variables as random. Consequently describing u i as "fixed" does not make much sense and it is hardly a contrast with the "random effect" label since under either assumption u i is treated as random. Once again, the labels are unfortunate but the key difference is whether u i is correlated with the regressors.
@@ -235,49 +277,49 @@ With fixed effects, we can also compute averages for each group: $\hat{M}_{Yt}=\
 
 #### **Comparing Models** {-}
 
-Recall that we can compare regression models using an F-Test.
-
-Under some additional parametric assumptions about the data generating process, the F-statistic follows an $F$ distribution. This case is well-studied historically, often under the title Analysis of Variance (ANOVA). An important case corresponds to the restricted model having no explanatory variables (i.e., our model is $\hat{Y}_{i}=b_{0}$ and our predictions are $\hat{y}_{i}=\hat{M}_{Y}$).
+Recall that we can compare regression models using an F-Test. Under some additional parametric assumptions, the F-statistic follows an $F$ distribution. This case is well-studied historically under the title Analysis of Variance (ANOVA). We can build a sequence of nested models to see which predictors contribute.
 
 ```{r}
-reg_full <- lm(Murder ~ Assault + UrbanPop + Rape, data = USArrests)
-reg_none <- lm(Murder ~ 1, data=USArrests)
-anova(reg_none, reg_full)
+# Sequence of nested models
+reg0 <- lm(Murder ~ 1, data = dat)               # intercept only
+reg1 <- lm(Murder ~ Region, data = dat)           # Region (the ANOVA model)
+reg2 <- lm(Murder ~ Region + Assault, data = dat) # Region + Assault
+reg3 <- lm(Murder ~ Region * Assault, data = dat) # Region * Assault
 
-# Manual F-test
-rss0 <- sum(resid(reg_none)^2) # restricted
-rss1 <- sum(resid(reg_full)^2) # unrestricted
-df0  <- df.residual(reg_none)
-df1  <- df.residual(reg_full)
-F    <- ((rss0 - rss1)/(df0-df1)) / (rss1/df1) # observed F stat
-p    <- 1-pf(F, df0-df1, df1) # where F falls in the F-distribution
+# Does Region explain murder rates?
+anova(reg0, reg1)
+
+# Does adding Assault improve the model beyond Region?
+anova(reg1, reg2)
+
+# Does the effect of Assault differ by Region?
+anova(reg2, reg3)
+```
+
+```{r}
+# Manual F-test: intercept-only vs Region
+rss0 <- sum(resid(reg0)^2)
+rss1 <- sum(resid(reg1)^2)
+df0  <- df.residual(reg0)
+df1  <- df.residual(reg1)
+F    <- ((rss0 - rss1)/(df0 - df1)) / (rss1/df1)
+p    <- 1 - pf(F, df0 - df1, df1)
 cbind(F, p)
 ```
 
-Whether you take a parametric or nonparametric approach to hypothesis testing, you can easily test whether variables are additively separable with an F test.
-```{r}
-# Empirical Example
-reg1 <- lm(Murder~Assault+UrbanPop, USArrests)
-reg2 <- lm(Murder~Assault*UrbanPop, USArrests)
-anova(reg1, reg2)
-```
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+The sequence of F-tests builds from simple to complex. The first test asks whether Region matters at all. The second asks whether Assault adds information beyond Region. The third asks whether the Assault-Murder relationship varies across regions. If the interaction test has a large p-value, what does that tell us about whether the effect of Assault is the same in every region?
+:::
 
-```{r, eval=F}
-# Simulation Example
-N <- 1000
-x <- runif(N,3,8)
-e <- rnorm(N,0,0.4)
-fo <- factor(rbinom(N,4,.5), ordered=T)
-fu <- factor(rep(c('A','B'),N/2), ordered=F)
-dA <- 1*(fu=='A')
-y <- (2^as.integer(fo)*dA )*sqrt(x)+ 2*as.integer(fo)*e
-dat_f <- data.frame(y,x,fo,fu)
+## Exercises
 
-reg0 <- lm(y~-1+x+fo+fu, dat_f)
-reg1 <- lm(y~-1+x+fo*fu, dat_f)
-reg2 <- lm(y~-1+x*fo*fu, dat_f)
+1. An ANOVA $F$-test rejects the null that all group means are equal. Does this tell you *which* group is different, or only that at least one differs?
 
-anova(reg0, reg2)
-anova(reg0, reg1, reg2)
-```
+2. Using the `USArrests` dataset with `state.region` as the grouping variable, compute the between-group sum of squares ($\hat{BSS}$) and within-group sum of squares ($\hat{WSS}$) for `Assault` by hand (using `aggregate()`). Verify your $\hat{F}$ statistic matches the output of `summary(aov(Assault ~ state.region, data = ...))`.
 
+3. Extend the running example by fitting `Murder ~ Region + Assault + UrbanPop` and `Murder ~ Region * Assault + UrbanPop`. Use `anova()` to test whether the Region-Assault interaction terms are jointly significant after controlling for `UrbanPop`. Compare your conclusion to the interaction test without `UrbanPop` shown in the chapter.
+
+#### **Further Reading**. {-}
+
+* <https://www.econometrics-with-r.org/7-htaciimr.html> -- hypothesis tests for comparing groups in a regression framework, including F-tests and joint restrictions.
+* <https://online.stat.psu.edu/stat462/node/137/> -- ANOVA as a special case of regression, with examples of multiple group comparisons.

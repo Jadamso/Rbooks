@@ -2,8 +2,8 @@
 """Compute Math / Code / Text line breakdown and word count for each .qmd chapter.
 
 Usage:
-    python3 chapter_breakdown.py          # all chapters
-    python3 chapter_breakdown.py 01_09    # single chapter (substring match)
+    python3 count_lines.py          # all chapters
+    python3 count_lines.py 01_09    # single chapter (substring match)
 
 Prints a Markdown table matching the format in ToDo.md,
 followed by outlier reports (short and long chapters by word count).
@@ -24,6 +24,8 @@ def classify(filepath):
     code = 0
     math = 0
     text = 0
+    sections = 0
+    subsections = 0
 
     for line in lines:
         s = line.strip()
@@ -51,10 +53,15 @@ def classify(filepath):
         if s.startswith('$$'):
             math += 1
             continue
+        # Count sections and subsections (outside code blocks)
+        if re.match(r'^## ', line):
+            sections += 1
+        elif re.match(r'^#### ', line):
+            subsections += 1
         # Everything else
         text += 1
 
-    return total, math, code, text, words
+    return total, math, code, text, words, sections, subsections
 
 
 def label_from_filename(fname):
@@ -82,7 +89,7 @@ def is_stub(total):
 
 
 if __name__ == '__main__':
-    bookdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'book')
+    bookdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'book')
     files = sorted(glob.glob(os.path.join(bookdir, '[0-9][0-9]_[0-9][0-9]_*.qmd')))
 
     # Optional filter
@@ -94,17 +101,18 @@ if __name__ == '__main__':
     results = []
     for fp in files:
         fname = os.path.basename(fp)
-        total, math, code, text, words = classify(fp)
+        total, math, code, text, words, sections, subsections = classify(fp)
         lbl = label_from_filename(fname)
         part = fname[:2]
-        results.append((fp, fname, part, lbl, total, math, code, text, words))
+        results.append((fp, fname, part, lbl, total, math, code, text, words,
+                         sections, subsections))
 
     # Print table
     print('| Chapter | Words | Lines | Math | Code | Text |')
     print('|---|---:|---:|---:|---:|---:|')
 
     prev_part = None
-    for fp, fname, part, lbl, total, math, code, text, words in results:
+    for fp, fname, part, lbl, total, math, code, text, words, sections, subsections in results:
         if part != prev_part and not filt:
             hdr = part_header(part)
             if hdr:
@@ -116,15 +124,30 @@ if __name__ == '__main__':
 
         print(f'| {lbl} | {words} | {total} | {pct(math)} | {pct(code)} | {pct(text)} |')
 
+    # Structure table: sections and subsections per chapter
+    print('\n#### Chapter Structure (sections `##` and subsections `####`)\n')
+    print('| Chapter | Sections | Subsections |')
+    print('|---|---:|---:|')
+
+    prev_part = None
+    for fp, fname, part, lbl, total, math, code, text, words, sections, subsections in results:
+        if part != prev_part and not filt:
+            hdr = part_header(part)
+            if hdr:
+                print(f'| {hdr} |')
+            prev_part = part
+        print(f'| {lbl} | {sections} | {subsections} |')
+
     # Outlier analysis (skip stubs and appendices, only when showing all chapters)
     if not filt:
-        chapters = [(lbl, total, words)
-                     for fp, fname, part, lbl, total, math, code, text, words
-                     in results
+        chapters = [(lbl, total, words, sections, subsections)
+                     for fp, fname, part, lbl, total, math, code, text, words,
+                     sections, subsections in results
                      if not is_stub(total) and part not in ('04',)]
 
         if len(chapters) >= 5:
-            word_counts = [w for _, _, w in chapters]
+            # Word count outliers
+            word_counts = [w for _, _, w, _, _ in chapters]
             med = statistics.median(word_counts)
             q1 = statistics.median([w for w in word_counts if w <= med])
             q3 = statistics.median([w for w in word_counts if w >= med])
@@ -132,10 +155,12 @@ if __name__ == '__main__':
             lo = q1 - 1.5 * iqr
             hi = q3 + 1.5 * iqr
 
-            short = [(lbl, lines, words) for lbl, lines, words in chapters if words < lo]
-            long_ = [(lbl, lines, words) for lbl, lines, words in chapters if words > hi]
+            short = [(lbl, lines, words)
+                     for lbl, lines, words, _, _ in chapters if words < lo]
+            long_ = [(lbl, lines, words)
+                     for lbl, lines, words, _, _ in chapters if words > hi]
 
-            print(f'\n**Outliers** (median {med} words, IQR [{round(q1)}–{round(q3)}], '
+            print(f'\n**Word-count outliers** (median {med} words, IQR [{round(q1)}–{round(q3)}], '
                   f'fence [{round(lo)}–{round(hi)}])')
 
             if short:
@@ -153,3 +178,34 @@ if __name__ == '__main__':
                     print(f'- {lbl}: {words} words ({lines} lines)')
             else:
                 print('\nLong: none')
+
+            # Structure outliers
+            def iqr_outliers(values, labels):
+                med = statistics.median(values)
+                q1 = statistics.median([v for v in values if v <= med])
+                q3 = statistics.median([v for v in values if v >= med])
+                iqr = q3 - q1
+                lo = q1 - 1.5 * iqr
+                hi = q3 + 1.5 * iqr
+                low = [(lbl, v) for lbl, v in zip(labels, values) if v < lo]
+                high = [(lbl, v) for lbl, v in zip(labels, values) if v > hi]
+                return med, lo, hi, low, high
+
+            labels = [lbl for lbl, _, _, _, _ in chapters]
+            sec_vals = [s for _, _, _, s, _ in chapters]
+            sub_vals = [s for _, _, _, _, s in chapters]
+
+            print('\n**Structure outliers**')
+            for metric, vals in [('Sections', sec_vals), ('Subsections', sub_vals)]:
+                med, lo, hi, low, high = iqr_outliers(vals, labels)
+                items = []
+                for lbl, v in low:
+                    items.append(f'{lbl} ({v}, low)')
+                for lbl, v in high:
+                    items.append(f'{lbl} ({v}, high)')
+                if items:
+                    print(f'\n{metric} (median {med}, fence [{lo:.0f}–{hi:.0f}]):')
+                    for item in items:
+                        print(f'- {item}')
+                else:
+                    print(f'\n{metric} (median {med}): no outliers')

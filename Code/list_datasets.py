@@ -2,9 +2,9 @@
 """Identify which datasets are used in each .qmd chapter.
 
 Usage:
-    python3 dataset_usage.py              # all chapters
-    python3 dataset_usage.py 01_09        # single chapter (substring match)
-    python3 dataset_usage.py --by-dataset # grouped by dataset instead of chapter
+    python3 list_datasets.py              # all chapters
+    python3 list_datasets.py 01_09        # single chapter (substring match)
+    python3 list_datasets.py --by-dataset # grouped by dataset instead of chapter
 
 Scans R code blocks for data(), read.csv(), library(wooldridge/Ecdat),
 and direct references to known built-in datasets.
