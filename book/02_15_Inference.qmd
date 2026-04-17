@@ -2,13 +2,13 @@
 # Inference
 ***
 
-## Applied Methods
-
 Often, we are interested in *gradients*: how $Y$ changes with $X$. The linear model depicts this as a simple constant, $\hat{b}_{1}$, whereas other models do not. A great first step to assess gradients is to plot the predicted values over the explanatory values. A great second step is to compute gradients and summarize them. In any case, we compute confidence intervals to account for variability across samples.
 
-#### **Confidence Bands**. {-}
+## Applied Methods
 
-We can construct *confidence bands* using the jackknife or bootstrap.
+#### **LOESS** {-}
+
+An important extension of locally linear regressions is called *loess*, which uses adaptive bandwidths in order to have a similar number of data points around each design point. This is especially useful when $\hat{X}_{i}$ is not uniform.
 
 ```{r}
 ## Data
@@ -16,8 +16,33 @@ library(Ecdat)
 dat <- Wages1[, c('wage', 'school')]
 dat <- dat[order(Wages1[, 'school']), ]
 
+# Adaptive bandwidth with non-uniform weights
+dat <- Wages1[order(Wages1[, 'school']), c('wage', 'school')]
+plot(wage ~ school, pch=16, col=grey(0, .1), data=dat,
+    main=NA, xlab='School', ylab='Wage')
+
+reg_lo4 <- loess(wage ~ school, data=dat, span=.4)
+reg_lo8 <- loess(wage ~ school, data=dat, span=.8)
+
+cols <- hcl.colors(3, alpha=.75)[-3]
+lines(dat[, 'school'], predict(reg_lo4),
+    col=cols[1], type='o', pch=2)
+lines(dat[, 'school'], predict(reg_lo8),
+    col=cols[2], type='o', pch=2)
+
+legend('topleft', title='Loess',
+    legend=c('span=.4 ', 'span=.8'),
+    lty=1, col=cols, cex=.8)
+```
+
+
+#### **Confidence Bands**. {-}
+
+We can construct *confidence bands* using the jackknife or bootstrap.
+
+```{r}
 # Loess
-reg_lo <- loess(wage ~ school, data=dat, span=.8)
+reg_lo <- loess(wage ~ school, data=dat, span=.6)
 
 # Predictions at design points
 pred_design <- data.frame(school=unique(dat[, 'school']))
@@ -164,9 +189,71 @@ kable(
 ```
 
 
+#### **Hypothesis Testing**.{-}
 
+We can test whether the mean gradient is statistically different from zero. Ee can compute the p-value directly from the bootstrap distribution. Under $H_0$, the mean gradient equals zero, so we center the bootstrap distribution at zero and ask how often it produces values as extreme as the observed mean gradient.
 
- 
+```{r}
+## P-value via null bootstrap ECDF
+## Center bootstrap means at zero (impose H0)
+boot_centered <- boot_stats[, 'Mean SE'] - mean(boot_stats[, 'Mean SE'])
+
+## ECDF of centered bootstrap distribution
+boot_ecdf <- ecdf(boot_centered)
+
+## Two-sided p-value: P(|centered mean| >= |observed mean|)
+p_boot <- 1 - boot_ecdf(abs(tab_stats['Mean'])) +
+              boot_ecdf(-abs(tab_stats['Mean']))
+
+cat('Bootstrap p-value (ECDF):', format.pval(p_boot, digits=3), '\n')
+```
+
+The small p-value indicates that the mean gradient is statistically distinguishable from zero: on average, wages increase with schooling.
+
+We can also use a normal approximation. Under the null hypothesis $H_0$: the mean gradient equals zero, we use the test statistic
+$$t = \frac{\text{mean gradient}}{\text{SE(mean gradient)}}$$
+and the p-value comes from the standard normal distribution.
+
+```{r}
+## P-value for mean gradient
+## Standard Normal Approximation
+t_stat <- tab_stats['Mean'] / boot_se['Mean SE']
+p_val  <- 2 * pnorm(-abs(t_stat))
+
+cat('Mean gradient:', round(tab_stats['Mean'], 3), '\n')
+cat('Bootstrap SE: ', round(boot_se['Mean SE'], 3), '\n')
+cat('t-statistic:  ', round(t_stat, 3), '\n')
+cat('p-value:      ', format.pval(p_val, digits=3), '\n')
+```
+
+::: {.callout-tip icon=false collapse="true" title="Test Yourself"}
+Compute the t-statistic and p-value using jackknife standard errors instead of the bootstrap.
+
+```{r}
+## Jackknife SE for mean gradient
+n <- nrow(dat)
+jack_means <- numeric(n)
+for (i in 1:n) {
+    dat_i  <- dat[-i, ]
+    reg_i  <- loess(wage ~ school, data=dat_i, span=.6)
+    pred_i <- predict(reg_i)
+    grad_i <- diff(pred_i) / diff(dat_i[, 'school'])
+    jack_means[i] <- mean(grad_i, na.rm=T)
+}
+
+## Jackknife SE
+jack_se <- sqrt((n - 1) / n * sum((jack_means - mean(jack_means))^2))
+
+## t-statistic and p-value
+t_jack <- tab_stats['Mean'] / jack_se
+p_jack <- 2 * pnorm(-abs(t_jack))
+
+cat('Jackknife SE: ', round(jack_se, 3), '\n')
+cat('t-statistic:  ', round(t_jack, 3), '\n')
+cat('p-value:      ', format.pval(p_jack, digits=3), '\n')
+```
+:::
+
 
 ## Theory
 

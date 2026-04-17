@@ -52,21 +52,15 @@ where $\hat{BSS}$ is the between-group sum of squares (variation in group means 
 
 If the group means are all equal, then $\hat{BSS}$ should be small relative to $\hat{WSS}$.
 
-#### **The F-statistic**. {-}
+In R, `aov()` fits the ANOVA model and `summary()` returns the standard ANOVA table. The ANOVA table reports $\hat{BSS}$ ("Sum Sq" for `Region`), $\hat{WSS}$ ("Sum Sq" for `Residuals`).
+```{r}
+# Fit ANOVA
+fit_aov <- aov(Murder ~ Region, data = dat)
+fit_aov
+```
 
-We test $H_0: \mu_1=\mu_2=\dots=\mu_G$ versus $H_A:$ at least one $\mu_g$ differs. The ANOVA F-statistic is
-\begin{eqnarray}
-\hat{F} &=& \frac{\hat{BSS}/(G-1)}{\hat{WSS}/(n-G)}.
-\end{eqnarray}
-The numerator is the average between-group variation (per degree of freedom), and the denominator is the average within-group variation. A large $\hat{F}$ means group means are more spread out than individual-level noise would predict.
-
-Under additional parametric assumptions (independent observations, equal variances, normal errors), $\hat{F}$ follows an $F_{G-1,\;n-G}$ distribution. In practice, we can also use permutation or bootstrap methods to build a null distribution, just as in previous chapters.
-
-
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-#### Numerical example
-
-Suppose we have $G=3$ groups with the following data:
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+For example, suppose we have $G=3$ groups with the following data:
 
 | Group A | Group B | Group C |
 |:---:|:---:|:---:|
@@ -81,21 +75,18 @@ Between-group sum of squares:
 \hat{BSS} &=& 3(5-19/3)^2 + 3(8-19/3)^2 + 3(6-19/3)^2 \\
 &=& 3(16/9) + 3(25/9) + 3(1/9) = 48/9 + 75/9 + 3/9 = 14
 \end{eqnarray*}
-
 Within-group sum of squares:
 \begin{eqnarray*}
 \hat{WSS} &=& [(4-5)^2+(5-5)^2+(6-5)^2] + [(8-8)^2+(7-8)^2+(9-8)^2] \\
 && + [(5-6)^2+(6-6)^2+(7-6)^2] = 2+2+2 = 6
 \end{eqnarray*}
 
-Check: $\hat{TSS} = 14+6 = 20$.
-
-F-statistic: $\hat{F} = \frac{14/2}{6/6} = 7$. With $G-1=2$ and $n-G=6$ degrees of freedom, we compare to an $F_{2,6}$ distribution: $p = 1 - F_{2,6}(7) \approx 0.027$.
-
 ```{r}
-# Verify by hand
+# Data
 Y <- c(4, 5, 6, 8, 7, 9, 5, 6, 7)
 g <- factor(c('A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C'))
+
+# Verify by hand
 n <- length(Y)
 G <- nlevels(g)
 
@@ -105,7 +96,85 @@ n_g <- aggregate(Y, list(g), length)$x
 
 BSS <- sum(n_g * (M_g - M_Y)^2)
 WSS <- sum(aggregate(Y, list(g), function(y) sum((y - mean(y))^2))$x)
+```
+:::
 
+#### **The F-statistic**. {-}
+
+We test $H_0: \mu_1=\mu_2=\dots=\mu_G$ versus $H_A:$ at least one $\mu_g$ differs. The ANOVA F-statistic is
+\begin{eqnarray}
+\hat{F} &=& \frac{\hat{BSS}/(G-1)}{\hat{WSS}/(n-G)}.
+\end{eqnarray}
+The numerator is the average between-group variation (per degree of freedom), and the denominator is the average within-group variation. A large $\hat{F}$ means group means are more spread out than individual-level noise would predict.
+
+```{r}
+F_fun <- function(Y,g){
+    M_Y <- mean(Y)
+    M_g <- aggregate(Y, list(g), mean)$x
+    n_g <- aggregate(Y, list(g), length)$x
+
+    BSS <- sum(n_g * (M_g - M_Y)^2)
+    WSS <- sum(aggregate(Y, list(g), function(y) sum((y - mean(y))^2))$x)
+
+    n <- nrow(dat)
+    G <- nlevels(g)
+    F_obs <- (BSS/(G-1)) / (WSS/(n-G))
+}
+F_obs <- F_fun(Y=dat$Murder, g=dat$Region)
+F_obs
+```
+
+
+To compute a $p$-value, we can use permutation or bootstrap methods to build a null distribution, just as in previous chapters.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+```{r}
+# Pairs bootstrap: resample rows with replacement
+B <- 5000
+n <- nrow(dat)
+
+F_nullboot <- vector(length=999)
+for( b in seq_along(F_nullboot)){
+    idx <- sample(n, replace = TRUE)
+    g_boot <- dat[idx, 'Region']
+    F_b <- F_fun(Y=dat$Murder, g=g_boot)
+    F_nullboot[b] <- F_b
+}
+
+# Bootstrap p-value
+p_boot <- mean(F_nullboot >= F_obs)
+p_boot
+
+hist(F_nullboot, breaks = 40,
+    col = grey(0.5, 0.5), border = NA,
+    freq = F, main = NA, xlab = 'Null Bootstrap F-statistic',
+    xlim = c(0,14))
+title('Null Bootstrap F-test', font.main = 1)
+abline(v = F_obs, col = rgb(1, 0, 0, .8), lwd = 2)
+legend('topright', legend = 'Observed F',
+    col = rgb(1, 0, 0, .8), lwd =0, bty='n')
+```
+:::
+
+Under additional parametric assumptions (independent observations, equal variances, normal errors), $\hat{F}$ (under the null) follows an $F_{G-1,\;n-G}$ distribution. From that theoretical null distribution, we can then compute p-values (which is the default report method in R).
+```{r}
+summary(fit_aov)
+
+p_param <- 1 - pf(F_obs, G-1, n-G)
+ 
+ # Compare parametric and bootstrap p-values
+cbind(F_obs, p_param, p_boot)
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+The parametric F-test assumes (i) independent observations, (ii) normal errors within each group, and (iii) equal variances across groups (*homoscedasticity*). If these assumptions are doubtful, then the nonparametric Kruskal-Wallis test (below) is a safer alternative. As a quick diagnostic, visually compare side-by-side boxplots: if the spread differs across groups or the distribution has excessive skew/kurtosis, be cautious with the parametric test.
+
+With $G-1=2$ and $n-G=6$ degrees of freedom, we compare to an $F_{2,6}$ distribution: $p = 1 - F_{2,6}(7) \approx 0.027$.
+```{r}
+# Computation
+summary(aov(Y~g))
+
+# Verify by hand (from Before)
 Fstat <- (BSS/(G-1)) / (WSS/(n-G))
 pval  <- 1 - pf(Fstat, G-1, n-G)
 cbind(BSS, WSS, Fstat, pval)
@@ -113,67 +182,7 @@ cbind(BSS, WSS, Fstat, pval)
 :::
 
 
-#### **ANOVA in R**. {-}
 
-In R, `aov()` fits the ANOVA model and `summary()` returns the standard ANOVA table. Equivalently, `anova()` applied to a regression with a single factor gives the same result.
-
-```{r}
-# Fit ANOVA
-fit_aov <- aov(Murder ~ Region, data = dat)
-summary(fit_aov)
-```
-
-The ANOVA table reports $\hat{BSS}$ ("Sum Sq" for `Region`), $\hat{WSS}$ ("Sum Sq" for `Residuals`), and the $F$-statistic with its $p$-value.
-
-```{r}
-# Equivalent via lm
-fit_lm <- lm(Murder ~ Region, data = dat)
-anova(fit_lm)
-```
-
-
-#### **Assumptions and alternatives**. {-}
-
-The parametric F-test assumes (i) independent observations, (ii) normal errors within each group, and (iii) equal variances across groups (*homoscedasticity*). If these assumptions are doubtful, then the nonparametric Kruskal-Wallis test (below) is a safer alternative. As a quick diagnostic, visually compare side-by-side boxplots: if the spread differs across groups or the distribution has excessive skew/kurtosis, be cautious with the parametric test.
-
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-#### Bootstrap F-test
-
-Rather than relying on the $F_{G-1,\;n-G}$ distribution, we can bootstrap the $F$-statistic directly. The pairs bootstrap resamples entire observations (Murder, Region) with replacement, preserving whatever joint structure exists in the data.
-
-```{r}
-# Observed F-statistic
-fit_aov   <- aov(Murder ~ Region, data = dat)
-F_obs     <- summary(fit_aov)[[1]]['Region', 'F value']
-
-# Pairs bootstrap: resample rows with replacement
-B <- 5000
-n <- nrow(dat)
-
-F_boot <- replicate(B, {
-    idx <- sample(n, replace = TRUE)
-    dat_boot <- dat[idx, ]
-    summary(aov(Murder ~ Region, data = dat_boot))[[1]]['Region', 'F value']
-})
-
-# Bootstrap p-value
-p_boot <- mean(F_boot >= F_obs)
-
-# Compare parametric and bootstrap p-values
-p_param <- summary(fit_aov)[[1]]['Region', 'Pr(>F)']
-cbind(F_obs, p_param, p_boot)
-```
-
-```{r}
-hist(F_boot, breaks = 40,
-    col = hcl.colors(1, alpha = .45), border = NA,
-    freq = F, main = NA, xlab = 'Bootstrap F-statistic',
-    xlim = c(0, max(F_obs * 1.2, quantile(F_boot, .99))))
-title('Bootstrap F-test', font.main = 1)
-abline(v = F_obs, col = rgb(1, 0, 0, .8), lwd = 2)
-legend('topright', legend = 'Observed F', col = rgb(1, 0, 0, .8), lwd = 2)
-```
-:::
 
 
 ## Equal Distributions
@@ -217,16 +226,24 @@ ANOVA is a special case of linear regression where the only explanatory variable
 The model $\hat{Y}_{ig} = b_0 + \sum_{g=2}^{G} b_g \hat{D}_{ig} + e_{ig}$ produces the same F-statistic as above. Here $b_0$ estimates the mean of the reference group and each $b_g$ estimates the difference between group $g$ and the reference.
 
 ```{r}
-# Regression coefficients = group mean differences
-coef(fit_lm)
-
 # Compare to group means
 M_g <- aggregate(Murder ~ Region, dat, mean)$Murder
 M_g
 
 # b0 = mean of reference group; b_g = mean(g) - mean(reference)
 M_g - M_g[1]
+
+# Regression coefficients = group mean differences
+fit_lm <- lm(Murder ~ Region, data = dat)
+coef(fit_lm)
 ```
+
+As such, the ANOVA table for a regression with a single factor is the same as one for AOV.
+```{r}
+anova(fit_aov)
+anova(fit_lm)
+```
+
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Suppose there are $G=3$ groups with means $\hat{M}_1=4$, $\hat{M}_2=7$, $\hat{M}_3=5$. Using group 1 as the reference, the regression coefficients are $b_0=4$, $b_2=7-4=3$, $b_3=5-4=1$. The intercept equals the reference group mean, and each slope equals the difference from the reference.
