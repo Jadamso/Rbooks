@@ -2,7 +2,9 @@
 # Statistics of Association
 ***
 
-There are several ways to statistically assess the relationship between two variables. The major differences surround whether the data are cardinal or an ordered/unordered factor. In all cases, we measure association but not causation. 
+## Introduction
+
+There are several ways to statistically assess the relationship between two variables. The major differences surround whether the data are cardinal or an ordered/unordered factor. In all cases, we measure association but not causation.
 
 ## Cardinal Data
 
@@ -186,7 +188,7 @@ Permutation     | $n$   | $B$  | $X$: Random resample without replacement | Perc
 
 The *Codeviance*, $\tilde{C}_{XY}$, is a robust alternative to Covariance. Instead of relying on means (which can be sensitive to outliers), it uses medians.^[See <https://jadamso.github.io/Rbooks/01_03_DescriptiveStatistics.html#medians-and-absolute-deviations>. See also *Theil-Sen Estimator*, which may be seen as a precursor.] We can also scale the Codeviance by the median absolute deviation to compute the *median correlation*, $\tilde{R}_{XY}$, which typically lies in $[-1,1]$ but not always. Letting $\tilde{M}_{X}$ and $\tilde{M}_{Y}$ denote the median of $\hat{X}$ and $\hat{Y}$, we have
 \begin{eqnarray} 
-\tilde{C}_{XY} = \text{Med}\left\{ |\hat{X}_{i} - \tilde{M}_{X}| |\hat{Y}_i - \tilde{M}_{Y}| \right\} \\
+\tilde{C}_{XY} = \text{Med}\left\{ (\hat{X}_{i} - \tilde{M}_{X})(\hat{Y}_i - \tilde{M}_{Y}) \right\} \\
 \tilde{R}_{XY} = \frac{ \tilde{C}_{XY} }{ \hat{\text{MAD}}_{X} \hat{\text{MAD}}_{Y}}. 
 \end{eqnarray}
 ```{r}
@@ -205,6 +207,26 @@ codev <- function(xy) {
 xy_codev <- codev(xy)
 xy_codev
 ```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Compute the Codeviance for the dataset $\{(1,2),(2,1),(3,4),(4,3),(5,6)\}$.
+
+The medians are $\tilde{M}_{X}=3$ and $\tilde{M}_{Y}=3$, giving signed deviations and products
+
+\begin{array}{c|rrrrr}
+\hat{X}_{i}-\tilde{M}_{X} & -2 & -1 & 0 & 1 & 2 \\
+\hat{Y}_{i}-\tilde{M}_{Y} & -1 & -2 & 1 & 0 & 3 \\
+(\hat{X}_{i}-\tilde{M}_{X})(\hat{Y}_{i}-\tilde{M}_{Y}) & 2 & 2 & 0 & 0 & 6
+\end{array}
+
+The Codeviance is the median of those products: $\tilde{C}_{XY}=\text{Med}\{0,0,2,2,6\}=2$.
+The median absolute deviations are $\hat{\text{MAD}}_{X}=\text{Med}\{0,1,1,2,2\}=1$ and $\hat{\text{MAD}}_{Y}=\text{Med}\{0,1,1,2,3\}=1$, so the median correlation is $\tilde{R}_{XY}=2/(1\cdot1)=2$.
+Here $\tilde{R}_{XY}$ exceeds $1$: unlike Pearson's correlation, the median correlation is not confined to $[-1,1]$.
+```{r}
+xy_small <- cbind(X=c(1,2,3,4,5), Y=c(2,1,4,3,6))
+codev(xy_small)
+```
+:::
 
 You construct sampling distributions and conduct hypothesis tests for Falk's Codeviance statistic in the same way you do for Pearson's Correlation statistic.
 
@@ -261,6 +283,28 @@ KT <- cor(xy[, 1], xy[, 2], method = 'kendall')
 round(KT, 3)
 ```
 
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Compute Kendall's $\hat{KT}$ for the dataset $\{(1,1),(2,3),(3,2),(4,4)\}$.
+
+With $n=4$ there are $n(n-1)/2=6$ pairs. For each pair we take the sign of $(\hat{X}_{i}-\hat{X}_{j})(\hat{Y}_{i}-\hat{Y}_{j})$: a pair is *concordant* ($+1$) if both variables move the same way, *discordant* ($-1$) if they move oppositely.
+
+| Pair | $X$ moves | $Y$ moves | sign |
+|:---:|:---:|:---:|:---:|
+| (1,1),(2,3) | up | up   | $+1$ |
+| (1,1),(3,2) | up | up   | $+1$ |
+| (1,1),(4,4) | up | up   | $+1$ |
+| (2,3),(3,2) | up | down | $-1$ |
+| (2,3),(4,4) | up | up   | $+1$ |
+| (3,2),(4,4) | up | up   | $+1$ |
+
+There are $5$ concordant and $1$ discordant pair, so
+\begin{eqnarray}
+\hat{KT} = \frac{2}{n(n-1)}\sum_{i}\sum_{j>i}\text{sgn}(\cdots) = \frac{2}{4\cdot3}(5-1) = \frac{8}{12} = \frac{2}{3} \approx 0.67.
+\end{eqnarray}
+```{r}
+cor(c(1,2,3,4), c(1,3,2,4), method='kendall')
+```
+:::
 
 You construct sampling distributions and conduct hypothesis tests for Kendall's rank correlation statistic in the same way you do as for Pearson's Correlation statistic and Falk's Codeviance statistic.
 
@@ -338,11 +382,11 @@ where
 
 * $\hat{O}_{kj}$ denote the observed frequency in cell $(k, j)$,
 * $\hat{E}_{kj} = \hat{RF}_{k} \cdot \hat{CF}_j / n$ is the expected frequency for each cell if $\hat{X}$ and $\hat{Y}$ are independent
-* $\hat{RF}_{k}$ denotes the total frequency for row $k$ (i.e., $\hat{RF}_i = \sum_{j=1}^{J} \hat{O}_{kj}$),
+* $\hat{RF}_{k}$ denotes the total frequency for row $k$ (i.e., $\hat{RF}_k = \sum_{j=1}^{J} \hat{O}_{kj}$),
 * $\hat{CF}_{j}$ denotes the total frequency for column $j$ (i.e., $\hat{CF}_{j} = \sum_{k=1}^{K} \hat{O}_{kj}$),
 
 
-Second, normalize the chi-square statistic with the sample size and the degrees of freedom to compute Cramer's V. Recalling that $I$ is the number of categories for $\hat{X}$, and $J$ is the number of categories for $\hat{Y}$, the statistic is
+Second, normalize the chi-square statistic with the sample size and the degrees of freedom to compute Cramer's V. Recalling that $K$ is the number of categories for $\hat{X}$, and $J$ is the number of categories for $\hat{Y}$, the statistic is
 \begin{eqnarray}
 \hat{CV} = \sqrt{\frac{\hat{\chi}^2 / n}{\min(J - 1, \, K - 1)}}.
 \end{eqnarray}
@@ -370,6 +414,42 @@ CV(xy)
 
 # DescTools::CramerV( table(xy) )
 ```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Compute Cramer's V for this $2\times2$ table of $100$ workers, cross-classifying a college degree against employment.
+
+\begin{array}{c|cc|c}
+ & \text{employed} & \text{unemployed} & \text{Row total}\\
+\hline
+\text{degree}    & 30 & 10 & 40\\
+\text{no degree} & 20 & 40 & 60\\
+\hline
+\text{Column total} & 50 & 50 & 100
+\end{array}
+
+If degree and employment were independent, the expected count in each cell is $\hat{E}_{kj}=\hat{RF}_{k}\hat{CF}_{j}/n$. For the top-left cell, $\hat{E}_{11}=40\cdot50/100=20$; all four expected counts are $(20,20,30,30)$.
+\begin{eqnarray}
+\hat{\chi}^2 &=& \frac{(30-20)^2}{20}+\frac{(10-20)^2}{20}+\frac{(20-30)^2}{30}+\frac{(40-30)^2}{30} = 5+5+3.33+3.33 = 16.67.
+\end{eqnarray}
+With $K=2$ rows and $J=2$ columns, $\min(J-1,K-1)=1$, so
+\begin{eqnarray}
+\hat{CV} = \sqrt{\frac{\hat{\chi}^2/n}{\min(J-1,K-1)}} = \sqrt{\frac{16.67/100}{1}} \approx 0.41.
+\end{eqnarray}
+```{r}
+# Observed 2x2 table
+O <- rbind(degree    = c(employed=30, unemployed=10),
+           no_degree = c(20, 40))
+n <- sum(O)
+
+# Expected counts under independence
+E <- outer(rowSums(O), colSums(O)) / n
+
+# Chi-square statistic and Cramer's V
+chi2 <- sum((O - E)^2 / E)
+df_min <- min(nrow(O)-1, ncol(O)-1)
+c(chi2=chi2, CramerV=sqrt((chi2/n)/df_min))
+```
+:::
 
 You construct sampling distributions and conduct hypothesis tests for  Cramer's V statistic in the same way you do as the other statistics.
 
@@ -489,7 +569,7 @@ plot(Murder ~ Assault, USArrests, pch=16, col=grey(0, .5),
 ```
 :::
 
-Note that the above examples below are not the only examples of "correlation does not mean causation". Many real datasets have temporal and spatial interdependence that create additional issues. Many real datasets also have economic interdependence, which also creates additional issues. We will delay covering these issues until much later.
+Note that the examples above are not the only examples of "correlation does not mean causation". Many real datasets have temporal and spatial interdependence that create additional issues. Many real datasets also have economic interdependence, which also creates additional issues. We will delay covering these issues until much later.
 
 
 
