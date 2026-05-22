@@ -41,6 +41,29 @@ choose(4, 2)
 ```
 :::
 
+More generally, counting outcomes relies on a few rules.
+The *multiplication rule* says that if one choice has $a$ options and an independent second choice has $b$ options, then together they have $a \times b$ options.
+When we select $k$ items from $n$ and the order matters, there are $n \times (n-1) \times \cdots \times (n-k+1)$ *permutations*.
+When the order does not matter, we divide out the $k!$ rearrangements and count $\binom{n}{k}$ *combinations*.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+**License plates.** A plate has the format `AB1 23C`: three letter slots and three number slots, with no letter and no number repeated. The letters can be filled $26 \times 25 \times 24$ ways and the numbers $10 \times 9 \times 8$ ways, so by the multiplication rule there are $(26 \times 25 \times 24)(10 \times 9 \times 8)$ possible plates.
+
+**Bank-account sample.** From $20$ accounts we draw a sample of $3$, and the order of selection does not matter. The number of possible samples is $\binom{20}{3}$.
+
+**HR committee.** In the morning, $2$ of $25$ employees are chosen for *distinct* roles (manager, then assistant manager), so order matters: $25 \times 24$ ways. In the afternoon, $5$ of $23$ employees are chosen for termination, where order does not matter: $\binom{23}{5}$ ways. The two decisions are independent, so the multiplication rule gives $(25 \times 24)\binom{23}{5}$ outcomes for the day.
+```{r}
+# License plates: 3 distinct letters, 3 distinct numbers
+(26 * 25 * 24) * (10 * 9 * 8)
+
+# Bank-account sample of 3 from 20 (order irrelevant)
+choose(20, 3)
+
+# HR committee: morning ordered, afternoon unordered
+(25 * 24) * choose(23, 5)
+```
+:::
+
 
 
 Often, we think of the population as being infinitely large. This is an approximation that makes mathematical and computational work much simpler. 
@@ -345,7 +368,7 @@ hist(sample_means, breaks=100,
 
 #### **The Fundamental Theorem of Statistics**. {-}
 
-The Law of Large Numbers generalizes to many other statistics, like `median` or `sd`.^[When a statistic converges in probability to the quantity they are meant to estimate, they are called *consistent*.] 
+The Law of Large Numbers generalizes to many other statistics, like the `median` or `sd` from [Numerical Statistics](https://jadamso.github.io/Rbooks/01_03_DescriptiveStatistics.html).^[When a statistic converges in probability to the quantity they are meant to estimate, they are called *consistent*.] 
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Here is a sampling distribution for a quantile, for three different sample sizes
@@ -534,7 +557,24 @@ Note that we do not use the mean of the resampled statistics as a replacement fo
 Here, we compute all "leave-one-out" estimates. Specifically, for a dataset with $n$ observations, the jackknife uses $n-1$ observations other than $i$ for each unique subsample. 
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Given the sample $\{1,6,7,22\}$, compute the jackknife estimate of the median. Show the result mathematically by hand and also with the computer.
+Given the sample $\{1,6,7,22\}$, compute the jackknife estimate of the median.
+Leave out each observation in turn and take the median of the remaining three.
+
+* Leave out $1$: median of $\{6,7,22\}$ is $7$.
+* Leave out $6$: median of $\{1,7,22\}$ is $7$.
+* Leave out $7$: median of $\{1,6,22\}$ is $6$.
+* Leave out $22$: median of $\{1,6,7\}$ is $6$.
+
+The jackknife distribution of the median is $\{7,7,6,6\}$, centered at $(7+7+6+6)/4 = 6.5$.
+```{r}
+small_dat <- c(1, 6, 7, 22)
+jackknife_meds <- rep(NA, length(small_dat))
+for(i in seq_along(jackknife_meds)){
+    jackknife_meds[i] <- median(small_dat[-i])
+}
+jackknife_meds
+mean(jackknife_meds)
+```
 :::
 
 
@@ -562,8 +602,21 @@ Each bootstrap sample $b=1...B$ uses a random resample of the observations to re
 We repeat that many times, say $B=9999$, to estimate the sampling distribution.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Given the sample $\{1,6,7,22\}$, compute the bootstrap estimate of the median, with $B=8$.
-Show the result with the computer and then show what is happening in each sample by hand.
+Given the sample $\{1,6,7,22\}$, compute the bootstrap estimate of the median with $B=8$ resamples.
+Each resample draws $n=4$ values from $\{1,6,7,22\}$ *with replacement*, then takes the median.
+For instance, one resample might be $\{6,6,7,22\}$: sorted, the two middle values are $6$ and $7$, so the median is $(6+7)/2=6.5$.
+Another might be $\{1,1,7,7\}$, with median $(1+7)/2=4$.
+Repeating this $B=8$ times gives the bootstrap distribution of the median.
+```{r}
+set.seed(1)
+small_dat <- c(1, 6, 7, 22)
+bootstrap_meds <- rep(NA, 8)
+for(b in seq_along(bootstrap_meds)){
+    dat_b <- sample(small_dat, replace=T)
+    bootstrap_meds[b] <- median(dat_b)
+}
+bootstrap_meds
+```
 :::
 
 
@@ -631,7 +684,7 @@ sd(bootstrap_means) # standard error estimate for the mean
 sd(sample_dat) # standard deviation
 ```
 
-We can compute also calculate this explicitly for a small number of replicates. Suppose we have five bootstrap estimates of the sample mean: $\{8,5,4,7,8\}$. Then 
+We can also calculate this explicitly for a small number of replicates. Suppose we have five bootstrap estimates of the sample mean: $\{3,5,6,7,9\}$. Then
 
 \begin{eqnarray}
 \bar{\hat{M}}^{\text{boot}} &=& \frac{3 + 5 + 6 + 7 + 9}{5} = 6 \\
