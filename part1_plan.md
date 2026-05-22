@@ -281,3 +281,75 @@ File order, one commit per chapter, high-impact items first within each:
 `00_01 → 01_02 → 01_03 → 01_04 → 01_05 → 01_06 → 01_07 → 01_08 → 01_09`.
 Critical structural bugs (CR1, the `01_09` sentence, the `01_05` number bug) are fixed
 as part of their chapter's commit.
+
+---
+
+## Completed (Phase 4)
+
+All nine chapters were edited, one commit per chapter, plus a Phase 4 fix commit.
+
+### Done
+
+- **00_01 First Steps** — fixed the `Reproducibile` typo and split the run-on opening
+  sentence; added a Must Know callout (a `my_range` custom function) and a Test Yourself
+  callout (predict a loop's output), bringing the chapter to 4 callouts.
+- **01_02 Data** — added a worked numerical example for the empirical mass function; added
+  a by-hand numerical example for the uniform-kernel density; clarified the `\hat{X}_i`
+  hat notation with a forward-reference; gave the orphaned `outer` code chunk a real
+  sentence; added a forward-reference for the mode.
+- **01_03 Descriptive Statistics** — added worked Must Know examples for skewness and
+  kurtosis (the two formulas that had no by-hand example); expanded the thin Clusters/Gaps
+  section with real exposition (gap, cluster, unimodal, bimodal); fixed a garbled Jensen
+  sentence; narrated the mode example; added a back-link; fixed a `collapse` value.
+- **01_04 Random Variables** — showed `F` from `f` and the reverse (new Must Know callout
+  on the Uniform, plus prose on both directions and the discrete PMF/CDF link); repaired
+  and completed the math-scores Test Yourself (working parameters + code); corrected the
+  Exponential parameter to "rate"; added a probability-rules pointer, a Normal plain-
+  language line, and a Bernoulli forward-reference.
+- **01_05 Sampling** — fixed the bootstrap-SE worked example (prose said `{8,5,4,7,8}`,
+  calculation used `{3,5,6,7,9}`); turned the jackknife and bootstrap Must Know callouts
+  into genuine worked examples; added counting rules and the three combinatorics problems
+  (see Interpretation note 1); added a back-link.
+- **01_06 Population Statistics** — added the missing `# Population Statistics` title and
+  `***` rule (the chapter had none); completed the four-sided-die variance; added a
+  numerical `SE` example; completed the weighted-variance example; fixed two `collapse`
+  values; added a back-link and a closing transition.
+- **01_07 Confidence Intervals** — added the fail-to-reject / multiple-competing-
+  hypotheses Must Know callout; turned the first Must Know into worked 90% and 99% CIs
+  (and fixed `$90%$`/`$99%$` to `\%`); added a concrete caveat on when the Normal
+  approximation fails; added a back-link.
+- **01_08 Hypothesis Testing** — added a Must Know callout explaining why the bootstrap
+  shift imposes the null; added the left-tail test computation (only the right tail had
+  been run); added a back-link.
+- **01_09 Advanced Probability** — added the missing `***` rule; completed the truncated
+  Binomial sentence (unfair-coin probabilities); fixed the Law of Total Probability list
+  formatting; fixed two small grammar errors.
+
+### Deferred (with reasons)
+
+- **`## Introduction` headers** — not added to the 6 Part 1 chapters that lack them.
+  Only 6 of ~27 chapters book-wide have one; adding them would make Part 1 inconsistent
+  with the rest of the book and counts as restructuring (Interpretation note 2).
+- **Functions/logic in 01_02** — not added; already covered in `00_01`. Counting went to
+  `01_05` instead (Interpretation note 1). The user was asked and declined to answer, so
+  the recommended option was taken and is documented here.
+- **`## Continuous Factorial Distributions` rename (01_09)** — left unchanged. The name is
+  imperfect for Beta/Irwin–Hall, but renaming a section is restructuring.
+- **Code-style sweep** — not done. New code follows the style guide; existing working code
+  was left alone per the task constraint (Interpretation note 4).
+- **Hard "Show `E[X]=np`" prompts (01_09)** — left as-is; already partly scaffolded.
+- **Pre-existing issues outside the plan** — not chased: `$0%$`/`$100%$` (missing `\%`) in
+  01_02, the "distributions these using" phrasing in 01_04, and the imprecise
+  `#sampling-distributions` anchor in an existing 01_09 link. None were introduced by this
+  pass; fixing every pre-existing latent issue would be scope creep.
+
+### Verification
+
+- All nine chapters confirmed to have one `#` title and one `***` rule.
+- All callout `:::` fences confirmed balanced (even count per file).
+- All new cross-reference anchors confirmed against real section headings.
+- All added R code is standard base R matching existing chapter patterns; arithmetic in
+  every worked example was checked by hand.
+- Fixed one self-review bug: the 01_03 skewness/kurtosis callouts originally used `X`,
+  which would have overwritten the `X` the existing kurtosis code block depends on;
+  renamed to `x_demo`.
