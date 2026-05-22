@@ -49,12 +49,12 @@ After introducing different random variables, we will also cover some basic impl
 
 The probability of $X_{i}\leq b$ and $X_{i}> a$ can be written in terms of falling into a range $Prob(X_{i} \in (a,b])=Prob(a < X_{i} \leq b) = F(b) - F(a)$. 
 
-The opposite probability of $X_{i} > b$ or $X_{i} \leq a$ is $Prob(X_{i} \leq a \text{ or } X_{i} > b) = F(a) + [1- F(b)]$. Notice that this opposite probability $F(a) + [1- F(b)] =1 - [F(b) - F(a)]$, so that $Prob(X_{i} \text{ out of } (a,b]) = 1 - Prob( X_{i} \in (a,b])$
+The opposite probability of $X_{i} > b$ or $X_{i} \leq a$ is $Prob(X_{i} \leq a \text{ or } X_{i} > b) = F(a) + [1- F(b)]$. Notice that this opposite probability $F(a) + [1- F(b)] =1 - [F(b) - F(a)]$, so that $Prob(X_{i} \text{ out of } (a,b]) = 1 - Prob( X_{i} \in (a,b])$. Each of these rules is applied to concrete numbers in the four-sided-die example below.
 
 
 ## Discrete Random Variables
 
-A discrete random variable can take one of several values in a set. E.g., any number in $\{1,2,3,...\}$ or any letter in $\{A,B,C,...\}$. Theoretical proportions are referred to as a *probability mass function*, which can be thought of as a proportions bar plot for an infinitely large dataset. Equivalently, the bar plot is an empirical version of the probability mass function that is applied to observed data.
+A discrete random variable can take one of several values in a set. E.g., any number in $\{1,2,3,...\}$ or any letter in $\{A,B,C,...\}$. Theoretical proportions are referred to as a *probability mass function*, which can be thought of as a proportions bar plot for an infinitely large dataset. Equivalently, the bar plot is an empirical version of the probability mass function that is applied to observed data. The CDF accumulates the mass function, $F(x)=\sum_{x' \leq x} Prob(X_{i}=x')$, and conversely the probability of any value is the size of the jump in $F$ at that value.
 
 In R, you can simulate random discrete data using the `sample` function. To do so, you must specify each outcome $x$ and its probability $Prob(X_{i}=x)$.
 
@@ -70,6 +70,8 @@ F(x) &=& \begin{cases}
     1   & x\geq 1
 \end{cases}
 \end{eqnarray}
+
+The theoretical mean of a Bernoulli variable works out to $p$, as derived in [Population Statistics](https://jadamso.github.io/Rbooks/01_06_PopStatistics.html#population-parameters).
 
 Here is an example of the [Bernoulli](https://en.wikipedia.org/wiki/Bernoulli_distribution) distribution. While you might get all heads (or all tails) in the first few coin flips, the ratios level out to their theoretical values after many flips.
 ```{r}
@@ -227,7 +229,7 @@ X <- factor(unlist(X), levels=LETTERS, ordered=F)
 
 A continuous random variable can take one value out of an uncountably infinite number. E.g., any number between $0$ and $1$ with any number of decimal points. With a continuous random variable, the probability of any individual point is zero, so we describe these variables with the cumulative distribution function (CDF), $F$, or the *probability density function* (PDF), $f$. Just as $F$ can be thought of as the ECDF, $\hat{F}$, with an infinite amount of data, $f$ can be thought of as a histogram, $\hat{f}$, with an infinite amount of data.  Equivalently, the histogram is an empirical version of the PDF that is applied to observed data.
 
-Often, the PDF helps you intuitively understand a random variable whereas the CDF helps you calculate numerical values. This is because probabilities are depicted as areas in the PDF and the CDF accumulates those areas: $F(x)$ equals the area under the PDF from $-\infty$ to $x$. For example, $Prob(X_{i} \leq 1)$ is depicted by the PDF as the area under $f(x)$ from the lowest possible value until $x=1$, which is numerically calculated simply as $F(1)$.
+Often, the PDF helps you intuitively understand a random variable whereas the CDF helps you calculate numerical values. This is because probabilities are depicted as areas in the PDF and the CDF accumulates those areas: $F(x)$ equals the area under the PDF from $-\infty$ to $x$. For example, $Prob(X_{i} \leq 1)$ is depicted by the PDF as the area under $f(x)$ from the lowest possible value until $x=1$, which is numerically calculated simply as $F(1)$. Going the other way, the density is the rate of change of the CDF: where $F$ rises steeply $f$ is large, and where $F$ is flat $f$ is near zero.
 
 
 In R, you work with continuous distributions these using functions
@@ -237,6 +239,27 @@ In R, you work with continuous distributions these using functions
 * `rXXX` generate random variables according to the distribution
 
 where `XXX` is the distribution name (`unif`, `exp`, `norm`)
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+The density $f$ and the CDF $F$ hold the same information, and you can move between them.
+Consider a continuous random variable equally likely to land anywhere in $[0,1]$, so its density is flat: $f(x)=1$ for $x \in [0,1]$.
+
+To build $F$ from $f$, accumulate area. The area under $f$ from $0$ to $x$ is a rectangle of width $x$ and height $1$, so $F(x)=x$.
+
+To recover $f$ from $F$, take the slope. The CDF $F(x)=x$ is a straight line of slope $1$, so $f(x)=1$.
+```{r}
+x <- seq(0, 1, by=0.01)
+par(mfrow=c(1, 2))
+# Density f(x): flat
+plot(x, dunif(x), type='l', col=rgb(0, 0, 1, .8),
+    ylim=c(0, 1.2), xlab='x', ylab='f(x)', main=NA)
+title('Density f(x)', font.main=1)
+# CDF F(x): accumulated area under f
+plot(x, punif(x), type='l', col=rgb(0, 0, 1, .8),
+    xlab='x', ylab='F(x)', main=NA)
+title('CDF F(x)', font.main=1)
+```
+:::
 
 #### **Continuous Uniform**. {-}
 Any number on a unit interval allowing for any number of decimal points, with every interval of the same size having the same probability.
@@ -362,7 +385,7 @@ Suppose the flight time between Calgary and Kamloops is Uniformly distributed be
 
 
 #### **Exponential**. {-}
-The sample space is any positive number.^[In other classes, you may further distinguish types of random variables based on whether their maximum value is theoretically finite or infinite.] An *[Exponential](https://en.wikipedia.org/wiki/Exponential_distribution)* random variable has a single parameter, $\lambda>0$, that governs its shape
+The sample space is any positive number.^[In other classes, you may further distinguish types of random variables based on whether their maximum value is theoretically finite or infinite.] An *[Exponential](https://en.wikipedia.org/wiki/Exponential_distribution)* random variable has a single *rate* parameter, $\lambda>0$.
 \begin{eqnarray}
 X_{i} &\in& [0,\infty) \\
 f(x) &=& \lambda exp\left\{ -\lambda x \right\} \\
@@ -417,6 +440,8 @@ This distribution is for any number on the real line, with bell shaped probabili
 X_{i} &\in& (-\infty,\infty) \\
 f(x) &=& \frac{1}{\sqrt{2\pi \sigma^2}} exp\left\{ \frac{-(x-\mu)^2}{2\sigma^2} \right\}
 \end{eqnarray}
+
+Despite the complicated formula, the shape is simple: a bell centered at $\mu$, with most of the probability within a few multiples of $\sigma$ on either side.
 
 ```{r}
 rnorm(3) # 3 draws
@@ -498,7 +523,14 @@ pnorm(1.645)-pnorm(-1.645)
 
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Suppose scores in math class are approximately normally distributed with $\mu=50, \sigma=1$. If you selected one student randomly, what is the probability their score is higher than $90$. Is $Prob(X_{i}\geq 90)$ higher if $\mu=25, \sigma=2$? What about $\mu=10, \sigma=5$?
+Suppose scores in a math class are approximately normally distributed with $\mu=70$ and $\sigma=10$.
+If you select one student at random, what is the probability their score is higher than $90$?
+Is $Prob(X_{i}\geq 90)$ higher if $\mu=80, \sigma=10$? What about $\mu=70, \sigma=20$?
+```{r}
+# Probability a score exceeds 90, when mu=70 and sigma=10
+1 - pnorm(90, mean=70, sd=10)
+```
+Recompute the probability for the other two cases and compare.
 :::
 
 
