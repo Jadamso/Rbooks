@@ -2,6 +2,8 @@
 # Inference
 ***
 
+## Introduction
+
 Often, we are interested in *gradients*: how $Y$ changes with $X$. The linear model depicts this as a simple constant, $\hat{b}_{1}$, whereas other models do not. A great first step to assess gradients is to plot the predicted values over the explanatory values. A great second step is to compute gradients and summarize them. In any case, we compute confidence intervals to account for variability across samples.
 
 ## Applied Methods
@@ -106,9 +108,24 @@ There are three ways to summarize gradients
 
 2. When using split-sample regressions or local linear regressions, you can use the estimated slope coefficients $\hat{b}_{1}(x)$ as a gradient estimate.^[One benefit of LLLS is that it is theoretically motivated: assuming that $Y_{i}=m(X_{i}) + \epsilon_{i}$, we can then take a Taylor approximation: $m(X_{i}) + \epsilon_{i} \approx m(x) + m'(x)[X_{i}-x] + \epsilon_{i} = [m(x) - m'(x)x ] + m'(x)X_{i} + \epsilon_{i} = b_{0}(x,h) + b_{1}(x,h) X_{i}$.]
 
-3. More sophisticate methods that are beyond the scope of this class.
+3. More sophisticated methods that are beyond the scope of this class.
 
-After computing gradients, you can summarize them in various plots: Histograms and Scatterplots. The confidence band only shows variability across samples, whereas these plots show variability within-sample. You can also plot all Gradients with their CI's [@Chaudhuri1999; @HendersonEtAl2012].
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Suppose a local model predicts wages near $x=12$ years of schooling: $\hat{y}(11.5)=9.2$ and $\hat{y}(12.5)=10.4$ (dollars per hour).
+With step $d=1$, the finite-difference gradient at $x=12$ is
+\begin{eqnarray}
+\hat{b}_{1}(12) = \frac{\hat{y}(12.5) - \hat{y}(11.5)}{d} = \frac{10.4 - 9.2}{1} = 1.2.
+\end{eqnarray}
+Near $12$ years of schooling, each extra year is associated with about $\$1.20$ more per hour.
+```{r}
+d <- 1
+y_hi <- 10.4  # prediction at x + d/2
+y_lo <- 9.2   # prediction at x - d/2
+(y_hi - y_lo) / d
+```
+:::
+
+After computing gradients, you can summarize them in various plots: Histograms and Scatterplots. The confidence band only shows variability across samples, whereas these plots show variability within-sample. You can also plot all Gradients with their CI's (Chaudhuri 1999; Henderson et al. 2012).
 
 ```{r}
 ## Gradients
@@ -133,6 +150,21 @@ plot(grad_x+grad_dx, grad_lo,
 ```
 
 You may also be interested in a particular gradient or a single summary statistic. For example, a bivariate regressogram can estimate the "marginal effect at the mean"; $\hat{b}_{1}( x=\hat{M}_{X} )$. More typically, you would be interested in the "mean of the gradients", sometimes said simply as "average effect", which averages the gradients over all datapoints in the dataset: $1/n \sum_{i}^{n} \hat{b}_{1}(x=\hat{X}_{i})$. Alternatively, you may be interested in the median of the gradients, or measures of "effect heterogeneity": the interquartile range or standard deviation of the gradients. Such statistics are single numbers that can be presented in tabular form: "mean gradient (sd gradient)". You can also report standard errors: "mean gradient (estimated se), sd gradient (estimated se)".
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+These two summaries usually differ.
+Suppose a local model has gradients $\hat{b}_{1}(x)$ at schooling levels $x=(8,10,12,14,16)$ equal to $(0.4, 0.8, 1.2, 0.9, 0.3)$, and the sample mean schooling is $\hat{M}_{X}=12$.
+
+* The *marginal effect at the mean* is the single gradient at $x=\hat{M}_{X}$: $\hat{b}_{1}(12) = 1.2$.
+* The *mean of the gradients* averages over all five points: $\frac{0.4+0.8+1.2+0.9+0.3}{5} = \frac{3.6}{5} = 0.72$.
+
+They differ because the gradient is not constant: here the relationship is steepest near the mean and flatter at the extremes.
+```{r}
+grads <- c(0.4, 0.8, 1.2, 0.9, 0.3)
+grads[3]      # marginal effect at the mean (x = 12)
+mean(grads)   # mean of the gradients
+```
+:::
 
 ```{r}
 ## Tabular Summary
@@ -191,7 +223,7 @@ kable(
 
 #### **Hypothesis Testing**.{-}
 
-We can test whether the mean gradient is statistically different from zero. Ee can compute the p-value directly from the bootstrap distribution. Under $H_0$, the mean gradient equals zero, so we center the bootstrap distribution at zero and ask how often it produces values as extreme as the observed mean gradient.
+We can test whether the mean gradient is statistically different from zero. We can compute the p-value directly from the bootstrap distribution. Under $H_0$, the mean gradient equals zero, so we center the bootstrap distribution at zero and ask how often it produces values as extreme as the observed mean gradient.
 
 ```{r}
 ## P-value via null bootstrap ECDF
@@ -434,6 +466,20 @@ h_n \to 0
 n h_n \to \infty.
 \end{eqnarray}
 In LOESS language, this corresponds to the span shrinking with $n$, but not too fast.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+A common bandwidth rule shrinks $h$ with the sample size, for example $h_{n}=n^{-1/5}$. Check the two conditions:
+
+* $h_{n}=n^{-1/5}\to 0$: at $n=100$ it is about $0.40$; at $n=10{,}000$ it is about $0.16$. The neighborhood shrinks.
+* $n h_{n}=n^{4/5}\to\infty$: at $n=100$ it is about $40$; at $n=10{,}000$ it is about $1585$. The local sample size still grows.
+
+So bias falls (the window narrows) while variance falls (each local fit uses more data).
+```{r}
+n <- c(100, 10000)
+h_n <- n^(-1/5)
+rbind(h_n=round(h_n, 3), n_times_h=round(n*h_n, 1))
+```
+:::
 
 The simulation below illustrates this at one target point $x_0$: absolute error in estimating $m(x_0)$ tends to decrease with larger $n$.
 
