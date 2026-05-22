@@ -140,7 +140,7 @@ polygon( c(x, rev(x)),
 
 #### **Cross Validation**.{-}
 
-Perhaps the most common approach to selecting a bandwidth is to minimize \textit{prediction} error. Leave-one-out Cross-validation minimizes the average "leave-one-out" mean square prediction errors:
+Perhaps the most common approach to selecting a bandwidth is to minimize *prediction* error. *Leave-one-out cross-validation* minimizes the average "leave-one-out" mean square prediction errors:
 \begin{eqnarray}
 \min_{h} \quad \frac{1}{n} \sum_{i=1}^{n} \left[ \hat{Y}_{i} - \hat{y_{[i]}}(X,h) \right]^2,
 \end{eqnarray}
@@ -148,7 +148,7 @@ where $\hat{y}_{[i]}(X,h)$ is the model predicted value at $X_{i}$ based on a da
 
 Minimizing out-sample prediction error is perhaps the simplest computational approach to choose bandwidths, and it also addresses an issue that plagues observational studies in the social sciences: your model explains everything and predicts nothing. Note, however, minimizing prediction error is not objectively "best". 
 
-In practice, compare models with cross-validation (below). The preferred model is the one with best out-of-sample performance, not the one with the most flexible in-sample fit.
+In practice, compare models with cross-validation (below). The preferred model is the one with best out-of-sample performance, not the one with the most flexible in-sample fit. The same idea selects bin counts and bandwidths in [Local Relationships](https://jadamso.github.io/Rbooks/03_22_Regressograms.html#model-selection).
 
 ```{r}
 library(wooldridge)
@@ -185,7 +185,22 @@ lines(xy_mat[pred_id, 'x'], predict(llls)[pred_id],
     col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
-## Filtering 
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Leave-one-out cross-validation is just an average of out-of-sample errors.
+Suppose $n=4$ and, for one bandwidth $h$, leaving out each point in turn gives the predictions $\hat{y}_{[i]}$ below.
+
+| $i$ | $\hat{Y}_i$ | $\hat{y}_{[i]}$ | $\hat{Y}_i - \hat{y}_{[i]}$ |
+|:---:|:---:|:---:|:---:|
+| 1 | 10 | 9 | 1 |
+| 2 | 12 | 14 | -2 |
+| 3 | 15 | 14 | 1 |
+| 4 | 11 | 11 | 0 |
+
+The cross-validation score is the mean squared error: $(1^2 + (-2)^2 + 1^2 + 0^2)/4 = 6/4 = 1.5$.
+Repeating this for several bandwidths, the one with the smallest score is preferred.
+:::
+
+## Filtering
 
 #### **Filtering**.{-}
 In some cases, we may want to smooth time series data instead of predict into the future. We can distinguish two types of smoothing, incorporating future observations or not. When only weighting two other observations, the differences can be expressed as trying to estimate the average with different available data:
@@ -201,98 +216,60 @@ set.seed(1)
 x0 <- cumsum(rnorm(500, 0, 1))
 ## Observed Datapoints
 x <- x0 + runif(length(x0), -10, 10)
-dat <- data.frame(t=seq(x), x0=x0, x=x)
+dat <- data.frame(t=seq_along(x), x0=x0, x=x)
 
-## Asymmetric Kernel
-#bw <- c(2/3, 1/3)
-#s1 <- filter(x, bw/sum(bw), sides=1)
+## Asymmetric kernel (filtering: uses current and past only)
+bw1 <- c(2/3, 1/3)
+s1 <- filter(x, bw1/sum(bw1), sides=1)
 
-## Symmetric Kernel
-#bw <- c(1/6, 2/3, 1/6)
-#s2 <- filter(x,  bw/sum(bw), sides=2)
+## Symmetric kernel (smoothing: also uses future)
+bw2 <- c(1/6, 2/3, 1/6)
+s2 <- filter(x, bw2/sum(bw2), sides=2)
+
+## Plot the series with both smoothers
+plot(x ~ t, data=dat, pch=16, col=grey(0, .25),
+    main=NA, xlab='Time', ylab='x')
+lines(dat$t, s1, col=rgb(1, 0, 0, .8), lwd=2)
+lines(dat$t, s2, col=rgb(0, 0, 1, .8), lwd=2)
+legend('topleft', lwd=2, bty='n',
+    col=c(rgb(1, 0, 0, .8), rgb(0, 0, 1, .8)),
+    legend=c('Asymmetric (filtering)', 'Symmetric (smoothing)'))
 ```
 
-There are several cross-validation procedures for filtering time series data [@OpsomerEtAl2001]. One is called *time series cross-validation* (TSCV), which is useful for temporally dependent data [@Hart1991; @HaerdlePhilippe1992; @Bergmeir2018].
-```{r, eval=F}
-## Plot Simulated Data
+There are several cross-validation procedures for filtering time series data (Opsomer et al., 2001).
+One is called *time series cross-validation* (TSCV), which is useful for temporally dependent data (Hart, 1991; Härdle and Philippe, 1992; Bergmeir et al., 2018).
+Unlike ordinary cross-validation, TSCV only ever predicts a point from its past, never its future, which respects the time ordering of the data.
+We use it below to choose the window of a one-sided moving average.
+```{r}
+# Time series cross-validation for a one-sided moving average
+# For each window h, predict each point from the previous h points
 x <- dat$x
-x0 <- dat$x0
-par(fig = c(0, 1, 0, 1), new=F)
-plot(x, pch=16, col=grey(0, .25))
-lines(x0, col=1, lty=1, lwd=2)
-
-## Work with differenced data?
-#n       <- length(Yt)
-#plot(Yt[1:(n-1)], Yt[2:n],
-#    xlab='d Y (t-1)', ylab='d Y (t)', 
-#    col=grey(0, .5), pch=16)
-#Yt <- diff(Yt)
-
-## TSCV One Sided Moving Average
-filter_bws <- seq(1, 20, by=1)
-filter_mape_bws <- sapply(filter_bws, function(h){
-    bw <- c(0, rep(1/h, h)) ## Leave current one out
-    s2 <- filter(x, bw, sides=1)
-    pe <- s2 - x
-    mape <- mean( abs(pe)^2, na.rm=T)
-})
-filter_mape_star <- filter_mape_bws[which.min(filter_mape_bws)]
-filter_h_star <- filter_bws[which.min(filter_mape_bws)]
-filter_tscv <- filter(x,  c(rep(1/filter_h_star, filter_h_star)), sides=1)
-# Plot Optimization Results
-#par(fig = c(0.07, 0.35, 0.07, 0.35), new=T) 
-#plot(filter_bws, filter_mape_bws, type='o', ylab='mape', pch=16)
-#points(filter_h_star, filter_mape_star, pch=19, col=2, cex=1.5)
-
-## TSCV for LLLS
-library(np)
-llls_bws <- seq(8, 28, by=1)
-llls_burnin <- 10
-llls_mape_bws <- sapply(llls_bws, function(h){ # cat(h, '\n')
-    pe <- sapply(llls_burnin:nrow(dat), function(t_end){
-        dat_t <- dat[dat$t<t_end, ]
-        reg <- npreg(x ~ t, data=dat_t, bws=h,
-            ckertype='epanechnikov',
-            bandwidth.compute=F, regtype='ll')
-        edat <- dat[dat$t==t_end, ]
-        pred <- predict(reg, newdata=edat)
-        pe <- edat$x - pred
-        return(pe)    
-    })
-    mape <- mean( abs(pe)^2, na.rm=T)
-})
-llls_mape_star <- llls_mape_bws[which.min(llls_mape_bws)]
-llls_h_star <- llls_bws[which.min(llls_mape_bws)]
-#llls_tscv <- predict( npreg(x ~ t, data=dat, bws=llls_h_star,
-#    bandwidth.compute=F, regtype='ll', ckertype='epanechnikov'))
-llls_tscv <- sapply(llls_burnin:nrow(dat), function(t_end, h=llls_h_star){
-    dat_t <- dat[dat$t<t_end, ]
-    reg <- npreg(x ~ t, data=dat_t, bws=h,
-        ckertype='epanechnikov',
-        bandwidth.compute=F, regtype='ll')
-    edat <- dat[dat$t==t_end, ]
-    pred <- predict(reg, newdata=edat)
-    return(pred)    
+ma_windows <- 2:20
+tscv_mse <- sapply(ma_windows, function(h){
+    ## Weight the previous h points equally, 0 weight on the current point
+    ma_coefs <- c(0, rep(1/h, h))
+    x_pred <- filter(x, ma_coefs, sides=1)
+    mean((x - x_pred)^2, na.rm=T)
 })
 
-## Compare Fits Qualitatively
-lines(filter_tscv, col=2, lty=1, lwd=1)
-lines(llls_burnin:nrow(dat), llls_tscv, col=4, lty=1, lwd=1)
-legend('topleft', lty=1, col=c(1, 2, 4), bty='n',
-    c('Underlying Trend', 'MA-1sided + TSCV', 'LLLS-1sided + TSCV'))
+## CV-optimal window
+h_star <- ma_windows[which.min(tscv_mse)]
 
-## Compare Fits Quantitatively
-cbind(
-    bandwidth=c(LLLS=llls_h_star, MA=filter_h_star),
-    mape=round(c(LLLS=llls_mape_star, MA=filter_mape_star), 2) )
+par(mfrow=c(1, 2))
+## Plot CV error against window size
+plot(ma_windows, tscv_mse, type='o', pch=16, main=NA,
+    xlab='Moving-average window (h)', ylab='TSCV mean squared error')
+abline(v=h_star, col=rgb(1, 0, 0, .8), lwd=2)
 
-## See also https://cran.r-project.org/web/packages/smoots/smoots.pdf
-#https://otexts.com/fpp3/tscv.html
-#https://robjhyndman.com/hyndsight/tscvexample/
+## Plot the series with the CV-optimal filter
+x_smooth <- filter(x, c(0, rep(1/h_star, h_star)), sides=1)
+plot(x ~ t, data=dat, pch=16, col=grey(0, .25), main=NA,
+    xlab='Time', ylab='x')
+lines(dat$t, x_smooth, col=rgb(1, 0, 0, .8), lwd=2)
+title(paste0('One-sided MA, h = ', h_star), font.main=1)
+
+## See also https://robjhyndman.com/hyndsight/tscvexample/
 ```
-
-#### **Bayesian Filtering** {-}
-
 
 #### **Bayes' Theorem**. {-}
 
@@ -402,7 +379,7 @@ The random subsample uses $n-10$ observations per iteration. How would you expec
 
 #### **Matrix Calculations**. {-}
 
-First, not that you can use matrix algebra in R
+First, note that you can use matrix algebra in R
 ```{r}
 x_mat1 <- matrix( seq(2, 7), 2, 3)
 x_mat1
@@ -488,6 +465,86 @@ K\left(\frac{\mathbf{X}_{1}-\mathbf{x}}{h_{1}}\right) & ... & 0\\
 which is unbiased far more often.
 
 
+## Multiple Testing
+
+When you test one hypothesis at the $5\%$ level, there is a $5\%$ chance of a false positive.
+When you test many hypotheses, those chances accumulate.
+This is the statistical engine behind much of [Data Scientism](https://jadamso.github.io/Rbooks/03_25_DataScientism.html): search long enough and something will look significant.
+
+#### **Family-Wise Error Rate**. {-}
+
+The *family-wise error rate* (FWER) is the probability of at least one false positive across a family of $K$ tests.
+If the tests are independent and each has false-positive rate $\alpha$, then
+\begin{eqnarray}
+\text{FWER} &=& 1-(1-\alpha)^{K}.
+\end{eqnarray}
+With $\alpha=0.05$, one test has FWER $0.05$, but $K=10$ tests give $1-0.95^{10}\approx 0.40$ and $K=100$ tests give $1-0.95^{100}\approx 0.99$.
+Almost any dataset will yield a "significant" result if you test it enough ways.
+
+```{r}
+# Family-wise error rate grows with the number of tests
+alpha <- 0.05
+K <- c(1, 5, 10, 20, 50, 100)
+fwer <- 1 - (1-alpha)^K
+cbind(K, fwer=round(fwer, 3))
+```
+
+#### **Bonferroni and Holm Corrections**. {-}
+
+To control the FWER, we make each individual test stricter.
+The *Bonferroni correction* tests each hypothesis at level $\alpha/K$ instead of $\alpha$.
+Equivalently, it multiplies each $p$-value by $K$ and keeps the $\alpha$ threshold.
+This guarantees FWER $\leq \alpha$, but it is conservative: with many tests, it can miss real effects.
+The *Holm correction* is a less conservative stepwise version that still controls the FWER, and is generally preferred.
+
+```{r}
+# Five p-values from five separate tests
+pvals <- c(0.001, 0.013, 0.021, 0.04, 0.21)
+
+# Adjust for multiple testing
+cbind(
+    raw        = pvals,
+    bonferroni = p.adjust(pvals, method='bonferroni'),
+    holm       = p.adjust(pvals, method='holm'))
+```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+A researcher runs $K=5$ tests and reports a $p$-value of $0.013$.
+On its own, $0.013 < 0.05$ looks significant.
+The Bonferroni-adjusted value is $0.013 \times 5 = 0.065 > 0.05$, so it is *not* significant once we account for the five tests.
+The threshold view is equivalent: compare the raw $p$-value to $\alpha/K = 0.05/5 = 0.01$.
+:::
+
+#### **Post-Hoc Pairwise Tests**. {-}
+
+A global test, such as the ANOVA $F$-test in [Comparing Multiple Groups](https://jadamso.github.io/Rbooks/03_20_MultipleGroups.html), tells you that *some* group differs, but not *which* one.
+The natural follow-up is to compare every pair of groups.
+With $G$ groups there are $G(G-1)/2$ pairs, so these *post-hoc* comparisons are themselves a multiple-testing problem and need a correction.
+
+```{r}
+# Global test: do murder rates differ by region?
+dat <- USArrests
+dat$Region <- state.region
+summary(aov(Murder ~ Region, data=dat))
+```
+
+```{r}
+# Post-hoc: which regions differ? (pairwise t-tests, Holm-adjusted)
+pairwise.t.test(dat$Murder, dat$Region, p.adjust.method='holm')
+```
+
+```{r}
+# Tukey's Honest Significant Differences:
+# pairwise confidence intervals that already account for all comparisons
+TukeyHSD(aov(Murder ~ Region, data=dat))
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Rerun `pairwise.t.test` on the region data with `p.adjust.method='none'` and again with `'bonferroni'`.
+How many pairs are significant at the $5\%$ level under each?
+The uncorrected version flags more differences; explain why, and state which version you should report.
+:::
+
 ## Exercises
 
 1. Explain the distinction between description, explanation, and prediction using a concrete example other than minimum wages. For each objective, state what statistical tools you would use and what kind of evidence would be needed.
@@ -496,8 +553,11 @@ which is unbiased far more often.
 
 3. Using the `wage1` dataset from the `wooldridge` package, fit a `loess` regression of `wage` on `educ` for three different span values (e.g., 0.4, 0.6, 0.8). Use leave-one-out cross-validation to compute the mean squared prediction error for each span. Which span minimizes prediction error, and does a more flexible fit always predict better?
 
+4. A researcher runs $K=20$ independent tests, each at the $5\%$ level. Compute the family-wise error rate $1-(1-0.05)^{20}$, and find the per-test Bonferroni threshold $\alpha/K$ that holds the family-wise rate at $5\%$. Then create a vector of 20 $p$-values, apply `p.adjust()` with the `'bonferroni'` and `'holm'` methods, and report how many results remain significant under each.
+
 #### **Further Reading**. {-}
 
 * <https://otexts.com/fpp3/> -- Hyndman and Athanasopoulos, *Forecasting: Principles and Practice* (3rd ed.), covering time-series smoothing, cross-validation, and prediction in R.
 * <https://cran.r-project.org/web/packages/np/vignettes/np.pdf> -- the `np` package vignette for nonparametric kernel estimation and bandwidth selection.
 * Shmueli, G. (2010). To explain or to predict? *Statistical Science*, 25(3), 289--310. <https://doi.org/10.1214/10-STS330> -- a clear discussion of the describe/explain/predict distinction in statistical modeling.
+* <https://cran.r-project.org/web/packages/multcomp/vignettes/multcomp-examples.pdf> -- worked examples of multiple-comparison procedures and post-hoc tests in R.
