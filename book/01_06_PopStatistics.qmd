@@ -1,3 +1,6 @@
+# Population Statistics
+***
+
 ## Statistical Theory
 
 We will now dig a little deeper theoretically into the statistics we compute. When we know how the data are generated theoretically, we can often compute the theoretical value of the two most basic and often-used statistics: the mean and variance. Recall that we denote $X_{i}$ as a random variable that can take on specific values $x$ from the sample space with known probabilities (see this [probability refresher](https://www.khanacademy.org/math/statistics-probability/probability-library/basic-theoretical-probability/a/probability-the-basics) if needed). For example, $X_{i}$ is a coin that we will flip and it can land on heads ($x=1$) or tails ($x=0$).
@@ -89,11 +92,29 @@ round( var(X), 4)
 :::
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Consider a four-sided die with outcomes $\{1,2,3,4 \}$ and corresponding probabilities $\{ 1/8, 2/8, 1/8, 4/8 \}$ . What is the mean?
+Consider a four-sided die with outcomes $\{1,2,3,4\}$ and corresponding probabilities $\{1/8, 2/8, 1/8, 4/8\}$.
+The mean is
 \begin{eqnarray}
-\mathbb{E}[X_{i}] = 1 \frac{1}{8} + 2 \frac{2}{8} + 3 \frac{1}{8} + 4 \frac{4}{8} = 3
+\mathbb{E}[X_{i}] = 1 \frac{1}{8} + 2 \frac{2}{8} + 3 \frac{1}{8} + 4 \frac{4}{8} = 3.
 \end{eqnarray}
-What is the variance? Verify both the mean and variance by simulation.
+The variance is the probability-weighted average squared deviation from the mean,
+\begin{eqnarray}
+\mathbb{V}[X_{i}] = (1-3)^2 \frac{1}{8} + (2-3)^2 \frac{2}{8} + (3-3)^2 \frac{1}{8} + (4-3)^2 \frac{4}{8} = \frac{4 + 2 + 0 + 4}{8} = \frac{10}{8} = 1.25.
+\end{eqnarray}
+```{r}
+x <- c(1, 2, 3, 4)
+x_probs <- c(1/8, 2/8, 1/8, 4/8)
+X_mean <- sum(x * x_probs)
+X_mean
+
+X_var <- sum((x - X_mean)^2 * x_probs)
+X_var
+
+# Verify by simulation
+X <- sample(x, prob=x_probs, size=10000, replace=T)
+round(mean(X), 2)
+round(var(X), 2)
+```
 :::
 
 
@@ -298,17 +319,22 @@ mean(X)
 
 The weighting idea generalizes to other statistics. E.g., we can also estimate variance with probability weights
 
-:::{.callout-tip icon=false collapse="false" title="Test Yourself"}
-Provide a concrete example of computing a weighted variance building on this code below
-```{r, eval=F}
-mx <- sum(x*x_probs)
-x_diff <- (x - mx)^2
-x_var <- sum(x_probs * x_diff)
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Here is a concrete example of a weighted variance, for a random variable with values $\{1,2,3\}$ and probability weights $\{0.2, 0.5, 0.3\}$.
+```{r}
+x <- c(1, 2, 3)
+x_probs <- c(0.2, 0.5, 0.3)
+
+mx <- sum(x * x_probs)         # weighted mean
+x_diff <- (x - mx)^2           # squared deviations
+x_var <- sum(x_probs * x_diff) # weighted variance
+x_var
 ```
+Try it yourself with different values and weights.
 :::
 
 
-:::{.callout-tip icon=false collapse="false" title="Test Yourself"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 You can estimate means and variances for continuous random variables with weights, but here we have an additional approximation error due to binning by the histogram.
 ```{r}
 # values and probabilities
@@ -369,8 +395,10 @@ Another famous theoretical result in statistics is that if we have independent a
 SE\left(M\right) &=& \sqrt{\mathbb{V}\left[ M \right] } = \sqrt{\sigma^2/n} = \sigma/\sqrt{n}.
 \end{eqnarray}
 
+For example, if the population has $\sigma=10$ and we draw samples of size $n=4$, then $\mathbb{V}[M]=\sigma^2/n=100/4=25$ and $SE(M)=\sigma/\sqrt{n}=10/2=5$.
+Quadrupling the sample size to $n=16$ halves the standard error to $10/\sqrt{16}=2.5$.
 
-Note that the standard deviation refers variability of individual observations (in either a sample or population), and is hence different from the standard error. To be clear, 
+Note that the standard deviation refers to the variability of individual observations (in either a sample or population), and is hence different from the standard error. To be clear, 
 
 | Concept            | What varies                 | Notation     |
 | ------------------ | --------------------------- | ------------ |
@@ -383,7 +411,7 @@ Nonetheless, the sample standard deviation can be used to estimate the standard 
 SE(M) \approx \sigma/\sqrt{n} \approx \hat{S}/\sqrt{n}. 
 \end{eqnarray}
 
-Another data-driven way is to create a bootstrap distribution for the sample mean and then compute the standard deviation of the bootstrap distribution $\hat{SE}^{\text{boot}} \approx SE(M)$. The theory-driven estimate is often a little different from the bootstrap estimate, as the theory-driven estimate is based on idealistic assumptions (i.i.d. and normality) whereas the bootstrap estimate is driven by data that are often not ideal. The theory-driven estimate does have some advantages too, but we do not go into that as we would need more advanced mathematics.
+Another data-driven way is to create a bootstrap distribution for the sample mean and then compute the standard deviation of the bootstrap distribution $\hat{SE}^{\text{boot}} \approx SE(M)$, as shown in [Sampling & Resampling](https://jadamso.github.io/Rbooks/01_05_Sampling.html#standard-errors). The theory-driven estimate is often a little different from the bootstrap estimate, as the theory-driven estimate is based on idealistic assumptions (i.i.d. and normality) whereas the bootstrap estimate is driven by data that are often not ideal. The theory-driven estimate does have some advantages too, but we do not go into that as we would need more advanced mathematics.
 
 ```{r}
 sample_dat <- USArrests[, 'Murder']
@@ -424,6 +452,8 @@ x <- seq(5, 10, by=0.01)
 fx <- dnorm(x, mean(sample_dat), theory_se)
 lines(x, fx, col=rgb(1, 0, 0, .8), lty=1)
 ```
+
+This normal approximation for the sampling distribution is the foundation for the [confidence intervals](https://jadamso.github.io/Rbooks/01_07_Intervals.html) we build in the next chapter.
 
 
 
