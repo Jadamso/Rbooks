@@ -1,7 +1,7 @@
 # Multiple Linear Regression
 ***
 
-We often want to know the relationship between one outcome variable $\hat{Y}_{i}$ and multiple explanatory/predictor variables. This builds on [Simple Regression](https://jadamso.github.io/Rbooks/02_13_SimpleRegression.html), which related $\hat{Y}_{i}$ to a single explanatory variable. For historical reasons, we start by fitting a linear model to data.
+We often want to know the relationship between one outcome variable $\hat{Y}_{i}$ and multiple explanatory variables. This builds on [Simple Regression](https://jadamso.github.io/Rbooks/02_13_SimpleRegression.html), which related $\hat{Y}_{i}$ to a single $\hat{X}_{i}$. *Multiple linear regression* fits a single linear model to several explanatory variables at once, and asks how each one moves the outcome while holding the others fixed. For historical reasons, we start by fitting a linear model to data.
 
 ## The Linear Model
 
@@ -21,8 +21,12 @@ hence the common term *Ordinary Least Squares* regression.
 
 We can analytically solve this problem using [matrix-calculations](https://jadamso.github.io/Rbooks/03_26_MiscTopics.html#matrix-calculations), although we do not do that here (for a detailed derivation, see [these notes](https://jrnold.github.io/intro-methods-notes/ols-in-matrix-form.html)). Solving yields the best fitting model with coefficients $B^{*}=(b_0^{*} ~~ b_1^{*} ~~... ~~ b_{K}^{*})$.
 
+:::{.callout-important title="Definition" collapse="false"}
+*Ordinary Least Squares (OLS)* picks the coefficients $b_0, b_1, \ldots, b_K$ that minimize the sum of squared residuals $\sum_i e_i^2$. With $K$ explanatory variables and an intercept, the solution is a single best-fit hyperplane through the data.
+:::
+
 ```{r}
-# Check
+# Fit a multiple regression of Murder on Assault and UrbanPop
 reg <- lm(Murder ~ Assault+UrbanPop, data=USArrests)
 coef(reg)
 ```
@@ -45,6 +49,10 @@ We can also again compute sums of squared errors. Adding random data may sometim
 \hat{R}_{yY}^2 = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}\\
 \hat{R}^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-\hat{R}_{yY}^2)
 \end{eqnarray}
+
+:::{.callout-important title="Definition" collapse="false"}
+The *adjusted $\hat{R}^2$* discounts the ordinary $\hat{R}^2$ by a factor that grows with the number of parameters $K$. Unlike $\hat{R}^2$, it does not mechanically rise when more regressors are added, so it is a more honest summary of in-sample fit across models of different size.
+:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Suppose $n=50$, $K=3$, and $\hat{R}^2=0.70$. Then
@@ -84,12 +92,13 @@ legend('topleft', horiz=T,
 
 ## Variability Estimates and Hypothesis Tests
 
-Above, we computed the coefficient $\hat{B}$ for a particular sample: $\hat{X}_{i1}, \hat{X}_{i2}, \ldots, \hat{Y}_{i}$. We now seek to know how much the best-fitting coefficients $B^{*}$ varies from sample to sample. I.e., $\hat{B}$ is our estimate and we want to know the standard error of our estimator: $SE(B^{*})$. To estimate this variability, we can use the same data-driven methods introduced previously. 
+Above, we computed the coefficient $\hat{B}$ for a particular sample: $\hat{X}_{i1}, \hat{X}_{i2}, \ldots, \hat{Y}_{i}$. We now seek to know how much the best-fitting coefficients $B^{*}$ varies from sample to sample. I.e., $\hat{B}$ is our estimate and we want to know the standard error of our estimator: $SE(B^{*})$. To estimate this variability, we can use the same data-driven methods introduced previously.
 
-As before, we can also conduct independent hypothesis tests using t-values. However, we can also conduct *joint tests* that account for interdependancies in our estimates. For example, to test whether two coefficients both equal $0$, we bootstrap the joint distribution of coefficients.
+As before, we can also conduct independent hypothesis tests using t-values. However, we can also conduct *joint tests* that account for interdependencies in our estimates. For example, to test whether two coefficients both equal $0$, we bootstrap the joint distribution of coefficients.
 
 ```{r}
-# Bootstrap SE's
+# Bootstrap SEs of all three coefficients jointly: resample rows of the
+# dataset with replacement, refit lm, and store the coefficient vector.
 boot_coefs <- matrix(NA, nrow=399, ncol=3)
 for(b in seq(nrow(boot_coefs))){
     b_id <- sample( nrow(USArrests), replace=T)
@@ -99,10 +108,13 @@ for(b in seq(nrow(boot_coefs))){
 }
 colnames(boot_coefs) <- names(coef(reg))
 
-# Recenter at 0 to impose the null
-#boot_means <- rowMeans(boot_coefs)
-#boot_coefs0 <- sweep(boot_coefs, MARGIN=1, STATS=boot_means)
+# The bootstrap SE is just the standard deviation across replications
+apply(boot_coefs, 2, sd)
 ```
+
+:::{.callout-important title="Definition" collapse="false"}
+A *joint hypothesis test* asks whether several coefficients are simultaneously consistent with a stated null (e.g., $\beta_1 = \beta_2 = 0$). The bootstrap above approximates the joint sampling distribution of $\hat{B}$, so we can read off the joint distribution rather than just the marginals.
+:::
 
 ```{r}
 boot_coef_df <- as.data.frame(cbind(
@@ -129,7 +141,7 @@ fig
 
 #### **F-statistic**. {-}
 
-We can also use an $F$ test for any $q$ hypotheses. Specifically, when $q$ hypotheses *restrict* a model, the degrees of freedom drop from $k_{u}$ to $k_{r}$ and the residual sum of squares $\hat{RSS}=\sum_{i}(\hat{Y}_{i}-\hat{y}_{i})^2$ typically increases. We compute the statistic
+We can also use an *$F$ test* for any $q$ hypotheses. Specifically, when $q$ hypotheses *restrict* a model, the degrees of freedom drop from $k_{u}$ to $k_{r}$ and the residual sum of squares $\hat{RSS}=\sum_{i}(\hat{Y}_{i}-\hat{y}_{i})^2$ typically increases. We compute the statistic
 \begin{eqnarray}
 \hat{F}_{q} = \frac{(\hat{RSS}_{r}-\hat{RSS}_{u})/(k_{u}-k_{r})}{\hat{RSS}_{u}/(n-k_{u})}
 \end{eqnarray}
@@ -139,6 +151,10 @@ If you test whether all $K$ variables are jointly significant, the restricted mo
 \hat{F}_{K} = \frac{(K-1) + (n-K)\hat{R}^2_{\text{adj.}}}{(K-1)(1 - \hat{R}^2_{\text{adj.}})}
 \end{eqnarray}
 Notice that $\hat{F}_{K}=1$ when $\hat{R}^2_{\text{adj.}}=0$, meaning the model does not improve fit beyond what random covariates would achieve. The F-statistic exceeds $1$ when $\hat{R}^2_{\text{adj.}}>0$ and falls below $1$ when $\hat{R}^2_{\text{adj.}}<0$.
+
+:::{.callout-important title="Definition" collapse="false"}
+The *$F$-statistic* compares the residual sum of squares of a restricted and an unrestricted model, scaled by their degrees of freedom. A large $\hat{F}$ means the unrestricted model fits much better than the restricted one, beyond what would be expected by chance.
+:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Suppose $\hat{R}^2_{\text{adj.}}=0.50$, $K=3$, $n=50$. Then
@@ -261,7 +277,7 @@ This is why we can still interpret them, cautiously, even when the linear model 
 Compare the two simulation results. In the correctly specified case, the estimated coefficients center on the true values. What happens in the misspecified case? Why might OLS still be useful even when the model is misspecified?
 :::
 
-In general, you can interpret your regression coefficients as "adjusted correlations". There are (many) tests for whether the relationships in your dataset are actually additively separable and linear.
+In general, you can interpret your regression coefficients as *adjusted correlations*: the partial relationship between $Y$ and one $X$ after netting out the linear dependence on the other $X$'s. There are (many) tests for whether the relationships in your dataset are actually additively separable and linear (see [Model Assessment](https://jadamso.github.io/Rbooks/03_21_InterpretingRegression.html#model-diagnostics) and [Local Relationships](https://jadamso.github.io/Rbooks/03_22_Regressograms.html)).
 
 #### **$\hat{R}^2$ vs. $\hat{\beta}$**. {-}
 
@@ -282,4 +298,9 @@ That said, we still care about $\hat{R}^2$. A very small $\hat{R}^2$ can signal 
 * <https://www.econometrics-with-r.org/6-rmwmr.html> -- multiple regression in R with worked examples, hypothesis tests, and diagnostics.
 * <https://book.stat420.org/> -- a full applied-statistics textbook covering OLS theory, matrix derivations, and model selection in R.
 * <https://www.econometrics-with-r.org/10-rwpd.html> -- panel data and fixed-effects estimation with practical R code.
+
+
+:::{.callout-note title="Recall" collapse="false" icon=false}
+This chapter extended simple regression to multiple explanatory variables, introducing the adjusted $\hat{R}^2$, the $F$-statistic for joint tests, and bootstrap standard errors. In the next chapter we use the same machinery on factor variables — the ANOVA decomposition of variation between and within groups.
+:::
 
