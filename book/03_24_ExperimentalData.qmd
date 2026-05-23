@@ -57,7 +57,7 @@ If you have exogenous variation on one side of the market, you can get informati
 
 To see this, consider an experiment where student subjects are recruited to a classroom and randomly assigned to be either buyers or sellers in a market for little red balls. In this case, the classroom environment allows the experimenter to control for various factors (e.g., the temperature of the room is constant for all subjects) and the explicit randomization of subjects means that there are not typically systematic differences in different groups of students.
 
-In the experiment, sellers are given linear "cost functions" that theoretically yield individual supplies like \eqref{eqn:market_supply} and are paid "price - cost". Buyers are given linear "benefit functions" that theoretically yield individual demands like \eqref{eqn:market_demand}, and are paid "benefit - price". The theoretical predictions are theorefore given in \eqref{eqn:market_supply}. Moreover, experimental manipulation of $\alpha_{S}$ leads to 
+In the experiment, sellers are given linear "cost functions" that theoretically yield individual supplies like the supply equation from the previous chapter and are paid "price - cost". Buyers are given linear "benefit functions" that theoretically yield individual demands like the demand equation from the previous chapter, and are paid "benefit - price". The theoretical predictions are therefore given by the supply equation. Moreover, experimental manipulation of $\alpha_{S}$ leads to
 \begin{eqnarray}
 \label{eqn:comp_market_statics}
 \frac{d P^{*}}{d \alpha_{S}} = \frac{-1}{\beta_{D}+\beta_{S}}, \\
@@ -219,19 +219,54 @@ stargazer::stargazer(regP, regQ,
 The DID estimate relies on the *parallel trends* assumption: absent treatment, the treatment and control groups would have followed the same trajectory. Look at the pre-treatment period in the plots above. Do the treated (black) and control (red) series appear to have parallel trends? What would violate this assumption?
 :::
 
+:::{.callout-tip icon=false collapse="true" title="Test Yourself: reading the DID table"}
+The stargazer output for the DID model `P ~ PostPeriod * EverTreated` has four rows.
+
+* The intercept is the mean of $P$ for the *control* group in the *pre* period.
+* `PostPeriodTRUE` is the change between pre and post in the control group.
+* `EverTreated1` is the pre-period difference between treated and control.
+* `PostPeriodTRUE:EverTreated1` is the DID estimate: the *extra* change in the treated group above the control trend. This is the coefficient to interpret as the treatment effect.
+
+A statistically significant interaction term whose sign matches what theory predicts is the headline DID result. The same logic applies to the RDD table, where the `T:cost2` interaction captures the change in slope at the discontinuity.
+:::
+
 
 
 #### **Blocking and Clustering** . {-}
 
-Randomization is the process of randomly manipulating an explanatory variable of (assigning treatments to units).
+Randomization is the process of randomly manipulating an explanatory variable (assigning treatments to units).
 
-A completely randomized design is useful when the experimental units are homogeneous. If the experimental units are heterogeneous, *blocking* is often used to form homogeneous groups.
+A *completely randomized* design is useful when the experimental units are homogeneous: each unit is assigned to treatment or control with equal probability.
+If the experimental units are heterogeneous, *blocking* first partitions the units into homogeneous groups and then randomizes *within* each block, ensuring that treatment and control are balanced on the blocking variable.
 
 Continuing with supply and demand example, we might manipulate costs (randomize high or low treatments) for companies in different industries (computer services, lumber harvesting).
+With a completely randomized design, industry composition can differ between treatment and control purely by chance; blocking by industry removes that source of imbalance.
+
+```{r}
+# Contrast completely randomized vs blocked assignment
+set.seed(1)
+industry <- rep(c('Computer', 'Lumber'), each=20)
+n <- length(industry)
+
+# Completely randomized: assign half to treatment, ignore industry
+crd <- sample(rep(c('Treat','Control'), each=n/2))
+table(industry, crd)
+
+# Blocked: assign half within each industry
+blocked <- character(n)
+for(g in unique(industry)){
+    idx <- which(industry == g)
+    blocked[idx] <- sample(rep(c('Treat','Control'), each=length(idx)/2))
+}
+table(industry, blocked)
+```
+
+Notice that the blocked design always returns 10-10 in each industry, whereas the completely randomized design can drift away from that balance from one realization to the next.
+Blocking buys precision when the blocking variable predicts the outcome.
 
 ## Quasi Experiments
 
-*Quasi* or *natural experiments* are historical case studies have the second distinguishing feature of experiments: randomization, but not the first: control. This helps remedy the endogeneity issues in observational data. "Intrumental Variables", "RDD", "DID" methods discussed above are used in historical event studies. The elementary versions use linear regression, so I can cover them here using our competitive equilibrium example from before.
+*Quasi* or *natural experiments* are historical case studies have the second distinguishing feature of experiments: randomization, but not the first: control. This helps remedy the endogeneity issues in observational data. "Instrumental Variables", "RDD", "DID" methods discussed above are used in historical event studies. The elementary versions use linear regression, so I can cover them here using our competitive equilibrium example from before.
 
 
 #### **Two Stage Least Squares (2SLS)**. {-}
@@ -245,13 +280,15 @@ It turns out that the noisiness of the process within each group affects our OLS
 <details>
 <summary><i>Within Group Variance</i></summary>
 You can experiment with the effect of different variances on both OLS and IV in the code below. And note that if we had multiple supply shifts and recorded their magnitudes, then we could recover more information about demand, perhaps tracing it out entirely.
-```{r, eval=F}
+```{r}
+library(fixest)
+
 # Examine
 Egrid <- expand.grid(Ed_sigma=c(.001, .25, 1), Es_sigma=c(.001, .25, 1))
 
 Egrid_regs <- lapply(1:nrow(Egrid), function(i){
     Ed_sigma <- Egrid[i, 1]
-    Es_sigma <- Egrid[i, 2]    
+    Es_sigma <- Egrid[i, 2]
     EQ1 <- sapply(1:N, function(n){
         demand <- qd_fun(P, Ed_sigma=Ed_sigma)
         supply <- qs_fun(P, Es_sigma=Es_sigma)
@@ -344,18 +381,7 @@ The 2SLS procedure works in two steps. First, regress the endogenous variable (p
 * *Inference and standard errors:* Spatial or temporal interdependence reduces the effective sample size, making conventional standard errors misleadingly small.
 
 
-We always get coefficients back when running `feols`, and sometimes the computed p-values are very small. The interpretation of those numbers rests on many assumptions, and we are rarely sure that all of these assumptions hold. Researchers often also report their OLS results, but that is insufficient.
-
-```{r, eval=F, results='hide', echo=F}
-We could also use a nonparametric estimator to diagnose linearity at each stage.
-#reg2_alt_fs <- lm(Q ~ cost, data=dat2)
-#summary(reg2_alt_fs)
-#lo2_alt_fs <- loess(Q ~ cost, data=dat2)
-
-
-# Many packages can do IV
-# ivreg::ivreg(Q ~ P|cost, data=dat2)
-```
+We always get coefficients back when running `feols`, and sometimes the computed p-values are very small. The interpretation of those numbers rests on many assumptions, and we are rarely sure that all of these assumptions hold. Researchers often also report their OLS results, but that is insufficient. A nonparametric estimator (e.g. `loess`) at each stage can help diagnose departures from linearity; other packages such as `ivreg::ivreg` provide alternative IV implementations.
 
 
 ## Exercises
