@@ -255,3 +255,84 @@ a legitimate, distinct topic and the natural sequel to 02_14.
 6. Phase 4 self-review.
 
 Commit after each chapter with a concise one-line message.
+
+---
+
+## Completed (2026-05-22)
+
+### Done
+
+**03_19** (a5ed53e)
+- Notation: `\hat{X}_{1i}` → `\hat{X}_{i1}` at lines 9 and 87 (observation-first).
+- Added clarifying footnote on $K$ counting all parameters including intercept.
+- Retitled plotly chart to "Joint Bootstrap Distribution of Coefficients"; fixed `Assualt` → `Assault` typo (axis + hover text).
+- Italicized *adjusted* $\hat{R}^2$ on first use.
+- New Must-Know callout: nested F-test on `USArrests` using `anova()` (Rape → no improvement).
+- Bridge sentence at chapter open with link to 02_13.
+- Added prose answering Must-Know question on misspecified-model simulation.
+
+**03_20** (87ad0cf)
+- Fixed Mann-Whitney typo: $H_0$ RHS now `Prob(Y_j > Y_i)`; $H_A$ now `\neq Prob(Y_j > Y_i)`.
+- New Must-Know callout: worked Kruskal-Wallis numerical example ($\hat{KW}=7.2$ on $\{1,\ldots,9\}$) and Mann-Whitney $\hat{U}=3$ on $A=\{1,3,5\}, B=\{2,4,6\}$, both checked against R.
+- New Must-Know callout: post-hoc `pairwise.wilcox.test` on regional data with Holm correction.
+- Cross-link from KW result to new 03_26 Multiple Testing section.
+- Removed dead `B <- 5000`.
+- Added intuition sentence to pairs-bootstrap callout explaining why resampling group labels breaks the Y-group pairing.
+- F_fun now computes `n <- length(Y)` from its argument, not from enclosing `dat`.
+
+**03_21** (5044f26, predecessor)
+- Five `eval=F` blocks all resolved with base R (influence plot from `hatvalues`/`rstandard`/`cooks.distance`, manual VIF, manual Breusch-Pagan).
+- Worked Must-Know callout for VIF; Test-Yourself callout for Breusch-Pagan/heteroskedasticity interpretation.
+- Typos fixed: "many assualts", "Heterskedasticity", "may also matters".
+
+**03_22** (8807118, predecessor)
+- Filled empty `## Local Regressions` code block with a working multivariate piecewise regression (`y ~ x1c/(x1+x2)`).
+- Resolved `eval=F` Chow-test block; renamed inner `reg` → `reg_sub`.
+- Expanded `## Model Selection` with a 5-fold CV-over-bins example.
+- Expanded `## Hypothesis Testing` with finite-difference and piecewise-slope gradient examples.
+- New callouts: regressogram-cell-mean Must-Know, CV Test-Yourself, finite-difference gradient Must-Know.
+- Broken `@cite` keys (Racine, Arlot/Celisse, Bates, Chaudhuri, Henderson) converted to plain-text citations.
+- Bridge paragraph at chapter open linking to 02_14.
+
+**03_23** (feee673)
+- Replaced off-topic `eval=F` coin-flip block with a working time-path + marginal-distribution layout of the random walk simulated above.
+- New Must-Know callout: ACF worked example $\widehat{ACF}(1)=0.4$ on $y=(2,4,6,8,10)$, checked against `acf()`.
+- Fixed "AFC" → "ACF".
+- Notation: bare `E`, `V`, `Cov`, `Var` in stationarity and ACF/CCF formulas → $\mathbb{E}, \mathbb{V}, \mathbb{C}$.
+- Random-walk Must-Know now has a hint answering the question (`runif` vs `rnorm` shocks both give nonstationary walks).
+
+**03_24** (fdb233a)
+- Resolved `eval=F` "Within Group Variance" block: `library(fixest)` added inside the block, runs.
+- Removed orphan `eval=F` block (commented-out IV scaffolding); lifted the one useful sentence into prose.
+- Replaced broken cross-chapter `\eqref{eqn:market_supply}` and `\eqref{eqn:market_demand}` with plain "the supply/demand equation from the previous chapter".
+- Expanded "Blocking and Clustering" with a concrete completely-randomized vs blocked assignment code example.
+- New Test-Yourself callout walking through how to read the DID stargazer table (intercept, main effects, interaction).
+- Typos: "theorefore" → "therefore"; "Intrumental" → "Instrumental".
+
+**03_25** (ed5f2db)
+- Removed `eval=F` fully-commented stargazer block (line 161).
+- Tightened duplicate police-wages paragraph in Spurious Causal Impacts to a brief callback to the intro.
+- Expanded the p-hacking Test-Yourself callout into a concrete `1-(1-α)^k` computation across $k=1,10,100,700,5000$ with a forward link to 03_26 Multiple Testing.
+- Fixed "OSLS" → "OLS" comment typo.
+
+**03_26** (7bb536c, predecessor)
+- **Added new `## Multiple Testing` section** before `## Exercises` — FWER, Bonferroni and Holm via `p.adjust`, post-hoc `pairwise.t.test` and `TukeyHSD` on `USArrests` + `state.region`. Two callouts.
+- Resolved `eval=F` TSCV block with a working base-R symmetric/asymmetric filter and one-sided MA TSCV; produces real figures.
+- Removed empty `#### **Bayesian Filtering** {-}` header.
+- Broken `@cite` keys (Racine, Hyndman/Athanasopoulos, Hansen) converted to plain-text citations.
+- "not that you can use" → "note that you can use".
+
+### Deferred (with reasons)
+
+- **03_21 — Switch `library(psych)` to `psych::pairs.panels`.** Low-priority style refactor; the chapter's substantive work (5 `eval=F` blocks, VIF/BP callouts, typos) is done.
+- **03_22 — Cross-link the cross-validation discussion to 03_26.** The reverse link (03_26 → 03_22 Model Selection) was added by my predecessor; the forward link from 03_22 was not. Low priority.
+- **03_23 — Add one econ/finance Further Reading entry.** All three existing entries (Effect Book, Mostly Harmless, Mixtape) are already econ-focused, so the field-balance concern is already satisfied. No change needed.
+- **03_24 — Optional: contrast completely-randomized vs randomized-block by re-fitting the supply-and-demand simulation under each.** The added code shows assignment balance but does not run a comparison estimator. Plan only asked for a "short code illustration", which is what was delivered.
+
+### Verification
+
+- `grep -E 'eval\s*=\s*F' book/03_*.qmd` returns no matches (0 of 11 remaining).
+- `grep '@cite\|@\w+\d{4}' book/03_*.qmd` returns no matches.
+- All chapter cross-links checked: `#multiple-testing` exists in 03_26 (line 468), `#matrix-calculations` exists in 03_26 (line 380), `#model-selection` exists in 03_22 (line 228).
+- Each modified chapter re-read end-to-end for flow; no surviving plan items beyond Deferred above.
+- 9 commits on top of main (8 chapter/section improvements + 1 planning commit).
