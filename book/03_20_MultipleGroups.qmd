@@ -116,7 +116,7 @@ F_fun <- function(Y,g){
     BSS <- sum(n_g * (M_g - M_Y)^2)
     WSS <- sum(aggregate(Y, list(g), function(y) sum((y - mean(y))^2))$x)
 
-    n <- nrow(dat)
+    n <- length(Y)
     G <- nlevels(g)
     F_obs <- (BSS/(G-1)) / (WSS/(n-G))
 }
@@ -128,9 +128,10 @@ F_obs
 To compute a $p$-value, we can use permutation or bootstrap methods to build a null distribution, just as in previous chapters.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
+Pairing the observed `Murder` values with a *resampled* `Region` vector breaks the link between outcome and group: under the null, group labels are exchangeable, so this approximates the distribution of $\hat{F}$ when no group effect exists.
+
 ```{r}
-# Pairs bootstrap: resample rows with replacement
-B <- 5000
+# Pairs bootstrap: resample group labels to break the Y--group pairing
 n <- nrow(dat)
 
 F_nullboot <- vector(length=999)
@@ -195,7 +196,7 @@ To conduct the test, first denote individuals $i=1,...n$ with overall ranks $\ha
 \end{eqnarray}
 where  $\bar{r} = \frac{n+1}{2}$ is the grand mean rank.
 
-In the special case with only two groups, the Kruskal Wallis test reduces to the *Mann–Whitney U* test (also known as the *Wilcoxon rank-sum* test). In this case, we can write the hypotheses in terms of individual outcomes in each group, $Y_i$ in one group $Y_j$ in the other; $H_0: Prob(Y_i > Y_j)=Prob(Y_i > Y_i)$  versus $H_A: Prob(Y_i > Y_j) \neq Prob(Y_i > Y_j)$. The corresponding test statistic is
+In the special case with only two groups, the Kruskal Wallis test reduces to the *Mann–Whitney U* test (also known as the *Wilcoxon rank-sum* test). In this case, we can write the hypotheses in terms of individual outcomes in each group, $Y_i$ in one group $Y_j$ in the other; $H_0: Prob(Y_i > Y_j)=Prob(Y_j > Y_i)$  versus $H_A: Prob(Y_i > Y_j) \neq Prob(Y_j > Y_i)$. The corresponding test statistic is
 \begin{eqnarray}
 \hat{U}   &=& \min(\hat{U}_1, \hat{U}_2) \\
 \hat{U}_g &=& \sum_{i\in g}\sum_{j\in -g}
@@ -213,8 +214,44 @@ kw <- kruskal.test(Murder ~ Region, data = dat)
 kw
 ```
 
+A significant Kruskal-Wallis result tells us *that* some group differs, not *which*.
+To answer *which*, use a post-hoc pairwise test together with a multiple-comparisons correction (see [Multiple Testing](https://jadamso.github.io/Rbooks/03_26_MiscTopics.html#multiple-testing) in the next chapter).
+
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-The Kruskal-Wallis test rejected the null, so at least one region has a different distribution of murder rates. Looking back at the boxplot, which region stands out?
+Worked example: $G=3$ groups with values $A=\{1,2,3\}$, $B=\{4,5,6\}$, $C=\{7,8,9\}$.
+
+Pooling and ranking gives the ranks $1,\ldots,9$ in order.
+Group rank averages: $\bar{r}_A=2$, $\bar{r}_B=5$, $\bar{r}_C=8$.
+Grand mean rank: $\bar{r}=(n+1)/2=5$.
+Plug into $\hat{KW}$ with $n=9$, $n_g=3$:
+$$
+\hat{KW} = (n-1) \cdot \frac{3(2-5)^2 + 3(5-5)^2 + 3(8-5)^2}{\sum_{i=1}^{9}(\hat{r}_i - 5)^2}
+        = 8 \cdot \frac{27 + 0 + 27}{60} = 7.2.
+$$
+
+```{r}
+Y <- c(1,2,3, 4,5,6, 7,8,9)
+g <- factor(rep(c('A','B','C'), each=3))
+kruskal.test(Y ~ g)
+```
+
+For the two-group case, the Mann-Whitney statistic counts pairwise wins.
+Compare $A=\{1,3,5\}$ to $B=\{2,4,6\}$: out of $3\times 3 = 9$ pairs, $A$ wins three ($(3,2), (5,2), (5,4)$), so $\hat{U}_A=3$, $\hat{U}_B=6$, giving $\hat{U}=\min(3,6)=3$.
+
+```{r}
+A <- c(1,3,5); B <- c(2,4,6)
+wilcox.test(A, B)
+```
+:::
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+The Kruskal-Wallis test rejected the null on the regional data, so at least one region has a different distribution of murder rates.
+A post-hoc check pinpoints which pair differs.
+
+```{r}
+pairwise.wilcox.test(dat$Murder, dat$Region, p.adjust.method='holm')
+```
+Looking back at the boxplot, which region stands out?
 :::
 
 ## Regression

@@ -36,47 +36,37 @@ fig
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Modify the random walk above by changing `runif(1, -10, 10)` to `rnorm(1, 0, 5)`. How does the choice of shock distribution affect the path? Does it change whether the series is stationary or nonstationary?
+
+*Hint.* Both choices produce zero-mean, finite-variance shocks, so each simulated path is still a random walk: the variance of $Y_t$ grows linearly in $t$, so the series is nonstationary regardless of whether the shocks are uniform or normal. The shape of individual paths looks slightly different but the long-run behavior is the same.
 :::
 
 In both plots, we see that today's value is not independent of past values. In contrast to *cross-sectional* data (e.g. individual incomes), *time series* often require special methods to account for memory and nonstationarity.
 
 
-In any case, if often helps to see the marginal distribution too.
-```{r, eval=F}
-x0 <- rbinom(600, 1, 0.5)
-
-# Setup 2 Plots, side by side
+It often helps to see the marginal distribution alongside the time path.
+A nonstationary series can disguise itself in a histogram because the histogram pools across $t$.
+```{r}
+# Time path beside the marginal distribution
 layout(matrix(c(1, 2), nrow = 1), widths = c(4, 1))
 
-# Plot Cumulative Averages
-x0_t <- seq(1, length(x0))
-x0_mt <- cumsum(x0)/x0_t
-par(mar=c(4, 4, 1, 4))
-plot(x0_t, x0_mt, type='l',
-    ylab='Cumulative Average',
-    xlab='Flip #', 
-    ylim=c(0, 1), 
-    lwd=2)
-points(x0_t, x0, col=grey(0, .5),
-    pch=16, cex=.2)
-
-# Plot Long run proportions
 par(mar=c(4, 4, 1, 1))
-x_hist <- hist(x0, breaks=50, plot=F)
-x_freq <- x_hist$count/length(x0)
-barplot(x_freq ,
-    axes=FALSE,
-    space=0, horiz=TRUE, border=NA)
+plot(1:tN, y, type='l', lwd=2,
+    xlab='t', ylab=expression(y[t]))
+title('Random walk: time path', font.main=1, adj=0)
+
+par(mar=c(4, 1, 1, 2))
+y_hist <- hist(y, breaks=20, plot=F)
+barplot(y_hist$counts, horiz=TRUE, space=0, border=NA,
+    col=grey(.5, .5), axes=FALSE)
 axis(1)
-axis(2)
-mtext('Observed Frequency', 2, line=2.5)
+title('Marginal', font.main=1, adj=0)
 ```
 
 #### **Stationary**. {-}
 A *stationary* time series is one whose statistical properties do not change over time. Formally
 
-* Stationary Means: $E[Y_{t}]=E[Y_{t'}]$ for all time periods $t, t'$
-* Stationary Variances: $V[Y_{t}]=V[Y_{t'}]$ for all time periods $t, t'$
+* Stationary Means: $\mathbb{E}[Y_{t}]=\mathbb{E}[Y_{t'}]$ for all time periods $t, t'$
+* Stationary Variances: $\mathbb{V}[Y_{t}]=\mathbb{V}[Y_{t'}]$ for all time periods $t, t'$
 
 For example, consider the data generating process $Y_t = \beta t + \epsilon_t$, with $\epsilon_t \sim \text{N}(0, \sigma + \alpha t)$, with parameters $\beta$ affecting mean stationarity and $\alpha$ affecting variance stationarity.
 
@@ -127,12 +117,28 @@ In the top-left panel ($\beta=0, \alpha=0$), both the mean and variance are cons
 #### **Measures of temporal association**. {-}
 Time series often exhibit *serial dependence*—values today are related to past values, and potentially to other processes evolving over time. We can visualize this using correlation-based diagnostics.
 
-The *Autocorrelation Function* (AFC) measures correlation between a time series and its own lagged values:
+The *Autocorrelation Function* (ACF) measures correlation between a time series and its own lagged values:
 \begin{eqnarray}
-ACF_{Y}(k) = \frac{Cov(Y_{t},Y_{t-k})}{ \sqrt{Var(Y_{t})Var(Y_{t-k})}}
+ACF_{Y}(k) = \frac{\mathbb{C}(Y_{t},Y_{t-k})}{ \sqrt{\mathbb{V}(Y_{t})\mathbb{V}(Y_{t-k})}}
 \end{eqnarray}
 
 This helps detect temporal persistence (memory). For stationary processes, the ACF typically decays quickly, whereas for nonstationary processes, it typically decays slowly or persists.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Worked example: $y=(2,4,6,8,10)$, with $n=5$ and mean $\bar{y}=6$.
+R's `acf()` uses the biased estimator
+$$
+\widehat{ACF}(1) = \frac{\frac{1}{n}\sum_{t=2}^{n}(y_t - \bar{y})(y_{t-1}-\bar{y})}{\frac{1}{n}\sum_{t=1}^{n}(y_t - \bar{y})^2}.
+$$
+Deviations are $(-4,-2,0,2,4)$; lag-1 cross-products are $(-4)(-2)=8$, $(-2)(0)=0$, $(0)(2)=0$, $(2)(4)=8$, summing to $16$.
+Sum of squared deviations is $16+4+0+4+16=40$.
+So $\widehat{ACF}(1) = 16/40 = 0.4$.
+
+```{r}
+y_acf <- c(2,4,6,8,10)
+acf(y_acf, plot=FALSE)$acf[2]
+```
+:::
 
 ```{r}
 par(mfrow = c(2, 2))
@@ -147,7 +153,7 @@ for(beta in c(0, .05)){
 The *Cross-Correlation Function* (CCF) measures correlation between two time series at different lags:
 
 \begin{eqnarray}
-CCF_{YX}(k) = \frac{Cov(Y_{t},X_{t-k})}{ \sqrt{Var(Y_t)Var(X_{t-k})}}
+CCF_{YX}(k) = \frac{\mathbb{C}(Y_{t},X_{t-k})}{ \sqrt{\mathbb{V}(Y_t)\mathbb{V}(X_{t-k})}}
 \end{eqnarray}
 
 This is useful for detecting lagged relationships between two series, such as leading indicators or external drivers. (If $X$ is white noise, any visible structure in the CCF likely reflects nonstationarity in $Y$.)
@@ -197,8 +203,8 @@ plot(luxembourg_elevation_raster)
 #### **Stationary.** {-}
 Just as with temporal data, stationarity in spatial data means that the statistical properties (like mean, variance, or spatial correlation) are roughly the same across space.
 
-* Stationary Means: $E[Y(s)]=E[Y(s')]$ for all spatial locations $s,s'$
-* Stationary Vars: $V[Y(s)]=V[Y(s')]$ for all spatial locations $s,s'$
+* Stationary Means: $\mathbb{E}[Y(s)]=\mathbb{E}[Y(s')]$ for all spatial locations $s,s'$
+* Stationary Vars: $\mathbb{V}[Y(s)]=\mathbb{V}[Y(s')]$ for all spatial locations $s,s'$
 
 ```{r}
 # Simulated 2D spatial fields

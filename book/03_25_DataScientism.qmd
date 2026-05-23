@@ -47,7 +47,7 @@ Note: one reason to plot your data is to help spot such errors.
 Another class of errors pertains to *P-hacking* (and it's various synonyms: data drudging, star mining,....). While there are cases of fraudulent data manipulation (which can be considered as a dishonest data error), P-hacking need not even be intentional. You can simply be trying different variable transformations to uncover patterns in the data, for example, without accounting for how easy it is to find patterns when transforming  completely random data. P-hacking is [pernicious](https://elephantinthelab.org/a-replication-crisis-in-the-making/) and [widespread](https://www.americanscientist.org/article/the-statistical-crisis-in-science). 
 
 ```{r}
-# P-hacking OSLS with different explanatory vars
+# P-hacking OLS with different explanatory vars
 set.seed(123)
 n <- 50
 X1 <- runif(n)
@@ -77,7 +77,16 @@ abline(reg_i, col=rgb(1, 0, 0, .8))
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-The loop ran through `i` random datasets before finding one with $p < 0.001$. With truly random data, each regression has a $0.1\%$ chance of producing $p < 0.001$. After $k$ independent tests, the probability of at least one false positive is $1-(1-0.001)^k$. After $k=700$ tries, this exceeds $50\%$. The more you search, the more likely you are to find a spurious result.
+The loop ran through `i` random datasets before finding one with $p < 0.001$. With truly random data, each regression has a $0.1\%$ chance of producing $p < 0.001$. After $k$ independent tests, the probability of at least one false positive is $1-(1-\alpha)^k$. The probability climbs fast in $k$:
+
+```{r}
+alpha <- 0.001
+k <- c(1, 10, 100, 700, 5000)
+round(1 - (1 - alpha)^k, 3)
+```
+
+So at $k=700$ tries the chance of at least one false discovery exceeds 50%, and by $k=5000$ it is essentially 1. The more you search, the more likely you are to find a spurious result.
+See [Multiple Testing](https://jadamso.github.io/Rbooks/03_26_MiscTopics.html#multiple-testing) in the next chapter for corrections that control this family-wise error rate.
 :::
 
 ```{r}
@@ -158,13 +167,6 @@ axis(2)
 Both plots show variables with high correlations ($r > 0.9$) that have no causal connection. The correlations arise because both series trend upward over time. When two time series share a common trend, their correlation can be very high even if they are completely unrelated. This is why regression with trending time series requires special care (e.g., detrending or differencing).
 :::
 
-```{r, results='asis', eval=F}
-# Include an intercept to regression 1
-#reg2 <-  lm(cage_films ~ science_spending, data=vigen_csv)
-#suppressMessages(library(stargazer))
-#stargazer(reg1, reg2, type='html')
-```
-
 #### **Another Example**. {-}
 The US government spending on science is ruining cinema
 (p<.001)!?
@@ -195,9 +197,7 @@ The same principles apply to more sophisticated methods.
 
 ## Spurious Causal Impacts
 
-In practice, it is *hard to find "good" natural experiments*. For example, suppose we asked "what is the effect of wages on police demanded?" and examined a policy which lowered the educational requirements from 4 years to 2 to become an officer. This increases the labour supply, but it also affects the demand curve through "general equilibrium": as some of the new officers were potentially criminals. With fewer criminals, the demand for likely police shifts down.
-
-In practice, it is also surprisingly *easy to find "bad" natural experiments*. Paradoxically, natural experiments are something you are supposed to find but never search for. As you search for good instruments, for example, sometimes random noise will appear like a good instrument (spurious instruments). Worse, if you search for a good instrument for too long, you can also be led astray from important questions.
+As discussed in the chapter introduction, good natural experiments are hard to find and bad ones are easy to find. The remainder of this section illustrates the second point: applying canonical causal-inference recipes (IV, RDD, DID) to data that is purely noise.
 
 #### **Example: Vigen IV's**. {-}
 We now run IV regressions for different variable combinations in the dataset of spurious relationships

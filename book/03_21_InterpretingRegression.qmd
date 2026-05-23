@@ -41,7 +41,7 @@ outer_legend <- function(...) {
   legend(...)
 }
 outer_legend('topright',
-    legend=c('many assualts', 'few assaults'),
+    legend=c('many assaults', 'few assaults'),
     pch=16, col=c(col_high, col_low),
     horiz=T, cex=1, bty='n')
 ```
@@ -108,8 +108,10 @@ In the plot above, the red point is a high-leverage observation. How does removi
 :::
 
 *Standardized residuals* are $r_i=\frac{\hat{e}_i}{s_{[i]}\sqrt{1-h_i}}$, where $s_{[i]}$ is the root mean squared error of a regression with the $i$th observation removed and $h_i$ is the leverage of residual $\hat{e}_{i}$. 
-```{r, eval=F}
+```{r}
+# State with the highest leverage
 which.max(hatvalues(reg))
+# State with the largest standardized residual
 which.max(rstandard(reg))
 ```
 
@@ -120,9 +122,25 @@ D_{i}
 = \frac{\hat{e}_{i}^2}{p \hat{S}^2 } \frac{h_i}{(1-h_i)^2} \\
 \hat{S}^2 &=& \frac{\sum_{i} \hat{e}_{i}^2 }{n-K}.
 \end{eqnarray}
-```{r, eval=F}
+```{r}
+# State with the largest Cook's Distance
 which.max(cooks.distance(reg))
-car::influencePlot(reg)
+
+# Influence plot: leverage vs. standardized residual,
+# with point area proportional to Cook's Distance
+h_i <- hatvalues(reg)
+r_i <- rstandard(reg)
+d_i <- cooks.distance(reg)
+
+plot(h_i, r_i, pch=16, col=grey(0, .5),
+    cex=1 + 4*d_i/max(d_i), main=NA,
+    xlab='Leverage', ylab='Standardized residual')
+abline(h=0, lty=2)
+
+# Label the most influential observations
+inf_id <- order(d_i, decreasing=TRUE)[1:3]
+text(h_i[inf_id], r_i[inf_id],
+    labels=rownames(USArrests)[inf_id], pos=3, cex=.7)
 ```
 
 
@@ -131,15 +149,30 @@ See <https://www.r-bloggers.com/2016/06/leverage-and-influence-in-a-nutshell/> f
 
 #### **Collinearity**. {-}
 This is when one explanatory variable in a multiple linear regression model can be linearly predicted from the others with a substantial degree of accuracy. Coefficient estimates may change erratically in response to small changes in the model or the data. (In the extreme case, there are more variables than observations $K>n$ and an infinite number of solutions to a linear model.) To diagnose collinearity, we can use the *Variance Inflation Factor*: $\hat{VIF}_{k}=\frac{1}{1-\hat{R}^2_k}$, where $\hat{R}^2_k$ is the $\hat{R}^2$ for the regression of $\hat{X}_k$ on the other covariates $\hat{X}_{-k}$ (a regression that does not involve the response variable $\hat{Y}$)
-```{r, eval=F}
-car::vif(reg) 
-sqrt(car::vif(reg)) > 2 # problem?
+```{r}
+# Variance Inflation Factor from its definition: VIF_k = 1/(1 - R^2_k),
+# where R^2_k comes from regressing covariate k on the other covariates.
+R2_assault  <- summary(lm(Assault ~ UrbanPop, data=USArrests))$r.squared
+R2_urbanpop <- summary(lm(UrbanPop ~ Assault, data=USArrests))$r.squared
+
+vif <- c(Assault=1/(1-R2_assault), UrbanPop=1/(1-R2_urbanpop))
+vif
+
+# A common rule of thumb flags sqrt(VIF) > 2
+sqrt(vif) > 2
 ```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+A $\hat{VIF}_k$ of $1$ means covariate $k$ is uncorrelated with the others.
+A $\hat{VIF}_k$ of $4$ means the variance of $\hat{b}_k$ is $4$ times larger than it would be with no collinearity, so its standard error is $\sqrt{4}=2$ times larger.
+With only two covariates, $\hat{R}^2_1 = \hat{R}^2_2$ (it is just their squared correlation), so the two VIFs are equal.
+Collinearity does not bias the coefficients; it only makes them less precise.
+:::
 
 
 #### **Normality**. {-}
-The second plot examines whether the residuals are normally distributed. Your OLS coefficient estimates do not depend on the normality of the residuals. (Good thing, because there's no reason the residuals of economic phenomena should be so well behaved.) Many hypothesis tests are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality 
-```{r, eval=F}
+The second plot examines whether the residuals are normally distributed. Your OLS coefficient estimates do not depend on the normality of the residuals. (Good thing, because there's no reason the residuals of economic phenomena should be so well behaved.) Many hypothesis tests are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality.
+```{r}
 par(mfrow=c(1, 2))
 hist(resid(reg),
     main='Histogram of Residuals',
@@ -153,11 +186,27 @@ qqline(resid(reg), col=1, lty=2)
 #shapiro.test(resid(reg))
 ```
 
-*Heterskedasticity* may also matters for variability estimates. This is not shown in the plot, but you can conduct a simple test
-```{r, eval=F}
-library(lmtest)
-lmtest::bptest(reg)
+*Heteroskedasticity* may also matter for variability estimates. This is not shown in the plot, but you can conduct a simple test.
+```{r}
+# Breusch-Pagan test for heteroskedasticity, by hand.
+# Regress the squared residuals on the original regressors:
+# a good fit (high R^2) signals non-constant variance.
+e2 <- resid(reg)^2
+aux <- lm(e2 ~ Assault + UrbanPop, data=USArrests)
+R2_aux <- summary(aux)$r.squared
+
+# Test statistic n*R^2 ~ chi-squared with K degrees of freedom
+n <- nrow(USArrests)
+K <- 2
+BP <- n*R2_aux
+c(statistic=BP, p.value=1-pchisq(BP, df=K))
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+The Breusch-Pagan test asks whether the residual variance depends on the regressors.
+A small $p$-value is evidence of *heteroskedasticity*: the spread of the residuals changes with $X$.
+Why does heteroskedasticity leave the OLS coefficients unbiased, but make the usual standard errors unreliable?
+:::
 
 ## Data Transformations
 
