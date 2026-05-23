@@ -1,12 +1,12 @@
 # Multiple Linear Regression
 ***
 
-We often want to know the relationship between one outcome variable $\hat{Y}_{i}$ and multiple explanatory/predictor variables. For historical reasons, we start by fitting a linear model to data.  
+We often want to know the relationship between one outcome variable $\hat{Y}_{i}$ and multiple explanatory/predictor variables. This builds on [Simple Regression](https://jadamso.github.io/Rbooks/02_13_SimpleRegression.html), which related $\hat{Y}_{i}$ to a single explanatory variable. For historical reasons, we start by fitting a linear model to data.
 
 ## The Linear Model
 
 #### **Model and Objective**. {-}
-Let there be $K$ cardinal explanatory variables: $\hat{X}_{1i},  \hat{X}_{2i},... \hat{X}_{Ki}$. Our model is 
+Let there be $K$ cardinal explanatory variables: $\hat{X}_{i1}, \hat{X}_{i2}, \ldots, \hat{X}_{iK}$. Our model is
 \begin{eqnarray}
 \hat{Y}_{i} &=& b_0 + b_1 \hat{X}_{i1}+ b_2 \hat{X}_{i2}+\ldots+b_K \hat{X}_{iK} + e_i \\
  &=& \sum_{k=0}^{K} b_k \hat{X}_{ik} + e_i,
@@ -40,7 +40,7 @@ plot(USArrests$Murder, predict(reg), pch=16, col=grey(0, .5),
 abline(a=0, b=1, lty=2)
 ```
 
-We can also again compute sums of squared errors. Adding random data may sometimes improve the fit, however, so we adjust the $\hat{R}^2$ by the number of covariates $K$.
+We can also again compute sums of squared errors. Adding random data may sometimes improve the fit, however, so we also compute an *adjusted* $\hat{R}^2$ that penalizes the number of model parameters $K$.^[Here $K$ counts all estimated coefficients including the intercept, so $K=3$ for a model with two explanatory variables. This is the convention used in the $\hat{R}^2_{\text{adj.}}$ and $F$-statistic formulas and their worked examples.]
 \begin{eqnarray}
 \hat{R}_{yY}^2 = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}\\
 \hat{R}^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-\hat{R}_{yY}^2)
@@ -84,7 +84,7 @@ legend('topleft', horiz=T,
 
 ## Variability Estimates and Hypothesis Tests
 
-Above, we computed the coefficient $\hat{B}$ for a particular sample: $\hat{X}_{1i}, \hat{X}_{2i}, ..., \hat{Y}_{i}$. We now seek to know how much the best-fitting coefficients $B^{*}$ varies from sample to sample. I.e., $\hat{B}$ is our estimate and we want to know the standard error of our estimator: $SE(B^{*})$. To estimate this variability, we can use the same data-driven methods introduced previously. 
+Above, we computed the coefficient $\hat{B}$ for a particular sample: $\hat{X}_{i1}, \hat{X}_{i2}, \ldots, \hat{Y}_{i}$. We now seek to know how much the best-fitting coefficients $B^{*}$ varies from sample to sample. I.e., $\hat{B}$ is our estimate and we want to know the standard error of our estimator: $SE(B^{*})$. To estimate this variability, we can use the same data-driven methods introduced previously. 
 
 As before, we can also conduct independent hypothesis tests using t-values. However, we can also conduct *joint tests* that account for interdependancies in our estimates. For example, to test whether two coefficients both equal $0$, we bootstrap the joint distribution of coefficients.
 
@@ -112,17 +112,17 @@ fig <- plotly::plot_ly(boot_coef_df,
     type = 'scatter', mode = 'markers',
     x = ~ UrbanPop, y = ~ Assault,
     text = ~ paste('<b> bootstrap dataset: ', ID, '</b>',
-            '<br>Coef. Urban  :', round(UrbanPop, 3),
-            '<br>Coef. Murder :', round(Assault, 3),
+            '<br>Coef. UrbanPop :', round(UrbanPop, 3),
+            '<br>Coef. Assault :', round(Assault, 3),
             '<br>Coef. Intercept :', round(`(Intercept)`, 3)),
     hoverinfo='text',
     showlegend=F,
     marker=list( color='rgba(0, 0, 0, 0.5)'))
 fig <- plotly::layout(fig,
     showlegend=F,
-    title='Joint Distribution of Coefficients (under the null)',
+    title='Joint Bootstrap Distribution of Coefficients',
     xaxis = list(title='UrbanPop Coefficient'),
-    yaxis = list(title='Assualt Coefficient'))
+    yaxis = list(title='Assault Coefficient'))
 fig
 ```
 
@@ -144,6 +144,20 @@ Notice that $\hat{F}_{K}=1$ when $\hat{R}^2_{\text{adj.}}=0$, meaning the model 
 Suppose $\hat{R}^2_{\text{adj.}}=0.50$, $K=3$, $n=50$. Then
 $$\hat{F}_K = \frac{(K-1) + (n-K)\hat{R}^2_{\text{adj.}}}{(K-1)(1 - \hat{R}^2_{\text{adj.}})} = \frac{(3-1) + (50-3)(0.50)}{(3-1)(1-0.50)} = \frac{2+23.5}{2 \times 0.5} = \frac{25.5}{1} = 25.5.$$
 This is well above $1$, indicating that the model explains substantially more variation than random covariates. You can verify: `qf(0.95, 2, 47)` $\approx 3.20$, so $\hat{F}_K = 25.5$ is highly significant.
+:::
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+The `anova()` function compares two nested models with an F-test.
+Here we test whether `UrbanPop` adds explanatory power beyond `Assault`.
+
+```{r}
+reg_r <- lm(Murder ~ Assault, data=USArrests)            # restricted
+reg_u <- lm(Murder ~ Assault + UrbanPop, data=USArrests) # unrestricted
+anova(reg_r, reg_u)
+```
+
+The F-statistic compares the drop in $\hat{RSS}$ to the residual variance of the unrestricted model.
+A large F (small p-value) means the extra variable improves the fit by more than random noise would.
 :::
 
 To conduct a hypothesis test, first compute a null distribution by randomly reshuffling the outcomes and recompute the F statistic, and then compare how often random data give something as extreme as your initial statistic. For some intuition on this F test, examine how the adjusted $\hat{R}^2$ statistic varies with bootstrap samples. 
@@ -238,6 +252,10 @@ for(i in 2:3){
     abline(v=mean(Coefs[i, ]), col=rgb(1, 0, 0, .8), lwd=2)
 }
 ```
+
+In the misspecified case there is no true $\beta$ for OLS to recover, because the data are not generated by a linear model.
+The estimated coefficients still have a meaning: OLS returns the linear model that best approximates the true relationship in a least-squares sense.
+This is why we can still interpret them, cautiously, even when the linear model is wrong.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Compare the two simulation results. In the correctly specified case, the estimated coefficients center on the true values. What happens in the misspecified case? Why might OLS still be useful even when the model is misspecified?
