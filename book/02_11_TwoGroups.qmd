@@ -1,6 +1,12 @@
 # Comparing Two Groups
 ***
 
+## Introduction
+
+This chapter compares two groups: how the distribution of one variable changes across the categories of another.
+We begin with discrete data, where both variables are factors, and then turn to "mixed" data, where a cardinal outcome $\hat{Y}_{i}$ is split into groups by a factor $\hat{X}_{i}$.
+In each case we summarize the groups, compute a statistic for the difference between them, and test that difference using the resampling methods from [Hypothesis Testing](https://jadamso.github.io/Rbooks/01_08_HypothesisTests.html).
+
 ## Discrete Data
 
 Suppose our data is given in the table shown below.
@@ -157,7 +163,7 @@ abline(v=0, lwd=2, col=rgb(1, 0, 0, .8))
 :::
 
 
-For "imposing the null", it is more common to use $p$-values instead of confidence intervals. We can compute $p$-values using a null-bootstrap or permutation distribution. If using a hard decision rule, it is most common to use
+For "imposing the null", it is more common to use $p$-values instead of confidence intervals. We can compute $p$-values using a null-bootstrap or *permutation* distribution; a permutation distribution reshuffles the group labels without replacement, so each resample keeps the same pooled data but randomly re-splits it into two groups. If using a hard decision rule, it is most common to use
 
 * reject the null at the $5\%$ level if $p<0.05$
 * fail to reject the null at the $5\%$ level if $p>0.05$
@@ -165,7 +171,7 @@ For "imposing the null", it is more common to use $p$-values instead of confiden
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 ```{r}
-# Null Bootstrap Distribution
+# Permutation Distribution
 permute_diff <- rep(NA, 9999)
 for(b in seq(permute_diff) ){
     #randomize data
@@ -355,14 +361,13 @@ y <- sort(c(Y1, Y2))
 F1 <- ecdf(Y1)(y)
 F2 <- ecdf(Y2)(y)
 
-library(twosamples)
+# Kolmogorov-Smirnov statistic: largest vertical gap
+KS_gap <- abs(F1 - F2)
+KSq  <- which.max(KS_gap)
+KSqv <- round(KS_gap[KSq], 2)
 
-# Kolmogorov-Smirnov
-KSq <- which.max(abs(F2 - F1))
-KSqv <- round(twosamples::ks_stat(Y1, Y2), 2)
-
-# Cramer-von Mises Statistic (p=2)
-CVMqv <- round(twosamples::cvm_stat(Y1, Y2, power=2), 2) 
+# Cramer-von Mises statistic (p=2): summed squared gaps
+CVMqv <- round(sum((F1 - F2)^2), 2)
 
 # Visualize Differences
 plot(range(y), c(0, 1), type='n', xlab='x', ylab='ECDF')
@@ -403,11 +408,38 @@ $CVM = 1/16 + 1/16 + 1/16 + 1/16 = 1/4$.
 :::
 
 
-Just as before, you use bootstrapping for hypothesis testing.
-```{r}
-twosamples::ks_test(Y1, Y2)
+Just as before, we use resampling for hypothesis testing.
+To impose the null hypothesis of identical distributions, we permute the group labels: each resample keeps the pooled data but randomly re-splits it into two groups of the original sizes.
+Each permutation that produces a statistic at least as large as the observed one is a case where random label-shuffling alone created a gap this big, so the $p$-value is the fraction of such permutations.
+A small $p$-value means the observed gap is hard to explain by chance.
 
-twosamples::cvm_test(Y1, Y2)
+```{r}
+# KS and CVM statistics for any two-group split
+ks_cvm <- function(Y1, Y2){
+    y  <- sort(c(Y1, Y2))
+    F1 <- ecdf(Y1)(y)
+    F2 <- ecdf(Y2)(y)
+    gap <- abs(F1 - F2)
+    c(KS=max(gap), CVM=sum(gap^2))
+}
+stat_obs <- ks_cvm(Y1, Y2)
+
+# Permutation null distribution: reshuffle group labels
+Y_pooled <- c(Y1, Y2)
+n1 <- length(Y1)
+n  <- length(Y_pooled)
+perm_stats <- matrix(NA, nrow=999, ncol=2,
+    dimnames=list(NULL, c('KS', 'CVM')))
+for(b in seq(nrow(perm_stats))){
+    id1 <- sample(n, n1, replace=F)
+    perm_stats[b, ] <- ks_cvm(Y_pooled[id1], Y_pooled[-id1])
+}
+
+# Permutation p-values
+p_ks  <- mean(perm_stats[, 'KS']  >= stat_obs['KS'])
+p_cvm <- mean(perm_stats[, 'CVM'] >= stat_obs['CVM'])
+round(c(KS_stat=stat_obs[['KS']], KS_pval=p_ks,
+    CVM_stat=stat_obs[['CVM']], CVM_pval=p_cvm), 3)
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}

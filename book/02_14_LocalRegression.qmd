@@ -1,6 +1,12 @@
 # Local Regression
 ***
 
+## Introduction
+
+This chapter models how the average of $\hat{Y}_{i}$ changes with $\hat{X}_{i}$ without assuming a single straight line.
+We build up from regressograms (bin averages) to piecewise and local linear regression, carrying one running example throughout: wages and years of schooling.
+We close by measuring how well each model fits and introducing the bias-variance tradeoff.
+
 ## Local Averages
 
 Scatterplots are a great and simplest plot for bivariate data that simply plots each observation. There are many extensions and similar tools. The example below helps understand how both the central tendency and dispersion change. 
@@ -42,7 +48,7 @@ where $m$ is an unknown function and $e_{i}$ is white noise, which we estimate v
 
 ## Regressograms
 
-Just as we use histograms to describe the distribution of a random variable, we can use a regressogram for conditional relationships.
+Just as we use histograms to describe the distribution of a random variable, we can use a *regressogram* for conditional relationships.
 Specifically, we can use dummies for exclusive intervals or "bins" to estimate the average value of $\hat{Y}_{i}$ for data inside the bin.
 ```{r}
 # Data
@@ -112,9 +118,9 @@ In any case, the values predicted by the model are found as
 I.e., the predicted value of observation $i$ is the the average value for its bin. 
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Consider this two-bin regressogram example of how age affects wage for people with $\leq 9$ years of school complete vs $> 9$.
+Consider this two-bin regressogram example of how schooling affects wage for people with $\leq 9$ years of school completed vs $> 9$.
 \begin{eqnarray}
-\text{Wage}_{i} &=& b_{0}(x=4.5, h=9/2) \mathbf{1}\left(\text{Educ}_{i} \in (0,9]\right) + b_{0}(x=13.5, h=9/2) \mathbf{1}\left(\text{Age}_{i} \in (9,18] \right) + e_{i}.
+\text{Wage}_{i} &=& b_{0}(x=4.5, h=9/2) \mathbf{1}\left(\text{Educ}_{i} \in (0,9]\right) + b_{0}(x=13.5, h=9/2) \mathbf{1}\left(\text{Educ}_{i} \in (9,18] \right) + e_{i}.
 \end{eqnarray}
 
 Here is a simple example with three data points $(\hat{X}_{i}, \hat{Y}_{i}) \in \{ (1,2), (4,4), (12,3) \}$, we can easily compute 
@@ -503,6 +509,101 @@ legend('topleft', title='Locally Linear',
 
 
 
+## Model Fit
+
+Each local model produces fitted values $\hat{y}_{i}$ and residuals $\hat{e}_{i} = \hat{Y}_{i} - \hat{y}_{i}$.
+To compare models, we summarize the residuals with a single number.
+
+#### **MSE and MAPE**. {-}
+
+The *mean squared error* averages the squared residuals,
+\begin{eqnarray}
+\hat{MSE} &=& \frac{1}{n}\sum_{i=1}^{n} \hat{e}_{i}^2 = \frac{1}{n}\sum_{i=1}^{n} \left(\hat{Y}_{i} - \hat{y}_{i}\right)^2.
+\end{eqnarray}
+Squaring penalizes large misses heavily, and the units are the square of $\hat{Y}_{i}$ (squared dollars for wages).
+The *mean absolute percentage error* instead averages each residual relative to its observed value,
+\begin{eqnarray}
+\hat{MAPE} &=& \frac{100}{n}\sum_{i=1}^{n} \left| \frac{\hat{e}_{i}}{\hat{Y}_{i}} \right|.
+\end{eqnarray}
+MAPE is unit-free, which makes it easy to communicate, but it is undefined when $\hat{Y}_{i}=0$ and over-weights observations with small $\hat{Y}_{i}$.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Suppose three workers have wages $\hat{Y}=(8, 10, 15)$ and a model predicts $\hat{y}=(9, 9, 14)$.
+The residuals are $\hat{e}=(-1, 1, 1)$, so
+\begin{eqnarray}
+\hat{MSE} &=& \frac{(-1)^2 + 1^2 + 1^2}{3} = \frac{3}{3} = 1,\\
+\hat{MAPE} &=& \frac{100}{3}\left( \frac{1}{8} + \frac{1}{10} + \frac{1}{15} \right) \approx \frac{100}{3}(0.292) \approx 9.7.
+\end{eqnarray}
+The model misses by $1$ squared-dollar on average, or about $10\%$ of each wage.
+```{r}
+Y     <- c(8, 10, 15)
+y_hat <- c(9, 9, 14)
+e <- Y - y_hat
+mean(e^2)           # MSE
+100*mean(abs(e/Y))  # MAPE
+```
+:::
+
+We can compute these for the linear, regressogram, and piecewise models on the wage~school data.
+```{r}
+library(Ecdat)
+dat <- Wages1[order(Wages1[, 'school']), c('wage', 'school')]
+
+# Three models for wage on schooling
+reg_lin <- lm(wage ~ school, data=dat)        # globally linear
+dat[, 'xcf'] <- cut(dat[, 'school'], 3)
+reg_rgram <- lm(wage ~ xcf, data=dat)         # regressogram, 3 bins
+reg_pw    <- lm(wage ~ xcf*school, data=dat)  # piecewise, 3 bins
+
+# Mean squared error and mean absolute percentage error
+fit_stats <- function(model){
+    e <- resid(model)
+    Y <- dat[, 'wage']
+    c(MSE=mean(e^2), MAPE=100*mean(abs(e/Y)))
+}
+round(rbind(
+    Linear       = fit_stats(reg_lin),
+    Regressogram = fit_stats(reg_rgram),
+    Piecewise    = fit_stats(reg_pw)), 2)
+```
+
+#### **Bias-Variance Tradeoff**. {-}
+
+A smaller $\hat{MSE}$ on the data you fit is not automatically better.
+A regressogram with one bin per observation fits every point exactly ($\hat{MSE}=0$), but it has just copied the data and would predict new observations poorly.
+This is the *bias-variance tradeoff*, and the number of bins (equivalently, the half-width $h$) is the lever:
+
+* *Few bins (large $h$)*: each bin average uses many observations, so the fitted curve barely changes from sample to sample (low variance). But one constant over a wide region cannot follow a relationship that bends, so the fit is systematically off (high bias).
+* *Many bins (small $h$)*: each bin average uses few observations, so the fitted curve chases noise and swings from sample to sample (high variance). But a narrow bin can track curvature closely (low bias).
+
+```{r}
+# Same data, regressograms with three bin counts
+plot(wage ~ school, data=dat, pch=16, col=grey(0, .1),
+    main=NA, xlab='School', ylab='Wage')
+bin_cols <- hcl.colors(3, alpha=.9)
+
+# Coarse: 2 bins
+dat[, 'xb'] <- cut(dat[, 'school'], 2)
+lines(dat[, 'school'], predict(lm(wage ~ xb, dat)),
+    col=bin_cols[1], lwd=2, type='s')
+# Medium: 4 bins
+dat[, 'xb'] <- cut(dat[, 'school'], 4)
+lines(dat[, 'school'], predict(lm(wage ~ xb, dat)),
+    col=bin_cols[2], lwd=2, type='s')
+# Fine: one bin per schooling year
+dat[, 'xb'] <- as.factor(dat[, 'school'])
+lines(dat[, 'school'], predict(lm(wage ~ xb, dat)),
+    col=bin_cols[3], lwd=2, type='s')
+
+legend('topleft', title='Regressogram bins',
+    legend=c('2', '4', 'per year'),
+    col=bin_cols, lty=1, lwd=2, cex=.8)
+```
+
+With $2$ bins the fitted curve is flat and stable but misses the rise in wages with schooling; with one bin per year it is jagged and sample-specific.
+Choosing the number of bins (the bandwidth $h$) means trading bias against variance.
+We study this tradeoff with simulations in [Inference](https://jadamso.github.io/Rbooks/02_15_Inference.html#bias-variance-tradeoff).
+
 ## Exercises
 
 1. Explain the difference between a regressogram and a local linear regression. In what sense does increasing the number of bins in a regressogram create a bias-variance tradeoff?
@@ -510,6 +611,8 @@ legend('topleft', title='Locally Linear',
 2. Using the `Wages1` dataset from the `Ecdat` package, fit a regressogram with 4 bins and a piecewise regression with 4 bins for the relationship between `wage` and `school`. Compute the predicted value at `school = 10` for each model.
 
 3. Using the `USArrests` dataset, write R code to estimate a local linear regression of `Murder` on `UrbanPop` using uniform kernel weights with bandwidth $h = 10$. Compute predictions at design points `X0 <- seq(40, 80, by = 10)` and plot them over the scatterplot.
+
+4. The chapter derives the optimal locally constant coefficient $\hat{b}_{0}(x,h)$ but leaves the local linear case as an exercise. Starting from the weighted objective $\sum_{i} [\hat{Y}_{i} - b_{0} - b_{1}\hat{X}_{i}]^2 \, k_{U}(\hat{X}_{i}, x, h)$, set the partial derivatives with respect to $b_{0}$ and $b_{1}$ to zero. Show that the solution is the simple-regression formula applied to the kernel-weighted data: $\hat{b}_{1}(x,h) = \hat{C}_{XY}(x,h)/\hat{V}_{X}(x,h)$ and $\hat{b}_{0}(x,h) = \hat{M}_{Y}(x,h) - \hat{b}_{1}(x,h)\hat{M}_{X}(x,h)$.
 
 #### **Further Reading**. {-}
 
