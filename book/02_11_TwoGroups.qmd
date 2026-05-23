@@ -1,8 +1,6 @@
 # Comparing Two Groups
 ***
 
-## Introduction
-
 This chapter compares two groups: how the distribution of one variable changes across the categories of another.
 We begin with discrete data, where both variables are factors, and then turn to "mixed" data, where a cardinal outcome $\hat{Y}_{i}$ is split into groups by a factor $\hat{X}_{i}$.
 In each case we summarize the groups, compute a statistic for the difference between them, and test that difference using the resampling methods from [Hypothesis Testing](https://jadamso.github.io/Rbooks/01_08_HypothesisTests.html).
@@ -21,7 +19,7 @@ Suppose our data is given in the table shown below.
 First, we can compute conditional probabilities to examine how the distribution changes.
 
 |      | $x=0$ | $x=1$ |
-|:----:|:---:|:---:|:---:| 
+|:----:|:---:|:---:|:---:|
 | $y=1$ | $12/40$ | $8/30$  |
 | $y=2$ | $18/40$ | $6/30$  |
 | $y=3$ | $10/40$ | $16/30$ |
@@ -33,6 +31,10 @@ Second, we can compute the *conditional mean* $\hat{M}_{Y|X}$ by looking within 
 \hat{M}_{y|x=1} = 1 \frac{8}{30} + 2 \frac{6}{30} + 3 \frac{16}{30} = \frac{8+12+48}{30} = \frac{68}{30}
 \end{eqnarray*}
 Notice that $\hat{M}_{y|x=0} < 2 < \hat{M}_{y|x=1}$, which shows that the mean value of $Y$ is higher when $X$ is higher. I.e., there is a positive association.
+
+:::{.callout-important title="Definition" collapse="false"}
+The *conditional mean* $\hat{M}_{Y|x}$ is the average value of $Y_{i}$ inside the subgroup where $X_{i}=x$: $\hat{M}_{Y|x}=\sum_{y} y\,\hat{p}_{y\mid x}$. Comparing $\hat{M}_{Y|x}$ across values of $x$ is how we summarize an association between a cardinal outcome and a factor.
+:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 We can compute the mean $\hat{M}_{Y}$ using the marginal distributions, as already shown in the last chapter. 
@@ -95,20 +97,19 @@ To compare wages for people with and without completing a degree, we start by ma
 
 ```{r}
 library('Ecdat')
-## Wages
-Y <- Wages1[, 'wage']
-## Group 1: Not Graduates
-X1_id <- Wages1[, 'school'] == 12
-Y1 <- Y[X1_id]
-## Group 2: Graduates
-X2_id <- Wages1[, 'school'] == 16
-Y2 <- Y[X2_id]
+Y <- Wages1[, 'wage']               # cardinal outcome (hourly wage)
+
+# Logical index for each group, then subset Y by it
+X1_id <- Wages1[, 'school'] == 12   # TRUE for high-school only
+Y1 <- Y[X1_id]                      # wages of high-school group
+X2_id <- Wages1[, 'school'] == 16   # TRUE for university graduates
+Y2 <- Y[X2_id]                      # wages of university group
 
 
-# Initial Summary Figure
-bks <- seq(0, 34, by=1)
-dlim <- c(0, .2)
-cols <- c(rgb(1, 0, 0, .5), rgb(0, 0, 1, .5))
+# Initial summary figure: two overlaid histograms on a common grid
+bks <- seq(0, 34, by=1)             # shared bin edges
+dlim <- c(0, .2)                    # shared y limit
+cols <- c(rgb(1, 0, 0, .5), rgb(0, 0, 1, .5)) # semi-transparent fill
 
 hist(Y1, breaks=bks, ylim=dlim,
      col=cols[1], xlab='Wages',
@@ -127,10 +128,16 @@ The histogram may show several differences between groups or none at all. Often,
 #### **Mean Differences**. {-}
 
 We often want to know if the means of different samples are the same or different. To test this hypothesis, we compute the means separately for each sample and then examine the differences term
-\begin{eqnarray} 
+\begin{eqnarray}
 \hat{D} = \hat{M}_{Y1} - \hat{M}_{Y2},
 \end{eqnarray}
 with a null hypothesis that there is no difference in the population means. We can do this either by "inverting a Confidence Interval" or "imposing the null".
+
+:::{.callout-important title="Definition" collapse="false"}
+The *mean difference* $\hat{D}=\hat{M}_{Y1}-\hat{M}_{Y2}$ is the sample-mean of the outcome in group 1 minus the sample-mean in group 2. A positive value says group 1 has the higher average; zero is the natural null.
+:::
+
+The bootstrap below pegs $\hat{M}_{Y1}$ and $\hat{M}_{Y2}$ at the wage data and reports $\hat{D}$. The university group has the higher mean wage, so $\hat{D}<0$ here; the next step is asking whether the gap is bigger than sampling noise alone would produce.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Here is an example of inverting a CI
@@ -167,6 +174,10 @@ For "imposing the null", it is more common to use $p$-values instead of confiden
 
 * reject the null at the $5\%$ level if $p<0.05$
 * fail to reject the null at the $5\%$ level if $p>0.05$
+
+:::{.callout-important title="Definition" collapse="false"}
+A *permutation test* of "no difference between groups" recomputes the test statistic on many random reshufflings of the group labels. Because each reshuffle keeps the pooled data but breaks the link between label and outcome, the resulting distribution shows what differences look like under the null of no association.
+:::
 
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
@@ -350,10 +361,18 @@ The starting point for hypothesis testing is the *Kolmogorov-Smirnov statistic*:
 \begin{eqnarray}
 \hat{KS} &=& \max_{y} |\hat{F}_{1}(y)- \hat{F}_{2}(y)|^{p},
 \end{eqnarray}
-where $p$ is an integer (typically 1). An intuitive alternative is the *Cramer-von Mises statistic*: the sum of absolute differences (raised to an integer, typically 2) between two CDF's. 
+where $p$ is an integer (typically 1). An intuitive alternative is the *Cramer-von Mises statistic*: the sum of absolute differences (raised to an integer, typically 2) between two CDF's.
 \begin{eqnarray}
 \hat{CVM} &=& \sum_{y} | \hat{F}_{1}(y)- \hat{F}_{2}(y)|^{p}.
 \end{eqnarray}
+
+:::{.callout-important title="Definition" collapse="false"}
+The *Kolmogorov-Smirnov statistic* $\hat{KS}$ summarizes the difference between two ECDF's with their single biggest vertical gap. It is sensitive to a shift between the two distributions but can miss differences that average out.
+:::
+
+:::{.callout-important title="Definition" collapse="false"}
+The *Cramer-von Mises statistic* $\hat{CVM}$ summarizes the difference between two ECDF's with the sum (or sum of squares) of vertical gaps at every pooled sample point. It accumulates many small differences that $\hat{KS}$ would miss.
+:::
 
 ```{r}
 # Distributions
@@ -468,3 +487,7 @@ These methods extend naturally from two groups to many. See [Multiple Groups](ht
 * <https://learningstatisticswithr.com/book/ttest.html> -- comparing two groups with t-tests and effect sizes, with R examples.
 * <https://www.jwilber.me/permutationtest/> -- interactive visual explanation of how permutation tests build a null distribution.
 * <https://cran.r-project.org/web/packages/qualvar/vignettes/wilcox1973.html> -- the qualitative variation index for comparing categorical distributions across groups.
+
+:::{.callout-note title="Recall" collapse="false" icon=false}
+This chapter compared two groups in three ways: mean differences, quantile differences, and distributional comparisons via $\hat{KS}$ and $\hat{CVM}$, with $p$-values from permutation tests. The next chapter moves from group differences to *association*: single-number statistics that summarize how two variables move together across the whole dataset.
+:::
