@@ -12,6 +12,9 @@ followed by outlier reports (short and long chapters by word count).
 import glob, os, re, sys, statistics
 
 
+CALLOUT_CLASSES = ('note', 'tip', 'important', 'caution')
+
+
 def classify(filepath):
     with open(filepath) as f:
         content = f.read()
@@ -26,6 +29,9 @@ def classify(filepath):
     text = 0
     sections = 0
     subsections = 0
+    callouts = {c: 0 for c in CALLOUT_CLASSES}
+
+    callout_open = re.compile(r'^:::\s*\{\s*\.callout-(' + '|'.join(CALLOUT_CLASSES) + r')\b')
 
     for line in lines:
         s = line.strip()
@@ -58,10 +64,14 @@ def classify(filepath):
             sections += 1
         elif re.match(r'^#### ', line):
             subsections += 1
+        # Count callouts by class
+        m = callout_open.match(line)
+        if m:
+            callouts[m.group(1)] += 1
         # Everything else
         text += 1
 
-    return total, math, code, text, words, sections, subsections
+    return total, math, code, text, words, sections, subsections, callouts
 
 
 def label_from_filename(fname):
@@ -101,18 +111,18 @@ if __name__ == '__main__':
     results = []
     for fp in files:
         fname = os.path.basename(fp)
-        total, math, code, text, words, sections, subsections = classify(fp)
+        total, math, code, text, words, sections, subsections, callouts = classify(fp)
         lbl = label_from_filename(fname)
         part = fname[:2]
         results.append((fp, fname, part, lbl, total, math, code, text, words,
-                         sections, subsections))
+                         sections, subsections, callouts))
 
     # Print table
     print('| Chapter | Words | Lines | Math | Code | Text |')
     print('|---|---:|---:|---:|---:|---:|')
 
     prev_part = None
-    for fp, fname, part, lbl, total, math, code, text, words, sections, subsections in results:
+    for fp, fname, part, lbl, total, math, code, text, words, sections, subsections, callouts in results:
         if part != prev_part and not filt:
             hdr = part_header(part)
             if hdr:
@@ -130,7 +140,7 @@ if __name__ == '__main__':
     print('|---|---:|---:|')
 
     prev_part = None
-    for fp, fname, part, lbl, total, math, code, text, words, sections, subsections in results:
+    for fp, fname, part, lbl, total, math, code, text, words, sections, subsections, callouts in results:
         if part != prev_part and not filt:
             hdr = part_header(part)
             if hdr:
@@ -138,16 +148,30 @@ if __name__ == '__main__':
             prev_part = part
         print(f'| {lbl} | {sections} | {subsections} |')
 
+    # Callouts table: count of each class per chapter
+    print('\n#### Callouts by Class (`.callout-note` / `-tip` / `-important` / `-caution`)\n')
+    print('| Chapter | note | tip | important | caution |')
+    print('|---|---:|---:|---:|---:|')
+
+    prev_part = None
+    for fp, fname, part, lbl, total, math, code, text, words, sections, subsections, callouts in results:
+        if part != prev_part and not filt:
+            hdr = part_header(part)
+            if hdr:
+                print(f'| {hdr} |')
+            prev_part = part
+        print(f"| {lbl} | {callouts['note']} | {callouts['tip']} | {callouts['important']} | {callouts['caution']} |")
+
     # Outlier analysis (skip stubs and appendices, only when showing all chapters)
     if not filt:
-        chapters = [(lbl, total, words, sections, subsections)
+        chapters = [(lbl, total, words, sections, subsections, callouts)
                      for fp, fname, part, lbl, total, math, code, text, words,
-                     sections, subsections in results
+                     sections, subsections, callouts in results
                      if not is_stub(total) and part not in ('04',)]
 
         if len(chapters) >= 5:
             # Word count outliers
-            word_counts = [w for _, _, w, _, _ in chapters]
+            word_counts = [w for _, _, w, _, _, _ in chapters]
             med = statistics.median(word_counts)
             q1 = statistics.median([w for w in word_counts if w <= med])
             q3 = statistics.median([w for w in word_counts if w >= med])
@@ -156,9 +180,9 @@ if __name__ == '__main__':
             hi = q3 + 1.5 * iqr
 
             short = [(lbl, lines, words)
-                     for lbl, lines, words, _, _ in chapters if words < lo]
+                     for lbl, lines, words, _, _, _ in chapters if words < lo]
             long_ = [(lbl, lines, words)
-                     for lbl, lines, words, _, _ in chapters if words > hi]
+                     for lbl, lines, words, _, _, _ in chapters if words > hi]
 
             print(f'\n**Word-count outliers** (median {med} words, IQR [{round(q1)}–{round(q3)}], '
                   f'fence [{round(lo)}–{round(hi)}])')
@@ -191,12 +215,15 @@ if __name__ == '__main__':
                 high = [(lbl, v) for lbl, v in zip(labels, values) if v > hi]
                 return med, lo, hi, low, high
 
-            labels = [lbl for lbl, _, _, _, _ in chapters]
-            sec_vals = [s for _, _, _, s, _ in chapters]
-            sub_vals = [s for _, _, _, _, s in chapters]
+            labels = [lbl for lbl, _, _, _, _, _ in chapters]
+            sec_vals = [s for _, _, _, s, _, _ in chapters]
+            sub_vals = [s for _, _, _, _, s, _ in chapters]
+            note_vals = [c['note'] for _, _, _, _, _, c in chapters]
+            tip_vals = [c['tip'] for _, _, _, _, _, c in chapters]
 
             print('\n**Structure outliers**')
-            for metric, vals in [('Sections', sec_vals), ('Subsections', sub_vals)]:
+            for metric, vals in [('Sections', sec_vals), ('Subsections', sub_vals),
+                                  ('Note callouts', note_vals), ('Tip callouts', tip_vals)]:
                 med, lo, hi, low, high = iqr_outliers(vals, labels)
                 items = []
                 for lbl, v in low:
