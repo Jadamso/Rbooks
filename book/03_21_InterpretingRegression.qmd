@@ -1,14 +1,18 @@
 # Model Assessment
 ***
 
+A fitted regression should be audited before its coefficients are reported. This chapter walks through that audit in three stages: first a visual exploration of the data, then the four standard diagnostic plots for outliers, collinearity, and residual structure, and finally data transformations that can sometimes rescue a misspecified model.
+
 ## Data Exploration
 
 First, you can summarize a dataset with multiple variables using the previous tools. This is often the first indication as to whether you should analyze the data using a linear model. Such figures are almost always a good idea to make first, as they can suggest issues that you were not even thinking about.
 
 ```{r}
-# Inspect Dataset on police arrests for the USA in 1973
+# Inspect dataset on police arrests in the USA, 1973
 head(USArrests)
 
+# pairs.panels lays out univariate histograms on the diagonal,
+# scatterplots in the lower triangle, and correlations in the upper triangle.
 library(psych)
 pairs.panels( USArrests[, c('Murder', 'Assault', 'UrbanPop')],
     hist.col=grey(0, .25), breaks=30, density=F, hist.border=NA, # Diagonal
@@ -80,17 +84,22 @@ fig
 
 ## Model Diagnostics
 
-There's little sense in getting great standard errors for a terrible model. Plotting your regression object a simple and easy step to help diagnose whether your model is in some way bad. We next go through what each of these figures show.
+There's little sense in getting great standard errors for a terrible model. Plotting your regression object is a simple and easy step to help diagnose whether your model is in some way bad. Calling `plot()` on an `lm` object returns four standard plots: (1) residuals vs fitted, (2) Q-Q normal of residuals, (3) scale-location, and (4) residuals vs leverage with Cook's distance contours. We next go through what each shows.
 ```{r, fig.height=10, fig.width=10, fig.align="center"}
+# Fit a multiple regression and produce the four standard diagnostic plots.
 reg <- lm(Murder ~ Assault+UrbanPop, data=USArrests)
 par(mfrow=c(2, 2))
 plot(reg, pch=16, col=grey(0, .5))
 ```
 
 #### **Outliers**. {-}
-The first diagnostic plot examines outliers in terms the observed outcome $\hat{Y}_i$ being far from its prediction $\hat{y}_i$. You may be interested in such outliers because they can (but do not have to) unduly influence your estimates. 
+The first diagnostic plot (residuals vs fitted) examines outliers in the outcome: the observed $\hat{Y}_i$ is far from its prediction $\hat{y}_i$. You may be interested in such outliers because they can (but do not have to) unduly influence your estimates.
 
-The third diagnostic plot examines another type of outlier, the observed explanatory variable $\hat{X}_{i}$ is far from the others. A point has high *leverage* if the estimates change dramatically when you estimate the model without that data point.
+The fourth diagnostic plot (residuals vs leverage) examines another type of outlier: the observed explanatory variable $\hat{X}_{i}$ is far from the others. A point has high *leverage* if the estimates change dramatically when you estimate the model without that data point.
+
+:::{.callout-important title="Definition" collapse="false"}
+The *leverage* $h_i$ of an observation is the diagonal element of the OLS projection matrix $\hat{P} = X(X'X)^{-1}X'$ at row $i$. High leverage means the point sits far from the others in $X$-space, so removing it can move the fitted line a lot.
+:::
 ```{r}
 N <- 40
 x <- c(25, runif(N-1, 3, 8))
@@ -107,7 +116,7 @@ abline(lm(y[-1] ~ x[-1]))
 In the plot above, the red point is a high-leverage observation. How does removing it change the regression line? In your own data analysis, what steps would you take before deciding to remove an outlier?
 :::
 
-*Standardized residuals* are $r_i=\frac{\hat{e}_i}{s_{[i]}\sqrt{1-h_i}}$, where $s_{[i]}$ is the root mean squared error of a regression with the $i$th observation removed and $h_i$ is the leverage of residual $\hat{e}_{i}$. 
+*Standardized residuals* are $r_i=\frac{\hat{e}_i}{s_{[i]}\sqrt{1-h_i}}$, where $s_{[i]}$ is the root mean squared error of a regression with the $i$th observation removed and $h_i$ is the leverage of residual $\hat{e}_{i}$.
 ```{r}
 # State with the highest leverage
 which.max(hatvalues(reg))
@@ -115,13 +124,21 @@ which.max(hatvalues(reg))
 which.max(rstandard(reg))
 ```
 
-The fourth plot further assesses outliers in the explanatory variables ($X$) using *Cook's Distance*, which sums of all prediction changes when observation $i$ is removed and scales proportionally to the mean square error
+:::{.callout-important title="Definition" collapse="false"}
+The *standardized residual* $r_i$ is the residual divided by its estimated standard deviation (using a leave-one-out variance estimate). The scaling makes residuals comparable across observations with different leverages.
+:::
+
+The fourth plot further assesses outliers in the explanatory variables ($X$) using *Cook's Distance*, which sums all prediction changes when observation $i$ is removed and scales proportionally to the mean square error
 \begin{eqnarray}
 D_{i} 
 &=& \frac{\sum_{j} \left( \hat{y_j} - \hat{y_j}_{[i]} \right)^2 }{ p \hat{S}^2 }
 = \frac{\hat{e}_{i}^2}{p \hat{S}^2 } \frac{h_i}{(1-h_i)^2} \\
 \hat{S}^2 &=& \frac{\sum_{i} \hat{e}_{i}^2 }{n-K}.
 \end{eqnarray}
+:::{.callout-important title="Definition" collapse="false"}
+*Cook's Distance* measures how much the fitted values change when observation $i$ is removed. Large values flag points that strongly influence the entire regression, not just their own fitted value.
+:::
+
 ```{r}
 # State with the largest Cook's Distance
 which.max(cooks.distance(reg))
@@ -148,7 +165,11 @@ See <https://www.r-bloggers.com/2016/06/leverage-and-influence-in-a-nutshell/> f
 
 
 #### **Collinearity**. {-}
-This is when one explanatory variable in a multiple linear regression model can be linearly predicted from the others with a substantial degree of accuracy. Coefficient estimates may change erratically in response to small changes in the model or the data. (In the extreme case, there are more variables than observations $K>n$ and an infinite number of solutions to a linear model.) To diagnose collinearity, we can use the *Variance Inflation Factor*: $\hat{VIF}_{k}=\frac{1}{1-\hat{R}^2_k}$, where $\hat{R}^2_k$ is the $\hat{R}^2$ for the regression of $\hat{X}_k$ on the other covariates $\hat{X}_{-k}$ (a regression that does not involve the response variable $\hat{Y}$)
+*Collinearity* is when one explanatory variable in a multiple linear regression model can be linearly predicted from the others with a substantial degree of accuracy. Coefficient estimates may change erratically in response to small changes in the model or the data. (In the extreme case, there are more variables than observations $K>n$ and an infinite number of solutions to a linear model.) To diagnose collinearity, we can use the *Variance Inflation Factor*: $\hat{VIF}_{k}=\frac{1}{1-\hat{R}^2_k}$, where $\hat{R}^2_k$ is the $\hat{R}^2$ for the regression of $\hat{X}_k$ on the other covariates $\hat{X}_{-k}$ (a regression that does not involve the response variable $\hat{Y}$)
+
+:::{.callout-important title="Definition" collapse="false"}
+*Collinearity* is when one explanatory variable can be closely predicted by a linear combination of the others. The *Variance Inflation Factor* $\hat{VIF}_k = 1/(1-\hat{R}^2_k)$ quantifies how much it inflates the variance of $\hat{\beta}_k$ compared to the no-collinearity case.
+:::
 ```{r}
 # Variance Inflation Factor from its definition: VIF_k = 1/(1 - R^2_k),
 # where R^2_k comes from regressing covariate k on the other covariates.
@@ -171,7 +192,7 @@ Collinearity does not bias the coefficients; it only makes them less precise.
 
 
 #### **Normality**. {-}
-The second plot examines whether the residuals are normally distributed. Your OLS coefficient estimates do not depend on the normality of the residuals. (Good thing, because there's no reason the residuals of economic phenomena should be so well behaved.) Many hypothesis tests are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality.
+The second diagnostic plot (Q-Q normal of residuals) examines whether the residuals are normally distributed. Your OLS coefficient estimates do not depend on the normality of the residuals. (Good thing, because there's no reason the residuals of economic phenomena should be so well behaved.) Many hypothesis tests are, however, affected by the distribution of the residuals. For these reasons, you may be interested in assessing normality.
 ```{r}
 par(mfrow=c(1, 2))
 hist(resid(reg),
@@ -186,7 +207,11 @@ qqline(resid(reg), col=1, lty=2)
 #shapiro.test(resid(reg))
 ```
 
-*Heteroskedasticity* may also matter for variability estimates. This is not shown in the plot, but you can conduct a simple test.
+*Heteroskedasticity* may also matter for variability estimates. The third diagnostic plot (scale-location) is one visual check; the *Breusch-Pagan test* below is a numerical alternative.
+
+:::{.callout-important title="Definition" collapse="false"}
+*Heteroskedasticity* is when the variance of the residuals depends on the regressors. It leaves the OLS coefficients unbiased but makes the conventional standard errors unreliable.
+:::
 ```{r}
 # Breusch-Pagan test for heteroskedasticity, by hand.
 # Regress the squared residuals on the original regressors:
@@ -223,7 +248,11 @@ Transforming variables can often improve your model fit while still estimating i
 Suppose you estimate $\ln(y) = 2.1 + 0.08 \cdot x$. The coefficient $0.08$ means that a one-unit increase in $x$ is associated with an approximate $100 \times 0.08 = 8\%$ increase in $y$. If instead you estimate $\ln(y) = 1.5 + 0.6 \cdot \ln(x)$, the coefficient $0.6$ is an *elasticity*: a $1\%$ increase in $x$ is associated with a $0.6\%$ increase in $y$.
 :::
 
-Now recall from micro theory that an additively seperable and linear production function is referred to as ``perfect substitutes''. With a linear model and untranformed data, you have implicitly modelled the different regressors $X$ as perfect substitutes. Further recall that the ''perfect substitutes'' model is a special case of the constant elasticity of substitution production function. Here, we will build on <http://dx.doi.org/10.2139/ssrn.3917397>, and consider *Box-Cox* transforming both $X$ and $y$. Specifically, apply the box-cox transform of $y$ using parameter $\lambda$ and apply another box-cox transform to each $x$ using the same parameter $\rho$ so that
+Now recall from micro theory that an additively separable and linear production function is referred to as "perfect substitutes". With a linear model and untransformed data, you have implicitly modelled the different regressors $X$ as perfect substitutes. Further recall that the "perfect substitutes" model is a special case of the constant elasticity of substitution production function. Here, we will build on <http://dx.doi.org/10.2139/ssrn.3917397>, and consider *Box-Cox* transforming both $X$ and $y$. Specifically, apply the box-cox transform of $y$ using parameter $\lambda$ and apply another box-cox transform to each $x$ using the same parameter $\rho$ so that
+
+:::{.callout-important title="Definition" collapse="false"}
+The *Box-Cox transformation* is a family of power transformations indexed by a parameter (here $\lambda$ for the outcome and $\rho$ for the regressors). It nests the linear ($\rho=\lambda=1$) and log ($\rho=\lambda=0$) specifications as special cases and is fit by minimizing prediction error on the original scale.
+:::
 \begin{eqnarray}
 Y^{(\lambda)}_{i} &=& \sum_{k=1}^{K}\beta_{k} X^{(\rho)}_{ik} + \epsilon_{i}\\
 Y^{(\lambda)}_{i} &=&
@@ -348,7 +377,16 @@ legend('topleft', pch=c(16), col=cols,
 abline(a=0, b=1, lty=2)
 ```
 
-When explicitly transforming data according to $\lambda$ and $\rho$, these parameters increase the degrees of freedom by two. The default hypothesis testing procedures do not account for you trying out different transformations, and should be adjusted by the increased degrees of freedom. Specification searches deflate standard errors and are a major source for false discoveries.
+We can compare the fit on the original scale: the grid-search optimum versus the untransformed linear baseline.
+```{r}
+# Compare prediction MSE on the original Murder scale
+mse_linear <- mean(resid(reg)^2)
+mse_boxcox <- min(rl_df$mse)
+c(rl0, mse_linear=round(mse_linear, 3), mse_boxcox=round(mse_boxcox, 3))
+```
+The Box-Cox grid lowers the prediction MSE relative to the linear baseline, at the cost of two extra parameters and a less direct interpretation of the coefficients.
+
+When explicitly transforming data according to $\lambda$ and $\rho$, these parameters increase the degrees of freedom by two. The default hypothesis testing procedures do not account for you trying out different transformations, and should be adjusted by the increased degrees of freedom. *Specification searches* deflate standard errors and are a major source for false discoveries (see [Data Scientism](https://jadamso.github.io/Rbooks/03_25_DataScientism.html)).
 
 Note that if you are ultimately interested in the outcome $Y$, then transforming/untransforming $Y$ can introduce a bias. To understand when you might be better off sticking with an untransformed outcome variable, see the literature on "smearing".
 
@@ -367,3 +405,8 @@ Note that if you are ultimately interested in the outcome $Y$, then transforming
 * <https://book.stat420.org/model-diagnostics.html> -- leverage, Cook's distance, and residual diagnostics with R examples.
 * <https://www.econometrics-with-r.org/6-rmwmr.html> -- interpreting coefficients, specification, and multicollinearity in multiple regression.
 * Fox, J. D. (2020). *Regression diagnostics: An introduction* (2nd ed.). SAGE. <https://dx.doi.org/10.4135/9781071878651> -- a short monograph on influence measures, outliers, and model misspecification.
+
+
+:::{.callout-note title="Recall" collapse="false" icon=false}
+This chapter audited a fitted regression with four diagnostic plots (outliers, leverage, normality, scale), introduced the Variance Inflation Factor for collinearity, the Breusch-Pagan test for heteroskedasticity, and Box-Cox transformations as a way to rescue a misspecified linear model. In the next chapter we keep the multivariate setup but drop the linear assumption: local regressions and regressograms estimate the conditional mean without committing to a single line.
+:::
