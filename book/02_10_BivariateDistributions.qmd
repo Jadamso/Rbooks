@@ -2,13 +2,12 @@
 # Bivariate Distributions
 ***
 
-## Introduction
-
 We will now study two variables. The data for each observation data can be grouped together as a vector $(\hat{X}_{i}, \hat{Y}_{i})$.
 ```{r}
-# Bivariate Data from USArrests
+# USArrests has 50 rows (one per US state) and four crime columns;
+# pick two of those columns to form a bivariate dataset.
 xy <- USArrests[, c('Murder', 'UrbanPop')]
-xy[1, ]
+xy[1, ]                                # first state's two values
 ```
 
 ## Joint Distributions
@@ -19,10 +18,19 @@ We have multiple observations of $(\hat{X}_{i}, \hat{Y}_{i})$, each of which cor
 \begin{eqnarray}
 \hat{p}_{xy} = \sum_{i=1}^{n}\mathbf{1}\left( \hat{X}_{i}=x, \hat{Y}_{i}=y \right)/n,
 \end{eqnarray}
+
+:::{.callout-important title="Definition" collapse="false"}
+The *joint distribution* of two discrete variables $X_{i}$ and $Y_{i}$ is the table $\hat{p}_{xy}$ giving the share of observations with $X_{i}=x$ and $Y_{i}=y$, for every combination of values $(x,y)$.
+:::
+
 The *marginal distributions* are just the univariate information, which can be computed independently (see [here](https://jadamso.github.io/Rbooks/01_06_PopStatistics.html#estimates) ) and also from the joint distribution
 \begin{eqnarray}
 \hat{p}_{x} = \sum_{y} \hat{p}_{xy}
 \end{eqnarray}
+
+:::{.callout-important title="Definition" collapse="false"}
+The *marginal distribution* of $X_{i}$ is the univariate distribution $\hat{p}_{x}$ obtained by summing the joint distribution over all values of $Y_{i}$. It tells you the share of observations at each value of $X_{i}$, ignoring $Y_{i}$.
+:::
 
 For example, suppose we observe a sample of $n=13$ students with two discrete variables:
 
@@ -68,20 +76,20 @@ x=14 & 1/13 & 5/13 & 6/13\\
 \end{array}
 
 ```{r}
-# Simple hand-built dataset: 13 students
+# Simple hand-built dataset: 13 students, two variables each
 dat <- rbind(
-    c(12, 0), c(12, 0), c(12, 0), c(12, 0), #Male
-    c(14, 0), 
-    c(12, 1), c(12, 1), c(12, 1),
-    c(14, 1), c(14, 1), c(14, 1), c(14, 1), c(14, 1))
+    c(12, 0), c(12, 0), c(12, 0), c(12, 0), # 4 male with 12 years
+    c(14, 0),                                # 1 male with 14 years
+    c(12, 1), c(12, 1), c(12, 1),            # 3 female with 12 years
+    c(14, 1), c(14, 1), c(14, 1), c(14, 1), c(14, 1)) # 5 female with 14 years
 colnames(dat) <- c('educ', 'female')
 dat <- as.data.frame(dat)
 
-# Frequency table
-tab  <- table(dat)          # counts
-prop <- tab/sum(tab)        # joint distribution p_xy
+# Frequency table and joint distribution
+tab  <- table(dat)          # raw counts: rows=educ, cols=female
+prop <- tab / sum(tab)      # joint distribution p_xy (sums to 1)
 
-# joint distribution with marginals added
+# addmargins() appends row and column totals (i.e., the marginals)
 prop_m <- addmargins(prop)
 round(prop_m, 2)
 ```
@@ -161,6 +169,10 @@ In contrast to marginal and joint distributions, *conditional* distributions des
 \hat{p}_{y \mid x} = \frac{\hat{p}_{xy}}{\hat{p}_{x} },
 \end{eqnarray}
 where $\hat{p}_{x} = \sum_y \hat{p}_{xy}$.
+
+:::{.callout-important title="Definition" collapse="false"}
+The *conditional distribution* of $Y_{i}$ given $X_{i}=x$ is $\hat{p}_{y\mid x}=\hat{p}_{xy}/\hat{p}_{x}$: the joint share renormalized so the row at $X_{i}=x$ sums to one. It tells you the share of values of $Y_{i}$ *within the subgroup* where $X_{i}=x$.
+:::
 
 For example, suppose we observe a sample of $n=13$ students with two discrete variables:
 
@@ -255,6 +267,10 @@ Conditional distributions change the unit of analysis:
 * $\hat{p}_{x=14 \mid y=1}$ answers "what fraction of students have 14 years of education within the subgroup that is female?"
 
 Mixing up these two directions is a common mistake known as the *base-rate fallacy*.
+
+:::{.callout-important title="Definition" collapse="false"}
+The *base-rate fallacy* is the mistake of confusing $\hat{p}_{y\mid x}$ with $\hat{p}_{x\mid y}$ — reading the wrong conditional — and forgetting how common $X_{i}=x$ is in the first place ($\hat{p}_{x}$, the *base rate*).
+:::
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 **The most-stolen car.** Suppose you read that the Honda Civic is the most-stolen car in a city. Does that mean a Civic is more likely to be stolen than other cars? Not necessarily.
@@ -387,9 +403,13 @@ boxplot(Murder ~ UrbanPop_Kcut, USArrests,
 
 ## Simpson's Paradox
 
-Conditional distributions can be tricky, so take your time making and interpreting them. 
+Conditional distributions can be tricky, so take your time making and interpreting them.
 
-Consider the following example, which shows that $400$ men and $400$ women applied to university and that only a share were accepted in each department (English or Engineering). If you computed percents for each sex within each cell, you would find men have a higher overall acceptance rate, but women have higher acceptance rates within each department! This counterintuitive phenomena is known as *Simpson's Paradox*, and the example is part of a real debate about discrimination (<http://homepage.stat.uiowa.edu/~mbognar/1030/Bickel-Berkeley.pdf>). 
+Consider the following example, which shows that $400$ men and $400$ women applied to university and that only a share were accepted in each department (English or Engineering). If you computed percents for each sex within each cell, you would find men have a higher overall acceptance rate, but women have higher acceptance rates within each department! This counterintuitive phenomena is known as *Simpson's Paradox*, and the example is part of a real debate about discrimination (<http://homepage.stat.uiowa.edu/~mbognar/1030/Bickel-Berkeley.pdf>).
+
+:::{.callout-important title="Definition" collapse="false"}
+*Simpson's paradox* arises when a relationship that holds inside every subgroup reverses when the data are pooled. The within-group conditional distributions $\hat{p}_{y\mid x, g}$ point one way; the overall $\hat{p}_{y\mid x}$ points the other.
+:::
 
 Even if women have higher admission rates within both departments, women can still have a lower overall admission rate if women disproportionately apply to the more selective department (English) and men disproportionately apply to the less selective department (Engineering). The same issue is relevant for a variety of labor market issues, such as the gender pay gap, and a great many other social issues, such as why are some countries rich and others poor.^[In general, one should also remember that a ratio can change due changes in either the numerator or the denominator.]
 
@@ -464,4 +484,8 @@ Each within-group regression line (solid) slopes downward, yet the pooled regres
 * <https://www.econometrics-with-r.org/2-1-random-variables-and-probability-distributions.html> -- joint, marginal, and conditional distributions in an econometrics context.
 * <https://r-graph-gallery.com/histogram.html> -- gallery of histogram styles in R, useful for building marginal-distribution plots.
 * <https://www.khanacademy.org/math/statistics-probability/random-variables-stats-library/random-variables-discrete/v/valid-discrete-probability-distribution-examples> -- short video introduction to discrete probability distributions and joint tables.
+
+:::{.callout-note title="Recall" collapse="false" icon=false}
+This chapter introduced joint, marginal, and conditional distributions for two variables, and showed how mixing up conditional directions produces the base-rate fallacy and Simpson's paradox. The next chapter uses conditioning on a factor variable to compare two groups, and tests the differences with the resampling tools from Part 1.
+:::
 
