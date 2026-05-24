@@ -1,9 +1,19 @@
 # Hypothesis Testing
 ***
 
+A *hypothesis test* turns a question about the population into a decision: given the data, do we have enough evidence to reject a specific value for the parameter?
+This chapter conducts those tests two ways — by inverting a confidence interval and by imposing the null — then summarizes the evidence with a $p$-value and a $t$-value.
+We also cover one-sided versions and common pitfalls so that "statistically significant" stays linked to its statistical meaning.
+
 ## Testing Methods
-  
+
 In this chapter, we test hypotheses using *data-driven* methods that assume much less about the data generating process. There are two main ways to conduct a *hypothesis test*: inverting a confidence interval and imposing the null. The first treats the distribution of estimates directly; the second explicitly enforces the null hypothesis to evaluate how unusual the observed statistic is. Both approaches rely on the bootstrap: resampling the data to approximate sampling variability. The most typical case is hypothesizing about the mean.
+
+:::{.callout-important title="Definition" collapse="false"}
+The *null hypothesis* $H_{0}$ is the specific claim about the parameter that we will test.
+The *alternative hypothesis* $H_{A}$ is the competing claim we would accept if the null were rejected.
+A *two-sided* alternative ($H_{A}: \mu \neq \mu_{0}$) covers deviations in either direction; a *one-sided* alternative ($H_{A}: \mu > \mu_{0}$ or $H_{A}: \mu < \mu_{0}$) covers only one tail.
+:::
 
 #### **Invert a CI**. {-}
 
@@ -13,6 +23,11 @@ One main way to conduct hypothesis tests is to examine whether a [confidence int
 * fail to reject the null if value falls inside of the interval
 
 We typically use a $95\%$ confidence interval to create a *rejection region*: the area that falls outside of the interval.
+
+:::{.callout-important title="Definition" collapse="false"}
+The *rejection region* is the set of values for the test statistic (or hypothesized parameter) that lead us to reject $H_{0}$.
+For a two-sided test at level $\alpha=0.05$, the rejection region is the two tails outside the central $95\%$ of the null distribution.
+:::
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 For example, suppose you hypothesize the mean is $9$. You then construct a bootstrap distribution with $95\%$ confidence interval, and find your hypothesized value falls outside of the confidence interval. Then, after accounting for sampling variability (which you estimate), it still seems extremely unlikely that the theoretical mean actually equals $9$, so you reject that hypothesis. (If the theoretical value landed in the interval, you would "fail to reject" the theoretical mean equals $9$.)
@@ -130,6 +145,12 @@ The Normal approximation from the previous chapter can also impose the null: cen
 
 ## $p$-values
 
+:::{.callout-important title="Definition" collapse="false"}
+The *$p$-value* is the probability, under the null hypothesis, of seeing a statistic at least as extreme as the one observed.
+Small $p$-values give evidence against the null; the threshold $p \leq 0.05$ is a convention, not a law of nature.
+The $p$-value is *not* the probability that the null is true.
+:::
+
 A *$p$-value* is the frequency you see something at least as extreme as your statistic under the null hypothesis (when sampling from the null distribution). We want the probability that the random variable $M$ is at least as extreme (far from the null mean of $9$) as our observed sample mean $\hat{M}$.
 
 Recall that we used the bootstrap to estimate the distribution of the sample statistic like the mean, and the null-bootstrap shifted the bootstrap to be centered at a hypothesized value. The bootstrap idea here is to approximate $M-\mu$, the difference between the sample mean $M$ and the unknown theoretical mean $\mu$, with the null-bootstrap analogue $M^{\text{boot}}_{0}-\mu$, where $M^{\text{boot}}_{0}=M^{\text{boot}}+(\mu-\hat{M})$ is the recentered bootstrap mean.
@@ -204,6 +225,13 @@ Beware that a common misreading of the $p$-value as "the probability the null is
 
 Often, one may also see or hear "$p<.05$: statistically significant" and "$p>.05$: not statistically significant". That is decision making on purely statistical grounds, and it may or may not be suitable for your context. You simply need to know that whoever says those things is using $5\%$ as a critical value to reject a null hypothesis.
 
+:::{.callout-caution title="Common Pitfall" collapse="false"}
+Running many hypothesis tests inflates the chance of a false rejection.
+At the $5\%$ level, you expect roughly $1$ in $20$ true nulls to be rejected by chance alone.
+If you test $20$ independent nulls and find $1$ "significant" result, that result is what you would expect even when every null is true.
+The fix is to correct the level (e.g., Bonferroni: use $0.05/k$ when running $k$ tests) or to pre-specify a small set of hypotheses before looking at the data.
+:::
+
 ```{r}
 # Purely-Statistical Decision Making
 # via Two Sided Test
@@ -237,6 +265,13 @@ hist(p_values, freq=F,
 ## Other Statistics
 
 #### **$t$-values**. {-}
+
+:::{.callout-important title="Definition" collapse="false"}
+The *$t$-value* (or $t$-statistic) standardizes the deviation of $\hat{M}$ from the hypothesized $\mu$ by the standard error,
+$$t = \frac{M - \mu}{SE(M)}.$$
+Using a standardized statistic makes results comparable across studies and connects to a well-studied reference distribution (Normal in large samples, Student's $t$ in small).
+:::
+
 A *$t$-value* standardizes the approach for hypothesis tests of the mean.
 \begin{eqnarray}
 t = (M - \mu) / SE(M),
@@ -359,6 +394,36 @@ Above, we tested whether the observed statistic is either extremely high or low.
 * $H_{A}: \mu < 9$, a left-tail test
 * $H_{A}: \mu > 9$, a right-tail test
 
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+A fitness tracker manufacturer claims that users take more than $8{,}000$ steps per day on average.
+A sample of $25$ users has $\hat{M}=8{,}492$ steps and $\hat{S}=1{,}200$ steps.
+Test at the $5\%$ level using theory-based intervals.
+
+**(a) Hypotheses.**
+The claim is a right-tail alternative: $H_{0}: \mu = 8000$ versus $H_{A}: \mu > 8000$.
+
+**(b) Test statistic.**
+The classical standard error is $\hat{S}/\sqrt{n} = 1200/\sqrt{25} = 240$, so $t = (8492 - 8000)/240 \approx 2.05$.
+
+**(c) Decision.**
+The right-tail critical value at $5\%$ is $q_{0.95} \approx 1.645$ from the Normal. Since $t = 2.05 > 1.645$, we reject $H_{0}$.
+
+**(d) Conclusion.**
+At the $5\%$ level, the data are consistent with the manufacturer's claim: there is evidence the population mean exceeds $8{,}000$ steps per day.
+```{r}
+M_hat <- 8492
+S_hat <- 1200
+n <- 25
+mu0 <- 8000
+SE <- S_hat / sqrt(n)
+t_stat <- (M_hat - mu0) / SE
+t_stat
+
+# Right-tail p-value from the standard Normal approximation
+1 - pnorm(t_stat)
+```
+:::
+
 One-sided hypothesis tests can be conducted by inverting a one-sided confidence interval (covered in the previous chapter) or by computing a one-sided $p$-value.
 
 #### **One-Sided $p$-values**. {-}
@@ -432,3 +497,8 @@ ecdf( bootstrap_means_null )( sample_mean)
 
 * <https://learningstatisticswithr.com/book/hypothesistesting.html> -- Comprehensive chapter on null hypotheses, p-values, and test decisions with R examples.
 * <https://www.khanacademy.org/math/statistics-probability/significance-tests-one-sample> -- Step-by-step video lessons on hypothesis testing for one-sample means and proportions.
+
+:::{.callout-note title="Recall" collapse="false" icon=false}
+This chapter built hypothesis tests two ways (invert a CI, impose the null), introduced $p$-values and $t$-values, and flagged the multiple-comparisons pitfall.
+In the next chapter we round out the probability toolbox with the Binomial, Poisson, and Beta distributions, plus Bayes' theorem and the Law of Total Probability.
+:::
