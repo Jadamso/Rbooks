@@ -1,11 +1,9 @@
 # Data Scientism
 ***
 
-## Introduction
-
 In practice, it is hard to find a good natural experiment. For example, suppose we asked "what is the effect of wages on police demanded?" and examined a policy which lowered the educational requirements from 4 years to 2 to become an officer. This increases the labour supply, but it also affects the demand curve through "general equilibrium": as some of the new officers were potentially criminals and, with fewer criminals, the demand for police shifts down.
 
-In practice, it is also easy to find a bad instrument. Paradoxically, natural experiments are something you are supposed to find but never search for. As you search for good instruments, for example, sometimes random noise will appear like a good instrument (*spurious instruments*). In this age of big data, we are getting increasingly more data and, perhaps surprisingly, this makes it easier to make false discoveries. 
+In practice, it is also easy to find a bad instrument. Paradoxically, natural experiments are something you are supposed to find but never search for. As you search for good instruments, for example, sometimes random noise will appear like a good instrument (*spurious instruments*). In this age of big data, we are getting increasingly more data and, perhaps surprisingly, this makes it easier to make false discoveries.
 
 We will consider three classical ways for false discoveries to arise. After that, there are examples with the latest and greatest empirical recipes---we don't have so many theoretical results yet but I think you can understand the issue with the numerical example. Although it is difficult to express numerically, you must also know that if you search for a good natural experiment for too long, you can also be led astray from important questions. There are good reasons to be excited about empirical social science, but we would be wise to recall some earlier wisdom from economists on the matter.
 
@@ -41,10 +39,14 @@ We will consider three classical ways for false discoveries to arise. After that
 #### **Data Errors**. {-}
 A huge amount of data normally means a huge amount of data cleaning/merging/aggregating. This avoids many copy-paste errors, which are a recipe for [disaster](https://blog.hurree.co/8-of-the-biggest-excel-mistakes-of-all-time), but may also introduce other types of errors. Some spurious results are driven by honest errors in data cleaning. According to one [estimate](https://www.pnas.org/doi/10.1073/pnas.1212247109), this is responsible for around one fifth of all medical science retractions (there is even a whole [book](https://www.amazon.de/Much-Cost-Coding-Errors-Implementation/dp/1543772994) about this!). Although there are not similar meta-analysis in economics, there are some high-profile examples. This includes papers that are highly influential, like [Lott, Levitt](https://scienceblogs.com/deltoid/2005/12/02/lott-levitt-and-coding-errors) and [Reinhart and Rogoff](https://blogs.lse.ac.uk/impactofsocialsciences/2013/04/24/reinhart-rogoff-revisited-why-we-need-open-data-in-economics/) as well as others the top economics journals, like the [RESTUD](https://academic.oup.com/restud/article/90/2/1009/6982752) and [AER](https://www.aeaweb.org/articles?id=10.1257/aer.113.7.2053). There are some reasons to think such errors are more widespread across the social sciences; e.g., in [Census data](https://www2.census.gov/ces/tp/tp-2002-17.pdf) and [Aid data](https://www.sciencedirect.com/science/article/abs/pii/S0305750X11001951). So be careful!
 
-Note: one reason to plot your data is to help spot such errors.
+Note: one reason to plot your data is to help spot such errors. Data errors are only one route to a spurious finding. The next one is searching the same dataset for any specification that "works".
 
 #### **P-Hacking**. {-}
-Another class of errors pertains to *P-hacking* (and it's various synonyms: data drudging, star mining,....). While there are cases of fraudulent data manipulation (which can be considered as a dishonest data error), P-hacking need not even be intentional. You can simply be trying different variable transformations to uncover patterns in the data, for example, without accounting for how easy it is to find patterns when transforming  completely random data. P-hacking is [pernicious](https://elephantinthelab.org/a-replication-crisis-in-the-making/) and [widespread](https://www.americanscientist.org/article/the-statistical-crisis-in-science). 
+Another class of errors pertains to *p-hacking* (and its various synonyms: *data drudging*, *star mining*,...). While there are cases of fraudulent data manipulation (which can be considered as a dishonest data error), p-hacking need not even be intentional. You can simply be trying different variable transformations to uncover patterns in the data, for example, without accounting for how easy it is to find patterns when transforming completely random data. P-hacking is [pernicious](https://elephantinthelab.org/a-replication-crisis-in-the-making/) and [widespread](https://www.americanscientist.org/article/the-statistical-crisis-in-science).
+
+:::{.callout-important title="Definition" collapse="false"}
+*P-hacking* is the practice (often unintentional) of trying many models, transformations, or subsamples until one returns a small $p$-value, then reporting only that one. The reported $p$-value no longer reflects the true probability of seeing the result under the null, because the search itself was not accounted for.
+:::
 
 ```{r}
 # P-hacking OLS with different explanatory vars
@@ -123,9 +125,13 @@ The p-hacking example found a statistically significant IV result using random d
 :::
 
 
-## Spurious Regression 
- 
+## Spurious Regression
+
 Even without any coding errors or p-hacking, you can sometimes make a false discovery. We begin with a motivating empirical example of "US Gov't Spending on Science".
+
+:::{.callout-important title="Definition" collapse="false"}
+*Spurious regression* arises when two unrelated time series share a common trend and so produce a large $\hat{R}^2$ and a small $p$-value when one is regressed on the other. The OLS standard errors assume independent observations; with trending series this assumption fails badly, and significance becomes a function of sample length rather than any underlying relationship.
+:::
 
 
 First, get and inspect some data from https://tylervigen.com/spurious-correlations
@@ -172,9 +178,10 @@ The US government spending on science is ruining cinema
 (p<.001)!?
 ```{r}
 # Drop Data before 1999
-vigen_csv <- vigen_csv[vigen_csv$year >= 1999, ] 
+vigen_csv <- vigen_csv[vigen_csv$year >= 1999, ]
 
-# Run OLS Regression
+# Run OLS Regression of Cage's film count on science spending.
+# The p-value on `science_spending` will be tiny, despite zero plausible causal link.
 reg1 <-  lm(cage_films ~ -1 + science_spending, data=vigen_csv)
 summary(reg1)
 ```
@@ -197,7 +204,11 @@ The same principles apply to more sophisticated methods.
 
 ## Spurious Causal Impacts
 
-As discussed in the chapter introduction, good natural experiments are hard to find and bad ones are easy to find. The remainder of this section illustrates the second point: applying canonical causal-inference recipes (IV, RDD, DID) to data that is purely noise.
+As discussed earlier, good natural experiments are hard to find and bad ones are easy to find. The remainder of this section illustrates the second point: applying canonical causal-inference recipes (IV, RDD, DID) to data that is purely noise.
+
+:::{.callout-important title="Definition" collapse="false"}
+A *spurious instrument* is a variable that satisfies the formal statistical criteria for an instrumental variable (relevance, exogeneity) by chance, despite having no plausible causal connection to the endogenous regressor. Spurious instruments become easier to find as the number of candidate variables grows — the same multiple-testing problem as p-hacking, but applied to instrument selection.
+:::
 
 #### **Example: Vigen IV's**. {-}
 We now run IV regressions for different variable combinations in the dataset of spurious relationships
@@ -232,7 +243,12 @@ pvars <- sapply(ivreg_list, function(ivreg_i){ivreg_i[[2]]})
 pdat <- data.frame(t(pvars), pvals)
 pdat <- pdat[order(pdat$pvals), ]
 head(pdat)
+
+# Fraction of all combinations significant at conventional levels
+c(at_0.05 = mean(pvals < 0.05, na.rm=TRUE),
+  at_0.01 = mean(pvals < 0.01, na.rm=TRUE))
 ```
+A noticeable share of the random variable triples returns "significant" results at both the 5% and 1% levels — far more than the 5% and 1% rates a single hypothesis test would imply.
 
 #### **Simulation Study**. {-}
 We apply the three major credible methods (IV, RDD, DID) to random walks. Each time, we find a result that fits mold and add various extensions that make it appear robust. One could tell a story about how $X_{2}$ affects $X_{1}$ but $X_{1}$ might also affect $X_{2}$, and how they discovered an instrument $X_{3}$ to provide the first causal estimate of $X_{2}$ on $X_{1}$. The analysis looks scientific and the story sounds plausible, so you could probably be convinced *if it were not just random noise.*
@@ -360,3 +376,8 @@ All three empirical recipes (IV, RDD, DID) produced statistically significant re
 
 * <https://www.econometrics-with-r.org/9-1-testing-joint-hypotheses.html> -- multiple testing and joint hypothesis testing in a regression context.
 * Athey, S. and Imbens, G. W. (2019). Machine learning methods that economists should know about. *Annual Review of Economics*, 11, 685--725. <https://doi.org/10.1146/annurev-economics-080217-053433> -- a survey of when and how machine learning tools complement econometric inference.
+
+
+:::{.callout-note title="Recall" collapse="false" icon=false}
+This chapter cataloged three ways significant results arise from noise — data errors, $p$-hacking, and spurious regression — and showed that all three causal-inference recipes (IV, RDD, DID) can produce statistically significant findings from purely random data. In the next chapter we collect the remaining multivariate topics: prediction, multiple testing corrections, and the matrix-form OLS theory that underlies everything above.
+:::
