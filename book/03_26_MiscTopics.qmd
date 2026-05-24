@@ -1,7 +1,7 @@
 # Misc. Multivariate Topics
 ***
 
-
+This chapter collects the remaining multivariate topics that did not fit cleanly into the preceding chapters. We cover prediction (including prediction intervals and cross-validation), time-series filtering, random subsampling, the matrix-form OLS theory and the bias of $\hat{B}^*$, and finally multiple testing corrections — the formal remedy for the kind of search-induced false positives raised in [Data Scientism](https://jadamso.github.io/Rbooks/03_25_DataScientism.html).
 
 ## Prediction
 
@@ -35,6 +35,10 @@ Consider the relationship between class size and student test scores. Write one 
 #### **Prediction Intervals**. {-}
 
 Here, we consider a range for $Y_{i}$ rather than for $m(X_{i})$. These intervals also take into account the residuals, the variability of individuals rather than the variability of their mean.
+
+:::{.callout-important title="Definition" collapse="false"}
+A *prediction interval* for $Y_i$ at $X_i = x$ is a range that captures a stated probability (e.g., 95%) of new observations at that $x$. Unlike a confidence interval for $m(x)$, it also accounts for residual variation, so it is generally wider.
+:::
 ```{r}
 # Bivariate Data from USArrests
 xy <- USArrests[, c('Murder', 'UrbanPop')]
@@ -141,6 +145,10 @@ polygon( c(x, rev(x)),
 #### **Cross Validation**.{-}
 
 Perhaps the most common approach to selecting a bandwidth is to minimize *prediction* error. *Leave-one-out cross-validation* minimizes the average "leave-one-out" mean square prediction errors:
+
+:::{.callout-important title="Definition" collapse="false"}
+*Leave-one-out cross-validation (LOO-CV)* fits the model $n$ times, each time leaving one observation out and predicting it from the rest. The average squared prediction error across the held-out observations is the cross-validation score; the bandwidth or model that minimizes this score is the preferred one.
+:::
 \begin{eqnarray}
 \min_{h} \quad \frac{1}{n} \sum_{i=1}^{n} \left[ \hat{Y}_{i} - \hat{y_{[i]}}(X,h) \right]^2,
 \end{eqnarray}
@@ -208,6 +216,10 @@ In some cases, we may want to smooth time series data instead of predict into th
 * Filtering: $\mathbb{E}[Y_{t} | X_{t-1}, X_{t-2}]$
 * Smoothing: $\mathbb{E}[Y_{t} | X_{t-1}, X_{t+1}]$
 
+:::{.callout-important title="Definition" collapse="false"}
+*Filtering* estimates the value of a time series at $t$ using only past observations; *smoothing* uses both past and future. Filtering is appropriate for forecasting and any online use; smoothing produces lower-variance estimates but is only valid for retrospective analysis.
+:::
+
 One example of *filtering* is *Exponential Filtering* (sometimes confusingly referred to as "Exponential Smoothing") which weights only previous observations using an exponential kernel.
 ```{r}
 # Time series data
@@ -273,7 +285,11 @@ title(paste0('One-sided MA, h = ', h_star), font.main=1)
 
 #### **Bayes' Theorem**. {-}
 
-Bayes' theorem maps predictive statements into inferential statements. In bivariate form,
+*Bayes' theorem* maps predictive statements into inferential statements. In bivariate form,
+
+:::{.callout-important title="Definition" collapse="false"}
+*Bayes' theorem* updates a prior probability $Prob(X_i=x)$ to a posterior $Prob(X_i=x \mid Y_i=y)$ using the likelihood $Prob(Y_i=y \mid X_i=x)$. Mnemonic: posterior $\propto$ likelihood $\times$ prior.
+:::
 \begin{eqnarray}
 Prob(X_i=x \mid Y_i=y)
 &=&
@@ -338,7 +354,7 @@ Notice that a positive test result raises the probability of having the conditio
 :::
 
 ## Subsampling
-Random *subsampling* is one of many hybrid approaches that tries to combine the best of the core methods: Bootstrap and Jacknife.
+Random *subsampling* is one of many hybrid approaches that tries to combine the best of the core methods: Bootstrap and Jackknife. It draws subsamples of size $m < n$ without replacement, repeating the procedure $B$ times. The next table summarizes how the three resampling strategies differ.
 
 | | Sample Size per Iteration | Number of Iterations | Resample |
 | -------- | ------- | ------- | ------- |
@@ -431,14 +447,19 @@ Minimizing the squared errors: $\min_{B} e_{i}^2 = \min_{B} (E' E)$, yields coef
 \hat{E} &=& \hat{Y} - \hat{y} \\
 \end{eqnarray}
 ```{r}
-# Manually Compute
+# Manually compute B_hat = (X'X)^{-1} X'Y step by step.
 Y <- USArrests[, 'Murder']
 X <- USArrests[, c('Assault', 'UrbanPop')]
 X <- as.matrix(cbind(1, X))
 
-XtXi <- solve(t(X)%*%X)
-Bhat <- XtXi %*% (t(X)%*%Y)
+XtX  <- t(X) %*% X         # K+1 by K+1 cross-product
+XtXi <- solve(XtX)         # invert
+XtY  <- t(X) %*% Y          # K+1 by 1 cross-product with Y
+Bhat <- XtXi %*% XtY        # K+1 coefficient vector
 c(Bhat)
+
+# Confirms the same answer as lm()
+coef(lm(Murder ~ Assault + UrbanPop, data=USArrests))
 ```
 
 #### **Bias**. {-}
@@ -474,6 +495,10 @@ This is the statistical engine behind much of [Data Scientism](https://jadamso.g
 #### **Family-Wise Error Rate**. {-}
 
 The *family-wise error rate* (FWER) is the probability of at least one false positive across a family of $K$ tests.
+
+:::{.callout-important title="Definition" collapse="false"}
+The *family-wise error rate (FWER)* is the probability of at least one false positive across a family of $K$ tests. With $\alpha = 0.05$ and independent tests, $\text{FWER} = 1-(1-\alpha)^K$, which exceeds $0.5$ around $K=14$ and approaches $1$ for $K \geq 100$.
+:::
 If the tests are independent and each has false-positive rate $\alpha$, then
 \begin{eqnarray}
 \text{FWER} &=& 1-(1-\alpha)^{K}.
@@ -496,6 +521,10 @@ The *Bonferroni correction* tests each hypothesis at level $\alpha/K$ instead of
 Equivalently, it multiplies each $p$-value by $K$ and keeps the $\alpha$ threshold.
 This guarantees FWER $\leq \alpha$, but it is conservative: with many tests, it can miss real effects.
 The *Holm correction* is a less conservative stepwise version that still controls the FWER, and is generally preferred.
+
+:::{.callout-important title="Definition" collapse="false"}
+The *Bonferroni correction* multiplies each $p$-value by the number of tests $K$ (equivalently, lowers the threshold to $\alpha/K$); it guarantees $\text{FWER} \leq \alpha$ but is conservative. The *Holm correction* applies the same idea stepwise, beating Bonferroni in power while still controlling the FWER.
+:::
 
 ```{r}
 # Five p-values from five separate tests
@@ -520,6 +549,10 @@ The threshold view is equivalent: compare the raw $p$-value to $\alpha/K = 0.05/
 A global test, such as the ANOVA $F$-test in [Comparing Multiple Groups](https://jadamso.github.io/Rbooks/03_20_MultipleGroups.html), tells you that *some* group differs, but not *which* one.
 The natural follow-up is to compare every pair of groups.
 With $G$ groups there are $G(G-1)/2$ pairs, so these *post-hoc* comparisons are themselves a multiple-testing problem and need a correction.
+
+:::{.callout-important title="Definition" collapse="false"}
+A *post-hoc test* is a follow-up comparison conducted after a significant global test (like ANOVA). Because there are $G(G-1)/2$ pairs to test, the per-pair significance threshold must be tightened to control the family-wise error rate; *Tukey's HSD* and Holm-adjusted pairwise $t$-tests are common choices.
+:::
 
 ```{r}
 # Global test: do murder rates differ by region?
@@ -561,3 +594,8 @@ The uncorrected version flags more differences; explain why, and state which ver
 * <https://cran.r-project.org/web/packages/np/vignettes/np.pdf> -- the `np` package vignette for nonparametric kernel estimation and bandwidth selection.
 * Shmueli, G. (2010). To explain or to predict? *Statistical Science*, 25(3), 289--310. <https://doi.org/10.1214/10-STS330> -- a clear discussion of the describe/explain/predict distinction in statistical modeling.
 * <https://cran.r-project.org/web/packages/multcomp/vignettes/multcomp-examples.pdf> -- worked examples of multiple-comparison procedures and post-hoc tests in R.
+
+
+:::{.callout-note title="Recall" collapse="false" icon=false}
+This chapter wrapped up the multivariate part with the describe/explain/predict taxonomy, prediction intervals and cross-validation, time-series filtering, random subsampling, the matrix form of OLS, and multiple-testing corrections. These tools close the loop with the earlier chapters: cross-validation chooses models, multiple-testing corrections discipline the search problem flagged in [Data Scientism](https://jadamso.github.io/Rbooks/03_25_DataScientism.html), and the matrix form makes the OLS algebra of [Multiple Regression](https://jadamso.github.io/Rbooks/03_19_MultipleRegression.html) explicit. The appendices that follow revisit reproducible workflows and probability theory in greater depth.
+:::
