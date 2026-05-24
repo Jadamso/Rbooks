@@ -1,31 +1,26 @@
 # Simple Regression
 ***
 
-## Introduction
-
 Suppose we have some bivariate data: $\hat{X}_{i}, \hat{Y}_{i}$. In the previous chapter, we summarized the strength of association between two variables using correlation. Correlation tells us *how strongly* $X$ and $Y$ move together, but not *by how much* $Y$ changes per unit change in $X$. Regression answers that question by fitting a line through the data.
 
 ```{r}
-# Bivariate Data from USArrests
+# Pull two columns from USArrests and rename for compact code below
 xy <- USArrests[, c('Murder', 'UrbanPop')]
-colnames(xy) <- c('y', 'x')
+colnames(xy) <- c('y', 'x')                     # y=outcome, x=predictor
 
-# Inspect Dataset
-# head(xy)
-# summary(xy)
+# Scatter the data
 plot(y ~ x, xy, col=grey(0, .5), pch=16,
 	main=NA,
 	xlab='Population Share in Urban Area',
 	ylab='Murder Arrests per 100K')
 title('Data from American States, 1975', font.main=1)
 
-# Correlation
-cor(xy$x, xy$y)
+cor(xy$x, xy$y)                                 # Pearson correlation
 
-# Slope from correlation
+# Slope from correlation: R_{XY} * S_Y / S_X
 cor(xy$x, xy$y) * sd(xy$y)/sd(xy$x)
 
-# Regression
+# Fit the line via OLS and overlay it on the scatter
 reg <- lm(y ~ x, data=xy)
 abline(reg, lty=2)
 ```
@@ -39,11 +34,15 @@ This refers to fitting a linear model to bivariate data.
 
 #### **Model and Objective**. {-}
 
-Specifically, our *model* is 
+Specifically, our *model* is
 \begin{eqnarray}
 \hat{Y}_{i}=b_{0}+b_{1} \hat{X}_{i}+e_{i},
 \end{eqnarray}
 where $b_{0}$ and $b_{1}$ are parameters, often referred to as "coefficients", and $\hat{X}_{i}, \hat{Y}_{i}$ are data for observation $i$, and $e_{i}$ is a *residual* error term that represents the difference between the model and the data.
+
+:::{.callout-important title="Definition" collapse="false"}
+A *residual* $e_{i}=\hat{Y}_{i}-(b_{0}+b_{1}\hat{X}_{i})$ is the vertical gap between observation $i$'s actual value of $\hat{Y}_{i}$ and the model's prediction for that observation. The OLS objective squares and sums these gaps.
+:::
 
 
 We then find the parameters which best-fit the data. Specifically, our *objective* is to
@@ -56,6 +55,10 @@ Minimizing the sum of squared errors then yields two *optimal coefficients* that
 \Rightarrow \hat{b}_{1} &=& \frac{\sum_{i}^{n}(\hat{X}_{i}-\hat{M}_{X})(\hat{Y}_{i}-\hat{M}_{Y})}{\sum_{i}^{}(\hat{X}_{i}-\hat{M}_{X})^2} = \frac{\hat{C}_{XY}}{\hat{V}_{X}},
 \end{eqnarray}
 the latter term being the estimated covariance between $X$ and $Y$ divided by the variance of $X$. (Recall that $M_{X}$ and $M_{Y}$ are the means.) Equivalently, $\hat{b}_{1} = \hat{R}_{XY} \cdot \hat{S}_{Y}/\hat{S}_{X}$, so the slope is just the correlation rescaled by the ratio of standard deviations.
+
+:::{.callout-important title="Definition" collapse="false"}
+The *least-squares slope* $\hat{b}_{1}=\hat{C}_{XY}/\hat{V}_{X}$ is the value of $b_{1}$ that minimizes the sum of squared residuals when paired with the matching intercept $\hat{b}_{0}=\hat{M}_{Y}-\hat{b}_{1}\hat{M}_{X}$. It is the change in fitted $\hat{Y}$ per one-unit change in $\hat{X}$.
+:::
 For the *intercept* coefficient:
 \begin{eqnarray}
 0 &=& \sum_{i=1}^{n} 2\left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right)\\ 
@@ -86,8 +89,12 @@ Once we have the coefficient, we can find the sample predictions
 \end{eqnarray}
 and make out-of-sample predictions at design points $x$
 \begin{eqnarray}
-\hat{y}(x) = \hat{b}_0 + \hat{b}_1 x 
+\hat{y}(x) = \hat{b}_0 + \hat{b}_1 x
 \end{eqnarray}
+
+:::{.callout-important title="Definition" collapse="false"}
+A *fitted value* $\hat{y}_{i}=\hat{b}_{0}+\hat{b}_{1}\hat{X}_{i}$ is the regression line evaluated at the $i$-th observation's $\hat{X}_{i}$. A *prediction* $\hat{y}(x)$ uses the same line at any new design point $x$, including values not in the sample.
+:::
 
 ```{r, eval=F}
 # Find predicted values and residuals
@@ -230,6 +237,10 @@ With linear models, we typically compute the *R-squared* statistic directly, $[\
 \hat{R}_{yY}^2 = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}
 \end{eqnarray}
 This is also known as the *coefficient of determination*. Intuitively, it is the percentage of all variation explained by our model, and must theorefore fall in $[0,1]$.
+
+:::{.callout-important title="Definition" collapse="false"}
+The *R-squared* $\hat{R}^{2}_{yY}=\hat{ESS}/\hat{TSS}=1-\hat{RSS}/\hat{TSS}$ is the share of total variation in $\hat{Y}_{i}$ that the model explains. $\hat{R}^{2}=1$ means perfect in-sample fit; $\hat{R}^{2}=0$ means the model does no better than predicting the mean.
+:::
 
 
 ```{r}
@@ -381,7 +392,11 @@ A regression coefficient is a statistic. And, just like all statistics, we can e
 * standard error: variability across different samples (c.f.  standard deviation: variability within a single sample.)
 * confidence interval: range your statistic varies across different samples.
 
-Note that values reported by your computer do not necessarily satisfy this definition. To calculate these statistics, we will estimate variability using the data-driven methods from <https://jadamso.github.io/Rbooks/01_07_Intervals.html>. (For some theoretical background, see also <https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf>.) 
+:::{.callout-important title="Definition" collapse="false"}
+The *standard error* of an estimator is the standard deviation of its sampling distribution. For a slope coefficient $\hat{b}_{1}$ we write $\hat{s}_{\hat{b}_{1}}$ for the estimated standard error; it captures how much $\hat{b}_{1}$ would jiggle from sample to sample.
+:::
+
+Note that values reported by your computer do not necessarily satisfy this definition. To calculate these statistics, we will estimate variability using the data-driven methods from <https://jadamso.github.io/Rbooks/01_07_Intervals.html>. (For some theoretical background, see also <https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf>.)
 
 
 #### **Bootstrap**. {-}
@@ -580,7 +595,7 @@ xy <- Wages1[, c('school', 'wage')]
 
 We could also use hard decision rules, such as "$p < 0.05$ is a statistically significant finding". However, just like confidence intervals, those hard decision rules can be sensitive to somewhat arbitrary choices (Why Jackknife SE's instead of classical ones? Why test at the $95\%$ level rather than $90\%$?)
 
-"No association" is the most common null hypothesis in practice, but we can also use bootstrapping to test against other specific hypothesis: $\beta$. To impose the null in this case, you recenter the sampling distribution around the hypothetical value; $\hat{t} = \frac{\hat{b} - \beta}{\hat{s}_{\hat{b}}}$.^[Under some additional assumptions, the null distribution follows a $t$-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)]  
+"No association" is the most common null hypothesis in practice, but we can also use bootstrapping to test against other specific hypothesis: $\beta$, the population slope (formalized in [Bivariate Probability](https://jadamso.github.io/Rbooks/02_16_BivariateProbability.html)). To impose the null in this case, you recenter the sampling distribution around the hypothetical value; $\hat{t} = \frac{\hat{b} - \beta}{\hat{s}_{\hat{b}}}$.^[Under some additional assumptions, the null distribution follows a $t$-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)]
 
 Although two-sided hypothesis tests are most common, you can also test one-sided hypotheses.
 
@@ -631,3 +646,7 @@ Nonetheless, linear regression provides an important piece of quantitative infor
 * <https://www.econometrics-with-r.org/4-lrwor.html> -- OLS estimation, fitted values, and residuals explained step by step with R.
 * <https://learningstatisticswithr.com/book/regression.html> -- accessible introduction to simple linear regression including interpretation of coefficients and $R^2$.
 * <https://www.khanacademy.org/math/statistics-probability/describing-relationships-quantitative-data/regression-library/v/introduction-to-residuals-and-least-squares-regression> -- video walkthrough of least-squares fitting and residual plots.
+
+:::{.callout-note title="Recall" collapse="false" icon=false}
+This chapter fit a single line to bivariate data: it derived the OLS slope $\hat{b}_{1}=\hat{C}_{XY}/\hat{V}_{X}$ and intercept $\hat{b}_{0}=\hat{M}_{Y}-\hat{b}_{1}\hat{M}_{X}$, measured goodness of fit with $\hat{R}^{2}$, and built confidence intervals and $p$-values via the bootstrap, jackknife, and permutation. The next chapter relaxes the single-slope assumption: bin the data and fit a separate local model in each bin, so the relationship can bend.
+:::
