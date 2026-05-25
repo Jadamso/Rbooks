@@ -17,19 +17,34 @@ To compare two group means, we standardize the observed difference by its estima
 The *two-sample t-statistic* divides the observed mean difference by its estimated standard error:
 $$\hat{t} = \frac{\hat{M}_{Y1} - \hat{M}_{Y2}}{\sqrt{\hat{S}^2_{Y1}/n_1+\hat{S}^2_{Y2}/n_2}},$$
 where $\hat{S}^2_{Yg}$ is the sample variance and $n_g$ is the sample size for group $g$.
+
+*Welch's t-test* modifies the two-sample $\hat{t}$ above to account for unequal variances or unequal sample sizes.
+The modifications use the [Welch-Satterthwaite approximation](https://en.wikipedia.org/wiki/Welch%E2%80%93Satterthwaite_equation).
 :::
 
-The two-sample $\hat{t}$ is useful as the workhorse standardized test statistic for "two means": dividing by the standard error puts the gap in standard-deviation units, so the same numerator can be large or small in $\hat{t}$ units depending on $n_{1}, n_{2}$ and the within-group variances. With normally distributed group means, this statistic follows Student's [t-distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution), so we can read a $p$-value from a formula rather than from resampling.
-
+The two-sample $\hat{t}$ is useful as the workhorse standardized test statistic for "two means": dividing by the standard error puts the gap in standard-deviation units, so the same numerator can be large or small in $\hat{t}$ units depending on $n_{1}, n_{2}$ and the within-group variances.
+With normally distributed group means, this statistic follows Student's [t-distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution), so we can read a $p$-value from a formula rather than from resampling.
 When the two groups have unequal variances or sample sizes, a small adjustment to the degrees of freedom keeps the $t$-distribution approximation accurate.
 
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
-*Welch's t-test* uses the two-sample $\hat{t}$ above with degrees of freedom set by the [Welch-Satterthwaite approximation](https://en.wikipedia.org/wiki/Welch%E2%80%93Satterthwaite_equation), which lets the two groups have unequal variances or unequal sample sizes.
-:::
 
-Welch's $t$-test is useful as the standard default when comparing two means without assuming equal variances, which is the realistic setting in most applied work (two job markets, two policy regimes, two countries). With the variance-and-normality assumptions in place, the test can be conducted entirely with formulas — no resampling required.
+```{r}
+# Sample 1 (e.g., males)
+n1 <- 100
+Y1 <- rnorm(n1, 0, 2)
+#hist(Y1, freq=F, main='Sample 1')
 
-:::{.callout-note icon=false collapse="true" title="Must Know"}
+# Sample 2 (e.g., females)
+n2 <- 80
+Y2 <- rnorm(n2, 1, 1)
+#hist(Y2, freq=F, main='Sample 2')
+
+t.test(Y1, Y2, var.equal=F)
+```
+
+Welch's $t$-test is useful as the standard default when comparing two means without assuming equal variances, which is the realistic setting in most applied work (two job markets, two policy regimes, two countries).
+With the variance-and-normality assumptions in place, the test can be conducted entirely with formulas (no bootstrap resampling required).
+
+:::{.callout-tip icon=false collapse="true" title="Must Know"}
 The *Welch-Satterthwaite equation* approximates the degrees of freedom when the two groups have unequal variances:
 \begin{eqnarray}
 df = \frac{\left(\hat{S}^2_{Y1}/n_1 + \hat{S}^2_{Y2}/n_2\right)^2}{\frac{(\hat{S}^2_{Y1}/n_1)^2}{n_1-1} + \frac{(\hat{S}^2_{Y2}/n_2)^2}{n_2-1}}.
@@ -47,19 +62,6 @@ v2 <- 1/n2
 ```
 :::
 
-```{r}
-# Sample 1 (e.g., males)
-n1 <- 100
-Y1 <- rnorm(n1, 0, 2)
-#hist(Y1, freq=F, main='Sample 1')
-
-# Sample 2 (e.g., females)
-n2 <- 80
-Y2 <- rnorm(n2, 1, 1)
-#hist(Y2, freq=F, main='Sample 2')
-
-t.test(Y1, Y2, var.equal=F)
-```
 
 
 We can visualize this by simulating many samples *under the null* ($\mu_1=\mu_2$) and comparing the distribution of $\hat{t}$ with the theoretical $t$-distribution.
@@ -102,8 +104,9 @@ If we want to test for the differences in medians across groups with independent
 ```{r}
 boxplot(Y1, Y2,
     col=c(rgb(1, 0, 0, .5), rgb(0, 0, 1, .5)),
-    main=NA, border='white',
-    notch=T,
+    main=NA,
+    whisklty=0, staplelty=0, outline=F,
+    notch=T, ## Adds a CI
     varwidth=T)
 ```
 
@@ -199,7 +202,7 @@ c(theoretical = p_theory, bootstrap = p_boot)
 A hypothesis test starts with a null $H_0$ and an alternative $H_A$, and produces a decision (reject or fail-to-reject) from finite sample data. Because the data have variability, the decision can be wrong in two ways.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-A *Type I error* is rejecting $H_{0}$ when $H_{0}$ is true (a false positive). A *Type II error* is failing to reject $H_{0}$ when $H_{0}$ is false (a missed detection).
+A *Type I error* is rejecting $H_{0}$ when $H_{0}$ is true (a false positive). A *Type II error* is failing to reject $H_{0}$ when $H_{0}$ is false (a false negative).
 :::
 
 This distinction is useful because the two error types are managed by different levers: we control Type I error by setting the *significance level* $\alpha=Prob(\text{Type I})$ before looking at the data, while Type II error is harder to control directly and depends on the sample size and the true effect size. Reducing one error rate usually raises the other for a fixed sample.
@@ -432,11 +435,12 @@ A common application of Bayes' theorem is interpreting a positive result from a 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 For a binary screening test where $X_{i}=1$ means "condition present" and $Y_{i}=1$ means "test positive":
 
+*Prevalence* $Prob(X_{i}=1)$ is the base rate of the condition in the population.
+
 *Sensitivity* $Prob(Y_{i}=1\mid X_{i}=1)$ is the probability of a positive result when the condition is present.
 
-The *false positive rate* $Prob(Y_{i}=1\mid X_{i}=0)$ is the probability of a positive result when it is absent.
+*False positive rate* $Prob(Y_{i}=1\mid X_{i}=0)$ is the probability of a positive result when it is absent.
 
-*Prevalence* $Prob(X_{i}=1)$ is the base rate of the condition in the population.
 :::
 
 Screening is useful for converting test accuracy and base rates into the quantity an individual actually cares about: the posterior $Prob(X_{i}=1\mid Y_{i}=1)$, the probability of having the condition given a positive result. The three inputs play different roles: sensitivity and the false positive rate describe the test, while prevalence describes the population. Suppose a screening test has sensitivity $0.90$, false positive rate $0.08$, and prevalence $0.12$. Applying Bayes' theorem,
