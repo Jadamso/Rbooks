@@ -44,13 +44,16 @@ The mean and variance are the two most basic statistics that summarize the cente
 
 #### **Mean**. {-}
 
-:::{.callout-important title="Definition" collapse="false"}
+The first step in describing a sample is to reduce its center to a single number.
+
+:::{.callout-important title="Key Definition" collapse="false"}
 The sample *mean* is the sum of the observations divided by the number of observations,
 $$\hat{M} = \frac{1}{n} \sum_{i=1}^{n} \hat{X}_{i}.$$
-It is the simplest measure of central tendency.
 :::
 
-The mean (also called the *sample mean* or *empirical mean*) is the most commonly reported single-number summary of a sample, and the natural one when the data are roughly symmetric. Here $\hat{X}_{i}$ denotes the value of the $i$-th observation.
+The mean (also called the *sample mean* or *empirical mean*) is the simplest and most commonly reported single-number summary of a sample, and the natural measure of central tendency when the data are roughly symmetric.
+The mean is useful when totals matter: total income across a population equals the mean income times the number of people, a relation that does not hold for the median or other rank-based summaries.
+Because every observation contributes equally to the sum, a single extreme value can pull the mean substantially in its direction.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 For example, a dataset of $\{1,4,10\}$ has a mean of $[1+4+10]/3=5$.
@@ -75,13 +78,18 @@ title(paste0('mean= ', round(X1_mean, 2)), font.main=1)
 
 #### **Variance**.{-}
 
-:::{.callout-important title="Definition" collapse="false"}
+Once we know where the data are centered, the next question is how widely they vary around that center.
+
+:::{.callout-important title="Key Definition" collapse="false"}
 The sample *variance* is the average squared deviation from the mean,
 $$\hat{V} = \frac{1}{n} \sum_{i=1}^{n} (\hat{X}_{i} - \hat{M})^2.$$
 The sample *standard deviation* is its square root, $\hat{S} = \sqrt{\hat{V}}$, and is in the same units as the data.
 :::
 
-The variance and standard deviation are the second-most-common single-number summaries of a sample. They tell us how concentrated or spread out the data are around the mean: a small variance means the observations cluster tightly, a large variance means they fan out. Squaring the deviations also means a few extreme values can dominate the result, which is one reason the median absolute deviation (below) is often preferred for heavy-tailed data.
+The variance and standard deviation are the second-most-common single-number summaries of a sample.
+They tell us how concentrated or spread out the data are around the mean: a small variance means the observations cluster tightly, a large variance means they fan out.
+The standard deviation in particular is useful because it sits in the original units of the data, making sentences like "monthly returns averaged $0.6\%$ with a standard deviation of $4\%$" interpretable at a glance.
+Squaring the deviations also means a few extreme values can dominate the result, which is one reason the median absolute deviation (below) is often preferred for heavy-tailed data.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 For example, a dataset of $\{1,4,10\}$ has a mean of $[1+4+10]/3=5$. The variance is $[(1-5)^2+(4-5)^2+(10-5)^2]/3=[16+1+25]/3=42/3=14$ and the standard deviation is $\sqrt{14}$.
@@ -128,7 +136,9 @@ A general rule of applied statistics is that there are multiple ways to measure 
 
 #### **Medians and Absolute Deviations**. {-}
 
-:::{.callout-important title="Definition" collapse="false"}
+When the data are skewed or contain outliers, statistics built from quantiles often give a more representative summary of center and spread than the mean and variance.
+
+:::{.callout-important title="Key Definition" collapse="false"}
 The sample *median* $\tilde{M}$ is the value where one half of the data fall below and one half above; it is the $0.5$ quantile.
 
 The *interquartile range* ($IQR$) is the upper quartile minus the lower quartile, the spread of the middle half of the data.
@@ -136,7 +146,9 @@ The *interquartile range* ($IQR$) is the upper quartile minus the lower quartile
 The *median absolute deviation* ($\text{MAD}$) is the median of the absolute deviations from the median, $\text{Med}(|\hat{X}_{i} - \tilde{M}|)$.
 :::
 
-We use the empirical *median* as a "robust alternative" to the mean, especially useful for data with asymmetric distributions or extreme values. Recall from [Data & Visualization](https://jadamso.github.io/Rbooks/01_02_Data.html#quantiles) that the $q$th quantile is the value where $q$ percent of the data fall below and ($1-q$) percent above; the median is the $q=0.5$ case. A single outlier can pull the mean by an arbitrary amount, but moves the median by at most one position, making the median the safer choice whenever extreme values may have crept into the sample.
+These three statistics share a common rationale: by using ranks rather than arithmetic averages, they resist the influence of extreme values.
+A single outlier can pull the *mean* by an arbitrary amount, but moves the median by at most one position; the $IQR$ and $\text{MAD}$ inherit the same protection because they are built from medians and quantiles (recall the [$p$-th quantile](https://jadamso.github.io/Rbooks/01_02_Data.html#quantiles) from the previous chapter).
+Reach for these robust summaries when the distribution is skewed or contains values you cannot trust to be typical: income, house prices, response times, and similar heavy-tailed quantities where a small fraction of large values would swamp the mean.
 
 ```{r}
 X1 <- USArrests[, 'Murder']
@@ -164,11 +176,7 @@ quantile(X1_extreme, prob=0.5)
 
 
 
-We can also use the sample *Interquartile Range* or *Median Absolute Deviation* as an alternative to variance. The difference between the first and third quartiles (quantiles $q=.25$ and $q=.75$) measure is range of the middle $50%$ of the data, which is how the boxplot measures "spread". The median absolute deviation is another statistic that also measures "spread".
-\begin{eqnarray}
-\tilde{M} &=& \text{Med}( \hat{X}_{i}) \\
-\hat{\text{MAD}} &=& \text{Med}\left( | \hat{X}_{i} - \tilde{M} | \right).
-\end{eqnarray}
+The $IQR$ corresponds to the box in the boxplot, and the $\text{MAD}$ uses the same robust idea but measures distances from the median directly rather than reading off quartile cut-offs.
 
 ```{r}
 IQR(X1)
@@ -340,13 +348,18 @@ There are many other statistics we could compute on an ad-hoc basis. However, sh
 
 #### **Skewness**. {-}
 
-:::{.callout-important title="Definition" collapse="false"}
+Center and spread alone leave open whether the distribution is symmetric; the first shape question asks whether one tail extends further than the other.
+
+:::{.callout-important title="Key Definition" collapse="false"}
 The sample *skewness* measures asymmetry: the average cubed deviation from the mean, scaled by the cube of the standard deviation,
 $$\text{skew} = \frac{\sum_{i=1}^{n}(\hat{X}_{i}-\hat{M})^3 / n}{\hat{S}^3}.$$
 Positive skew means a long right tail, negative skew a long left tail, and zero skew (e.g., the Normal) is symmetric.
 :::
 
-Cubing the deviations preserves their sign: positive deviations stay positive and negative deviations stay negative. The numerator is therefore close to zero when the data are roughly balanced around the mean, and large in absolute value when one tail is much longer than the other. Dividing by the cubed standard deviation makes skewness dimensionless, so the values are comparable across datasets measured in different units.
+Cubing the deviations preserves their sign: positive deviations stay positive and negative deviations stay negative.
+The numerator is therefore close to zero when the data are roughly balanced around the mean, and large in absolute value when one tail is much longer than the other.
+Dividing by the cubed standard deviation makes skewness dimensionless, so the values are comparable across datasets measured in different units.
+Skewness is useful for flagging whether the mean and median will agree closely (low skew) or diverge sharply (high skew), and for deciding whether a log or square-root transformation might tame the distribution before further analysis.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Consider the right-skewed dataset $\{0,1,2,3,9\}$ with mean $\hat{M}=15/5=3$.
@@ -385,13 +398,17 @@ We can automatically compare against the normal distribution, which has a skew o
 
 #### **Kurtosis**. {-}
 
-:::{.callout-important title="Definition" collapse="false"}
+A second shape question, independent of asymmetry, asks how much of the variability comes from a few far-from-center observations rather than from the typical bulk.
+
+:::{.callout-important title="Key Definition" collapse="false"}
 The sample *kurtosis* measures how heavy the tails are: the average fourth power of deviations from the mean, scaled by $\hat{S}^4$,
 $$\text{kurt} = \frac{\sum_{i=1}^{n}(\hat{X}_{i}-\hat{M})^4 / n}{\hat{S}^4}.$$
 The Normal distribution has kurtosis $3$, so subtracting $3$ gives a comparison-to-Normal version (excess kurtosis).
 :::
 
-Where skewness uses the cube (and so can be negative), kurtosis uses the fourth power, which forces every term to be positive and disproportionately amplifies the largest deviations. A handful of far-from-the-mean values can drive kurtosis up substantially even when the bulk of the distribution looks unremarkable, which is why it is often described as a "tail-heaviness" measure.
+Where skewness uses the cube (and so can be negative), kurtosis uses the fourth power, which forces every term to be positive and disproportionately amplifies the largest deviations.
+A handful of far-from-the-mean values can drive kurtosis up substantially even when the bulk of the distribution looks unremarkable, which is why it is often described as a "tail-heaviness" measure.
+Kurtosis is useful for distinguishing distributions that look similar in their bulk but differ in how often extreme values occur: daily stock returns, for example, have moderate variance but kurtosis well above $3$, reflecting occasional crashes that a Normal model would treat as vanishingly rare.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Using the same dataset $\{0,1,2,3,9\}$ with mean $\hat{M}=3$, the *quartic* deviations are $(-3)^4, (-2)^4, (-1)^4, 0^4, 6^4$, which equal $81, 16, 1, 0, 1296$.
