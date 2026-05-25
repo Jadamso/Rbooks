@@ -49,12 +49,13 @@ where $m$ is an unknown function and $e_{i}$ is white noise, which we estimate v
 
 ## Regressograms
 
-Just as we use histograms to describe the distribution of a random variable, we can use a *regressogram* for conditional relationships.
-Specifically, we can use dummies for exclusive intervals or "bins" to estimate the average value of $\hat{Y}_{i}$ for data inside the bin.
+Just as a histogram summarizes how observations are distributed across bins of $X$, a *regressogram* summarizes how the conditional mean of $\hat{Y}_{i}$ changes across bins of $X$.
 
-:::{.callout-important title="Definition" collapse="false"}
-A *regressogram* splits $X$ into exclusive intervals (bins) of half-width $h$ and reports the average of $\hat{Y}_{i}$ within each bin. It is the conditional-mean analog of a histogram.
+:::{.callout-important title="Key Definition" collapse="false"}
+A *regressogram* splits $X$ into exclusive intervals (bins) of half-width $h$ and reports the average of $\hat{Y}_{i}$ within each bin.
 :::
+
+The regressogram is useful when we expect the relationship between $X$ and $Y$ to bend in ways a single line cannot capture, because the bin averages can rise, fall, or stay flat from one bin to the next without imposing any global shape. It is the conditional-mean analog of a histogram: histograms count observations within bins of $X$; regressograms average $Y$ within bins of $X$.
 ```{r}
 # Data
 plot(wage ~ school, data=Wages1, pch=16, col=grey(0, .1),
@@ -87,9 +88,13 @@ legend('topleft',
 
 To conduct a regressogram, first divide $X$ into $1,...L$ exclusive bins of half-width $h$. Each bin has a midpoint, $x$, and each observation has an associated dummy variable $\hat{D}_{i}(x,h) = \mathbf{1}\left(\hat{X}_{i} \in \left(x-h,x+h\right] \right)$.
 
-:::{.callout-important title="Definition" collapse="false"}
-The *bandwidth* $h$ is the half-width of a local bin around the design point $x$: an observation is "local" to $x$ when $|\hat{X}_{i}-x|\leq h$. Larger $h$ pools more observations but smooths over real variation; smaller $h$ tracks the data closely but uses fewer points per estimate.
+The half-width $h$ controls how "local" a local estimate actually is.
+
+:::{.callout-important title="Key Definition" collapse="false"}
+The *bandwidth* $h$ is the half-width of a local bin around the design point $x$: an observation is "local" to $x$ when $|\hat{X}_{i}-x|\leq h$.
 :::
+
+The bandwidth is useful as the central tuning knob for every local method in this chapter — regressograms, piecewise regression, locally constant kernel regression, and locally linear regression — and (in disguise as `span`) for LOESS in the next chapter. Larger $h$ pools more observations into each estimate but smooths over real variation; smaller $h$ tracks the data more closely but uses fewer points per estimate, so the fitted curve becomes noisier.
 Then we conduct a regression with this model:
 \begin{eqnarray}
 \hat{Y}_{i} &=& \sum_{x \in \{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{D}_{i}(x,h)  + e_{i},
@@ -154,11 +159,13 @@ aggregate(wage ~ xcc, data=dat, mean)
 
 ## Piecewise Regression
 
-The regressogram depicts locally constant relationships. We can also included slope terms within each bin to allow for locally linear relationships. This is often called *segmented/piecewise regression*, which runs a separate regression for different subsets of the data.
+To let the slope vary across the range of $X$ instead of just the level, we add a slope term within each bin.
 
-:::{.callout-important title="Definition" collapse="false"}
+:::{.callout-important title="Key Definition" collapse="false"}
 A *piecewise regression* (also *segmented regression*) divides $X$ into bins and runs a separate simple linear regression on each bin. Within a bin the relationship is a straight line; across bins the slope and intercept can change.
 :::
+
+Piecewise regression is useful when the relationship is approximately linear in pieces but the slope itself changes — for example, returns to schooling that flatten after a degree, or marginal cost curves that kink at capacity. Compared to the regressogram, it captures within-bin trends instead of just within-bin averages; compared to a single line, it lets the slope bend at bin boundaries.
 
 ```{r}
 # Data
@@ -354,17 +361,22 @@ predict(preg_c, newdata=data.frame(school=x, xcc='(9.5,16]'))
 
 ## Locally Constant Regression
 
-Consider a point $x$ and model where values are constant around $x$;  $\hat{Y}_{i} = b_{0}(x, h) + e_{i}$.
-Then notice a weighted OLS estimator with uniform kernel weights yields
+By replacing the hard bin indicator with a smooth kernel weight, we can fit a local average at every design point and get a curve that varies continuously with $x$.
 
-:::{.callout-important title="Definition" collapse="false"}
-A *locally constant (kernel) regression* fits a single constant at each design point $x$ using only observations within bandwidth $h$; equivalently, a weighted mean with kernel weights $k(\hat{X}_{i}, x, h)$. With a uniform kernel and exclusive bins it reduces to a regressogram.
+:::{.callout-important title="Key Definition" collapse="false"}
+A *locally constant (kernel) regression* fits a single constant at each design point $x$ by minimizing a kernel-weighted sum of squared residuals:
+$$\min_{b_{0}(x, h)} \sum_{i=1}^{n}\left[\hat{Y}_{i} - b_{0}(x, h) \right]^{2} k\left(\hat{X}_{i}, x, h\right),$$
+where $k(\hat{X}_{i}, x, h)$ is a kernel weight that down-weights observations far from $x$.
 :::
+
+The locally constant regression is useful as the simplest smoother that produces a continuous fitted curve: at each $x$ it returns a kernel-weighted average of nearby $\hat{Y}_{i}$. With a uniform kernel and exclusive bins it reduces to a regressogram, so the regressogram is just its simplest special case.
+
+For some intuition, consider a point $x$ and the model $\hat{Y}_{i} = b_{0}(x, h) + e_{i}$. The weighted OLS estimator with uniform kernel weights $k_{U}$ yields
 \begin{eqnarray} \label{eqn:lcls}
 & & \min_{b_{0}(x,h)}~ \sum_{i}^{n}\left[e_{i} \right]^2 k_{U}\left( \hat{X}_{i}, x, h \right) \\
 \Rightarrow & & -2 \sum_{i}^{n}\left[\hat{Y}_{i}- b_{0}(x, h) \right] k_{U}\left(\hat{X}_{i}, x, h\right) = 0\\
 \label{eqn:lcls1}
-\Rightarrow & & \hat{b}_{0}(x) 
+\Rightarrow & & \hat{b}_{0}(x)
 = \frac{\sum_{i} \hat{Y}_{i} k_{U} \left( \hat{X}_{i}, x, h \right) }{ \sum_{i} k_{U}\left( \hat{X}_{i}, x, h \right) }
 = \sum_{i} \hat{Y}_{i} \left[ \frac{ k_{U} \left( \hat{X}_{i}, x, h \right) }{ \sum_{i} k_{U}\left( \hat{X}_{i}, x, h \right)} \right]
 = \sum_{i} \hat{Y}_{i} w_{i}(x, h),
@@ -586,13 +598,13 @@ round(rbind(
 
 #### **Bias-Variance Tradeoff**. {-}
 
-A smaller $\hat{MSE}$ on the data you fit is not automatically better.
-A regressogram with one bin per observation fits every point exactly ($\hat{MSE}=0$), but it has just copied the data and would predict new observations poorly.
-This is the *bias-variance tradeoff*, and the number of bins (equivalently, the half-width $h$) is the lever:
+A smaller $\hat{MSE}$ on the data you fit is not automatically better, because a model can hit every point in the sample and still predict new observations poorly.
 
-:::{.callout-important title="Definition" collapse="false"}
-The *bias-variance tradeoff* describes how a model's expected error decomposes into two sources: *bias* (systematic miss from over-smoothing) and *variance* (sample-to-sample wobble from under-smoothing). The bandwidth $h$ governs the tradeoff: large $h$ trades bias up for variance down, small $h$ does the opposite.
+:::{.callout-important title="Key Definition" collapse="false"}
+The *bias-variance tradeoff* describes how a model's expected error decomposes into two sources: *bias* (systematic miss from over-smoothing) and *variance* (sample-to-sample wobble from under-smoothing).
 :::
+
+The bias-variance tradeoff is useful for thinking about *why* a tuning parameter matters and how to set it. For the local methods in this chapter, the bandwidth $h$ (equivalently, the number of bins) is the lever that governs the tradeoff: large $h$ trades variance down for bias up, small $h$ does the opposite. A regressogram with one bin per observation has $\hat{MSE}=0$ on the fit data but generalizes poorly because it has just copied the noise.
 
 * *Few bins (large $h$)*: each bin average uses many observations, so the fitted curve barely changes from sample to sample (low variance). But one constant over a wide region cannot follow a relationship that bends, so the fit is systematically off (high bias).
 * *Many bins (small $h$)*: each bin average uses few observations, so the fitted curve chases noise and swings from sample to sample (high variance). But a narrow bin can track curvature closely (low bias).
@@ -641,7 +653,7 @@ We study this tradeoff with simulations in [Inference](https://jadamso.github.io
 * <https://cran.r-project.org/doc/manuals/R-intro.html#LOESS> -- R's built-in documentation on `loess()`, including span selection and fitting options.
 * <https://www.khanacademy.org/computing/computer-science/informationtheory/moderninfotheory/v/bias-variance> -- visual introduction to the bias-variance tradeoff that drives bandwidth choice.
 
-:::{.callout-note title="Recall" collapse="false" icon=false}
-This chapter let the wage-schooling relationship bend by fitting local models: regressograms (bin means), piecewise regression (bin lines), locally constant kernel regression, and locally linear regression. We measured fit with $\hat{MSE}$ and $\hat{MAPE}$ and saw the bias-variance tradeoff that bandwidth $h$ governs. The next chapter asks how much these local fits *vary across samples*: confidence bands, gradient summaries, and consistency.
-:::
+#### Recall {-}
+
+This chapter let the wage-schooling relationship bend by fitting local models on the `Wages1` data: regressograms (bin means), piecewise regression (bin lines), locally constant kernel regression, and locally linear regression. The three-observation worked example $\{(1, 2), (4, 4), (12, 3)\}$ split into two bins at $h=9/2$ gave regressogram coefficients $\hat{b}_{0}(x=4.5)=(2+4)/2=3$ and $\hat{b}_{0}(x=13.5)=3$. We measured fit with $\hat{MSE}$ and $\hat{MAPE}$ and saw the bias-variance tradeoff that the bandwidth $h$ governs. The next chapter asks how much these local fits *vary across samples*: confidence bands, gradient summaries, and consistency.
 
