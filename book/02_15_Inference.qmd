@@ -19,26 +19,20 @@ LOESS is useful for smoothing data with uneven $X$: because the *share* of point
 ```{r}
 ## Data
 library(Ecdat)
-dat <- Wages1[, c('wage', 'school')]
-dat <- dat[order(Wages1[, 'school']), ]
-
-# Adaptive bandwidth with non-uniform weights
 dat <- Wages1[order(Wages1[, 'school']), c('wage', 'school')]
+
+# Fit loess with the default span
+reg_lo <- loess(wage ~ school, data=dat)
+
 plot(wage ~ school, pch=16, col=grey(0, .1), data=dat,
     main=NA, xlab='School', ylab='Wage')
+lo_col <- adjustcolor('#20B2AA', alpha.f=.75)  # teal green
+lines(dat[, 'school'], predict(reg_lo),
+    col=lo_col, type='o', pch=2)
 
-reg_lo4 <- loess(wage ~ school, data=dat, span=.4)
-reg_lo8 <- loess(wage ~ school, data=dat, span=.8)
-
-cols <- hcl.colors(3, alpha=.75)[-3]
-lines(dat[, 'school'], predict(reg_lo4),
-    col=cols[1], type='o', pch=2)
-lines(dat[, 'school'], predict(reg_lo8),
-    col=cols[2], type='o', pch=2)
-
-legend('topleft', title='Loess',
-    legend=c('span=.4 ', 'span=.8'),
-    lty=1, col=cols, cex=.8)
+legend('topleft',
+    legend=sprintf('Loess (span = %.2f)', reg_lo$pars$span),
+    lty=1, col=lo_col, cex=.8)
 ```
 
 
@@ -53,27 +47,21 @@ A *confidence band* is a confidence interval drawn at every design point: a regi
 Confidence bands are useful for showing where a fitted curve is well-supported by the data and where another sample could move it. The width is typically wider at the edges of $X$ (few neighbors) and narrower in the dense middle, which is itself a quick visual diagnostic. The same bootstrap that produces the band also produces standard errors for any single design point and for the gradient summaries below.
 
 ```{r}
-# Loess
-reg_lo <- loess(wage ~ school, data=dat, span=.6)
-
-# Predictions at design points
+# Same loess fit as above (default span)
 pred_design <- data.frame(school=unique(dat[, 'school']))
 preds_lo <- predict(reg_lo, newdata=pred_design)
 
-# Plot
-lo_col <- hcl.colors(3, alpha=.5)[2]
 plot(wage ~ school, pch=16, col=grey(0, .1), data=dat,
     main=NA, xlab='School', ylab='Wage')
+lo_col <- adjustcolor('#20B2AA', alpha.f=.5)  # same teal green
 lines(pred_design[, 'school'], preds_lo,
-    col=lo_col,
-    type='o', pch=2)
+    col=lo_col, type='o', pch=2)
 
-# Boot CI
+# Boot CI with the same default-span loess
 boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
 for (b in 1:399) {
-    # xy_i <- xy[-i, ] #jackknife for i in 1:nrow(xy)
     xy_b <- dat[sample(nrow(dat), replace=T), ]
-    reg_b <- loess(wage ~ school, data=xy_b, span=.8)
+    reg_b <- loess(wage ~ school, data=xy_b)
     boot_lo[, b] <- predict(reg_b, newdata=pred_design)
 }
 boot_cb <- apply(boot_lo, 1, quantile,
@@ -106,8 +94,123 @@ lines(xy0[, 'x'], predict(reg_lo2),
 ```
 :::
 
+#### **Bias-Variance Tradeoff**. {-}
 
-#### **Gradients**.{-}
+A better fit on the data you have is not automatically better, because a model can hit every point in the sample and still predict new observations poorly.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *bias-variance tradeoff* describes two sources of model error: *bias* (systematic miss from over-smoothing) and *variance* (sample-to-sample wobble from under-smoothing).
+:::
+
+The bias-variance tradeoff is useful for thinking about *why* a tuning parameter matters and how to set it. For local regressions, the bandwidth $h$ (equivalently, the LOESS *span*) is the lever that governs the tradeoff: large $h$ trades variance down for bias up, small $h$ does the opposite. A loess fit narrow enough to interpolate every point has $\hat{MSE}=0$ on the fit data but generalizes poorly because it has just copied the noise.
+
+* *Wide window (large span, large $h$)*: each local fit uses many observations, so the fitted curve barely changes from sample to sample (low variance). But a nearly flat fit over a wide region cannot follow a relationship that bends, so it is systematically off (high bias).
+* *Narrow window (small span, small $h$)*: each local fit uses few observations, so the fitted curve chases noise and swings from sample to sample (high variance). But a narrow window can track curvature closely (low bias).
+
+```{r}
+# Two-span loess with bootstrap confidence bands on one scatterplot
+pred_design <- data.frame(school=sort(unique(dat[, 'school'])))
+spans <- c(4.0, 0.4)
+B <- 399
+span_col <- hcl.colors(3, alpha=.9)[c(1, 3)]
+
+plot(wage ~ school, data=dat, pch=16, col=grey(0, .1),
+    main=NA, xlab='School', ylab='Wage')
+
+for (s in seq_along(spans)) {
+    sp <- spans[s]
+    fit <- loess(wage ~ school, data=dat, span=sp)
+    boot_preds <- matrix(NA, nrow=nrow(pred_design), ncol=B)
+    for (b in 1:B) {
+        d_b <- dat[sample(nrow(dat), replace=TRUE), ]
+        fit_b <- loess(wage ~ school, data=d_b, span=sp)
+        boot_preds[, b] <- predict(fit_b, newdata=pred_design)
+    }
+    boot_cb <- apply(boot_preds, 1, quantile,
+        probs=c(.025, .975), na.rm=TRUE)
+
+    polygon(c(pred_design[, 'school'], rev(pred_design[, 'school'])),
+        c(boot_cb[1, ], rev(boot_cb[2, ])),
+        col=adjustcolor(span_col[s], alpha.f=0.3), border=NA)
+    lines(pred_design[, 'school'], predict(fit, newdata=pred_design),
+        col=span_col[s], lwd=2)
+}
+
+legend('topleft', title='LOESS span',
+    legend=paste0(spans),
+    col=span_col, lty=1, lwd=2, cex=.8)
+```
+
+With span $4.0$ the fitted curve is very smooth and stable, and the bootstrap band sits tightly around it. With span $0.4$ the curve tracks more local variation, and the bootstrap band fans wider, directly displaying the variance penalty for chasing local detail.
+(`school` is integer-valued with only $14$ distinct values, so spans below about $0.4$ collapse to single-point neighborhoods and `loess()` cannot fit.)
+Choosing the span (the bandwidth $h$) means trading bias against variance.
+We make this tradeoff precise in the [Theory](#theory) section below, where the bias-variance decomposition gives a formal expression and simulations check both pieces.
+
+Note that the simple linear regression is nested as a special case with $span \to \infty$.
+
+#### **Model Fit** {-}
+
+Each local model produces fitted values $\hat{y}_{i}$ and residuals $\hat{e}_{i} = \hat{Y}_{i} - \hat{y}_{i}$.
+To compare models, we often summarize the residuals with a single number.
+
+
+The *mean squared error* averages the squared residuals,
+\begin{eqnarray}
+\hat{MSE} &=& \frac{1}{n}\sum_{i=1}^{n} \hat{e}_{i}^2 = \frac{1}{n}\sum_{i=1}^{n} \left(\hat{Y}_{i} - \hat{y}_{i}\right)^2.
+\end{eqnarray}
+Squaring penalizes large misses heavily, and the units are the square of $\hat{Y}_{i}$ (squared dollars for wages).
+
+
+The *mean absolute percentage error* instead averages each residual relative to its observed value,
+\begin{eqnarray}
+\hat{MAPE} &=& \frac{100}{n}\sum_{i=1}^{n} \left| \frac{\hat{e}_{i}}{\hat{Y}_{i}} \right|.
+\end{eqnarray}
+MAPE is unit-free, which makes it easy to communicate, but it is undefined when $\hat{Y}_{i}=0$ and over-weights observations with small $\hat{Y}_{i}$.
+MSE is easier to analyze theoretically (formally deriving the bias-variance tradeoff)
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Suppose three workers have wages $\hat{Y}=(8, 10, 15)$ and a model predicts $\hat{y}=(9, 9, 14)$.
+The residuals are $\hat{e}=(-1, 1, 1)$, so
+\begin{eqnarray}
+\hat{MSE} &=& \frac{(-1)^2 + 1^2 + 1^2}{3} = \frac{3}{3} = 1,\\
+\hat{MAPE} &=& \frac{100}{3}\left( \frac{1}{8} + \frac{1}{10} + \frac{1}{15} \right) \approx \frac{100}{3}(0.292) \approx 9.7.
+\end{eqnarray}
+The model misses by $1$ squared-dollar on average, or about $10\%$ of each wage.
+```{r}
+Y     <- c(8, 10, 15)
+y_hat <- c(9, 9, 14)
+e <- Y - y_hat
+mean(e^2)           # MSE
+100*mean(abs(e/Y))  # MAPE
+```
+:::
+
+We can compute these for the linear, regressogram, and piecewise models on the wage~school data.
+```{r}
+library(Ecdat)
+dat <- Wages1[order(Wages1[, 'school']), c('wage', 'school')]
+
+# Three models for wage on schooling
+reg_lin <- lm(wage ~ school, data=dat)        # globally linear
+dat[, 'xcf'] <- cut(dat[, 'school'], 3)
+reg_rgram <- lm(wage ~ xcf, data=dat)         # regressogram, 3 bins
+reg_pw    <- lm(wage ~ xcf*school, data=dat)  # piecewise, 3 bins
+
+# Mean squared error and mean absolute percentage error
+fit_stats <- function(model){
+    e <- resid(model)
+    Y <- dat[, 'wage']
+    c(MSE=mean(e^2), MAPE=100*mean(abs(e/Y)))
+}
+round(rbind(
+    Linear       = fit_stats(reg_lin),
+    Regressogram = fit_stats(reg_rgram),
+    Piecewise    = fit_stats(reg_pw)), 2)
+```
+
+## Relationships
+
+#### **Gradients** {-}
 
 Once the fitted curve can bend, "the slope" is no longer a single number; we want the slope locally at each $x$.
 
@@ -168,13 +271,13 @@ plot(grad_x+grad_dx, grad_lo,
 A different kind of summary collapses the whole gradient curve into a single number for tabular reporting.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *marginal effect at the mean* evaluates the gradient at a single design point (usually $\hat{M}_{X}$):
+The *gradient at the mean* (sometimes called the *marginal effect at the mean*) evaluates the gradient at a single design point:
 $$\hat{b}_{1}(x=\hat{M}_{X}).$$
-The *mean of the gradients* (also called the *average effect*) averages $\hat{b}_{1}(x)$ across every observation in the dataset:
+The *mean of the gradients* (sometimes called the *average effect* or *mean marginal effect*) averages $\hat{b}_{1}(x)$ across every observation in the dataset:
 $$\frac{1}{n}\sum_{i=1}^{n} \hat{b}_{1}(x=\hat{X}_{i}).$$
 :::
 
-These two summaries are useful for different questions: the *marginal effect at the mean* answers "what is the slope at a typical $X$?", while the *mean of the gradients* answers "what is the average slope across the sample?". The two coincide for a globally linear model but can differ for any other, sometimes substantially when the relationship bends. You may also be interested in the *median* of the gradients, or in measures of *effect heterogeneity* like the interquartile range or standard deviation of the gradients. Such statistics can be presented in tabular form: "mean gradient (sd gradient)" or "mean gradient (estimated SE), sd gradient (estimated SE)".
+These two summaries are useful for different questions: the *gradient at the mean* answers "what is the slope at a typical $X$?", while the *mean of the gradients* answers "what is the average slope across the sample?". The two coincide for a globally linear model but can differ for any other, sometimes substantially when the relationship bends. You may also be interested in the *median* of the gradients, or in measures of *effect heterogeneity* like the interquartile range or standard deviation of the gradients. Such statistics can be presented in tabular form: "mean gradient (sd gradient)" or "mean gradient (estimated SE), sd gradient (estimated SE)".
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 These two summaries usually differ.
@@ -311,105 +414,6 @@ cat('p-value:      ', format.pval(p_jack, digits=3), '\n')
 ```
 :::
 
-
-## Model Fit
-
-Each local model produces fitted values $\hat{y}_{i}$ and residuals $\hat{e}_{i} = \hat{Y}_{i} - \hat{y}_{i}$.
-To compare models, we summarize the residuals with a single number.
-
-#### **MSE and MAPE**. {-}
-
-The *mean squared error* averages the squared residuals,
-\begin{eqnarray}
-\hat{MSE} &=& \frac{1}{n}\sum_{i=1}^{n} \hat{e}_{i}^2 = \frac{1}{n}\sum_{i=1}^{n} \left(\hat{Y}_{i} - \hat{y}_{i}\right)^2.
-\end{eqnarray}
-Squaring penalizes large misses heavily, and the units are the square of $\hat{Y}_{i}$ (squared dollars for wages).
-The *mean absolute percentage error* instead averages each residual relative to its observed value,
-\begin{eqnarray}
-\hat{MAPE} &=& \frac{100}{n}\sum_{i=1}^{n} \left| \frac{\hat{e}_{i}}{\hat{Y}_{i}} \right|.
-\end{eqnarray}
-MAPE is unit-free, which makes it easy to communicate, but it is undefined when $\hat{Y}_{i}=0$ and over-weights observations with small $\hat{Y}_{i}$.
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-Suppose three workers have wages $\hat{Y}=(8, 10, 15)$ and a model predicts $\hat{y}=(9, 9, 14)$.
-The residuals are $\hat{e}=(-1, 1, 1)$, so
-\begin{eqnarray}
-\hat{MSE} &=& \frac{(-1)^2 + 1^2 + 1^2}{3} = \frac{3}{3} = 1,\\
-\hat{MAPE} &=& \frac{100}{3}\left( \frac{1}{8} + \frac{1}{10} + \frac{1}{15} \right) \approx \frac{100}{3}(0.292) \approx 9.7.
-\end{eqnarray}
-The model misses by $1$ squared-dollar on average, or about $10\%$ of each wage.
-```{r}
-Y     <- c(8, 10, 15)
-y_hat <- c(9, 9, 14)
-e <- Y - y_hat
-mean(e^2)           # MSE
-100*mean(abs(e/Y))  # MAPE
-```
-:::
-
-We can compute these for the linear, regressogram, and piecewise models on the wage~school data.
-```{r}
-library(Ecdat)
-dat <- Wages1[order(Wages1[, 'school']), c('wage', 'school')]
-
-# Three models for wage on schooling
-reg_lin <- lm(wage ~ school, data=dat)        # globally linear
-dat[, 'xcf'] <- cut(dat[, 'school'], 3)
-reg_rgram <- lm(wage ~ xcf, data=dat)         # regressogram, 3 bins
-reg_pw    <- lm(wage ~ xcf*school, data=dat)  # piecewise, 3 bins
-
-# Mean squared error and mean absolute percentage error
-fit_stats <- function(model){
-    e <- resid(model)
-    Y <- dat[, 'wage']
-    c(MSE=mean(e^2), MAPE=100*mean(abs(e/Y)))
-}
-round(rbind(
-    Linear       = fit_stats(reg_lin),
-    Regressogram = fit_stats(reg_rgram),
-    Piecewise    = fit_stats(reg_pw)), 2)
-```
-
-#### **Bias-Variance Tradeoff**. {-}
-
-A smaller $\hat{MSE}$ on the data you fit is not automatically better, because a model can hit every point in the sample and still predict new observations poorly.
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *bias-variance tradeoff* describes how a model's expected error decomposes into two sources: *bias* (systematic miss from over-smoothing) and *variance* (sample-to-sample wobble from under-smoothing).
-:::
-
-The bias-variance tradeoff is useful for thinking about *why* a tuning parameter matters and how to set it. For local regressions, the bandwidth $h$ (equivalently, the number of bins) is the lever that governs the tradeoff: large $h$ trades variance down for bias up, small $h$ does the opposite. A regressogram with one bin per observation has $\hat{MSE}=0$ on the fit data but generalizes poorly because it has just copied the noise.
-
-* *Few bins (large $h$)*: each bin average uses many observations, so the fitted curve barely changes from sample to sample (low variance). But one constant over a wide region cannot follow a relationship that bends, so the fit is systematically off (high bias).
-* *Many bins (small $h$)*: each bin average uses few observations, so the fitted curve chases noise and swings from sample to sample (high variance). But a narrow bin can track curvature closely (low bias).
-
-```{r}
-# Same data, regressograms with three bin counts
-plot(wage ~ school, data=dat, pch=16, col=grey(0, .1),
-    main=NA, xlab='School', ylab='Wage')
-bin_cols <- hcl.colors(3, alpha=.9)
-
-# Coarse: 2 bins
-dat[, 'xb'] <- cut(dat[, 'school'], 2)
-lines(dat[, 'school'], predict(lm(wage ~ xb, dat)),
-    col=bin_cols[1], lwd=2, type='s')
-# Medium: 4 bins
-dat[, 'xb'] <- cut(dat[, 'school'], 4)
-lines(dat[, 'school'], predict(lm(wage ~ xb, dat)),
-    col=bin_cols[2], lwd=2, type='s')
-# Fine: one bin per schooling year
-dat[, 'xb'] <- as.factor(dat[, 'school'])
-lines(dat[, 'school'], predict(lm(wage ~ xb, dat)),
-    col=bin_cols[3], lwd=2, type='s')
-
-legend('topleft', title='Regressogram bins',
-    legend=c('2', '4', 'per year'),
-    col=bin_cols, lty=1, lwd=2, cex=.8)
-```
-
-With $2$ bins the fitted curve is flat and stable but misses the rise in wages with schooling; with one bin per year it is jagged and sample-specific.
-Choosing the number of bins (the bandwidth $h$) means trading bias against variance.
-We make this tradeoff precise in the [Theory](#theory) section below, where the bias-variance decomposition gives a formal expression and simulations check both pieces.
 
 
 ## Theory
