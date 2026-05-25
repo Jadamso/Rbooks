@@ -1,7 +1,7 @@
 # Misc. Multivariate Topics
 ***
 
-
+This chapter collects the remaining multivariate topics that did not fit cleanly into the preceding chapters. We cover prediction (including prediction intervals and cross-validation), time-series filtering, random subsampling, the matrix-form OLS theory and the bias of $\hat{B}^*$, and finally multiple testing corrections — the formal remedy for the kind of search-induced false positives raised in [Data Scientism](https://jadamso.github.io/Rbooks/03_25_DataScientism.html).
 
 ## Prediction
 
@@ -34,7 +34,14 @@ Consider the relationship between class size and student test scores. Write one 
 
 #### **Prediction Intervals**. {-}
 
-Here, we consider a range for $Y_{i}$ rather than for $m(X_{i})$. These intervals also take into account the residuals, the variability of individuals rather than the variability of their mean.
+A confidence interval for the mean $m(x)$ does not by itself tell us how far a *new* observation at $x$ might land.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *prediction interval* for $Y_i$ at $X_i = x$ is a range that captures a stated probability (e.g., 95%) of new observations at that $x$.
+:::
+
+*Prediction intervals* are useful when the question is about individuals rather than averages — what wage might a new worker with 12 years of schooling actually earn, not what the average wage of such workers is.
+Because they also include the residual variability of $Y_i$ around the mean, they are generally wider than a confidence interval for $m(x)$ at the same level.
 ```{r}
 # Bivariate Data from USArrests
 xy <- USArrests[, c('Murder', 'UrbanPop')]
@@ -140,13 +147,16 @@ polygon( c(x, rev(x)),
 
 #### **Cross Validation**.{-}
 
-Perhaps the most common approach to selecting a bandwidth is to minimize *prediction* error. *Leave-one-out cross-validation* minimizes the average "leave-one-out" mean square prediction errors:
-\begin{eqnarray}
-\min_{h} \quad \frac{1}{n} \sum_{i=1}^{n} \left[ \hat{Y}_{i} - \hat{y_{[i]}}(X,h) \right]^2,
-\end{eqnarray}
-where $\hat{y}_{[i]}(X,h)$ is the model predicted value at $X_{i}$ based on a dataset that excludes $X_{i}$, and $h$ is the bandwidth (e.g., bin size in a regressogram).
+A model that fits the training data perfectly can still predict new observations badly, so we need a score that rewards out-of-sample accuracy rather than in-sample fit.
 
-Minimizing out-sample prediction error is perhaps the simplest computational approach to choose bandwidths, and it also addresses an issue that plagues observational studies in the social sciences: your model explains everything and predicts nothing. Note, however, minimizing prediction error is not objectively "best". 
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+*Leave-one-out cross-validation (LOO-CV)* fits the model $n$ times, each time leaving one observation out and predicting it from the rest, then chooses the bandwidth $h$ that minimizes the average squared prediction error,
+$$\min_{h} \quad \frac{1}{n} \sum_{i=1}^{n} \left[ \hat{Y}_{i} - \hat{y}_{[i]}(X,h) \right]^2,$$
+where $\hat{y}_{[i]}(X,h)$ is the model's predicted value at $X_{i}$ from a fit that excluded $X_{i}$ and $h$ is the bandwidth (e.g., bin size in a regressogram).
+:::
+
+*Leave-one-out cross-validation* is useful as the simplest computational way to choose bandwidths, and it directly addresses an issue that plagues observational studies in the social sciences: your model explains everything and predicts nothing.
+The score it minimizes is an out-of-sample average, so a too-flexible model that fits in-sample noise will be penalized; minimizing prediction error is not objectively "best" but it is a defensible default when no other criterion is obviously stronger.
 
 In practice, compare models with cross-validation (below). The preferred model is the one with best out-of-sample performance, not the one with the most flexible in-sample fit. The same idea selects bin counts and bandwidths in [Local Relationships](https://jadamso.github.io/Rbooks/03_22_Regressograms.html#model-selection).
 
@@ -203,10 +213,15 @@ Repeating this for several bandwidths, the one with the smallest score is prefer
 ## Filtering
 
 #### **Filtering**.{-}
-In some cases, we may want to smooth time series data instead of predict into the future. We can distinguish two types of smoothing, incorporating future observations or not. When only weighting two other observations, the differences can be expressed as trying to estimate the average with different available data:
 
-* Filtering: $\mathbb{E}[Y_{t} | X_{t-1}, X_{t-2}]$
-* Smoothing: $\mathbb{E}[Y_{t} | X_{t-1}, X_{t+1}]$
+In some cases we want to estimate the level of a time series at $t$ rather than forecast forward, and the relevant question is which neighbors we are allowed to use.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+*Filtering* estimates the value of a time series at $t$ using only past observations, $\mathbb{E}[Y_{t} \mid X_{t-1}, X_{t-2}]$; *smoothing* uses both past and future, $\mathbb{E}[Y_{t} \mid X_{t-1}, X_{t+1}]$.
+:::
+
+*Filtering* is useful for forecasting and any online use where the future is genuinely unknown at time $t$, while *smoothing* produces lower-variance estimates and is the right choice for retrospective analysis where the full series is in hand.
+The two are otherwise built from the same kernel weights, so the only practical difference is which observations the weights are allowed to touch.
 
 One example of *filtering* is *Exponential Filtering* (sometimes confusingly referred to as "Exponential Smoothing") which weights only previous observations using an exponential kernel.
 ```{r}
@@ -273,24 +288,22 @@ title(paste0('One-sided MA, h = ', h_star), font.main=1)
 
 #### **Bayes' Theorem**. {-}
 
-Bayes' theorem maps predictive statements into inferential statements. In bivariate form,
-\begin{eqnarray}
-Prob(X_i=x \mid Y_i=y)
-&=&
-\frac{Prob(Y_i=y \mid X_i=x)Prob(X_i=x)}{Prob(Y_i=y)}.
-\end{eqnarray}
+We often start with a predictive statement — how likely is a signal $Y_i$ given a state $X_i$ — but the question we actually want answered runs the other way.
 
-Interpretation:
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+*Bayes' theorem* updates a prior probability $Prob(X_i=x)$ to a posterior $Prob(X_i=x \mid Y_i=y)$ using the likelihood $Prob(Y_i=y \mid X_i=x)$,
+$$Prob(X_i=x \mid Y_i=y) = \frac{Prob(Y_i=y \mid X_i=x)Prob(X_i=x)}{Prob(Y_i=y)}.$$
+Mnemonic: posterior $\propto$ likelihood $\times$ prior.
+:::
+
+*Bayes' theorem* is useful as the bridge between predictive and inferential statements: given the conditional probabilities a test or model supplies (the likelihood) and a baseline rate (the prior), it returns the probability that interests the decision-maker (the posterior).
+The three ingredients have standard names:
 
 * $Prob(X_i=x)$ is the prior probability for $X_i=x$.
 * $Prob(Y_i=y|X_i=x)$ is the likelihood of seeing $Y_i=y$ if $X_i=x$ is true.
 * $Prob(X_i=x|Y_i=y)$ is the posterior, your updated probability after seeing $Y_i=y$.
 
-A useful way to remember this is
-\begin{eqnarray}
-\text{Posterior} \propto \text{Likelihood} \times \text{Prior}.
-\end{eqnarray}
-For two states, posterior odds are prior odds times a likelihood ratio.
+For two states, posterior odds are prior odds times a likelihood ratio, which is often the easiest form for hand calculation.
 
 For a concrete example, suppose a screening test has sensitivity 0.90 and false positive rate 0.08, while prevalence is 0.12:
 \begin{eqnarray}
@@ -338,7 +351,7 @@ Notice that a positive test result raises the probability of having the conditio
 :::
 
 ## Subsampling
-Random *subsampling* is one of many hybrid approaches that tries to combine the best of the core methods: Bootstrap and Jacknife.
+Random *subsampling* is one of many hybrid approaches that tries to combine the best of the core methods: Bootstrap and Jackknife. It draws subsamples of size $m < n$ without replacement, repeating the procedure $B$ times. The next table summarizes how the three resampling strategies differ.
 
 | | Sample Size per Iteration | Number of Iterations | Resample |
 | -------- | ------- | ------- | ------- |
@@ -431,14 +444,19 @@ Minimizing the squared errors: $\min_{B} e_{i}^2 = \min_{B} (E' E)$, yields coef
 \hat{E} &=& \hat{Y} - \hat{y} \\
 \end{eqnarray}
 ```{r}
-# Manually Compute
+# Manually compute B_hat = (X'X)^{-1} X'Y step by step.
 Y <- USArrests[, 'Murder']
 X <- USArrests[, c('Assault', 'UrbanPop')]
 X <- as.matrix(cbind(1, X))
 
-XtXi <- solve(t(X)%*%X)
-Bhat <- XtXi %*% (t(X)%*%Y)
+XtX  <- t(X) %*% X         # K+1 by K+1 cross-product
+XtXi <- solve(XtX)         # invert
+XtY  <- t(X) %*% Y          # K+1 by 1 cross-product with Y
+Bhat <- XtXi %*% XtY        # K+1 coefficient vector
 c(Bhat)
+
+# Confirms the same answer as lm()
+coef(lm(Murder ~ Assault + UrbanPop, data=USArrests))
 ```
 
 #### **Bias**. {-}
@@ -473,13 +491,16 @@ This is the statistical engine behind much of [Data Scientism](https://jadamso.g
 
 #### **Family-Wise Error Rate**. {-}
 
-The *family-wise error rate* (FWER) is the probability of at least one false positive across a family of $K$ tests.
-If the tests are independent and each has false-positive rate $\alpha$, then
-\begin{eqnarray}
-\text{FWER} &=& 1-(1-\alpha)^{K}.
-\end{eqnarray}
-With $\alpha=0.05$, one test has FWER $0.05$, but $K=10$ tests give $1-0.95^{10}\approx 0.40$ and $K=100$ tests give $1-0.95^{100}\approx 0.99$.
-Almost any dataset will yield a "significant" result if you test it enough ways.
+A single $5\%$ test promises a $5\%$ false-positive rate, but a researcher rarely stops at one test — and the relevant question is the chance of *any* false positive across the whole batch.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *family-wise error rate (FWER)* is the probability of at least one false positive across a family of $K$ tests.
+If the tests are independent and each has false-positive rate $\alpha$,
+$$\text{FWER} = 1-(1-\alpha)^{K}.$$
+:::
+
+The FWER is useful as the headline number for any procedure that runs many hypothesis tests: it tells you how likely you are to declare *something* "significant" by chance even when every null is true.
+With $\alpha=0.05$, one test has FWER $0.05$, but $K=10$ tests give $1-0.95^{10}\approx 0.40$ and $K=100$ tests give $1-0.95^{100}\approx 0.99$ — almost any dataset will yield a "significant" result if you test it enough ways.
 
 ```{r}
 # Family-wise error rate grows with the number of tests
@@ -491,11 +512,15 @@ cbind(K, fwer=round(fwer, 3))
 
 #### **Bonferroni and Holm Corrections**. {-}
 
-To control the FWER, we make each individual test stricter.
-The *Bonferroni correction* tests each hypothesis at level $\alpha/K$ instead of $\alpha$.
-Equivalently, it multiplies each $p$-value by $K$ and keeps the $\alpha$ threshold.
-This guarantees FWER $\leq \alpha$, but it is conservative: with many tests, it can miss real effects.
-The *Holm correction* is a less conservative stepwise version that still controls the FWER, and is generally preferred.
+To hold the family-wise error rate down to $\alpha$, we have to make each individual test stricter — but exactly how strict matters for whether real effects survive.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *Bonferroni correction* multiplies each $p$-value by the number of tests $K$ (equivalently, lowers the threshold to $\alpha/K$).
+The *Holm correction* applies the same idea stepwise: sort the $p$-values from smallest to largest and compare the $j$th smallest to $\alpha/(K-j+1)$.
+:::
+
+The *Bonferroni correction* is useful as the simplest valid adjustment — it guarantees $\text{FWER} \leq \alpha$ under any dependence structure between tests — but it is conservative, and with many tests it can miss real effects.
+The *Holm correction* is uniformly more powerful than Bonferroni while still controlling the FWER, so it is generally preferred when only family-wise control is wanted.
 
 ```{r}
 # Five p-values from five separate tests
@@ -517,9 +542,15 @@ The threshold view is equivalent: compare the raw $p$-value to $\alpha/K = 0.05/
 
 #### **Post-Hoc Pairwise Tests**. {-}
 
-A global test, such as the ANOVA $F$-test in [Comparing Multiple Groups](https://jadamso.github.io/Rbooks/03_20_MultipleGroups.html), tells you that *some* group differs, but not *which* one.
-The natural follow-up is to compare every pair of groups.
-With $G$ groups there are $G(G-1)/2$ pairs, so these *post-hoc* comparisons are themselves a multiple-testing problem and need a correction.
+A significant global test says some group differs, but the question we usually care about is *which* one — and asking each pair separately reintroduces the multiple-testing problem we just controlled at the global level.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *post-hoc test* is a follow-up comparison conducted after a significant global test (like ANOVA).
+Because there are $G(G-1)/2$ pairs to test, the per-pair significance threshold must be tightened to control the family-wise error rate; *Tukey's HSD* and Holm-adjusted pairwise $t$-tests are common choices.
+:::
+
+*Post-hoc tests* are useful as the standard follow-up to a significant ANOVA $F$-test (see [Comparing Multiple Groups](https://jadamso.github.io/Rbooks/03_20_MultipleGroups.html)): they pinpoint the group or groups responsible for the global rejection without inflating the false-positive rate.
+The number of comparisons grows quadratically in $G$, so the per-pair threshold gets noticeably stricter as soon as there are more than a handful of groups.
 
 ```{r}
 # Global test: do murder rates differ by region?
@@ -561,3 +592,8 @@ The uncorrected version flags more differences; explain why, and state which ver
 * <https://cran.r-project.org/web/packages/np/vignettes/np.pdf> -- the `np` package vignette for nonparametric kernel estimation and bandwidth selection.
 * Shmueli, G. (2010). To explain or to predict? *Statistical Science*, 25(3), 289--310. <https://doi.org/10.1214/10-STS330> -- a clear discussion of the describe/explain/predict distinction in statistical modeling.
 * <https://cran.r-project.org/web/packages/multcomp/vignettes/multcomp-examples.pdf> -- worked examples of multiple-comparison procedures and post-hoc tests in R.
+
+
+#### **Recall** {-}
+
+This chapter wrapped up the multivariate part with the describe/explain/predict taxonomy, prediction intervals and cross-validation, time-series filtering, random subsampling, the matrix form of OLS, and multiple-testing corrections. The matrix-OLS sense-check on `USArrests` made the algebra concrete: computing $\hat{B}^{*}=(\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\hat{Y}$ step by step with `XtX <- t(X) %*% X`, `XtXi <- solve(XtX)`, and `Bhat <- XtXi %*% XtY` recovers exactly the coefficient vector that `lm(Murder ~ Assault + UrbanPop, data=USArrests)` returns. These tools close the loop with earlier chapters: cross-validation chooses models, multiple-testing corrections discipline the search problem flagged in [Data Scientism](https://jadamso.github.io/Rbooks/03_25_DataScientism.html), and the matrix form makes the OLS algebra of [Multiple Regression](https://jadamso.github.io/Rbooks/03_19_MultipleRegression.html) explicit. The appendices that follow revisit reproducible workflows and probability theory in greater depth.
