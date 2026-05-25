@@ -7,6 +7,15 @@ In each case we summarize the groups, compute a statistic for the difference bet
 
 ## Discrete Data
 
+When both variables are factors, a natural way to summarize their association is to look at how the average of one (treated as cardinal) changes across categories of the other.
+
+:::{.callout-important title="Key Definition" collapse="false"}
+The *conditional mean* $\hat{M}_{Y|x}$ is the average value of $Y_{i}$ inside the subgroup where $X_{i}=x$:
+$$\hat{M}_{Y|x}=\sum_{y} y\,\hat{p}_{y\mid x}.$$
+:::
+
+Comparing $\hat{M}_{Y|x}$ across values of $x$ is useful as the simplest summary of association between a cardinal outcome and a factor: a single number per subgroup shows whether $Y$ tends to be higher in one category. The calculation breaks into two steps: row-by-row, compute the conditional distribution $\hat{p}_{y\mid x}$, then take its weighted average using the values of $y$.
+
 Suppose our data is given in the table shown below.
 
 |      | $x=0$ | $x=1$ |
@@ -16,7 +25,7 @@ Suppose our data is given in the table shown below.
 | $y=3$ | $10$ | $16$ |
 
 
-First, we can compute conditional probabilities to examine how the distribution changes.
+First, we compute conditional probabilities to examine how the distribution changes.
 
 |      | $x=0$ | $x=1$ |
 |:----:|:---:|:---:|:---:|
@@ -25,16 +34,12 @@ First, we can compute conditional probabilities to examine how the distribution 
 | $y=3$ | $10/40$ | $16/30$ |
 |       | $40/40$ | $30/30$ |
 
-Second, we can compute the *conditional mean* $\hat{M}_{Y|X}$ by looking within each row. Specifically
+Second, we apply the conditional-mean formula row by row:
 \begin{eqnarray*}
-\hat{M}_{y|x=0} = 1 \frac{12}{40} + 2 \frac{18}{40} + 3 \frac{10}{40} = \frac{12+36+30}{40} = \frac{78}{40} \\ 
+\hat{M}_{y|x=0} = 1 \frac{12}{40} + 2 \frac{18}{40} + 3 \frac{10}{40} = \frac{12+36+30}{40} = \frac{78}{40} \\
 \hat{M}_{y|x=1} = 1 \frac{8}{30} + 2 \frac{6}{30} + 3 \frac{16}{30} = \frac{8+12+48}{30} = \frac{68}{30}
 \end{eqnarray*}
 Notice that $\hat{M}_{y|x=0} < 2 < \hat{M}_{y|x=1}$, which shows that the mean value of $Y$ is higher when $X$ is higher. I.e., there is a positive association.
-
-:::{.callout-important title="Definition" collapse="false"}
-The *conditional mean* $\hat{M}_{Y|x}$ is the average value of $Y_{i}$ inside the subgroup where $X_{i}=x$: $\hat{M}_{Y|x}=\sum_{y} y\,\hat{p}_{y\mid x}$. Comparing $\hat{M}_{Y|x}$ across values of $x$ is how we summarize an association between a cardinal outcome and a factor.
-:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 We can compute the mean $\hat{M}_{Y}$ using the marginal distributions, as already shown in the last chapter. 
@@ -127,17 +132,15 @@ The histogram may show several differences between groups or none at all. Often,
 
 #### **Mean Differences**. {-}
 
-We often want to know if the means of different samples are the same or different. To test this hypothesis, we compute the means separately for each sample and then examine the differences term
-\begin{eqnarray}
-\hat{D} = \hat{M}_{Y1} - \hat{M}_{Y2},
-\end{eqnarray}
-with a null hypothesis that there is no difference in the population means. We can do this either by "inverting a Confidence Interval" or "imposing the null".
+We often want to know whether two samples have the same mean.
 
-:::{.callout-important title="Definition" collapse="false"}
-The *mean difference* $\hat{D}=\hat{M}_{Y1}-\hat{M}_{Y2}$ is the sample-mean of the outcome in group 1 minus the sample-mean in group 2. A positive value says group 1 has the higher average; zero is the natural null.
+:::{.callout-important title="Key Definition" collapse="false"}
+The *mean difference* $\hat{D}=\hat{M}_{Y1}-\hat{M}_{Y2}$ is the sample-mean of the outcome in group 1 minus the sample-mean in group 2:
+$$\hat{D} = \hat{M}_{Y1} - \hat{M}_{Y2}.$$
+A positive value says group 1 has the higher average; zero is the natural null.
 :::
 
-The bootstrap below pegs $\hat{M}_{Y1}$ and $\hat{M}_{Y2}$ at the wage data and reports $\hat{D}$. The university group has the higher mean wage, so $\hat{D}<0$ here; the next step is asking whether the gap is bigger than sampling noise alone would produce.
+The *mean difference* is useful as the workhorse single-number summary of "how different are these two groups, on average", because it is on the same scale as the outcome itself and the natural null hypothesis $\hat{D}=0$ corresponds to "no difference in population means". We can test that hypothesis either by inverting a confidence interval or by imposing the null. The bootstrap below pegs $\hat{M}_{Y1}$ and $\hat{M}_{Y2}$ at the wage data and reports $\hat{D}$: the university group has the higher mean wage, so $\hat{D}<0$ here, and the next step is asking whether the gap is bigger than sampling noise alone would produce.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Here is an example of inverting a CI
@@ -170,14 +173,13 @@ abline(v=0, lwd=2, col=rgb(1, 0, 0, .8))
 :::
 
 
-For "imposing the null", it is more common to use $p$-values instead of confidence intervals. We can compute $p$-values using a null-bootstrap or *permutation* distribution; a permutation distribution reshuffles the group labels without replacement, so each resample keeps the same pooled data but randomly re-splits it into two groups. If using a hard decision rule, it is most common to use
+For "imposing the null", it is more common to use $p$-values instead of confidence intervals.
 
-* reject the null at the $5\%$ level if $p<0.05$
-* fail to reject the null at the $5\%$ level if $p>0.05$
-
-:::{.callout-important title="Definition" collapse="false"}
+:::{.callout-important title="Key Definition" collapse="false"}
 A *permutation test* of "no difference between groups" recomputes the test statistic on many random reshufflings of the group labels. Because each reshuffle keeps the pooled data but breaks the link between label and outcome, the resulting distribution shows what differences look like under the null of no association.
 :::
+
+The *permutation test* (also called a *randomization test*) is useful whenever the null hypothesis is "no association", because reshuffling labels imposes that null exactly by construction, without needing to assume a distributional form. The shuffled distribution always sums to the same pooled data, so the only variability comes from re-splitting the labels. If using a hard decision rule, it is most common to reject the null at the $5\%$ level when $p<0.05$ and fail to reject when $p>0.05$.
 
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
@@ -357,22 +359,19 @@ title('Quantile-Quantile Plot', font.main=1)
 abline(a=0, b=1, lty=2)
 ```
 
-The starting point for hypothesis testing is the *Kolmogorov-Smirnov statistic*: the maximum absolute difference between two CDF's over all sample data $y \in \{Y_1\} \cup \{Y_2\}$.
-\begin{eqnarray}
-\hat{KS} &=& \max_{y} |\hat{F}_{1}(y)- \hat{F}_{2}(y)|^{p},
-\end{eqnarray}
-where $p$ is an integer (typically 1). An intuitive alternative is the *Cramer-von Mises statistic*: the sum of absolute differences (raised to an integer, typically 2) between two CDF's.
-\begin{eqnarray}
-\hat{CVM} &=& \sum_{y} | \hat{F}_{1}(y)- \hat{F}_{2}(y)|^{p}.
-\end{eqnarray}
+To go from a picture of two distributions to a single-number summary of how different they are, we measure the gap between their ECDFs.
 
-:::{.callout-important title="Definition" collapse="false"}
-The *Kolmogorov-Smirnov statistic* $\hat{KS}$ summarizes the difference between two ECDF's with their single biggest vertical gap. It is sensitive to a shift between the two distributions but can miss differences that average out.
+:::{.callout-important title="Key Definition" collapse="false"}
+The *Kolmogorov-Smirnov statistic* $\hat{KS}$ summarizes the difference between two ECDFs by their single biggest vertical gap, evaluated over the pooled sample $y \in \{Y_1\} \cup \{Y_2\}$:
+$$\hat{KS} = \max_{y} |\hat{F}_{1}(y)- \hat{F}_{2}(y)|^{p}.$$
+
+The *Cramer-von Mises statistic* $\hat{CVM}$ instead sums the vertical gaps at every pooled sample point:
+$$\hat{CVM} = \sum_{y} | \hat{F}_{1}(y)- \hat{F}_{2}(y)|^{p}.$$
+
+The integer $p$ is typically $1$ for $\hat{KS}$ and $2$ for $\hat{CVM}$.
 :::
 
-:::{.callout-important title="Definition" collapse="false"}
-The *Cramer-von Mises statistic* $\hat{CVM}$ summarizes the difference between two ECDF's with the sum (or sum of squares) of vertical gaps at every pooled sample point. It accumulates many small differences that $\hat{KS}$ would miss.
-:::
+$\hat{KS}$ is useful when we expect distributions to differ by a shift: the gap piles up at one location and the max catches it. The cost is that $\hat{KS}$ can miss differences where small positive and small negative gaps cancel along the support. $\hat{CVM}$ is useful for accumulated small differences spread across the support, since every pooled sample point contributes to the sum.
 
 ```{r}
 # Distributions
@@ -488,6 +487,6 @@ These methods extend naturally from two groups to many. See [Multiple Groups](ht
 * <https://www.jwilber.me/permutationtest/> -- interactive visual explanation of how permutation tests build a null distribution.
 * <https://cran.r-project.org/web/packages/qualvar/vignettes/wilcox1973.html> -- the qualitative variation index for comparing categorical distributions across groups.
 
-:::{.callout-note title="Recall" collapse="false" icon=false}
-This chapter compared two groups in three ways: mean differences, quantile differences, and distributional comparisons via $\hat{KS}$ and $\hat{CVM}$, with $p$-values from permutation tests. The next chapter moves from group differences to *association*: single-number statistics that summarize how two variables move together across the whole dataset.
-:::
+#### Recall {-}
+
+This chapter compared two groups in three ways: mean differences, quantile differences, and distributional comparisons via $\hat{KS}$ and $\hat{CVM}$. The worked example throughout used wages from the `Wages1` dataset split by schooling (12 vs 16 years), with permutation tests for $p$-values; the small worked example of summer earnings $A=\{18,20,25,30\}$ and $B=\{19,21,24,35\}$ walked through the cell-by-cell $\hat{CVM}=1/4$ calculation. The next chapter moves from group differences to *association*: single-number statistics that summarize how two variables move together across the whole dataset.
