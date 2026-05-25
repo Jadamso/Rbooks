@@ -1,22 +1,29 @@
 # Confidence Intervals
 ***
 
-The sampling distribution describes how the statistic varies across samples. The *confidence interval* is a way to turn knowledge about that sampling distribution into a statement about the unknown parameter. We use our sample data to construct an interval that says "we are $Z\%$ confident that the mean is in this interval". Just as with standard errors, we can make confidence intervals using theory-driven or data-driven approaches. We will focus on data-driven approaches first, then theory-driven approaches, then theoretical properties of confidence intervals.
+The sampling distribution describes how a statistic varies across samples; the *confidence interval* turns knowledge about that sampling distribution into a statement about the unknown parameter.
+We will focus on data-driven approaches first, then theory-driven approaches, then theoretical properties of confidence intervals.
 
-:::{.callout-important title="Definition" collapse="false"}
+:::{.callout-important title="Key Definition" collapse="false"}
 A *confidence interval* is a range of values, computed from the sample, intended to contain the unknown population parameter.
 The *coverage* level $1-\alpha$ is the long-run proportion of intervals (constructed from repeated samples by the same procedure) that contain the true parameter.
 :::
 
+Confidence intervals are useful for *reporting uncertainty* alongside an estimate: instead of saying only "the mean is $\hat{M}$", we report a range and a coverage level, communicating both the best guess and how much sampling noise could plausibly move it.
+The width depends on the sample size, the spread of the data, and the coverage level $1-\alpha$ that the user chooses.
+
 
 ## Resampling Intervals
 
-:::{.callout-important title="Definition" collapse="false"}
+If we have a sampling distribution for a statistic, the simplest way to read off a confidence interval is to take its middle quantiles.
+
+:::{.callout-important title="Key Definition" collapse="false"}
 The *critical values* of a sampling distribution are the lower and upper quantiles that bracket the middle $Z\%$ of the distribution.
 For a $95\%$ confidence interval, the critical values are the $2.5$th and $97.5$th percentiles.
 :::
 
-Often, we have only one sample. In practice, we can use resampling procedures to estimate a confidence interval. E.g., we repeatedly resample data and construct a bootstrap or jackknife sampling distribution, as introduced in [Sampling & Resampling](https://jadamso.github.io/Rbooks/01_05_Sampling.html#resampling-distributions). Then we compute the confidence intervals using the upper and lower quantiles of the sampling distribution. The quantiles associated with $Z\%$ are called the *critical values*
+Critical values are useful because they translate any coverage level into a pair of numbers that can be looked up or simulated, without committing to a parametric model for the sampling distribution.
+Often, we have only one sample, in which case we can construct a bootstrap or jackknife sampling distribution (as in [Sampling & Resampling](https://jadamso.github.io/Rbooks/01_05_Sampling.html#resampling-distributions)) and compute the critical values directly from it:
 
 * The $5^{th}$ and $95^{th}$ percentiles are the critical values for the $90\%$ confidence interval.
 * The $2.5^{th}$ and $97.5^{th}$ percentiles are the critical values for the $95\%$ confidence interval.
@@ -101,26 +108,20 @@ abline(v=boot_ci)
 
 ## Normal Approximation
 
-:::{.callout-important title="Definition" collapse="false"}
+When the sampling distribution is well approximated by a Normal curve, the confidence interval has a simple closed form built from the standard error.
+
+:::{.callout-important title="Key Definition" collapse="false"}
 The *margin of error* $E$ is the half-width of a Normal-approximation confidence interval, so the interval is $\hat{M} \pm E$.
 It equals the critical value times the standard error, $E = q(\alpha/2) \cdot SE(M)$, and shrinks as $n$ grows.
 :::
 
-Given the sampling distribution is approximately Normal, the usual confidence intervals are symmetric.
-For the sample mean $M$, we can then construct the interval $[M - E, M + E]$, where $E$ is a *margin of error* on either side of $M$.
-The margin of error for the Normal distribution is theoretically known, and can be calculated based on standard errors and the critical values.
-Given a standard error $SE(M)$ and quantiles $q(\alpha/2)$, we know from theory that $E=q(\alpha/2)\cdot SE(M)$.
-The critical values define the Normal confidence interval associated with $1-\alpha$ coverage, referred to above as $Z\%$.
-\begin{eqnarray}
-M \pm q(\alpha/2) \cdot SE(M)
-\end{eqnarray}
+The Normal-approximation interval is useful because it requires only an estimate $\hat{M}$, a standard error $SE(M)$, and a single Normal quantile (no resampling loop, no full sampling distribution).
+The $95\%$ interval is the most common and uses critical value $q=1.96$ (the $97.5$th percentile of the standard Normal); the $90\%$ interval uses $q=1.645$.
+$SE(M)$ can come from the classical formula $\hat{S}/\sqrt{n}$, the bootstrap, or the jackknife.
 
 A *coverage* level of $1-\alpha$ means that if the same sampling procedure were repeated $100$ times from the same population, approximately $1-\alpha$ percent of the intervals are expected to contain the true population mean.
 ^[Generally, a coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$.
-Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( \mu + E > M > \mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ in $95\%$ of the samples because whenever $M$ is within $10$ of $\mu$, the value $\mu$ is also within $10$ of $M$. But for any particular sample, the interval $[\hat{M}-10, \hat{M}+10]$ either does or does not contain $\mu$. Similarly, if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$.] We can also compute from theory that $\pm 1.96~ SE(M)$ corresponds to the critical values of the Normal distribution, where $SE(M)$ is estimated using the bootstrap distribution or theory (classical SEs: $\hat{S}/\sqrt{n}$).
-The $95\%$ interval is the most common, and has quantile value $q=1.96$. 
-The $90\%$ interval has quantile value $q=1.65$. 
-The values for $M$ and $SE(M)$ are estimated from data.
+Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( \mu + E > M > \mu - E)$. So if the interval $[\mu - 10, \mu + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ in $95\%$ of the samples because whenever $M$ is within $10$ of $\mu$, the value $\mu$ is also within $10$ of $M$. But for any particular sample, the interval $[\hat{M}-10, \hat{M}+10]$ either does or does not contain $\mu$. Similarly, if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$.]
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 For example, suppose we sample $n=36$ monthly electricity bills (in dollars) and find $\hat{M}=142$ and $\hat{S}=30$.
@@ -418,14 +419,15 @@ abline(v=ci_95, lwd=2)
 
 #### **Prediction Intervals**. {-}
 
-:::{.callout-important title="Definition" collapse="false"}
+Sometimes the question is not "what is the population mean?" but "what range should I expect a single new observation to fall in?".
+
+:::{.callout-important title="Key Definition" collapse="false"}
 A *prediction interval* is a range that aims to contain a future single observation, not a statistic.
 We compute it from the lower and upper quantiles of the data themselves, so its width reflects the spread of individual observations rather than the spread of a sampling distribution.
 :::
 
-Note that $Z\%$ confidence intervals do not generally cover $Z\%$ of the data (those types of intervals are covered later). In the examples above, notice the confidence interval for the mean differs from the confidence interval of the median, and so both cannot cover $90\%$ of the data. The confidence interval for the mean is roughly $[0.48, 0.52]$, which theoretically covers only a $0.52-0.48=0.04$ proportion of uniform random data, much less than the proportion $0.9$.
-
-In addition to confidence intervals, we can also compute a *prediction interval* which estimate the variability of new data rather than a statistic. To do so, we compute the lower/upper quantiles of the data.
+Prediction intervals are useful when the decision depends on individual outcomes rather than averages: forecasting whether a single warranty claim, a single weather day, or a single test score will fall in a tolerable range.
+Note that $Z\%$ confidence intervals do not generally cover $Z\%$ of the data: in the examples above, the $90\%$ confidence interval for the mean is roughly $[0.48, 0.52]$, which theoretically covers only a $0.04$ proportion of uniform random data, far less than $0.9$.
 ```{r}
 x <- runif(1000)
 # Middle 90% of values
@@ -457,7 +459,8 @@ Confidence intervals also apply to regression coefficients. See [Simple Regressi
 * <https://www.khanacademy.org/math/statistics-probability/confidence-intervals-one-sample> -- Video walkthroughs of confidence interval construction and interpretation.
 * <https://www.econometrics-with-r.org/3.1-hypothesis-tests-and-confidence-intervals-in-the-simple-linear-regression-model.html> -- Confidence intervals applied to regression, bridging descriptive and inferential statistics.
 
-:::{.callout-note title="Recall" collapse="false" icon=false}
-This chapter built confidence intervals two ways (bootstrap percentile and Normal approximation), explained what "$Z\%$ confident" means in repeated sampling, and showed the precision–accuracy trade-off.
+#### Recall {-}
+
+This chapter built *confidence intervals* two ways (the *bootstrap percentile* method and the *Normal approximation*), explained what "$Z\%$ confident" means in repeated sampling, and showed the precision–accuracy trade-off.
+The electricity-bill example tied the Normal formula to numbers: with $\hat{M}=142$, $\hat{S}=30$, and $n=36$, the classical standard error is $SE(M) = 30/\sqrt{36} = 5$, and the $95\%$ margin of error is $E = 1.96 \times 5 = 9.8$, giving a confidence interval of $[\$132.20, \$151.80]$.
 In the next chapter we use the same machinery to test specific hypotheses about the population.
-:::
