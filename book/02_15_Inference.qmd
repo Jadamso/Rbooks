@@ -8,11 +8,13 @@ Often, we are interested in *gradients*: how $Y$ changes with $X$. The linear mo
 
 #### **LOESS** {-}
 
-An important extension of locally linear regressions is called *loess*, which uses adaptive bandwidths in order to have a similar number of data points around each design point. This is especially useful when $\hat{X}_{i}$ is not uniform.
+When $\hat{X}_{i}$ is unevenly distributed across its range, a fixed bandwidth $h$ leaves some local fits with many neighbors and others with very few.
 
-:::{.callout-important title="Definition" collapse="false"}
-*LOESS* (locally estimated scatterplot smoothing) fits a local linear (or quadratic) regression at each design point, using an *adaptive bandwidth* that includes a fixed share of the data. The share is set by `span`; smaller spans mean narrower neighborhoods, more flexibility, and noisier curves.
+:::{.callout-important title="Key Definition" collapse="false"}
+*LOESS* (locally estimated scatterplot smoothing) fits a local linear (or quadratic) regression at each design point using an *adaptive bandwidth*: instead of fixing $h$, it includes a fixed *share* of the data — set by the parameter `span` — at each $x$.
 :::
+
+LOESS is useful for smoothing data with uneven $X$: because the *share* of points in each neighborhood is fixed, the local fit has roughly the same effective sample size everywhere, even where the data are sparse. The `span` parameter plays the role $h$ does for fixed-bandwidth methods, so smaller spans mean narrower neighborhoods, more flexibility, and noisier curves, while larger spans pool more data and smooth more aggressively.
 
 ```{r}
 ## Data
@@ -42,11 +44,13 @@ legend('topleft', title='Loess',
 
 #### **Confidence Bands**. {-}
 
-We can construct *confidence bands* using the jackknife or bootstrap.
+A single fitted curve does not show how much that curve would change in another sample, so we draw a region around it.
 
-:::{.callout-important title="Definition" collapse="false"}
-A *confidence band* is a confidence interval drawn at every design point: a region around the fitted curve that captures sample-to-sample variability. A bootstrap confidence band collects the predictions from many resamples and reads off pointwise quantiles.
+:::{.callout-important title="Key Definition" collapse="false"}
+A *confidence band* is a confidence interval drawn at every design point: a region around the fitted curve that captures sample-to-sample variability. A bootstrap confidence band collects the predictions from many resamples and reads off pointwise quantiles at each $x$.
 :::
+
+Confidence bands are useful for showing where a fitted curve is well-supported by the data and where another sample could move it. The width is typically wider at the edges of $X$ (few neighbors) and narrower in the dense middle, which is itself a quick visual diagnostic. The same bootstrap that produces the band also produces standard errors for any single design point and for the gradient summaries below.
 
 ```{r}
 # Loess
@@ -105,11 +109,13 @@ lines(xy0[, 'x'], predict(reg_lo2),
 
 #### **Gradients**.{-}
 
-:::{.callout-important title="Definition" collapse="false"}
-A *gradient* $\hat{b}_{1}(x)$ at the design point $x$ is the rate of change of the fitted value $\hat{y}(x)$ with respect to $\hat{X}_{i}$ in a neighborhood of $x$. For a globally linear model it equals the single slope coefficient; for local models it varies with $x$.
+Once the fitted curve can bend, "the slope" is no longer a single number; we want the slope locally at each $x$.
+
+:::{.callout-important title="Key Definition" collapse="false"}
+A *gradient* $\hat{b}_{1}(x)$ at the design point $x$ is the rate of change of the fitted value $\hat{y}(x)$ with respect to $\hat{X}_{i}$ in a neighborhood of $x$.
 :::
 
-There are three ways to summarize gradients
+The gradient is useful as the local analog of the simple-regression slope: for a globally linear model it equals the single coefficient $\hat{b}_{1}$ everywhere; for a local model it varies with $x$ and traces out how the marginal relationship changes across the range of $X$. Three common ways to summarize gradients are:
 
 1. For all methods, including regressograms, you can approximate gradients with small finite differences. For some small difference $d$, we can manually compute
 \begin{eqnarray}
@@ -159,11 +165,16 @@ plot(grad_x+grad_dx, grad_lo,
     col=lo_col, pch=16, main=NA) ## Diminishing Returns?
 ```
 
-You may also be interested in a particular gradient or a single summary statistic. For example, a bivariate regressogram can estimate the "marginal effect at the mean"; $\hat{b}_{1}( x=\hat{M}_{X} )$. More typically, you would be interested in the "mean of the gradients", sometimes said simply as "average effect", which averages the gradients over all datapoints in the dataset: $1/n \sum_{i}^{n} \hat{b}_{1}(x=\hat{X}_{i})$. Alternatively, you may be interested in the median of the gradients, or measures of "effect heterogeneity": the interquartile range or standard deviation of the gradients. Such statistics are single numbers that can be presented in tabular form: "mean gradient (sd gradient)". You can also report standard errors: "mean gradient (estimated se), sd gradient (estimated se)".
+A different kind of summary collapses the whole gradient curve into a single number for tabular reporting.
 
-:::{.callout-important title="Definition" collapse="false"}
-The *marginal effect at the mean* evaluates the gradient at a single design point (usually $\hat{M}_{X}$) and reports one number. The *mean of the gradients* (also called the *average effect*) averages $\hat{b}_{1}(x)$ across every observation in the dataset. The two coincide for a globally linear model and can differ for any other.
+:::{.callout-important title="Key Definition" collapse="false"}
+The *marginal effect at the mean* evaluates the gradient at a single design point (usually $\hat{M}_{X}$):
+$$\hat{b}_{1}(x=\hat{M}_{X}).$$
+The *mean of the gradients* (also called the *average effect*) averages $\hat{b}_{1}(x)$ across every observation in the dataset:
+$$\frac{1}{n}\sum_{i=1}^{n} \hat{b}_{1}(x=\hat{X}_{i}).$$
 :::
+
+These two summaries are useful for different questions: the *marginal effect at the mean* answers "what is the slope at a typical $X$?", while the *mean of the gradients* answers "what is the average slope across the sample?". The two coincide for a globally linear model but can differ for any other, sometimes substantially when the relationship bends. You may also be interested in the *median* of the gradients, or in measures of *effect heterogeneity* like the interquartile range or standard deviation of the gradients. Such statistics can be presented in tabular form: "mean gradient (sd gradient)" or "mean gradient (estimated SE), sd gradient (estimated SE)".
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 These two summaries usually differ.
@@ -446,11 +457,13 @@ legend('topright',
 
 #### **Bias-Variance Tradeoff**.{-}
 
-Models face a *bias-variance tradeoff*.
+The previous chapter introduced the bias-variance tradeoff intuitively with the bandwidth knob; here we restate it more formally and check it with simulations.
 
-:::{.callout-important title="Definition" collapse="false"}
-The expected prediction error of an estimator decomposes into two pieces. Squared *bias* is how far its average prediction sits from the truth. *Variance* is how much its predictions wobble around their own average. Cutting one usually raises the other.
+:::{.callout-important title="Key Definition" collapse="false"}
+The expected prediction error of an estimator decomposes into two pieces. Squared *bias* is how far its average prediction sits from the truth. *Variance* is how much its predictions wobble around their own average.
 :::
+
+The bias-variance decomposition is useful as the formal expression of why we cannot simply minimize one source of error and ignore the other: cutting one usually raises the other, so there is a tradeoff to navigate. Concretely:
 
 * High-bias / low-variance models. E.g., strict linear models are stable across samples but can miss curvature.
 * Low-bias / high-variance models. E.g., very flexible local linear models can capture curvature but may overfit noise.
@@ -544,6 +557,6 @@ A similar result holds for OLS when the true relationship is linear. Even with u
 * <https://learningstatisticswithr.com/book/regression.html#hypothesistestsforregressionmodels> -- testing regression slopes, interpreting p-values, and understanding standard errors.
 * <https://www.khanacademy.org/math/statistics-probability/significance-tests-one-sample/more-significance-testing-videos/v/hypothesis-testing-and-p-values> -- video introduction to hypothesis testing logic and p-values.
 
-:::{.callout-note title="Recall" collapse="false" icon=false}
-This chapter put inference around the local fits from the previous chapter: bootstrap confidence bands, gradient summaries (marginal effect at the mean vs mean of the gradients), hypothesis tests, and a simulation walk through bias, variance, and consistency. The next chapter pulls back from samples and develops the bivariate probability machinery (joint distributions, conditional expectations, and the population coefficient $\beta_{1}$) that says what we are estimating.
-:::
+#### Recall {-}
+
+This chapter put inference around the local fits from the previous chapter on the `Wages1` data: bootstrap confidence bands for a LOESS fit, gradient summaries (marginal effect at the mean vs mean of the gradients), hypothesis tests, and a simulation walk through bias, variance, and consistency. The small worked example with $\hat{y}(11.5)=9.2$ and $\hat{y}(12.5)=10.4$ gave a finite-difference gradient $\hat{b}_{1}(12)=1.2$ dollars per year of schooling, and the gradient-vector example $(0.4, 0.8, 1.2, 0.9, 0.3)$ at $x=(8, 10, 12, 14, 16)$ showed the marginal-effect-at-the-mean ($1.2$) and the mean-of-the-gradients ($0.72$) diverging when the relationship bends. The next chapter pulls back from samples and develops the bivariate probability machinery (joint distributions, conditional expectations, and the population coefficient $\beta_{1}$) that says what we are estimating.
