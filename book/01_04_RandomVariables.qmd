@@ -5,18 +5,17 @@
 Previously, we computed a distribution given the data, whereas now we generate individual data points given the distribution.
 This chapter introduces *random variables* and the two basic kinds of sample space (discrete and continuous), along with the most common distributions in each family.
 
-*Random variables* are variables whose values occur according to a frequency distribution. As such, random variables have a
+To talk about data we have not yet observed, we need an object that names the set of possible outcomes and the long-run frequency of each.
 
-* *sample space* which refers to the set of all possible outcomes, and
-* *probability* for each particular set of outcomes, which is the proportion that those outcomes occur in the long run.
-
-:::{.callout-important title="Definition" collapse="false"}
+:::{.callout-important title="Key Definition" collapse="false"}
 A *random variable* $X_{i}$ is a variable whose value is generated according to a probability distribution.
 Its *sample space* is the set of all values it can take, and its *probability* assigns a long-run frequency to each subset of the sample space.
 A *realized value* $\hat{X}_{i}$ is a specific observed value drawn from the random variable's distribution.
 :::
 
-We think of a data generating process before the data are actually observed. For example, we consider flipping a coin before knowing whether it lands on heads or tails. We denote the random variable, in this case the unflipped coin, as $X_{i}$, and the specific values it can take as $x$ ($x=1$ is heads, $x=0$ is tails) and the probability of each outcome is $1/2$. This differs from a flipped coin that is either heads or tails, and denoted as $\hat{X}_{i}$.
+The random-variable framing is useful for reasoning about a *data generating process* before any data are observed.
+For example, consider flipping a coin before knowing whether it lands on heads or tails: we denote the unflipped coin as the random variable $X_{i}$, with sample space $\{0, 1\}$ ($x=1$ is heads, $x=0$ is tails) and probability $1/2$ on each outcome.
+A specific flipped coin that has landed heads or tails is denoted $\hat{X}_{i}$, mirroring the hat notation from the previous chapter.
 
 ```{r, echo=FALSE}
 x <- c(0, 1)
@@ -43,18 +42,18 @@ There are two basic types of sample spaces: discrete (encompassing cardinal-disc
 
 #### **Cumulative Probability**. {-}
 
-:::{.callout-important title="Definition" collapse="false"}
+The first job of any random-variable description is to assign a probability to events of the form "the value falls at or below $x$".
+
+:::{.callout-important title="Key Definition" collapse="false"}
 The *cumulative distribution function* (CDF) of a random variable $X_{i}$ is
 $$F(x) = Prob(X_{i} \leq x),$$
 the theoretical probability that $X_{i}$ takes a value at or below $x$.
 The CDF is the theoretical analogue of the empirical CDF $\hat{F}$ from the previous chapter.
 :::
 
-The most common random variables are [easily accessible](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html) and can be described using the *cumulative distribution function* (CDF)
-\begin{eqnarray}
-F(x) &=& Prob(X_{i} \leq x).
-\end{eqnarray}
-Note that this is just like the Empirical Cumulative Distribution Function (ECDF), $\hat{F}(x)$, except that it is now theoretically known. You can think of $F(x)$ as the ECDF for a dataset with an infinite number of observations. Equivalently, the ECDF is an empirical version of the CDF that is applied to observed data.
+The CDF is useful because it packages every probability of interest into a single function: $Prob(X_{i} > x) = 1 - F(x)$, $Prob(a < X_{i} \leq b) = F(b) - F(a)$, and so on.
+You can think of $F(x)$ as the ECDF for a dataset with an infinite number of observations; equivalently, the ECDF is an empirical version of the CDF applied to observed data.
+The most common random variables in R are [easily accessible](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Distributions.html) through their CDFs.
 
 #### **Probability Rules**. {-}
 
@@ -73,12 +72,15 @@ In R, you can simulate random discrete data using the `sample` function. To do s
 
 #### **Bernoulli**. {-}
 
-:::{.callout-important title="Definition" collapse="false"}
+The simplest random variable models a single yes/no event, like one flip of a coin.
+
+:::{.callout-important title="Key Definition" collapse="false"}
 A *Bernoulli* random variable takes two values, $x=1$ (success/heads) with probability $p$ and $x=0$ (failure/tails) with probability $1-p$.
 The single parameter $p \in [0,1]$ controls the probability of success.
 :::
 
-Think of a Coin Flip: Heads or Tails with equal probability. In general, a *Bernoulli* random variable denotes heads as the event $x=1$ and tails as the event $x=0$, and allows the probability of heads to vary $p \in [0,1]$.
+Bernoulli variables are useful whenever an outcome is binary — heads or tails, success or failure, present or absent — and are also the building block from which richer discrete distributions are assembled out of independent yes/no events.
+Writing the distribution out in full helps fix the notation we will reuse for richer cases:
 \begin{eqnarray}
 X_{i} &\in& \{0,1\} \\
 Prob(X_{i} =0) &=& 1-p \\
@@ -246,15 +248,18 @@ X <- factor(unlist(X), levels=LETTERS, ordered=F)
 
 ## Continuous Random Variables
 
-A continuous random variable can take one value out of an uncountably infinite number. E.g., any number between $0$ and $1$ with any number of decimal points. With a continuous random variable, the probability of any individual point is zero, so we describe these variables with the cumulative distribution function (CDF), $F$, or the *probability density function* (PDF), $f$. Just as $F$ can be thought of as the ECDF, $\hat{F}$, with an infinite amount of data, $f$ can be thought of as a histogram, $\hat{f}$, with an infinite amount of data.  Equivalently, the histogram is an empirical version of the PDF that is applied to observed data.
+A continuous random variable can take one value out of an uncountably infinite number. E.g., any number between $0$ and $1$ with any number of decimal points.
+With a continuous random variable, the probability of any individual point is zero, so we cannot describe the distribution by listing $Prob(X_{i} = x)$ for each $x$; instead, we describe it with the CDF or with a density.
 
-:::{.callout-important title="Definition" collapse="false"}
+:::{.callout-important title="Key Definition" collapse="false"}
 The *probability density function* (PDF) $f(x)$ of a continuous random variable describes how concentrated the probability is near each value of $x$.
 The probability that $X_{i}$ falls in an interval $[a,b]$ is the area under $f$ from $a$ to $b$, equivalently $F(b) - F(a)$.
 $f(x)$ itself is not a probability; only its area over an interval is.
 :::
 
-Often, the PDF helps you intuitively understand a random variable whereas the CDF helps you calculate numerical values. This is because probabilities are depicted as areas in the PDF and the CDF accumulates those areas: $F(x)$ equals the area under the PDF from $-\infty$ to $x$. For example, $Prob(X_{i} \leq 1)$ is depicted by the PDF as the area under $f(x)$ from the lowest possible value until $x=1$, which is numerically calculated simply as $F(1)$. Going the other way, the density is the rate of change of the CDF: where $F$ rises steeply $f$ is large, and where $F$ is flat $f$ is near zero.
+The PDF is useful for intuition: probabilities are pictured as areas, peaks of $f$ mark where outcomes are likely, and the shape of $f$ tells you whether the distribution is symmetric, skewed, or heavy-tailed.
+The CDF is the workhorse for numerical calculation, since $F(x)$ already encodes the cumulative area under $f$ from $-\infty$ to $x$ — where $F$ rises steeply $f$ is large, and where $F$ is flat $f$ is near zero.
+Just as $F$ can be thought of as the ECDF $\hat{F}$ with an infinite amount of data, $f$ can be thought of as a histogram $\hat{f}$ with an infinite amount of data; equivalently, the histogram is an empirical version of the PDF applied to observed data.
 
 
 In R, you work with continuous distributions using these functions
@@ -267,12 +272,15 @@ where `XXX` is the distribution name (`unif`, `exp`, `norm`)
 
 #### **Continuous Uniform**. {-}
 
-:::{.callout-important title="Definition" collapse="false"}
+The simplest continuous distribution is the one with no preferred region: every value in an interval is equally likely.
+
+:::{.callout-important title="Key Definition" collapse="false"}
 A *Continuous Uniform* random variable on the interval $[a,b]$ is equally likely to land anywhere in $[a,b]$, with density $f(x) = 1/(b-a)$ for $x \in [a,b]$ and $0$ otherwise.
 The unit interval $[0,1]$ is the special case $a=0, b=1$.
 :::
 
-Any number on the interval $[a,b]$ allowing for any number of decimal points, with every sub-interval of the same length having the same probability.
+The continuous uniform is useful as a *reference distribution*: a flat density makes it a natural "no information" baseline, and R's `runif` is the foundation underlying many other random-number routines.
+The full specification gathers sample space, density, and cumulative function in one place:
 \begin{eqnarray}
 X_{i} &\in& [a,b] \\
 f(x) &=& \begin{cases}
@@ -469,13 +477,17 @@ title('Exponential (floored)', font.main=1)
 
 #### **Normal (Gaussian)**. {-}
 
-:::{.callout-important title="Definition" collapse="false"}
+For continuous data spread symmetrically around a center, the default model is the bell curve.
+
+:::{.callout-important title="Key Definition" collapse="false"}
 A *Normal* (or *Gaussian*) random variable has a bell-shaped density on the real line, with two parameters: the mean $\mu$ (the center) and the standard deviation $\sigma$ (the spread).
 The density is $f(x) = \frac{1}{\sqrt{2\pi\sigma^{2}}}\exp\{-(x-\mu)^{2}/(2\sigma^{2})\}$.
 The Normal will reappear throughout the book because most sample averages are approximately Normal (the central limit theorem of the next chapter).
 :::
 
-This distribution is for any number on the real line, with bell shaped probabilities. The *[Normal](https://en.wikipedia.org/wiki/Normal_distribution)* distribution is mathematically complex and sometimes called the *Gaussian* distribution. We call it "Normal" because we will encounter it again and again and again. The probability density function $f$ has two parameters $\mu \in (-\infty,\infty)$ and $\sigma > 0$.
+The *[Normal](https://en.wikipedia.org/wiki/Normal_distribution)* is useful as the default model for measurements that cluster around a typical value with symmetric scatter — heights, test scores, measurement errors — and is sometimes called the *Gaussian* distribution.
+We call it "Normal" because it appears again and again, both as a description of real data and as the limiting shape for sample averages.
+The full PDF spells out the parameters $\mu \in (-\infty,\infty)$ and $\sigma > 0$:
 \begin{eqnarray}
 X_{i} &\in& (-\infty,\infty) \\
 f(x) &=& \frac{1}{\sqrt{2\pi \sigma^2}} exp\left\{ \frac{-(x-\mu)^2}{2\sigma^2} \right\}
@@ -597,8 +609,9 @@ Many random variables are related to each other. Also note that numbers randomly
 * <https://www.math.wm.edu/~leemis/chart/UDR/UDR.html> -- Interactive chart showing transformations and limiting relationships among univariate distributions.
 * <https://learningstatisticswithr.com/book/probability.html> -- Introduction to probability distributions with worked R examples.
 
-:::{.callout-note title="Recall" collapse="false" icon=false}
-This chapter introduced random variables, distinguished discrete (Bernoulli, Uniform, Multinoulli) from continuous (Uniform, Exponential, Normal), and showed how the CDF and the PDF describe them.
+#### Recall {-}
+
+This chapter introduced *random variables* and distinguished *discrete* families (Bernoulli, Uniform, Multinoulli) from *continuous* families (Uniform, Exponential, Normal), describing each through the *CDF* $F(x)=Prob(X_{i} \leq x)$ and (for continuous variables) the *PDF* $f(x)$.
+The four-sided die example tied the CDF rules together: with $Prob(X_{i} \leq 3) = 3/4$, the right-tail probability is $Prob(X_{i} > 3) = 1/4$, the in-interval probability is $Prob(1 < X_{i} \leq 3) = 3/4 - 1/4 = 2/4$, and the out-of-interval probability is $Prob(X_{i} \leq 1 \text{ or } X_{i} > 3) = 1/4 + 1/4 = 2/4$.
 In the next chapter we draw repeated samples from these distributions and ask how the resulting statistics behave from sample to sample.
-:::
 
