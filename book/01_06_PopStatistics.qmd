@@ -12,15 +12,18 @@ Recall that we denote $X_{i}$ as a random variable that can take on specific val
 * $X_{i}$ is a random variable, taking on outcomes $x$
 * $\hat{X}_{i}$ is a realized value
 
-The theoretical mean, $\mu$, and variance, $\sigma^2$, describe the population distribution $F$ generating the data. The population *parameters* ($\mu, \sigma^2$) are fixed, true values. They are often unknown and estimated with sample statistics that are calculated from data. With sample statistics, you should distinguish the particular *estimate* you calculated for your sample, $\hat{M}$, and the *estimator* $M$ that is computed on any sample. For example, consider flipping a coin three times: $M$ corresponds to a theoretical formula you compute on coins before they are flipped and $\hat{M}$ corresponds to a specific value after you flip the coins.
+Three closely related quantities are easily conflated: the fixed truth in the population, the formula we use to recover it, and the specific number that formula produces from one sample.
 
-:::{.callout-important title="Definition" collapse="false"}
+:::{.callout-important title="Key Definition" collapse="false"}
 A population *parameter* (e.g., $\mu$, $\sigma^{2}$) is a fixed but typically unknown number describing the population distribution.
 
 An *estimator* (e.g., $M$, $V$) is a random variable: a formula that computes a statistic on any sample of size $n$ from the population.
 
 An *estimate* (e.g., $\hat{M}$, $\hat{V}$) is the specific number you get by applying the estimator to your particular sample.
 :::
+
+The distinction is useful for being precise about uncertainty: a *parameter* has no sampling variability (it is just an unknown number), an *estimator* has a full sampling distribution, and an *estimate* is one realization from that distribution.
+For example, in flipping a coin three times, $M = (X_{1}+X_{2}+X_{3})/3$ is the estimator computed on coins before they are flipped, and $\hat{M}$ is the specific value after you flip them.
 
 | Concept      | Mean      | Variance   | What it is | Terminology                              | Alternative Terminology |
 | ------------ | --------- | ---------- |----------------------| ---------------------------------------- |----------- |
@@ -34,12 +37,19 @@ For concreteness, we separately analyze how the theoretical mean and variance ar
 
 ## Population Parameters
 
-:::{.callout-important title="Definition" collapse="false"}
+#### **Expected Value and Variance**. {-}
+
+When we know the theoretical probabilities, the two most basic summaries — center and spread — can be computed exactly rather than estimated.
+
+:::{.callout-important title="Key Definition" collapse="false"}
 The *expected value* (or population mean) of a random variable $X_{i}$, written $\mathbb{E}[X_{i}]$ or $\mu$, is the probability-weighted average of its values.
 For a discrete sample space, $\mathbb{E}[X_{i}] = \sum_{x} x \cdot Prob(X_{i}=x)$; for continuous, it is the integral $\int x f(x) dx$.
 
 The *population variance*, written $\mathbb{V}[X_{i}]$ or $\sigma^{2}$, is the expected squared deviation from $\mu$.
 :::
+
+These population quantities are useful as *targets*: every sample-based estimator we built in earlier chapters is trying to recover one of them, and the gap between estimator and target is what sampling theory tries to control.
+The next two subsections show how to compute these for discrete and continuous random variables.
 
 #### **Discrete Random Variables**. {-}
 If the sample space is discrete, we can compute the *expected value*, or theoretical mean, as
@@ -176,13 +186,15 @@ For a discrete uniform random variable with the sample space $\{1,2,3,4,5\}$, ca
 
 #### **Law of the Unconscious Statistician (LOTUS)**. {-}
 
-:::{.callout-important title="Definition" collapse="false"}
+We often care about a transformed quantity like $X_{i}^{2}$ or $\log(X_{i})$, and would prefer not to derive its full distribution from scratch just to take its expectation.
+
+:::{.callout-important title="Key Definition" collapse="false"}
 The *Law of the Unconscious Statistician* (LOTUS) gives the expected value of a function of a random variable without first deriving the distribution of that function.
 For discrete $X_{i}$ and any function $g$, $\mathbb{E}[g(X_{i})] = \sum_{x} g(x) Prob(X_{i}=x)$; for continuous $X_{i}$, replace the sum with an integral against $f(x)$.
 :::
 
-As before, we will represent the random variable as $X_{i}$, which can take on values $x$ from the sample space. If $X_{i}$ is a discrete random variable (a random variable with a discrete sample space) and $g$ is a function, then
-$\mathbb E[g(X_{i})] = \sum_x g(x)Prob(X_{i}=x)$.
+LOTUS is useful as a shortcut: instead of deriving the distribution of $g(X_{i})$ and then summing $y \cdot Prob(g(X_{i}) = y)$, we sum $g(x) \cdot Prob(X_{i}=x)$ directly using the original distribution of $X_{i}$.
+You have already seen the special case $g(X_{i})=\left(X_{i}-\mathbb{E}[X_{i}]\right)^2$, which is the population variance.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Let $X_{i}$ take values $\{1,2,3\}$ with
@@ -228,9 +240,6 @@ mean(sqrt(x))                      # LOTUS Simulation
 sqrt(pi) / 2                       # Exact via LOTUS integral
 ```
 :::
-
-Note that you have already seen the special case where $g(X_{i})=\left(X_{i}-\mathbb{E}[X_{i}]\right)^2$. LOTUS also applies to continuous random variables.
-
 
 #### **Continuous Random Variables**. {-}
 
@@ -382,20 +391,23 @@ X <- runif(2000, -1, 1)
 
 ## Estimators
 
-:::{.callout-important title="Definition" collapse="false"}
+#### **Means**. {-}
+
+The LLN says the sample mean concentrates on the population mean as $n$ grows; we can derive this from a more basic rule about how expectations distribute over sums.
+
+:::{.callout-important title="Key Definition" collapse="false"}
 *Linearity of expectation* states that for any random variables $X_{1}, X_{2}$ and constants $a, b$,
 $$\mathbb{E}[a X_{1} + b X_{2}] = a \mathbb{E}[X_{1}] + b \mathbb{E}[X_{2}].$$
 This holds whether or not the variables are independent.
 :::
 
-#### **Means**. {-}
-The LLN relates to a famous theoretical result in statistics, *Linearity of Expectations*: the expected value of a sum of random variables equals the sum of their individual expected values (see [here](https://dlsun.github.io/probability/linearity.html) for a detailed treatment).
-To be concrete, suppose we take $n$ random variables, each one denoted as $X_{i}$. Then, for constants $a,b,1/n$, we have
+Linearity of expectation is useful because it lets us reason about the mean of any *linear combination* of random variables without computing a joint distribution.
+Applied to the sample mean estimator $M = \sum_{i=1}^{n} X_{i}/n$, with the constants $1/n$:
 \begin{eqnarray}
-\mathbb{E}[a X_{1}+ b X_{2}] &=& a \mathbb{E}[X_{1}]+ b \mathbb{E}[X_{2}]\\
-\mathbb{E}\left[M\right] &=& \mathbb{E}\left[ \sum_{i=1}^{n} X_{i}/n \right] = \sum_{i=1}^{n} \mathbb{E}[X_{i}]/n
+\mathbb{E}\left[M\right] = \mathbb{E}\left[ \sum_{i=1}^{n} X_{i}/n \right] = \sum_{i=1}^{n} \mathbb{E}[X_{i}]/n.
 \end{eqnarray}
-Assuming each data point has an identical mean; $\mathbb{E}[X_{i}]=\mu$, the expected value of the sample average is the mean; $\mathbb{E}\left[M\right] = \sum_{i=1}^{n} \mu/n = \mu$.
+Assuming each data point has an identical mean $\mathbb{E}[X_{i}]=\mu$, the expected value of the sample average is the mean: $\mathbb{E}\left[M\right] = \sum_{i=1}^{n} \mu/n = \mu$.
+For a detailed treatment, see [here](https://dlsun.github.io/probability/linearity.html).
 
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -502,7 +514,9 @@ This normal approximation for the sampling distribution is the foundation for th
 * <https://www.econometrics-with-r.org/2.1-random-variables-and-probability-distributions.html> -- Expected value, variance, and population parameters in an econometrics setting.
 * <https://dlsun.github.io/probability/linearity.html> -- Detailed explanation of the linearity of expectation and rules for computing expected values.
 
-:::{.callout-note title="Recall" collapse="false" icon=false}
-This chapter formalized population parameters ($\mu$, $\sigma^{2}$) and their estimators ($M$, $V$), introduced LOTUS and linearity of expectation, and showed that the standard error of the sample mean shrinks at the $1/\sqrt{n}$ rate.
+#### Recall {-}
+
+This chapter formalized *population parameters* ($\mu$, $\sigma^{2}$) and their *estimators* ($M$, $V$), introduced *LOTUS* and *linearity of expectation*, and showed that the standard error of the sample mean shrinks at the $1/\sqrt{n}$ rate.
+The five-sided die computation made the parameters concrete: with outcomes $\{1, 2, 3, 4, 5\}$ each having probability $1/5$, the population mean is $\mu = 15/5 = 3$ and the variance is $\sigma^{2} = (4+1+0+1+4)/5 = 2$.
+The $1/\sqrt{n}$ rule then says that if a population has $\sigma = 10$, samples of size $n=4$ have $SE(M) = 5$ but quadrupling the sample size to $n=16$ halves the standard error to $2.5$.
 In the next chapter we turn these results into confidence intervals: ranges of plausible values for the unknown parameter.
-:::
