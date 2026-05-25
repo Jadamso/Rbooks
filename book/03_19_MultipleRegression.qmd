@@ -6,24 +6,20 @@ We often want to know the relationship between one outcome variable $\hat{Y}_{i}
 ## The Linear Model
 
 #### **Model and Objective**. {-}
-Let there be $K$ cardinal explanatory variables: $\hat{X}_{i1}, \hat{X}_{i2}, \ldots, \hat{X}_{iK}$. Our model is
+
+With several explanatory variables we need a rule for picking one specific coefficient vector out of the infinite candidates that almost fit the data.
+
+:::{.callout-important title="Key Definition" collapse="false"}
+*Ordinary Least Squares (OLS)* assumes a linear model with $K$ cardinal explanatory variables $\hat{X}_{i1}, \hat{X}_{i2}, \ldots, \hat{X}_{iK}$,
 \begin{eqnarray}
-\hat{Y}_{i} &=& b_0 + b_1 \hat{X}_{i1}+ b_2 \hat{X}_{i2}+\ldots+b_K \hat{X}_{iK} + e_i \\
- &=& \sum_{k=0}^{K} b_k \hat{X}_{ik} + e_i,
+\hat{Y}_{i} &=& b_0 + b_1 \hat{X}_{i1}+ b_2 \hat{X}_{i2}+\ldots+b_K \hat{X}_{iK} + e_i = \sum_{k=0}^{K} b_k \hat{X}_{ik} + e_i,
 \end{eqnarray}
-where $\hat{X}_{i0}=1$ and $e_{i}$ is an error term. 
-
-Our objective is to minimize the sum of squared errors:
-\begin{eqnarray}
-\min_{b_0 ~~ b_1 ~~... ~~ b_{K}} \sum_{i=1}^{n} e_{i}^2,
-\end{eqnarray}
-hence the common term *Ordinary Least Squares* regression.
-
-We can analytically solve this problem using [matrix-calculations](https://jadamso.github.io/Rbooks/03_26_MiscTopics.html#matrix-calculations), although we do not do that here (for a detailed derivation, see [these notes](https://jrnold.github.io/intro-methods-notes/ols-in-matrix-form.html)). Solving yields the best fitting model with coefficients $B^{*}=(b_0^{*} ~~ b_1^{*} ~~... ~~ b_{K}^{*})$.
-
-:::{.callout-important title="Definition" collapse="false"}
-*Ordinary Least Squares (OLS)* picks the coefficients $b_0, b_1, \ldots, b_K$ that minimize the sum of squared residuals $\sum_i e_i^2$. With $K$ explanatory variables and an intercept, the solution is a single best-fit hyperplane through the data.
+where $\hat{X}_{i0}=1$ and $e_{i}$ is an error term, and picks the coefficients that minimize the sum of squared residuals
+$$\min_{b_0, b_1, \ldots, b_K} \sum_{i=1}^{n} e_{i}^2.$$
 :::
+
+OLS is useful when you want one coefficient per explanatory variable summarizing its partial relationship with $Y$ holding the others fixed; it is the workhorse of linear modeling because the minimization has a closed-form solution via [matrix-calculations](https://jadamso.github.io/Rbooks/03_26_MiscTopics.html#matrix-calculations) (see [these notes](https://jrnold.github.io/intro-methods-notes/ols-in-matrix-form.html) for a detailed derivation).
+The solution yields the best fitting coefficient vector $B^{*}=(b_0^{*} ~~ b_1^{*} ~~... ~~ b_{K}^{*})$, and the residuals $e_i$ are exactly the sample analog of what is minimized.
 
 ```{r}
 # Fit a multiple regression of Murder on Assault and UrbanPop
@@ -44,15 +40,20 @@ plot(USArrests$Murder, predict(reg), pch=16, col=grey(0, .5),
 abline(a=0, b=1, lty=2)
 ```
 
-We can also again compute sums of squared errors. Adding random data may sometimes improve the fit, however, so we also compute an *adjusted* $\hat{R}^2$ that penalizes the number of model parameters $K$.^[Here $K$ counts all estimated coefficients including the intercept, so $K=3$ for a model with two explanatory variables. This is the convention used in the $\hat{R}^2_{\text{adj.}}$ and $F$-statistic formulas and their worked examples.]
-\begin{eqnarray}
-\hat{R}_{yY}^2 = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}\\
-\hat{R}^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-\hat{R}_{yY}^2)
-\end{eqnarray}
+#### **Adjusted $\hat{R}^2$**. {-}
 
-:::{.callout-important title="Definition" collapse="false"}
-The *adjusted $\hat{R}^2$* discounts the ordinary $\hat{R}^2$ by a factor that grows with the number of parameters $K$. Unlike $\hat{R}^2$, it does not mechanically rise when more regressors are added, so it is a more honest summary of in-sample fit across models of different size.
+Adding extra regressors can mechanically raise the ordinary $\hat{R}^2$ even when the new variables are pure noise, so we need a fit measure that does not reward including junk.
+
+:::{.callout-important title="Key Definition" collapse="false"}
+The ordinary *coefficient of determination* is the share of variance the model explains,
+$$\hat{R}_{yY}^2 = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}.$$
+The *adjusted $\hat{R}^2$* multiplies the unexplained share by a factor that grows with the number of parameters $K$,
+$$\hat{R}^2_{\text{adj.}} = 1-\frac{n-1}{n-K}(1-\hat{R}_{yY}^2),$$
+where $K$ counts all estimated coefficients including the intercept (so $K=3$ for a model with two explanatory variables).
 :::
+
+The *adjusted $\hat{R}^2$* is useful for comparing models with different numbers of regressors on the same dataset: it only rises when an added variable improves fit by more than random noise would, which makes it a more honest summary than $\hat{R}^2$ alone.
+The penalty $(n-1)/(n-K)$ is the only thing distinguishing it from the unadjusted version, and it can in fact go negative if the model fits worse than a constant.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Suppose $n=50$, $K=3$, and $\hat{R}^2=0.70$. Then
@@ -112,9 +113,16 @@ colnames(boot_coefs) <- names(coef(reg))
 apply(boot_coefs, 2, sd)
 ```
 
-:::{.callout-important title="Definition" collapse="false"}
+#### **Joint Hypothesis Tests**. {-}
+
+When coefficient estimates are correlated, testing them one at a time can miss dependencies that a joint test captures.
+
+:::{.callout-important title="Key Definition" collapse="false"}
 A *joint hypothesis test* asks whether several coefficients are simultaneously consistent with a stated null (e.g., $\beta_1 = \beta_2 = 0$). The bootstrap above approximates the joint sampling distribution of $\hat{B}$, so we can read off the joint distribution rather than just the marginals.
 :::
+
+A *joint test* is useful when two coefficients move together across resamples: pooling the evidence into one test reflects the actual joint uncertainty, whereas two separate $t$-tests would either double-count or miss the dependence entirely.
+The plot below visualizes the bootstrap joint distribution of the `UrbanPop` and `Assault` coefficients, where each point is one bootstrap replicate.
 
 ```{r}
 boot_coef_df <- as.data.frame(cbind(
@@ -141,20 +149,21 @@ fig
 
 #### **F-statistic**. {-}
 
-We can also use an *$F$ test* for any $q$ hypotheses. Specifically, when $q$ hypotheses *restrict* a model, the degrees of freedom drop from $k_{u}$ to $k_{r}$ and the residual sum of squares $\hat{RSS}=\sum_{i}(\hat{Y}_{i}-\hat{y}_{i})^2$ typically increases. We compute the statistic
-\begin{eqnarray}
-\hat{F}_{q} = \frac{(\hat{RSS}_{r}-\hat{RSS}_{u})/(k_{u}-k_{r})}{\hat{RSS}_{u}/(n-k_{u})}
-\end{eqnarray}
+For a single coefficient we have the $t$-statistic; with several restrictions at once we need an analog that combines them into one number.
+
+:::{.callout-important title="Key Definition" collapse="false"}
+The *$F$-statistic* compares the residual sum of squares of a restricted and an unrestricted model, scaled by their degrees of freedom. With $q$ restrictions, residual sum of squares $\hat{RSS} = \sum_i (\hat{Y}_i - \hat{y}_i)^2$, and degrees of freedom $k_u$ unrestricted and $k_r$ restricted,
+$$\hat{F}_{q} = \frac{(\hat{RSS}_{r}-\hat{RSS}_{u})/(k_{u}-k_{r})}{\hat{RSS}_{u}/(n-k_{u})}.$$
+:::
+
+The $F$-statistic is useful for testing whether several restrictions on a regression hold simultaneously — most often, "are these $K$ coefficients all zero?" — by comparing two nested models with one number.
+A large $\hat{F}$ means the unrestricted model fits much better than the restricted one, beyond what would be expected by chance.
 
 If you test whether all $K$ variables are jointly significant, the restricted model is a simple intercept and $\hat{RSS}_{r}=\hat{TSS}$, and $\hat{F}_{q}$ can be written in terms of $\hat{R}^2$: $\hat{F}_{K} = \frac{\hat{R}^2}{1-\hat{R}^2} \frac{n-K}{K-1}$. The first fraction is the relative goodness of fit, and the second fraction is an adjustment for degrees of freedom (similar to how we adjusted the $\hat{R}^2$ term before). We can also write this test statistic for whether all variables are statistically significant in terms of the adjusted $\hat{R}^2$:
 \begin{eqnarray}
 \hat{F}_{K} = \frac{(K-1) + (n-K)\hat{R}^2_{\text{adj.}}}{(K-1)(1 - \hat{R}^2_{\text{adj.}})}
 \end{eqnarray}
 Notice that $\hat{F}_{K}=1$ when $\hat{R}^2_{\text{adj.}}=0$, meaning the model does not improve fit beyond what random covariates would achieve. The F-statistic exceeds $1$ when $\hat{R}^2_{\text{adj.}}>0$ and falls below $1$ when $\hat{R}^2_{\text{adj.}}<0$.
-
-:::{.callout-important title="Definition" collapse="false"}
-The *$F$-statistic* compares the residual sum of squares of a restricted and an unrestricted model, scaled by their degrees of freedom. A large $\hat{F}$ means the unrestricted model fits much better than the restricted one, beyond what would be expected by chance.
-:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Suppose $\hat{R}^2_{\text{adj.}}=0.50$, $K=3$, $n=50$. Then
@@ -300,7 +309,7 @@ That said, we still care about $\hat{R}^2$. A very small $\hat{R}^2$ can signal 
 * <https://www.econometrics-with-r.org/10-rwpd.html> -- panel data and fixed-effects estimation with practical R code.
 
 
-:::{.callout-note title="Recall" collapse="false" icon=false}
-This chapter extended simple regression to multiple explanatory variables, introducing the adjusted $\hat{R}^2$, the $F$-statistic for joint tests, and bootstrap standard errors. In the next chapter we use the same machinery on factor variables — the ANOVA decomposition of variation between and within groups.
-:::
+#### Recall {-}
+
+This chapter extended simple regression to multiple explanatory variables, introducing OLS, the adjusted $\hat{R}^2$, the $F$-statistic for joint tests, and bootstrap standard errors. The R² vs. adjusted R² simulation made the difference concrete: we added 30 random covariates to `Murder ~ Assault + UrbanPop`, watched the unadjusted $\hat{R}^2$ creep upward, and saw the adjusted version stay flat. In the next chapter we use the same machinery on factor variables — the ANOVA decomposition of variation between and within groups.
 
