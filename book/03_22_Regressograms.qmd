@@ -11,11 +11,14 @@ It then shows how to summarize the gradients these models produce.
 
 #### **Setup**. {-}
 
-You can estimate a nonparametric model with multiple $X$ variables with a *multivariate regressogram*. Here, we cut the data into exclusive bins along each dimension (called dummy variables), and then run a regression on all dummy variables.
+We want a flexible estimate of $\mathbb{E}[Y \mid X_1, X_2]$ that does not commit to any functional form for either explanatory variable.
 
-:::{.callout-important title="Definition" collapse="false"}
-A *multivariate regressogram* cuts each explanatory variable into exclusive bins and predicts the mean of $\hat{Y}$ within each bin combination. It is the multivariate generalization of the univariate regressogram from [Local Regression](https://jadamso.github.io/Rbooks/02_14_LocalRegression.html#regressograms).
+:::{.callout-important title="Key Definition" collapse="false"}
+A *multivariate regressogram* cuts each explanatory variable into exclusive bins (each encoded as a dummy variable), then predicts $\mathbb{E}[\hat{Y}]$ within each bin combination using OLS on the full set of dummies. It is the multivariate generalization of the univariate regressogram from [Local Regression](https://jadamso.github.io/Rbooks/02_14_LocalRegression.html#regressograms).
 :::
+
+The multivariate regressogram is useful for estimating a conditional mean without committing to linearity or any particular interaction structure — every cell gets its own prediction.
+This flexibility is also its main drawback: as the number of explanatory variables grows, the cells empty out and predictions in sparse regions become noisy; the simulated data below uses two predictors to keep things visible.
 
 ```{r}
 ## Simulate data: y is a nonlinear function of x1 and x2 plus noise.
@@ -156,13 +159,14 @@ The fitted value for any point is its cell mean: $(2+4)/2 = 3$ for the (low, low
 
 #### **Piecewise Model**. {-}
 
-A regressogram is *locally constant*: it predicts a single number for every point in a bin.
-Just as in the bivariate case, we can instead fit a *locally linear* model by running a separate regression within each bin.
-This is a multivariate *piecewise regression*: we bin one variable, then fit a full linear model of $\hat{Y}$ on the explanatory variables within each bin.
+A regressogram is *locally constant* — every point in a bin gets the same prediction — and we sometimes want slopes within each bin instead of a flat shelf.
 
-:::{.callout-important title="Definition" collapse="false"}
-A multivariate *piecewise regression* bins one explanatory variable and fits a separate OLS line on the others within each bin. Predictions vary smoothly within a bin and jump only at the bin edges, sitting between the flat regressogram and the global OLS plane.
+:::{.callout-important title="Key Definition" collapse="false"}
+A multivariate *piecewise regression* bins one explanatory variable and fits a separate OLS line on the others within each bin.
 :::
+
+A *piecewise regression* is useful as a middle ground between the flat regressogram and the global OLS plane: it tracks gradients within each bin so predictions vary smoothly, and jumps only at the bin edges.
+We bin one variable, then fit a full linear model of $\hat{Y}$ on the explanatory variables within each bin.
 
 ```{r}
 ##################
@@ -244,23 +248,26 @@ The Chow test checks whether a structural break exists at a specified point. Wha
 
 #### **Leave-One-Out and K-Fold CV**. {-}
 
-One of the most common approaches to selecting a model or bandwidth is to minimize *prediction* error. *Leave-one-out cross-validation* minimizes the average "leave-one-out" mean square prediction errors:
+A flexible model can fit the training data perfectly while predicting new observations badly, so we need a way to measure performance on data the model has not seen.
+
+:::{.callout-important title="Key Definition" collapse="false"}
+*Cross-validation (CV)* picks a model by minimizing out-of-sample prediction error. *Leave-one-out CV* drops one observation at a time, refits, and averages the squared prediction errors:
 \begin{eqnarray}
 \min_{\mathbf{H}} \quad \frac{1}{n} \sum_{i=1}^{n} \left[ \hat{Y}_{i} - \hat{y_{[i]}}(\mathbf{X},\mathbf{H}) \right]^2,
 \end{eqnarray}
-where $\hat{y}_{[i]}(\mathbf{X},\mathbf{H})$ is the model predicted value at $\mathbf{X}_{i}$ based on a dataset that excludes $\mathbf{X}_{i}$, and $\mathbf{H}$ is matrix of bandwidths. With a weighted least squares regression on three explanatory variables, for example, the matrix is
+where $\hat{y}_{[i]}(\mathbf{X},\mathbf{H})$ is the model's prediction at $\mathbf{X}_{i}$ from a fit that excluded $\mathbf{X}_{i}$, and $\mathbf{H}$ is the bandwidth matrix. *$k$-fold CV* drops one of $k$ random groups at a time instead of one observation.
+:::
+
+Cross-validation is useful because it directly penalizes overfitting: a too-flexible model predicts held-out observations poorly even though it fits in-sample data tightly.
+With a weighted least squares regression on three explanatory variables, the bandwidth matrix has the form
 \begin{eqnarray}
 \mathbf{H}=\begin{pmatrix}
-h_{1} & 0 & 0  \\ 
+h_{1} & 0 & 0  \\
  0    & h_{2} & 0 \\
  0    & 0 & h_{3} \\
 \end{pmatrix},
 \end{eqnarray}
 where each $h_{k}$ is the bandwidth for variable $X_{k}$. In the discrete-bin setting below, the role of the bandwidth is played by the *number of bins $L$*: more bins means finer resolution (a smaller effective bandwidth) and fewer observations per bin.
-
-:::{.callout-important title="Definition" collapse="false"}
-*Cross-validation (CV)* picks a model by minimizing out-of-sample prediction error. *Leave-one-out CV* drops one observation, refits, and averages the squared prediction errors; *$k$-fold CV* drops one of $k$ random groups at a time. CV penalizes overfitting because too-flexible models predict the held-out observations poorly.
-:::
 
 There are many types of cross-validation (Arlot and Celisse, 2010; Bates et al., 2023). *Generalized cross-validation* adjusts for the degrees of freedom, whereas the `npreg` function in R uses *least-squares cross-validation* (Racine, 2019, p. 74) by default. You can refer to extensions on a case by case basis.
 
@@ -317,18 +324,22 @@ What happens to the cross-validated error once `L` is large enough that some gri
 
 #### **Finite Differences**. {-}
 
-We first summarize gradients (how $Y$ changes with $X$) before testing them. There are two main approaches.
+We first summarize gradients — how $\hat{y}$ changes with each $x_p$ at a point — before testing them.
 
-1. For regressograms, you can approximate gradients with small finite differences. For some small $h_{p}$, we can compute
+:::{.callout-important title="Key Definition" collapse="false"}
+A *gradient* of a fitted multivariate model is the partial derivative $\partial \hat{y}/\partial x_p$ evaluated at a point. For a regressogram with no slope coefficients, it must be approximated by a finite difference between adjacent bins,
 \begin{eqnarray}
 \hat{\beta}_{p}(\mathbf{x}) &=& \frac{ \hat{y}(x_{1},...,x_{p}+ \frac{h_{p}}{2}...,x_{P})-\hat{y}(x_{1},...,x_{p}-\frac{h_{p}}{2}...,x_{P})}{h_{p}},
 \end{eqnarray}
-
-2. When using split-sample regressions or local linear regressions, you can use the estimated slope coefficients $\hat{\beta}_{p}(\mathbf{x})$ as gradient estimates in each direction.
-
-:::{.callout-important title="Definition" collapse="false"}
-A *gradient* of a fitted multivariate model is the partial derivative $\partial \hat{y}/\partial x_p$, evaluated at a point. A regressogram has no slope coefficients, so its gradient must be approximated by finite differences; a piecewise or local linear regression has within-bin slopes that are themselves gradient estimates.
+while a piecewise or local linear regression has within-bin slopes that are themselves gradient estimates.
 :::
+
+The gradient is useful because, unlike the single OLS coefficient, it varies with $\mathbf{x}$ — letting us see whether the marginal effect of $X_p$ is the same at small, medium, and large values of the other regressors.
+We can compute it two ways:
+
+1. For regressograms, approximate the gradient with a small finite difference between adjacent bins (formula above).
+
+2. For split-sample regressions or local linear regressions, read the within-bin slope coefficients $\hat{\beta}_{p}(\mathbf{x})$ directly as gradient estimates.
 
 After computing gradients, you can summarize them in various plots: a histogram of $\hat{\beta}_{p}(\mathbf{x})$, a scatterplot of $\hat{\beta}_{p}(\mathbf{x})$ against $X_{p}$, or the sorted gradients shown with their confidence intervals (Chaudhuri, 1999; Henderson et al., 2012).
 
@@ -406,6 +417,6 @@ A piecewise or local linear regression avoids this approximation, because its wi
 * <https://www.econometrics-with-r.org/11-rwmad.html> -- nonparametric methods and their connection to regression, including bin-smoothers.
 
 
-:::{.callout-note title="Recall" collapse="false" icon=false}
-This chapter generalized regressograms, piecewise regression, and cross-validation to the multivariate setting, and showed two ways to summarize gradients: finite differences from the regressogram, and within-bin slopes from the piecewise model. In the next chapter we step back from estimation and ask what happens when the data themselves are dependent over time, across space, or through market equilibrium — observational complications that violate the independence assumption used here.
-:::
+#### Recall {-}
+
+This chapter generalized regressograms, piecewise regression, and cross-validation to the multivariate setting, and showed two ways to summarize gradients: finite differences from the regressogram, and within-bin slopes from the piecewise model. The 5-fold CV exercise on `y ~ x1c/(x1 + x2)` made the bias-variance trade-off concrete: we swept the number of `x1` bins through $\{2, 4, 6, 8, 12, 16\}$, watched the cross-validated MSE bottom out at the CV-optimal $L^{*}$, and saw it rise again as we kept adding bins. In the next chapter we step back from estimation and ask what happens when the data themselves are dependent over time, across space, or through market equilibrium — observational complications that violate the independence assumption used here.
