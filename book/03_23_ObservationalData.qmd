@@ -65,14 +65,17 @@ title('Marginal', font.main=1, adj=0)
 ```
 
 #### **Stationary**. {-}
-A *stationary* time series is one whose statistical properties do not change over time. Formally
 
-* Stationary Means: $\mathbb{E}[Y_{t}]=\mathbb{E}[Y_{t'}]$ for all time periods $t, t'$
-* Stationary Variances: $\mathbb{V}[Y_{t}]=\mathbb{V}[Y_{t'}]$ for all time periods $t, t'$
+The simplest time-series methods implicitly assume the data have a stable distribution over time; this assumption fails often enough that we need a name for it.
 
-:::{.callout-important title="Definition" collapse="false"}
-A time series is *stationary* if its mean and variance do not depend on $t$. A series with a deterministic trend is mean-nonstationary; a random walk is variance-nonstationary because $\mathbb{V}[Y_t]$ grows linearly in $t$.
+:::{.callout-important title="Key Definition" collapse="false"}
+A time series is *stationary* if both its mean and variance do not depend on $t$:
+
+* Stationary means: $\mathbb{E}[Y_{t}]=\mathbb{E}[Y_{t'}]$ for all time periods $t, t'$.
+* Stationary variances: $\mathbb{V}[Y_{t}]=\mathbb{V}[Y_{t'}]$ for all time periods $t, t'$.
 :::
+
+Stationarity is useful as a precondition for most classical time-series tools, and violations come in distinct flavors: a series with a deterministic trend is mean-nonstationary, while a random walk is variance-nonstationary because $\mathbb{V}[Y_t]$ grows linearly in $t$.
 
 For example, consider the data generating process $Y_t = \beta t + \epsilon_t$, with $\epsilon_t \sim \text{N}(0, \sigma + \alpha t)$, with parameters $\beta$ affecting mean stationarity and $\alpha$ affecting variance stationarity.
 
@@ -121,18 +124,18 @@ In the top-left panel ($\beta=0, \alpha=0$), both the mean and variance are cons
 :::
 
 #### **Measures of temporal association**. {-}
-Time series often exhibit *serial dependence*: values today are related to past values, and potentially to other processes evolving over time. We can visualize this using correlation-based diagnostics.
 
-The *Autocorrelation Function* (ACF) measures correlation between a time series and its own lagged values:
-\begin{eqnarray}
-ACF_{Y}(k) = \frac{\mathbb{C}(Y_{t},Y_{t-k})}{ \sqrt{\mathbb{V}(Y_{t})\mathbb{V}(Y_{t-k})}}
-\end{eqnarray}
+When values at one time depend on values at other times, we need correlation-based diagnostics across lags to characterize the dependence.
 
-This helps detect temporal persistence (memory). For stationary processes, the ACF typically decays quickly, whereas for nonstationary processes, it typically decays slowly or persists.
-
-:::{.callout-important title="Definition" collapse="false"}
-The *autocorrelation function* $ACF_Y(k)$ is the correlation of $Y_t$ with its own lagged value $Y_{t-k}$. The *cross-correlation function* $CCF_{YX}(k)$ is the corresponding correlation of $Y_t$ with $X_{t-k}$. Both diagnose temporal dependence; the ACF within one series, the CCF between two.
+:::{.callout-important title="Key Definition" collapse="false"}
+The *autocorrelation function* of $Y$ at lag $k$ is the correlation of $Y_t$ with its own lagged value $Y_{t-k}$,
+$$ACF_{Y}(k) = \frac{\mathbb{C}(Y_{t},Y_{t-k})}{ \sqrt{\mathbb{V}(Y_{t})\mathbb{V}(Y_{t-k})}}.$$
+The *cross-correlation function* between $Y$ and $X$ at lag $k$ is the corresponding correlation of $Y_t$ with $X_{t-k}$,
+$$CCF_{YX}(k) = \frac{\mathbb{C}(Y_{t},X_{t-k})}{ \sqrt{\mathbb{V}(Y_t)\mathbb{V}(X_{t-k})}}.$$
 :::
+
+The ACF is useful for detecting temporal persistence (memory) within one series: for stationary processes it typically decays quickly, while nonstationary processes show ACFs that decay slowly or persist.
+The CCF is useful for detecting lagged relationships between two series, such as leading indicators or external drivers; if $X$ is white noise, any visible structure in the CCF likely reflects nonstationarity in $Y$.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Worked example: $y=(2,4,6,8,10)$, with $n=5$ and mean $\bar{y}=6$.
@@ -160,13 +163,7 @@ for(beta in c(0, .05)){
 }}
 ```
 
-The *Cross-Correlation Function* (CCF) measures correlation between two time series at different lags:
-
-\begin{eqnarray}
-CCF_{YX}(k) = \frac{\mathbb{C}(Y_{t},X_{t-k})}{ \sqrt{\mathbb{V}(Y_t)\mathbb{V}(X_{t-k})}}
-\end{eqnarray}
-
-This is useful for detecting lagged relationships between two series, such as leading indicators or external drivers. (If $X$ is white noise, any visible structure in the CCF likely reflects nonstationarity in $Y$.)
+A *cross-correlation* plot diagnoses lagged dependence between two series at once:
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Worked CCF example. Let $y=(1,2,3,4,5)$ and $x=(2,3,4,5,6)$, with $\bar{y}=3, \bar{x}=4$.
@@ -256,13 +253,15 @@ title('Nonstationary Field', font.main = 1)
 ```
 
 #### **Measures of spatial association**. {-}
-Just like temporal data may exhibit autocorrelation, spatial data may show *spatial autocorrelation* or *spatial cross-correlation*—meaning that observations located near each other are more (or less) similar than we would expect under spatial independence.
 
-Autocorrelation. We can measure spatial *autocorrelation* using *Moran's I*, a standard index of spatial dependence. Global Moran's I summarizes overall spatial association (just like the ACF).
+Just as temporal data can exhibit autocorrelation, spatial data can too — nearby locations tend to be more (or less) similar than spatial independence would predict.
 
-:::{.callout-important title="Definition" collapse="false"}
+:::{.callout-important title="Key Definition" collapse="false"}
 *Moran's I* is an index of spatial autocorrelation ranging from $-1$ to $1$. Values near $1$ indicate that nearby locations have similar values, $-1$ that they have dissimilar values, and $0$ that they are spatially independent.
 :::
+
+Moran's I is useful as the spatial analog of the ACF: it summarizes overall spatial dependence in one number, and large positive values signal that observations near each other share information we cannot treat as independent.
+A two-variable analog measures *spatial cross-correlation* — computed similarly to the CCF but with spatial rather than temporal lags.
 
 ```{r}
 # Raster Data Example
@@ -353,17 +352,22 @@ polygon( c(x, rev(x)),
 
 ## Economic Interdependence
 
-In addition to spatial and temporal dependence, many observational datasets exhibit interdependence between variables for economic reasons. In the minds of economists, many variables are *endogenous*: meaning that they are an economic outcome determined (or caused: $\to$) by some other variable.
+In addition to spatial and temporal dependence, many observational datasets exhibit interdependence between variables for economic reasons.
 
- * If $Y \to X$, then we have *reverse causality*
- * If $Y \to X$ and $X \to Y$, then we have *simultaneity*
- * If $Z\to Y$ and either $Z\to X$ or $X \to Z$, then we have omitted a potentially important variable
+#### **Endogeneity**. {-}
 
-Now recall the linear model is $Y=X\beta + \epsilon$. The endogeneity issues imply $X$ and $\epsilon$ are correlated, which is a barrier to interpreting OLS estimates as reflecting a causal relationship.^[Note that $X$ and $\epsilon$ may be correlated for other reasons too, such as when $X$ is measured with error.]
+Economic outcomes are not free variables we can move at will — many are jointly determined, affected by selection, or driven by variables we have not measured.
 
-:::{.callout-important title="Definition" collapse="false"}
-A regressor is *endogenous* if it is correlated with the error term in a regression. The three classic sources are *reverse causality*, *simultaneity*, and *omitted variables*. Endogeneity biases OLS away from the structural causal parameter.
+:::{.callout-important title="Key Definition" collapse="false"}
+A regressor is *endogenous* if it is correlated with the error term in a regression. The three classic sources are
+
+ * *reverse causality*: $Y \to X$.
+ * *simultaneity*: $Y \to X$ and $X \to Y$.
+ * *omitted variables*: $Z\to Y$ and either $Z\to X$ or $X \to Z$.
 :::
+
+Endogeneity is the central reason observational data resist clean causal interpretation: in the linear model $Y=X\beta + \epsilon$, endogeneity means $\mathbb{E}[X'\epsilon] \neq 0$, so OLS is biased away from the structural causal parameter.^[$X$ and $\epsilon$ may be correlated for other reasons too, such as when $X$ is measured with error.]
+The next chapter introduces experimental and quasi-experimental designs that supply exogenous variation in $X$ and recover what OLS alone cannot.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Consider the relationship between education and wages. Identify a potential source of (a) omitted variable bias, (b) reverse causality, and (c) measurement error. For each, explain the direction in which you expect the OLS estimate to be biased.
@@ -395,13 +399,19 @@ Q_{S}(P) &=& \alpha_{S} + \beta_{S} P + E_{S},\\
 Q_{D}(P) &=& \alpha_{D} - \beta_{D} P + E_{D},\\
 \label{eqn:market_eq}
 Q_{D} &=& Q_{S} = Q.
-%%  $Q_{D}(P) = \sum_{i} q_{D}_{i}(P)$, 
+%%  $Q_{D}(P) = \sum_{i} q_{D}_{i}(P)$,
 \end{eqnarray}
-This last equation implies a simultaneous *reduced form* relationship where both the price and the quantity are outcomes.
 
-:::{.callout-important title="Definition" collapse="false"}
-The *reduced form* of a structural system writes each endogenous outcome (here $P^*$ and $Q^*$) as a function of the exogenous variables (here the intercepts and shocks) only. It is what you can identify from observed prices and quantities; the structural slopes $\beta_S, \beta_D$ require additional identifying variation to recover.
+#### **Reduced Form**. {-}
+
+When two variables are jointly determined in equilibrium, neither one is "exogenous" — we can only observe their joint outcomes.
+
+:::{.callout-important title="Key Definition" collapse="false"}
+The *reduced form* of a structural system writes each endogenous outcome (here $P^{*}$ and $Q^{*}$) as a function of the exogenous variables (here the intercepts and shocks) only.
 :::
+
+The reduced form is useful as a clean separation between what observational data can identify and what they cannot: the reduced-form intercepts and shocks combine in known ways, but the structural slopes $\beta_S, \beta_D$ require additional identifying variation (introduced in the next chapter) to recover.
+The equilibrium condition $Q_D = Q_S$ in the structural equations above is exactly what triggers this simultaneity, leaving both price and quantity as outcomes.
 ```{r}
 # Demand Curve Simulator
 qd_fun <- function(p, Ad=8, Bd=-.8, Ed_sigma=.25){
@@ -508,7 +518,7 @@ In the next chapter we look at the standard remedy: experimental and quasi-exper
 * <https://mixtape.scunning.com/03-directed_acyclical_graphs> -- DAGs and the logic of identification in observational studies.
 
 
-:::{.callout-note title="Recall" collapse="false" icon=false}
-This chapter introduced three forms of observational dependence — temporal, spatial, and economic — and the diagnostic tools (ACF/CCF, Moran's I, endogeneity taxonomy) for each. In the next chapter we turn to experimental and quasi-experimental designs that supply the exogenous variation needed to identify causal effects: RDD, DID, and 2SLS.
-:::
+#### Recall {-}
+
+This chapter introduced three forms of observational dependence — temporal, spatial, and economic — and the diagnostic tools (ACF/CCF, Moran's I, endogeneity taxonomy) for each. The supply-demand simulation made the endogeneity bite concrete: we ran 300 market periods through `qd_fun`/`qs_fun`, fit `lm(Q ~ P, data=dat1)`, and got a slope that confuses the supply and demand sides because price and quantity are jointly determined. In the next chapter we turn to experimental and quasi-experimental designs that supply the exogenous variation needed to identify causal effects: RDD, DID, and 2SLS.
 
