@@ -5,18 +5,21 @@ So far we have used regression with cardinal explanatory variables. We now turn 
 
 #### **Factor Variables**. {-}
 
-We previously discussed cardinal data where the difference between units always means the same thing: e.g., $4-3=2-1$. There are also *factor variables*
+So far we have used cardinal explanatory variables where $4-3=2-1$; many useful predictors are instead labels of group membership that do not arithmetic this way.
+
+:::{.callout-important title="Key Definition" collapse="false"}
+A *factor variable* labels which group each observation belongs to. Each level of the factor can be encoded as an *indicator variable* (or *dummy*) $\hat{D}_{c} = \mathbf{1}(\text{Factor} = c)$, which equals $1$ when the observation is in group $c$ and $0$ otherwise.
+:::
+
+Factor variables are useful when group identity itself predicts the outcome — region, industry, treatment arm — and we want to compare group means within a regression framework.
+They split into two flavors:
 
 * *Ordered*: refers to *ordinal* data. The difference between units means something, but not always the same thing. For example, $4th - 3rd \neq 2nd - 1st$.
 * *Unordered*: refers to *categorical* data. The difference between units is meaningless. For example, $D-C=?$
 
-To analyze either factor, we often convert them into *indicator variables* or *dummies*; $\hat{D}_{c}=\mathbf{1}( \text{Factor} = c)$. One common case is if you have observations of individuals over time periods, then you may have two factor variables. An unordered factor that indicates who an individual is; for example $\hat{D}_{i}=\mathbf{1}( \text{Individual} = i)$, and an ordered factor that indicates the time period; for example $\hat{D}_{t}=\mathbf{1}( \text{Time} \in [\text{month}~ t, \text{month}~ t+1) )$. There are many other cases you see factor variables, including spatial ID's in purely cross sectional data.
+One common case is if you have observations of individuals over time periods, then you may have two factor variables. An unordered factor that indicates who an individual is; for example $\hat{D}_{i}=\mathbf{1}( \text{Individual} = i)$, and an ordered factor that indicates the time period; for example $\hat{D}_{t}=\mathbf{1}( \text{Time} \in [\text{month}~ t, \text{month}~ t+1) )$. There are many other cases you see factor variables, including spatial ID's in purely cross sectional data.
 
 Be careful not to handle categorical data as if they were cardinal. E.g., generate city data with Leipzig=1, Lausanne=2, LosAngeles=3, ... and then include city as if it were a cardinal number (that's a big no-no). The same applied to ordinal data; PopulationLeipzig=2, PopulationLausanne=3, PopulationLosAngeles=1.
-
-:::{.callout-important title="Definition" collapse="false"}
-A *factor variable* labels which group each observation belongs to. Each level of the factor can be encoded as an *indicator variable* (or *dummy*) $\hat{D}_{c} = \mathbf{1}(\text{Factor} = c)$, which equals $1$ when the observation is in group $c$ and $0$ otherwise.
-:::
 
 In this chapter, we use `state.region` (Northeast, South, North Central, West) as an unordered factor to group the `USArrests` data by US Census region.
 
@@ -46,7 +49,10 @@ In [Comparing Groups](https://jadamso.github.io/Rbooks/02_11_TwoGroups.html), we
 
 #### **Decomposition**. {-}
 
-The key idea is to decompose total variation into *between-group* and *within-group* components. Label each observation $\hat{Y}_{ig}$ for individual $i$ in group $g$. Each group $g=1,\dots,G$ has $n_g$ observations with group mean $\hat{M}_{g}$, and the grand mean across all $n=\sum_g n_g$ observations is $\hat{M}_{Y}$. Then the total sum of squares decomposes as
+If group means differ, some of the spread in $Y$ must come from differences *between* groups rather than *within* them — and we can split each piece out.
+
+:::{.callout-important title="Key Definition" collapse="false"}
+Label each observation $\hat{Y}_{ig}$ for individual $i$ in group $g$, where group $g=1,\dots,G$ has $n_g$ observations with group mean $\hat{M}_{g}$, and the grand mean across all $n=\sum_g n_g$ observations is $\hat{M}_{Y}$. The *ANOVA decomposition* splits the total sum of squares into between-group and within-group pieces:
 \begin{eqnarray}
 \underbrace{\sum_{g=1}^{G}\sum_{i=1}^{n_g}(\hat{Y}_{ig}-\hat{M}_{Y})^2}_{\hat{TSS}}
 &=&
@@ -54,14 +60,11 @@ The key idea is to decompose total variation into *between-group* and *within-gr
 \;+\;
 \underbrace{\sum_{g=1}^{G}\sum_{i=1}^{n_g}(\hat{Y}_{ig}-\hat{M}_{g})^2}_{\hat{WSS}},
 \end{eqnarray}
-where $\hat{BSS}$ is the between-group sum of squares (variation in group means around the grand mean) and $\hat{WSS}$ is the within-group sum of squares (variation of observations around their own group mean). The cross-term $\sum_{g,i}(\hat{Y}_{ig}-\hat{M}_{g})(\hat{M}_{g}-\hat{M}_{Y})$ vanishes because the within-group deviations sum to zero around their own group mean, which is why the decomposition holds exactly.
-
-If the group means are all equal, then $\hat{BSS}$ should be small relative to $\hat{WSS}$.
-
-:::{.callout-important title="Definition" collapse="false"}
-The *ANOVA decomposition* splits the total sum of squares into a between-group piece (variation of group means around the grand mean) and a within-group piece (variation of observations around their own group mean):
-$\hat{TSS} = \hat{BSS} + \hat{WSS}$.
+where $\hat{BSS}$ measures variation in group means around the grand mean and $\hat{WSS}$ measures variation of observations around their own group mean.
 :::
+
+The decomposition is useful as the foundation for any test of "do group means differ?": if they do not, $\hat{BSS}$ should be small relative to $\hat{WSS}$.
+The equality holds exactly because the cross-term $\sum_{g,i}(\hat{Y}_{ig}-\hat{M}_{g})(\hat{M}_{g}-\hat{M}_{Y})$ vanishes — the within-group deviations sum to zero around their own group mean.
 
 In R, `aov()` fits the ANOVA model and `summary()` returns the standard ANOVA table. The ANOVA table reports $\hat{BSS}$ ("Sum Sq" for `Region`), $\hat{WSS}$ ("Sum Sq" for `Residuals`).
 ```{r}
@@ -112,15 +115,16 @@ WSS <- sum(aggregate(Y, list(g), function(y) sum((y - mean(y))^2))$x)
 
 #### **The F-statistic**. {-}
 
-We test $H_0: \mu_1=\mu_2=\dots=\mu_G$ versus $H_A:$ at least one $\mu_g$ differs. The *ANOVA F-statistic* is
-\begin{eqnarray}
-\hat{F} &=& \frac{\hat{BSS}/(G-1)}{\hat{WSS}/(n-G)}.
-\end{eqnarray}
-The numerator is the average between-group variation (per degree of freedom), and the denominator is the average within-group variation. A large $\hat{F}$ means group means are more spread out than individual-level noise would predict.
+We have the decomposition; now we need a single number that tells us when the between-group piece is "large" relative to the within-group piece.
 
-:::{.callout-important title="Definition" collapse="false"}
-The *ANOVA $F$-statistic* is the ratio of average between-group variation to average within-group variation. Under the null of equal group means it follows an $F_{G-1, n-G}$ distribution (with the usual parametric assumptions); we can also get a $p$-value nonparametrically by bootstrapping the labels.
+:::{.callout-important title="Key Definition" collapse="false"}
+The *ANOVA $F$-statistic* is the ratio of average between-group variation to average within-group variation:
+$$\hat{F} = \frac{\hat{BSS}/(G-1)}{\hat{WSS}/(n-G)}.$$
+Under the null $H_0: \mu_1=\mu_2=\dots=\mu_G$ (with the usual parametric assumptions) it follows an $F_{G-1, n-G}$ distribution; we can also get a $p$-value nonparametrically by bootstrapping the labels.
 :::
+
+The ANOVA F-statistic is useful as the global "do any means differ?" test — one number, one $p$-value, regardless of how many groups you have.
+The numerator is the average between-group variation per degree of freedom, the denominator is the average within-group variation, and a large $\hat{F}$ means group means are more spread out than individual-level noise would predict.
 
 ```{r}
 F_fun <- function(Y,g){
@@ -203,11 +207,18 @@ cbind(BSS, WSS, Fstat, pval)
 
 ## Equal Distributions
 
-The *Kruskal-Wallis* test examines $H_0:\; F_1 = F_2 = \dots = F_G$ versus $H_A:$ at least one  $F_g$ differs, where $F_g$ is the continuous distribution of group $g=1,...G$. This test does not tell us which group is different.
+ANOVA tests whether group *means* differ; sometimes the entire *distributions* differ in ways the mean would miss.
 
-:::{.callout-important title="Definition" collapse="false"}
-The *Kruskal-Wallis test* is a nonparametric test for equal distributions across $G$ groups. It uses the average ranks within each group rather than the raw observations, so it only requires the data to be ordinal. With two groups it reduces to the *Mann-Whitney U* (equivalently *Wilcoxon rank-sum*) test.
+#### **Kruskal-Wallis Test**. {-}
+
+When data are skewed, heavy-tailed, or only ordinal, a test built on means may overlook differences that show up in the rank order.
+
+:::{.callout-important title="Key Definition" collapse="false"}
+The *Kruskal-Wallis test* is a nonparametric test for equal distributions across $G$ groups, testing $H_0: F_1 = F_2 = \dots = F_G$ against $H_A:$ at least one $F_g$ differs (where $F_g$ is the continuous distribution of group $g=1,...G$). It uses the average ranks within each group rather than the raw observations, so it only requires the data to be ordinal. With two groups it reduces to the *Mann-Whitney U* (equivalently *Wilcoxon rank-sum*) test.
 :::
+
+The Kruskal-Wallis test is useful when the equal-variance normal-error assumption is implausible — for example, with income, response times, or other heavy-tailed outcomes — because rank-based tests need only the orderings of the data.
+A significant result tells us *that* some distribution differs, but not *which* one; the global rejection has to be followed up with pairwise tests.
 
 To conduct the test, first denote individuals $i=1,...n$ with overall ranks $\hat{r}_1,....\hat{r}_{n}$. Each individual belongs to group $g=1,...G$, and each group $g$ has $n_{g}$ individuals with average rank $\bar{r}_{g} = \sum_{i} \hat{r}_{i} /n_{g}$. The Kruskal Wallis statistic is 
 \begin{eqnarray}
@@ -312,7 +323,7 @@ coef(lm(Y ~ g))
 ```
 :::
 
-#### **Regression**. {-}
+#### **Regression with Factors**. {-}
 
 We can extend the group-comparison model by adding continuous predictors alongside the factor. For example, we might ask: after controlling for `Assault`, do regional differences in murder rates persist?
 
@@ -322,15 +333,20 @@ reg_combined <- lm(Murder ~ Region + Assault, data = dat)
 summary(reg_combined)
 ```
 
-With factors, you can still include them in the design matrix of an OLS regression. For example,
-\begin{eqnarray}
-\hat{Y}_{i} = \sum_{k=0}^{K} b_k \hat{X}_{ik} + \sum_{g}\hat{D}_{g}b_{g}
-\end{eqnarray}
-When, as commonly done, the factors are modeled as being additively separable, they are modeled as *fixed effects*.^[There are also *random effects*: the factor variable comes from a distribution that is uncorrelated with the regressors. This is rarely used in economics today, however, and are mostly included for historical reasons and special cases where fixed effects cannot be estimated due to data limitations.] Simply including the factors into the OLS regression yields a "dummy variable" fixed effects estimator. The fixed effects and dummy variable approach are algebraically equal: same coefficients and same residuals. (See Hansen Econometrics, Theorem 17.1)
+#### **Fixed Effects**. {-}
 
-:::{.callout-important title="Definition" collapse="false"}
-*Fixed effects* are group-specific intercepts that absorb every time-invariant feature of the group. Including the dummy variables directly in OLS or using a dedicated routine (e.g., `fixest::feols`) gives the same coefficients on the remaining regressors and the same residuals.
+The dummy-variable model treats each group as having its own intercept — a useful framing when group identity captures features we cannot otherwise measure.
+
+:::{.callout-important title="Key Definition" collapse="false"}
+*Fixed effects* are group-specific intercepts that absorb every time-invariant feature of the group, entering the regression as
+\begin{eqnarray}
+\hat{Y}_{i} = \sum_{k=0}^{K} b_k \hat{X}_{ik} + \sum_{g}\hat{D}_{g}b_{g}.
+\end{eqnarray}
+Including the dummy variables directly in OLS or using a dedicated routine (e.g., `fixest::feols`) gives the same coefficients on the remaining regressors and the same residuals.
 :::
+
+Fixed effects are useful when you suspect a categorical variable predicts the outcome but you do not care about the levels themselves — only about isolating the partial effects of the other regressors net of group identity.^[There are also *random effects*: the factor variable comes from a distribution that is uncorrelated with the regressors. This is rarely used in economics today, however, and are mostly included for historical reasons and special cases where fixed effects cannot be estimated due to data limitations.]
+The dummy-variable approach and a dedicated FE estimator are algebraically equal — same coefficients, same residuals (see Hansen Econometrics, Theorem 17.1).
 <!--
 In fact, if the fixed effect is ``fully unstructured then the only way to consistently estimate the coefficient $\beta$ is by an estimator which is invariant'' (Hansen Econometrics, p).
 -->
@@ -402,6 +418,6 @@ The sequence of F-tests builds from simple to complex. The first test asks wheth
 * <https://online.stat.psu.edu/stat462/node/137/> -- ANOVA as a special case of regression, with examples of multiple group comparisons.
 
 
-:::{.callout-note title="Recall" collapse="false" icon=false}
-This chapter introduced ANOVA — the decomposition of variation between and within groups, the $F$-statistic that compares the two, and the nonparametric Kruskal-Wallis analog. We also saw that ANOVA is just OLS with group indicators as regressors, and that fixed effects extend this to additional continuous predictors. In the next chapter we step back from estimation and ask how to diagnose a fitted regression: outliers, leverage, collinearity, and variable transformations.
-:::
+#### Recall {-}
+
+This chapter introduced ANOVA — the decomposition of variation between and within groups, the $F$-statistic that compares the two, and the nonparametric Kruskal-Wallis analog. The worked three-group example with $A=\{4,5,6\}, B=\{8,7,9\}, C=\{5,6,7\}$ made the arithmetic concrete: by hand we got $\hat{BSS}=14$ and $\hat{WSS}=6$, which `aov(Y ~ g)` reproduces exactly. We also saw that ANOVA is just OLS with group indicators as regressors, and that fixed effects extend this to additional continuous predictors. In the next chapter we step back from estimation and ask how to diagnose a fitted regression: outliers, leverage, collinearity, and variable transformations.
