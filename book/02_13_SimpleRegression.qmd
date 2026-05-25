@@ -34,37 +34,45 @@ This refers to fitting a linear model to bivariate data.
 
 #### **Model and Objective**. {-}
 
-Specifically, our *model* is
+A regression line goes through the cloud of points, and the gap between each point and the line is what we need to define first.
+
+Our *model* is
 \begin{eqnarray}
 \hat{Y}_{i}=b_{0}+b_{1} \hat{X}_{i}+e_{i},
 \end{eqnarray}
-where $b_{0}$ and $b_{1}$ are parameters, often referred to as "coefficients", and $\hat{X}_{i}, \hat{Y}_{i}$ are data for observation $i$, and $e_{i}$ is a *residual* error term that represents the difference between the model and the data.
+where $b_{0}$ and $b_{1}$ are parameters (the *coefficients*), and $\hat{X}_{i}, \hat{Y}_{i}$ are the data for observation $i$.
 
-:::{.callout-important title="Definition" collapse="false"}
-A *residual* $e_{i}=\hat{Y}_{i}-(b_{0}+b_{1}\hat{X}_{i})$ is the vertical gap between observation $i$'s actual value of $\hat{Y}_{i}$ and the model's prediction for that observation. The OLS objective squares and sums these gaps.
+:::{.callout-important title="Key Definition" collapse="false"}
+A *residual* $e_{i}$ is the vertical gap between observation $i$'s actual value of $\hat{Y}_{i}$ and the model's prediction for that observation:
+$$e_{i}=\hat{Y}_{i}-(b_{0}+b_{1}\hat{X}_{i}).$$
 :::
 
+The *residual* is useful as the basic raw material of every later regression quantity: the OLS coefficients, the $\hat{R}^{2}$, the standard errors, the diagnostic plots are all functions of $e_{i}$. We will square these gaps and sum them, which prevents positive and negative misses from cancelling and penalizes big misses more than small ones.
 
-We then find the parameters which best-fit the data. Specifically, our *objective* is to
+We then find the parameters which best-fit the data, by minimizing the sum of squared residuals:
 \begin{eqnarray}
 \min_{b_{0}, b_{1}} \sum_{i=1}^{n} \left( e_{i} \right)^2 &=& \min_{b_{0}, b_{1}} \sum_{i=1}^{n} \left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right)^2.
 \end{eqnarray}
-Minimizing the sum of squared errors then yields two *optimal coefficients* that can be explicitly solved for using math. For the *slope* coefficient:
+This *ordinary least squares* (OLS) problem has a closed-form solution.
+
+:::{.callout-important title="Key Definition" collapse="false"}
+The *least-squares* (OLS) coefficients minimize the sum of squared residuals. The optimal slope and intercept are
+$$\hat{b}_{1} = \frac{\hat{C}_{XY}}{\hat{V}_{X}}, \qquad \hat{b}_{0} = \hat{M}_{Y} - \hat{b}_{1} \hat{M}_{X}.$$
+:::
+
+The *least-squares slope* $\hat{b}_{1}$ is useful as the canonical "how much does fitted $\hat{Y}$ change per one-unit change in $\hat{X}$" summary, and the formula shows it is just the covariance divided by the variance of $X$. Equivalently, $\hat{b}_{1} = \hat{R}_{XY} \cdot \hat{S}_{Y}/\hat{S}_{X}$, so the slope is the Pearson correlation rescaled by the ratio of standard deviations. The intercept formula then guarantees the fitted line passes through the point of means $(\hat{M}_{X}, \hat{M}_{Y})$.
+
+To derive these, take partial derivatives of the objective with respect to each coefficient and set to zero. For the slope:
 \begin{eqnarray}
 0 &=& \sum_{i=1}^{n} 2\left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right) \hat{X}_{i} \\
-\Rightarrow \hat{b}_{1} &=& \frac{\sum_{i}^{n}(\hat{X}_{i}-\hat{M}_{X})(\hat{Y}_{i}-\hat{M}_{Y})}{\sum_{i}^{}(\hat{X}_{i}-\hat{M}_{X})^2} = \frac{\hat{C}_{XY}}{\hat{V}_{X}},
+\Rightarrow \hat{b}_{1} &=& \frac{\sum_{i=1}^{n}(\hat{X}_{i}-\hat{M}_{X})(\hat{Y}_{i}-\hat{M}_{Y})}{\sum_{i=1}^{n}(\hat{X}_{i}-\hat{M}_{X})^2} = \frac{\hat{C}_{XY}}{\hat{V}_{X}}.
 \end{eqnarray}
-the latter term being the estimated covariance between $X$ and $Y$ divided by the variance of $X$. (Recall that $M_{X}$ and $M_{Y}$ are the means.) Equivalently, $\hat{b}_{1} = \hat{R}_{XY} \cdot \hat{S}_{Y}/\hat{S}_{X}$, so the slope is just the correlation rescaled by the ratio of standard deviations.
-
-:::{.callout-important title="Definition" collapse="false"}
-The *least-squares slope* $\hat{b}_{1}=\hat{C}_{XY}/\hat{V}_{X}$ is the value of $b_{1}$ that minimizes the sum of squared residuals when paired with the matching intercept $\hat{b}_{0}=\hat{M}_{Y}-\hat{b}_{1}\hat{M}_{X}$. It is the change in fitted $\hat{Y}$ per one-unit change in $\hat{X}$.
-:::
-For the *intercept* coefficient:
+For the intercept:
 \begin{eqnarray}
-0 &=& \sum_{i=1}^{n} 2\left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right)\\ 
+0 &=& \sum_{i=1}^{n} 2\left( \hat{Y}_{i} - [b_{0}+b_{1} \hat{X}_{i}] \right)\\
 \Rightarrow \hat{b}_{0} &=& \hat{M}_{Y}-\hat{b}_{1}\hat{M}_{X} .
 \end{eqnarray}
-We could alternatively find the best fitting parameters numerically, by trying out different combinations of $(b_{0}, b_{1})$.
+We could alternatively find the best-fitting parameters numerically, by trying out different combinations of $(b_{0}, b_{1})$.
 You can do that in this [example](https://myshiny.duckdns.org/least-squares/), which can help you understand what is happening.
 The computer uses math to compute the answer directly, because it is much faster.
 
@@ -82,19 +90,17 @@ b0 <- mean(y) - b1*mean(x)
 b0
 ```
 
-Once we have the coefficient, we can find the sample predictions
-\begin{eqnarray}
-\hat{y}_{i} &=& \hat{b}_{0}+\hat{b}_{1}\hat{X}_{i}\\
-\hat{e}_i &=& \hat{Y}_{i}-\hat{y}_{i}
-\end{eqnarray}
-and make out-of-sample predictions at design points $x$
-\begin{eqnarray}
-\hat{y}(x) = \hat{b}_0 + \hat{b}_1 x
-\end{eqnarray}
+With the coefficients in hand, we can evaluate the regression line at the sample points and at new values.
 
-:::{.callout-important title="Definition" collapse="false"}
-A *fitted value* $\hat{y}_{i}=\hat{b}_{0}+\hat{b}_{1}\hat{X}_{i}$ is the regression line evaluated at the $i$-th observation's $\hat{X}_{i}$. A *prediction* $\hat{y}(x)$ uses the same line at any new design point $x$, including values not in the sample.
+:::{.callout-important title="Key Definition" collapse="false"}
+A *fitted value* is the regression line evaluated at the $i$-th observation's $\hat{X}_{i}$:
+$$\hat{y}_{i} = \hat{b}_{0}+\hat{b}_{1}\hat{X}_{i}.$$
+A *prediction* $\hat{y}(x)$ uses the same line at any new design point $x$:
+$$\hat{y}(x) = \hat{b}_{0} + \hat{b}_{1} x.$$
+The *sample residual* is the gap between actual and fitted, $\hat{e}_{i} = \hat{Y}_{i} - \hat{y}_{i}$.
 :::
+
+Fitted values are useful for *in-sample* diagnostics: comparing $\hat{y}_{i}$ to $\hat{Y}_{i}$ shows where the model fits well and where it misses (these are the residuals $\hat{e}_{i}$ we minimized). Predictions $\hat{y}(x)$ are useful for *out-of-sample* questions like "what wage would the model predict for someone with 14 years of schooling?". Extrapolating well beyond the range of $\hat{X}_{i}$ in the sample is risky: the model has no data there to anchor its prediction.
 
 ```{r, eval=F}
 # Find predicted values and residuals
@@ -228,19 +234,16 @@ add_trace(fig, x= ~ x, y= ~ pred,
 
 
 #### **Goodness of Fit**. {-}
-First, we qualitatively analyze the *goodness of fit* of our model by plotting it against the data.
-For a quantitative summary, we can also compute the linear correlation between the model predictions and the sample data: $\hat{R}_{yY} = \hat{C}_{yY}/[\hat{S}_{y} \hat{S}_{Y}]$. 
-With linear models, we typically compute the *R-squared* statistic directly, $[\hat{R}_{yY}]^2$ using the sums of squared errors (Total, Explained, and Residual)
-\begin{eqnarray}
-\underbrace{\sum_{i}(\hat{Y}_{i}-\hat{M}_{Y})^2}_\text{TSS}
-=\underbrace{\sum_{i}(\hat{y}_i-\hat{M}_{Y})^2}_\text{ESS}+\underbrace{\sum_{i}\hat{e}_{i}^2}_\text{RSS}\\
-\hat{R}_{yY}^2 = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}
-\end{eqnarray}
-This is also known as the *coefficient of determination*. Intuitively, it is the percentage of all variation explained by our model, and must theorefore fall in $[0,1]$.
 
-:::{.callout-important title="Definition" collapse="false"}
-The *R-squared* $\hat{R}^{2}_{yY}=\hat{ESS}/\hat{TSS}=1-\hat{RSS}/\hat{TSS}$ is the share of total variation in $\hat{Y}_{i}$ that the model explains. $\hat{R}^{2}=1$ means perfect in-sample fit; $\hat{R}^{2}=0$ means the model does no better than predicting the mean.
+After fitting the line, the next question is how much of the variation in $\hat{Y}$ the line actually accounts for.
+
+:::{.callout-important title="Key Definition" collapse="false"}
+The *R-squared* (or *coefficient of determination*) $\hat{R}_{yY}^{2}$ is the share of total variation in $\hat{Y}_{i}$ that the model explains. Using the Total, Explained, and Residual sums of squares,
+$$\underbrace{\sum_{i}(\hat{Y}_{i}-\hat{M}_{Y})^2}_\text{TSS} = \underbrace{\sum_{i}(\hat{y}_i-\hat{M}_{Y})^2}_\text{ESS}+\underbrace{\sum_{i}\hat{e}_{i}^2}_\text{RSS},$$
+$$\hat{R}_{yY}^{2} = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}.$$
 :::
+
+$R^{2}$ is useful as a single-number summary of how much of the variation in $\hat{Y}$ the linear model accounts for: $\hat{R}^{2}=1$ means perfect in-sample fit, $\hat{R}^{2}=0$ means the model does no better than predicting the mean. Because the bounds are universal, $R^{2}$ values are comparable across studies in the way raw $\hat{RSS}$ values are not. Equivalently, $\hat{R}_{yY}^{2}$ equals the squared linear correlation between the fitted values $\hat{y}_{i}$ and the actuals $\hat{Y}_{i}$. The first qualitative check should still be a plot of the line over the data — $R^{2}$ is a summary, and an Anscombe-style outlier can give a moderate $R^{2}$ even when the linear model is plainly wrong.
 
 
 ```{r}
@@ -387,16 +390,13 @@ cor(Y0, predict(reg0))
 
 ## Variability Estimates
 
-A regression coefficient is a statistic. And, just like all statistics, we can estimate it's variability using a
+A regression coefficient is a statistic, so it has its own sampling distribution that we want to summarize.
 
-* standard error: variability across different samples (c.f.  standard deviation: variability within a single sample.)
-* confidence interval: range your statistic varies across different samples.
-
-:::{.callout-important title="Definition" collapse="false"}
-The *standard error* of an estimator is the standard deviation of its sampling distribution. For a slope coefficient $\hat{b}_{1}$ we write $\hat{s}_{\hat{b}_{1}}$ for the estimated standard error; it captures how much $\hat{b}_{1}$ would jiggle from sample to sample.
+:::{.callout-important title="Key Definition" collapse="false"}
+The *standard error* of an estimator is the standard deviation of its sampling distribution: it captures how much the estimate would vary if we redrew the sample. For a slope coefficient $\hat{b}_{1}$ we write $\hat{s}_{\hat{b}_{1}}$ for the estimated standard error.
 :::
 
-Note that values reported by your computer do not necessarily satisfy this definition. To calculate these statistics, we will estimate variability using the data-driven methods from <https://jadamso.github.io/Rbooks/01_07_Intervals.html>. (For some theoretical background, see also <https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf>.)
+The standard error is useful for quantifying sample-to-sample uncertainty in any statistic, including but not limited to a slope coefficient. It is distinct from the *standard deviation*, which measures variability of observations *within* a single sample. From a standard error, we can build a *confidence interval*: a range of values consistent with our data at a chosen level. Note that values reported by your computer do not necessarily satisfy this definition. To estimate variability, we will use the data-driven methods from <https://jadamso.github.io/Rbooks/01_07_Intervals.html>. (For some theoretical background, see also <https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf>.)
 
 
 #### **Bootstrap**. {-}
@@ -647,6 +647,6 @@ Nonetheless, linear regression provides an important piece of quantitative infor
 * <https://learningstatisticswithr.com/book/regression.html> -- accessible introduction to simple linear regression including interpretation of coefficients and $R^2$.
 * <https://www.khanacademy.org/math/statistics-probability/describing-relationships-quantitative-data/regression-library/v/introduction-to-residuals-and-least-squares-regression> -- video walkthrough of least-squares fitting and residual plots.
 
-:::{.callout-note title="Recall" collapse="false" icon=false}
-This chapter fit a single line to bivariate data: it derived the OLS slope $\hat{b}_{1}=\hat{C}_{XY}/\hat{V}_{X}$ and intercept $\hat{b}_{0}=\hat{M}_{Y}-\hat{b}_{1}\hat{M}_{X}$, measured goodness of fit with $\hat{R}^{2}$, and built confidence intervals and $p$-values via the bootstrap, jackknife, and permutation. The next chapter relaxes the single-slope assumption: bin the data and fit a separate local model in each bin, so the relationship can bend.
-:::
+#### Recall {-}
+
+This chapter fit a single line to bivariate data: it derived the OLS slope $\hat{b}_{1}=\hat{C}_{XY}/\hat{V}_{X}$ and intercept $\hat{b}_{0}=\hat{M}_{Y}-\hat{b}_{1}\hat{M}_{X}$, measured goodness of fit with $\hat{R}^{2}$, and built confidence intervals and $p$-values via the bootstrap, jackknife, and permutation. The three-observation worked example $\{(1,2),(2,2.5),(3,4)\}$ traced through every step by hand and produced slope $\hat{b}_{1}=1$, intercept $\hat{b}_{0}=5/6$, $\hat{TSS}=13/6$, $\hat{RSS}=1/6$, and $\hat{R}^{2}=12/13\approx 0.92$. The next chapter relaxes the single-slope assumption: bin the data and fit a separate local model in each bin, so the relationship can bend.
