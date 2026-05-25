@@ -2,27 +2,36 @@
 # Bivariate Distributions
 ***
 
-## Introduction
-
 We will now study two variables. The data for each observation data can be grouped together as a vector $(\hat{X}_{i}, \hat{Y}_{i})$.
 ```{r}
-# Bivariate Data from USArrests
+# USArrests has 50 rows (one per US state) and four crime columns;
+# pick two of those columns to form a bivariate dataset.
 xy <- USArrests[, c('Murder', 'UrbanPop')]
-xy[1, ]
+xy[1, ]                                # first state's two values
 ```
 
 ## Joint Distributions
 
 #### **Discrete Data**.{-}
 
-We have multiple observations of $(\hat{X}_{i}, \hat{Y}_{i})$, each of which corresponds to a unique value $(x,y)$. A *frequency table* shows how often each combination of values appear. The *joint distribution* counts up the number of pairs with the same values and divides by the number of observations, $n$;
-\begin{eqnarray}
-\hat{p}_{xy} = \sum_{i=1}^{n}\mathbf{1}\left( \hat{X}_{i}=x, \hat{Y}_{i}=y \right)/n,
-\end{eqnarray}
-The *marginal distributions* are just the univariate information, which can be computed independently (see [here](https://jadamso.github.io/Rbooks/01_06_PopStatistics.html#estimates) ) and also from the joint distribution
-\begin{eqnarray}
-\hat{p}_{x} = \sum_{y} \hat{p}_{xy}
-\end{eqnarray}
+When two variables are recorded together for each observation, the first question is how often each combination of values appears.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *joint distribution* of two discrete variables $X_{i}$ and $Y_{i}$ is the table giving the share of observations with $X_{i}=x$ and $Y_{i}=y$, for every combination of values $(x,y)$:
+$$\hat{p}_{xy} = \sum_{i=1}^{n}\mathbf{1}\left( \hat{X}_{i}=x, \hat{Y}_{i}=y \right)/n,$$
+where $\mathbf{1}(\cdot)$ is an *indicator function* that equals $1$ if the expression inside is TRUE and $0$ otherwise.
+:::
+
+The joint distribution is also called a *frequency table* (or *cross-tabulation*) and is useful for summarizing how two categorical variables co-occur: it is the starting point for every other two-variable statistic in this chapter. Dividing the count by $n$ puts the cells on a probability scale, so each cell reports a proportion of the sample and the whole table sums to one.
+
+Sometimes we only need to summarize one of the two variables and ignore the other.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *marginal distribution* of $X_{i}$ is the univariate distribution obtained by summing the joint distribution over all values of $Y_{i}$:
+$$\hat{p}_{x} = \sum_{y} \hat{p}_{xy}.$$
+:::
+
+The *marginal* (so called because it lives in the row and column margins of the joint table) is useful for recovering the univariate picture once the joint table is built, and for supplying the base rates ($\hat{p}_{x}$, $\hat{p}_{y}$) that conditional distributions divide by. The same numbers can also be computed directly from the univariate data without ever forming the joint table (see [here](https://jadamso.github.io/Rbooks/01_06_PopStatistics.html#estimates)).
 
 For example, suppose we observe a sample of $n=13$ students with two discrete variables:
 
@@ -68,20 +77,20 @@ x=14 & 1/13 & 5/13 & 6/13\\
 \end{array}
 
 ```{r}
-# Simple hand-built dataset: 13 students
+# Simple hand-built dataset: 13 students, two variables each
 dat <- rbind(
-    c(12, 0), c(12, 0), c(12, 0), c(12, 0), #Male
-    c(14, 0), 
-    c(12, 1), c(12, 1), c(12, 1),
-    c(14, 1), c(14, 1), c(14, 1), c(14, 1), c(14, 1))
+    c(12, 0), c(12, 0), c(12, 0), c(12, 0), # 4 male with 12 years
+    c(14, 0),                                # 1 male with 14 years
+    c(12, 1), c(12, 1), c(12, 1),            # 3 female with 12 years
+    c(14, 1), c(14, 1), c(14, 1), c(14, 1), c(14, 1)) # 5 female with 14 years
 colnames(dat) <- c('educ', 'female')
 dat <- as.data.frame(dat)
 
-# Frequency table
-tab  <- table(dat)          # counts
-prop <- tab/sum(tab)        # joint distribution p_xy
+# Frequency table and joint distribution
+tab  <- table(dat)          # raw counts: rows=educ, cols=female
+prop <- tab / sum(tab)      # joint distribution p_xy (sums to 1)
 
-# joint distribution with marginals added
+# addmargins() appends row and column totals (i.e., the marginals)
 prop_m <- addmargins(prop)
 round(prop_m, 2)
 ```
@@ -156,11 +165,15 @@ barplot(yhist[['counts']], axes=FALSE, space=0, horiz=TRUE, border=NA)
 
 #### **Discrete Data**.{-}
 
-In contrast to marginal and joint distributions, *conditional* distributions describe how the distribution of one variable changes when we restrict attention to a subgroup defined by another variable. Formally, if $\hat{p}_{xy}$ denotes the empirical joint distribution, then the empirical conditional distribution of $Y_{i}$ given $X_{i}=x$ is
-\begin{eqnarray}
-\hat{p}_{y \mid x} = \frac{\hat{p}_{xy}}{\hat{p}_{x} },
-\end{eqnarray}
-where $\hat{p}_{x} = \sum_y \hat{p}_{xy}$.
+Often we want to know how the distribution of one variable changes when we restrict attention to a subgroup defined by another.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *conditional distribution* of $Y_{i}$ given $X_{i}=x$ is the joint share renormalized so the row at $X_{i}=x$ sums to one:
+$$\hat{p}_{y \mid x} = \frac{\hat{p}_{xy}}{\hat{p}_{x}},$$
+where $\hat{p}_{x} = \sum_y \hat{p}_{xy}$ is the marginal of $X_{i}$.
+:::
+
+Conditional distributions are useful when one variable splits the data into meaningful subgroups (sex, education level, treatment status) and we want to compare the outcome distribution across those subgroups. The renormalization is what changes the unit of analysis: row sums equal to one means each row is itself a probability distribution over $y$ for the given $x$, rather than a share of the whole sample. Swapping which variable is in the denominator gives the other direction, $\hat{p}_{x\mid y}=\hat{p}_{xy}/\hat{p}_{y}$, which generally answers a different question.
 
 For example, suppose we observe a sample of $n=13$ students with two discrete variables:
 
@@ -254,7 +267,13 @@ Conditional distributions change the unit of analysis:
 * $\hat{p}_{y=1 \mid x=14}$ answers "what fraction of students are female within the subgroup with 14 years of education?"
 * $\hat{p}_{x=14 \mid y=1}$ answers "what fraction of students have 14 years of education within the subgroup that is female?"
 
-Mixing up these two directions is a common mistake known as the *base-rate fallacy*.
+The two directions answer different questions, and confusing them is so common that the mistake has its own name.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *base-rate fallacy* is the mistake of confusing $\hat{p}_{y\mid x}$ with $\hat{p}_{x\mid y}$ (reading the wrong conditional) and forgetting how common $X_{i}=x$ is in the first place ($\hat{p}_{x}$, the *base rate*).
+:::
+
+The base-rate fallacy is useful to flag whenever a headline reports a conditional probability without saying which direction. A rare category can produce a low rate per case yet still dominate raw counts, and a common category can dominate raw counts even when its rate per case is low. The "most-stolen car" example below illustrates exactly this pattern.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 **The most-stolen car.** Suppose you read that the Honda Civic is the most-stolen car in a city. Does that mean a Civic is more likely to be stolen than other cars? Not necessarily.
@@ -372,7 +391,8 @@ table(USArrests[, 'UrbanPop_Kcut'] )
 # Boxplots for each group
 Kcols <- hcl.colors(K, alpha=.5)
 boxplot(Murder ~ UrbanPop_Kcut, USArrests,
-    main=NA, col=Kcols, border=NA,
+    main=NA, col=Kcols,
+    whisklty=0, staplelty=0, outline=F,
     varwidth=T, #show number of obs. per group
     xlab='Urban Population', ylab='Murder Arrests')
 
@@ -387,11 +407,13 @@ boxplot(Murder ~ UrbanPop_Kcut, USArrests,
 
 ## Simpson's Paradox
 
-Conditional distributions can be tricky, so take your time making and interpreting them. 
+A relationship visible inside every subgroup can flip direction once those subgroups are pooled.
 
-Consider the following example, which shows that $400$ men and $400$ women applied to university and that only a share were accepted in each department (English or Engineering). If you computed percents for each sex within each cell, you would find men have a higher overall acceptance rate, but women have higher acceptance rates within each department! This counterintuitive phenomena is known as *Simpson's Paradox*, and the example is part of a real debate about discrimination (<http://homepage.stat.uiowa.edu/~mbognar/1030/Bickel-Berkeley.pdf>). 
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+*Simpson's paradox* arises when a relationship that holds inside every subgroup reverses when the data are pooled. The within-group conditional distributions $\hat{p}_{y\mid x, g}$ point one way; the overall $\hat{p}_{y\mid x}$ points the other.
+:::
 
-Even if women have higher admission rates within both departments, women can still have a lower overall admission rate if women disproportionately apply to the more selective department (English) and men disproportionately apply to the less selective department (Engineering). The same issue is relevant for a variety of labor market issues, such as the gender pay gap, and a great many other social issues, such as why are some countries rich and others poor.^[In general, one should also remember that a ratio can change due changes in either the numerator or the denominator.]
+Simpson's paradox is useful as a warning whenever you are tempted to pool subgroups: the pooled relationship reflects both the within-group pattern and how the subgroups differ in size. The classic example involves university admissions, where $400$ men and $400$ women apply to one of two departments (English or Engineering). Women can have higher admission rates *within* both departments yet a lower *overall* admission rate, if women disproportionately apply to the more selective department (English) and men to the less selective one (Engineering). The example is part of a real debate about discrimination (<http://homepage.stat.uiowa.edu/~mbognar/1030/Bickel-Berkeley.pdf>) and the same logic applies to the gender pay gap, cross-country growth comparisons, and many other social issues.^[A ratio can also change due to changes in either the numerator or the denominator.]
 
 
 | Department   | Men                  | Women                 | Total                 |
@@ -434,20 +456,20 @@ df_agg <- df_agg[order(df_agg$X1), ]
 
 ## Scatterplot, colored by group
 pt_cols <- c(rgb(.8, 0, 0, .2), rgb(0, .8, 0, .2), rgb(0, 0, .8, .2))
-ln_cols <- c(rgb(.8, 0, 0, .8), rgb(0, .8, 0, .8), rgb(0, 0, .8, .8))
 plot(X2 ~ X1, df_agg, pch=16, col=pt_cols[df_agg$Group], cex=.8,
     main=NA, xlab='X1', ylab='X2')
 
 ## Within-group regression lines (each negative)
-for(g in 1:3){
-    dg <- df_agg[df_agg$Group==g, ]
-    abline(lm(X2 ~ X1, data=dg), col=ln_cols[g], lwd=2)
-}
+#ln_cols <- c(rgb(.8, 0, 0, .8), rgb(0, .8, 0, .8), rgb(0, 0, .8, .8))
+#for(g in 1:3){
+#    abline(
+#	lm(X2 ~ X1, data=df_agg[df_agg$Group==g, ]), col=ln_cols[g], lwd=2)
+#}
 ## Pooled regression line (positive)
-abline(lm(X2 ~ X1, data=df_agg), lwd=3, lty=2)
-legend('topleft', bty='n', cex=.8,
-    legend=c('within group', 'pooled'),
-    lwd=c(2, 3), lty=c(1, 2), col=c(grey(0, .7), 'black'))
+#abline(lm(X2 ~ X1, data=df_agg), lwd=3, lty=2)
+#legend('topleft', bty='n', cex=.8,
+#    legend=c('within group', 'pooled'),
+#    lwd=c(2, 3), lty=c(1, 2), col=c(grey(0, .7), 'black'))
 ```
 Each within-group regression line (solid) slopes downward, yet the pooled regression line (dashed) slopes upward. A researcher who ignored the groups would report a positive relationship that holds within no single group. Fitting lines like these is the subject of [Simple Regression](https://jadamso.github.io/Rbooks/02_13_SimpleRegression.html).
 
@@ -464,4 +486,8 @@ Each within-group regression line (solid) slopes downward, yet the pooled regres
 * <https://www.econometrics-with-r.org/2-1-random-variables-and-probability-distributions.html> -- joint, marginal, and conditional distributions in an econometrics context.
 * <https://r-graph-gallery.com/histogram.html> -- gallery of histogram styles in R, useful for building marginal-distribution plots.
 * <https://www.khanacademy.org/math/statistics-probability/random-variables-stats-library/random-variables-discrete/v/valid-discrete-probability-distribution-examples> -- short video introduction to discrete probability distributions and joint tables.
+
+#### **Recall** {-}
+
+This chapter built up two-variable summaries from joint to marginal to conditional distributions, illustrated with the 13-student education-and-sex table where $\hat{p}_{y=1\mid x=14}=5/6$ is the share of female students *within* the 14-years-of-school subgroup. We then saw how confusing the direction of conditioning produces the base-rate fallacy (the "most-stolen car" calculation, where Civics are the most-stolen model but the *least* likely to be stolen per car), and how Simpson's paradox can reverse a within-group pattern once the subgroups are pooled. The next chapter conditions on a factor variable to compare two groups directly, and tests the differences with the resampling tools from Part 1.
 

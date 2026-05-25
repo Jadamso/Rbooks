@@ -1,24 +1,25 @@
 # Local Regression
 ***
 
-## Introduction
-
 This chapter models how the average of $\hat{Y}_{i}$ changes with $\hat{X}_{i}$ without assuming a single straight line.
 We build up from regressograms (bin averages) to piecewise and local linear regression, carrying one running example throughout: wages and years of schooling.
 We close by measuring how well each model fits and introducing the bias-variance tradeoff.
 
 ## Local Averages
 
-Scatterplots are a great and simplest plot for bivariate data that simply plots each observation. There are many extensions and similar tools. The example below helps understand how both the central tendency and dispersion change. 
+Scatterplots are a great and simplest plot for bivariate data that simply plots each observation. There are many extensions and similar tools. The example below helps understand how both the central tendency and dispersion change.
 ```{r}
-# Local relationship: wages and education
-library(Ecdat)
+# Running example for the whole chapter: wages and years of schooling
+library(Ecdat)                              # provides Wages1
 
-## Plot 1
+# Scatter of every observation
 plot(wage ~ school, data=Wages1, pch=16, col=grey(0, .1),
     main=NA, xlab='School', ylab='Wage')
+
+# Conditional mean at each integer schooling level
 school_means <- aggregate(wage ~ school, data=Wages1, mean)
-points(wage ~ school, data=school_means, pch=17, col=rgb(0, 0, 1, .8), type='b')
+points(wage ~ school, data=school_means,    # connect dots so the trend pops
+    pch=17, col=rgb(0, 0, 1, .8), type='b')
 title('Grouped Means and Scatterplot', font.main=1)
 
 ## Plot 2 (Alternative for big datasets)
@@ -48,8 +49,13 @@ where $m$ is an unknown function and $e_{i}$ is white noise, which we estimate v
 
 ## Regressograms
 
-Just as we use histograms to describe the distribution of a random variable, we can use a *regressogram* for conditional relationships.
-Specifically, we can use dummies for exclusive intervals or "bins" to estimate the average value of $\hat{Y}_{i}$ for data inside the bin.
+Just as a histogram summarizes how observations are distributed across bins of $X$, a *regressogram* summarizes how the conditional mean of $\hat{Y}_{i}$ changes across bins of $X$.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *regressogram* splits $X$ into exclusive intervals (bins) of half-width $h$ and reports the average of $\hat{Y}_{i}$ within each bin.
+:::
+
+The regressogram is useful when we expect the relationship between $X$ and $Y$ to bend in ways a single line cannot capture, because the bin averages can rise, fall, or stay flat from one bin to the next without imposing any global shape. It is the conditional-mean analog of a histogram: histograms count observations within bins of $X$; regressograms average $Y$ within bins of $X$.
 ```{r}
 # Data
 plot(wage ~ school, data=Wages1, pch=16, col=grey(0, .1),
@@ -81,6 +87,14 @@ legend('topleft',
 ```
 
 To conduct a regressogram, first divide $X$ into $1,...L$ exclusive bins of half-width $h$. Each bin has a midpoint, $x$, and each observation has an associated dummy variable $\hat{D}_{i}(x,h) = \mathbf{1}\left(\hat{X}_{i} \in \left(x-h,x+h\right] \right)$.
+
+The half-width $h$ controls how "local" a local estimate actually is.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *bandwidth* $h$ is the half-width of a local bin around the design point $x$: an observation is "local" to $x$ when $|\hat{X}_{i}-x|\leq h$.
+:::
+
+The bandwidth is useful as the central tuning knob for every local method in this chapter — regressograms, piecewise regression, locally constant kernel regression, and locally linear regression — and (in disguise as `span`) for LOESS in the next chapter. Larger $h$ pools more observations into each estimate but smooths over real variation; smaller $h$ tracks the data more closely but uses fewer points per estimate, so the fitted curve becomes noisier.
 Then we conduct a regression with this model:
 \begin{eqnarray}
 \hat{Y}_{i} &=& \sum_{x \in \{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{D}_{i}(x,h)  + e_{i},
@@ -145,7 +159,13 @@ aggregate(wage ~ xcc, data=dat, mean)
 
 ## Piecewise Regression
 
-The regressogram depicts locally constant relationships. We can also included slope terms within each bin to allow for locally linear relationships. This is often called *segmented/piecewise regression*, which runs a separate regression for different subsets of the data.
+To let the slope vary across the range of $X$ instead of just the level, we add a slope term within each bin.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *piecewise regression* (also *segmented regression*) divides $X$ into bins and runs a separate simple linear regression on each bin. Within a bin the relationship is a straight line; across bins the slope and intercept can change.
+:::
+
+Piecewise regression is useful when the relationship is approximately linear in pieces but the slope itself changes — for example, returns to schooling that flatten after a degree, or marginal cost curves that kink at capacity. Compared to the regressogram, it captures within-bin trends instead of just within-bin averages; compared to a single line, it lets the slope bend at bin boundaries.
 
 ```{r}
 # Data
@@ -341,13 +361,22 @@ predict(preg_c, newdata=data.frame(school=x, xcc='(9.5,16]'))
 
 ## Locally Constant Regression
 
-Consider a point $x$ and model where values are constant around $x$;  $\hat{Y}_{i} = b_{0}(x, h) + e_{i}$. 
-Then notice a weighted OLS estimator with uniform kernel weights yields
+By replacing the hard bin indicator with a smooth kernel weight, we can fit a local average at every design point and get a curve that varies continuously with $x$.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *locally constant (kernel) regression* fits a single constant at each design point $x$ by minimizing a kernel-weighted sum of squared residuals:
+$$\min_{b_{0}(x, h)} \sum_{i=1}^{n}\left[\hat{Y}_{i} - b_{0}(x, h) \right]^{2} k\left(\hat{X}_{i}, x, h\right),$$
+where $k(\hat{X}_{i}, x, h)$ is a kernel weight that down-weights observations far from $x$.
+:::
+
+The locally constant regression is useful as the simplest smoother that produces a continuous fitted curve: at each $x$ it returns a kernel-weighted average of nearby $\hat{Y}_{i}$. With a uniform kernel and exclusive bins it reduces to a regressogram, so the regressogram is just its simplest special case.
+
+For some intuition, consider a point $x$ and the model $\hat{Y}_{i} = b_{0}(x, h) + e_{i}$. The weighted OLS estimator with uniform kernel weights $k_{U}$ yields
 \begin{eqnarray} \label{eqn:lcls}
 & & \min_{b_{0}(x,h)}~ \sum_{i}^{n}\left[e_{i} \right]^2 k_{U}\left( \hat{X}_{i}, x, h \right) \\
 \Rightarrow & & -2 \sum_{i}^{n}\left[\hat{Y}_{i}- b_{0}(x, h) \right] k_{U}\left(\hat{X}_{i}, x, h\right) = 0\\
 \label{eqn:lcls1}
-\Rightarrow & & \hat{b}_{0}(x) 
+\Rightarrow & & \hat{b}_{0}(x)
 = \frac{\sum_{i} \hat{Y}_{i} k_{U} \left( \hat{X}_{i}, x, h \right) }{ \sum_{i} k_{U}\left( \hat{X}_{i}, x, h \right) }
 = \sum_{i} \hat{Y}_{i} \left[ \frac{ k_{U} \left( \hat{X}_{i}, x, h \right) }{ \sum_{i} k_{U}\left( \hat{X}_{i}, x, h \right)} \right]
 = \sum_{i} \hat{Y}_{i} w_{i}(x, h),
@@ -509,101 +538,6 @@ legend('topleft', title='Locally Linear',
 
 
 
-## Model Fit
-
-Each local model produces fitted values $\hat{y}_{i}$ and residuals $\hat{e}_{i} = \hat{Y}_{i} - \hat{y}_{i}$.
-To compare models, we summarize the residuals with a single number.
-
-#### **MSE and MAPE**. {-}
-
-The *mean squared error* averages the squared residuals,
-\begin{eqnarray}
-\hat{MSE} &=& \frac{1}{n}\sum_{i=1}^{n} \hat{e}_{i}^2 = \frac{1}{n}\sum_{i=1}^{n} \left(\hat{Y}_{i} - \hat{y}_{i}\right)^2.
-\end{eqnarray}
-Squaring penalizes large misses heavily, and the units are the square of $\hat{Y}_{i}$ (squared dollars for wages).
-The *mean absolute percentage error* instead averages each residual relative to its observed value,
-\begin{eqnarray}
-\hat{MAPE} &=& \frac{100}{n}\sum_{i=1}^{n} \left| \frac{\hat{e}_{i}}{\hat{Y}_{i}} \right|.
-\end{eqnarray}
-MAPE is unit-free, which makes it easy to communicate, but it is undefined when $\hat{Y}_{i}=0$ and over-weights observations with small $\hat{Y}_{i}$.
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-Suppose three workers have wages $\hat{Y}=(8, 10, 15)$ and a model predicts $\hat{y}=(9, 9, 14)$.
-The residuals are $\hat{e}=(-1, 1, 1)$, so
-\begin{eqnarray}
-\hat{MSE} &=& \frac{(-1)^2 + 1^2 + 1^2}{3} = \frac{3}{3} = 1,\\
-\hat{MAPE} &=& \frac{100}{3}\left( \frac{1}{8} + \frac{1}{10} + \frac{1}{15} \right) \approx \frac{100}{3}(0.292) \approx 9.7.
-\end{eqnarray}
-The model misses by $1$ squared-dollar on average, or about $10\%$ of each wage.
-```{r}
-Y     <- c(8, 10, 15)
-y_hat <- c(9, 9, 14)
-e <- Y - y_hat
-mean(e^2)           # MSE
-100*mean(abs(e/Y))  # MAPE
-```
-:::
-
-We can compute these for the linear, regressogram, and piecewise models on the wage~school data.
-```{r}
-library(Ecdat)
-dat <- Wages1[order(Wages1[, 'school']), c('wage', 'school')]
-
-# Three models for wage on schooling
-reg_lin <- lm(wage ~ school, data=dat)        # globally linear
-dat[, 'xcf'] <- cut(dat[, 'school'], 3)
-reg_rgram <- lm(wage ~ xcf, data=dat)         # regressogram, 3 bins
-reg_pw    <- lm(wage ~ xcf*school, data=dat)  # piecewise, 3 bins
-
-# Mean squared error and mean absolute percentage error
-fit_stats <- function(model){
-    e <- resid(model)
-    Y <- dat[, 'wage']
-    c(MSE=mean(e^2), MAPE=100*mean(abs(e/Y)))
-}
-round(rbind(
-    Linear       = fit_stats(reg_lin),
-    Regressogram = fit_stats(reg_rgram),
-    Piecewise    = fit_stats(reg_pw)), 2)
-```
-
-#### **Bias-Variance Tradeoff**. {-}
-
-A smaller $\hat{MSE}$ on the data you fit is not automatically better.
-A regressogram with one bin per observation fits every point exactly ($\hat{MSE}=0$), but it has just copied the data and would predict new observations poorly.
-This is the *bias-variance tradeoff*, and the number of bins (equivalently, the half-width $h$) is the lever:
-
-* *Few bins (large $h$)*: each bin average uses many observations, so the fitted curve barely changes from sample to sample (low variance). But one constant over a wide region cannot follow a relationship that bends, so the fit is systematically off (high bias).
-* *Many bins (small $h$)*: each bin average uses few observations, so the fitted curve chases noise and swings from sample to sample (high variance). But a narrow bin can track curvature closely (low bias).
-
-```{r}
-# Same data, regressograms with three bin counts
-plot(wage ~ school, data=dat, pch=16, col=grey(0, .1),
-    main=NA, xlab='School', ylab='Wage')
-bin_cols <- hcl.colors(3, alpha=.9)
-
-# Coarse: 2 bins
-dat[, 'xb'] <- cut(dat[, 'school'], 2)
-lines(dat[, 'school'], predict(lm(wage ~ xb, dat)),
-    col=bin_cols[1], lwd=2, type='s')
-# Medium: 4 bins
-dat[, 'xb'] <- cut(dat[, 'school'], 4)
-lines(dat[, 'school'], predict(lm(wage ~ xb, dat)),
-    col=bin_cols[2], lwd=2, type='s')
-# Fine: one bin per schooling year
-dat[, 'xb'] <- as.factor(dat[, 'school'])
-lines(dat[, 'school'], predict(lm(wage ~ xb, dat)),
-    col=bin_cols[3], lwd=2, type='s')
-
-legend('topleft', title='Regressogram bins',
-    legend=c('2', '4', 'per year'),
-    col=bin_cols, lty=1, lwd=2, cex=.8)
-```
-
-With $2$ bins the fitted curve is flat and stable but misses the rise in wages with schooling; with one bin per year it is jagged and sample-specific.
-Choosing the number of bins (the bandwidth $h$) means trading bias against variance.
-We study this tradeoff with simulations in [Inference](https://jadamso.github.io/Rbooks/02_15_Inference.html#bias-variance-tradeoff).
-
 ## Exercises
 
 1. Explain the difference between a regressogram and a local linear regression. In what sense does increasing the number of bins in a regressogram create a bias-variance tradeoff?
@@ -619,4 +553,8 @@ We study this tradeoff with simulations in [Inference](https://jadamso.github.io
 * <https://www.econometrics-with-r.org/11-1-heteroskedasticity-and-homoskedasticity.html> -- motivates nonparametric methods by showing where linear models break down.
 * <https://cran.r-project.org/doc/manuals/R-intro.html#LOESS> -- R's built-in documentation on `loess()`, including span selection and fitting options.
 * <https://www.khanacademy.org/computing/computer-science/informationtheory/moderninfotheory/v/bias-variance> -- visual introduction to the bias-variance tradeoff that drives bandwidth choice.
+
+#### **Recall** {-}
+
+This chapter let the wage-schooling relationship bend by fitting local models on the `Wages1` data: regressograms (bin means), piecewise regression (bin lines), locally constant kernel regression, and locally linear regression. The three-observation worked example $\{(1, 2), (4, 4), (12, 3)\}$ split into two bins at $h=9/2$ gave regressogram coefficients $\hat{b}_{0}(x=4.5)=(2+4)/2=3$ and $\hat{b}_{0}(x=13.5)=3$. The next chapter asks how to evaluate these fits and how much they vary across samples: model-fit metrics ($\hat{MSE}$ and $\hat{MAPE}$), the bias-variance tradeoff, bootstrap confidence bands, gradient summaries, and consistency.
 

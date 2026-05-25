@@ -1,8 +1,6 @@
 # Data Analysis
 ***
 
-## Introduction
-
 This chapter is about communicating results.
 We cover how to present data in interactive figures and tables, how to polish a figure so a reader grasps it quickly, and how to assemble a reproducible report in Quarto.
 Good analysis is only useful to others if its output is clear.
@@ -12,21 +10,26 @@ Good analysis is only useful to others if its output is clear.
 
 #### **Interactive Figures**. {-}
 
-Notably, [histograms](https://plotly.com/r/histograms/), [boxplots](https://plotly.com/r/box-plots/), and [scatterplots](https://plotly.com/r/line-and-scatter/)
+A single static plot fixes one view of the data, but readers often want to explore details the analyst did not pre-select.
 
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+An *interactive figure* is a plot whose viewer can change the display at runtime (hovering for point-level detail, panning, zooming, or filtering) without re-rendering on the analyst's side.
+:::
+
+Interactive figures are useful when the data have more structure than any single static view can capture: many points where hovering reveals labels, groups the reader may want to toggle, or ranges they may want to zoom into. The `plotly` package wraps common plot types (notably [histograms](https://plotly.com/r/histograms/), [boxplots](https://plotly.com/r/box-plots/), and [scatterplots](https://plotly.com/r/line-and-scatter/)) into HTML widgets that work in any browser.
 
 ```{r}
-library(plotly) #install.packages('plotly')
-USArrests[, 'ID'] <- rownames(USArrests)
+library(plotly)              # install.packages('plotly')
+USArrests[, 'ID'] <- rownames(USArrests) # state name for hover text
 
-# Scatter Plot
+# Scatter plot of arrests vs urbanization
 fig <- plot_ly(
     USArrests, x = ~ UrbanPop, y = ~ Assault,
     mode='markers',
     type='scatter',
-    hoverinfo='text',
-    marker=list( color='rgba(0, 0, 0, 0.5)'),
-    text = ~ paste('<b>', ID, '</b>',
+    hoverinfo='text',                              # use custom hover text
+    marker=list( color='rgba(0, 0, 0, 0.5)'),      # semi-transparent points
+    text = ~ paste('<b>', ID, '</b>',              # one line per state
         '<br>Urban  :', UrbanPop,
         '<br>Assault:', Assault))
 fig <- layout(fig,
@@ -99,11 +102,20 @@ fig
 
 #### **Interactive Tables**. {-}
 
-You can create an interactive table to explore raw data.
+For raw data, a static table forces the analyst to pre-pick which rows the reader sees first.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+An *interactive table* shows rows of data with built-in filtering, sorting, and search controls. The viewer chooses which rows to see; the analyst does not need to pre-aggregate.
+:::
+
+Interactive tables are useful when the reader wants to look up specific records rather than a summary view: searching by row identifier, sorting on a particular column, or filtering down to a subset. The `reactable` package renders a data frame as an HTML widget with these controls already built in.
+
 ```{r}
 data('USArrests')
-library(reactable)
-reactable(USArrests, filterable=T, highlight=T)
+library(reactable)                       # install.packages('reactable')
+reactable(USArrests,
+    filterable=T,                        # one search box per column
+    highlight=T)                         # row highlighting on hover
 ```
 
 You can create an interactive table that summarizes the data too.
@@ -142,15 +154,47 @@ reactable(stats_df)
 
 #### **Polishing**.{-}
 
-Your first figures are typically standard, and probably not as good as they should be. Edit your plot to focus on the most useful information. For others to easily comprehend your work, you must also polish the plot. When polishing, you must do two things:
+A first-draft figure usually works for the analyst but not for anyone else; polishing makes it readable on first glance by stripping what is not data and adding what is needed to interpret what remains.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *data-ink ratio* is the share of ink in a figure devoted to displaying data:
+$$\text{data-ink ratio} = \frac{\text{ink used to display data}}{\text{total ink in the figure}}.$$
+Non-data ink is everything else: gridlines, borders, shading, redundant labels, and decoration.
+:::
+
+The data-ink ratio is useful as a one-number guide for polishing: a low ratio means clutter is competing with the data, a high ratio means the figure is doing as little extra work as possible. Tufte (1983) introduces it to push figures toward a single goal — every mark should help the reader see the data — so erase any element that, if removed, would not change what the reader learns. When polishing, you do two things:
 
 * Add details that are necessary.
 * Remove details that are not necessary.
 
 ::: {.callout-note icon=false collapse="true" title="Must Know"}
-**Data-Ink Ratio.** Tufte (1983) defines the data-ink ratio as the share of ink in a figure devoted to displaying data. Non-data ink includes gridlines, borders, background shading, redundant labels, and decorative elements. A good figure has a high data-ink ratio: erase any element that does not help the reader understand the data. If removing something changes nothing about what the reader learns, it should go.
+**Data-Ink Ratio numerical example.** Consider a scatter plot of 50 points with a heavy gray background, a thick border, and three duplicate legends. Of all the pixels printed, only the 50 points are *data ink*. Suppose those points account for 200 pixels and the rest of the figure uses 1800 pixels. The data-ink ratio is $200/(200 + 1800) = 0.10$. Strip the background, border, and duplicate legends and the same 200 data pixels might account for $200/250 \approx 0.80$. Same information, eight times the ratio.
+:::
 
-$$\text{data-ink ratio} = \frac{\text{ink used to display data}}{\text{total ink in the figure}}$$
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+**A cluttered plot vs a polished one.** The two panels below show the same data: a small downward relationship between urbanization and murder arrests across 50 American states. The left panel piles on non-data ink; the right strips it back. Both panels carry the same information about the data.
+```{r}
+par(mfrow=c(1, 2), mar=c(4, 4, 2, 1))
+
+# Cluttered: heavy background, gridlines, default symbols, redundant title
+plot(Murder ~ UrbanPop, data=USArrests,
+    pch=21, bg='red', col='blue', cex=1.5,
+    main='Murder Arrests vs Urban Pop. (US, 1975)',
+    sub='Source: USArrests',
+    xlab='UrbanPop (%)',
+    ylab='Murder Arrests per 100,000 People (Murder)')
+grid(col='black', lwd=1)
+box(lwd=2)
+legend('topright', legend='State', pch=21, pt.bg='red', col='blue')
+
+# Polished: light points, no grid, no redundant labels or legend
+plot(Murder ~ UrbanPop, data=USArrests,
+    pch=16, col=grey(0, .5),                     # transparent black points
+    main=NA, xlab='Urban Population', ylab='Murder Arrests',
+    bty='n')                                     # drop the surrounding box
+title('US States, 1975', font.main=1, adj=0)
+```
+Removed: drop-shadow markers, grid, box, redundant title, subtitle, one-entry legend. Added: nothing; the cleaner panel reads faster because nothing competes with the points.
 :::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -323,13 +367,29 @@ Here are some ones that I have made over the years.
 
 ## Quarto Reports
 
-We will use Quarto for communicating results to each other. Note that R and Quarto are both languages. R does statistical computations and Quarto formats those computations into polished documents that contain both writing and statistics. Altogether, your project will use
+#### **Quarto Documents**. {-}
+
+A statistical analysis typically lives in two places at once: code that produces numbers and prose that explains them.
+Keeping the two in sync by hand is the source of most reproducibility failures.
+A *Quarto document* (`.qmd` file) is a plain-text source that interleaves prose with executable R code chunks.
+Rendering produces a self-contained output (HTML, PDF, or Word) where the code, its results, and the surrounding text all stay in sync.
+
+Quarto is useful as the format for any analysis that has both writing and computation: homework reports, technical notes, papers, slides, and the chapters of this book.
+R does the statistical computation and Quarto formats those computations into a polished document. Altogether, your project will use
 
 * R: does statistical computations
 * Quarto: formats statistical computations for sharing (`.qmd` files)
 * RStudio: graphical user interface that allows you to easily use both R and Quarto
 
-Homework reports are probably the smallest document you can create. They are simple reproducible reports that are almost entirely self-contained (showing both code and output). To make them, you need Quarto installed on your computer
+#### **Reproducible Reports**. {-}
+
+Quarto solves the *mechanics* of mixing code and prose; the larger goal it serves has its own name.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *reproducible report* is one whose final figures, tables, and numbers can be regenerated from the source file alone, by anyone with the data and the listed software versions.
+:::
+
+Reproducible reports are useful because they let collaborators (and your future self) re-run the analysis after data are updated, methods are corrected, or a coauthor wants to check a number. Homework reports are the smallest version of this: simple reproducible reports that are almost entirely self-contained (showing both code and output). To make them, you need Quarto installed on your computer.
 
 * RStudio (version 2022.07 or later) includes Quarto
 
@@ -375,4 +435,10 @@ Now try each of the following steps, re-rendering the document after each step
 * <https://quarto.org/docs/guide/> -- the official Quarto guide, covering document types, code cells, and output formats.
 * <https://r4ds.hadley.nz/quarto> -- practical chapter on integrating Quarto into a data-analysis workflow.
 * <https://rstudio.github.io/cheatsheets/quarto.pdf> -- two-page cheat sheet for quick reference on cell options and formatting syntax.
+
+#### **Recall** {-}
+
+This chapter closed Part 2 with the communication side of analysis: interactive figures, interactive tables, the data-ink ratio, and Quarto as a reproducible-report format.
+The `USArrests` data ran through every example: a `plotly` scatterplot with state-name hover text, a `reactable` table of summary statistics, and a side-by-side comparison of a cluttered scatterplot against a polished one of `Murder` vs. `UrbanPop`.
+The next chapter opens Part 3 with multiple linear regression, extending the single-predictor model from [Simple Regression](https://jadamso.github.io/Rbooks/02_13_SimpleRegression.html) to many explanatory variables at once.
 
