@@ -538,105 +538,6 @@ legend('topleft', title='Locally Linear',
 
 
 
-## Model Fit
-
-Each local model produces fitted values $\hat{y}_{i}$ and residuals $\hat{e}_{i} = \hat{Y}_{i} - \hat{y}_{i}$.
-To compare models, we summarize the residuals with a single number.
-
-#### **MSE and MAPE**. {-}
-
-The *mean squared error* averages the squared residuals,
-\begin{eqnarray}
-\hat{MSE} &=& \frac{1}{n}\sum_{i=1}^{n} \hat{e}_{i}^2 = \frac{1}{n}\sum_{i=1}^{n} \left(\hat{Y}_{i} - \hat{y}_{i}\right)^2.
-\end{eqnarray}
-Squaring penalizes large misses heavily, and the units are the square of $\hat{Y}_{i}$ (squared dollars for wages).
-The *mean absolute percentage error* instead averages each residual relative to its observed value,
-\begin{eqnarray}
-\hat{MAPE} &=& \frac{100}{n}\sum_{i=1}^{n} \left| \frac{\hat{e}_{i}}{\hat{Y}_{i}} \right|.
-\end{eqnarray}
-MAPE is unit-free, which makes it easy to communicate, but it is undefined when $\hat{Y}_{i}=0$ and over-weights observations with small $\hat{Y}_{i}$.
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-Suppose three workers have wages $\hat{Y}=(8, 10, 15)$ and a model predicts $\hat{y}=(9, 9, 14)$.
-The residuals are $\hat{e}=(-1, 1, 1)$, so
-\begin{eqnarray}
-\hat{MSE} &=& \frac{(-1)^2 + 1^2 + 1^2}{3} = \frac{3}{3} = 1,\\
-\hat{MAPE} &=& \frac{100}{3}\left( \frac{1}{8} + \frac{1}{10} + \frac{1}{15} \right) \approx \frac{100}{3}(0.292) \approx 9.7.
-\end{eqnarray}
-The model misses by $1$ squared-dollar on average, or about $10\%$ of each wage.
-```{r}
-Y     <- c(8, 10, 15)
-y_hat <- c(9, 9, 14)
-e <- Y - y_hat
-mean(e^2)           # MSE
-100*mean(abs(e/Y))  # MAPE
-```
-:::
-
-We can compute these for the linear, regressogram, and piecewise models on the wage~school data.
-```{r}
-library(Ecdat)
-dat <- Wages1[order(Wages1[, 'school']), c('wage', 'school')]
-
-# Three models for wage on schooling
-reg_lin <- lm(wage ~ school, data=dat)        # globally linear
-dat[, 'xcf'] <- cut(dat[, 'school'], 3)
-reg_rgram <- lm(wage ~ xcf, data=dat)         # regressogram, 3 bins
-reg_pw    <- lm(wage ~ xcf*school, data=dat)  # piecewise, 3 bins
-
-# Mean squared error and mean absolute percentage error
-fit_stats <- function(model){
-    e <- resid(model)
-    Y <- dat[, 'wage']
-    c(MSE=mean(e^2), MAPE=100*mean(abs(e/Y)))
-}
-round(rbind(
-    Linear       = fit_stats(reg_lin),
-    Regressogram = fit_stats(reg_rgram),
-    Piecewise    = fit_stats(reg_pw)), 2)
-```
-
-#### **Bias-Variance Tradeoff**. {-}
-
-A smaller $\hat{MSE}$ on the data you fit is not automatically better, because a model can hit every point in the sample and still predict new observations poorly.
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *bias-variance tradeoff* describes how a model's expected error decomposes into two sources: *bias* (systematic miss from over-smoothing) and *variance* (sample-to-sample wobble from under-smoothing).
-:::
-
-The bias-variance tradeoff is useful for thinking about *why* a tuning parameter matters and how to set it. For the local methods in this chapter, the bandwidth $h$ (equivalently, the number of bins) is the lever that governs the tradeoff: large $h$ trades variance down for bias up, small $h$ does the opposite. A regressogram with one bin per observation has $\hat{MSE}=0$ on the fit data but generalizes poorly because it has just copied the noise.
-
-* *Few bins (large $h$)*: each bin average uses many observations, so the fitted curve barely changes from sample to sample (low variance). But one constant over a wide region cannot follow a relationship that bends, so the fit is systematically off (high bias).
-* *Many bins (small $h$)*: each bin average uses few observations, so the fitted curve chases noise and swings from sample to sample (high variance). But a narrow bin can track curvature closely (low bias).
-
-```{r}
-# Same data, regressograms with three bin counts
-plot(wage ~ school, data=dat, pch=16, col=grey(0, .1),
-    main=NA, xlab='School', ylab='Wage')
-bin_cols <- hcl.colors(3, alpha=.9)
-
-# Coarse: 2 bins
-dat[, 'xb'] <- cut(dat[, 'school'], 2)
-lines(dat[, 'school'], predict(lm(wage ~ xb, dat)),
-    col=bin_cols[1], lwd=2, type='s')
-# Medium: 4 bins
-dat[, 'xb'] <- cut(dat[, 'school'], 4)
-lines(dat[, 'school'], predict(lm(wage ~ xb, dat)),
-    col=bin_cols[2], lwd=2, type='s')
-# Fine: one bin per schooling year
-dat[, 'xb'] <- as.factor(dat[, 'school'])
-lines(dat[, 'school'], predict(lm(wage ~ xb, dat)),
-    col=bin_cols[3], lwd=2, type='s')
-
-legend('topleft', title='Regressogram bins',
-    legend=c('2', '4', 'per year'),
-    col=bin_cols, lty=1, lwd=2, cex=.8)
-```
-
-With $2$ bins the fitted curve is flat and stable but misses the rise in wages with schooling; with one bin per year it is jagged and sample-specific.
-Choosing the number of bins (the bandwidth $h$) means trading bias against variance.
-We study this tradeoff with simulations in [Inference](https://jadamso.github.io/Rbooks/02_15_Inference.html#bias-variance-tradeoff).
-
 ## Exercises
 
 1. Explain the difference between a regressogram and a local linear regression. In what sense does increasing the number of bins in a regressogram create a bias-variance tradeoff?
@@ -655,5 +556,5 @@ We study this tradeoff with simulations in [Inference](https://jadamso.github.io
 
 #### **Recall** {-}
 
-This chapter let the wage-schooling relationship bend by fitting local models on the `Wages1` data: regressograms (bin means), piecewise regression (bin lines), locally constant kernel regression, and locally linear regression. The three-observation worked example $\{(1, 2), (4, 4), (12, 3)\}$ split into two bins at $h=9/2$ gave regressogram coefficients $\hat{b}_{0}(x=4.5)=(2+4)/2=3$ and $\hat{b}_{0}(x=13.5)=3$. We measured fit with $\hat{MSE}$ and $\hat{MAPE}$ and saw the bias-variance tradeoff that the bandwidth $h$ governs. The next chapter asks how much these local fits *vary across samples*: confidence bands, gradient summaries, and consistency.
+This chapter let the wage-schooling relationship bend by fitting local models on the `Wages1` data: regressograms (bin means), piecewise regression (bin lines), locally constant kernel regression, and locally linear regression. The three-observation worked example $\{(1, 2), (4, 4), (12, 3)\}$ split into two bins at $h=9/2$ gave regressogram coefficients $\hat{b}_{0}(x=4.5)=(2+4)/2=3$ and $\hat{b}_{0}(x=13.5)=3$. The next chapter asks how to evaluate these fits and how much they vary across samples: model-fit metrics ($\hat{MSE}$ and $\hat{MAPE}$), the bias-variance tradeoff, bootstrap confidence bands, gradient summaries, and consistency.
 
