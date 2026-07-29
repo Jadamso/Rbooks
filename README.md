@@ -2,7 +2,7 @@
 
 * The book is found at <https://jadamso.github.io/Rbooks/>
 * The source materials are found at <https://github.com/Jadamso/Rbooks>
-* Things to fix/add are found at <https://github.com/Jadamso/Rbooks/blob/main/ToDo.md>
+* Errors and issues can be reported at <https://github.com/Jadamso/Rbooks/issues>
 
 To preview locally,
 
@@ -15,11 +15,11 @@ To publish online,
     git push
     quarto publish gh-pages book --no-browser
 
-To sync files,
+To clear freeze entries for chapters that no longer exist,
 
     cd book && for d in _freeze/*/; do stem=$(basename "$d"); [ ! -f "${stem}.qmd" ] && rm -rf "$d"; done
     cp -r ./Templates/Figures_Manual/* ./book/_book/Figures_Manual
-    
+
 To publish a tagged release, 
 
     gh release create v0.0.2 --title "v0.0.2, for ECON 2320"

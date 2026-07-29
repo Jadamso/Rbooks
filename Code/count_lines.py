@@ -5,8 +5,8 @@ Usage:
     python3 count_lines.py          # all chapters
     python3 count_lines.py 01_09    # single chapter (substring match)
 
-Prints a Markdown table matching the format in ToDo.md,
-followed by outlier reports (short and long chapters by word count).
+Prints a Markdown table, followed by outlier reports
+(short and long chapters by word count).
 """
 
 import glob, os, re, sys, statistics
