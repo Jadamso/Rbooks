@@ -1,0 +1,141 @@
+
+# Datasets
+***
+
+The book works from a small number of datasets on purpose.
+Reusing `USArrests` across seventeen chapters means that by the time you reach multiple regression you already know what the variables are, so the new material is the only new thing on the page.
+This appendix lists each dataset, its variables, where it comes from, and which chapters use it.
+Use it when a chapter refers to a variable you have forgotten, or when you want a dataset you already understand for an exercise.
+
+## Summary
+
+| Dataset | Source | Rows | Variables | Chapters |
+|---|---|---:|---|---|
+| `USArrests` | `datasets` (built in) | 50 | `Murder`, `Assault`, `UrbanPop`, `Rape` | 2--3, 5--8, 10, 12--15, 17--21, 26 |
+| `state.region` | `datasets` (built in) | 50 | a 4-level factor | 20, 26 |
+| `anscombe` | `datasets` (built in) | 11 | `x1`--`x4`, `y1`--`y4` | 13 |
+| `Wages1` | `Ecdat` | 3294 | `exper`, `sex`, `school`, `wage` | 10--11, 13--15, 17, 22 |
+| `finance-charts-apple.csv` | web, via `read.csv` | 506 | `Date`, `AAPL.Open`, `AAPL.High`, `AAPL.Low`, `AAPL.Close`, `AAPL.Volume`, `AAPL.Adjusted`, and four derived columns | 23 |
+| `tylervigen.csv` | web, via `read.csv` | varies | many unrelated time series | 25 |
+
+## Built-in Datasets
+
+These come with R, so they need no package and no download.
+Type the name to see the data, and `?USArrests` for the help page.
+
+#### **USArrests**. {-}
+
+Violent crime rates by US state in 1973, and the book's main working dataset.
+
+| Variable | Meaning |
+|---|---|
+| `Murder` | Murder arrests per 100,000 residents |
+| `Assault` | Assault arrests per 100,000 residents |
+| `UrbanPop` | Percent of the state population living in urban areas |
+| `Rape` | Rape arrests per 100,000 residents |
+
+Two features make it useful for teaching.
+The row names are state names rather than a column, which is why the book indexes with `USArrests[,'Murder']` rather than by position.
+And the variables are rates per 100,000 rather than counts, so they are comparable across states of very different size.
+
+```{r}
+dim(USArrests)
+head(USArrests, 3)
+summary(USArrests[,'Murder'])
+```
+
+Note that these are *arrest* rates, not offense rates.
+Differences across states reflect policing and reporting practice as well as underlying crime, which is worth remembering whenever a regression in a later chapter treats one of these variables as an outcome.
+
+#### **state.region**. {-}
+
+A factor of length 50 giving the census region of each state, in the same state order as `USArrests`.
+The four levels are Northeast, South, North Central, and West.
+The book uses it as the grouping variable for multiple-group comparisons.
+
+```{r}
+table(state.region)
+```
+
+Because the ordering matches, you can attach it to `USArrests` directly without a merge.
+
+#### **anscombe**. {-}
+
+Anscombe's quartet: four $x$ and $y$ pairs with nearly identical means, variances, correlations, and regression lines, but very different scatterplots.
+Eleven rows each.
+The book uses it to make the point that summary statistics do not determine the shape of a relationship.
+
+## Package Datasets
+
+#### **Wages1**. {-}
+
+A cross-section of 3294 workers, from the `Ecdat` package.
+This is the book's main dataset once samples need to be larger than 50.
+
+| Variable | Meaning |
+|---|---|
+| `exper` | Years of work experience |
+| `sex` | `male` or `female` |
+| `school` | Years of schooling |
+| `wage` | Hourly wage |
+
+Install the package once, then load the dataset when you need it.
+
+```r
+install.packages('Ecdat')   # once ever
+data(Wages1, package='Ecdat')
+```
+
+With $n = 3294$ the scatterplots need transparency to be readable, which is why [Figures](04_C_Figures.qmd) ties the alpha channel to sample size.
+
+## Datasets Read from the Web
+
+Two chapters read a CSV directly from a URL rather than from a package.
+This needs a working internet connection, and the file could change or move, which is itself a reproducibility lesson worth noticing.
+
+#### **finance-charts-apple.csv**. {-}
+
+Daily Apple share prices over 506 trading days, read into an object called `stock` in Chapter 23.
+Alongside `Date` it carries `AAPL.Open`, `AAPL.High`, `AAPL.Low`, `AAPL.Close`, `AAPL.Volume`, and `AAPL.Adjusted`, plus four columns (`dn`, `mavg`, `up`, `direction`) that someone else derived from the prices before publishing the file.
+The book uses it for time-series plots, where observations are not independent across rows.
+
+```r
+stock <- read.csv('https://raw.githubusercontent.com/plotly/datasets/master/finance-charts-apple.csv')
+```
+
+#### **tylervigen.csv**. {-}
+
+A collection of unrelated time series compiled to illustrate spurious correlation, read into `vigen_csv` in Chapter 25.
+Any two of its columns will tend to correlate strongly, which is exactly the point being made.
+
+```r
+vigen_csv <- read.csv(
+    'https://raw.githubusercontent.com/the-mad-statter/whysospurious/master/data-raw/tylervigen.csv'
+)
+```
+
+## Inspecting a New Dataset
+
+The same four commands are worth running on any dataset before you analyze it, including the ones above.
+
+```{r}
+dim(USArrests)          # how many rows and columns
+names(USArrests)        # what the columns are called
+summary(USArrests)      # range, quartiles, and any NA values
+sum(is.na(USArrests))   # how many values are missing
+```
+
+The last one matters most often.
+Many R functions drop missing values silently or return `NA` for the whole calculation, so knowing whether any exist before you start saves confusing output later.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Run the four commands above on `Wages1`.
+How many observations does it have, how many variables, and are any values missing?
+Then check whether `sex` is stored as a factor or as text, using `class(Wages1$sex)`, and explain why that matters for `lm()`.
+:::
+
+#### **Further Reading**. {-}
+
+* <https://vincentarelbundock.github.io/Rdatasets/datasets.html> -- a searchable index of the datasets shipped with hundreds of R packages.
+* <https://pages.stern.nyu.edu/~wgreene/Text/Edition7/tablelist8new.htm> -- the data tables from Greene's *Econometric Analysis*.
+* <https://www.ssc.wisc.edu/~bhansen/econometrics/> -- Hansen's *Econometrics* datasets.

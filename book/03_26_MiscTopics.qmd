@@ -1,7 +1,7 @@
 # Misc. Multivariate Topics
 ***
 
-This chapter collects the remaining multivariate topics that did not fit cleanly into the preceding chapters. We cover prediction (including prediction intervals and cross-validation), time-series filtering, random subsampling, the matrix-form OLS theory and the bias of $\hat{B}^*$, and finally multiple testing corrections — the formal remedy for the kind of search-induced false positives raised in [Data Scientism](https://jadamso.github.io/Rbooks/03_25_DataScientism.html).
+This chapter collects the remaining multivariate topics that did not fit cleanly into the preceding chapters. We cover prediction (including prediction intervals and cross-validation), time-series filtering, random subsampling, the matrix-form OLS theory and the bias of $\hat{B}^*$, and finally multiple testing corrections — the formal remedy for the kind of search-induced false positives raised in [Data Scientism](03_25_DataScientism.qmd).
 
 ## Prediction
 
@@ -69,7 +69,7 @@ preds_lo <- predict(reg_lo, newdata=data.frame(educ=X0))
 # Bootstrap Residuals
 n <- nrow(dat)
 res_lo <- lapply(1:399, function(i){
-    dat_b <- dat[sample(n, replace=T), ]
+    dat_b <- dat[sample(n, replace=TRUE), ]
     reg_b <- loess(wage ~ educ, data=dat_b, span=.8)
     resids_b <- resid(reg_b)
     cbind(e=resids_b, educ=dat_b[, 'educ'])
@@ -83,7 +83,7 @@ res_fun <- function(x0, h){
     ki0 <- dunif(ki0)/h
     ei0 <- res_lo[ki0 != 0, 'e'] #subset estimates   
     ## Local quantiles
-    res_i <- quantile(ei0, probs=c(.025, .975), na.rm=T)
+    res_i <- quantile(ei0, probs=c(.025, .975), na.rm=TRUE)
     res_i
 }
 res_ci <- sapply(X0, res_fun, h=5)
@@ -112,7 +112,7 @@ reg <- lm(wage ~ educ, data=dat)
 
 # Bootstrap Prediction Interval
 boot_resids <- lapply(1:399, function(b){
-    b_id <- sample( nrow(dat), replace=T)
+    b_id <- sample( nrow(dat), replace=TRUE)
     dat_b <- dat[b_id, ]
     reg_b <- lm(wage ~ educ, data=dat_b)
     e_b <- resid(reg_b)
@@ -158,7 +158,7 @@ where $\hat{y}_{[i]}(X,h)$ is the model's predicted value at $X_{i}$ from a fit 
 *Leave-one-out cross-validation* is useful as the simplest computational way to choose bandwidths, and it directly addresses an issue that plagues observational studies in the social sciences: your model explains everything and predicts nothing.
 The score it minimizes is an out-of-sample average, so a too-flexible model that fits in-sample noise will be penalized; minimizing prediction error is not objectively "best" but it is a defensible default when no other criterion is obviously stronger.
 
-In practice, compare models with cross-validation (below). The preferred model is the one with best out-of-sample performance, not the one with the most flexible in-sample fit. The same idea selects bin counts and bandwidths in [Local Relationships](https://jadamso.github.io/Rbooks/03_22_Regressograms.html#model-selection).
+In practice, compare models with cross-validation (below). The preferred model is the one with best out-of-sample performance, not the one with the most flexible in-sample fit. The same idea selects bin counts and bandwidths in [Local Relationships](03_22_Regressograms.qmd#model-selection).
 
 ```{r}
 library(wooldridge)
@@ -264,7 +264,7 @@ tscv_mse <- sapply(ma_windows, function(h){
     ## Weight the previous h points equally, 0 weight on the current point
     ma_coefs <- c(0, rep(1/h, h))
     x_pred <- filter(x, ma_coefs, sides=1)
-    mean((x - x_pred)^2, na.rm=T)
+    mean((x - x_pred)^2, na.rm=TRUE)
 })
 
 ## CV-optimal window
@@ -367,7 +367,7 @@ coef(reg)
 
 # Random Subsamples
 rs_regs <- lapply(1:399, function(b){
-    b_id <- sample( nrow(xy), nrow(xy)-10, replace=F)
+    b_id <- sample( nrow(xy), nrow(xy)-10, replace=FALSE)
     xy_b <- xy[b_id, ]
     reg_b <- lm(y ~ x, data=xy_b)
 })
@@ -375,7 +375,7 @@ rs_coefs <- sapply(rs_regs, coef)['x', ]
 rs_se <- sd(rs_coefs)
 
 hist(rs_coefs, breaks=25,
-    main=NA, border=NA, freq=F,
+    main=NA, border=NA, freq=FALSE,
     xlab=expression(hat(b)[b]))
 title(paste0('SE est. = ', round(rs_se, 4)), font.main=1)
 abline(v=coef(reg)['x'], lwd=2, col=rgb(1, 0, 0, .8))
@@ -487,7 +487,7 @@ which is unbiased far more often.
 
 When you test one hypothesis at the $5\%$ level, there is a $5\%$ chance of a false positive.
 When you test many hypotheses, those chances accumulate.
-This is the statistical engine behind much of [Data Scientism](https://jadamso.github.io/Rbooks/03_25_DataScientism.html): search long enough and something will look significant.
+This is the statistical engine behind much of [Data Scientism](03_25_DataScientism.qmd): search long enough and something will look significant.
 
 #### **Family-Wise Error Rate**. {-}
 
@@ -549,7 +549,7 @@ A *post-hoc test* is a follow-up comparison conducted after a significant global
 Because there are $G(G-1)/2$ pairs to test, the per-pair significance threshold must be tightened to control the family-wise error rate; *Tukey's HSD* and Holm-adjusted pairwise $t$-tests are common choices.
 :::
 
-*Post-hoc tests* are useful as the standard follow-up to a significant ANOVA $F$-test (see [Comparing Multiple Groups](https://jadamso.github.io/Rbooks/03_20_MultipleGroups.html)): they pinpoint the group or groups responsible for the global rejection without inflating the false-positive rate.
+*Post-hoc tests* are useful as the standard follow-up to a significant ANOVA $F$-test (see [Comparing Multiple Groups](03_20_MultipleGroups.qmd)): they pinpoint the group or groups responsible for the global rejection without inflating the false-positive rate.
 The number of comparisons grows quadratically in $G$, so the per-pair threshold gets noticeably stricter as soon as there are more than a handful of groups.
 
 ```{r}
@@ -578,13 +578,17 @@ The uncorrected version flags more differences; explain why, and state which ver
 
 ## Exercises
 
-1. Explain the distinction between description, explanation, and prediction using a concrete example other than minimum wages. For each objective, state what statistical tools you would use and what kind of evidence would be needed.
+1. Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in [Working with AI](04_A_WorkingWithAI.qmd).
+   Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing.
+   Finish with your own questions about whatever you found hardest.
 
-2. Using the `USArrests` dataset, regress `Murder` on `Assault` and `UrbanPop`. Compute $\hat{B}^{*}$ both with `lm()` and manually via $(\hat{\mathbf{X}}'\hat{\mathbf{X}})^{-1}\hat{\mathbf{X}}'\hat{Y}$ using matrix operations in R. Verify that the two approaches give the same coefficients.
+2. Explain the distinction between description, explanation, and prediction using a concrete example other than minimum wages. For each objective, state what statistical tools you would use and what kind of evidence would be needed.
 
-3. Using the `wage1` dataset from the `wooldridge` package, fit a `loess` regression of `wage` on `educ` for three different span values (e.g., 0.4, 0.6, 0.8). Use leave-one-out cross-validation to compute the mean squared prediction error for each span. Which span minimizes prediction error, and does a more flexible fit always predict better?
+3. Using the `USArrests` dataset, regress `Murder` on `Assault` and `UrbanPop`. Compute $\hat{B}^{*}$ both with `lm()` and manually via $(\hat{\mathbf{X}}'\hat{\mathbf{X}})^{-1}\hat{\mathbf{X}}'\hat{Y}$ using matrix operations in R. Verify that the two approaches give the same coefficients.
 
-4. A researcher runs $K=20$ independent tests, each at the $5\%$ level. Compute the family-wise error rate $1-(1-0.05)^{20}$, and find the per-test Bonferroni threshold $\alpha/K$ that holds the family-wise rate at $5\%$. Then create a vector of 20 $p$-values, apply `p.adjust()` with the `'bonferroni'` and `'holm'` methods, and report how many results remain significant under each.
+4. Using the `wage1` dataset from the `wooldridge` package, fit a `loess` regression of `wage` on `educ` for three different span values (e.g., 0.4, 0.6, 0.8). Use leave-one-out cross-validation to compute the mean squared prediction error for each span. Which span minimizes prediction error, and does a more flexible fit always predict better?
+
+5. A researcher runs $K=20$ independent tests, each at the $5\%$ level. Compute the family-wise error rate $1-(1-0.05)^{20}$, and find the per-test Bonferroni threshold $\alpha/K$ that holds the family-wise rate at $5\%$. Then create a vector of 20 $p$-values, apply `p.adjust()` with the `'bonferroni'` and `'holm'` methods, and report how many results remain significant under each.
 
 #### **Further Reading**. {-}
 
@@ -596,4 +600,4 @@ The uncorrected version flags more differences; explain why, and state which ver
 
 #### **Recall** {-}
 
-This chapter wrapped up the multivariate part with the describe/explain/predict taxonomy, prediction intervals and cross-validation, time-series filtering, random subsampling, the matrix form of OLS, and multiple-testing corrections. The matrix-OLS sense-check on `USArrests` made the algebra concrete: computing $\hat{B}^{*}=(\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\hat{Y}$ step by step with `XtX <- t(X) %*% X`, `XtXi <- solve(XtX)`, and `Bhat <- XtXi %*% XtY` recovers exactly the coefficient vector that `lm(Murder ~ Assault + UrbanPop, data=USArrests)` returns. These tools close the loop with earlier chapters: cross-validation chooses models, multiple-testing corrections discipline the search problem flagged in [Data Scientism](https://jadamso.github.io/Rbooks/03_25_DataScientism.html), and the matrix form makes the OLS algebra of [Multiple Regression](https://jadamso.github.io/Rbooks/03_19_MultipleRegression.html) explicit. The appendices that follow revisit reproducible workflows and probability theory in greater depth.
+This chapter wrapped up the multivariate part with the describe/explain/predict taxonomy, prediction intervals and cross-validation, time-series filtering, random subsampling, the matrix form of OLS, and multiple-testing corrections. The matrix-OLS sense-check on `USArrests` made the algebra concrete: computing $\hat{B}^{*}=(\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\hat{Y}$ step by step with `XtX <- t(X) %*% X`, `XtXi <- solve(XtX)`, and `Bhat <- XtXi %*% XtY` recovers exactly the coefficient vector that `lm(Murder ~ Assault + UrbanPop, data=USArrests)` returns. These tools close the loop with earlier chapters: cross-validation chooses models, multiple-testing corrections discipline the search problem flagged in [Data Scientism](03_25_DataScientism.qmd), and the matrix form makes the OLS algebra of [Multiple Regression](03_19_MultipleRegression.qmd) explicit. The appendices that follow revisit reproducible workflows and probability theory in greater depth.

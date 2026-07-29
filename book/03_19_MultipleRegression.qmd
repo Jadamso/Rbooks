@@ -1,7 +1,7 @@
 # Multiple Linear Regression
 ***
 
-We often want to know the relationship between one outcome variable $\hat{Y}_{i}$ and multiple explanatory variables. This builds on [Simple Regression](https://jadamso.github.io/Rbooks/02_13_SimpleRegression.html), which related $\hat{Y}_{i}$ to a single $\hat{X}_{i}$. *Multiple linear regression* fits a single linear model to several explanatory variables at once, and asks how each one moves the outcome while holding the others fixed. For historical reasons, we start by fitting a linear model to data.
+We often want to know the relationship between one outcome variable $\hat{Y}_{i}$ and multiple explanatory variables. This builds on [Simple Regression](02_13_SimpleRegression.qmd), which related $\hat{Y}_{i}$ to a single $\hat{X}_{i}$. *Multiple linear regression* fits a single linear model to several explanatory variables at once, and asks how each one moves the outcome while holding the others fixed. For historical reasons, we start by fitting a linear model to data.
 
 ## The Linear Model
 
@@ -20,7 +20,7 @@ Note that $\hat{X}_{i0}=1$ in the summation.
 $$\min_{b_0, b_1, \ldots, b_K} \sum_{i=1}^{n} e_{i}^2.$$
 :::
 
-OLS is useful when you want one coefficient per explanatory variable summarizing its partial relationship with $Y$ holding the others fixed; it is the workhorse of linear modeling because the minimization has a closed-form solution via [matrix-calculations](https://jadamso.github.io/Rbooks/03_26_MiscTopics.html#matrix-calculations) (see [these notes](https://jrnold.github.io/intro-methods-notes/ols-in-matrix-form.html) for a detailed derivation).
+OLS is useful when you want one coefficient per explanatory variable summarizing its partial relationship with $Y$ holding the others fixed; it is the workhorse of linear modeling because the minimization has a closed-form solution via [matrix-calculations](03_26_MiscTopics.qmd#matrix-calculations.) (see [these notes](https://jrnold.github.io/intro-methods-notes/ols-in-matrix-form.html) for a detailed derivation).
 The solution yields the best fitting coefficient vector $B^{*}=(b_0^{*} ~~ b_1^{*} ~~... ~~ b_{K}^{*})$, and the residuals $e_i$ are exactly the sample analog of what is minimized.
 
 ```{r}
@@ -86,7 +86,7 @@ axis(1)
 axis(2)
 mtext(expression(R^2), 2, line=3)
 mtext('Additional Random Covariates', 1, line=3)
-legend('topleft', horiz=T,
+legend('topleft', horiz=TRUE,
     legend=c('Unadjusted', 'Adjusted'), pch=c(1, 16))
 ```
 
@@ -104,7 +104,7 @@ As before, we can also conduct independent hypothesis tests using t-values. Howe
 # dataset with replacement, refit lm, and store the coefficient vector.
 boot_coefs <- matrix(NA, nrow=399, ncol=3)
 for(b in seq(nrow(boot_coefs))){
-    b_id <- sample( nrow(USArrests), replace=T)
+    b_id <- sample( nrow(USArrests), replace=TRUE)
     dat_b <- USArrests[b_id, ]
     reg_b <- lm(Murder ~ Assault+UrbanPop, data=dat_b)
     boot_coefs[b, ] <- coef(reg_b)
@@ -138,10 +138,10 @@ fig <- plotly::plot_ly(boot_coef_df,
             '<br>Coef. Assault :', round(Assault, 3),
             '<br>Coef. Intercept :', round(`(Intercept)`, 3)),
     hoverinfo='text',
-    showlegend=F,
+    showlegend=FALSE,
     marker=list( color='rgba(0, 0, 0, 0.5)'))
 fig <- plotly::layout(fig,
-    showlegend=F,
+    showlegend=FALSE,
     title='Joint Bootstrap Distribution of Coefficients',
     xaxis = list(title='UrbanPop Coefficient'),
     yaxis = list(title='Assault Coefficient'))
@@ -195,7 +195,7 @@ R2adj_sim0 <- rep(NA, length(boots))
 for(b in boots){
   # Generate bootstrap sample
   xy_b <- USArrests
-  b_id <- sample( nrow(USArrests), replace=T)
+  b_id <- sample( nrow(USArrests), replace=TRUE)
   # Impose the null
   xy_b$Murder <- xy_b$Murder[b_id]
   # Run regression
@@ -203,7 +203,7 @@ for(b in boots){
   R2adj_sim0[b] <- summary(reg_b)$adj.r.squared
 }
 hist(R2adj_sim0, xlim=c(-.1, 1), breaks=25, border=NA,
-    freq=F, main=NA, xlab=expression('adj.'~R[b]^2))
+    freq=FALSE, main=NA, xlab=expression('adj.'~R[b]^2))
 title('Bootstrap F-test', font.main=1)
 
 # Compare to initial statistic
@@ -252,7 +252,7 @@ for(sim in 1:400){
 
 par(mfrow=c(1, 2))
 for(i in 2:3){
-    hist(Coefs[i, ], xlab=bquote(beta[.(i)]), main=NA, border=NA, freq=F)
+    hist(Coefs[i, ], xlab=bquote(beta[.(i)]), main=NA, border=NA, freq=FALSE)
     abline(v=mean(Coefs[i, ]), lwd=2, col=rgb(1, 0, 0, .8))
     abline(v=B[i], col=rgb(0, 0, 1, .8), lty=2)
 }
@@ -275,7 +275,7 @@ for(sim in 1:600){
 
 par(mfrow=c(1, 2))
 for(i in 2:3){
-    hist(Coefs[i, ],  xlab=bquote(beta[.(i)]), main=NA, border=NA, freq=F)
+    hist(Coefs[i, ],  xlab=bquote(beta[.(i)]), main=NA, border=NA, freq=FALSE)
     abline(v=mean(Coefs[i, ]), col=rgb(1, 0, 0, .8), lwd=2)
 }
 ```
@@ -288,7 +288,7 @@ This is why we can still interpret them, cautiously, even when the linear model 
 Compare the two simulation results. In the correctly specified case, the estimated coefficients center on the true values. What happens in the misspecified case? Why might OLS still be useful even when the model is misspecified?
 :::
 
-In general, you can interpret your regression coefficients as *adjusted correlations*: the partial relationship between $Y$ and one $X$ after netting out the linear dependence on the other $X$'s. There are (many) tests for whether the relationships in your dataset are actually additively separable and linear (see [Model Assessment](https://jadamso.github.io/Rbooks/03_21_InterpretingRegression.html#model-diagnostics) and [Local Relationships](https://jadamso.github.io/Rbooks/03_22_Regressograms.html)).
+In general, you can interpret your regression coefficients as *adjusted correlations*: the partial relationship between $Y$ and one $X$ after netting out the linear dependence on the other $X$'s. There are (many) tests for whether the relationships in your dataset are actually additively separable and linear (see [Model Assessment](03_21_InterpretingRegression.qmd#model-diagnostics) and [Local Relationships](03_22_Regressograms.qmd)).
 
 #### **$\hat{R}^2$ vs. $\hat{\beta}$**. {-}
 
@@ -298,11 +298,15 @@ That said, we still care about $\hat{R}^2$. A very small $\hat{R}^2$ can signal 
 
 ## Exercises
 
-1. Explain in your own words why $\hat{R}^2$ can increase when you add a random noise variable to a regression, but $\hat{R}^2_{\text{adj.}}$ generally does not. What does this imply about using $\hat{R}^2$ alone to choose between models with different numbers of covariates?
+1. Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in [Working with AI](04_A_WorkingWithAI.qmd).
+   Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing.
+   Finish with your own questions about whatever you found hardest.
 
-2. Using the `USArrests` dataset, regress `Murder` on `Assault`, `UrbanPop`, and `Rape`. Report the $\hat{R}^2_{\text{adj.}}$ and the $F$-statistic. Then test whether `Rape` is jointly significant with the other variables by comparing the full model to a restricted model that excludes `Rape`.
+2. Explain in your own words why $\hat{R}^2$ can increase when you add a random noise variable to a regression, but $\hat{R}^2_{\text{adj.}}$ generally does not. What does this imply about using $\hat{R}^2$ alone to choose between models with different numbers of covariates?
 
-3. Using `lm()`, fit the model `Murder ~ Assault + UrbanPop` on the `USArrests` data. Write a bootstrap loop (at least 200 replications) to estimate the standard error of the `Assault` coefficient. Compare your bootstrap standard error to the one reported by `summary()`.
+3. Using the `USArrests` dataset, regress `Murder` on `Assault`, `UrbanPop`, and `Rape`. Report the $\hat{R}^2_{\text{adj.}}$ and the $F$-statistic. Then test whether `Rape` is jointly significant with the other variables by comparing the full model to a restricted model that excludes `Rape`.
+
+4. Using `lm()`, fit the model `Murder ~ Assault + UrbanPop` on the `USArrests` data. Write a bootstrap loop (at least 200 replications) to estimate the standard error of the `Assault` coefficient. Compare your bootstrap standard error to the one reported by `summary()`.
 
 #### **Further Reading**. {-}
 

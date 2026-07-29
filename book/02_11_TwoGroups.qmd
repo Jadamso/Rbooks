@@ -3,7 +3,7 @@
 
 This chapter compares two groups: how the distribution of one variable changes across the categories of another.
 We begin with discrete data, where both variables are factors, and then turn to "mixed" data, where a cardinal outcome $\hat{Y}_{i}$ is split into groups by a factor $\hat{X}_{i}$.
-In each case we summarize the groups, compute a statistic for the difference between them, and test that difference using the resampling methods from [Hypothesis Testing](https://jadamso.github.io/Rbooks/01_08_HypothesisTests.html).
+In each case we summarize the groups, compute a statistic for the difference between them, and test that difference using the resampling methods from [Hypothesis Testing](01_08_HypothesisTests.qmd).
 
 ## Discrete Data
 
@@ -98,7 +98,7 @@ library('Ecdat') # 'load' anytime you want to use the data
 head(Wages1)
 ```
 
-To compare wages for people with and without completing a degree, we start by making a [histogram](https://jadamso.github.io/Rbooks/01_02_Data.html#histogram-density) for both groups.
+To compare wages for people with and without completing a degree, we start by making a [histogram](01_02_Data.qmd#histogram-density.) for both groups.
 
 ```{r}
 library('Ecdat')
@@ -118,10 +118,10 @@ cols <- c(rgb(1, 0, 0, .5), rgb(0, 0, 1, .5)) # semi-transparent fill
 
 hist(Y1, breaks=bks, ylim=dlim,
      col=cols[1], xlab='Wages',
-     freq=F, border=NA, main=NA)
+     freq=FALSE, border=NA, main=NA)
 hist(Y2, breaks=bks, ylim=dlim,
      col=cols[2],
-     freq=F, border=NA, add=T)
+     freq=FALSE, border=NA, add=TRUE)
 legend('topright',
        col=cols, pch=15,
        legend=c('12 Years (Highschool)', '16 Years (University)'),
@@ -155,15 +155,15 @@ d <- m1-m2
 # Bootstrap Distribution
 bootstrap_diff <- rep(NA, 9999)
 for(b in seq(bootstrap_diff) ){
-    Y1_b <- sample(Y1, replace=T)
-    Y2_b <- sample(Y2, replace=T)
+    Y1_b <- sample(Y1, replace=TRUE)
+    Y2_b <- sample(Y2, replace=TRUE)
     m1_b <- mean(Y1_b)
     m2_b <- mean(Y2_b)
     d_b <- m1_b - m2_b
     bootstrap_diff[b] <- d_b
 }
 hist(bootstrap_diff,
-    border=NA, freq=F,
+    border=NA, freq=FALSE,
     main=NA, xlab='Difference in Means')
 title('Bootstrapped Difference in Means', font.main=1)
 
@@ -190,7 +190,7 @@ The *permutation test* (also called a *randomization test*) is useful whenever t
 permute_diff <- rep(NA, 9999)
 for(b in seq(permute_diff) ){
     #randomize data
-    Y_b  <- sample(Y, replace=F)
+    Y_b  <- sample(Y, replace=FALSE)
     Y1_b <- Y_b[X1_id]
     Y2_b <- Y_b[X2_id]
     # recompute statistic
@@ -200,7 +200,7 @@ for(b in seq(permute_diff) ){
     permute_diff[b] <- d_b
 }
 hist(permute_diff,
-    border=NA, freq=F,
+    border=NA, freq=FALSE,
     main=NA, xlab='Difference in Means')
 title('Permuted Difference in Means', font.main=1)
 abline(v=d, col=rgb(1, 0, 0, .8))
@@ -221,8 +221,7 @@ Those are purely statistical statements that only speak to how frequent differen
 For such reasons, applied statisticians consider many statistics
 
 #### **Quantile Differences**. {-}
-The above procedure generalized from differences in means to other quantiles statistics like medians. To start, we plot the [ECDF](
-https://jadamso.github.io/Rbooks/01_02_Data.html#empirical-cumulative-distribution-function)'s for both groups.
+The above procedure generalized from differences in means to other quantiles statistics like medians. To start, we plot the [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function.)'s for both groups.
 
 ```{r}
 # Quantile Comparison
@@ -259,8 +258,8 @@ legend('bottomright',
 boot_quant <- function(Y1, Y2, B=9999, probs=0.5, ...){
     bootstrap_diff <- rep(NA, B)
     for(b in seq(bootstrap_diff)){
-        Y1_b <- sample(Y1, replace=T)
-        Y2_b <- sample(Y2, replace=T)
+        Y1_b <- sample(Y1, replace=TRUE)
+        Y2_b <- sample(Y2, replace=TRUE)
         q1_b <- quantile(Y1_b, probs=probs, ...)
         q2_b <- quantile(Y2_b, probs=probs, ...)
         d_b <- q1_b - q2_b
@@ -272,7 +271,7 @@ boot_quant <- function(Y1, Y2, B=9999, probs=0.5, ...){
 # 2-Sided Test for Median Differences
 # d <- quantile(Y2, probs=0.5) - quantile(Y1, probs=0.5)
 boot_d <- boot_quant(Y1, Y2, B=999, probs=0.5)
-hist(boot_d, border=NA, freq=F,
+hist(boot_d, border=NA, freq=FALSE,
     main=NA, xlab='Difference in Medians')
 title('Bootstrap Difference in Medians', font.main=1)
 abline(v=quantile(boot_d, probs=c(.025, .975)), lwd=2)
@@ -287,12 +286,12 @@ In principle, we can also examine whether there are differences in spread (`sd` 
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Here is an example to look at differences in "spread"
-```{r, eval=F}
+```{r, eval=FALSE}
 boot_fun <- function( fun, B=9999, ...){
     bootstrap_diff <- rep(NA, B)
     for(b in seq(bootstrap_diff)){
-        Y1_b <- sample(Y1, replace=T)
-        Y2_b <- sample(Y2, replace=T)
+        Y1_b <- sample(Y1, replace=TRUE)
+        Y2_b <- sample(Y2, replace=TRUE)
         f1_b <- fun(Y1_b, ...)
         f2_b <- fun(Y2_b, ...)
         d_b <- f1_b - f2_b
@@ -451,7 +450,7 @@ n  <- length(Y_pooled)
 perm_stats <- matrix(NA, nrow=999, ncol=2,
     dimnames=list(NULL, c('KS', 'CVM')))
 for(b in seq(nrow(perm_stats))){
-    id1 <- sample(n, n1, replace=F)
+    id1 <- sample(n, n1, replace=FALSE)
     perm_stats[b, ] <- ks_cvm(Y_pooled[id1], Y_pooled[-id1])
 }
 
@@ -465,23 +464,27 @@ round(c(KS_stat=stat_obs[['KS']], KS_pval=p_ks,
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Compare the distribution of arrests for two different counties, each with data over time.
 
-```{r, eval=F}
+```{r, eval=FALSE}
 library(wooldridge)
 countymurders
 ```
 
 :::
 
-These methods extend naturally from two groups to many. See [Multiple Groups](https://jadamso.github.io/Rbooks/03_20_MultipleGroups.html) for the ANOVA approach to comparing $G$ groups simultaneously.
+These methods extend naturally from two groups to many. See [Multiple Groups](03_20_MultipleGroups.qmd) for the ANOVA approach to comparing $G$ groups simultaneously.
 
 
 ## Exercises
 
-1. A permutation test shuffles the group labels to build a null distribution, while a bootstrap test resamples with replacement from each group separately. Explain why permutation is appropriate for testing "no difference between groups" and when you might prefer the bootstrap instead.
+1. Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in [Working with AI](04_A_WorkingWithAI.qmd).
+   Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing.
+   Finish with your own questions about whatever you found hardest.
 
-2. Using the `Wages1` data from the `Ecdat` package, compute the difference in mean wages $\hat{D} = \hat{M}_{Y1} - \hat{M}_{Y2}$ between workers with $12$ years of schooling and workers with $16$ years of schooling. Then compute the Kolmogorov-Smirnov statistic $\hat{KS}$ between the two wage distributions by hand (i.e., find the maximum absolute difference between the two ECDF's evaluated at the pooled sorted data).
+2. A permutation test shuffles the group labels to build a null distribution, while a bootstrap test resamples with replacement from each group separately. Explain why permutation is appropriate for testing "no difference between groups" and when you might prefer the bootstrap instead.
 
-3. Using the `mtcars` dataset, split cars into two groups based on transmission type (`am`: 0 = automatic, 1 = manual). Write a permutation test with $B = 9999$ iterations to test whether the difference in mean `mpg` between automatic and manual cars is statistically different from zero. Report the $p$-value.
+3. Using the `Wages1` data from the `Ecdat` package, compute the difference in mean wages $\hat{D} = \hat{M}_{Y1} - \hat{M}_{Y2}$ between workers with $12$ years of schooling and workers with $16$ years of schooling. Then compute the Kolmogorov-Smirnov statistic $\hat{KS}$ between the two wage distributions by hand (i.e., find the maximum absolute difference between the two ECDF's evaluated at the pooled sorted data).
+
+4. Using the `mtcars` dataset, split cars into two groups based on transmission type (`am`: 0 = automatic, 1 = manual). Write a permutation test with $B = 9999$ iterations to test whether the difference in mean `mpg` between automatic and manual cars is statistically different from zero. Report the $p$-value.
 
 #### **Further Reading**. {-}
 

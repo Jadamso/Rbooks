@@ -1,0 +1,201 @@
+
+# Code Conventions in This Book
+***
+
+This is the house style used by every piece of R code in this book, not a standard that R enforces or that other R programmers follow.
+R will happily run code written any other way, and you will meet plenty of it: other books use `=` for assignment, load the tidyverse, and prefer double quotes.
+The conventions here are collected for two reasons.
+The first is practical: when your code looks like the book's code, you can compare the two line by line and see where you diverged.
+The second is that most of these choices exist to prevent a specific mistake, and the notes below say which one.
+Where a convention is a matter of taste rather than safety, it says so.
+The code blocks on this page are shown for reference and are not run.
+
+## Assignment and Naming
+
+Always use `<-` for assignment, never `=`.
+The two are not interchangeable, because `=` also passes arguments to functions, and mixing the two makes it hard to see which is happening.
+
+Use snake_case for multi-word names, capital letters for mathematical objects, and short lowercase names for loop indices and counts.
+
+| Kind of name | Convention | Examples |
+|---|---|---|
+| Multi-word object | snake_case | `sample_means`, `boot_se`, `col_high` |
+| Mathematical object | single capital | `X`, `Y`, `M` (mean), `V` (variance) |
+| Loop index or count | short lowercase | `i`, `n`, `b`, `h` |
+| Coefficient | matches the book's notation | `b0`, `b1`, `b_k` |
+
+```r
+X <- USArrests[,'Murder']
+X_mean <- mean(X)
+sample_means <- rep(NA, B)
+```
+
+Names that match the notation in [Notation](04_D_Notation.qmd) let you read a formula and the code that implements it side by side.
+
+## Base R
+
+This book uses base R throughout, with no tidyverse verbs (`mutate`, `filter`, `select`, `arrange`) and no pipes.
+Use `aggregate()`, `subset()`, `merge()`, and bracket indexing instead.
+The one exception is `%>%` where a package requires chaining, as `plotly` does.
+
+Access a package with `::` when you use it once or twice, and with `library()` only when a chapter uses it repeatedly.
+
+```r
+car::vif(reg)      # used once
+library('wooldridge')  # used throughout a chapter
+```
+
+Writing `car::vif()` rather than loading the package makes it obvious where a function came from, which matters when an assistant suggests a function and you cannot find it.
+
+#### **Data Access**. {-}
+
+Use bracket notation with the column name for subsetting, the dollar sign for quick single-column access inline, and double brackets for pulling an element out of a list.
+
+```r
+xy <- USArrests[,c('Murder','UrbanPop')]
+x <- xy[,'UrbanPop']
+y <- xy[,'Murder']
+
+# also acceptable for single columns
+assault_high <- USArrests$Assault > median(USArrests$Assault)
+```
+
+Naming the column, rather than its position, means your code keeps working when the column order changes.
+
+## Functions and Comments
+
+Put the opening brace on the same line as `function()`, indent the body, end with an explicit `return()`, and close the brace on its own line.
+
+```r
+skewness <- function(X) {
+    X_mean <- mean(X)
+    m3 <- mean((X - X_mean)^3)
+    s3 <- sd(X)^3
+    skew <- m3 / s3
+    return(skew)
+}
+```
+
+R returns the last expression evaluated even without `return()`, so an explicit `return()` is for the reader rather than the interpreter.
+It makes the output of a function unambiguous at a glance.
+
+Use `#` with a space after it, and let comments explain purpose rather than mechanics.
+
+```r
+X <- rnorm(1000)        # simulated data
+X_mean <- mean(X)       # sample mean
+```
+
+A comment that restates the code (`# take the mean`) adds nothing, while one that says why (`# sample mean, to compare against mu`) does.
+This is the style [Working with AI](04_A_WorkingWithAI.qmd) asks you to comment in, and Step 3 there checks these comments against what the code actually does.
+
+#### **Spacing and Strings**. {-}
+
+Put spaces around binary operators and after commas, and no spaces inside parentheses.
+The one exception is `=` when it names a function argument, which takes no spaces.
+This is deliberate: `x <- y + 1` is arithmetic and gets room to breathe, while `col='red'` is one argument and reads as a single unit.
+
+```r
+x <- y + 1
+c(1, 2, 3)
+X[1, 2]
+grey(0, .5)
+mean(X)                        # not mean( X )
+hist(X, breaks=25, freq=FALSE)     # not breaks = 25
+```
+
+Use single quotes for all strings, including column names, package names, and axis labels.
+R treats `'a'` and `"a"` as identical, so this one is purely for consistency.
+
+```r
+USArrests[,'Murder']
+library('wooldridge')
+xlab='Murder arrests (per 100k)'
+```
+
+#### **Logical Values**. {-}
+
+Write logical values in full, as `TRUE` and `FALSE`.
+
+```r
+hist(X, freq=FALSE, border=NA)
+x_boot <- sample(X, replace=TRUE)
+```
+
+R also accepts the abbreviations `T` and `F`, and you will see them constantly in other people's code, but they are not safe.
+`TRUE` and `FALSE` are reserved words that cannot be reassigned, while `T` and `F` are ordinary variables that merely start out holding those values.
+Someone who writes `T <- 0` earlier in a script silently breaks every `freq=T` after it, and nothing warns you.
+The full words cost three or four extra characters and remove the possibility.
+
+## Simulation and Loops
+
+Call `set.seed()` once at the top of the block that generates random numbers, and never reset it partway through.
+Resetting midway makes the results depend on where the reset happened, which is very hard to debug later.
+
+Use `replicate()` for repeated simulations that return a vector or matrix, `sapply()` and `lapply()` for apply-style iteration, and an explicit `for` loop when the iteration itself is the point being taught.
+Pre-allocate with `rep(NA, n)`.
+
+```r
+set.seed(1)
+B <- 999
+sample_means <- rep(NA, B)
+for (b in seq(B)) {
+    x_boot <- sample(X, replace=TRUE)
+    sample_means[b] <- mean(x_boot)
+}
+```
+
+Pre-allocating with `rep(NA, n)` rather than `numeric(n)` matters because `numeric(n)` fills the vector with zeros.
+If a bug leaves some entries unfilled, zeros look like real results and `NA` does not.
+
+#### **seq and seq_along**. {-}
+
+These two are not interchangeable, and the book uses each for a different job.
+
+```r
+for (b in seq(B))         { ... }   # B is a count, so seq(B) gives 1, 2, ..., B
+for (i in seq_along(X))   { ... }   # X is a vector, so this gives 1, ..., length(X)
+```
+
+Writing `seq_along(B)` when `B` is a single number is a silent bug: it returns just `1`, so the loop runs once and the code appears to work.
+Writing `seq(X)` when `X` is a vector happens to work, but it reads as though `X` were a count.
+
+One edge case is worth knowing.
+`seq(B)` returns `c(1, 0)` when `B` is zero, so a loop that should not run at all runs twice.
+`seq_len(B)` returns nothing in that case and is the safer form.
+The book uses `seq()` because its counts are never zero.
+
+#### **Formulas and Output**. {-}
+
+Use standard R formula syntax with spaces around `~`.
+
+```r
+reg <- lm(y ~ x, data=xy)
+plot(y ~ x, xy, pch=16, col=grey(0, .5))
+```
+
+Round for display with `round(value, 2)`, build label strings with `paste0()`, and rely on auto-printing rather than calling `print()` except inside a loop or conditional.
+
+```r
+title(paste0('mean= ', round(X_mean, 2)), font.main=1)
+```
+
+## Reference Card
+
+1. `<-` for assignment, never `=`.
+2. Base R only, no tidyverse and no pipes.
+3. `library()` for repeated use, `pkg::fun()` for one-off calls.
+4. Bracket notation `[,'Name']` for column subsetting.
+5. Explicit `return()` in every function you write.
+6. `set.seed()` once at the top of a random block, never reset.
+7. Single quotes for all strings.
+8. Spaces around operators, none around an argument's `=`.
+9. `TRUE` and `FALSE` in full, never `T` and `F`.
+10. Pre-allocate with `rep(NA, n)`, not `numeric(n)`.
+11. `seq()` for counts, `seq_along()` for vectors.
+12. Comments explain purpose, not mechanics.
+
+#### **Further Reading**. {-}
+
+* <https://style.tidyverse.org/> -- a widely used R style guide. It assumes the tidyverse rather than base R, so read it for the general principles rather than the specific verbs.
+* [Figures](04_C_Figures.qmd) -- the matching conventions for plots.

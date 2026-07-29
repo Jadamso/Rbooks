@@ -2,7 +2,7 @@
 # Inference
 ***
 
-Often, we are interested in *gradients*: how $Y$ changes with $X$. The linear model from [Simple Regression](https://jadamso.github.io/Rbooks/02_13_SimpleRegression.html) depicts this as a single constant, $\hat{b}_{1}$, but the local-regression models from [Local Regression](https://jadamso.github.io/Rbooks/02_14_LocalRegression.html) do not. A great first step to assess gradients is to plot the predicted values over the explanatory values. A great second step is to compute gradients and summarize them. In any case, we compute confidence intervals to account for variability across samples.
+Often, we are interested in *gradients*: how $Y$ changes with $X$. The linear model from [Simple Regression](02_13_SimpleRegression.qmd) depicts this as a single constant, $\hat{b}_{1}$, but the local-regression models from [Local Regression](02_14_LocalRegression.qmd) do not. A great first step to assess gradients is to plot the predicted values over the explanatory values. A great second step is to compute gradients and summarize them. In any case, we compute confidence intervals to account for variability across samples.
 
 ## Applied Methods
 
@@ -60,12 +60,12 @@ lines(pred_design[, 'school'], preds_lo,
 # Boot CI with the same default-span loess
 boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
 for (b in 1:399) {
-    xy_b <- dat[sample(nrow(dat), replace=T), ]
+    xy_b <- dat[sample(nrow(dat), replace=TRUE), ]
     reg_b <- loess(wage ~ school, data=xy_b)
     boot_lo[, b] <- predict(reg_b, newdata=pred_design)
 }
 boot_cb <- apply(boot_lo, 1, quantile,
-    probs=c(.025, .975), na.rm=T)
+    probs=c(.025, .975), na.rm=TRUE)
 
 # Plot CI
 polygon(
@@ -256,7 +256,7 @@ grad_lo <-grad_dy/grad_dx
 ## Visual Summary
 par(mfrow=c(1, 2))
 hist(grad_lo,  breaks=20,
-    border=NA, freq=F,
+    border=NA, freq=FALSE,
     col=lo_col,
     xlab=expression(d~hat(y)/dx),
     main=NA) ## Distributional Summary
@@ -297,19 +297,19 @@ mean(grads)   # mean of the gradients
 ```{r}
 ## Tabular Summary
 tab_stats <- c(
-    Mean=mean(grad_lo, na.rm=T),
-    SD=sd(grad_lo, na.rm=T))
+    Mean=mean(grad_lo, na.rm=TRUE),
+    SD=sd(grad_lo, na.rm=TRUE))
 
 ## Use bootstrap to approximate sampling dist
 boot_stats <- matrix(NA, nrow=299, ncol=2)
 colnames(boot_stats) <- c('Mean SE', 'SD SE')
 for(b in 1:nrow(boot_stats)){
-    xy_b <- dat[sample(1:nrow(dat), replace=T), ]
+    xy_b <- dat[sample(1:nrow(dat), replace=TRUE), ]
     reg_lo <- loess(wage ~ school, data=xy_b, span=.6)
     pred_lo <- predict(reg_lo)
     grad_lo <- diff(pred_lo)/diff(xy_b[, 'school'])
-    dydx_mean <- mean(grad_lo, na.rm=T)
-    dydx_sd <- sd(grad_lo, na.rm=T)
+    dydx_mean <- mean(grad_lo, na.rm=TRUE)
+    dydx_sd <- sd(grad_lo, na.rm=TRUE)
     boot_stats[b, 1] <- dydx_mean
     boot_stats[b, 2] <- dydx_sd
 }
@@ -398,7 +398,7 @@ for (i in 1:n) {
     reg_i  <- loess(wage ~ school, data=dat_i, span=.6)
     pred_i <- predict(reg_i)
     grad_i <- diff(pred_i) / diff(dat_i[, 'school'])
-    jack_means[i] <- mean(grad_i, na.rm=T)
+    jack_means[i] <- mean(grad_i, na.rm=TRUE)
 }
 
 ## Jackknife SE
@@ -451,12 +451,12 @@ pred_design <- data.frame(X=seq(Xmn, Xmx))
 preds_lo <- predict(reg_lo, newdata=pred_design)
 boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
 for (b in 1:399) {
-    dat0_i <- dat0[sample(nrow(dat0), replace=T), ]
+    dat0_i <- dat0[sample(nrow(dat0), replace=TRUE), ]
     reg_i <- loess(Y ~ X, data=dat0_i, span=.8)
     boot_lo[, b] <- predict(reg_i, newdata=pred_design)
 }
 boot_cb <- apply(boot_lo, 1, quantile,
-    probs=c(.025, .975), na.rm=T)
+    probs=c(.025, .975), na.rm=TRUE)
 polygon(
     c(pred_design[[1]], rev(pred_design[[1]])),
     c(boot_cb[1, ], rev(boot_cb[2, ])),
@@ -471,7 +471,7 @@ for (b in 1:399) {
     sample_lo[, b] <- predict(reg_b, newdata=pred_design)
 }
 ci_lo <- apply(sample_lo, 1, quantile,
-    probs=c(.025, .975), na.rm=T)
+    probs=c(.025, .975), na.rm=TRUE)
 polygon(
     c(pred_design[[1]], rev(pred_design[[1]])),
     c(ci_lo[1, ], rev(ci_lo[2, ])),
@@ -516,7 +516,7 @@ for (ni in seq_along(Nseq)) {
             fit_lo_b <- loess(Y ~ X, data=dat_b, span=span_lo)
             pred_lo_bias[, b] <- predict(fit_lo_b, newdata=pred_design)
         }
-        stats[, b] <- c(coef(fit_lm)[2], mean(grad_lo, na.rm=T))
+        stats[, b] <- c(coef(fit_lm)[2], mean(grad_lo, na.rm=TRUE))
     }
     SE[, ni] <- apply(stats, 1, sd)
 }
@@ -649,11 +649,15 @@ A similar result holds for OLS when the true relationship is linear. Even with u
 
 ## Exercises
 
-1. A linear regression has low variance but can have high bias when the true relationship is nonlinear. A loess regression with a small span has low bias but high variance. Explain why increasing the sample size $n$ helps reduce the standard error for both models, but only helps reduce bias for loess (with an appropriate bandwidth rule).
+1. Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in [Working with AI](04_A_WorkingWithAI.qmd).
+   Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing.
+   Finish with your own questions about whatever you found hardest.
 
-2. Using the `USArrests` dataset, fit a loess regression of `Murder` on `UrbanPop` with `span = 0.6`. Compute the finite-difference gradients $\hat{b}_{1}(x)$ and report their mean and standard deviation. Compare these to the OLS slope $\hat{b}_{1}$ from a simple linear regression.
+2. A linear regression has low variance but can have high bias when the true relationship is nonlinear. A loess regression with a small span has low bias but high variance. Explain why increasing the sample size $n$ helps reduce the standard error for both models, but only helps reduce bias for loess (with an appropriate bandwidth rule).
 
-3. Using the `USArrests` dataset and the loess fit from the previous question, write R code to construct a bootstrap confidence band with $B = 399$ replicates. Plot the scatterplot, the loess curve, and the shaded 95% confidence band.
+3. Using the `USArrests` dataset, fit a loess regression of `Murder` on `UrbanPop` with `span = 0.6`. Compute the finite-difference gradients $\hat{b}_{1}(x)$ and report their mean and standard deviation. Compare these to the OLS slope $\hat{b}_{1}$ from a simple linear regression.
+
+4. Using the `USArrests` dataset and the loess fit from the previous question, write R code to construct a bootstrap confidence band with $B = 399$ replicates. Plot the scatterplot, the loess curve, and the shaded 95% confidence band.
 
 #### **Further Reading**. {-}
 

@@ -103,7 +103,7 @@ round(1 - (1 - alpha)^k, 3)
 ```
 
 So at $k=700$ tries the chance of at least one false discovery exceeds 50%, and by $k=5000$ it is essentially 1. The more you search, the more likely you are to find a spurious result.
-See [Multiple Testing](https://jadamso.github.io/Rbooks/03_26_MiscTopics.html#multiple-testing) in the next chapter for corrections that control this family-wise error rate.
+See [Multiple Testing](03_26_MiscTopics.qmd#multiple-testing) in the next chapter for corrections that control this family-wise error rate.
 :::
 
 ```{r}
@@ -283,7 +283,7 @@ A noticeable share of the random variable triples returns "significant" results 
 We apply the three major credible methods (IV, RDD, DID) to random walks. Each time, we find a result that fits mold and add various extensions that make it appear robust. One could tell a story about how $X_{2}$ affects $X_{1}$ but $X_{1}$ might also affect $X_{2}$, and how they discovered an instrument $X_{3}$ to provide the first causal estimate of $X_{2}$ on $X_{1}$. The analysis looks scientific and the story sounds plausible, so you could probably be convinced *if it were not just random noise.*
 
 
-```{r, message=F, warning=F}
+```{r, message=FALSE, warning=FALSE}
 n <- 1000
 n_index <- seq(n)
 
@@ -317,7 +317,7 @@ summary(ivreg_i)
 ```
 
 **RDD**. Second, find a large discrete change in the data that you can associate with a policy. You can use this as an instrument too, also providing a causal estimate of $X_{2}$ on $X_{1}$.
-```{r, message=F, warning=F}
+```{r, message=FALSE, warning=FALSE}
 # Let the data take shape
 # (around the large differences before and after)
 n1 <- 290
@@ -337,21 +337,21 @@ lines(reg0$model$t, reg0$fitted.values, col=rgb(0, 0, 0, .8))
 lines(reg1$model$t, reg1$fitted.values, col=rgb(0, 0, 0, .8))
 ```
 
-```{r, message=F, warning=F, results='asis'}
+```{r, message=FALSE, warning=FALSE, results='asis'}
 # Dress with some statistics for added credibility
 rdd_sub <- lm(y ~ d+t+d*t, data=dat1_sub)
 rdd_full <- lm(y ~ d+t+d*t, data=dat1)
 stargazer::stargazer(rdd_sub, rdd_full, 
     type='html',
     title='Recipe RDD',
-    header=F,
+    header=FALSE,
     omit=c('Constant'),
     notes=c('First column uses a dataset around the discontinuity.',
     'Smaller windows are more causal, and where the effect is bigger.'))
 ```
 
 **DID**. Third, find a change in the data that you can associate with a policy where the control group has parallel trends. This also provides a causal estimate of $X_{2}$ on $X_{1}$.
-```{r, message=F, warning=F}
+```{r, message=FALSE, warning=FALSE}
 # Find a reversal of fortune
 # (A good story always goes well with a nice pre-trend)
 n2 <- 318
@@ -362,7 +362,7 @@ points(random_walk1, pch=16, col=rgb(1, 0, 0, .5))
 abline(v=n2, lty=2)
 ```
 
-```{r, message=F, warning=F, results='asis'}
+```{r, message=FALSE, warning=FALSE, results='asis'}
 # Knead out any effects that are non-causal (aka correlation)
 dat2A <- data.frame(t=n_index, y=random_walk1, d=1*(n_index > n2), RWid=1)
 dat2B <- data.frame(t=n_index, y=random_walk2, d=0, RWid=2)
@@ -380,7 +380,7 @@ did_fe3 <- lm(y ~ d*RWid+tid, data=dat2_sub)
 stargazer::stargazer(did_fe1, did_fe2, did_fe3,
     type='html',
     title='Recipe DID',
-    header=F,
+    header=FALSE,
     omit=c('tid', 'RWid', 'Constant'),
     notes=c(
      'Fixed effects for time in column 1, for id in column 2, and both in column 3.',
@@ -395,11 +395,15 @@ All three empirical recipes (IV, RDD, DID) produced statistically significant re
 
 ## Exercises
 
-1. Explain the difference between p-hacking and spurious regression. Both can produce statistically significant results from unrelated data, but the mechanisms differ. Give a concrete example of each using concepts from this chapter.
+1. Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in [Working with AI](04_A_WorkingWithAI.qmd).
+   Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing.
+   Finish with your own questions about whatever you found hardest.
 
-2. Using the `tylervigen.csv` dataset from the chapter, pick any two variables and run an OLS regression. Then pick a third variable as an instrument and run a 2SLS regression with `fixest::feols`. Report the p-values for both. Do these significant results reflect a real causal relationship? Why or why not?
+2. Explain the difference between p-hacking and spurious regression. Both can produce statistically significant results from unrelated data, but the mechanisms differ. Give a concrete example of each using concepts from this chapter.
 
-3. Simulate two independent random walks of length 500 in R (each starting at 0, with increments from `runif(1, -1, 1)`). Regress one on the other using `lm()` and record the p-value on the slope. Repeat this 200 times and plot the distribution of p-values. What fraction are below 0.05, and how does this compare to what you would expect under independence?
+3. Using the `tylervigen.csv` dataset from the chapter, pick any two variables and run an OLS regression. Then pick a third variable as an instrument and run a 2SLS regression with `fixest::feols`. Report the p-values for both. Do these significant results reflect a real causal relationship? Why or why not?
+
+4. Simulate two independent random walks of length 500 in R (each starting at 0, with increments from `runif(1, -1, 1)`). Regress one on the other using `lm()` and record the p-value on the slope. Repeat this 200 times and plot the distribution of p-values. What fraction are below 0.05, and how does this compare to what you would expect under independence?
 
 #### **Further Reading**. {-}
 

@@ -1,0 +1,259 @@
+
+# Figure Conventions in This Book
+***
+
+A default R plot is rarely a good plot, and the gap between the two is mostly a handful of arguments.
+This appendix collects the choices the book makes and explains what each one is for, so you can apply them to figures the book never draws.
+Most of them are house style rather than rules: another book would pick different colors and be no worse for it.
+The one section that is not a matter of taste is *Accessibility*, which is about whether a reader can use your figure at all.
+The theme running through the rest is that ink should carry information, since borders, bold titles, and full-strength colors all draw the eye without telling the reader anything.
+Most of the code blocks here are shown for reference and are not run, but the two worked examples are.
+
+## Default Versus House Style
+
+The two panels below plot the same data.
+Only the arguments differ.
+
+```{r, fig.height=4}
+X <- USArrests[,'Murder']
+par(mfrow=c(1,2), mar=c(4, 4, 2, 1))
+
+# Default settings
+hist(X)
+
+# House style
+hist(X, breaks=15, border=NA, freq=FALSE, main=NA,   # fewer bins, since n is only 50
+    xlab='Murder arrests (per 100k)')
+abline(v=mean(X), col=rgb(1, 0, 0, .8), lwd=2)
+title(paste0('mean= ', round(mean(X), 2)), font.main=1)
+```
+
+Four things changed.
+The bar borders are gone, so the shape of the distribution reads as one silhouette instead of twenty outlined boxes.
+The vertical axis is a density rather than a count, which makes the histogram comparable to a fitted curve.
+The axis label says what the variable is and in what units.
+The title reports a number rather than repeating the variable name that the axis label already gave.
+
+## Histograms
+
+```r
+hist(X, breaks=25, border=NA, freq=FALSE, main=NA, xlab='label')
+```
+
+| Argument | Convention | Notes |
+|---|---|---|
+| `border` | `NA` | Never use visible borders on bars |
+| `freq` | `FALSE` | Density scale, not counts |
+| `main` | `NA` or omit | Add titles via `title()` instead |
+| `breaks` | 20--60 integer | Adjust to sample size; 25 is a good default |
+| `col` | Default grey, or `grey(0, alpha)` | Use transparency for overlays |
+| `xlab` | Short descriptive string | Use `expression()` for math notation |
+
+The density scale is the argument that matters most often.
+With `freq=FALSE` the bars integrate to one, so you can overlay a theoretical density or a kernel estimate on the same axes.
+With the default `freq=TRUE` you cannot, because the two are on different scales.
+
+## Scatterplots
+
+```r
+plot(y ~ x, pch=16, col=grey(0, .5), data=dat, main=NA, xlab='x', ylab='y')
+```
+
+| Argument | Convention | Notes |
+|---|---|---|
+| `pch` | `16` (solid circle) | Standard throughout the book |
+| `col` | `grey(0, alpha)` | Alpha in [0.05, 0.5] depending on $n$ |
+| `main` | `NA` or omit | Titles via `title()` if needed |
+| `cex` | Reduce for large $n$ (e.g., `.5`) | Default is fine for small datasets |
+
+Transparency is how a scatterplot survives a large sample.
+Opaque points overplot into a solid blob that hides where the data are dense, while transparent points darken where observations pile up, so the plot doubles as a picture of the joint density.
+
+| Sample size | Suggested alpha |
+|---|---|
+| $n < 100$ | 0.5 |
+| 100--1000 | 0.25 |
+| 1000--10000 | 0.1 |
+| $n > 10000$ | 0.05 |
+
+## Titles and Colors
+
+Add titles with `title()` after the plot call, rather than with `main=` inside it.
+
+```r
+title(paste0('mean= ', round(m, 2)), font.main=1)
+```
+
+Always set `font.main=1`, which is plain text.
+R's default is bold, and a bold title competes with the data for attention.
+Keep the text short, usually a statistic or a single phrase, and use `title('label', outer=TRUE)` for a label spanning a multi-panel figure.
+
+#### **The Grey and RGB System**. {-}
+
+Scatterpoints and histogram fills use `grey()` with a first argument of `0`, varying only the transparency.
+Anything you want the reader to look at uses `rgb()` with an explicit alpha channel.
+
+| Code | Color | Use for |
+|---|---|---|
+| `rgb(1, 0, 0, .8)` | Red | Means, fitted lines, key statistics |
+| `rgb(0, 0, 1, .8)` | Blue | SD bounds, secondary reference lines |
+| `rgb(0, 0, 0, .8)` | Black | Horizontal and vertical reference lines |
+
+Use `rgb()` rather than numeric codes such as `col=2` or names such as `'red'`.
+The numeric codes depend on the current palette, so the same number can produce a different color in a different session, and neither form lets you set transparency.
+
+For two groups, use `cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))`.
+For three or more, use `cols <- hcl.colors(k, alpha=.45)`, where `k` is the number of groups.
+`hcl.colors()` spaces colors evenly in a perceptual space, so no one group looks louder than the others.
+
+## Accessibility
+
+Everything above this section is a preference.
+This section is not.
+Around one man in twelve has some form of color vision deficiency, your figure may be printed in greyscale or read on a washed-out projector, and a reader using a screen reader gets only the text you attach to it.
+Four habits cover most of the problem.
+
+**Never let color be the only difference between groups.**
+Pair it with a shape for points (`pch`) or a line type for lines (`lty`), so the groups stay separable when the color does not survive.
+Base R also ships a colorblind-safe categorical palette, which is a better starting point than picking hues yourself.
+
+```r
+palette.colors(4, 'Okabe-Ito')
+## [1] "#000000" "#E69F00" "#56B4E9" "#009E73"
+```
+
+**Keep text large enough to survive scaling.**
+A figure is drawn at one size and displayed at another, usually smaller, so text set below the default can become unreadable.
+Set `cex.lab` and `cex.axis` at 1 or above, and never shrink text that is words rather than plotting symbols.
+
+**Caption the figure.**
+A caption states what the reader is looking at, so the figure can be understood without hunting for the paragraph that introduced it.
+In a Quarto or R Markdown report, `fig-cap` puts it under the figure and numbers it for you.
+
+**Write alt text that gives the finding.**
+Alt text replaces the figure for a reader who cannot see it, so describing the ink ("a scatterplot with red and blue points") is useless.
+Say what the figure shows.
+`fig-alt` sets it.
+
+The example below does all four.
+Group membership is carried by shape as well as color, the label text is enlarged, and the caption and alt text are attached to the chunk rather than drawn onto the plot.
+
+```{r}
+#| fig-height: 4.5
+#| fig-cap: "Murder arrests against urban population, split at the median assault rate."
+#| fig-alt: "Scatterplot of murder arrests per 100,000 against percent urban population for 50 US states. High-assault states, shown as red circles, sit mostly above 8 murder arrests; low-assault states, shown as blue triangles, sit mostly below 8. Neither group trends clearly with urban population."
+high <- USArrests[,'Assault'] > median(USArrests[,'Assault'])
+
+plot(USArrests[,'Murder'] ~ USArrests[,'UrbanPop'],
+    pch=ifelse(high, 16, 17),                                  # shape carries the group
+    col=ifelse(high, rgb(.8, 0, 0, .6), rgb(0, 0, .8, .6)),    # color repeats it
+    cex.lab=1.1, cex.axis=1.1,
+    xlab='Urban population (%)', ylab='Murder arrests (per 100k)')
+legend('topleft', legend=c('High assault', 'Low assault'),
+    pch=c(16, 17), col=c(rgb(.8, 0, 0, .6), rgb(0, 0, .8, .6)), bty='n')
+```
+
+Note that the legend repeats both `pch` and `col`.
+A legend that gives only the colors defeats the point of encoding the group twice.
+
+To check a finished figure, view it in greyscale.
+If you cannot tell the groups apart, the shapes are not doing their job.
+
+## Reference Lines and Annotations
+
+```r
+# Vertical line at a statistic (e.g., mean)
+abline(v=value, col=rgb(1, 0, 0, .8), lwd=2)
+
+# Horizontal reference (e.g., zero line)
+abline(h=0, col=rgb(0, 0, 0, .8), lty=2)
+
+# Confidence interval bounds
+abline(v=ci_bounds, col=rgb(0, 0, 1, .8), lty=2)
+```
+
+| Element | col | lwd | lty |
+|---|---|---|---|
+| Sample statistic | `rgb(1, 0, 0, .8)` | `2` | `1` |
+| CI or theoretical value | `rgb(0, 0, 1, .8)` | `1` | `2` |
+| Subtle reference | `grey(0.5)` | `1` | `3` |
+
+The pattern is that solid and thick means "computed from this sample", while dashed and thin means "a reference to compare it against".
+A reader who has seen one figure in the book can then read the next one without a legend.
+
+For text annotations, match the color to the element being labeled and use `expression()` or `bquote()` for math.
+
+```r
+text(x, y, label, col=rgb(0, 0, 1, .8), adj=0)
+```
+
+Use `adj=0` for left-aligned text and `adj=0.5` for centered.
+
+#### **Fitted and Overlay Lines**. {-}
+
+```r
+lines(x_sorted, y_hat, col=rgb(1, 0, 0, .8), lwd=2)
+```
+
+Draw fitted lines with `lines()` rather than `curve()`, using red at `lwd=2` for the primary fit and blue at `lwd=1, lty=2` for a comparison fit.
+`lines()` takes the fitted values you actually computed, whereas `curve()` re-evaluates a function, which can quietly differ from the model you fit.
+Sort by the horizontal variable first, or `lines()` will zigzag back and forth across the plot.
+
+## Layouts and Legends
+
+```r
+par(mfrow=c(rows, cols))
+```
+
+Use `par(mfrow=c(1,2))` for two panels side by side, `c(1,3)` for three, and `c(2,2)` for a grid.
+Set small top and right margins with `par(mar=c(4, 4, 1, 1))`.
+If you change `par()` inside a function, restore it on exit.
+
+```r
+op <- par(no.readonly=TRUE)
+on.exit(par(op), add=TRUE)
+```
+
+```r
+legend('topright', legend=c('A', 'B'),
+    col=c(rgb(1, 0, 0, .8), rgb(0, 0, 1, .8)), lwd=2, cex=.8)
+```
+
+Position legends with a string such as `'topright'` or `'topleft'` rather than coordinates, so the legend moves with the data instead of landing on top of it.
+Add `bty='n'` to drop the box when it clutters the plot, keep entries to one to three words, and match `lty`, `pch`, and `col` to the plot symbols.
+
+#### **Boxplots**. {-}
+
+```r
+boxplot(X1, X2, names=c('A', 'B'), main=NA, xlab='Groups')
+```
+
+Use `main=NA` and add titles with `title(..., font.main=1)`.
+Color grouped boxplots with `col=hcl.colors(k, alpha=.45)`, and set `border='white'` or `border=NA` when a fill color is specified.
+
+## Reference Card
+
+House style, before you save a figure:
+
+- [ ] histograms use `border=NA`
+- [ ] density histograms use `freq=FALSE`
+- [ ] scatterplots use `pch=16`
+- [ ] points use `grey(0, alpha)` with alpha matched to $n$
+- [ ] any title sets `font.main=1`
+- [ ] emphasis colors use `rgb()` with alpha, not `col=2` or `'red'`
+- [ ] multi-panel layouts use `par(mfrow=...)`, not `layout()`
+
+Accessibility, before anyone else sees it:
+
+- [ ] both axes are labeled, in words, with units
+- [ ] groups differ by `pch` or `lty`, not by color alone
+- [ ] the legend repeats every channel used, not just color
+- [ ] `cex.lab` and `cex.axis` are at 1 or above
+- [ ] it still reads in greyscale
+- [ ] a report figure has `fig-cap`, and `fig-alt` that states the finding
+
+#### **Further Reading**. {-}
+
+* <https://clauswilke.com/dataviz/> -- *Fundamentals of Data Visualization*, free online, on which figures work and why.
+* Tufte, E. R. (2001). *The Visual Display of Quantitative Information* (2nd ed.). Graphics Press. The source of the ink-per-unit-information argument above.
+* [Data Analysis](02_18_DataAnalysis.qmd) -- applies these conventions to a full worked figure.
