@@ -7,7 +7,9 @@ We close by measuring how well each model fits and introducing the bias-variance
 
 ## Local Averages
 
-Scatterplots are a great and simplest plot for bivariate data that simply plots each observation. There are many extensions and similar tools. The example below helps understand how both the central tendency and dispersion change.
+Scatterplots are a great and simplest plot for bivariate data that simply plots each observation.
+There are many extensions and similar tools.
+The example below helps understand how both the central tendency and dispersion change.
 ```{r}
 # Running example for the whole chapter: wages and years of schooling
 library(Ecdat)                              # provides Wages1
@@ -33,18 +35,22 @@ title('Grouped Means and Scatterplot', font.main=1)
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Examine the local relationship between 'Murder' and 'Urbanization' in the `USArrests` dataset. Use custom bins.
+Examine the local relationship between 'Murder' and 'Urbanization' in the `USArrests` dataset.
+Use custom bins.
 ```{r, eval=FALSE}
 xy <- USArrests[, c('Murder', 'UrbanPop')]
 xy[, 'bins'] <- cut(USArrests[, 'UrbanPop'], 6) 
 ```
 :::
 
-To move beyond descriptive statistics, we will use models. We previously covered linear models, but you could be analyzing data with nonlinear relationships. So now we consider a general relationship:
+To move beyond descriptive statistics, we will use models.
+We previously covered linear models, but you could be analyzing data with nonlinear relationships.
+So now we consider a general relationship:
 \begin{eqnarray}
 \hat{Y}_{i} = m(\hat{X}_{i}) + e_{i},
 \end{eqnarray}
-where $m$ is an unknown function and $e_{i}$ is white noise, which we estimate via different models. After minimizing the sum of squared errors in a the regressions below, our estimated models $\hat{m}$ will also predict local averages.
+where $m$ is an unknown function and $e_{i}$ is white noise, which we estimate via different models.
+After minimizing the sum of squared errors in a the regressions below, our estimated models $\hat{m}$ will also predict local averages.
 
 
 ## Regressograms
@@ -55,7 +61,8 @@ Just as a histogram summarizes how observations are distributed across bins of $
 A *regressogram* splits $X$ into exclusive intervals (bins) of half-width $h$ and reports the average of $\hat{Y}_{i}$ within each bin.
 :::
 
-The regressogram is useful when we expect the relationship between $X$ and $Y$ to bend in ways a single line cannot capture, because the bin averages can rise, fall, or stay flat from one bin to the next without imposing any global shape. It is the conditional-mean analog of a histogram: histograms count observations within bins of $X$; regressograms average $Y$ within bins of $X$.
+The regressogram is useful when we expect the relationship between $X$ and $Y$ to bend in ways a single line cannot capture, because the bin averages can rise, fall, or stay flat from one bin to the next without imposing any global shape.
+It is the conditional-mean analog of a histogram: histograms count observations within bins of $X$; regressograms average $Y$ within bins of $X$.
 ```{r}
 # Data
 plot(wage ~ school, data=Wages1, pch=16, col=grey(0, .1),
@@ -86,7 +93,8 @@ legend('topleft',
     lty=1, cex=.8)
 ```
 
-To conduct a regressogram, first divide $X$ into $1,...L$ exclusive bins of half-width $h$. Each bin has a midpoint, $x$, and each observation has an associated dummy variable $\hat{D}_{i}(x,h) = \mathbf{1}\left(\hat{X}_{i} \in \left(x-h,x+h\right] \right)$.
+To conduct a regressogram, first divide $X$ into $1,...L$ exclusive bins of half-width $h$.
+Each bin has a midpoint, $x$, and each observation has an associated dummy variable $\hat{D}_{i}(x,h) = \mathbf{1}\left(\hat{X}_{i} \in \left(x-h,x+h\right] \right)$.
 
 The half-width $h$ controls how "local" a local estimate actually is.
 
@@ -94,7 +102,10 @@ The half-width $h$ controls how "local" a local estimate actually is.
 The *bandwidth* $h$ is the half-width of a local bin around the design point $x$: an observation is "local" to $x$ when $|\hat{X}_{i}-x|\leq h$.
 :::
 
-The bandwidth is useful as the central tuning knob for every local method in this chapter — regressograms, piecewise regression, locally constant kernel regression, and locally linear regression — and (in disguise as `span`) for LOESS in the next chapter. Larger $h$ pools more observations into each estimate but smooths over real variation; smaller $h$ tracks the data more closely but uses fewer points per estimate, so the fitted curve becomes noisier.
+The bandwidth is useful as the central tuning knob for every local method in this chapter: regressograms, piecewise regression, locally constant kernel regression, and locally linear regression.
+It is the same $h$ that set the bin half-width of a [histogram](01_02_Data.qmd#histogram-density.) and the spread of a [kernel density](01_02_Data.qmd#kernel-density.), except that there it controlled how much data went into a density estimate at $x$, and here it controls how much data goes into a conditional-mean estimate at $x$.
+It also tunes LOESS in the next chapter, in disguise as `span`.
+Larger $h$ pools more observations into each estimate but smooths over real variation; smaller $h$ tracks the data more closely but uses fewer points per estimate, so the fitted curve becomes noisier.
 Then we conduct a regression with this model:
 \begin{eqnarray}
 \hat{Y}_{i} &=& \sum_{x \in \{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{D}_{i}(x,h)  + e_{i},
@@ -102,9 +113,10 @@ Then we conduct a regression with this model:
 where each bin has a coefficient $b_{0}(x,h)$.
 
 #### **Local Averages**.{-}
-When minimizing the sum of squared errors, the optimal coefficients are denoted as $\hat{b}_{0}(x,h)$ and we can find them analytically. To do so, notice that each bin has $n(x,h) = \sum_{i}^{n}\hat{D}_{i}(x,h)$ observations. This means we can split the dataset into parts associated with each bin
+When minimizing the sum of squared errors, the optimal coefficients are denoted as $\hat{b}_{0}(x,h)$ and we can find them analytically.
+To do so, notice that each bin has $n(x,h) = \sum_{i}^{n}\hat{D}_{i}(x,h)$ observations.
+This means we can split the dataset into parts associated with each bin
 \begin{eqnarray}
-\label{eqn:regressogram1}
 \sum_{i}^{n}\left[e_{i}\right]^2 
 &=& \sum_{i}^{n}\left[\hat{Y}_{i}- \sum_{x \in \{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{D}_{i}(x,h) \right]^2 \\
 &=& \sum_{i}^{n(x_{1},h)}\left[\hat{Y}_{i}- \sum_{x \in \{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{D}_{i}(x,h) \right]^2 
@@ -113,7 +125,6 @@ When minimizing the sum of squared errors, the optimal coefficients are denoted 
 \end{eqnarray}
 This separation allows us to analytically optimize for each bin separately
 \begin{eqnarray}
-\label{eqn:regressogram2}
 \min_{ \left\{ b_{0}(x,h) \right\} } \sum_{i}^{n}\left[e_{i}\right]^2
 &=& \min_{ \left\{ b_{0}(x,h) \right\} } \sum_{i}^{n(x,h)}\left[\hat{Y}_{i}- b_{0}\left(x,h\right) \right]^2,
 \end{eqnarray}
@@ -162,10 +173,13 @@ aggregate(wage ~ xcc, data=dat, mean)
 To let the slope vary across the range of $X$ instead of just the level, we add a slope term within each bin.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-A *piecewise regression* (also *segmented regression*) divides $X$ into bins and runs a separate simple linear regression on each bin. Within a bin the relationship is a straight line; across bins the slope and intercept can change.
+A *piecewise regression* (also *segmented regression*) divides $X$ into bins and runs a separate simple linear regression on each bin.
+Within a bin the relationship is a straight line; across bins the slope and intercept can change.
 :::
 
-Piecewise regression is useful when the relationship is approximately linear in pieces but the slope itself changes — for example, returns to schooling that flatten after a degree, or marginal cost curves that kink at capacity. Compared to the regressogram, it captures within-bin trends instead of just within-bin averages; compared to a single line, it lets the slope bend at bin boundaries.
+Piecewise regression is useful when the relationship is approximately linear in pieces but the slope itself changes.
+Returns to schooling might flatten after a degree, for example, or marginal cost curves might kink at capacity.
+Compared to the regressogram, it captures within-bin trends instead of just within-bin averages; compared to a single line, it lets the slope bend at bin boundaries.
 
 ```{r}
 # Data
@@ -226,7 +240,8 @@ all( pred2 - unlist(pred2B) < 1e-10 )
 :::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Compare a simple regression to a regressogram and a piecewise regression. Examine the relationship between 'Murder' and 'Urbanization' in the `USArrests` dataset. 
+Compare a simple regression to a regressogram and a piecewise regression.
+Examine the relationship between 'Murder' and 'Urbanization' in the `USArrests` dataset. 
 
 ```{r}
 xy <- USArrests[, c('Murder', 'UrbanPop')]
@@ -294,11 +309,16 @@ legend('topleft',
 ```
 :::
 
-For many things, a simple linear regression, regressograms, or piecewise regression is "good enough". Simple linear regressions struggle with nonlinear relationships but are very easy to run with a computer. Regressograms and piecewise regressions are intuitive ways to capture nonlinear relationships that are computationally efficient but have obvious problems where the bins change. Sometimes we want smoother predictions or to estimate derivatives (gradients). To cover more advanced regression methods that do those things, we will need to first learn about kernel density estimation.
+For many things, a simple linear regression, regressograms, or piecewise regression is "good enough".
+Simple linear regressions struggle with nonlinear relationships but are very easy to run with a computer.
+Regressograms and piecewise regressions are intuitive ways to capture nonlinear relationships that are computationally efficient but have obvious problems where the bins change.
+Sometimes we want smoother predictions or to estimate derivatives (gradients).
+To cover more advanced regression methods that do those things, we will need to first learn about kernel density estimation.
 
 
 #### **Weighted Regression**.{-}
-Interestingly, we can obtain the same statistics from weighted least squares regression. For some specific design point, $x$, we can find $\hat{b}(x, h)$ by minimizing
+Interestingly, we can obtain the same statistics from weighted least squares regression.
+For some specific design point, $x$, we can find $\hat{b}(x, h)$ by minimizing
 \begin{eqnarray}
 \sum_{i}^{n}\left[ e_{i} \right]^2  \hat{D}_{i}(x,h) &=& \sum_{i}^{n}\left[ \hat{Y}_{i}- b_{0}(x,h) - b_{1}(x,h) \hat{X}_{i} \right]^2  \hat{D}_{i}(x,h) \\
 &=& \sum_{i}^{n(x_{1},h)}\left[ \hat{Y}_{i}- b_{0}(x_{1},h) - b_{1}(x_{1},h) \hat{X}_{i}  \right]^2  \hat{D}_{i}(x_{1},h) + ... \sum_{i}^{n(x_{L},h)}\left[ \hat{Y}_{i}- b_{0}(x_{L},h) - b_{1}(x_{L},h) \hat{X}_{i}  \right]^2  \hat{D}_{i}(x_{L},h) \\
@@ -312,7 +332,8 @@ k_{U}\left( \hat{X}_{i}, x, h \right)
 &=& \frac{\mathbf{1}\left(\frac{|\hat{X}_{i}-x|}{h} \leq 1\right)}{2} 
 = \frac{\mathbf{1}\left( \hat{X}_{i} \in \left[ x-h, x + h\right] \right) }{2} \\
 \end{eqnarray}
-with is nearly identical to $\hat{D}_{i}(x,h)/ 2$, but uses intervals $[]$ instead of $(]$. As such we can see that
+with is nearly identical to $\hat{D}_{i}(x,h)/ 2$, but uses intervals $[]$ instead of $(]$.
+As such we can see that
 \begin{eqnarray}
 \sum_{i}^{n}\left[ e_{i} \right]^2 k_{U}\left( \hat{X}_{i}, x, h \right)
 &\approx& \sum_{i}^{n}\left[ e_{i} \right]^2 \hat{D}_{i}(x,h) / 2 \\
@@ -334,8 +355,13 @@ h <- 1
 k3_weights <- dunif( abs(x-3)/h, -1, 1) #(x >= 2)*(x <= 4)
 k3_weights
 
-yhat_3 <- sum(k3_weights*y)
+# Divide by the total so the weights sum to one
+w3 <- k3_weights/sum(k3_weights)
+yhat_3 <- sum(w3*y)
 yhat_3
+
+# Equals the simple average of the y's within h of x=3
+mean( y[ abs(x-3) <= h ] )
 ```
 
 
@@ -347,7 +373,7 @@ dat <- Wages1[order(Wages1[, 'school']), c('wage', 'school')]
 x <- 4.5
 h <- 9.036/2 #makes bin large enough to include 0: (-0.018, 9]
 k <- abs(dat[, 'school']-x) /h
-k_weights <- dunif(k) / (2*h)
+k_weights <- dunif(k, -1, 1) # the uniform kernel k_U
 preg_k  <- lm(wage ~ school, data=dat, weights=k_weights)
 predict(preg_k, newdata=data.frame(school=x))
 
@@ -369,13 +395,14 @@ $$\min_{b_{0}(x, h)} \sum_{i=1}^{n}\left[\hat{Y}_{i} - b_{0}(x, h) \right]^{2} k
 where $k(\hat{X}_{i}, x, h)$ is a kernel weight that down-weights observations far from $x$.
 :::
 
-The locally constant regression is useful as the simplest smoother that produces a continuous fitted curve: at each $x$ it returns a kernel-weighted average of nearby $\hat{Y}_{i}$. With a uniform kernel and exclusive bins it reduces to a regressogram, so the regressogram is just its simplest special case.
+The locally constant regression is useful as the simplest smoother that produces a continuous fitted curve: at each $x$ it returns a kernel-weighted average of nearby $\hat{Y}_{i}$.
+With a uniform kernel and exclusive bins it reduces to a regressogram, so the regressogram is just its simplest special case.
 
-For some intuition, consider a point $x$ and the model $\hat{Y}_{i} = b_{0}(x, h) + e_{i}$. The weighted OLS estimator with uniform kernel weights $k_{U}$ yields
-\begin{eqnarray} \label{eqn:lcls}
+For some intuition, consider a point $x$ and the model $\hat{Y}_{i} = b_{0}(x, h) + e_{i}$.
+The weighted OLS estimator with uniform kernel weights $k_{U}$ yields
+\begin{eqnarray}
 & & \min_{b_{0}(x,h)}~ \sum_{i}^{n}\left[e_{i} \right]^2 k_{U}\left( \hat{X}_{i}, x, h \right) \\
 \Rightarrow & & -2 \sum_{i}^{n}\left[\hat{Y}_{i}- b_{0}(x, h) \right] k_{U}\left(\hat{X}_{i}, x, h\right) = 0\\
-\label{eqn:lcls1}
 \Rightarrow & & \hat{b}_{0}(x)
 = \frac{\sum_{i} \hat{Y}_{i} k_{U} \left( \hat{X}_{i}, x, h \right) }{ \sum_{i} k_{U}\left( \hat{X}_{i}, x, h \right) }
 = \sum_{i} \hat{Y}_{i} \left[ \frac{ k_{U} \left( \hat{X}_{i}, x, h \right) }{ \sum_{i} k_{U}\left( \hat{X}_{i}, x, h \right)} \right]
@@ -393,7 +420,8 @@ As such, the regressogram is more crude but can be estimated more easily.
 
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-See how the results are nearly identical below. Then consider different design points.
+See how the results are nearly identical below.
+Then consider different design points.
 ```{r}
 #library(Ecdat) # Data from before
 #dat <- Wages1[order(Wages1[, 'school']), c('wage', 'school')]
@@ -419,7 +447,8 @@ When $n$ is small, $\hat{b}_{U}(x, h)$ is typically estimated for each unique ob
 For large datasets, you can select a subset or evenly spaced values of $x$ for which to make predictions.
 
 If $\hat{X}_{i}$ represents time, then the local constant regressions is also called a *moving average*.
-We can create a *weighted* moving average by using a different distribution. I.e. using the Normal `dnorm` instead of the Uniform `dunif`.
+We can create a *weighted* moving average by using a different distribution.
+I.e. using the Normal `dnorm` instead of the Uniform `dunif`.
 
 The basic idea also generalizes other kernels. 
 As such, a kernel regression using uniform weights is often called a "naive kernel regression". 
@@ -474,7 +503,7 @@ pred_fun <- function(x0, h){
     # Assign equal weight to observations within h distance to x0
     # 0 weight for all other observations
     ki <- abs(dat[, 'school']-x0)/h
-    ki <- dunif(ki)/(2*h) ## Could change, e.g. dnorm(ki)/h
+    ki <- dunif(ki, -1, 1) ## The uniform kernel k_U; could change, e.g. dnorm(ki)
     wi <- ki/sum(ki, na.rm=TRUE) # always sum to 1 (for edge-effects)
     # run regression with weighted data
     llls_i <- lm(wage ~ school, data=dat, weights=wi)
@@ -544,13 +573,18 @@ legend('topleft', title='Locally Linear',
    Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing.
    Finish with your own questions about whatever you found hardest.
 
-2. Explain the difference between a regressogram and a local linear regression. In what sense does increasing the number of bins in a regressogram create a bias-variance tradeoff?
+2. Explain the difference between a regressogram and a local linear regression.
+   In what sense does increasing the number of bins in a regressogram create a bias-variance tradeoff?
 
-3. Using the `Wages1` dataset from the `Ecdat` package, fit a regressogram with 4 bins and a piecewise regression with 4 bins for the relationship between `wage` and `school`. Compute the predicted value at `school = 10` for each model.
+3. Using the `Wages1` dataset from the `Ecdat` package, fit a regressogram with 4 bins and a piecewise regression with 4 bins for the relationship between `wage` and `school`.
+   Compute the predicted value at `school = 10` for each model.
 
-4. Using the `USArrests` dataset, write R code to estimate a local linear regression of `Murder` on `UrbanPop` using uniform kernel weights with bandwidth $h = 10$. Compute predictions at design points `X0 <- seq(40, 80, by = 10)` and plot them over the scatterplot.
+4. Using the `USArrests` dataset, write R code to estimate a local linear regression of `Murder` on `UrbanPop` using uniform kernel weights with bandwidth $h = 10$.
+   Compute predictions at design points `X0 <- seq(40, 80, by = 10)` and plot them over the scatterplot.
 
-5. The chapter derives the optimal locally constant coefficient $\hat{b}_{0}(x,h)$ but leaves the local linear case as an exercise. Starting from the weighted objective $\sum_{i} [\hat{Y}_{i} - b_{0} - b_{1}\hat{X}_{i}]^2 \, k_{U}(\hat{X}_{i}, x, h)$, set the partial derivatives with respect to $b_{0}$ and $b_{1}$ to zero. Show that the solution is the simple-regression formula applied to the kernel-weighted data: $\hat{b}_{1}(x,h) = \hat{C}_{XY}(x,h)/\hat{V}_{X}(x,h)$ and $\hat{b}_{0}(x,h) = \hat{M}_{Y}(x,h) - \hat{b}_{1}(x,h)\hat{M}_{X}(x,h)$.
+5. The chapter derives the optimal locally constant coefficient $\hat{b}_{0}(x,h)$ but leaves the local linear case as an exercise.
+   Starting from the weighted objective $\sum_{i} [\hat{Y}_{i} - b_{0} - b_{1}\hat{X}_{i}]^2 \, k_{U}(\hat{X}_{i}, x, h)$, set the partial derivatives with respect to $b_{0}$ and $b_{1}$ to zero.
+   Show that the solution is the simple-regression formula applied to the kernel-weighted data: $\hat{b}_{1}(x,h) = \hat{C}_{XY}(x,h)/\hat{V}_{X}(x,h)$ and $\hat{b}_{0}(x,h) = \hat{M}_{Y}(x,h) - \hat{b}_{1}(x,h)\hat{M}_{X}(x,h)$.
 
 #### **Further Reading**. {-}
 
@@ -560,5 +594,7 @@ legend('topleft', title='Locally Linear',
 
 #### **Recall** {-}
 
-This chapter let the wage-schooling relationship bend by fitting local models on the `Wages1` data: regressograms (bin means), piecewise regression (bin lines), locally constant kernel regression, and locally linear regression. The three-observation worked example $\{(1, 2), (4, 4), (12, 3)\}$ split into two bins at $h=9/2$ gave regressogram coefficients $\hat{b}_{0}(x=4.5)=(2+4)/2=3$ and $\hat{b}_{0}(x=13.5)=3$. The next chapter asks how to evaluate these fits and how much they vary across samples: model-fit metrics ($\hat{MSE}$ and $\hat{MAPE}$), the bias-variance tradeoff, bootstrap confidence bands, gradient summaries, and consistency.
+This chapter let the wage-schooling relationship bend by fitting local models on the `Wages1` data: regressograms (bin means), piecewise regression (bin lines), locally constant kernel regression, and locally linear regression.
+The three-observation worked example $\{(1, 2), (4, 4), (12, 3)\}$ split into two bins at $h=9/2$ gave regressogram coefficients $\hat{b}_{0}(x=4.5)=(2+4)/2=3$ and $\hat{b}_{0}(x=13.5)=3$.
+The next chapter asks how to evaluate these fits and how much they vary across samples: model-fit metrics ($\hat{MSE}$ and $\hat{MAPE}$), the bias-variance tradeoff, bootstrap confidence bands, gradient summaries, and consistency.
 
