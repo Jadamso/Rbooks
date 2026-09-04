@@ -17,8 +17,7 @@ To publish online,
 
 To clear freeze entries for chapters that no longer exist,
 
-    cd book && for d in _freeze/*/; do stem=$(basename "$d"); [ ! -f "${stem}.qmd" ] && rm -rf "$d"; done
-    cp -r ./Templates/Figures_Manual/* ./book/_book/Figures_Manual
+    for d in book/_freeze/*/; do stem=$(basename "$d"); [ "$stem" = site_libs ] && continue; [ -f "book/${stem}.qmd" ] || rm -rf "$d"; done
 
 To publish a tagged release, 
 

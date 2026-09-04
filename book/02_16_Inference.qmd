@@ -1,0 +1,717 @@
+
+# Inference
+***
+
+Often, we are interested in *gradients*: how $Y$ changes with $X$.
+The linear model from [Simple Regression](02_14_SimpleRegression.qmd) depicts this as a single constant, $\hat{b}_{1}$, but the local-regression models from [Local Regression](02_15_LocalRegression.qmd) do not.
+A great first step to assess gradients is to plot the predicted values over the explanatory values.
+A great second step is to compute gradients and summarize them.
+In any case, we compute confidence intervals to account for variability across samples.
+
+## Applied Methods
+
+#### **LOESS** {-}
+
+When $\hat{X}_{i}$ is unevenly distributed across its range, a fixed bandwidth $h$ leaves some local fits with many neighbors and others with very few.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+*LOESS* (locally estimated scatterplot smoothing) fits a local linear (or quadratic) regression at each design point using an *adaptive bandwidth*: instead of fixing $h$, it includes a fixed *share* of the data at each $x$, set by the parameter `span`.
+:::
+
+LOESS is useful for smoothing data with uneven $X$: because the *share* of points in each neighborhood is fixed, the local fit has roughly the same effective sample size everywhere, even where the data are sparse.
+The `span` parameter plays the role $h$ does for fixed-bandwidth methods, so smaller spans mean narrower neighborhoods, more flexibility, and noisier curves, while larger spans pool more data and smooth more aggressively.
+
+```{r}
+## Data
+library(Ecdat)
+dat <- Wages1[order(Wages1[, 'school']), c('wage', 'school')]
+
+# Fit loess with the default span
+reg_lo <- loess(wage ~ school, data=dat)
+
+plot(wage ~ school, pch=16, col=grey(0, .1), data=dat,
+    main=NA, xlab='School', ylab='Wage')
+lo_col <- adjustcolor('#20B2AA', alpha.f=.75)  # teal green
+lines(dat[, 'school'], predict(reg_lo),
+    col=lo_col, type='o', pch=2)
+
+legend('topleft',
+    legend=sprintf('Loess (span = %.2f)', reg_lo$pars$span),
+    lty=1, col=lo_col, cex=.8)
+```
+
+
+#### **Confidence Bands**. {-}
+
+A single fitted curve does not show how much that curve would change in another sample, so we draw a region around it.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *confidence band* is a confidence interval drawn at every design point: a region around the fitted curve that captures sample-to-sample variability.
+A bootstrap confidence band collects the predictions from many resamples and reads off pointwise quantiles at each $x$.
+:::
+
+Confidence bands are useful for showing where a fitted curve is well-supported by the data and where another sample could move it.
+The width is typically wider at the edges of $X$ (few neighbors) and narrower in the dense middle, which is itself a quick visual diagnostic.
+The same bootstrap that produces the band also produces standard errors for any single design point and for the gradient summaries below.
+
+```{r}
+# Same loess fit as above (default span)
+pred_design <- data.frame(school=unique(dat[, 'school']))
+preds_lo <- predict(reg_lo, newdata=pred_design)
+
+plot(wage ~ school, pch=16, col=grey(0, .1), data=dat,
+    main=NA, xlab='School', ylab='Wage')
+lo_col <- adjustcolor('#20B2AA', alpha.f=.5)  # same teal green
+lines(pred_design[, 'school'], preds_lo,
+    col=lo_col, type='o', pch=2)
+
+# Boot CI with the same default-span loess
+boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
+for (b in 1:399) {
+    xy_b <- dat[sample(nrow(dat), replace=TRUE), ]
+    reg_b <- loess(wage ~ school, data=xy_b)
+    boot_lo[, b] <- predict(reg_b, newdata=pred_design)
+}
+boot_cb <- apply(boot_lo, 1, quantile,
+    probs=c(.025, .975), na.rm=TRUE)
+
+# Plot CI
+polygon(
+    c(pred_design[[1]], rev(pred_design[[1]])),
+    c(boot_cb[1, ], rev(boot_cb[2, ])),
+    col=lo_col,
+    border=NA)
+```
+
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Construct a bootstrap confidence band for the following loess regression
+```{r}
+# Adaptive-width subsamples with non-uniform weights
+xy <- USArrests[, c('UrbanPop', 'Murder')]
+xy0 <- xy[order(xy[, 'UrbanPop']), ]
+names(xy0) <- c('x', 'y')
+
+plot(y ~ x, pch=16, col=grey(0, .5), data=xy0,
+    main=NA, xlab='Urban Population', ylab='Murder Arrests')
+reg_lo2 <- loess(y ~ x, data=xy0, span=.6)
+
+red_col <- rgb(1, 0, 0, .5)
+lines(xy0[, 'x'], predict(reg_lo2),
+    col=red_col, type='o', pch=2)
+```
+:::
+
+#### **Bias-Variance Tradeoff**. {-}
+
+A better fit on the data you have is not automatically better, because a model can hit every point in the sample and still predict new observations poorly.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *bias-variance tradeoff* describes two sources of model error: *bias* (systematic miss from over-smoothing) and *variance* (sample-to-sample wobble from under-smoothing).
+:::
+
+The bias-variance tradeoff is useful for thinking about *why* a tuning parameter matters and how to set it.
+For local regressions, the bandwidth $h$ (equivalently, the LOESS *span*) is the lever that governs the tradeoff: large $h$ trades variance down for bias up, small $h$ does the opposite.
+A loess fit narrow enough to interpolate every point has $\hat{MSE}=0$ on the fit data but generalizes poorly because it has just copied the noise.
+
+* *Wide window (large span, large $h$)*: each local fit uses many observations, so the fitted curve barely changes from sample to sample (low variance).
+  But a nearly flat fit over a wide region cannot follow a relationship that bends, so it is systematically off (high bias).
+* *Narrow window (small span, small $h$)*: each local fit uses few observations, so the fitted curve chases noise and swings from sample to sample (high variance).
+  But a narrow window can track curvature closely (low bias).
+
+```{r}
+# Two-span loess with bootstrap confidence bands on one scatterplot
+pred_design <- data.frame(school=sort(unique(dat[, 'school'])))
+spans <- c(4.0, 0.4)
+B <- 399
+span_col <- hcl.colors(3, alpha=.9)[c(1, 3)]
+
+plot(wage ~ school, data=dat, pch=16, col=grey(0, .1),
+    main=NA, xlab='School', ylab='Wage')
+
+for (s in seq_along(spans)) {
+    sp <- spans[s]
+    fit <- loess(wage ~ school, data=dat, span=sp)
+    boot_preds <- matrix(NA, nrow=nrow(pred_design), ncol=B)
+    for (b in 1:B) {
+        d_b <- dat[sample(nrow(dat), replace=TRUE), ]
+        fit_b <- loess(wage ~ school, data=d_b, span=sp)
+        boot_preds[, b] <- predict(fit_b, newdata=pred_design)
+    }
+    boot_cb <- apply(boot_preds, 1, quantile,
+        probs=c(.025, .975), na.rm=TRUE)
+
+    polygon(c(pred_design[, 'school'], rev(pred_design[, 'school'])),
+        c(boot_cb[1, ], rev(boot_cb[2, ])),
+        col=adjustcolor(span_col[s], alpha.f=0.3), border=NA)
+    lines(pred_design[, 'school'], predict(fit, newdata=pred_design),
+        col=span_col[s], lwd=2)
+}
+
+legend('topleft', title='LOESS span',
+    legend=paste0(spans),
+    col=span_col, lty=1, lwd=2, cex=.8)
+```
+
+With span $4.0$ the fitted curve is very smooth and stable, and the bootstrap band sits tightly around it.
+With span $0.4$ the curve tracks more local variation, and the bootstrap band fans wider, directly displaying the variance penalty for chasing local detail.
+(`school` is integer-valued with only $14$ distinct values, so spans below about $0.4$ collapse to single-point neighborhoods and `loess()` cannot fit.)
+Choosing the span (the bandwidth $h$) means trading bias against variance.
+We make this tradeoff precise in the [Theory](#theory) section below, where the bias-variance decomposition gives a formal expression and simulations check both pieces.
+
+Note that the simple linear regression is nested as a special case with $span \to \infty$.
+
+#### **Model Fit** {-}
+
+Each local model produces fitted values $\hat{y}_{i}$ and residuals $\hat{e}_{i} = \hat{Y}_{i} - \hat{y}_{i}$.
+To compare models, we often summarize the residuals with a single number.
+
+
+The *mean squared error* averages the squared residuals,
+$$\begin{aligned}
+\hat{MSE} &= \frac{1}{n}\sum_{i=1}^{n} \hat{e}_{i}^2 = \frac{1}{n}\sum_{i=1}^{n} \left(\hat{Y}_{i} - \hat{y}_{i}\right)^2.
+\end{aligned}$$
+Squaring penalizes large misses heavily, and the units are the square of $\hat{Y}_{i}$ (squared dollars for wages).
+
+
+The *mean absolute percentage error* instead averages each residual relative to its observed value,
+$$\begin{aligned}
+\hat{MAPE} &= \frac{100}{n}\sum_{i=1}^{n} \left| \frac{\hat{e}_{i}}{\hat{Y}_{i}} \right|.
+\end{aligned}$$
+MAPE is unit-free, which makes it easy to communicate, but it is undefined when $\hat{Y}_{i}=0$ and over-weights observations with small $\hat{Y}_{i}$.
+MSE is easier to analyze theoretically (formally deriving the bias-variance tradeoff)
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Suppose three workers have wages $\hat{Y}=(8, 10, 15)$ and a model predicts $\hat{y}=(9, 9, 14)$.
+The residuals are $\hat{e}=(-1, 1, 1)$, so
+$$\begin{aligned}
+\hat{MSE} &= \frac{(-1)^2 + 1^2 + 1^2}{3} = \frac{3}{3} = 1, \\
+\hat{MAPE} &= \frac{100}{3}\left( \frac{1}{8} + \frac{1}{10} + \frac{1}{15} \right) \approx \frac{100}{3}(0.292) \approx 9.7.
+\end{aligned}$$
+The model misses by $1$ squared-dollar on average, or about $10\%$ of each wage.
+```{r}
+Y     <- c(8, 10, 15)
+y_hat <- c(9, 9, 14)
+e <- Y - y_hat
+mean(e^2)           # MSE
+100*mean(abs(e/Y))  # MAPE
+```
+:::
+
+We can compute these for the linear, regressogram, and piecewise models on the wage~school data.
+```{r}
+library(Ecdat)
+dat <- Wages1[order(Wages1[, 'school']), c('wage', 'school')]
+
+# Three models for wage on schooling
+reg_lin <- lm(wage ~ school, data=dat)        # globally linear
+dat[, 'xcf'] <- cut(dat[, 'school'], 3)
+reg_rgram <- lm(wage ~ xcf, data=dat)         # regressogram, 3 bins
+reg_pw    <- lm(wage ~ xcf*school, data=dat)  # piecewise, 3 bins
+
+# Mean squared error and mean absolute percentage error
+fit_stats <- function(model){
+    e <- resid(model)
+    Y <- dat[, 'wage']
+    c(MSE=mean(e^2), MAPE=100*mean(abs(e/Y)))
+}
+round(rbind(
+    Linear       = fit_stats(reg_lin),
+    Regressogram = fit_stats(reg_rgram),
+    Piecewise    = fit_stats(reg_pw)), 2)
+```
+
+## Relationships
+
+#### **Gradients** {-}
+
+Once the fitted curve can bend, "the slope" is no longer a single number; we want the slope locally at each $x$.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *gradient* $\hat{b}_{1}(x)$ at the design point $x$ is the rate of change of the fitted value $\hat{y}(x)$ with respect to $\hat{X}_{i}$ in a neighborhood of $x$.
+:::
+
+The gradient is useful as the local analog of the simple-regression slope: for a globally linear model it equals the single coefficient $\hat{b}_{1}$ everywhere; for a local model it varies with $x$ and traces out how the marginal relationship changes across the range of $X$.
+Three common ways to summarize gradients are:
+
+1. For all methods, including regressograms, you can approximate gradients with small finite differences.
+   For some small difference $d$, we can manually compute
+$$\begin{aligned}
+\hat{b}_{1}(x) &= \frac{ \hat{y}(x+\frac{d}{2}) - \hat{y}(x-\frac{d}{2})}{d},
+\end{aligned}$$
+
+2. When using split-sample regressions or local linear regressions, you can use the estimated slope coefficients $\hat{b}_{1}(x)$ as a gradient estimate.^[One benefit of LLLS is that it is theoretically motivated: assuming that $Y_{i}=m(X_{i}) + \epsilon_{i}$, we can then take a Taylor approximation: $m(X_{i}) + \epsilon_{i} \approx m(x) + m'(x)[X_{i}-x] + \epsilon_{i} = [m(x) - m'(x)x ] + m'(x)X_{i} + \epsilon_{i} = b_{0}(x,h) + b_{1}(x,h) X_{i}$.]
+
+3. More sophisticated methods that are beyond the scope of this class.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Suppose a local model predicts wages near $x=12$ years of schooling: $\hat{y}(11.5)=9.2$ and $\hat{y}(12.5)=10.4$ (dollars per hour).
+With step $d=1$, the finite-difference gradient at $x=12$ is
+$$
+\hat{b}_{1}(12) = \frac{\hat{y}(12.5) - \hat{y}(11.5)}{d} = \frac{10.4 - 9.2}{1} = 1.2.
+$$
+Near $12$ years of schooling, each extra year is associated with about $\$1.20$ more per hour.
+```{r}
+d <- 1
+y_hi <- 10.4  # prediction at x + d/2
+y_lo <- 9.2   # prediction at x - d/2
+(y_hi - y_lo) / d
+```
+:::
+
+After computing gradients, you can summarize them in various plots: Histograms and Scatterplots.
+The confidence band only shows variability across samples, whereas these plots show variability within-sample.
+You can also plot all Gradients with their CI's [@Chaudhuri1999; @HendersonEtAl2012].
+
+```{r}
+## Gradients
+pred_lo <- predict(reg_lo)
+grad_dx <- diff(dat[, 'school'])
+grad_dy <- diff(pred_lo)
+grad_lo <-grad_dy/grad_dx
+
+## Visual Summary
+par(mfrow=c(1, 2))
+hist(grad_lo,  breaks=20,
+    border=NA, freq=FALSE,
+    col=lo_col,
+    xlab=expression(d~hat(y)/dx),
+    main=NA) ## Distributional Summary
+  
+## Visual Summary 2
+grad_x  <- dat[, 'school'][-1]
+plot(grad_x+grad_dx, grad_lo,
+    xlab='x', ylab=expression(d~hat(y)/dx),
+    col=lo_col, pch=16, main=NA) ## Diminishing Returns?
+```
+
+A different kind of summary collapses the whole gradient curve into a single number for tabular reporting.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *gradient at the mean* (sometimes called the *marginal effect at the mean*) evaluates the gradient at a single design point:
+$$\hat{b}_{1}(x=\hat{M}_{X}).$$
+The *mean of the gradients* (sometimes called the *average effect* or *mean marginal effect*) averages $\hat{b}_{1}(x)$ across every observation in the dataset:
+$$\frac{1}{n}\sum_{i=1}^{n} \hat{b}_{1}(x=\hat{X}_{i}).$$
+:::
+
+These two summaries are useful for different questions: the *gradient at the mean* answers "what is the slope at a typical $X$?", while the *mean of the gradients* answers "what is the average slope across the sample?".
+The two coincide for a globally linear model but can differ for any other, sometimes substantially when the relationship bends.
+You may also be interested in the *median* of the gradients, or in measures of *effect heterogeneity* like the interquartile range or standard deviation of the gradients.
+Such statistics can be presented in tabular form: "mean gradient (sd gradient)" or "mean gradient (estimated SE), sd gradient (estimated SE)".
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+These two summaries usually differ.
+Suppose a local model has gradients $\hat{b}_{1}(x)$ at schooling levels $x=(8,10,12,14,16)$ equal to $(0.4, 0.8, 1.2, 0.9, 0.3)$, and the sample mean schooling is $\hat{M}_{X}=12$.
+
+* The *marginal effect at the mean* is the single gradient at $x=\hat{M}_{X}$: $\hat{b}_{1}(12) = 1.2$.
+* The *mean of the gradients* averages over all five points: $\frac{0.4+0.8+1.2+0.9+0.3}{5} = \frac{3.6}{5} = 0.72$.
+
+They differ because the gradient is not constant: here the relationship is steepest near the mean and flatter at the extremes.
+```{r}
+grads <- c(0.4, 0.8, 1.2, 0.9, 0.3)
+grads[3]      # marginal effect at the mean (x = 12)
+mean(grads)   # mean of the gradients
+```
+:::
+
+```{r}
+## Tabular Summary
+tab_stats <- c(
+    Mean=mean(grad_lo, na.rm=TRUE),
+    SD=sd(grad_lo, na.rm=TRUE))
+
+## Use bootstrap to approximate sampling dist
+boot_stats <- matrix(NA, nrow=299, ncol=2)
+colnames(boot_stats) <- c('Mean SE', 'SD SE')
+for(b in 1:nrow(boot_stats)){
+    xy_b <- dat[sample(1:nrow(dat), replace=TRUE), ]
+    reg_lo <- loess(wage ~ school, data=xy_b, span=.6)
+    pred_lo <- predict(reg_lo)
+    grad_lo <- diff(pred_lo)/diff(xy_b[, 'school'])
+    dydx_mean <- mean(grad_lo, na.rm=TRUE)
+    dydx_sd <- sd(grad_lo, na.rm=TRUE)
+    boot_stats[b, 1] <- dydx_mean
+    boot_stats[b, 2] <- dydx_sd
+}
+## SEs and CIs
+boot_se <- apply(boot_stats, 2, sd)
+boot_quants <- apply(boot_stats, 2, quantile, probs=c(0.025, 0.975))
+boot_quants <- apply( round(boot_quants, 3), 2, paste0, collapse=', ')
+
+## Printing
+tab_regstyle <- data.frame(
+  Estimate  = round(tab_stats, 3),
+  SE = paste0('(', round(boot_se, 3), ')'),
+  CI_95 = paste0('[', boot_quants, ']')
+)
+tab_regstyle
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| results: asis
+
+library(knitr)
+tab <- data.frame(
+  'Estimate' = round(tab_stats, 2),
+  'Bootstrap SE'  =  paste0('(', round(boot_se, 3), ')'),
+  'Bootstrap 95 CI' = paste0('[', boot_quants, ']')
+ )
+kable(
+  tab,
+  format='html',
+  digits = 3,
+  align = 'l',
+  caption = 'Summary of Local Gradients')
+```
+
+
+#### **Hypothesis Testing**.{-}
+
+We can test whether the mean gradient is statistically different from zero.
+We can compute the p-value directly from the bootstrap distribution.
+Under $H_0$, the mean gradient equals zero, so we center the bootstrap distribution at zero and ask how often it produces values as extreme as the observed mean gradient.
+
+```{r}
+## P-value via null bootstrap ECDF
+## Center bootstrap means at zero (impose H0)
+boot_centered <- boot_stats[, 'Mean SE'] - mean(boot_stats[, 'Mean SE'])
+
+## ECDF of centered bootstrap distribution
+boot_ecdf <- ecdf(boot_centered)
+
+## Two-sided p-value: P(|centered mean| >= |observed mean|)
+p_boot <- 1 - boot_ecdf(abs(tab_stats['Mean'])) +
+              boot_ecdf(-abs(tab_stats['Mean']))
+
+cat('Bootstrap p-value (ECDF):', format.pval(p_boot, digits=3), '\n')
+```
+
+The small p-value indicates that the mean gradient is statistically distinguishable from zero: on average, wages increase with schooling.
+
+We can also use a normal approximation.
+Under the null hypothesis $H_0$: the mean gradient equals zero, we use the test statistic
+$$t = \frac{\text{mean gradient}}{\text{SE(mean gradient)}}$$
+and the p-value comes from the standard normal distribution.
+
+```{r}
+## P-value for mean gradient
+## Standard Normal Approximation
+t_stat <- tab_stats['Mean'] / boot_se['Mean SE']
+p_val  <- 2 * pnorm(-abs(t_stat))
+
+cat('Mean gradient:', round(tab_stats['Mean'], 3), '\n')
+cat('Bootstrap SE: ', round(boot_se['Mean SE'], 3), '\n')
+cat('t-statistic:  ', round(t_stat, 3), '\n')
+cat('p-value:      ', format.pval(p_val, digits=3), '\n')
+```
+
+::: {.callout-tip icon=false collapse="true" title="Test Yourself"}
+Compute the t-statistic and p-value using jackknife standard errors instead of the bootstrap.
+
+```{r}
+## Jackknife SE for mean gradient
+n <- nrow(dat)
+jack_means <- numeric(n)
+for (i in 1:n) {
+    dat_i  <- dat[-i, ]
+    reg_i  <- loess(wage ~ school, data=dat_i, span=.6)
+    pred_i <- predict(reg_i)
+    grad_i <- diff(pred_i) / diff(dat_i[, 'school'])
+    jack_means[i] <- mean(grad_i, na.rm=TRUE)
+}
+
+## Jackknife SE
+jack_se <- sqrt((n - 1) / n * sum((jack_means - mean(jack_means))^2))
+
+## t-statistic and p-value
+t_jack <- tab_stats['Mean'] / jack_se
+p_jack <- 2 * pnorm(-abs(t_jack))
+
+cat('Jackknife SE: ', round(jack_se, 3), '\n')
+cat('t-statistic:  ', round(t_jack, 3), '\n')
+cat('p-value:      ', format.pval(p_jack, digits=3), '\n')
+```
+:::
+
+
+
+## Theory
+
+We use simulations where the true data-generating process is known to better understand different models.
+
+#### **Sampling Distributions**.{-}
+
+Bootstrap confidence bands are approximations: they estimate how much predicted values vary from sample to sample.
+The simulation below compares a bootstrap CI constructed from one sample to the true sampling variation observed across many independent samples.
+
+```{r}
+## Ages
+Xmx <- 70
+Xmn <- 15
+
+##Generate Sample Data
+dat_sim <- function(n=1000){
+    X <- seq(Xmn, Xmx, length.out=n)
+    ## Random Productivity
+    e <- runif(n, 0, 1E6)
+    beta <-  1E-10*exp(1.4*X -.015*X^2)
+    Y    <-  (beta*X + e)/10
+    return(data.frame(Y, X))
+}
+dat0 <- dat_sim(1000)
+dat0 <- dat0[order(dat0[, 'X']), ]
+
+## Data from one sample
+plot(Y ~ X, data=dat0, pch=16, col=grey(0, .05),
+    main=NA, ylab='Yearly Productivity ($)', xlab='Age' )
+reg_lo <- loess(Y ~ X, data=dat0, span=.8)
+
+## Plot Bootstrap CI for Single Sample
+pred_design <- data.frame(X=seq(Xmn, Xmx))
+preds_lo <- predict(reg_lo, newdata=pred_design)
+boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
+for (b in 1:399) {
+    dat0_i <- dat0[sample(nrow(dat0), replace=TRUE), ]
+    reg_i <- loess(Y ~ X, data=dat0_i, span=.8)
+    boot_lo[, b] <- predict(reg_i, newdata=pred_design)
+}
+boot_cb <- apply(boot_lo, 1, quantile,
+    probs=c(.025, .975), na.rm=TRUE)
+polygon(
+    c(pred_design[[1]], rev(pred_design[[1]])),
+    c(boot_cb[1, ], rev(boot_cb[2, ])),
+    col=hcl.colors(3, alpha=.25)[2],
+    border=NA)
+
+# Construct CI across Multiple Samples
+sample_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
+for (b in 1:399) {
+    xy_b <- dat_sim(1000) #Entirely new sample
+    reg_b <- loess(Y ~ X, data=xy_b, span=.8)
+    sample_lo[, b] <- predict(reg_b, newdata=pred_design)
+}
+ci_lo <- apply(sample_lo, 1, quantile,
+    probs=c(.025, .975), na.rm=TRUE)
+polygon(
+    c(pred_design[[1]], rev(pred_design[[1]])),
+    c(ci_lo[1, ], rev(ci_lo[2, ])),
+    col=grey(0, alpha=.25),
+    border=NA)
+```
+
+#### **Bias**.{-}
+
+The plot below shows the average prediction across $B$ samples against the true mean.
+Notice that LOESS tracks the true mean closely.
+Notice that a linear model does not.
+
+
+```{r}
+set.seed(123)
+
+## Shared parameters used by Bias and Variance
+B        <- 300
+n_bias   <- 200
+Nseq     <- seq(50, 500, by=50)
+span_lo  <- 0.5
+true_m   <- function(x) (1E-10*exp(1.4*x - .015*x^2)*x + 5E5) / 10
+x0       <- seq(Xmn, Xmx, length.out=120)
+m0       <- true_m(x0)
+pred_design <- data.frame(X=x0)
+
+## Storage for Bias predictions (filled via <<- when n == n_bias)
+pred_lm_bias <- matrix(NA_real_, nrow=length(x0), ncol=B)
+pred_lo_bias <- matrix(NA_real_, nrow=length(x0), ncol=B)
+
+## One sweep: gradient SEs across all n, plus bias predictions at n_bias
+SE <- matrix(NA, nrow=2, ncol=length(Nseq))
+for (ni in seq_along(Nseq)) {
+    n <- Nseq[ni]
+    stats <- matrix(NA, nrow=2, ncol=B)
+    for (b in 1:B) {
+        dat_b  <- dat_sim(n)
+        fit_lm <- lm(Y ~ X, data=dat_b)
+        fit_lo <- loess(Y ~ X, data=dat_b, span=0.8)
+        grad_lo <- diff(predict(fit_lo))/diff(dat_b[, 'X'])
+        if(n == n_bias){
+            pred_lm_bias[, b] <- predict(fit_lm, newdata=pred_design)
+            fit_lo_b <- loess(Y ~ X, data=dat_b, span=span_lo)
+            pred_lo_bias[, b] <- predict(fit_lo_b, newdata=pred_design)
+        }
+        stats[, b] <- c(coef(fit_lm)[2], mean(grad_lo, na.rm=TRUE))
+    }
+    SE[, ni] <- apply(stats, 1, sd)
+}
+```
+
+```{r}
+m_lm <- rowMeans(pred_lm_bias, na.rm=TRUE)
+m_lo <- rowMeans(pred_lo_bias, na.rm=TRUE)
+
+y_rng <- range(c(m0, m_lm, m_lo), na.rm=TRUE)
+plot(x0, m0, type='l', lwd=2, col=rgb(0, 0, 0, .8), ylim=y_rng,
+  xlab='Age', ylab=' Mean Productivity ($)', main=NA)
+lines(x0[is.finite(m_lm)], m_lm[is.finite(m_lm)], lwd=2, col=rgb(1, 0, 0, .8))
+lines(x0[is.finite(m_lo)], m_lo[is.finite(m_lo)], lwd=2, col=rgb(0, 0, 1, .8))
+legend('topright', lty=1, lwd=2, col=c(rgb(0, 0, 0, .8), rgb(1, 0, 0, .8), rgb(0, 0, 1, .8)),
+  legend=c('True mean',
+    'Linear',
+    paste0('Loess(', span_lo, ')')
+))
+```
+
+
+#### **Variance**.{-}
+
+The model estimates also vary from sample to sample.
+Notice that the OLS slope coefficient generally varies less than the LOESS mean gradient, even though it is biased.
+
+Also notice that there are diminishing returns to larger sample sizes.
+Both the OLS slope coefficient and the loess mean gradient vary less from sample to sample as $n$ grows, making hypothesis tests more accurate.
+
+```{r}
+cols <- c(rgb(1, 0, 0, .8), rgb(0, 0, 1, .8))
+matplot(Nseq, t(SE), type='b', pch=16,
+    lty=1, lwd=2, col=cols,
+    ylab='standard error', xlab='sample size',
+    main=NA)
+legend('topright',
+    lty=1, lwd=2, col=cols,
+    legend=c('OLS slope', 'Loess mean gradient'))
+```
+
+
+
+
+#### **Bias-Variance Decomposition**.{-}
+
+The Model Fit section above introduced the bias-variance tradeoff intuitively with the bandwidth knob; here we decompose it formally and check both pieces with simulations.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The expected prediction error of an estimator decomposes into two pieces.
+Squared *bias* is how far its average prediction sits from the truth.
+*Variance* is how much its predictions wobble around their own average.
+:::
+
+The bias-variance decomposition is useful as the formal expression of why we cannot simply minimize one source of error and ignore the other: cutting one usually raises the other, so there is a tradeoff to navigate.
+Concretely:
+
+* High-bias / low-variance models.
+  E.g., strict linear models are stable across samples but can miss curvature.
+* Low-bias / high-variance models.
+  E.g., very flexible local linear models can capture curvature but may overfit noise.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+```{r}
+# Bias functions
+mean_pred <- function(P) rowMeans(P, na.rm=TRUE)
+avg_bias2 <- function(P) mean( (mean_pred(P) - m0)^2, na.rm=TRUE)
+
+# Variance
+var_pred <- function(P) apply(P, 1, var, na.rm=TRUE)
+avg_var   <- function(P) mean(var_pred(P), na.rm=TRUE)
+
+metrics <- rbind(
+  c(avg_bias2(pred_lm_bias),  avg_var(pred_lm_bias)),
+  c(avg_bias2(pred_lo_bias),  avg_var(pred_lo_bias))
+)
+colnames(metrics) <- c('Avg Bias^2', 'Avg Variance')
+rownames(metrics) <- c('Linear', 'Loess')
+round(metrics, 4)
+```
+:::
+
+#### **Consistency**.{-}
+
+The bias-variance tradeoff raises a question: can both be reduced simultaneously as $n$ grows?
+For local regression, the answer is yes, provided we shrink the bandwidth as $n$ grows.
+The neighborhood shrinks (reducing bias) while the local sample size still grows (reducing variance).
+This is often written as bandwidth conditions:
+$$
+h_n \to 0
+\quad\text{and}\quad
+n h_n \to \infty.
+$$
+In LOESS language, this corresponds to the span shrinking with $n$, but not too fast.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+A common bandwidth rule shrinks $h$ with the sample size, for example $h_{n}=n^{-1/5}$.
+Check the two conditions:
+
+* $h_{n}=n^{-1/5}\to 0$: at $n=100$ it is about $0.40$; at $n=10{,}000$ it is about $0.16$.
+  The neighborhood shrinks.
+* $n h_{n}=n^{4/5}\to\infty$: at $n=100$ it is about $40$; at $n=10{,}000$ it is about $1585$.
+  The local sample size still grows.
+
+So bias falls (the window narrows) while variance falls (each local fit uses more data).
+```{r}
+n <- c(100, 10000)
+h_n <- n^(-1/5)
+rbind(h_n=round(h_n, 3), n_times_h=round(n*h_n, 1))
+```
+:::
+
+The simulation below illustrates this at one target point $x_0$: absolute error in estimating $m(x_0)$ tends to decrease with larger $n$.
+
+```{r}
+set.seed(42)
+
+x0_target <- 40  # mid-career age
+n_grid <- c(60, 120, 240, 480)
+R <- 120
+
+avg_abs_err <- numeric(length(n_grid))
+for (ni in seq_along(n_grid)) {
+  n <- n_grid[ni]
+  span_n <- min(0.9, 1.8*n^(-1/4)) # shrinks with n
+  errs <- replicate(R, {
+    dat_b <- dat_sim(n)
+    fit <- loess(Y ~ X, data=dat_b, span=span_n, degree=1)
+    mhat <- predict(fit, newdata=data.frame(X=x0_target))
+    abs(mhat - true_m(x0_target))
+  })
+  avg_abs_err[ni] <- mean(errs, na.rm=TRUE)
+}
+
+plot(n_grid, avg_abs_err, type='b', pch=16,
+     xlab='Sample size (n)',
+     ylab='Average Bias',
+     main=NA)
+```
+
+A similar result holds for OLS when the true relationship is linear.
+Even with unlimited data, however, a misspecified model cannot recover the true conditional mean.
+
+
+## Exercises
+
+1. Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in [Working with AI](04_A_WorkingWithAI.qmd).
+   Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing.
+   Finish with your own questions about whatever you found hardest.
+
+2. A linear regression has low variance but can have high bias when the true relationship is nonlinear.
+   A loess regression with a small span has low bias but high variance.
+   Explain why increasing the sample size $n$ helps reduce the standard error for both models, but only helps reduce bias for loess (with an appropriate bandwidth rule).
+
+3. Using the `USArrests` dataset, fit a loess regression of `Murder` on `UrbanPop` with `span = 0.6`.
+   Compute the finite-difference gradients $\hat{b}_{1}(x)$ and report their mean and standard deviation.
+   Compare these to the OLS slope $\hat{b}_{1}$ from a simple linear regression.
+
+4. Using the `USArrests` dataset and the loess fit from the previous question, write R code to construct a bootstrap confidence band with $B = 399$ replicates.
+   Plot the scatterplot, the loess curve, and the shaded 95% confidence band.
+
+#### **Further Reading**. {-}
+
+* <https://www.econometrics-with-r.org/5-htaciam.html> -- hypothesis tests and confidence intervals for regression coefficients, with worked R examples.
+* <https://learningstatisticswithr.com/book/regression.html#hypothesistestsforregressionmodels> -- testing regression slopes, interpreting p-values, and understanding standard errors.
+* <https://www.khanacademy.org/math/statistics-probability/significance-tests-one-sample/more-significance-testing-videos/v/hypothesis-testing-and-p-values> -- video introduction to hypothesis testing logic and p-values.
+
+#### **Recall** {-}
+
+This chapter put inference around the local fits from the previous chapter on the `Wages1` data: model-fit metrics ($\hat{MSE}$ and $\hat{MAPE}$) and the bias-variance tradeoff, bootstrap confidence bands for a LOESS fit, gradient summaries (marginal effect at the mean vs mean of the gradients), hypothesis tests, and a simulation walk through bias, variance, and consistency.
+The small worked example with $\hat{y}(11.5)=9.2$ and $\hat{y}(12.5)=10.4$ gave a finite-difference gradient $\hat{b}_{1}(12)=1.2$ dollars per year of schooling, and the gradient-vector example $(0.4, 0.8, 1.2, 0.9, 0.3)$ at $x=(8, 10, 12, 14, 16)$ showed the marginal-effect-at-the-mean ($1.2$) and the mean-of-the-gradients ($0.72$) diverging when the relationship bends.
+The next chapter pulls back from samples and develops the bivariate probability machinery (joint distributions, conditional expectations, and the population coefficient $\beta_{1}$) that says what we are estimating.

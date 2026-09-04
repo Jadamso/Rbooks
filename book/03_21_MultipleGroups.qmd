@@ -1,0 +1,478 @@
+# Comparing Multiple Groups
+***
+
+So far we have used regression with cardinal explanatory variables.
+We now turn to *factor variables* that label which group each observation belongs to: regions, industries, treatment arms.
+The chapter builds up from the ANOVA decomposition of variation between and within groups, to its nonparametric Kruskal-Wallis analog, and finally back to a regression view in which group indicators are just another set of explanatory variables.
+
+#### **Factor Variables**. {-}
+
+So far we have used cardinal explanatory variables where $4-3=2-1$; many useful predictors are instead labels of group membership that do not arithmetic this way.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *factor variable* labels which group each observation belongs to.
+Each level of the factor can be encoded as an *indicator variable* (or *dummy*) $\hat{D}_{c} = \mathbf{1}(\text{Factor} = c)$, which equals $1$ when the observation is in group $c$ and $0$ otherwise.
+:::
+
+Factor variables are useful when group identity itself predicts the outcome (region, industry, treatment arm) and we want to compare group means within a regression framework.
+They split into two flavors:
+
+* *Ordered*: refers to *ordinal* data.
+  The difference between units means something, but not always the same thing.
+  For example, $4th - 3rd \neq 2nd - 1st$.
+* *Unordered*: refers to *categorical* data.
+  The difference between units is meaningless.
+  For example, $D-C=?$
+
+One common case is if you have observations of individuals over time periods, then you may have two factor variables.
+An unordered factor that indicates who an individual is; for example $\hat{D}_{i}=\mathbf{1}( \text{Individual} = i)$, and an ordered factor that indicates the time period; for example $\hat{D}_{t}=\mathbf{1}( \text{Time} \in [\text{month}~ t, \text{month}~ t+1) )$.
+There are many other cases you see factor variables, including spatial ID's in purely cross sectional data.
+
+Be careful not to handle categorical data as if they were cardinal.
+E.g., generate city data with Leipzig=1, Lausanne=2, LosAngeles=3, ... and then include city as if it were a cardinal number (that's a big no-no).
+The same applied to ordinal data; PopulationLeipzig=2, PopulationLausanne=3, PopulationLosAngeles=1.
+
+In this chapter, we use `state.region` (Northeast, South, North Central, West) as an unordered factor to group the `USArrests` data by US Census region.
+
+```{r}
+# Attach the four-level region factor to USArrests; the levels
+# are the values the categorical variable can take.
+dat <- USArrests
+dat$Region <- state.region
+levels(dat$Region)
+```
+
+#### **Multiple Groups**. {-}
+
+With multiple groups, begin with a summary figure (such as a boxplot) and then run a global test of whether at least one group differs.
+
+```{r}
+# Step 1: Visual summary
+boxplot(Murder ~ Region, data = dat,
+    col = hcl.colors(4, alpha = .45),
+    ylab = 'Murder arrests (per 100k)', xlab = 'Region', main = NA)
+title('Murder rates by region', font.main = 1)
+```
+
+## Equal Means (ANOVA)
+
+In [Comparing Groups](02_12_TwoGroups.qmd), we tested whether two groups had the same mean.
+We now extend this to $G$ groups.
+The *Analysis of Variance* (ANOVA) approach asks: are the observed differences in group means larger than we would expect from random variation alone?
+
+#### **Decomposition**. {-}
+
+If group means differ, some of the spread in $Y$ must come from differences *between* groups rather than *within* them.
+We can split each piece out.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+Label each observation $\hat{Y}_{ig}$ for individual $i$ in group $g$, where group $g=1,\dots,G$ has $n_g$ observations with group mean $\hat{M}_{g}$, and the grand mean across all $n=\sum_g n_g$ observations is $\hat{M}_{Y}$.
+The *ANOVA decomposition* splits the total sum of squares into between-group and within-group pieces:
+$$\begin{aligned}
+\underbrace{\sum_{g=1}^{G}\sum_{i=1}^{n_g}(\hat{Y}_{ig}-\hat{M}_{Y})^2}_{\hat{TSS}}
+&=
+\underbrace{\sum_{g=1}^{G} n_g (\hat{M}_{g}-\hat{M}_{Y})^2}_{\hat{BSS}}
+\;+\;
+\underbrace{\sum_{g=1}^{G}\sum_{i=1}^{n_g}(\hat{Y}_{ig}-\hat{M}_{g})^2}_{\hat{WSS}},
+\end{aligned}$$
+where $\hat{BSS}$ measures variation in group means around the grand mean and $\hat{WSS}$ measures variation of observations around their own group mean.
+:::
+
+The decomposition is useful as the foundation for any test of "do group means differ?": if they do not, $\hat{BSS}$ should be small relative to $\hat{WSS}$.
+The equality holds exactly because the cross-term $\sum_{g,i}(\hat{Y}_{ig}-\hat{M}_{g})(\hat{M}_{g}-\hat{M}_{Y})$ vanishes, since the within-group deviations sum to zero around their own group mean.
+
+In R, `aov()` fits the ANOVA model and `summary()` returns the standard ANOVA table.
+The ANOVA table reports $\hat{BSS}$ ("Sum Sq" for `Region`), $\hat{WSS}$ ("Sum Sq" for `Residuals`).
+```{r}
+# Fit ANOVA
+fit_aov <- aov(Murder ~ Region, data = dat)
+fit_aov
+```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+For example, suppose we have $G=3$ groups with the following data:
+
+| Group A | Group B | Group C |
+|:---:|:---:|:---:|
+| 4 | 8 | 5 |
+| 5 | 7 | 6 |
+| 6 | 9 | 7 |
+
+Group means: $\hat{M}_A = 5$, $\hat{M}_B = 8$, $\hat{M}_C = 6$.
+Grand mean: $\hat{M}_Y = (5+8+6)/3 = 19/3 \approx 6.33$.
+Each group has $n_g = 3$.
+
+Between-group sum of squares:
+$$\begin{aligned}
+\hat{BSS} &= 3(5-19/3)^2 + 3(8-19/3)^2 + 3(6-19/3)^2 \\
+&= 3(16/9) + 3(25/9) + 3(1/9) = 48/9 + 75/9 + 3/9 = 14
+\end{aligned}$$
+Within-group sum of squares:
+$$\begin{aligned}
+\hat{WSS} &= [(4-5)^2+(5-5)^2+(6-5)^2] + [(8-8)^2+(7-8)^2+(9-8)^2] \\
+& + [(5-6)^2+(6-6)^2+(7-6)^2] = 2+2+2 = 6
+\end{aligned}$$
+
+```{r}
+# Data
+Y <- c(4, 5, 6, 8, 7, 9, 5, 6, 7)
+g <- factor(c('A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C'))
+
+# Verify by hand
+n <- length(Y)
+G <- nlevels(g)
+
+M_Y <- mean(Y)
+M_g <- aggregate(Y, list(g), mean)$x
+n_g <- aggregate(Y, list(g), length)$x
+
+BSS <- sum(n_g * (M_g - M_Y)^2)
+WSS <- sum(aggregate(Y, list(g), function(y) sum((y - mean(y))^2))$x)
+```
+:::
+
+#### **The F-statistic**. {-}
+
+We have the decomposition; now we need a single number that tells us when the between-group piece is "large" relative to the within-group piece.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *ANOVA $F$-statistic* is the ratio of average between-group variation to average within-group variation:
+$$\hat{F} = \frac{\hat{BSS}/(G-1)}{\hat{WSS}/(n-G)}.$$
+Under the null $H_0: \mu_1=\mu_2=\dots=\mu_G$ (with the usual parametric assumptions) it follows an $F_{G-1, n-G}$ distribution; we can also get a $p$-value nonparametrically by bootstrapping the labels.
+:::
+
+The ANOVA F-statistic is useful as the global "do any means differ?" test: one number and one $p$-value, regardless of how many groups you have.
+The numerator is the average between-group variation per degree of freedom, the denominator is the average within-group variation, and a large $\hat{F}$ means group means are more spread out than individual-level noise would predict.
+
+```{r}
+F_fun <- function(Y,g){
+    M_Y <- mean(Y)
+    M_g <- aggregate(Y, list(g), mean)$x
+    n_g <- aggregate(Y, list(g), length)$x
+
+    BSS <- sum(n_g * (M_g - M_Y)^2)
+    WSS <- sum(aggregate(Y, list(g), function(y) sum((y - mean(y))^2))$x)
+
+    n <- length(Y)
+    G <- nlevels(g)
+    F_obs <- (BSS/(G-1)) / (WSS/(n-G))
+}
+F_obs <- F_fun(Y=dat$Murder, g=dat$Region)
+F_obs
+```
+
+
+To compute a $p$-value, we can use permutation or bootstrap methods to build a null distribution, just as in previous chapters.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Pairing the observed `Murder` values with a *resampled* `Region` vector breaks the link between outcome and group: under the null, group labels are exchangeable, so this approximates the distribution of $\hat{F}$ when no group effect exists.
+
+```{r}
+# Pairs bootstrap: resample group labels to break the Y--group pairing
+n <- nrow(dat)
+
+F_nullboot <- vector(length=999)
+for( b in seq_along(F_nullboot)){
+    idx <- sample(n, replace = TRUE)
+    g_boot <- dat[idx, 'Region']
+    F_b <- F_fun(Y=dat$Murder, g=g_boot)
+    F_nullboot[b] <- F_b
+}
+
+# Bootstrap p-value
+p_boot <- mean(F_nullboot >= F_obs)
+p_boot
+
+hist(F_nullboot, breaks = 40,
+    col = grey(0.5, 0.5), border = NA,
+    freq = FALSE, main = NA, xlab = 'Null Bootstrap F-statistic',
+    xlim = c(0,14))
+title('Null Bootstrap F-test', font.main = 1)
+abline(v = F_obs, col = rgb(1, 0, 0, .8), lwd = 2)
+legend('topright', legend = 'Observed F',
+    col = rgb(1, 0, 0, .8), lwd =0, bty='n')
+```
+:::
+
+Under additional parametric assumptions (independent observations, equal variances, normal errors), $\hat{F}$ (under the null) follows an $F_{G-1,\;n-G}$ distribution.
+From that theoretical null distribution, we can then compute p-values (which is the default report method in R).
+```{r}
+summary(fit_aov)
+
+p_param <- 1 - pf(F_obs, G-1, n-G)
+ 
+ # Compare parametric and bootstrap p-values
+cbind(F_obs, p_param, p_boot)
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+The parametric F-test assumes (i) independent observations, (ii) normal errors within each group, and (iii) equal variances across groups (*homoscedasticity*).
+If these assumptions are doubtful, then the nonparametric Kruskal-Wallis test (below) is a safer alternative.
+As a quick diagnostic, visually compare side-by-side boxplots: if the spread differs across groups or the distribution has excessive skew/kurtosis, be cautious with the parametric test.
+
+With $G-1=2$ and $n-G=6$ degrees of freedom, we compare to an $F_{2,6}$ distribution: $p = 1 - F_{2,6}(7) \approx 0.027$.
+```{r}
+# Computation
+summary(aov(Y~g))
+
+# Verify by hand (from Before)
+Fstat <- (BSS/(G-1)) / (WSS/(n-G))
+pval  <- 1 - pf(Fstat, G-1, n-G)
+cbind(BSS, WSS, Fstat, pval)
+```
+:::
+
+
+
+
+
+## Equal Distributions
+
+ANOVA tests whether group *means* differ; sometimes the entire *distributions* differ in ways the mean would miss.
+
+#### **Kruskal-Wallis Test**. {-}
+
+When data are skewed, heavy-tailed, or only ordinal, a test built on means may overlook differences that show up in the rank order.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *Kruskal-Wallis test* is a nonparametric test for equal distributions across $G$ groups, testing $H_0: F_1 = F_2 = \dots = F_G$ against $H_A:$ at least one $F_g$ differs (where $F_g$ is the continuous distribution of group $g=1,...G$).
+It uses the average ranks within each group rather than the raw observations, so it only requires the data to be ordinal.
+With two groups it reduces to the *Mann-Whitney U* (equivalently *Wilcoxon rank-sum*) test.
+:::
+
+The Kruskal-Wallis test is useful when the equal-variance normal-error assumption is implausible, as with income, response times, or other heavy-tailed outcomes.
+Rank-based tests need only the orderings of the data.
+A significant result tells us *that* some distribution differs, but not *which* one; the global rejection has to be followed up with pairwise tests.
+
+To conduct the test, first denote individuals $i=1,...n$ with overall ranks $\hat{r}_1,....\hat{r}_{n}$.
+Each individual belongs to group $g=1,...G$, and each group $g$ has $n_{g}$ individuals with average rank $\bar{r}_{g} = \sum_{i} \hat{r}_{i} /n_{g}$.
+The Kruskal Wallis statistic is 
+$$\begin{aligned}
+\hat{KW} &= (n-1) \frac{\sum_{g=1}^{G} n_{g}( \bar{r}_{g} - \bar{r}  )^2  }{\sum_{i=1}^{n} ( \hat{r}_{i} - \bar{r}  )^2},
+\end{aligned}$$
+where  $\bar{r} = \frac{n+1}{2}$ is the grand mean rank.
+
+In the special case with only two groups, the Kruskal Wallis test reduces to the *Mann–Whitney U* test (also known as the *Wilcoxon rank-sum* test).
+In this case, we can write the hypotheses in terms of individual outcomes in each group, $Y_i$ in one group $Y_j$ in the other; $H_0: Prob(Y_i > Y_j)=Prob(Y_j > Y_i)$  versus $H_A: Prob(Y_i > Y_j) \neq Prob(Y_j > Y_i)$.
+The corresponding test statistic is
+$$\begin{aligned}
+\hat{U}   &= \min(\hat{U}_1, \hat{U}_2) \\
+\hat{U}_g &= \sum_{i\in g}\sum_{j\in -g}
+           \Bigl[\mathbf 1( \hat{Y}_{i} > \hat{Y}_{j}) + \tfrac12\mathbf 1(\hat{Y}_{i} = \hat{Y}_{j})\Bigr].
+\end{aligned}$$
+
+Interpretation template:
+
+* If the Kruskal-Wallis p-value is large, keep the global null and stop.
+* If the p-value is small, report that at least one group differs.
+* Report both statistical and practical importance (distribution plots + effect size summaries), not only p-values.
+
+```{r}
+kw <- kruskal.test(Murder ~ Region, data = dat)
+kw
+```
+
+A significant Kruskal-Wallis result tells us *that* some group differs, not *which*.
+To answer *which*, use a post-hoc pairwise test together with a multiple-comparisons correction (see [Multiple Testing](03_27_MiscTopics.qmd#multiple-testing) in the next chapter).
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Worked example: $G=3$ groups with values $A=\{1,2,3\}$, $B=\{4,5,6\}$, $C=\{7,8,9\}$.
+
+Pooling and ranking gives the ranks $1,\ldots,9$ in order.
+Group rank averages: $\bar{r}_A=2$, $\bar{r}_B=5$, $\bar{r}_C=8$.
+Grand mean rank: $\bar{r}=(n+1)/2=5$.
+Plug into $\hat{KW}$ with $n=9$, $n_g=3$:
+$$
+\hat{KW} = (n-1) \cdot \frac{3(2-5)^2 + 3(5-5)^2 + 3(8-5)^2}{\sum_{i=1}^{9}(\hat{r}_i - 5)^2}
+        = 8 \cdot \frac{27 + 0 + 27}{60} = 7.2.
+$$
+
+```{r}
+Y <- c(1,2,3, 4,5,6, 7,8,9)
+g <- factor(rep(c('A','B','C'), each=3))
+kruskal.test(Y ~ g)
+```
+
+For the two-group case, the Mann-Whitney statistic counts pairwise wins.
+Compare $A=\{1,3,5\}$ to $B=\{2,4,6\}$: out of $3\times 3 = 9$ pairs, $A$ wins three ($(3,2), (5,2), (5,4)$), so $\hat{U}_A=3$, $\hat{U}_B=6$, giving $\hat{U}=\min(3,6)=3$.
+
+```{r}
+A <- c(1,3,5); B <- c(2,4,6)
+wilcox.test(A, B)
+```
+:::
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+The Kruskal-Wallis test rejected the null on the regional data, so at least one region has a different distribution of murder rates.
+A post-hoc check pinpoints which pair differs.
+
+```{r}
+pairwise.wilcox.test(dat$Murder, dat$Region, p.adjust.method='holm')
+```
+Looking back at the boxplot, which region stands out?
+:::
+
+## Regression
+
+ANOVA is a special case of linear regression where the only explanatory variables are group indicators.
+
+#### **ANOVA**. {-}
+
+The model $\hat{Y}_{ig} = b_0 + \sum_{g=2}^{G} b_g \hat{D}_{ig} + e_{ig}$ produces the same F-statistic as above.
+Here $b_0$ estimates the mean of the reference group and each $b_g$ estimates the difference between group $g$ and the reference.
+
+```{r}
+# Compare to group means
+M_g <- aggregate(Murder ~ Region, dat, mean)$Murder
+M_g
+
+# b0 = mean of reference group; b_g = mean(g) - mean(reference)
+M_g - M_g[1]
+
+# Regression coefficients = group mean differences
+fit_lm <- lm(Murder ~ Region, data = dat)
+coef(fit_lm)
+```
+
+As such, the ANOVA table for a regression with a single factor is the same as one for AOV.
+```{r}
+anova(fit_aov)
+anova(fit_lm)
+```
+
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Suppose there are $G=3$ groups with means $\hat{M}_1=4$, $\hat{M}_2=7$, $\hat{M}_3=5$.
+Using group 1 as the reference, the regression coefficients are $b_0=4$, $b_2=7-4=3$, $b_3=5-4=1$.
+The intercept equals the reference group mean, and each slope equals the difference from the reference.
+
+```{r}
+# Verify
+Y <- c(3, 4, 5, 6, 7, 8, 4, 5, 6)
+g <- factor(c(1, 1, 1, 2, 2, 2, 3, 3, 3))
+coef(lm(Y ~ g))
+```
+:::
+
+#### **Regression with Factors**. {-}
+
+We can extend the group-comparison model by adding continuous predictors alongside the factor.
+For example, we might ask: after controlling for `Assault`, do regional differences in murder rates persist?
+
+```{r}
+# Extend the model: add Assault as a continuous predictor
+reg_combined <- lm(Murder ~ Region + Assault, data = dat)
+summary(reg_combined)
+```
+
+#### **Fixed Effects**. {-}
+
+The dummy-variable model treats each group as having its own intercept.
+This framing is useful when group identity captures features we cannot otherwise measure.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+*Fixed effects* are group-specific intercepts that absorb every time-invariant feature of the group, entering the regression as
+$$
+\hat{Y}_{i} = \sum_{k=0}^{K} b_k \hat{X}_{ik} + \sum_{g}\hat{D}_{g}b_{g}.
+$$
+Including the dummy variables directly in OLS or using a dedicated routine (e.g., `fixest::feols`) gives the same coefficients on the remaining regressors and the same residuals.
+:::
+
+Fixed effects are useful when you suspect a categorical variable predicts the outcome but you do not care about the levels themselves.
+What you want is the partial effects of the other regressors, net of group identity.^[There are also *random effects*: the factor variable comes from a distribution that is uncorrelated with the regressors. This is rarely used in economics today, however, and are mostly included for historical reasons and special cases where fixed effects cannot be estimated due to data limitations.]
+The dummy-variable approach and a dedicated FE estimator are algebraically equal, giving the same coefficients and the same residuals (see Hansen Econometrics, Theorem 17.1).
+<!--
+In fact, if the fixed effect is ``fully unstructured then the only way to consistently estimate the coefficient $\beta$ is by an estimator which is invariant'' (Hansen Econometrics, p).
+-->
+```{r}
+# Dummy variable approach
+reg_dv <- lm(Murder ~ -1 + Assault + Region, data = dat)
+coef(reg_dv)['Assault']
+
+# Fixed effects approach
+library(fixest)
+reg_fe <- feols(Murder ~ Assault | Region, data = dat)
+coef(reg_fe)
+```
+
+With fixed effects, we can also compute averages for each group: $\hat{M}_{Yg}=\sum_{i}^{n_{g}} \hat{Y}_{ig}/n_{g}$, where each group $g$ has $n_{g}$ observations denoted $\hat{Y}_{ig}$.
+We can then construct a *between estimator*: $\hat{M}_{Yg} = b_{0} + \hat{M}_{Xg} b_{1}$.
+Or we can subtract the average from each group to construct a *within estimator*: $(\hat{Y}_{ig} - \hat{M}_{Yg}) = (\hat{X}_{ig}-\hat{M}_{Xg})b_{1}$.
+
+<!-- 
+> The labels "random effects" and "fixed effects" are misleading. These are labels which arose in the early literature and we are stuck with these labels today. In a previous era regressors were viewed as "fixed". Viewing the individual effect as an unobserved regressor leads to the label of the individual effect as "fixed". Today, we rarely refer to regressors as "fixed" when dealing with observational data. We view all variables as random. Consequently describing u i as "fixed" does not make much sense and it is hardly a contrast with the "random effect" label since under either assumption u i is treated as random. Once again, the labels are unfortunate but the key difference is whether u i is correlated with the regressors.
+-->
+
+
+#### **Comparing Models** {-}
+
+Recall that we can compare regression models using an F-Test.
+Under some additional parametric assumptions, the F-statistic follows an $F$ distribution.
+This case is well-studied historically under the title Analysis of Variance (ANOVA).
+We can build a sequence of nested models, each adding one layer of complexity, to see which predictors contribute.
+The first asks whether group means differ, the second whether a continuous predictor adds explanatory power on top, and the third whether that predictor's slope varies across groups.
+
+```{r}
+# Sequence of nested models, ordered from simplest to most complex.
+reg0 <- lm(Murder ~ 1, data = dat)               # intercept only
+reg1 <- lm(Murder ~ Region, data = dat)           # Region (the ANOVA model)
+reg2 <- lm(Murder ~ Region + Assault, data = dat) # Region + Assault
+reg3 <- lm(Murder ~ Region * Assault, data = dat) # Region * Assault
+
+# Does Region explain murder rates?
+anova(reg0, reg1)
+
+# Does adding Assault improve the model beyond Region?
+anova(reg1, reg2)
+
+# Does the effect of Assault differ by Region?
+anova(reg2, reg3)
+```
+
+```{r}
+# Manual F-test: intercept-only vs Region
+rss0 <- sum(resid(reg0)^2)
+rss1 <- sum(resid(reg1)^2)
+df0  <- df.residual(reg0)
+df1  <- df.residual(reg1)
+F    <- ((rss0 - rss1)/(df0 - df1)) / (rss1/df1)
+p    <- 1 - pf(F, df0 - df1, df1)
+cbind(F, p)
+```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+The sequence of F-tests builds from simple to complex.
+The first test asks whether Region matters at all.
+The second asks whether Assault adds information beyond Region.
+The third asks whether the Assault-Murder relationship varies across regions.
+If the interaction test has a large p-value, what does that tell us about whether the effect of Assault is the same in every region?
+:::
+
+## Exercises
+
+1. Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in [Working with AI](04_A_WorkingWithAI.qmd).
+   Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing.
+   Finish with your own questions about whatever you found hardest.
+
+2. An ANOVA $F$-test rejects the null that all group means are equal.
+   Does this tell you *which* group is different, or only that at least one differs?
+
+3. Using the `USArrests` dataset with `state.region` as the grouping variable, compute the between-group sum of squares ($\hat{BSS}$) and within-group sum of squares ($\hat{WSS}$) for `Assault` by hand (using `aggregate()`).
+   Verify your $\hat{F}$ statistic matches the output of `summary(aov(Assault ~ state.region, data = ...))`.
+
+4. Extend the running example by fitting `Murder ~ Region + Assault + UrbanPop` and `Murder ~ Region * Assault + UrbanPop`.
+   Use `anova()` to test whether the Region-Assault interaction terms are jointly significant after controlling for `UrbanPop`.
+   Compare your conclusion to the interaction test without `UrbanPop` shown in the chapter.
+
+#### **Further Reading**. {-}
+
+* <https://www.econometrics-with-r.org/7-htaciimr.html> -- hypothesis tests for comparing groups in a regression framework, including F-tests and joint restrictions.
+* <https://online.stat.psu.edu/stat462/node/137/> -- ANOVA as a special case of regression, with examples of multiple group comparisons.
+
+
+#### **Recall** {-}
+
+This chapter introduced ANOVA: the decomposition of variation between and within groups, the $F$-statistic that compares the two, and the nonparametric Kruskal-Wallis analog.
+The worked three-group example with $A=\{4,5,6\}, B=\{8,7,9\}, C=\{5,6,7\}$ made the arithmetic concrete: by hand we got $\hat{BSS}=14$ and $\hat{WSS}=6$, which `aov(Y ~ g)` reproduces exactly.
+We also saw that ANOVA is just OLS with group indicators as regressors, and that fixed effects extend this to additional continuous predictors.
+In the next chapter we step back from estimation and ask how to diagnose a fitted regression: outliers, leverage, collinearity, and variable transformations.

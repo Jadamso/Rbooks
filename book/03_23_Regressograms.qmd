@@ -1,0 +1,450 @@
+# Local Relationships
+***
+
+In [Local Regression](02_15_LocalRegression.qmd), we estimated nonparametric models with a single explanatory variable.
+We now extend those tools to multiple explanatory variables.
+The ideas carry over directly: instead of binning one variable, we bin each variable, and instead of fitting a line in pieces, we fit a plane in pieces.
+This chapter covers three nonparametric tools for multivariate data: regressograms, piecewise regressions, and cross-validated model selection.
+It then shows how to summarize the gradients these models produce.
+
+## Regressograms
+
+#### **Setup**. {-}
+
+We want a flexible estimate of $\mathbb{E}[Y \mid X_1, X_2]$ that does not commit to any functional form for either explanatory variable.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *multivariate regressogram* cuts each explanatory variable into exclusive bins (each encoded as a dummy variable), then predicts $\mathbb{E}[\hat{Y}]$ within each bin combination using OLS on the full set of dummies.
+It is the multivariate generalization of the univariate regressogram from [Local Regression](02_15_LocalRegression.qmd#regressograms).
+:::
+
+The multivariate regressogram is useful for estimating a conditional mean without committing to linearity or any particular interaction structure, because every cell gets its own prediction.
+This flexibility is also its main drawback: as the number of explanatory variables grows, the cells empty out and predictions in sparse regions become noisy; the simulated data below uses two predictors to keep things visible.
+
+```{r}
+## Simulate data: y is a nonlinear function of x1 and x2 plus noise.
+N <- 10000
+e <- rnorm(N)
+x1 <- seq(.1, 20, length.out=N)
+x2 <- runif(N, 0, 1)
+y  <- 3*exp(-2*x2 + 1.5*x1 - .1*x1^2)*x1 + e
+dat <- data.frame(x1, x2, y)
+
+## Create color palette (reused in later examples)
+col_scale <- seq(min(y)*1.1, max(y)*1.1, length.out=401)
+ycol_pal <- hcl.colors(length(col_scale), alpha=.5)
+names(ycol_pal) <- sort(col_scale)
+
+## Add legend (reused in later examples)
+add_legend <- function(col_scale,
+    yl=11,
+    colfun=function(x){ hcl.colors(x, alpha=.5) },
+    ...) {
+  opar <- par(fig=c(0, 1, 0, 1), oma=c(0, 0, 0, 0), 
+              mar=c(0, 0, 0, 0), new=TRUE)
+  on.exit(par(opar))
+  h <- hist(col_scale, plot=FALSE, breaks=yl-1)$mids
+  plot(0, 0, type='n', bty='n', xaxt='n', yaxt='n')
+  legend(...,
+    legend=h,
+    fill=colfun(length(h)),
+    border=NA,
+    bty='n')
+}
+
+
+## Plot Data
+par(oma=c(0, 0, 0, 2))
+plot(x1 ~ x2, dat,
+    col=ycol_pal[cut(y, col_scale)],
+    pch=16, cex=.5,
+    main=NA)
+title('Raw Data', font.main=1)
+add_legend(x='topright', col_scale=col_scale,
+    yl=6, inset=c(0, .05), title='y')
+```
+
+#### **OLS Baseline**. {-}
+
+We start with a global linear baseline, fitted without an interaction.
+```{r}
+## OLS (without interaction; the additive baseline)
+reg <- lm(y ~ x1+x2, data=dat)
+
+## Grid Points for Prediction
+# X1 bins
+l1 <- 11
+bks1 <- seq(0, 20, length.out=l1)
+h1 <- diff(bks1)[1]/2
+mids1 <- bks1[-1]-h1
+# X2 bins
+l2 <- 11
+bks2 <- seq(0, 1, length.out=l2)
+h2 <- diff(bks2)[1]/2
+mids2 <- bks2[-1]-h2
+# Grid
+pred_x <- expand.grid(x1=mids1, x2=mids2)
+
+## OLS Predictions
+pred_ols <- predict(reg, newdata=pred_x)
+pred_df_ols  <- cbind(pred_ols, pred_x)
+
+## Plot Predictions
+par(oma=c(0, 0, 0, 2))
+plot(x1 ~ x2, pred_df_ols,
+    col=ycol_pal[cut(pred_ols, col_scale)],
+    pch=15, cex=2,
+    main=NA)
+title('OLS Predictions', font.main=1)
+add_legend(x='topright', col_scale=col_scale,
+    yl=6, inset=c(0, .05), title='y')
+```
+
+#### **Multivariate Bins**. {-}
+
+```{r}
+##################
+# Multivariate Regressogram
+##################
+
+## Cut each variable into bins, then interact them: each (x1c, x2c) cell
+## gets its own mean. With the `*` interaction the model is fully saturated.
+dat$x1c <- cut(dat$x1, bks1)
+dat$x2c <- cut(dat$x2, bks2)
+
+## Regressogram (interacted bins -> one mean per (x1c, x2c) cell)
+reg <- lm(y ~ x1c*x2c, data=dat)
+
+## Predicted Values
+## For Points in Middle of Each Bin
+pred_df_rgrm <- expand.grid(
+    x1c=levels(dat$x1c),
+    x2c=levels(dat$x2c))
+pred_df_rgrm$yhat <- predict(reg, newdata=pred_df_rgrm)
+pred_df_rgrm <- cbind(pred_df_rgrm, pred_x)
+
+## Plot Predictions
+par(oma=c(0, 0, 0, 2))
+plot(x1 ~ x2, pred_df_rgrm,
+    col=ycol_pal[cut(pred_df_rgrm$yhat, col_scale)],
+    pch=15, cex=2,
+    main=NA)
+title('Regressogram Predictions', font.main=1)
+add_legend(x='topright', col_scale=col_scale,
+    yl=6, inset=c(0, .05), title='y')
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+The regressogram divides the $(x_1, x_2)$ space into a grid of bins and estimates the mean of $y$ within each bin.
+Compared to OLS, the regressogram makes no assumption about functional form: it can capture nonlinear and interaction effects.
+The trade-off is that it requires more data to fill each bin, especially as the number of variables grows.
+:::
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+A regressogram prediction is just the average of $\hat{Y}_i$ within a bin.
+Consider six observations, with $x_1$ and $x_2$ each split into "low" and "high".
+
+```{r}
+ex <- data.frame(
+    y  = c(2, 4, 5, 9, 8, 12),
+    x1 = c('low', 'low', 'low', 'high', 'high', 'high'),
+    x2 = c('low', 'low', 'high', 'low', 'high', 'high'))
+
+# Regressogram prediction = mean of y within each (x1, x2) cell
+aggregate(y ~ x1 + x2, data=ex, FUN=mean)
+```
+
+The fitted value for any point is its cell mean: $(2+4)/2 = 3$ for the (low, low) cell, $5$ for (low, high), $9$ for (high, low), and $(8+12)/2 = 10$ for (high, high).
+:::
+
+
+## Local Regressions
+
+#### **Piecewise Model**. {-}
+
+A regressogram is *locally constant*, so every point in a bin gets the same prediction.
+We sometimes want slopes within each bin instead of a flat shelf.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A multivariate *piecewise regression* bins one explanatory variable and fits a separate OLS line on the others within each bin.
+:::
+
+A *piecewise regression* is useful as a middle ground between the flat regressogram and the global OLS plane: it tracks gradients within each bin so predictions vary smoothly, and jumps only at the bin edges.
+We bin one variable, then fit a full linear model of $\hat{Y}$ on the explanatory variables within each bin.
+
+```{r}
+##################
+# Multivariate Piecewise Regression
+##################
+
+## Bin x1, then fit a linear model of y on (x1, x2) within each bin
+dat$x1c <- cut(dat$x1, bks1)
+preg <- lm(y ~ x1c/(x1 + x2), data=dat)
+
+## Predicted Values
+## For the same grid of points used above
+pred_df_preg <- pred_x
+pred_df_preg$x1c <- cut(pred_df_preg$x1, bks1)
+pred_df_preg$yhat <- predict(preg, newdata=pred_df_preg)
+
+## Plot Predictions
+par(oma=c(0, 0, 0, 2))
+plot(x1 ~ x2, pred_df_preg,
+    col=ycol_pal[cut(pred_df_preg$yhat, col_scale)],
+    pch=15, cex=2,
+    main=NA)
+title('Piecewise Regression Predictions', font.main=1)
+add_legend(x='topright', col_scale=col_scale,
+    yl=6, inset=c(0, .05), title='y')
+```
+
+The formula `y ~ x1c/(x1 + x2)` gives each `x1` bin its own intercept and its own slopes on `x1` and `x2`.
+Running one regression per data subset with `split()` gives identical predictions, as shown for the bivariate case in [Local Regression](02_15_LocalRegression.qmd#piecewise-regression).
+A fully *local linear regression* generalizes this further, replacing hard bins with kernel weights and a separate bandwidth for each variable; see [Local Regression](02_15_LocalRegression.qmd#local-linear-regression) for the bivariate version.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Compare the three sets of predictions in this chapter (OLS, regressogram, and piecewise).
+Which captures the curvature in `x1`?
+Which is smoothest?
+Refit the piecewise model with finer bins (`bks1 <- seq(0, 20, length.out=21)`) and describe how the prediction plot changes.
+:::
+
+
+#### **Break Points**. {-}
+Kinks and discontinuities in the relationship between $Y$ and $X$ can be modeled with factor variables, just like any other transformation.
+We can then use $F$-tests to examine whether a break is statistically significant.
+Both the interaction-model $F$-test (`anova`) and the *Chow test* below test the same null of "no break", and give the same answer.
+```{r}
+library(Ecdat)
+reg <- lm(wage ~ school, data=Wages1)
+
+# F-test for a break at school = 12
+reg2 <- lm(wage ~ school*I(school>12), data=Wages1)
+anova(reg, reg2)
+
+# Chow test for the same break
+data_splits <- split(Wages1, Wages1$school <= 12)
+resids <- sapply(data_splits, function(subdat){
+    reg_sub <- lm(wage ~ school, data=subdat)
+    sum(resid(reg_sub)^2)
+})
+Ns <- sapply(data_splits, function(subdat){ nrow(subdat) })
+
+# Chow F-statistic: does splitting the sample reduce RSS enough?
+Rt <- (sum(resid(reg)^2) - sum(resids))/sum(resids)
+Rb <- (sum(Ns) - 2*reg$rank)/reg$rank
+Ft <- Rt*Rb
+pf(Ft, reg$rank, sum(Ns)-2*reg$rank, lower.tail=FALSE)
+
+# See also
+# strucchange::sctest(wage ~ school, data=Wages1, type='Chow', point=.5)
+# segmented::segmented(reg)
+```
+A small $p$-value is evidence that the wage-schooling slope changes at 12 years (the end of secondary school).
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+The Chow test checks whether a structural break exists at a specified point.
+What happens if you do not know where the break is?
+How does searching over many potential break points affect the validity of your test?
+(Hint: think about multiple testing.)
+:::
+
+
+
+## Model Selection
+
+#### **Leave-One-Out and K-Fold CV**. {-}
+
+A flexible model can fit the training data perfectly while predicting new observations badly, so we need a way to measure performance on data the model has not seen.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+*Cross-validation (CV)* picks a model by minimizing out-of-sample prediction error.
+*Leave-one-out CV* drops one observation at a time, refits, and averages the squared prediction errors:
+$$
+\min_{\mathbf{H}} \quad \frac{1}{n} \sum_{i=1}^{n} \left[ \hat{Y}_{i} - \hat{y_{[i]}}(\mathbf{X},\mathbf{H}) \right]^2,
+$$
+where $\hat{y}_{[i]}(\mathbf{X},\mathbf{H})$ is the model's prediction at $\mathbf{X}_{i}$ from a fit that excluded $\mathbf{X}_{i}$, and $\mathbf{H}$ is the bandwidth matrix.
+*$k$-fold CV* drops one of $k$ random groups at a time instead of one observation.
+:::
+
+Cross-validation is useful because it directly penalizes overfitting: a too-flexible model predicts held-out observations poorly even though it fits in-sample data tightly.
+With a weighted least squares regression on three explanatory variables, the bandwidth matrix has the form
+$$
+\mathbf{H}=\begin{pmatrix}
+h_{1} & 0 & 0  \\
+ 0    & h_{2} & 0 \\
+ 0    & 0 & h_{3} \\
+\end{pmatrix},
+$$
+where each $h_{k}$ is the bandwidth for variable $X_{k}$.
+In the discrete-bin setting below, the role of the bandwidth is played by the *number of bins $L$*: more bins means finer resolution (a smaller effective bandwidth) and fewer observations per bin.
+
+There are many types of cross-validation [@ArlotCelisse2010; @BatesEtAl2023]. *Generalized cross-validation* adjusts for the degrees of freedom, whereas the `npreg` function in R uses *least-squares cross-validation* [@racine2019, p. 74] by default.
+You can refer to extensions on a case by case basis.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Cross-validation works by repeatedly holding out one observation, fitting the model on the rest, and measuring how well the model predicts the held-out point.
+A model that overfits (e.g., too many bins) will have low in-sample error but high cross-validation error.
+The bandwidth $\mathbf{H}$ that minimizes cross-validation error balances flexibility against overfitting.
+:::
+
+To make this concrete, we use cross-validation to choose the number of `x1` bins for the piecewise regression above.
+We split the data into 5 folds, fit the model on 4 of them, and measure the squared prediction error on the held-out fold.
+
+```{r}
+## 5-fold cross-validation for the number of x1 bins
+set.seed(1)
+n_folds <- 5
+fold_id <- sample(rep(1:n_folds, length.out=nrow(dat)))
+bin_counts <- c(2, 6, 10, 14, 18, 22)
+
+cv_mse <- sapply(bin_counts, function(L){
+    bks <- seq(0, 20, length.out=L+1)
+    fold_mse <- sapply(1:n_folds, function(k){
+        train <- dat[fold_id != k, ]
+        test  <- dat[fold_id == k, ]
+        train$x1c <- cut(train$x1, bks)
+        test$x1c  <- cut(test$x1, bks)
+        reg_k <- lm(y ~ x1c/(x1 + x2), data=train)
+        pred_k <- predict(reg_k, newdata=test)
+        mean((test$y - pred_k)^2, na.rm=TRUE)
+    })
+    mean(fold_mse)
+})
+
+## Plot CV error against model complexity
+plot(bin_counts, cv_mse, type='o', pch=16,
+    xlab='Number of x1 bins', ylab='5-fold CV mean squared error',
+    main=NA)
+L_star <- bin_counts[which.min(cv_mse)]
+abline(v=L_star, col=rgb(1, 0, 0, .8), lwd=2)
+title(paste0('CV-optimal: ', L_star, ' bins'), font.main=1)
+```
+
+Too few bins cannot capture the curvature in `x1` (high bias); too many bins split the data so finely that each local regression is noisy (high variance).
+The cross-validated error is smallest in between.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+The cross-validation above selects bins for the piecewise model.
+Adapt the code to instead select bins for the *regressogram* `lm(y ~ x1c*x2c)`, cutting both `x1` and `x2` into `L` bins.
+What happens to the cross-validated error once `L` is large enough that some grid cells are empty?
+(Hint: empty cells give `NA` predictions.)
+:::
+
+
+
+
+## Hypothesis Testing
+
+#### **Finite Differences**. {-}
+
+A gradient describes how $\hat{y}$ changes with each $x_k$ at a point.
+We first summarize gradients, then test them.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *gradient* of a fitted multivariate model is the partial derivative $\partial \hat{y}/\partial x_k$ evaluated at a point.
+For a regressogram with no slope coefficients, it must be approximated by a finite difference between adjacent bins,
+$$\begin{aligned}
+\hat{\beta}_{k}(\mathbf{x}) &= \frac{ \hat{y}(x_{1},...,x_{k}+ \frac{h_{k}}{2}...,x_{K})-\hat{y}(x_{1},...,x_{k}-\frac{h_{k}}{2}...,x_{K})}{h_{k}},
+\end{aligned}$$
+while a piecewise or local linear regression has within-bin slopes that are themselves gradient estimates.
+:::
+
+The gradient is useful because, unlike the single OLS coefficient, it varies with $\mathbf{x}$.
+This lets us see whether the marginal effect of $X_k$ is the same at small, medium, and large values of the other regressors.
+We can compute it two ways:
+
+1. For regressograms, approximate the gradient with a small finite difference between adjacent bins (formula above).
+
+2. For split-sample regressions or local linear regressions, read the within-bin slope coefficients $\hat{\beta}_{k}(\mathbf{x})$ directly as gradient estimates.
+
+After computing gradients, you can summarize them in various plots: a histogram of $\hat{\beta}_{k}(\mathbf{x})$, a scatterplot of $\hat{\beta}_{k}(\mathbf{x})$ against $X_{k}$, or the sorted gradients shown with their confidence intervals [@Chaudhuri1999; @HendersonEtAl2012].
+
+
+You may also be interested in a particular gradient or a single summary statistic.
+For example, a bivariate regressogram can estimate the marginal effect of $X_{1}$ at the means; $\hat{\beta_{1}}(\bar{\mathbf{x}}=[\bar{x_{1}}, \bar{x_{2}}])$.
+You may also be interested in the mean of the marginal effects (sometimes said simply as "average effect"), which averages the marginal effect over all datapoints in the dataset: $1/n \sum_{i}^{n} \hat{\beta_{1}}(\mathbf{X}_{i})$, or the median marginal effect.
+Such statistics are single numbers that can be presented similar to an OLS regression table, where each row corresponds to a variable and each cell has two elements: "mean gradient (sd gradient)".
+
+We illustrate both methods on the models fit earlier in this chapter.
+Method 1 differences the regressogram predictions; method 2 reads the slopes directly off the piecewise regression.
+
+```{r}
+##################
+# Method 1: finite-difference gradients from the regressogram
+##################
+
+## Arrange the regressogram predictions into an x1-by-x2 grid
+grid_yhat <- matrix(pred_df_rgrm$yhat,
+    nrow=length(mids1), ncol=length(mids2))
+
+## Approximate the x1-gradient by differencing adjacent x1 bins
+bin_width1 <- diff(bks1)[1]
+grad_x1 <- apply(grid_yhat, 2, diff)/bin_width1
+
+## Summarize the gradient distribution
+par(mfrow=c(1, 2))
+hist(grad_x1, breaks=20, border=NA, freq=FALSE,
+    main=NA, xlab=expression(hat(beta)[1](x)))
+title('Distribution of x1-gradients', font.main=1)
+plot(rep(mids1[-1], ncol(grad_x1)), grad_x1,
+    pch=16, col=grey(0, .5),
+    xlab=expression(x[1]), ylab=expression(hat(beta)[1](x)),
+    main=NA)
+title('Gradient vs x1', font.main=1)
+```
+
+#### **Slope Coefficients**. {-}
+
+```{r}
+##################
+# Method 2: slope coefficients from the piecewise regression
+##################
+
+## The within-bin slope on x1 is itself a gradient estimate
+coef_preg <- coef(preg)
+slope_x1 <- coef_preg[grep(':x1$', names(coef_preg))]
+
+## Mean and standard deviation of the x1-gradient
+c(mean=mean(slope_x1, na.rm=TRUE), sd=sd(slope_x1, na.rm=TRUE))
+```
+
+The mean gradient is a single-number summary, much like an OLS slope.
+The standard deviation across bins measures how much the gradient changes over the data, which a single OLS coefficient cannot show.
+To test whether a mean gradient differs from zero, bootstrap it exactly as in [Inference](02_16_Inference.qmd#hypothesis-testing.).
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+A regressogram has no slope coefficients, so its gradient must be approximated by finite differences: the change in the predicted value between two adjacent bins, divided by the distance between them.
+Suppose the regressogram predicts $\hat{y} = 8$ in one $x_1$-bin and $\hat{y} = 14$ in the next, and the bin midpoints are $2$ units apart.
+The estimated $x_1$-gradient is $(14 - 8)/2 = 3$: moving one unit in $x_1$ raises the prediction by about $3$.
+A piecewise or local linear regression avoids this approximation, because its within-bin slope coefficient *is* the gradient estimate.
+:::
+
+## Exercises
+
+1. Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in [Working with AI](04_A_WorkingWithAI.qmd).
+   Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing.
+   Finish with your own questions about whatever you found hardest.
+
+2. A regressogram bins each explanatory variable and estimates a separate mean within each bin combination.
+   How does this differ from a standard OLS regression with the same variables?
+   What advantage does it have when the true relationship is nonlinear, and what is its main drawback as the number of explanatory variables grows?
+
+3. Using the simulated data from this chapter (`x1 <- seq(.1, 20, length.out = 1000)`, `x2 <- runif(1000, 0, 1)`, `y <- 3*exp(-2*x2 + 1.5*x1 - .1*x1^2)*x1 + rnorm(1000)`), build a regressogram by cutting `x1` into 5 bins and `x2` into 5 bins. Compute the mean of `y` within each of the 25 bin combinations. Which bin combination has the highest predicted value?
+
+4. Using `lm()`, fit two models to the `mtcars` dataset with `mpg` as the outcome: (a) a standard linear model `mpg ~ wt + hp`, and (b) a regressogram model where `wt` and `hp` are each cut into 4 bins using `cut()` and interacted (`mpg ~ cut(wt,4) * cut(hp,4)`).
+   Compare the $\hat{R}^2$ of each model.
+   Plot the predicted values from both models against the observed `mpg`.
+
+#### **Further Reading**. {-}
+
+* <https://cran.r-project.org/web/packages/np/vignettes/np.pdf> -- the `np` package vignette for kernel and local-linear nonparametric regression in R.
+* <https://www.econometrics-with-r.org/11-rwmad.html> -- nonparametric methods and their connection to regression, including bin-smoothers.
+
+
+#### **Recall** {-}
+
+This chapter generalized regressograms, piecewise regression, and cross-validation to the multivariate setting, and showed two ways to summarize gradients: finite differences from the regressogram, and within-bin slopes from the piecewise model.
+The 5-fold CV exercise on `y ~ x1c/(x1 + x2)` made the bias-variance trade-off concrete: we swept the number of `x1` bins through $\{2, 4, 6, 8, 12, 16\}$, watched the cross-validated MSE bottom out at the CV-optimal $L^{*}$, and saw it rise again as we kept adding bins.
+In the next chapter we step back from estimation and ask what happens when the data themselves are dependent over time, across space, or through market equilibrium.
+These observational complications violate the independence assumption used here.
