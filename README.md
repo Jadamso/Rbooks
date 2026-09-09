@@ -23,7 +23,6 @@ To publish a tagged release,
 
     gh release create v0.0.2 --title "v0.0.2, for ECON 2320"
 
-
 <!-- ## CONVERT IMAGES
     for pdfile in *.pdf ; do 
     convert -verbose -density 500  "${pdfile}" "${pdfile%.*}".png;

@@ -1,0 +1,489 @@
+# Association is not Causation
+***
+
+## Introduction
+
+Earlier chapters described how two variables move together, fitted predictive models, and measured uncertainty about those summaries.
+None of those tools alone identifies what would happen to $Y$ if we intervened and changed $X$.
+This chapter brings together three warnings: Simpson's paradox shows that pooling groups can reverse a relationship, association can appear without causation or causation without linear correlation, and predictive models trade bias against variance without answering a causal question.
+
+## Simpson's Paradox
+
+A relationship visible inside every subgroup can flip direction once those subgroups are pooled.
+The [conditional distributions](02_11_BivariateDistributions.qmd#conditional-distributions) from Chapter 11 compare outcomes within values of another variable; adding a subgroup $g$ lets us compare $\hat{P}(y\mid x,g)$ within each group to the pooled $\hat{P}(y\mid x)$.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+*Simpson's paradox* arises when a relationship that holds inside every subgroup reverses when the data are pooled.
+The within-group conditional distributions $\hat{P}(y\mid x, g)$ point one way; the overall $\hat{P}(y\mid x)$ points the other.
+:::
+
+Simpson's paradox is useful as a warning whenever you are tempted to pool subgroups: the pooled relationship reflects both the within-group pattern and how the subgroups differ in size.
+The classic example involves university admissions, where $400$ men and $400$ women apply to one of two departments (English or Engineering).
+Women can have higher admission rates *within* both departments yet a lower *overall* admission rate, if women disproportionately apply to the more selective department (English) and men to the less selective one (Engineering).
+The example is part of a real debate about discrimination (<http://homepage.stat.uiowa.edu/~mbognar/1030/Bickel-Berkeley.pdf>) and the same logic applies to the gender pay gap, cross-country growth comparisons, and many other social issues.^[A ratio can also change due to changes in either the numerator or the denominator.]
+
+
+| Department   | Men                  | Women                 | Total                 |
+|-------------|-----------------------|-----------------------|-----------------------|
+| English     | 100 (40, **$40\%$**)      | 350 (150, **$43\%$**)     | 450 (190, **$42\%$**)     |
+| Engineering | 300 (160, **$53\%$**)     | 50 (30, **$60\%$**)       | 350 (190, **$54\%$**)     |
+| Total       | 400 (200, **$50\%$**)     | 400 (180, **$45\%$**)     | 800 (380, **$48\%$**)     |
+
+: School Applicants (Admitted), by Sex and Department
+
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Explore this issue further with real data.
+```{r}
+UCBAdmissions
+```
+:::
+
+The same issue shows up in continuous data.
+The figure below shows three groups.
+Within each group the relationship between $X_1$ and $X_2$ is negative, but the group centers rise together from lower-left to upper-right.
+```{r, echo=FALSE}
+set.seed(5)
+library(mvtnorm)
+N <- 400
+### Group 1
+mu1    <- c(0, 0)
+sigma1 <- rbind(c(4, -0.9), c(-0.9, 2) )
+g1     <- data.frame(rmvnorm(n=N, mu1, sigma1), Group=1)
+### Group 2
+mu2    <- c(3, 3)
+sigma2 <- rbind(c(2, -0.9), c(-0.9, 1) )
+g2     <- data.frame(rmvnorm(n=N, mu2, sigma2), Group=2)
+### Group 3
+mu3    <- c(6, 6)
+sigma3 <- rbind(c(3, -0.9), c(-0.9, 3) )
+g3     <- data.frame(rmvnorm(n=N, mu3, sigma3), Group=3)
+
+## Combined Data (Initially Observed)
+df_agg <- rbind(g1, g2, g3)
+df_agg <- df_agg[order(df_agg$X1), ]
+
+## Scatterplot, colored by group
+pt_cols <- c(rgb(.8, 0, 0, .2), rgb(0, .8, 0, .2), rgb(0, 0, .8, .2))
+plot(X2 ~ X1, df_agg, pch=16, col=pt_cols[df_agg$Group], cex=.8,
+    main=NA, xlab='X1', ylab='X2')
+
+# Within-group regression lines are negative.
+ln_cols <- c(rgb(.8, 0, 0, .8), rgb(0, .8, 0, .8), rgb(0, 0, .8, .8))
+for (g in seq_len(3)) {
+    abline(
+        lm(X2 ~ X1, data=df_agg[df_agg$Group == g, ]),
+        col=ln_cols[g], lwd=2)
+}
+
+# The pooled regression line is positive.
+abline(lm(X2 ~ X1, data=df_agg), lwd=3, lty=2)
+legend('topleft', bty='n', cex=.8,
+    legend=c('within group', 'pooled'),
+    lwd=c(2, 3), lty=c(1, 2), col=c(grey(0, .7), 'black'))
+```
+Each within-group regression line (solid) slopes downward, yet the pooled regression line (dashed) slopes upward.
+A researcher who ignored the groups would report a positive relationship that holds within no single group.
+The [Simple Regression](02_14_SimpleRegression.qmd) chapter explains how these lines are fit.
+Neither the pooled line nor the within-group lines alone identify what would happen under an intervention.
+
+## Association Is Not Causation
+
+
+Sampling variability is one problem: relationships in the population may not appear in a sample, and apparent sample relationships may not exist in the population.
+[Inference](02_16_Inference.qmd) helps quantify that uncertainty, but statistical significance does not distinguish association from causation.
+Two other problems remain: real relationships can average out, and random data can acquire mechanically induced relationships.
+To make both problems concrete, we focus on the Pearson correlation from [Statistics of Association](02_13_Associations.qmd#cardinal-data) and examine
+
+* Causation without correlation
+* Correlation without causation
+
+
+#### **Causation without correlation** {-}
+
+Examples of the first problem include *nonlinear effects* and *heterogeneous effects* that average out.
+
+```{r}
+set.seed(123)
+n <- 10000
+
+# X causes Y via Y = X^2 + noise
+X <- runif(n, min = -1, max = 1)
+epsilon <- rnorm(n, mean = 0, sd = 0.1)
+Y <- X^2 + epsilon  # clear causal effect of X on Y
+plot(X, Y, pch=16, col=grey(0, .05),
+    main=NA, xlab='X', ylab='Y')
+
+# Correlation over the entire range
+title( paste0('Cor: ', round( cor(X, Y), 1) ) ,
+    font.main=1)
+```
+
+```{r}
+# Heterogeneous Effects
+X <- rnorm(n) # Randomized 'treatment'
+
+# Heterogeneous effects based on group
+group <- rbinom(n, size = 1, prob = 0.5)
+epsilon <- rnorm(n, mean = 0, sd = 1)
+Y <- ifelse(group == 1,
+            X + epsilon,   # positive effect
+            -X + epsilon)  # negative effect
+plot(X, Y, pch=16, col=grey(0, .05),
+    main=NA, xlab='X', ylab='Y')
+
+# Correlation in the pooled sample
+title( paste0('Cor: ', round( cor(X, Y), 1) ),
+    font.main=1 )
+```
+
+
+#### **Correlation without causation** {-}
+Examples of the second problem include *shared denominators* and *selection bias* that induce correlations.
+
+Consider three completely random variables.
+We can induce a mechanical relationship between the first two variables by dividing them both by the third variable.
+
+```{r}
+set.seed(123)
+n <- 20000
+
+# Independent components
+A <- runif(n)
+B <- runif(n)
+C <- runif(n)
+par(mfrow=c(1, 2))
+plot(A, B, pch=16, col=grey(0, .05),
+    main=NA, xlab='A', ylab='B')
+title('Independent Variables', font.main=1)
+
+# Ratios with a shared denominator
+X <- A / C
+Y <- B / C
+plot(X, Y, pch=16, col=grey(0, .05),
+    main=NA, xlab='X', ylab='Y')
+title('With Common Divisor', font.main=1)
+
+# Correlation
+cor(X, Y)
+```
+
+Consider an admissions rule into university: applicants are accepted if they have either high test scores or strong extracurriculars.
+Even if there is no general relationship between test scores and extracurriculars, you will see one amongst university students.
+
+```{r}
+
+# Independent traits in the population
+test_score        <- rnorm(n, mean = 0, sd = 1)
+extracurriculars  <- rnorm(n, mean = 0, sd = 1)
+
+# Selection above thresholds
+threshold <- 1.0
+admitted <- (test_score > threshold) | (extracurriculars > threshold)
+mean(admitted)  # admission rate
+
+par(mfrow = c(1, 2))
+# Full population
+plot(test_score, extracurriculars,
+     pch=16, col=grey(0, .05),
+     main=NA, xlab='Test Score', ylab='Extracurriculars')
+title('General Sample', font.main=1)
+# Admitted only
+plot(test_score[admitted], extracurriculars[admitted],
+     pch=16, col=grey(0, .05),
+     main=NA, xlab='Test Score', ylab='Extracurriculars')
+title('University Sample', font.main=1)
+# Correlation among admitted applicants only
+cor(test_score[admitted], extracurriculars[admitted])
+```
+
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+In the dataset below, compute the correlation statistic and comment on whether any relationship is causal.
+```{r}
+plot(Murder ~ Assault, USArrests, pch=16, col=grey(0, .5),
+    main=NA, xlab='Assault Arrests', ylab='Murder Arrests')
+```
+:::
+
+Note that the examples above are not the only examples of "correlation does not mean causation".
+Many real datasets have temporal and spatial interdependence that create additional issues.
+Many real datasets also have economic interdependence, which also creates additional issues.
+The [Observational Data](03_26_ObservationalData.qmd) and [Experimental Data](03_27_ExperimentalData.qmd) chapters return to the designs and assumptions needed for causal claims.
+
+## Bias-Variance Tradeoff
+
+The applied [Bias-Variance Tradeoff](02_16_Inference.qmd#bias-variance-tradeoff) section compared narrow and wide LOESS spans.
+We now use simulations where the true data-generating process is known to separate bias from variance and study how both change across samples.
+
+#### **Sampling Distributions**{-}
+
+Bootstrap confidence bands are approximations: they estimate how much predicted values vary from sample to sample.
+The simulation below compares a bootstrap CI constructed from one sample to the true sampling variation observed across many independent samples.
+
+```{r}
+## Ages
+Xmx <- 70
+Xmn <- 15
+
+##Generate Sample Data
+dat_sim <- function(n=1000){
+    X <- seq(Xmn, Xmx, length.out=n)
+    ## Random Productivity
+    e <- runif(n, 0, 1E6)
+    beta <-  1E-10*exp(1.4*X -.015*X^2)
+    Y    <-  (beta*X + e)/10
+    return(data.frame(Y, X))
+}
+dat0 <- dat_sim(1000)
+dat0 <- dat0[order(dat0[, 'X']), ]
+
+## Data from one sample
+plot(Y ~ X, data=dat0, pch=16, col=grey(0, .05),
+    main=NA, ylab='Yearly Productivity ($)', xlab='Age' )
+reg_lo <- loess(Y ~ X, data=dat0, span=.8)
+
+## Plot Bootstrap CI for Single Sample
+pred_design <- data.frame(X=seq(Xmn, Xmx))
+preds_lo <- predict(reg_lo, newdata=pred_design)
+boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
+for (b in 1:399) {
+    dat0_i <- dat0[sample(nrow(dat0), replace=TRUE), ]
+    reg_i <- loess(Y ~ X, data=dat0_i, span=.8)
+    boot_lo[, b] <- predict(reg_i, newdata=pred_design)
+}
+boot_cb <- apply(boot_lo, 1, quantile,
+    probs=c(.025, .975), na.rm=TRUE)
+polygon(
+    c(pred_design[[1]], rev(pred_design[[1]])),
+    c(boot_cb[1, ], rev(boot_cb[2, ])),
+    col=hcl.colors(3, alpha=.25)[2],
+    border=NA)
+
+# Construct CI across Multiple Samples
+sample_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
+for (b in 1:399) {
+    xy_b <- dat_sim(1000) #Entirely new sample
+    reg_b <- loess(Y ~ X, data=xy_b, span=.8)
+    sample_lo[, b] <- predict(reg_b, newdata=pred_design)
+}
+ci_lo <- apply(sample_lo, 1, quantile,
+    probs=c(.025, .975), na.rm=TRUE)
+polygon(
+    c(pred_design[[1]], rev(pred_design[[1]])),
+    c(ci_lo[1, ], rev(ci_lo[2, ])),
+    col=grey(0, alpha=.25),
+    border=NA)
+```
+
+#### **Bias**{-}
+
+The plot below shows the average prediction across $B$ samples against the true mean.
+Notice that LOESS tracks the true mean closely.
+Notice that a linear model does not.
+
+
+```{r}
+set.seed(123)
+
+## Shared parameters used by Bias and Variance
+B        <- 300
+n_bias   <- 200
+Nseq     <- seq(50, 500, by=50)
+span_lo  <- 0.5
+true_m   <- function(x) (1E-10*exp(1.4*x - .015*x^2)*x + 5E5) / 10
+x0       <- seq(Xmn, Xmx, length.out=120)
+m0       <- true_m(x0)
+pred_design <- data.frame(X=x0)
+
+## Storage for Bias predictions (filled via <<- when n == n_bias)
+pred_lm_bias <- matrix(NA_real_, nrow=length(x0), ncol=B)
+pred_lo_bias <- matrix(NA_real_, nrow=length(x0), ncol=B)
+
+## One sweep: gradient SEs across all n, plus bias predictions at n_bias
+SE <- matrix(NA, nrow=2, ncol=length(Nseq))
+for (ni in seq_along(Nseq)) {
+    n <- Nseq[ni]
+    stats <- matrix(NA, nrow=2, ncol=B)
+    for (b in 1:B) {
+        dat_b  <- dat_sim(n)
+        fit_lm <- lm(Y ~ X, data=dat_b)
+        fit_lo <- loess(Y ~ X, data=dat_b, span=0.8)
+        grad_lo <- diff(predict(fit_lo))/diff(dat_b[, 'X'])
+        if(n == n_bias){
+            pred_lm_bias[, b] <- predict(fit_lm, newdata=pred_design)
+            fit_lo_b <- loess(Y ~ X, data=dat_b, span=span_lo)
+            pred_lo_bias[, b] <- predict(fit_lo_b, newdata=pred_design)
+        }
+        stats[, b] <- c(coef(fit_lm)[2], mean(grad_lo, na.rm=TRUE))
+    }
+    SE[, ni] <- apply(stats, 1, sd)
+}
+```
+
+```{r}
+m_lm <- rowMeans(pred_lm_bias, na.rm=TRUE)
+m_lo <- rowMeans(pred_lo_bias, na.rm=TRUE)
+
+y_rng <- range(c(m0, m_lm, m_lo), na.rm=TRUE)
+plot(x0, m0, type='l', lwd=2, col=rgb(0, 0, 0, .8), ylim=y_rng,
+  xlab='Age', ylab=' Mean Productivity ($)', main=NA)
+lines(x0[is.finite(m_lm)], m_lm[is.finite(m_lm)], lwd=2, col=rgb(1, 0, 0, .8))
+lines(x0[is.finite(m_lo)], m_lo[is.finite(m_lo)], lwd=2, col=rgb(0, 0, 1, .8))
+legend('topright', lty=1, lwd=2, col=c(rgb(0, 0, 0, .8), rgb(1, 0, 0, .8), rgb(0, 0, 1, .8)),
+  legend=c('True mean',
+    'Linear',
+    paste0('Loess(', span_lo, ')')
+))
+```
+
+
+#### **Variance**{-}
+
+The model estimates also vary from sample to sample.
+Notice that the OLS slope coefficient generally varies less than the LOESS mean gradient, even though it is biased.
+
+Also notice that there are diminishing returns to larger sample sizes.
+Both the OLS slope coefficient and the loess mean gradient vary less from sample to sample as $n$ grows, making hypothesis tests more accurate.
+
+```{r}
+cols <- c(rgb(1, 0, 0, .8), rgb(0, 0, 1, .8))
+matplot(Nseq, t(SE), type='b', pch=16,
+    lty=1, lwd=2, col=cols,
+    ylab='standard error', xlab='sample size',
+    main=NA)
+legend('topright',
+    lty=1, lwd=2, col=cols,
+    legend=c('OLS slope', 'Loess mean gradient'))
+```
+
+
+
+
+#### **Bias-Variance Decomposition**{-}
+
+The applied section in [Inference](02_16_Inference.qmd#bias-variance-tradeoff) introduced the bias-variance tradeoff intuitively with the bandwidth knob; here we decompose it formally and check both pieces with simulations.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The expected prediction error of an estimator decomposes into two pieces.
+Squared *bias* is how far its average prediction sits from the truth.
+*Variance* is how much its predictions wobble around their own average.
+:::
+
+The bias-variance decomposition is useful as the formal expression of why we cannot simply minimize one source of error and ignore the other: cutting one usually raises the other, so there is a tradeoff to navigate.
+Concretely:
+
+* High-bias / low-variance models.
+  E.g., strict linear models are stable across samples but can miss curvature.
+* Low-bias / high-variance models.
+  E.g., very flexible local linear models can capture curvature but may overfit noise.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+```{r}
+# Bias functions
+mean_pred <- function(P) rowMeans(P, na.rm=TRUE)
+avg_bias2 <- function(P) mean( (mean_pred(P) - m0)^2, na.rm=TRUE)
+
+# Variance
+var_pred <- function(P) apply(P, 1, var, na.rm=TRUE)
+avg_var   <- function(P) mean(var_pred(P), na.rm=TRUE)
+
+metrics <- rbind(
+  c(avg_bias2(pred_lm_bias),  avg_var(pred_lm_bias)),
+  c(avg_bias2(pred_lo_bias),  avg_var(pred_lo_bias))
+)
+colnames(metrics) <- c('Avg Bias^2', 'Avg Variance')
+rownames(metrics) <- c('Linear', 'Loess')
+round(metrics, 4)
+```
+:::
+
+#### **Consistency**{-}
+
+The bias-variance tradeoff raises a question: can both be reduced simultaneously as $n$ grows?
+For local regression, the answer is yes, provided we shrink the bandwidth as $n$ grows.
+The neighborhood shrinks (reducing bias) while the local sample size still grows (reducing variance).
+This is often written as bandwidth conditions:
+$$
+h_n \to 0
+\quad\text{and}\quad
+n h_n \to \infty.
+$$
+In LOESS language, this corresponds to the span shrinking with $n$, but not too fast.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+A common bandwidth rule shrinks $h$ with the sample size, for example $h_{n}=n^{-1/5}$.
+Check the two conditions:
+
+* $h_{n}=n^{-1/5}\to 0$: at $n=100$ it is about $0.40$; at $n=10{,}000$ it is about $0.16$.
+  The neighborhood shrinks.
+* $n h_{n}=n^{4/5}\to\infty$: at $n=100$ it is about $40$; at $n=10{,}000$ it is about $1585$.
+  The local sample size still grows.
+
+So bias falls (the window narrows) while variance falls (each local fit uses more data).
+```{r}
+n <- c(100, 10000)
+h_n <- n^(-1/5)
+rbind(h_n=round(h_n, 3), n_times_h=round(n*h_n, 1))
+```
+:::
+
+The simulation below illustrates this at one target point $x_0$: absolute error in estimating $M(x_0)$ tends to decrease with larger $n$.
+
+```{r}
+set.seed(42)
+
+x0_target <- 40  # mid-career age
+n_grid <- c(60, 120, 240, 480)
+R <- 120
+
+avg_abs_err <- numeric(length(n_grid))
+for (ni in seq_along(n_grid)) {
+  n <- n_grid[ni]
+  span_n <- min(0.9, 1.8*n^(-1/4)) # shrinks with n
+  errs <- replicate(R, {
+    dat_b <- dat_sim(n)
+    fit <- loess(Y ~ X, data=dat_b, span=span_n, degree=1)
+    mhat <- predict(fit, newdata=data.frame(X=x0_target))
+    abs(mhat - true_m(x0_target))
+  })
+  avg_abs_err[ni] <- mean(errs, na.rm=TRUE)
+}
+
+plot(n_grid, avg_abs_err, type='b', pch=16,
+     xlab='Sample size (n)',
+     ylab='Average Bias',
+     main=NA)
+```
+
+A similar result holds for OLS when the true relationship is linear.
+Even with unlimited data, however, a misspecified model cannot recover the true conditional mean.
+These results concern prediction across samples; they do not establish that changing $X$ would cause $Y$ to change.
+
+## Exercises
+
+1. Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in [Working with AI](04_A_WorkingWithAI.qmd).
+   Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing.
+   Finish with your own questions about whatever you found hardest.
+
+2. Use `UCBAdmissions` to compute the overall admission rate for men and women and the admission rate for each group within each department.
+   Identify any reversal between the pooled and within-department relationships, then explain why that reversal does not by itself establish whether admissions were discriminatory.
+
+3. Give an example of a dataset where Pearson's correlation $\hat{R}_{XY}$ is close to zero but there is a clear causal relationship between $X$ and $Y$.
+   What feature of the relationship causes the correlation to miss it, and which alternative statistic from [Statistics of Association](02_13_Associations.qmd) might detect it?
+
+4. Explain why a model can have low prediction error but still fail to estimate the causal effect of $X$ on $Y$.
+   In your answer, distinguish the bias-variance tradeoff from confounding and selection bias.
+
+#### **Further Reading** {-}
+
+* <http://homepage.stat.uiowa.edu/~mbognar/1030/Bickel-Berkeley.pdf> -- the Berkeley admissions study behind the classic Simpson's-paradox example.
+* <https://www.khanacademy.org/math/statistics-probability/describing-relationships-quantitative-data/scatterplots-and-correlation/v/correlation-and-causality> -- short video on why correlation does not imply causation.
+* <https://www.khanacademy.org/computing/computer-science/informationtheory/moderninfotheory/v/bias-variance> -- visual introduction to the bias-variance tradeoff.
+
+#### **Recall** {-}
+
+Simpson's paradox showed that a pooled relationship can reverse every within-group relationship.
+The correlation examples showed both causation without linear correlation and correlation without causation.
+The bias-variance analysis showed how model flexibility affects prediction across samples, but predictive performance alone does not identify a causal effect.
+The next chapter pulls back from samples and develops the [Bivariate Probability](02_18_BivariateProbability.qmd) machinery that says what the book's statistics estimate.

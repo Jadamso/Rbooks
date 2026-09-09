@@ -47,10 +47,10 @@ To move beyond descriptive statistics, we will use models.
 We previously covered linear models, but you could be analyzing data with nonlinear relationships.
 So now we consider a general relationship:
 $$
-\hat{Y}_{i} = m(\hat{X}_{i}) + e_{i},
+\hat{Y}_{i} = M(\hat{X}_{i}) + \epsilon_{i},
 $$
-where $m$ is an unknown function and $e_{i}$ is white noise, which we estimate via different models.
-After minimizing the sum of squared errors in a the regressions below, our estimated models $\hat{m}$ will also predict local averages.
+where $M$ is an unknown function and $\epsilon_{i}$ is white noise, which we estimate via different models.
+After minimizing the sum of squared errors in the regressions below, our estimated models will also predict local averages.
 
 
 ## Regressograms
@@ -103,21 +103,22 @@ The *bandwidth* $h$ is the half-width of a local bin around the design point $x$
 :::
 
 The bandwidth is useful as the central tuning knob for every local method in this chapter: regressograms, piecewise regression, locally constant kernel regression, and locally linear regression.
-It is the same $h$ that set the bin half-width of a [histogram](01_02_Data.qmd#histogram-density.) and the spread of a [kernel density](01_10_AdvancedEmpirics.qmd#kernel-density), except that there it controlled how much data went into a density estimate at $x$, and here it controls how much data goes into a conditional-mean estimate at $x$.
+It is the same $h$ that set the bin half-width of a [histogram](01_02_Data.qmd#histogram-density) and the spread of a [kernel density](01_10_AdvancedEmpirics.qmd#kernel-density), except that there it controlled how much data went into a density estimate at $x$, and here it controls how much data goes into a conditional-mean estimate at $x$.
 It also tunes LOESS in the next chapter, in disguise as `span`.
 Larger $h$ pools more observations into each estimate but smooths over real variation; smaller $h$ tracks the data more closely but uses fewer points per estimate, so the fitted curve becomes noisier.
 Then we conduct a regression with this model:
 $$\begin{aligned}
-\hat{Y}_{i} &= \sum_{x \in \{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{D}_{i}(x,h)  + e_{i},
+\hat{Y}_{i} &= \sum_{x \in \{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{D}_{i}(x,h)  + \hat{E}_{i},
 \end{aligned}$$
 where each bin has a coefficient $b_{0}(x,h)$.
+Here $\hat{E}_{i}$ depends on the trial bin coefficients $b_{0}(x,h)$; the final residuals use the fitted coefficients $\hat{B}_{0}(x,h)$.
 
-#### **Local Averages**.{-}
-When minimizing the sum of squared errors, the optimal coefficients are denoted as $\hat{b}_{0}(x,h)$ and we can find them analytically.
+#### **Local Averages**{-}
+When minimizing the sum of squared errors, the optimal coefficients are denoted as $\hat{B}_{0}(x,h)$ and we can find them analytically.
 To do so, notice that each bin has $n(x,h) = \sum_{i}^{n}\hat{D}_{i}(x,h)$ observations.
 This means we can split the dataset into parts associated with each bin
 $$\begin{aligned}
-\sum_{i}^{n}\left[e_{i}\right]^2 
+\sum_{i}^{n}\left[\hat{E}_{i}\right]^2 
 &= \sum_{i}^{n}\left[\hat{Y}_{i}- \sum_{x \in \{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{D}_{i}(x,h) \right]^2 \\
 &= \sum_{i}^{n(x_{1},h)}\left[\hat{Y}_{i}- \sum_{x \in \{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{D}_{i}(x,h) \right]^2 
 	+ ...  \sum_{i}^{n(x_{L},h)}\left[\hat{Y}_{i}- \sum_{x \in \{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{D}_{i}(x,h) \right]^2 \\
@@ -125,35 +126,35 @@ $$\begin{aligned}
 \end{aligned}$$
 This separation allows us to analytically optimize for each bin separately
 $$\begin{aligned}
-\min_{ \left\{ b_{0}(x,h) \right\} } \sum_{i}^{n}\left[e_{i}\right]^2
+\min_{ \left\{ b_{0}(x,h) \right\} } \sum_{i}^{n}\left[\hat{E}_{i}\right]^2
 &= \min_{ \left\{ b_{0}(x,h) \right\} } \sum_{i}^{n(x,h)}\left[\hat{Y}_{i}- b_{0}\left(x,h\right) \right]^2,
 \end{aligned}$$
 In any case, minimizing yields the optimal coefficient as follows
 $$\begin{aligned}
 0 &= -2 \sum_{i}^{n(x,h)}\left[ \hat{Y}_{i} - b_{0}(x,h)  \right] \\
-\hat{b}_{0}(x,h) &= \frac{\sum_{i}^{n(x,h)} \hat{Y}_{i}}{ n(x,h) } = \hat{M}_{Y}(x,h).
+\hat{B}_{0}(x,h) &= \frac{\sum_{i}^{n(x,h)} \hat{Y}_{i}}{ n(x,h) } = \hat{M}_{Y}(x,h).
 \end{aligned}$$
 As such, the OLS regression yields coefficients that are interpreted as the conditional mean: $\hat{M}_{Y}(x,h)$.
 We can directly compute the same statistic directly by simply taking the average value of $\hat{Y}_{i}$ for all $i$ observations in a particular bin. 
 
 In any case, the values predicted by the model are found as 
 $$
-\hat{y}_{i} = \sum_{x} \hat{b}_{0}(x,h) \hat{D}_{i}(x,h) = \sum_{x} \hat{M}_{Y}(x,h) \hat{D}_{i}(x,h).
+\hat{y}_{i} = \sum_{x} \hat{B}_{0}(x,h) \hat{D}_{i}(x,h) = \sum_{x} \hat{M}_{Y}(x,h) \hat{D}_{i}(x,h).
 $$
 I.e., the predicted value of observation $i$ is the the average value for its bin. 
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Consider this two-bin regressogram example of how schooling affects wage for people with $\leq 9$ years of school completed vs $> 9$.
 $$\begin{aligned}
-\text{Wage}_{i} &= b_{0}(x=4.5, h=9/2) \mathbf{1}\left(\text{Educ}_{i} \in (0,9]\right) + b_{0}(x=13.5, h=9/2) \mathbf{1}\left(\text{Educ}_{i} \in (9,18] \right) + e_{i}.
+\text{Wage}_{i} &= b_{0}(x=4.5, h=9/2) \mathbf{1}\left(\text{Educ}_{i} \in (0,9]\right) + b_{0}(x=13.5, h=9/2) \mathbf{1}\left(\text{Educ}_{i} \in (9,18] \right) + \hat{E}_{i}.
 \end{aligned}$$
 
 Here is a simple example with three data points $(\hat{X}_{i}, \hat{Y}_{i}) \in \{ (1,2), (4,4), (12,3) \}$, we can easily compute 
 $$\begin{aligned}
 n(x=4.5,h=9/2) &= 2 \\
-\hat{b}_{0}(x=4.5, h=9/2) &= [2 + 4] / 2 \\
+\hat{B}_{0}(x=4.5, h=9/2) &= [2 + 4] / 2 \\
 n(x=13.5,h=9/2) &= 1 \\
-\hat{b}_{0}(x=13.5, h=9/2) &= 3 / 1
+\hat{B}_{0}(x=13.5, h=9/2) &= 3 / 1
 \end{aligned}$$
 
 Here is a simple example with data
@@ -207,14 +208,14 @@ title('Piecewise Regressions', font.main=1)
 
 The model is
 $$\begin{aligned}
-\hat{Y}_{i} &= \sum_{x} \left[b_{0}(x,h) + b_{1}(x,h)\hat{X}_{i} \right] \hat{D}_{i}(x,h) + e_{i}.
+\hat{Y}_{i} &= \sum_{x} \left[b_{0}(x,h) + b_{1}(x,h)\hat{X}_{i} \right] \hat{D}_{i}(x,h) + \hat{E}_{i}.
 \end{aligned}$$
 This same separation as above allows us to analytically optimize for each bin separately.
 I.e. we run separate regressions on the split samples.
 From the previous chapter on simple linear regression, we know the solutions are
 $$\begin{aligned}
-\hat{b}_{0}(x,h) &= \hat{M}_{Y}(x,h)-\hat{b}_{1}\hat{M}_{X}(x,h) \\
-\hat{b}_{1}(x,h) &= \frac{\sum_{i}^{n(x,h)}(\hat{X}_{i}-\hat{M}_{X}(x,h))(\hat{Y}_{i}-\hat{M}_{Y}(x,h))}{\sum_{i}^{n(x,h)}(\hat{X}_{i}-\hat{M}_{X}(x,h))^2} = \frac{\hat{C}_{XY}(x,h)}{\hat{V}_{X}(x,h)},
+\hat{B}_{0}(x,h) &= \hat{M}_{Y}(x,h)-\hat{B}_{1}\hat{M}_{X}(x,h) \\
+\hat{B}_{1}(x,h) &= \frac{\sum_{i}^{n(x,h)}(\hat{X}_{i}-\hat{M}_{X}(x,h))(\hat{Y}_{i}-\hat{M}_{Y}(x,h))}{\sum_{i}^{n(x,h)}(\hat{X}_{i}-\hat{M}_{X}(x,h))^2} = \frac{\hat{C}_{XY}(x,h)}{\hat{V}_{X}(x,h)},
 \end{aligned}$$
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
@@ -316,11 +317,11 @@ Sometimes we want smoother predictions or to estimate derivatives (gradients).
 To cover more advanced regression methods that do those things, we will need to first learn about kernel density estimation.
 
 
-#### **Weighted Regression**.{-}
+#### **Weighted Regression**{-}
 Interestingly, we can obtain the same statistics from weighted least squares regression.
-For some specific design point, $x$, we can find $\hat{b}(x, h)$ by minimizing
+For some specific design point, $x$, we can find $\hat{B}(x, h)$ by minimizing
 $$\begin{aligned}
-\sum_{i}^{n}\left[ e_{i} \right]^2  \hat{D}_{i}(x,h) &= \sum_{i}^{n}\left[ \hat{Y}_{i}- b_{0}(x,h) - b_{1}(x,h) \hat{X}_{i} \right]^2  \hat{D}_{i}(x,h) \\
+\sum_{i}^{n}\left[ \hat{E}_{i} \right]^2  \hat{D}_{i}(x,h) &= \sum_{i}^{n}\left[ \hat{Y}_{i}- b_{0}(x,h) - b_{1}(x,h) \hat{X}_{i} \right]^2  \hat{D}_{i}(x,h) \\
 &= \sum_{i}^{n(x_{1},h)}\left[ \hat{Y}_{i}- b_{0}(x_{1},h) - b_{1}(x_{1},h) \hat{X}_{i}  \right]^2  \hat{D}_{i}(x_{1},h) + ... \sum_{i}^{n(x_{L},h)}\left[ \hat{Y}_{i}- b_{0}(x_{L},h) - b_{1}(x_{L},h) \hat{X}_{i}  \right]^2  \hat{D}_{i}(x_{L},h) \\
 &= \sum_{i}^{n(x,h)}\left[\hat{Y}_{i}- b_{0}\left(x,h\right) - b_{1}(x,h) \hat{X}_{i}  \right]^2
 \end{aligned}$$
@@ -335,8 +336,8 @@ k_{U}\left( \hat{X}_{i}, x, h \right)
 with is nearly identical to $\hat{D}_{i}(x,h)/ 2$, but uses intervals $[]$ instead of $(]$.
 As such we can see that
 $$\begin{aligned}
-\sum_{i}^{n}\left[ e_{i} \right]^2 k_{U}\left( \hat{X}_{i}, x, h \right)
-&\approx \sum_{i}^{n}\left[ e_{i} \right]^2 \hat{D}_{i}(x,h) / 2 \\
+\sum_{i}^{n}\left[ \hat{E}_{i} \right]^2 k_{U}\left( \hat{X}_{i}, x, h \right)
+&\approx \sum_{i}^{n}\left[ \hat{E}_{i} \right]^2 \hat{D}_{i}(x,h) / 2 \\
 &= \sum_{i}^{n(x,h)}\left[\hat{Y}_{i}- b_{0}\left(x,h\right) - b_{1}(x,h) \hat{X}_{i} \right]^2 / 2,
 \end{aligned}$$
 The constant term $1/2$ is irrelevant to finding the optimal solution (you can check the math yourself).
@@ -398,12 +399,12 @@ where $k(\hat{X}_{i}, x, h)$ is a kernel weight that down-weights observations f
 The locally constant regression is useful as the simplest smoother that produces a continuous fitted curve: at each $x$ it returns a kernel-weighted average of nearby $\hat{Y}_{i}$.
 With a uniform kernel and exclusive bins it reduces to a regressogram, so the regressogram is just its simplest special case.
 
-For some intuition, consider a point $x$ and the model $\hat{Y}_{i} = b_{0}(x, h) + e_{i}$.
+For some intuition, consider a point $x$ and the model $\hat{Y}_{i} = b_{0}(x, h) + \hat{E}_{i}$.
 The weighted OLS estimator with uniform kernel weights $k_{U}$ yields
 $$\begin{aligned}
-&  \min_{b_{0}(x,h)}~ \sum_{i}^{n}\left[e_{i} \right]^2 k_{U}\left( \hat{X}_{i}, x, h \right) \\
+&  \min_{b_{0}(x,h)}~ \sum_{i}^{n}\left[\hat{E}_{i} \right]^2 k_{U}\left( \hat{X}_{i}, x, h \right) \\
 \Rightarrow &  -2 \sum_{i}^{n}\left[\hat{Y}_{i}- b_{0}(x, h) \right] k_{U}\left(\hat{X}_{i}, x, h\right) = 0 \\
-\Rightarrow &  \hat{b}_{0}(x)
+\Rightarrow &  \hat{B}_{0}(x)
 = \frac{\sum_{i} \hat{Y}_{i} k_{U} \left( \hat{X}_{i}, x, h \right) }{ \sum_{i} k_{U}\left( \hat{X}_{i}, x, h \right) }
 = \sum_{i} \hat{Y}_{i} \left[ \frac{ k_{U} \left( \hat{X}_{i}, x, h \right) }{ \sum_{i} k_{U}\left( \hat{X}_{i}, x, h \right)} \right]
 = \sum_{i} \hat{Y}_{i} w_{i}(x, h),
@@ -441,9 +442,9 @@ predict(preg_k, newdata=data.frame(school=x))
 
 :::
 
-#### **Notes**.{-}
+#### **Notes**{-}
 
-When $n$ is small, $\hat{b}_{U}(x, h)$ is typically estimated for each unique observed value: $x \in \{ x_{1},...x_{n} \}$.
+When $n$ is small, $\hat{B}_{U}(x, h)$ is typically estimated for each unique observed value: $x \in \{ x_{1},...x_{n} \}$.
 For large datasets, you can select a subset or evenly spaced values of $x$ for which to make predictions.
 
 If $\hat{X}_{i}$ represents time, then the local constant regressions is also called a *moving average*.
@@ -489,12 +490,12 @@ We can also add a slope term to address the bias.
 
 ## Local Linear Regression
 A less simple case is a *local linear regression* which conducts a linear regression for each data point using a subsample of data around it. 
-Consider a point $x$ and model $\hat{Y}_{i} = b_{0}(x,h) + b_{1}(x) \hat{X}_{i} + e_{i}$ for data near $x$.
+Consider a point $x$ and model $\hat{Y}_{i} = b_{0}(x,h) + b_{1}(x) \hat{X}_{i} + \hat{E}_{i}$ for data near $x$.
 The weighted OLS estimator with kernel weights is
 $$\begin{aligned}
 &  \min_{b_{0}(x, h),b_{1}(x, h)}~ \sum_{i}^{n}\left[\hat{Y}_{i}- b_{0}(x, h) - b_{1}(x,h) \hat{X}_{i} \right]^2  k_{U}\left( \hat{X}_{i}, x, h\right)
 \end{aligned}$$
-Deriving the optimal values $\hat{b}_{0}(x, h)$ and  $\hat{b}_{1}(x,h)$ for $k_{U}$ is left as a homework exercise.
+Deriving the optimal values $\hat{B}_{0}(x, h)$ and  $\hat{B}_{1}(x,h)$ for $k_{U}$ is left as a homework exercise.
 
 
 ```{r}
@@ -582,11 +583,11 @@ legend('topleft', title='Locally Linear',
 4. Using the `USArrests` dataset, write R code to estimate a local linear regression of `Murder` on `UrbanPop` using uniform kernel weights with bandwidth $h = 10$.
    Compute predictions at design points `X0 <- seq(40, 80, by = 10)` and plot them over the scatterplot.
 
-5. The chapter derives the optimal locally constant coefficient $\hat{b}_{0}(x,h)$ but leaves the local linear case as an exercise.
+5. The chapter derives the optimal locally constant coefficient $\hat{B}_{0}(x,h)$ but leaves the local linear case as an exercise.
    Starting from the weighted objective $\sum_{i} [\hat{Y}_{i} - b_{0} - b_{1}\hat{X}_{i}]^2 \, k_{U}(\hat{X}_{i}, x, h)$, set the partial derivatives with respect to $b_{0}$ and $b_{1}$ to zero.
-   Show that the solution is the simple-regression formula applied to the kernel-weighted data: $\hat{b}_{1}(x,h) = \hat{C}_{XY}(x,h)/\hat{V}_{X}(x,h)$ and $\hat{b}_{0}(x,h) = \hat{M}_{Y}(x,h) - \hat{b}_{1}(x,h)\hat{M}_{X}(x,h)$.
+   Show that the solution is the simple-regression formula applied to the kernel-weighted data: $\hat{B}_{1}(x,h) = \hat{C}_{XY}(x,h)/\hat{V}_{X}(x,h)$ and $\hat{B}_{0}(x,h) = \hat{M}_{Y}(x,h) - \hat{B}_{1}(x,h)\hat{M}_{X}(x,h)$.
 
-#### **Further Reading**. {-}
+#### **Further Reading** {-}
 
 * <https://www.econometrics-with-r.org/11-1-heteroskedasticity-and-homoskedasticity.html> -- motivates nonparametric methods by showing where linear models break down.
 * <https://cran.r-project.org/doc/manuals/R-intro.html#LOESS> -- R's built-in documentation on `loess()`, including span selection and fitting options.
@@ -595,6 +596,6 @@ legend('topleft', title='Locally Linear',
 #### **Recall** {-}
 
 This chapter let the wage-schooling relationship bend by fitting local models on the `Wages1` data: regressograms (bin means), piecewise regression (bin lines), locally constant kernel regression, and locally linear regression.
-The three-observation worked example $\{(1, 2), (4, 4), (12, 3)\}$ split into two bins at $h=9/2$ gave regressogram coefficients $\hat{b}_{0}(x=4.5)=(2+4)/2=3$ and $\hat{b}_{0}(x=13.5)=3$.
+The three-observation worked example $\{(1, 2), (4, 4), (12, 3)\}$ split into two bins at $h=9/2$ gave regressogram coefficients $\hat{B}_{0}(x=4.5)=(2+4)/2=3$ and $\hat{B}_{0}(x=13.5)=3$.
 The next chapter asks how to evaluate these fits and how much they vary across samples: model-fit metrics ($\hat{MSE}$ and $\hat{MAPE}$), the bias-variance tradeoff, bootstrap confidence bands, gradient summaries, and consistency.
 

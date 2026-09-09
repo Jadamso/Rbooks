@@ -4,11 +4,11 @@
 
 There are several ways to statistically assess the relationship between two variables.
 The major differences surround whether the data are cardinal or an ordered/unordered factor.
-In all cases, we measure association but not causation.
+In all cases, these statistics measure association; [Association and Prediction Are Not Causation](02_17_NotCausation.qmd#association-is-not-causation) explains why they do not identify causal effects.
 
 ## Cardinal Data
 
-#### **Pearson (Linear) Correlation**. {-}
+#### **Pearson (Linear) Correlation** {-}
 
 When two variables are cardinal, the foundational measure of how they move together is the covariance.
 
@@ -120,7 +120,7 @@ cor(X, Y)
 ```
 :::
 
-#### **Hypothesis Testing**. {-}
+#### **Hypothesis Testing** {-}
 
 You can conduct hypothesis tests for these statistics using the same procedures we learned for univariate data, [ch.5](01_07_Intervals.qmd).
 For example, by inverting a confidence interval.
@@ -202,19 +202,17 @@ Permutation     | $n$   | $B$  | $X$: Random resample without replacement | Perc
 : Types of resampling
 
 
-#### **Falk Codeviance**. {-}
+#### **Falk Codeviance** {-}
 
 When the data contain outliers, the mean-based covariance can be misleading and a robust alternative is needed.
 
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *Falk codeviance* $\tilde{C}_{XY}$ replaces the mean-based average in the covariance with the median of paired deviations from each variable's median (where $\tilde{M}_{X}$ and $\tilde{M}_{Y}$ are the sample medians):
 $$\tilde{C}_{XY} = \text{Med}\left\{ (\hat{X}_{i} - \tilde{M}_{X})(\hat{Y}_i - \tilde{M}_{Y}) \right\}.$$
 
 The *median correlation* $\tilde{R}_{XY}$ rescales the codeviance by the product of the two median absolute deviations:
 $$\tilde{R}_{XY} = \frac{ \tilde{C}_{XY} }{ \hat{\text{MAD}}_{X} \hat{\text{MAD}}_{Y}}.$$
-:::
 
-The Falk codeviance is useful for cardinal data with outliers or heavy tails (income, prices, response times), where one extreme observation can move $\hat{C}_{XY}$ by a lot but $\tilde{C}_{XY}$ by very little (the same robustness rationale as for the median, $IQR$, and $\text{MAD}$ from Part 1).^[See <01_03_DescriptiveStatistics.qmd#medians-and-absolute-deviations.>. See also the *Theil-Sen Estimator*, which may be seen as a precursor.]
+The Falk codeviance is useful for cardinal data with outliers or heavy tails (income, prices, response times), where one extreme observation can move $\hat{C}_{XY}$ by a lot but $\tilde{C}_{XY}$ by very little (the same robustness rationale as for the median, $IQR$, and $\text{MAD}$ from Part 1).^[See [Medians and Absolute Deviations](01_03_DescriptiveStatistics.qmd#medians-and-absolute-deviations). See also the *Theil-Sen Estimator*, which may be seen as a precursor.]
 Unlike the Pearson correlation, the median correlation $\tilde{R}_{XY}$ typically lies in $[-1,1]$ but not always.
 ```{r}
 codev <- function(xy) {
@@ -285,7 +283,7 @@ abline(v=xy_codev, col=rgb(0, 0, 1, .8))
 
 ## Factor Data
 
-#### **Two Ordered Factors**. {-}
+#### **Two Ordered Factors** {-}
 
 When the data are ordered (rankings or ordered categories), we can summarize association by counting which pairs of observations agree in direction.
 
@@ -398,7 +396,7 @@ output()
 
 
 
-#### **Two Unordered Factors**. {-}
+#### **Two Unordered Factors** {-}
 
 When neither variable has a meaningful order, we organize the data as a contingency table and summarize the strength of association with a single bounded score.
 
@@ -474,157 +472,26 @@ c(chi2=chi2, CramerV=sqrt((chi2/n)/df_min))
 
 You construct sampling distributions and conduct hypothesis tests for  Cramer's V statistic in the same way you do as the other statistics.
 
-## Association is not Causation
-
-
-One major issue is statistical significance: sometimes there are relationships in the population that do not show up in samples, or non-relationships that appear in samples.
-This should be familiar at this point.
-
-Other major issues pertain to a) real relationships averaging out and b) mechanically inducing relationships with random data.
-To be concrete about these issue, I will focus on the most-used correlation statistic and examine
-
-* Causation without correlation
-* Correlation without causation
-
-
-#### **Causation without correlation**. {-}
-
-Examples of this first issue includes *nonlinear effects* and  *heterogeneous effects* averaging out.
-
-```{r}
-set.seed(123)
-n <- 10000
-
-# X causes Y via Y = X^2 + noise
-X <- runif(n, min = -1, max = 1)
-epsilon <- rnorm(n, mean = 0, sd = 0.1)
-Y <- X^2 + epsilon  # clear causal effect of X on Y
-plot(X, Y, pch=16, col=grey(0, .05),
-    main=NA, xlab='X', ylab='Y')
-
-# Correlation over the entire range
-title( paste0('Cor: ', round( cor(X, Y), 1) ) ,
-    font.main=1)
-```
-
-```{r}
-# Heterogeneous Effects
-X <- rnorm(n) # Randomized 'treatment'
-
-# Heterogeneous effects based on group
-group <- rbinom(n, size = 1, prob = 0.5)
-epsilon <- rnorm(n, mean = 0, sd = 1)
-Y <- ifelse(group == 1,
-            X + epsilon,   # positive effect
-            -X + epsilon)  # negative effect
-plot(X, Y, pch=16, col=grey(0, .05),
-    main=NA, xlab='X', ylab='Y')
-
-# Correlation in the pooled sample
-title( paste0('Cor: ', round( cor(X, Y), 1) ),
-    font.main=1 )
-```
-
-
-#### **Correlation without causation**. {-}
-Examples of this second issue includes *shared denominators* and  *selection bias* inducing correlations.
-
-Consider three completely random variables.
-We can induce a mechanical relationship between the first two variables by dividing them both by the third variable.
-
-```{r}
-set.seed(123)
-n <- 20000
-
-# Independent components
-A <- runif(n)
-B <- runif(n)
-C <- runif(n)
-par(mfrow=c(1, 2))
-plot(A, B, pch=16, col=grey(0, .05),
-    main=NA, xlab='A', ylab='B')
-title('Independent Variables', font.main=1)
-
-# Ratios with a shared denominator
-X <- A / C
-Y <- B / C
-plot(X, Y, pch=16, col=grey(0, .05),
-    main=NA, xlab='X', ylab='Y')
-title('With Common Divisor', font.main=1)
-
-# Correlation
-cor(X, Y)
-```
-
-Consider an admissions rule into university: applicants are accepted if they have either high test scores or strong extracurriculars.
-Even if there is no general relationship between test scores and extracurriculars, you will see one amongst university students.
-
-```{r}
-
-# Independent traits in the population
-test_score        <- rnorm(n, mean = 0, sd = 1)
-extracurriculars  <- rnorm(n, mean = 0, sd = 1)
-
-# Selection above thresholds
-threshold <- 1.0
-admitted <- (test_score > threshold) | (extracurriculars > threshold)
-mean(admitted)  # admission rate
-
-par(mfrow = c(1, 2))
-# Full population
-plot(test_score, extracurriculars,
-     pch=16, col=grey(0, .05),
-     main=NA, xlab='Test Score', ylab='Extracurriculars')
-title('General Sample', font.main=1)
-# Admitted only
-plot(test_score[admitted], extracurriculars[admitted],
-     pch=16, col=grey(0, .05),
-     main=NA, xlab='Test Score', ylab='Extracurriculars')
-title('University Sample', font.main=1)
-# Correlation among admitted applicants only
-cor(test_score[admitted], extracurriculars[admitted])
-```
-
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-In the dataset below, compute the correlation statistic and comment on whether any relationship is causal. 
-```{r}
-plot(Murder ~ Assault, USArrests, pch=16, col=grey(0, .5),
-    main=NA, xlab='Assault Arrests', ylab='Murder Arrests')
-```
-:::
-
-Note that the examples above are not the only examples of "correlation does not mean causation".
-Many real datasets have temporal and spatial interdependence that create additional issues.
-Many real datasets also have economic interdependence, which also creates additional issues.
-We will delay covering these issues until much later.
-
-
-
 ## Exercises
 
 1. Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in [Working with AI](04_A_WorkingWithAI.qmd).
    Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing.
    Finish with your own questions about whatever you found hardest.
 
-2. Give an example of a dataset where Pearson's correlation $\hat{R}_{XY}$ is close to zero but there is a clear causal relationship between $X$ and $Y$.
-   What feature of the relationship causes the correlation to miss it, and which alternative statistic from this chapter might detect it?
-
-3. For the dataset $\{(1, 5),\ (2, 3),\ (3, 4),\ (4, 2),\ (5, 1)\}$, compute the Pearson correlation $\hat{R}_{XY}$ by hand.
+2. For the dataset $\{(1, 5),\ (2, 3),\ (3, 4),\ (4, 2),\ (5, 1)\}$, compute the Pearson correlation $\hat{R}_{XY}$ by hand.
    Show all five steps: means, deviances, covariance $\hat{C}_{XY}$, standard deviations $\hat{S}_{X}$ and $\hat{S}_{Y}$, and the final correlation.
 
-4. Using the `USArrests` dataset, compute both the Pearson correlation and Kendall's rank correlation between `Murder` and `Assault`.
+3. Using the `USArrests` dataset, compute both the Pearson correlation and Kendall's rank correlation between `Murder` and `Assault`.
    Then write a bootstrap with $B = 9999$ iterations to construct a $95\%$ confidence interval for the Pearson correlation.
    Does the interval contain zero?
 
-#### **Further Reading**. {-}
+#### **Further Reading** {-}
 
 * <https://www.econometrics-with-r.org/2-2-an-application-to-the-gender-gap-of-earnings.html> -- worked example of computing and interpreting correlation in an economics setting.
 * <https://learningstatisticswithr.com/book/regression.html#correlations> -- clear introduction to Pearson, Spearman, and other correlation measures with R code.
-* <https://www.khanacademy.org/math/statistics-probability/describing-relationships-quantitative-data/scatterplots-and-correlation/v/correlation-and-causality> -- short video on why correlation does not imply causation.
 
 #### **Recall** {-}
 
 This chapter summarized two-variable association with a small toolbox matched to data type: Pearson correlation $\hat{R}_{XY}$ for cardinal data (worked out by hand on $\{(0, 0.1), (1, 0.3), (2, 0.2)\}$, yielding $\hat{R}_{XY}=1/2$), Falk codeviance $\tilde{C}_{XY}$ as the robust cousin for outlier-prone data, Kendall's $\hat{KT}$ for ordered factors (walked through the six pairs of $\{(1, 1), (2, 3), (3, 2), (4, 4)\}$ to get $\hat{KT}=2/3$), and Cramer's V $\hat{CV}$ for unordered factors (the $2\times 2$ degree-vs-employment table giving $\hat{CV}\approx 0.41$).
-We closed with simulations showing that association is not causation.
+These statistics describe association rather than causation, a distinction developed in [Association and Prediction Are Not Causation](02_17_NotCausation.qmd).
 The next chapter takes the cardinal case and fits a line, which moves from "how strongly do $X$ and $Y$ move together" to "by how much does $Y$ change per unit of $X$".

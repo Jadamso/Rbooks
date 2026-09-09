@@ -16,12 +16,13 @@ import glob, os, re, sys
 # ── Known datasets ──────────────────────────────────────────────────────────
 # Built-in R datasets referenced directly (without data() call)
 BUILTIN_DATASETS = {
-    'USArrests':    'datasets (built-in)',
-    'anscombe':     'datasets (built-in)',
-    'state.region': 'datasets (built-in)',
-    'state.name':   'datasets (built-in)',
-    'state.x77':    'datasets (built-in)',
-    'state.abb':    'datasets (built-in)',
+    'USArrests':     'datasets (built-in)',
+    'UCBAdmissions': 'datasets (built-in)',
+    'anscombe':      'datasets (built-in)',
+    'state.region':  'datasets (built-in)',
+    'state.name':    'datasets (built-in)',
+    'state.x77':     'datasets (built-in)',
+    'state.abb':     'datasets (built-in)',
 }
 
 # Datasets accessed via library(wooldridge)

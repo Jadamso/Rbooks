@@ -1,0 +1,421 @@
+# Mixed-Data Regression
+***
+
+## Introduction
+
+The previous chapter compared means and distributions across several groups.
+This chapter rewrites those group comparisons as regressions, first with treatment coding and then with effect coding.
+It then develops two resampling methods with different purposes: permutation tests impose a null relationship by shuffling a factor variable, while subsampling keeps each observation intact and checks how estimates vary when some observations are omitted.
+These methods sharpen what a regression can establish, but none turns an observational relationship into a causal effect.
+The word *effect* in *effect coding* names a parameterization, not a causal claim.
+
+We continue with `USArrests` and the four-level `state.region` factor from [Comparing Multiple Groups](03_22_MultipleGroups.qmd).
+
+```{r}
+# Recreate the regional data so this chapter runs independently.
+dat <- USArrests
+dat$Region <- state.region
+table(dat$Region)
+```
+
+## Regression
+
+[ANOVA](03_22_MultipleGroups.qmd#equal-means-anova) is a special case of linear regression where the only explanatory variables are group indicators.
+
+#### **ANOVA** {-}
+
+The model $\hat{Y}_{ig} = b_0 + \sum_{g=2}^{G} b_g \hat{D}_{ig} + \hat{E}_{ig}$ produces the same $F$-statistic as the ANOVA model in the previous chapter.
+After fitting, $\hat{B}_0$ estimates the mean of the reference group and each $\hat{B}_g$ estimates the difference between group $g$ and the reference.
+This default representation is called *treatment coding*.
+
+```{r}
+# Compare the regional means to treatment-coded coefficients.
+M_g <- aggregate(Murder ~ Region, data=dat, FUN=mean)[,'Murder']
+M_g
+
+# The intercept is the reference mean.
+M_g - M_g[1]
+
+# Each remaining coefficient is a difference from the reference.
+fit_lm <- lm(Murder ~ Region, data=dat)
+coef(fit_lm)
+```
+
+The ANOVA table for a regression with a single factor is therefore the same as the table from `aov()`.
+
+```{r}
+fit_aov <- aov(Murder ~ Region, data=dat)
+anova(fit_aov)
+anova(fit_lm)
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Suppose there are $G=3$ groups with means $\hat{M}_1=4$, $\hat{M}_2=7$, and $\hat{M}_3=5$.
+Using group 1 as the reference, the regression coefficients are $\hat{B}_0=4$, $\hat{B}_2=7-4=3$, and $\hat{B}_3=5-4=1$.
+The intercept equals the reference-group mean, and each slope equals a difference from that reference.
+
+```{r}
+# Verify the treatment-coded coefficients.
+Y <- c(3, 4, 5, 6, 7, 8, 4, 5, 6)
+g <- factor(c(1, 1, 1, 2, 2, 2, 3, 3, 3))
+coef(lm(Y ~ g))
+```
+:::
+
+#### **Effect Coding** {-}
+
+Treatment coding makes every coefficient depend on which group R selects as the reference.
+Effect coding instead compares each displayed group with the mean across all group means.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+With $G$ factor levels, *effect coding* creates $G-1$ columns.
+For column $g$, observations in level $g$ receive $1$, observations in the omitted level receive $-1$, and observations in the other levels receive $0$.
+In a factor-only regression, $\hat{B}_0$ is the unweighted mean of the $G$ group means, each displayed $\hat{B}_g$ is that group's deviation from the unweighted mean, and the omitted group's effect is $-\sum_{g=1}^{G-1}\hat{B}_g$.
+:::
+
+Effect coding is useful when no group is a natural reference and the deviations from a common center are easier to discuss than several pairwise differences.
+Because the four regions contain different numbers of states, the unweighted mean of their four means is not the observation-weighted mean across all 50 states.
+
+```{r}
+# Display the sum-to-zero contrast matrix used for effect coding.
+effect_matrix <- contr.sum(nlevels(dat$Region))
+rownames(effect_matrix) <- levels(dat$Region)
+effect_matrix
+
+# Apply contrasts to this model only, without changing global options.
+fit_effect <- lm(
+    Murder ~ Region,
+    data=dat,
+    contrasts=list(Region='contr.sum')
+)
+coef(fit_effect)
+
+# Compare each regional mean with the unweighted mean of group means.
+region_means <- aggregate(Murder ~ Region, data=dat, FUN=mean)
+effect_mean <- mean(region_means[,'Murder'])
+region_effects <- region_means[,'Murder'] - effect_mean
+data.frame(
+    region=region_means[,'Region'],
+    group_mean=region_means[,'Murder'],
+    coded_effect=region_effects
+)
+
+# Recover the omitted West effect from the sum-to-zero restriction.
+-sum(coef(fit_effect)[-1])
+```
+
+Changing the contrasts changes the meanings of the coefficients, but not the fitted values, residuals, $\hat{R}^2$, or global $F$-statistic.
+
+```{r}
+treatment_F <- anova(fit_lm)[['F value']][1]
+effect_F <- anova(fit_effect)[['F value']][1]
+
+c(
+    maximum_fitted_difference=max(abs(fitted(fit_lm) - fitted(fit_effect))),
+    maximum_residual_difference=max(abs(resid(fit_lm) - resid(fit_effect))),
+    treatment_F=treatment_F,
+    effect_F=effect_F
+)
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+The effect-coded intercept is about $7.28$, while the overall mean of `Murder` across all states is about $7.79$.
+Use `table(dat$Region)` and the regional means to explain why these numbers differ.
+Then change the order of the factor levels and verify that the fitted values remain unchanged.
+:::
+
+#### **Regression with Factors** {-}
+
+We can extend the group-comparison model by adding continuous predictors alongside the factor.
+For example, we might ask whether regional differences in murder arrest rates persist after holding `Assault` fixed.
+
+```{r}
+# Add a continuous predictor to the regional model.
+reg_combined <- lm(Murder ~ Region + Assault, data=dat)
+summary(reg_combined)
+```
+
+Holding `Assault` fixed changes the conditional association being summarized.
+It does not by itself remove confounding, reverse causation, measurement error, or other reasons that a regression coefficient may not be causal.
+
+#### **Fixed Effects** {-}
+
+The dummy-variable model treats each group as having its own intercept.
+This framing is useful when group identity captures features we cannot otherwise measure.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+*Fixed effects* are group-specific intercepts that absorb every time-invariant feature of the group, entering the regression as
+$$
+\hat{Y}_{i} = \sum_{k=0}^{K} b_k \hat{X}_{ik} + \sum_{g}\hat{D}_{g}b_{g}.
+$$
+Including the dummy variables directly in OLS or using a dedicated routine such as `fixest::feols()` gives the same coefficients on the remaining regressors and the same residuals.
+:::
+
+Fixed effects are useful when a factor predicts the outcome but the coefficients on its individual levels are not the main object of interest.
+The coefficient on another predictor then describes its partial relationship with the outcome after removing level differences across the factor.
+The dummy-variable approach and a dedicated fixed-effects estimator are algebraically equal, giving the same coefficient and residuals.
+
+```{r}
+# Estimate the Assault coefficient with explicit region indicators.
+reg_dv <- lm(Murder ~ -1 + Assault + Region, data=dat)
+coef(reg_dv)['Assault']
+
+# Estimate the same coefficient by absorbing the region effects.
+reg_fe <- fixest::feols(Murder ~ Assault | Region, data=dat)
+coef(reg_fe)
+```
+
+With fixed effects, we can also compute averages for each group: $\hat{M}_{Yg}=\sum_{i}^{n_{g}}\hat{Y}_{ig}/n_{g}$, where group $g$ has $n_g$ observations denoted $\hat{Y}_{ig}$.
+We can construct a *between estimator* from $\hat{M}_{Yg}=b_0+\hat{M}_{Xg}b_1$.
+Alternatively, we can subtract each group average to construct a *within estimator*: $(\hat{Y}_{ig}-\hat{M}_{Yg})=(\hat{X}_{ig}-\hat{M}_{Xg})b_1$.
+Absorbing fixed group differences does not remove confounders that vary within a group.
+
+#### **Comparing Models** {-}
+
+The [ANOVA $F$-statistic](03_22_MultipleGroups.qmd#the-f-statistic) also compares nested regression models.
+Under additional parametric assumptions, the statistic follows an $F$ distribution under the null.
+We can build a sequence of nested models, each adding one layer of complexity, to see which predictors contribute.
+The first asks whether group means differ, the second whether a continuous predictor adds explanatory power, and the third whether that predictor's slope varies across groups.
+
+```{r}
+# Order the nested models from simplest to most complex.
+reg0 <- lm(Murder ~ 1, data=dat)
+reg1 <- lm(Murder ~ Region, data=dat)
+reg2 <- lm(Murder ~ Region + Assault, data=dat)
+reg3 <- lm(Murder ~ Region * Assault, data=dat)
+
+# Test whether Region adds information.
+anova(reg0, reg1)
+
+# Test whether Assault adds information beyond Region.
+anova(reg1, reg2)
+
+# Test whether the Assault slope differs by Region.
+anova(reg2, reg3)
+```
+
+```{r}
+# Reproduce the first nested-model F-test by hand.
+rss0 <- sum(resid(reg0)^2)
+rss1 <- sum(resid(reg1)^2)
+df0 <- df.residual(reg0)
+df1 <- df.residual(reg1)
+F <- ((rss0 - rss1)/(df0 - df1))/(rss1/df1)
+p <- 1 - pf(F, df0 - df1, df1)
+cbind(F, p)
+```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+The sequence of $F$-tests builds from simple to complex.
+The first test asks whether Region adds information at all.
+The second asks whether Assault adds information beyond Region.
+The third asks whether the Assault-Murder relationship varies across regions.
+A small $p$-value rejects the simpler model, but it does not explain why the relationship exists.
+:::
+
+## Permutation Tests
+
+The theoretical $F$-test uses assumptions about independent Normal errors with equal variance.
+A permutation test instead constructs a null distribution by rearranging the observed factor labels.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *permutation test for a factor variable* repeatedly shuffles the factor labels without replacement, recomputes a global statistic such as $\hat{F}$, and compares the observed statistic with this permutation distribution.
+Under the null, the labels must be exchangeable across observations.
+:::
+
+Permutation tests are useful when we want a reference distribution that preserves the observed outcomes and the exact number of observations in each group.
+They differ from the label bootstrap in the previous chapter because sampling without replacement keeps all four regional group counts fixed.
+
+#### **A Global Factor Test** {-}
+
+The global $F$-statistic tests the factor as one object.
+This is preferable to separately permuting its $G-1$ coded columns, which would destroy the rule that each observation belongs to exactly one group.
+It is also coding-invariant, so treatment and effect coding produce the same observed and permuted statistics.
+
+```{r}
+#| fig-cap: "Permutation distribution for the regional F-statistic."
+#| fig-alt: "Histogram of F-statistics after shuffling regional labels. The observed F-statistic is marked by a red vertical line to the right of the simulated null distribution."
+
+set.seed(23)
+
+F_stat <- function(Y, group) {
+    fit <- lm(Y ~ group)
+    F_value <- anova(fit)[['F value']][1]
+    return(F_value)
+}
+
+F_obs <- F_stat(Y=dat[,'Murder'], group=dat[,'Region'])
+B <- 9999
+F_perm <- rep(NA, B)
+
+for (b in seq(B)) {
+    group_b <- sample(dat[,'Region'], replace=FALSE)
+    F_perm[b] <- F_stat(Y=dat[,'Murder'], group=group_b)
+}
+
+# Add one simulated result to avoid reporting a zero Monte Carlo p-value.
+p_perm <- (sum(F_perm >= F_obs) + 1)/(B + 1)
+p_param <- anova(fit_lm)[['Pr(>F)']][1]
+c(F_obs=F_obs, p_permutation=p_perm, p_parametric=p_param)
+
+hist(F_perm, breaks=40, border=NA, freq=FALSE, main=NA,
+    xlim=c(0, F_obs*1.05),
+    xlab='F-statistic under permuted region labels')
+abline(v=F_obs, col=rgb(1, 0, 0, .8), lwd=2)
+title(paste0('permutation p-value = ',
+    formatC(p_perm, format='f', digits=4)), font.main=1)
+```
+
+The observed regional $F$-statistic lies in the far-right tail of the permutation distribution.
+The test therefore provides evidence that murder arrest rates and region are associated, under the assumption that the labels are exchangeable under the null.
+
+#### **What Can Be Permuted** {-}
+
+The simple shuffle above is appropriate for the factor-only model because the null removes the only relationship in the model.
+In a regression with controls, naively shuffling `Region` would also break its relationship with those controls.
+Adjusted permutation tests therefore require a design-specific restricted permutation or a method that permutes residuals under a reduced model.
+
+Exchangeability is also a substantive assumption rather than a computational fact.
+States may be spatially related, and region was not randomly assigned.
+The small permutation $p$-value does not estimate the effect of moving a state to another region.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+A permutation test changes the pairing between `Murder` and `Region` while preserving the four group counts.
+If `Region` had been randomly assigned in an experiment, the shuffle could reproduce the assignment mechanism.
+For these observational data, it instead tests a no-association null under exchangeability.
+:::
+
+## Subsampling
+
+Permutation and subsampling both rerun a statistic on altered data, but they answer different questions.
+Permutation breaks a relationship to impose a null.
+Subsampling preserves each row and asks how much an estimate changes when some rows are left out.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+*Random subsampling* draws $B$ samples of size $m<n$ without replacement and recomputes the statistic in each.
+When $m=n-d$, the procedure is a random delete-$d$ jackknife.
+:::
+
+Random subsampling is useful for checking whether a regression result is stable across overlapping subsets of the observed data.
+The table compares it with the [bootstrap](01_05_Sampling.qmd#bootstrap-distribution) and [jackknife](01_05_Sampling.qmd#jackknife-distribution).
+
+| Method | Sample Size per Iteration | Number of Iterations | Resample |
+|---|---:|---:|---|
+| Bootstrap | $n$ | $B$ | With replacement |
+| Jackknife | $n-1$ | $n$ | Without replacement |
+| Random delete-$d$ subsample | $m=n-d$ | $B$ | Without replacement |
+
+#### **Random Delete-$d$ Samples** {-}
+
+The raw spread of estimates across overlapping subsamples is not the standard error of the full-sample estimator.
+For the random delete-$d$ jackknife used here, the variance estimate applies the correction [@PolitisEtAl1999]
+$$
+\hat{V}^{\text{sub}}
+=
+\frac{m}{dB}
+\sum_{b=1}^{B}
+\left(\hat{B}^{\text{sub}}_{b}-\bar{\hat{B}}^{\text{sub}}\right)^2,
+$$
+and $\hat{SE}^{\text{sub}}=\sqrt{\hat{V}^{\text{sub}}}$.
+The example uses a Normal approximation around the full-sample coefficient rather than taking raw percentiles of the overlapping subsample estimates.
+
+```{r}
+#| fig-cap: "Slope estimates from random delete-10 subsamples."
+#| fig-alt: "Histogram of regression slopes across delete-10 subsamples. The full-sample slope is marked in red and the corrected Normal confidence limits are marked with blue dashed lines."
+
+xy <- USArrests[,c('Murder', 'UrbanPop')]
+colnames(xy) <- c('y', 'x')
+reg <- lm(y ~ x, data=xy)
+b_full <- coef(reg)['x']
+
+# Draw random delete-10 samples without replacement.
+n <- nrow(xy)
+d <- 10
+m <- n - d
+B_sub <- 999
+rs_coefs <- rep(NA, B_sub)
+
+for (b in seq(B_sub)) {
+    b_id <- sample(n, m, replace=FALSE)
+    xy_b <- xy[b_id,]
+    reg_b <- lm(y ~ x, data=xy_b)
+    rs_coefs[b] <- coef(reg_b)['x']
+}
+
+# Correct the spread for overlapping delete-d samples.
+rs_mean <- mean(rs_coefs)
+rs_var <- (m/d)*mean((rs_coefs - rs_mean)^2)
+rs_se <- sqrt(rs_var)
+rs_ci <- b_full + qnorm(c(.025, .975))*rs_se
+c(b_full=b_full, subsample_SE=rs_se, lower=rs_ci[1], upper=rs_ci[2])
+
+hist(rs_coefs, breaks=25, border=NA, freq=FALSE, main=NA,
+    xlim=range(c(rs_coefs, rs_ci)),
+    xlab='Subsample slope on UrbanPop')
+abline(v=b_full, lwd=2, col=rgb(1, 0, 0, .8))
+abline(v=rs_ci, lty=2, col=rgb(0, 0, 1, .8))
+title(paste0('delete-', d, ' SE = ', round(rs_se, 3)), font.main=1)
+```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+The example deletes $d=10$ observations and retains $m=40$ per iteration.
+Increasing $d$ makes individual subsets less similar to the full dataset, while increasing $B$ only reduces Monte Carlo noise from which subsets happened to be drawn.
+Neither change creates new information beyond the original 50 states.
+:::
+
+#### **Permutation Versus Subsampling** {-}
+
+A permutation iteration keeps all $n$ observations but changes which outcome is paired with each factor label.
+A subsampling iteration keeps the original pairings but uses only $m<n$ observations.
+The permutation distribution describes a test statistic under a null relationship.
+The subsampling distribution describes sensitivity to omitting observations and requires a scaling correction before it estimates full-sample uncertainty.
+
+## What the Results Establish
+
+Treatment coding and effect coding are two coordinate systems for the same fitted group means.
+The word *effect* does not change the statistical model or supply a causal interpretation.
+
+The permutation test provides evidence against a no-association null under exchangeability.
+It identifies a surprising arrangement of outcomes and labels, not what would happen under an intervention.
+
+The subsampling result shows how a coefficient responds to deleting observations.
+A stable coefficient can still be confounded, and an unstable coefficient is not necessarily biased.
+
+These limits extend the distinction introduced in [Association and Prediction Are Not Causation](02_17_NotCausation.qmd).
+The later chapters on [Observational Data](03_26_ObservationalData.qmd) and [Experimental Data](03_27_ExperimentalData.qmd) develop the designs and assumptions required for causal claims.
+
+## Exercises
+
+1. Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in [Working with AI](04_A_WorkingWithAI.qmd).
+   Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing.
+   Finish with your own questions about whatever you found hardest.
+
+2. Suppose three groups have means $4$, $7$, and $5$.
+   Compute the treatment-coded coefficients using the first group as the reference.
+   Then compute the effect-coded intercept and all three group effects, checking that the effects sum to zero.
+
+3. Using `USArrests` and `state.region`, construct a permutation test of whether mean `Assault` arrest rates differ across regions.
+   Use $B=9999$ permutations, report the global $F$-statistic and permutation $p$-value, and compare the result with `anova(lm(Assault ~ Region, data=dat))`.
+
+4. Extend the running example by fitting `Murder ~ Region + Assault + UrbanPop` and `Murder ~ Region * Assault + UrbanPop`.
+   Use `anova()` to test whether the Region-Assault interaction terms are jointly significant after controlling for `UrbanPop`.
+   Explain why this test does not establish that assault arrests cause murder arrests.
+
+5. Repeat the subsampling example with $d=5$, $d=10$, and $d=20$.
+   Apply the delete-$d$ correction in each case and compare the standard errors.
+   Explain why increasing $B$ makes the simulation more stable without increasing the information in the original sample.
+
+#### **Further Reading** {-}
+
+* <https://www.econometrics-with-r.org/7-htaciimr.html> -- hypothesis tests for comparing groups in a regression framework, including $F$-tests and joint restrictions.
+* <https://online.stat.psu.edu/stat462/node/137/> -- ANOVA as a special case of regression, with examples of multiple-group comparisons.
+* @PolitisEtAl1999 -- a systematic treatment of subsampling methods and their statistical foundations.
+* @BinEtAl2015 -- a comparison of subsampling and bootstrapping for the stability of multivariable regression models.
+
+#### **Recall** {-}
+
+This chapter rewrote ANOVA as a regression with a factor variable and showed that treatment and effect coding change coefficient meanings without changing the fitted model.
+The regional example gave an effect-coded intercept of about $7.28$, the unweighted mean of the four regional means, while its global $F$-statistic was identical under both codings.
+The permutation test shuffled the factor labels to test a no-association null, whereas random delete-$d$ subsampling preserved each row and measured sensitivity to omitted observations.
+None of these operations made the regional regression causal.
+The next chapter audits fitted regressions for outliers, leverage, collinearity, and misspecification.
