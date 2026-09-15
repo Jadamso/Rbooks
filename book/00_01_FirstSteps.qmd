@@ -53,7 +53,7 @@ It is free on any machine, and it stays free after you graduate and after you le
 
 We will work in R through a second piece of software, RStudio.
 R performs the analysis while RStudio provides the workspace for writing code, inspecting data, and viewing results.^[
-Later, in [Data Analysis](02_20_DataAnalysis.qmd) we will also work with Quarto, so the text, code, and figures of a report can live in one file that rebuilds itself when the data change.]
+Later, in [Data Analysis](02_21_DataAnalysis.qmd) we will also work with Quarto, so the text, code, and figures of a report can live in one file that rebuilds itself when the data change.]
 RStudio is a popular choice in academia and [business](https://posit.co/about/customer-stories).
 
 Excel is useful for data entry and a quick inspection, while R is stronger for work that must be updated, checked, explained, or scaled.
@@ -375,13 +375,94 @@ x_mat * x_mat
 
 Calculations you find yourself doing again and again deserve a single name and a single place to live.
 
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
-A *function* is a named recipe that takes input values, performs a calculation, and returns an output.
-The input names are called *arguments* and the returned value is the function's *output*.
-:::
+A *function* is a named recipe that takes input values (called arguments), performs a calculation, and returns an output.
 
 Functions are useful for any calculation you intend to reuse: define the recipe once, and a single edit to the recipe propagates to every call.
 Naming the calculation also makes scripts easier to read, since a well-chosen function name documents what the code is doing.
+
+
+#### **Common Functions** {-}
+
+Perhaps the most common function we will use is summation.
+You can see exactly what a function does with `?`.
+
+```{r}
+x <- c(1, 10, 4)            # <1>
+x
+sum(x)                      # <2>
+# ?sum                      # <3>
+mean(x)
+```
+1. A vector with three entries.
+2. `sum()` adds the entries of a vector.
+3. Uncomment to open the help page for `sum`.
+
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+An *indicator function* $\mathbf{1}(\cdot)$ takes a logical statement and returns $1$ if the statement is TRUE and $0$ if it is FALSE.
+:::
+
+Summing an indicator counts how many observations satisfy the condition. 
+For example, $\sum_{i=1}^{n}\mathbf{1}\left(\hat{X}_{i}=x\right)$ counts the number of observations equal to $x$.
+
+```{r}
+1*(x == 4)                # <1>
+sum(x == 4, na.rm=TRUE)   # <2>
+mean(x == 4, na.rm=TRUE)  # <3>
+```
+1. Multiplying by `1` converts `TRUE` to `1` and `FALSE` to `0`; this is the indicator function $\mathbf{1}(\hat{X}_{i}=4)$ applied.
+2. Summing an indicator counts how many entries equal `4`.
+3. Averaging an indicator gives the proportion of entries that equal `4`; `na.rm=TRUE` drops the missing value first.
+
+Sometimes, we will use vectors that are entirely ordered.
+```{r}
+x
+order(x)
+x[order(x)]
+sort(x, na.last=TRUE)
+```
+
+We can also make ordered vectors with functions.
+```{r}
+seq(1, 7, by=1) #same as 1:7
+seq(1, 7, by=0.5)
+```
+
+#### **Functions for Matrices** {-}
+
+You can apply functions to all matrix elements
+```{r}
+x1 <- c(1, 4, 10) 
+x2 <- c(3, 0, 2)
+x_mat <- rbind(x1, x2)
+x_mat
+sum(x_mat)                  # <1>
+```
+1. Applied to a matrix, `sum()` adds *every* entry, not just one row or column.
+
+You can apply functions to each row or column of a matrix
+```{r}
+# Row sums
+y_row <- apply(x_mat, 1, sum) # <2>
+y_row
+
+#check row sums are correct
+sum(x_mat[1, ])
+sum(x_mat[2, ])
+```
+2. Apply a function to every row or column of a matrix
+
+```{r}
+# Column sums
+y_col <- apply(x_mat, 2, sum)
+y_col
+
+#check column sums are correct: DIY
+```
+
+
+
+
 
 #### **Creating Simple Functions** {-}
 
@@ -451,63 +532,6 @@ my_range(x)
 :::
 
 
-#### **Common Functions** {-}
-
-Perhaps the most common function we will use is summation.
-You can see exactly what a function does with `?`.
-
-```{r}
-x1 <- c(1, 4, 9)            # <1>
-x1
-sum(x1)                     # <2>
-
-x2 <- c(3, 0, 2)
-x_mat <- rbind(x1, x2)
-x_mat
-sum(x_mat)                  # <3>
-
-# ?sum                      # <4>
-```
-1. A vector with three entries.
-2. `sum()` adds the entries of a vector.
-3. Applied to a matrix, `sum()` adds *every* entry, not just one row or column.
-4. Uncomment to open the help page for `sum`.
-
-
-You can apply functions to each row or column of a matrix
-```{r}
-x_mat
-
-# Row sums
-y_row <- apply(x_mat, 1, sum)
-y_row
-
-#check row sums are correct
-x_row1 <- x_mat[1, ]
-sum(x_row1)
-x_row2 <- x_mat[2, ]
-sum(x_row2)
-
-# Column sums
-y_col <- apply(x_mat, 2, sum)
-y_col
-
-#check column sums are correct: DIY
-```
-
-Sometimes, we will use vectors that are entirely ordered.
-We make them with functions.
-```{r}
-seq(1, 7, by=1) #same as 1:7
-seq(1, 7, by=0.5)
-
-# Ordering data
-sort(x)
-x[order(x)]
-```
-
-
-
 #### **Loops** {-}
 
 Sometimes the same calculation must be performed on many inputs, with each result depending on the previous one or stored alongside the others.
@@ -524,11 +548,12 @@ Applying the same function over and over again
 ```{r}
 # Example 1: simple division
 x <- rep(NA, 3)              # <1>
+x
 for(i in seq(1, 3)){         # <2>
     x[i] <- i/2              # <3>
 }
 x                            # <4>
-# Compare
+
 
 # Example 2: using existing data
 x <- c(1, 3, 9, 2)
@@ -587,12 +612,13 @@ is.na(x)              # <6>
 
 The `&` and `|` commands are logical calculations that compare vectors to the left and right.
 ```{r}
+x <- c(1, 2, 3, NA) 
+
 x < 2
 x >= 1
 (x >= 1) & (x < 2)
 (x >= 1) | (x < 2)
 ```
-
 
 ## Working with AI
 

@@ -107,11 +107,44 @@ abline(v=sd_null, lwd=2, col=rgb(1, 0, 0, .8))
 To better your understanding, try redoing the above for any function (such as `IQR(x_b)/median(x_b)`)
 :::
 
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Suppose you scored $83\%$ on your exam with $50$ questions, but think you are really a $90\%$ student.
-Explain how you might test your hypothesis to your professor who insists your claim be supported by evidence.
-What would be the issue if we could not reject your hypothesis?
-Provide a computer simulation illustrating the issue.
+:::{.callout-note icon=false collapse="false" title="Must Know"}
+Suppose a student scores $77\%$ on a $44$-question multiple-choice exam but believes they are really an $85\%$ student who had a bad day.
+The professor is skeptical: "where's your evidence?"
+The student bootstraps a confidence interval for their "true" proportion correct, resampling from the $44$ right/wrong answers on that one exam.
+
+This creates a conundrum.
+If the confidence interval comes out narrow, it may exclude $85\%$, and the $85\%$ hypothesis is rejected.
+But an interval wide enough to contain $85\%$ is also wide enough to contain $70\%$, so the same evidence fails to rule out a worse student who simply got lucky.
+A single exam cannot easily distinguish the two stories.
+
+```{r}
+# One exam: 34 correct out of 44 questions
+n_questions <- 44
+n_correct <- 34
+outcomes <- c(rep(1, n_correct), rep(0, n_questions - n_correct)) # 1=correct, 0=incorrect
+
+# Bootstrap Distribution for the proportion correct
+set.seed(1)
+bootstrap_props <- rep(NA, 999)
+for(b in seq_along(bootstrap_props)){
+    outcomes_b <- sample(outcomes, replace=TRUE)
+    bootstrap_props[b] <- mean(outcomes_b)
+}
+
+hist(bootstrap_props, breaks=25,
+    border=NA, freq=FALSE,
+    main=NA, xlab='Bootstrap Proportion Correct')
+ci_95 <- quantile(bootstrap_props, probs=c(.025, .975))
+abline(v=ci_95, lwd=2)
+abline(v=c(.70, .85), col=rgb(1, 0, 0, .8), lwd=2, lty=c(2, 1))
+```
+
+The interval comfortably contains both $70\%$ and $85\%$, so the student can reject neither story.
+
+The deeper issue is what the bootstrap resample actually represents.
+Resampling only reshuffles the same $44$ questions, so it approximates how the score would vary if the student retook that exact exam.
+It says nothing about how the student would do on a genuinely different exam with different questions, which is the sampling distribution the student actually needs to make their case.
+Estimating that sampling distribution properly needs new, independent samples: more exams, not more resamples of one exam, and that is a cost the student is unlikely to accept for the rest of the semester.
 :::
 
 
@@ -246,6 +279,44 @@ abline(v=abs(sample_mean-mu), col=rgb(0, 0, 1, .8))
 p2 <- 1 - Fhat_abs0( abs(sample_mean-mu) )
 title( paste0('p=', round(p2, 3)), font.main=1)
 ```
+:::
+
+:::{.callout-note icon=false collapse="false" title="Must Know"}
+Continuing the exam example from above: the student scored $\hat{p}=34/44 \approx 77\%$ and wants to test $H_{0}: p=0.85$.
+Imposing the null shifts the bootstrap distribution of the proportion correct so that it is centered at $0.85$ instead of at $\hat{p}$, exactly as was done for the mean.
+
+```{r}
+n_questions <- 44
+n_correct <- 34
+outcomes <- c(rep(1, n_correct), rep(0, n_questions - n_correct))
+sample_phat <- mean(outcomes)
+
+set.seed(1)
+# Bootstrap NULL: p=0.85
+# Bootstrap shift: center each bootstrap resample so that the distribution satisfies the null hypothesis on average.
+p0 <- 0.85
+bootstrap_props_null <- rep(NA, 999)
+for(b in seq_along(bootstrap_props_null)){
+    outcomes_b <- sample(outcomes, replace=TRUE)
+    bootstrap_props_null[b] <- mean(outcomes_b) + (p0 - sample_phat) # impose the null via Bootstrap shift
+}
+
+# Two-Sided p-value
+boot_absval <- abs(bootstrap_props_null - p0)
+Fhat_abs0 <- ecdf(boot_absval)
+p2 <- 1 - Fhat_abs0( abs(sample_phat - p0) )
+
+hist(bootstrap_props_null, breaks=25, border=NA, freq=FALSE,
+    main=NA, xlab='Null Bootstrap Proportion (H0: p=0.85)')
+ci_95 <- quantile(bootstrap_props_null, probs=c(.025, .975))
+abline(v=ci_95, lwd=2)
+abline(v=sample_phat, lwd=2, col=rgb(0, 0, 1, .8))
+title( paste0('p=', round(p2, 3)), font.main=1)
+```
+
+The two-sided $p$-value comes out around $0.2$, far above the conventional $5\%$ threshold, so we fail to reject $H_{0}: p=0.85$.
+This matches the earlier conclusion from the confidence interval, but the $p$-value adds a precise number for how weak the evidence against $85\%$ actually is, rather than just a reject/fail-to-reject label.
+Testing $H_{0}: p=0.70$ the same way would also fail to reject: the $p$-value is large in both directions because a single $44$-question exam simply cannot pin down the student's true ability closely enough to rule out either story.
 :::
 
 
