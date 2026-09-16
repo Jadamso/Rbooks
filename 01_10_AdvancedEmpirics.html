@@ -493,19 +493,19 @@ window.Quarto = {
 <p>When we want a smoother picture than the jagged steps of a <a href="./01_02_Data.html#histogram-density">histogram</a>, we replace fixed bins with a moving window centered on each value of <span class="math inline">\(x\)</span> we want to evaluate.</p>
 <p>A <em>kernel density</em> estimates the density at <span class="math inline">\(x\)</span> by averaging a smooth weight function (the <em>kernel</em>) centered on each data point, with a bandwidth <span class="math inline">\(h\)</span> that controls how wide the weight spreads. The bandwidth is a half-width, exactly as in the histogram: each kernel below weights observations within <span class="math inline">\(h\)</span> of <span class="math inline">\(x\)</span> and gives zero weight beyond. Unlike the histogram, the bins around each <span class="math inline">\(x\)</span> can overlap, which is why the result is smooth instead of stepped.</p>
 <p>Kernel densities are useful when we want a continuous picture of shape: easier to read than a histogram and better suited to overlaying two or three distributions on the same axes, where stacked or overlapping bars become visually muddled. Different kernels weight nearby points in different ways, producing curves with visually distinct (but qualitatively similar) shapes. The simplest <em>kernel function</em> is the “uniform” (or “rectangular”) kernel, which places a weight of <span class="math inline">\(1/2\)</span> on every point inside the interval <span class="math inline">\(\left[ x-h, x + h\right]\)</span> and zero outside: <span class="math display">\[\begin{aligned}
-k_{U}\left( \hat{X}_{i}, x, h \right)
-&amp;= \frac{\mathbf{1}\left(\frac{|\hat{X}_{i}-x|}{h} \leq 1\right)}{2}
-= \frac{\mathbf{1}\left( \hat{X}_{i} \in \left[ x-h, x + h\right] \right) }{2} \\
-\hat{f}_{U}(x) &amp;= \frac{1}{nh} \sum_{i}^{n} k_{U}(\hat{X}_{i}, x, h)  = \frac{ \sum_{i}^{n} \mathbf{1}\left( \hat{X}_{i} \in \left[ x-h, x + h\right] \right) }{n 2 h}
+k_{U}\left( \hat{x}_{i}, x, h \right)
+&amp;= \frac{\mathbf{1}\left(\frac{|\hat{x}_{i}-x|}{h} \leq 1\right)}{2}
+= \frac{\mathbf{1}\left( \hat{x}_{i} \in \left[ x-h, x + h\right] \right) }{2} \\
+\hat{f}_{U}(x) &amp;= \frac{1}{nh} \sum_{i}^{n} k_{U}(\hat{x}_{i}, x, h)  = \frac{ \sum_{i}^{n} \mathbf{1}\left( \hat{x}_{i} \in \left[ x-h, x + h\right] \right) }{n 2 h}
 \end{aligned}\]</span></p>
-<p>For example, take the dataset <span class="math inline">\(\{3, 3.1, 0.02\}\)</span> with bandwidth <span class="math inline">\(h=1/2\)</span> and evaluate the density at <span class="math inline">\(x=3\)</span>. The interval <span class="math inline">\([x-h, x+h]=[2.5, 3.5]\)</span> contains the two points <span class="math inline">\(3\)</span> and <span class="math inline">\(3.1\)</span>, so <span class="math inline">\(\sum_{i}\mathbf{1}\left(\hat{X}_{i} \in [2.5,3.5]\right)=2\)</span> and <span class="math inline">\(\hat{f}_{U}(3)=\frac{2}{n 2h}=\frac{2}{3\times 1}=2/3\)</span>.</p>
+<p>For example, take the dataset <span class="math inline">\(\{3, 3.1, 0.02\}\)</span> with bandwidth <span class="math inline">\(h=1/2\)</span> and evaluate the density at <span class="math inline">\(x=3\)</span>. The interval <span class="math inline">\([x-h, x+h]=[2.5, 3.5]\)</span> contains the two points <span class="math inline">\(3\)</span> and <span class="math inline">\(3.1\)</span>, so <span class="math inline">\(\sum_{i}\mathbf{1}\left(\hat{x}_{i} \in [2.5,3.5]\right)=2\)</span> and <span class="math inline">\(\hat{f}_{U}(3)=\frac{2}{n 2h}=\frac{2}{3\times 1}=2/3\)</span>.</p>
 <p>Notice that the uniform kernel is essentially the histogram but without the restriction that <span class="math inline">\(x\)</span> must be a midpoint of <em>exclusive</em> bins. Typically, the points <span class="math inline">\(x\)</span> are chosen to be either the unique observations or some equidistant set of “design points” (e.g., at <span class="math inline">\(512\)</span> evenly spaced values of <span class="math inline">\(x\)</span> the dataset, not just the midpoints of exclusive bins).<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Practical Example</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(X,</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(x_hat,</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">20</span>, <span class="at">by=</span><span class="dv">2</span>), <span class="co"># bin width =2, so h=1</span></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>,</span>
@@ -515,9 +515,10 @@ k_{U}\left( \hat{X}_{i}, x, h \right)
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Density Estimate with half-width h=3</span></span>
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># 'density' reads bw as the kernel's standard deviation, so pass bw=h/sqrt(3)</span></span>
 <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="dv">3</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( <span class="fu">density</span>(X, <span class="at">bw=</span>h<span class="sc">/</span><span class="fu">sqrt</span>(<span class="dv">3</span>), <span class="at">kernel=</span><span class="st">'rectangular'</span>) )</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Raw Observations</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">rug</span>(X, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>))</span></code></pre></div>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>f_hat <span class="ot">&lt;-</span> <span class="fu">density</span>(x_hat, <span class="at">bw=</span>h<span class="sc">/</span><span class="fu">sqrt</span>(<span class="dv">3</span>), <span class="at">kernel=</span><span class="st">'rectangular'</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(f_hat)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Raw Observations</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">rug</span>(x_hat, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>))</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -547,43 +548,43 @@ k_{U}\left( \hat{X}_{i}, x, h \right)
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Kernel Density Functions</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">0</span> <span class="co"># Design point</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">2</span>, <span class="dv">2</span>, <span class="at">length.out=</span><span class="dv">1001</span>) <span class="co"># Where to compute weight</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="co"># Half-width: all three kernels are zero beyond |X-x| &gt; h</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>x_values <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">2</span>, <span class="dv">2</span>, <span class="at">length.out=</span><span class="dv">1001</span>) <span class="co"># Where to compute weight</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="co"># Half-width: all three kernels are zero beyond |x_values-x| &gt; h</span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.new</span>()</span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.window</span>(<span class="at">xlim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="fl">1.2</span>, <span class="fl">1.2</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>))</span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="do">## Uniform/rectangular</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>d_unif <span class="ot">&lt;-</span> <span class="cf">function</span>(X, x, h){</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    u <span class="ot">&lt;-</span> <span class="fu">abs</span>(X<span class="sc">-</span>x)<span class="sc">/</span>h</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>d_unif <span class="ot">&lt;-</span> <span class="cf">function</span>(x_values, x, h){</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    u <span class="ot">&lt;-</span> <span class="fu">abs</span>(x_values<span class="sc">-</span>x)<span class="sc">/</span>h</span>
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    fu <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">2</span><span class="sc">*</span>(u <span class="sc">&lt;=</span> <span class="dv">1</span>)</span>
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(fu)</span>
 <span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>kU <span class="ot">&lt;-</span> <span class="fu">d_unif</span>(X, x, h)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>kU <span class="ot">&lt;-</span> <span class="fu">d_unif</span>(x_values, x, h)</span>
 <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>kern_cols <span class="ot">&lt;-</span> <span class="fu">hcl.colors</span>(<span class="dv">3</span>, <span class="at">alpha=</span>.<span class="dv">45</span>)</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( kU <span class="sc">~</span> X, <span class="at">col=</span>kern_cols[<span class="dv">1</span>], <span class="at">lty=</span><span class="dv">1</span>)</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( kU <span class="sc">~</span> x_values, <span class="at">col=</span>kern_cols[<span class="dv">1</span>], <span class="at">lty=</span><span class="dv">1</span>)</span>
 <span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="do">## Epanechnikov</span></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>d_epan <span class="ot">&lt;-</span> <span class="cf">function</span>(X, x, h){</span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    u <span class="ot">&lt;-</span> <span class="fu">abs</span>(X<span class="sc">-</span>x)<span class="sc">/</span>h</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>d_epan <span class="ot">&lt;-</span> <span class="cf">function</span>(x_values, x, h){</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    u <span class="ot">&lt;-</span> <span class="fu">abs</span>(x_values<span class="sc">-</span>x)<span class="sc">/</span>h</span>
 <span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    fu <span class="ot">&lt;-</span> <span class="dv">3</span><span class="sc">/</span><span class="dv">4</span><span class="sc">*</span>(<span class="dv">1</span><span class="sc">-</span>u<span class="sc">^</span><span class="dv">2</span>)<span class="sc">*</span>(u <span class="sc">&lt;=</span> <span class="dv">1</span>)</span>
 <span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(fu)</span>
 <span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>kE <span class="ot">&lt;-</span> <span class="fu">d_epan</span>(X, x, h)</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( kE <span class="sc">~</span> X, <span class="at">col=</span>kern_cols[<span class="dv">2</span>], <span class="at">lty=</span><span class="dv">1</span>)</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>kE <span class="ot">&lt;-</span> <span class="fu">d_epan</span>(x_values, x, h)</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( kE <span class="sc">~</span> x_values, <span class="at">col=</span>kern_cols[<span class="dv">2</span>], <span class="at">lty=</span><span class="dv">1</span>)</span>
 <span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="do">## Try others using the 'density' function</span></span>
 <span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co"># 'density' reads bw as the kernel's standard deviation, not the half-width h</span></span>
 <span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="co">#kE &lt;-  density(x=0, bw=h/sqrt(5), kernel='epanechnikov')</span></span>
 <span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="do">## Tricubic</span></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>d_tricub <span class="ot">&lt;-</span> <span class="cf">function</span>(X, x, h){</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>    u <span class="ot">&lt;-</span> <span class="fu">abs</span>(X<span class="sc">-</span>x)<span class="sc">/</span>h</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>d_tricub <span class="ot">&lt;-</span> <span class="cf">function</span>(x_values, x, h){</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>    u <span class="ot">&lt;-</span> <span class="fu">abs</span>(x_values<span class="sc">-</span>x)<span class="sc">/</span>h</span>
 <span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>    fu <span class="ot">&lt;-</span> <span class="dv">70</span><span class="sc">/</span><span class="dv">81</span><span class="sc">*</span>(<span class="dv">1</span><span class="sc">-</span>u<span class="sc">^</span><span class="dv">3</span>)<span class="sc">^</span><span class="dv">3</span><span class="sc">*</span>(u <span class="sc">&lt;=</span> <span class="dv">1</span>)</span>
 <span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(fu)</span>
 <span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>kT <span class="ot">&lt;-</span> <span class="fu">d_tricub</span>(X, x, h)</span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( kT <span class="sc">~</span> X, <span class="at">col=</span>kern_cols[<span class="dv">3</span>], <span class="at">lty=</span><span class="dv">1</span>)</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>kT <span class="ot">&lt;-</span> <span class="fu">d_tricub</span>(x_values, x, h)</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( kT <span class="sc">~</span> x_values, <span class="at">col=</span>kern_cols[<span class="dv">3</span>], <span class="at">lty=</span><span class="dv">1</span>)</span>
 <span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="fu">rug</span>(<span class="dv">0</span>, <span class="at">lwd=</span><span class="dv">2</span>)</span>
@@ -601,14 +602,14 @@ k_{U}\left( \hat{X}_{i}, x, h \right)
 </div>
 </div>
 </div>
-<p>Each of the three functions integrates to one over <span class="math inline">\(u=(\hat{X}_{i}-x)/h\)</span>, so the same <span class="math inline">\(\frac{1}{nh}\)</span> rescaling above turns any of them into a density.</p>
+<p>Each of the three functions integrates to one over <span class="math inline">\(u=(\hat{x}_{i}-x)/h\)</span>, so the same <span class="math inline">\(\frac{1}{nh}\)</span> rescaling above turns any of them into a density.</p>
 <p>Once we have picked a kernel (which particular one is not particularly important) we can use it to compute density estimates at each design point.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Practical Example</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(X,</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(x_hat,</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">20</span>, <span class="at">by=</span><span class="dv">2</span>), <span class="co"># bin width 2h=2, so h=1</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>,</span>
@@ -618,9 +619,10 @@ k_{U}\left( \hat{X}_{i}, x, h \right)
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Same half-width h=3 as the rectangular kernel above, but a smoother weight</span></span>
 <span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co"># For the Epanechnikov kernel, bw=h/sqrt(5)</span></span>
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="dv">3</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( <span class="fu">density</span>(X, <span class="at">bw=</span>h<span class="sc">/</span><span class="fu">sqrt</span>(<span class="dv">5</span>), <span class="at">kernel=</span><span class="st">'epanechnikov'</span>) )</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Raw Observations</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="fu">rug</span>(X, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>))</span></code></pre></div>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>f_hat <span class="ot">&lt;-</span> <span class="fu">density</span>(x_hat, <span class="at">bw=</span>h<span class="sc">/</span><span class="fu">sqrt</span>(<span class="dv">5</span>), <span class="at">kernel=</span><span class="st">'epanechnikov'</span>)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(f_hat)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Raw Observations</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="fu">rug</span>(x_hat, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>))</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -655,14 +657,14 @@ k_{U}\left( \hat{X}_{i}, x, h \right)
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span></span>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">exp</span>(x)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>y</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>y_hat <span class="ot">&lt;-</span> <span class="fu">exp</span>(x_hat)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>y_hat</span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1]  2.718282  7.389056 20.085537 54.598150</span></span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">log</span>(y)</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>z</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>z_hat <span class="ot">&lt;-</span> <span class="fu">log</span>(y_hat)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>z_hat</span>
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1 2 3 4</span></span></code></pre></div>
 </details>
 </div>
@@ -679,16 +681,16 @@ y=\begin{cases}
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Box–Cox transform and inverse</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>bc_transform <span class="ot">&lt;-</span> <span class="cf">function</span>(x, lambda) {</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">any</span>(x <span class="sc">&lt;=</span> <span class="dv">0</span>)) <span class="fu">stop</span>(<span class="st">'Box-Cox requires x &gt; 0'</span>)</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">abs</span>(lambda) <span class="sc">&lt;</span> <span class="fl">1e-8</span>) <span class="fu">log</span>(x) <span class="cf">else</span> (x<span class="sc">^</span>lambda <span class="sc">-</span> <span class="dv">1</span>)<span class="sc">/</span>lambda</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>bc_transform <span class="ot">&lt;-</span> <span class="cf">function</span>(x_hat, lambda) {</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">any</span>(x_hat <span class="sc">&lt;=</span> <span class="dv">0</span>)) <span class="fu">stop</span>(<span class="st">'Box-Cox requires x &gt; 0'</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">abs</span>(lambda) <span class="sc">&lt;</span> <span class="fl">1e-8</span>) <span class="fu">log</span>(x_hat) <span class="cf">else</span> (x_hat<span class="sc">^</span>lambda <span class="sc">-</span> <span class="dv">1</span>)<span class="sc">/</span>lambda</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>bc_inverse <span class="ot">&lt;-</span> <span class="cf">function</span>(t, lambda) {</span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">abs</span>(lambda) <span class="sc">&lt;</span> <span class="fl">1e-8</span>) <span class="fu">exp</span>(t) <span class="cf">else</span> (lambda<span class="sc">*</span>t <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">^</span>(<span class="dv">1</span><span class="sc">/</span>lambda)</span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(X, <span class="at">main=</span><span class="cn">NA</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>)</span></code></pre></div>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(x_hat, <span class="at">main=</span><span class="cn">NA</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -702,8 +704,8 @@ y=\begin{cases}
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(lambda <span class="cf">in</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>)){</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    Y <span class="ot">&lt;-</span> <span class="fu">bc_transform</span>(X, lambda)</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">hist</span>(Y,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    y_hat <span class="ot">&lt;-</span> <span class="fu">bc_transform</span>(x_hat, lambda)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">hist</span>(y_hat,</span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">main=</span><span class="cn">NA</span>,</span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>)</span>
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(lambda, <span class="st">'='</span>, .(lambda))), <span class="at">font.main=</span><span class="dv">1</span>)</span>
@@ -726,8 +728,8 @@ y=\begin{cases}
 <li><em>Concave</em> functions curve inwards, like the inside of a cave.</li>
 <li><em>Convex</em> functions curve outward, the opposite of concave.</li>
 </ul>
-<p>Let <span class="math inline">\(\hat{Y}_{i}=g( \hat{X}_{i})\)</span>, and denote the mean as <span class="math inline">\(\hat{M}_{Y}\)</span>.</p>
-<p>If <span class="math inline">\(g\)</span> is a <em>concave</em> function, then <span class="math inline">\(g( \hat{M}_{X} ) \geq \hat{M}_{Y}\)</span>.</p>
+<p>Let <span class="math inline">\(\hat{y}_{i}=g( \hat{x}_{i})\)</span>, and denote the mean as <span class="math inline">\(\hat{m}_{Y}\)</span>.</p>
+<p>If <span class="math inline">\(g\)</span> is a <em>concave</em> function, then <span class="math inline">\(g( \hat{m}_{X} ) \geq \hat{m}_{Y}\)</span>.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -745,16 +747,16 @@ y=\begin{cases}
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Continuous Example 1</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">1.123</span>, <span class="fl">2.987</span>, <span class="fl">3.654</span>)</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>( <span class="fu">sqrt</span>(x) )</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">1.123</span>, <span class="fl">2.987</span>, <span class="fl">3.654</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>( <span class="fu">sqrt</span>(x_hat) )</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.174889</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sqrt</span>( <span class="fu">mean</span>(x) ) </span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sqrt</span>( <span class="fu">mean</span>(x_hat) )</span>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.393198</span></span>
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Continuous Example 2</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>( <span class="fu">log</span>(x) )</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>( <span class="fu">log</span>(x_hat) )</span>
 <span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] -Inf</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="fu">log</span>( <span class="fu">mean</span>(x) ) </span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="fu">log</span>( <span class="fu">mean</span>(x_hat) )</span>
 <span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.6632033</span></span></code></pre></div>
 </details>
 </div>
@@ -764,23 +766,23 @@ y=\begin{cases}
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Discrete Example</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>x  <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>px <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="fl">0.3</span>)</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>MX <span class="ot">&lt;-</span> <span class="fu">sum</span>(x <span class="sc">*</span> px)</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>MX</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>population_mean_x <span class="ot">&lt;-</span> <span class="fu">sum</span>(x <span class="sc">*</span> px)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>population_mean_x</span>
 <span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 2.1</span></span>
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>g  <span class="ot">&lt;-</span> sqrt</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="fu">g</span>(MX)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="fu">g</span>(population_mean_x)</span>
 <span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.449138</span></span>
 <span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>MY <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">g</span>(x) <span class="sc">*</span> px)</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>MY</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>population_mean_y <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">g</span>(x) <span class="sc">*</span> px)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>population_mean_y</span>
 <span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.426722</span></span></code></pre></div>
 </details>
 </div>
 </div>
 </div>
 </div>
-<p>If <span class="math inline">\(g\)</span> is a <em>convex</em> function, then the inequality reverses: <span class="math inline">\(g( \hat{M}_{X}) \leq \hat{M}_{Y}\)</span>.</p>
+<p>If <span class="math inline">\(g\)</span> is a <em>convex</em> function, then the inequality reverses: <span class="math inline">\(g( \hat{m}_{X}) \leq \hat{m}_{Y}\)</span>.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -821,9 +823,9 @@ y=\begin{cases}
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Empirical Distribution</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>FX_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(X)</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(FX_hat, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">20</span>),</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>F_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(x_hat)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(F_hat, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">20</span>),</span>
 <span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>), <span class="at">main=</span><span class="cn">NA</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
@@ -838,16 +840,16 @@ y=\begin{cases}
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Generating random variables via inverse ECDF</span></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">3000</span>) <span class="do">## Multiple Draws</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>QX_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(FX_hat, p, <span class="at">type=</span><span class="dv">1</span>)</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>QX_hat[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)]</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="do">## 52.86985035% 39.33680111%  6.45579686% </span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="do">##          7.4          6.0          2.2</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>x_draw_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(F_hat, p, <span class="at">type=</span><span class="dv">1</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>x_draw_hat[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)]</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="do">##  1.582243317% 25.981559441% 54.069016990% </span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="do">##           0.8           4.0           7.9</span></span>
 <span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="do">## Can also do directly from the data</span></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>QX_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(X, p, <span class="at">type=</span><span class="dv">1</span>)</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>QX_hat[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)]</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="do">## 52.86985035% 39.33680111%  6.45579686% </span></span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="do">##          7.4          6.0          2.2</span></span></code></pre></div>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>x_draw_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x_hat, p, <span class="at">type=</span><span class="dv">1</span>)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>x_draw_hat[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)]</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="do">##  1.582243317% 25.981559441% 54.069016990% </span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="do">##           0.8           4.0           7.9</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -862,11 +864,11 @@ y=\begin{cases}
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 4 random data points from 3 different distributions</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">runif</span>(<span class="dv">4</span>)</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.8314547 0.2261331 0.7374920 0.8912296</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5847960 0.6253174 0.9812630 0.3604085</span></span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="fu">rexp</span>(<span class="dv">4</span>)</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.2945136 0.2759661 0.4427445 0.3554522</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.2962313 1.3679634 0.4961755 1.0224249</span></span>
 <span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="fu">rnorm</span>(<span class="dv">4</span>)</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1]  0.3569255 -0.2070293 -1.1101673  0.2843943</span></span></code></pre></div>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1]  0.1188181  0.5372500 -0.8261870  0.6182860</span></span></code></pre></div>
 </details>
 </div>
 <p>Here is an in-depth example of the <a href="https://en.wikipedia.org/wiki/Dagum_distribution">Dagum distribution</a>. The distribution function is <span class="math inline">\(F(x)=(1+(x/b)^{-a})^{-c}\)</span>. For a given probability <span class="math inline">\(p\)</span>, we can then solve for the quantile as <span class="math display">\[F^{-1}(p)=\frac{ b p^{\frac{1}{ac}} }{(1-p^{1/c})^{1/a}}\]</span>. After which, we sample <span class="math inline">\(p\)</span> from a uniform distribution and then find the associated quantile.</p>
@@ -891,14 +893,14 @@ y=\begin{cases}
 <span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate Random Variables (VGAM::rdagum)</span></span>
 <span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>rdagum <span class="ot">&lt;-</span><span class="cf">function</span>(n, <span class="at">scale.b=</span><span class="dv">1</span>, shape1.a, shape2.c){</span>
 <span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    p <span class="ot">&lt;-</span> <span class="fu">runif</span>(n) <span class="co"># generate random probabilities</span></span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> <span class="fu">qdagum</span>(p, <span class="at">scale.b=</span>scale.b, <span class="at">shape1.a=</span>shape1.a, <span class="at">shape2.c=</span>shape2.c) <span class="co">#find the inverses</span></span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(x)</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    x_hat <span class="ot">&lt;-</span> <span class="fu">qdagum</span>(p, <span class="at">scale.b=</span>scale.b, <span class="at">shape1.a=</span>shape1.a, <span class="at">shape2.c=</span>shape2.c) <span class="co">#find the inverses</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(x_hat)</span>
 <span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Example</span></span>
 <span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">rdagum</span>(<span class="dv">3000</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
-<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>X[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)]</span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> <span class="fu">rdagum</span>(<span class="dv">3000</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>x_hat[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)]</span>
 <span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.7390476 1.5499868 0.8845006</span></span></code></pre></div>
 </details>
 </div>
@@ -909,8 +911,8 @@ y=\begin{cases}
 <ol type="1">
 <li><p>Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in <a href="./04_A_WorkingWithAI.html">Working with AI</a>. Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing. Finish with your own questions about whatever you found hardest.</p></li>
 <li><p>Using the dataset <span class="math inline">\(\{3, 3.1, 0.02\}\)</span> and half-width <span class="math inline">\(h=1/2\)</span>, compute the uniform kernel density <span class="math inline">\(\hat{f}_{U}(x)\)</span> by hand at <span class="math inline">\(x=0\)</span>, <span class="math inline">\(x=3\)</span>, and <span class="math inline">\(x=5\)</span>. That is, for each <span class="math inline">\(x\)</span> count the observations within <span class="math inline">\(h\)</span> of <span class="math inline">\(x\)</span> and divide by <span class="math inline">\(n \cdot 2h\)</span>. Then write a short R function that does the same count and verify your three answers.</p></li>
-<li><p>Load <code>USArrests</code> in R and extract the <code>Assault</code> variable. Compute <code>mean(log(X))</code> and <code>log(mean(X))</code>. Which is larger, and which case of Jensen’s inequality does this illustrate? Then apply the Box–Cox transform with <span class="math inline">\(\lambda \in \{-1, 0, 1/2, 1\}\)</span> using <code>bc_transform</code> from this chapter, and plot the four histograms side by side. Which <span class="math inline">\(\lambda\)</span> gives the most symmetric histogram?</p></li>
-<li><p>The <a href="./01_04_RandomVariables.html#exponential">exponential</a> distribution with rate <span class="math inline">\(\lambda\)</span> has distribution function <span class="math inline">\(F(x)=1-e^{-\lambda x}\)</span> for <span class="math inline">\(x \geq 0\)</span>. Solve for the quantile function <span class="math inline">\(F^{-1}(p)\)</span> by hand. Write an R function that draws <span class="math inline">\(n\)</span> values of <span class="math inline">\(p\)</span> from a uniform distribution and returns <span class="math inline">\(F^{-1}(p)\)</span>, then generate <span class="math inline">\(5000\)</span> draws with <span class="math inline">\(\lambda=2\)</span>. Plot a histogram of your draws with <code>freq=FALSE</code> and overlay <code>dexp(x, rate=2)</code> to check that they match.</p></li>
+<li><p>Load <code>USArrests</code> in R and extract the <code>Assault</code> variable. Compute <code>mean(log(x_hat))</code> and <code>log(mean(x_hat))</code>. Which is larger, and which case of Jensen’s inequality does this illustrate? Then apply the Box–Cox transform with <span class="math inline">\(\lambda \in \{-1, 0, 1/2, 1\}\)</span> using <code>bc_transform</code> from this chapter, and plot the four histograms side by side. Which <span class="math inline">\(\lambda\)</span> gives the most symmetric histogram?</p></li>
+<li><p>The <a href="./01_04_RandomVariables.html#exponential">exponential</a> distribution with rate <span class="math inline">\(\lambda\)</span> has distribution function <span class="math inline">\(F(x)=1-e^{-\lambda x}\)</span> for <span class="math inline">\(x \geq 0\)</span>. Solve for the quantile function <span class="math inline">\(F^{-1}(p)\)</span> by hand. Write an R function that draws <span class="math inline">\(n\)</span> values of <span class="math inline">\(p\)</span> from a uniform distribution and returns <span class="math inline">\(F^{-1}(p)\)</span>, then generate <span class="math inline">\(5000\)</span> draws with <span class="math inline">\(\lambda=2\)</span>. Plot a histogram of your draws with <code>freq=FALSE</code> and overlay <code>dexp(x_hat, rate=2)</code> to check that they match.</p></li>
 </ol>
 <section id="further-reading" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="further-reading"><strong>Further Reading</strong></h4>
@@ -922,7 +924,7 @@ y=\begin{cases}
 </section>
 <section id="recall" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="recall"><strong>Recall</strong></h4>
-<p>This chapter collected three tools that extend the univariate toolkit: the <em>kernel density</em>, which smooths a histogram by averaging a weight function centered on each observation with half-width <span class="math inline">\(h\)</span>; <em>data transformations</em> such as the log and the <em>Box–Cox</em> family, together with <em>Jensen’s inequality</em> on how the mean of transformed data compares to the transformed mean; and <em>inverse sampling</em>, which generates random draws by feeding uniform probabilities through a quantile function. The running three-point dataset <span class="math inline">\(\{3, 3.1, 0.02\}\)</span> pins the first of these down: the uniform kernel density at <span class="math inline">\(x=3\)</span> with half-width <span class="math inline">\(h=1/2\)</span> equals <span class="math inline">\(2/3\)</span>, because two points fall inside the interval <span class="math inline">\([2.5, 3.5]\)</span> and <span class="math inline">\(2/(3 \times 1)=2/3\)</span>. For the second, <code>mean(sqrt(x))</code> is never larger than <code>sqrt(mean(x))</code> because the square root is concave, and the inequality flips for a convex function like the exponential. In the next part we extend distributions, statistics, and probability rules to pairs of variables.</p>
+<p>This chapter collected three tools that extend the univariate toolkit: the <em>kernel density</em>, which smooths a histogram by averaging a weight function centered on each observation with half-width <span class="math inline">\(h\)</span>; <em>data transformations</em> such as the log and the <em>Box–Cox</em> family, together with <em>Jensen’s inequality</em> on how the mean of transformed data compares to the transformed mean; and <em>inverse sampling</em>, which generates random draws by feeding uniform probabilities through a quantile function. The running three-point dataset <span class="math inline">\(\{3, 3.1, 0.02\}\)</span> pins the first of these down: the uniform kernel density at <span class="math inline">\(x=3\)</span> with half-width <span class="math inline">\(h=1/2\)</span> equals <span class="math inline">\(2/3\)</span>, because two points fall inside the interval <span class="math inline">\([2.5, 3.5]\)</span> and <span class="math inline">\(2/(3 \times 1)=2/3\)</span>. For the second, <code>mean(sqrt(x_hat))</code> is never larger than <code>sqrt(mean(x_hat))</code> because the square root is concave, and the inequality flips for a convex function like the exponential. In the next part we extend distributions, statistics, and probability rules to pairs of variables.</p>
 
 
 </section>

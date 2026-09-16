@@ -112,6 +112,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -462,7 +491,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="assignment-and-naming" class="level2" data-number="B.1">
 <h2 data-number="B.1" class="anchored" data-anchor-id="assignment-and-naming"><span class="header-section-number">B.1</span> Assignment and Naming</h2>
 <p>Always use <code>&lt;-</code> for assignment, never <code>=</code>. The two are not interchangeable, because <code>=</code> also passes arguments to functions, and mixing the two makes it hard to see which is happening.</p>
-<p>Use snake_case for multi-word names, capital letters for mathematical objects, and short lowercase names for loop indices and counts.</p>
+<p>Use snake_case for multi-word names and <code>_hat</code> for generic names that hold observed values or sample summaries. Use <code>y_fit</code> for fitted or predicted values and <code>e_hat</code> for residuals. Keep capitals where the mathematical notation uses them, such as the design matrix <code>X</code> and the empirical CDF <code>F_hat</code>.</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 33%">
@@ -483,26 +512,68 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td><code>sample_means</code>, <code>boot_se</code>, <code>col_high</code></td>
 </tr>
 <tr class="even">
-<td>Mathematical object</td>
-<td>single capital</td>
-<td><code>X</code>, <code>Y</code>, <code>M</code> (mean), <code>V</code> (variance)</td>
+<td>Observed or simulated sample values</td>
+<td>lowercase with <code>_hat</code></td>
+<td><code>x_hat</code>, <code>y_hat</code></td>
 </tr>
 <tr class="odd">
+<td>Sample mean, variance, standard deviation</td>
+<td>lowercase with <code>_hat</code></td>
+<td><code>m_hat</code>, <code>v_hat</code>, <code>s_hat</code></td>
+</tr>
+<tr class="even">
+<td>Sample median</td>
+<td><code>med_hat</code></td>
+<td><code>med_hat &lt;- median(x_hat)</code></td>
+</tr>
+<tr class="odd">
+<td>Empirical CDF</td>
+<td><code>F_hat</code></td>
+<td><code>F_hat &lt;- ecdf(x_hat)</code></td>
+</tr>
+<tr class="even">
+<td>Kernel density or histogram</td>
+<td><code>f_hat</code></td>
+<td><code>f_hat &lt;- density(x_hat)</code>, <code>f_hat &lt;- hist(x_hat, plot=FALSE)</code></td>
+</tr>
+<tr class="odd">
+<td>Fitted values and residuals</td>
+<td>distinguish the fit from the observations</td>
+<td><code>y_fit</code>, <code>e_hat</code></td>
+</tr>
+<tr class="even">
+<td>Bootstrap sample</td>
+<td><code>_boot</code></td>
+<td><code>x_boot</code></td>
+</tr>
+<tr class="odd">
+<td>Bootstrap means and their average</td>
+<td>distinguish the collection from its average</td>
+<td><code>boot_means</code>, <code>m_boot</code></td>
+</tr>
+<tr class="even">
 <td>Loop index or count</td>
-<td>short lowercase</td>
-<td><code>i</code>, <code>n</code>, <code>b</code>, <code>h</code></td>
+<td>lowercase</td>
+<td><code>i</code>, <code>n</code>, <code>b</code>, <code>n_boot</code></td>
+</tr>
+<tr class="odd">
+<td>Mathematical matrix</td>
+<td>uppercase</td>
+<td><code>X</code> (design matrix)</td>
 </tr>
 <tr class="even">
 <td>Coefficient</td>
-<td>matches the book’s notation</td>
-<td><code>b0</code>, <code>b1</code>, <code>b_k</code></td>
+<td>lowercase, with context where needed</td>
+<td><code>b0</code>, <code>b1</code>, <code>b_k</code>, <code>b_hat</code></td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> USArrests[,<span class="st">'Murder'</span>]</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>X_mean <span class="ot">&lt;-</span> <span class="fu">mean</span>(X)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sample_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, B)</span></code></pre></div>
-<p>Names that match the notation in <a href="./04_D_Notation.html">Notation</a> let you read a formula and the code that implements it side by side.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_hat)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>v_hat <span class="ot">&lt;-</span> <span class="fu">var</span>(x_hat)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>s_hat <span class="ot">&lt;-</span> <span class="fu">sd</span>(x_hat)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>med_hat <span class="ot">&lt;-</span> <span class="fu">median</span>(x_hat)</span></code></pre></div>
+<p>Names that match the notation in <a href="./04_D_Notation.html">Notation</a> let you read a formula and the code that implements it side by side. For example, <code>x_hat[i]</code> corresponds to <span class="math inline">\(\hat{x}_i\)</span>, <code>m_hat</code> to <span class="math inline">\(\hat{m}\)</span>, and <code>y_fit[i]</code> to <span class="math inline">\(\hat{y}_i^{\mathrm{fit}}\)</span>. The sample median is <code>med_hat</code> in code and <span class="math inline">\(\tilde{m}\)</span> in formulas. Use <code>F_hat</code> for an empirical cumulative distribution function and <code>f_hat</code> for a kernel density estimate or a stored histogram. The capital <code>F</code> distinguishes the cumulative distribution from the density. Add a group or variable label when needed, as in <code>x1_hat</code>, <code>x2_hat</code>, <code>m_x_hat</code>, and <code>m_y_hat</code>. For two distributions, use names such as <code>F1_hat</code> and <code>F2_hat</code>, or <code>f_x_hat</code> and <code>f_y_hat</code>. Descriptive names such as <code>wage</code> and <code>region_means</code> can stay descriptive, and existing dataset column names keep their spelling. Possible outcomes and evaluation points can use <code>x</code> or <code>x_values</code>, while known population quantities use names such as <code>population_mean</code>. These are different roles from the sample values in <code>x_hat</code>.</p>
 </section>
 <section id="base-r" class="level2" data-number="B.2">
 <h2 data-number="B.2" class="anchored" data-anchor-id="base-r"><span class="header-section-number">B.2</span> Base R</h2>
@@ -514,9 +585,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="data-access" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="data-access"><strong>Data Access</strong></h4>
 <p>Use bracket notation with the column name for subsetting, the dollar sign for quick single-column access inline, and double brackets for pulling an element out of a list.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>xy <span class="ot">&lt;-</span> USArrests[,<span class="fu">c</span>(<span class="st">'Murder'</span>,<span class="st">'UrbanPop'</span>)]</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> xy[,<span class="st">'UrbanPop'</span>]</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> xy[,<span class="st">'Murder'</span>]</span>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>xy <span class="ot">&lt;-</span> USArrests[, <span class="fu">c</span>(<span class="st">'Murder'</span>, <span class="st">'UrbanPop'</span>)]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> xy[, <span class="st">'UrbanPop'</span>]</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>y_hat <span class="ot">&lt;-</span> xy[, <span class="st">'Murder'</span>]</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># also acceptable for single columns</span></span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>assault_high <span class="ot">&lt;-</span> USArrests<span class="sc">$</span>Assault <span class="sc">&gt;</span> <span class="fu">median</span>(USArrests<span class="sc">$</span>Assault)</span></code></pre></div>
@@ -526,18 +597,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="functions-and-comments" class="level2" data-number="B.3">
 <h2 data-number="B.3" class="anchored" data-anchor-id="functions-and-comments"><span class="header-section-number">B.3</span> Functions and Comments</h2>
 <p>Put the opening brace on the same line as <code>function()</code>, indent the body, end with an explicit <code>return()</code>, and close the brace on its own line.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>skewness <span class="ot">&lt;-</span> <span class="cf">function</span>(X) {</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    X_mean <span class="ot">&lt;-</span> <span class="fu">mean</span>(X)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    m3 <span class="ot">&lt;-</span> <span class="fu">mean</span>((X <span class="sc">-</span> X_mean)<span class="sc">^</span><span class="dv">3</span>)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    s3 <span class="ot">&lt;-</span> <span class="fu">sd</span>(X)<span class="sc">^</span><span class="dv">3</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    skew <span class="ot">&lt;-</span> m3 <span class="sc">/</span> s3</span>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>skewness <span class="ot">&lt;-</span> <span class="cf">function</span>(x_hat) {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_hat)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    m3_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>((x_hat <span class="sc">-</span> m_hat)<span class="sc">^</span><span class="dv">3</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    s3_hat <span class="ot">&lt;-</span> <span class="fu">sd</span>(x_hat)<span class="sc">^</span><span class="dv">3</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    skew <span class="ot">&lt;-</span> m3_hat <span class="sc">/</span> s3_hat</span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(skew)</span>
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>R returns the last expression evaluated even without <code>return()</code>, so an explicit <code>return()</code> is for the reader rather than the interpreter. It makes the output of a function unambiguous at a glance.</p>
 <p>Use <code>#</code> with a space after it, and let comments explain purpose rather than mechanics.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">1000</span>)        <span class="co"># simulated data</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>X_mean <span class="ot">&lt;-</span> <span class="fu">mean</span>(X)       <span class="co"># sample mean</span></span></code></pre></div>
-<p>A comment that restates the code (<code># take the mean</code>) adds nothing, while one that says why (<code># sample mean, to compare against mu</code>) does. This is the style <a href="./04_A_WorkingWithAI.html">Working with AI</a> asks you to comment in, and Step 3 there checks these comments against what the code actually does.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">1000</span>)        <span class="co"># simulated sample values</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_hat)        <span class="co"># sample mean</span></span></code></pre></div>
+<p>A comment that restates the code (<code># take the mean</code>) adds nothing, while one that says why (<code># sample mean, to compare against the population mean</code>) does. This is the style <a href="./04_A_WorkingWithAI.html">Working with AI</a> asks you to comment in, and Step 3 there checks these comments against what the code actually does.</p>
 <section id="spacing-and-strings" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="spacing-and-strings"><strong>Spacing and Strings</strong></h4>
 <p>Put spaces around binary operators and after commas, and no spaces inside parentheses. The one exception is <code>=</code> when it names a function argument, which takes no spaces. This is deliberate: <code>x &lt;- y + 1</code> is arithmetic and gets room to breathe, while <code>col='red'</code> is one argument and reads as a single unit.</p>
@@ -545,8 +616,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>X[<span class="dv">1</span>, <span class="dv">2</span>]</span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>)</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(X)                        <span class="co"># not mean( X )</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(X, <span class="at">breaks=</span><span class="dv">25</span>, <span class="at">freq=</span><span class="cn">FALSE</span>)     <span class="co"># not breaks = 25</span></span></code></pre></div>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(x_hat)                        <span class="co"># not mean( x_hat )</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(x_hat, <span class="at">breaks=</span><span class="dv">25</span>, <span class="at">freq=</span><span class="cn">FALSE</span>)     <span class="co"># not breaks = 25</span></span></code></pre></div>
 <p>Use single quotes for all strings, including column names, package names, and axis labels. R treats <code>'a'</code> and <code>"a"</code> as identical, so this one is purely for consistency.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>USArrests[,<span class="st">'Murder'</span>]</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'wooldridge'</span>)</span>
@@ -555,8 +626,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="logical-values" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="logical-values"><strong>Logical Values</strong></h4>
 <p>Write logical values in full, as <code>TRUE</code> and <code>FALSE</code>.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(X, <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">border=</span><span class="cn">NA</span>)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(X, <span class="at">replace=</span><span class="cn">TRUE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(x_hat, <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">border=</span><span class="cn">NA</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span></code></pre></div>
 <p>R also accepts the abbreviations <code>T</code> and <code>F</code>, and you will see them constantly in other people’s code, but they are not safe. <code>TRUE</code> and <code>FALSE</code> are reserved words that cannot be reassigned, while <code>T</code> and <code>F</code> are ordinary variables that merely start out holding those values. Someone who writes <code>T &lt;- 0</code> earlier in a script silently breaks every <code>freq=T</code> after it, and nothing warns you. The full words cost three or four extra characters and remove the possibility.</p>
 </section>
 </section>
@@ -565,28 +636,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Call <code>set.seed()</code> once at the top of the block that generates random numbers, and never reset it partway through. Resetting midway makes the results depend on where the reset happened, which is very hard to debug later.</p>
 <p>Use <code>replicate()</code> for repeated simulations that return a vector or matrix, <code>sapply()</code> and <code>lapply()</code> for apply-style iteration, and an explicit <code>for</code> loop when the iteration itself is the point being taught. Pre-allocate with <code>rep(NA, n)</code>.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>B <span class="ot">&lt;-</span> <span class="dv">999</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>sample_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, B)</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (b <span class="cf">in</span> <span class="fu">seq</span>(B)) {</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(X, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    sample_means[b] <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot)</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>n_boot <span class="ot">&lt;-</span> <span class="dv">999</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>boot_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, n_boot)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (b <span class="cf">in</span> <span class="fu">seq</span>(n_boot)) {</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    boot_means[b] <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>m_boot <span class="ot">&lt;-</span> <span class="fu">mean</span>(boot_means)</span></code></pre></div>
+<p>Here <code>boot_means[b]</code> is one replicate mean, while <code>m_boot</code> averages all the replicate means. If a loop stores its current replicate mean separately, use <code>m_b_hat</code>. The corresponding jackknife collection and its average are <code>jack_means</code> and <code>m_jack</code>.</p>
 <p>Pre-allocating with <code>rep(NA, n)</code> rather than <code>numeric(n)</code> matters because <code>numeric(n)</code> fills the vector with zeros. If a bug leaves some entries unfilled, zeros look like real results and <code>NA</code> does not.</p>
 <section id="seq-and-seq_along" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="seq-and-seq_along"><strong>seq and seq_along</strong></h4>
 <p>These two are not interchangeable, and the book uses each for a different job.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (b <span class="cf">in</span> <span class="fu">seq</span>(B))         { ... }   <span class="co"># B is a count, so seq(B) gives 1, 2, ..., B</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(X))   { ... }   <span class="co"># X is a vector, so this gives 1, ..., length(X)</span></span></code></pre></div>
-<p>Writing <code>seq_along(B)</code> when <code>B</code> is a single number is a silent bug: it returns just <code>1</code>, so the loop runs once and the code appears to work. Writing <code>seq(X)</code> when <code>X</code> is a vector happens to work, but it reads as though <code>X</code> were a count.</p>
-<p>One edge case is worth knowing. <code>seq(B)</code> returns <code>c(1, 0)</code> when <code>B</code> is zero, so a loop that should not run at all runs twice. <code>seq_len(B)</code> returns nothing in that case and is the safer form. The book uses <code>seq()</code> because its counts are never zero.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (b <span class="cf">in</span> <span class="fu">seq</span>(n_boot))        { ... }   <span class="co"># n_boot is a count, so seq(n_boot) gives 1, 2, ..., n_boot</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(x_hat))   { ... }   <span class="co"># x_hat is a vector, so this gives 1, ..., length(x_hat)</span></span></code></pre></div>
+<p>Writing <code>seq_along(n_boot)</code> when <code>n_boot</code> is a single number is a silent bug: it returns just <code>1</code>, so the loop runs once and the code appears to work. Writing <code>seq(x_hat)</code> when <code>x_hat</code> is a vector happens to work, but it reads as though <code>x_hat</code> were a count.</p>
+<p>One edge case is worth knowing. <code>seq(n_boot)</code> returns <code>c(1, 0)</code> when <code>n_boot</code> is zero, so a loop that should not run at all runs twice. <code>seq_len(n_boot)</code> returns nothing in that case and is the safer form. The book uses <code>seq()</code> because its counts are never zero.</p>
 </section>
 <section id="formulas-and-output" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="formulas-and-output"><strong>Formulas and Output</strong></h4>
 <p>Use standard R formula syntax with spaces around <code>~</code>.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(y <span class="sc">~</span> x, <span class="at">data=</span>xy)</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y <span class="sc">~</span> x, xy, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>y_fit <span class="ot">&lt;-</span> <span class="fu">fitted</span>(reg)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>e_hat <span class="ot">&lt;-</span> y_hat <span class="sc">-</span> y_fit</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>))</span></code></pre></div>
 <p>Round for display with <code>round(value, 2)</code>, build label strings with <code>paste0()</code>, and rely on auto-printing rather than calling <code>print()</code> except inside a loop or conditional.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'mean= '</span>, <span class="fu">round</span>(X_mean, <span class="dv">2</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'mean= '</span>, <span class="fu">round</span>(m_hat, <span class="dv">2</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </section>
 </section>
 <section id="reference-card" class="level2" data-number="B.5">
@@ -604,6 +679,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Pre-allocate with <code>rep(NA, n)</code>, not <code>numeric(n)</code>.</li>
 <li><code>seq()</code> for counts, <code>seq_along()</code> for vectors.</li>
 <li>Comments explain purpose, not mechanics.</li>
+<li><code>x_hat</code>, <code>y_hat</code>, <code>m_hat</code>, <code>v_hat</code>, <code>s_hat</code>, and <code>med_hat</code> for generic sample quantities; <code>y_fit</code> for fitted values and <code>e_hat</code> for residuals.</li>
+<li><code>F_hat</code> for ECDFs; <code>f_hat</code> for kernel density estimates and stored histograms.</li>
 </ol>
 <section id="further-reading" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="further-reading"><strong>Further Reading</strong></h4>

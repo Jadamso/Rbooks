@@ -510,7 +510,7 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>This setup is useful because it forces a single direction of inference: the data either contradict <span class="math inline">\(H_{0}\)</span> enough to reject it, or they do not, but in no case do they “prove” <span class="math inline">\(H_{A}\)</span>. The most common test concerns the mean, <span class="math inline">\(H_{0}: \mu = \mu_{0}\)</span>, where <span class="math inline">\(\mu_{0}\)</span> is a hypothesized value, and the alternative values are <span class="math inline">\(\mu \neq \mu_{0}\)</span>. E.g., you hypothesize your stock-retruns have earnings <span class="math inline">\(\mu_{0}=0\)</span> and consider that the returns could truly be either positive or negative.</p>
+<p>This setup is useful because it forces a single direction of inference: the data either contradict <span class="math inline">\(H_{0}\)</span> enough to reject it, or they do not, but in no case do they “prove” <span class="math inline">\(H_{A}\)</span>. The most common test concerns the mean, <span class="math inline">\(H_{0}: \mathbb{E}[X_i] = m_0\)</span>, where <span class="math inline">\(m_0\)</span> is a hypothesized value. The two-sided alternative is <span class="math inline">\(H_A: \mathbb{E}[X_i] \neq m_0\)</span>. E.g., you hypothesize your stock-retruns have earnings <span class="math inline">\(m_0=0\)</span> and consider that the returns could truly be either positive or negative.</p>
 <section id="invert-a-ci" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="invert-a-ci"><strong>Invert a CI</strong></h4>
 <p>One way to test a hypothesis is to look at whether a confidence interval contains the hypothesized value: if the value lies outside the interval, sampling variability alone cannot easily explain the gap.</p>
@@ -552,31 +552,29 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>sample_dat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sample_mean <span class="ot">&lt;-</span> <span class="fu">mean</span>(sample_dat)</span>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_hat)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap Distribution</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">length</span>(sample_dat)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">length</span>(x_hat)</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>) <span class="co"># to be replicable</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>bootstrap_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_means)){</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    dat_id <span class="ot">&lt;-</span> <span class="fu">seq_along</span>(sample_dat)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    boot_id <span class="ot">&lt;-</span> <span class="fu">sample</span>(dat_id, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    dat_b <span class="ot">&lt;-</span> sample_dat[boot_id] <span class="co"># c.f. jackknife</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    mean_b <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b)</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    bootstrap_means[b] <span class="ot">&lt;-</span> mean_b</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_means, <span class="at">breaks=</span><span class="dv">25</span>,</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>,</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>,</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Bootstrap Samples'</span>)</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="co"># CI</span></span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_means, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>ci_95, <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="co"># H0: mean=9</span></span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="dv">9</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code></pre></div>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>boot_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_means)){</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">replace=</span><span class="cn">TRUE</span>) <span class="co"># c.f. jackknife</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    m_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    boot_means[b] <span class="ot">&lt;-</span> m_b_hat</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_means, <span class="at">breaks=</span><span class="dv">25</span>,</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>,</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Bootstrap Samples'</span>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co"># CI</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(boot_means, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>ci_95, <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co"># H0: mean=9</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="dv">9</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -606,21 +604,21 @@ window.Quarto = {
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap Distribution for SD</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>sd_obs <span class="ot">&lt;-</span> <span class="fu">sd</span>(sample_dat)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>bootstrap_sd <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_sd)){</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    x_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    sd_b <span class="ot">&lt;-</span> <span class="fu">sd</span>(x_b)</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    bootstrap_sd[b] <span class="ot">&lt;-</span> sd_b</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>s_hat <span class="ot">&lt;-</span> <span class="fu">sd</span>(x_hat)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>boot_sds <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_sds)){</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    s_b_hat <span class="ot">&lt;-</span> <span class="fu">sd</span>(x_boot)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    boot_sds[b] <span class="ot">&lt;-</span> s_b_hat</span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Test for SD Differences (Invert CI)</span></span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>sd_null <span class="ot">&lt;-</span> <span class="fl">3.6</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_sd, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_sds, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
 <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'Bootstrap'</span>,</span>
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Standard Deviations (Invert CI)'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>sd_ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_sd, <span class="at">probs=</span><span class="fu">c</span>(<span class="fl">0.025</span>, .<span class="dv">975</span>) )</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>sd_ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(boot_sds, <span class="at">probs=</span><span class="fu">c</span>(<span class="fl">0.025</span>, .<span class="dv">975</span>) )</span>
 <span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sd_ci, <span class="at">lwd=</span><span class="dv">2</span>)</span>
 <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sd_null, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>))</span></code></pre></div>
 </details>
@@ -632,7 +630,7 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>To better your understanding, try redoing the above for any function (such as <code>IQR(x_b)/median(x_b)</code>)</p>
+<p>To better your understanding, try redoing the above for any function (such as <code>IQR(x_boot)/median(x_boot)</code>)</p>
 </div>
 </div>
 </div>
@@ -660,16 +658,16 @@ window.Quarto = {
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap Distribution for the proportion correct</span></span>
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>bootstrap_props <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_props)){</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    outcomes_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(outcomes, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    bootstrap_props[b] <span class="ot">&lt;-</span> <span class="fu">mean</span>(outcomes_b)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>boot_props <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_props)){</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(outcomes, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    boot_props[b] <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot)</span>
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_props, <span class="at">breaks=</span><span class="dv">25</span>,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_props, <span class="at">breaks=</span><span class="dv">25</span>,</span>
 <span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
 <span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'Bootstrap Proportion Correct'</span>)</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_props, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(boot_props, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
 <span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>ci_95, <span class="at">lwd=</span><span class="dv">2</span>)</span>
 <span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">c</span>(.<span class="dv">70</span>, .<span class="dv">85</span>), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">lty=</span><span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">1</span>))</span></code></pre></div>
 </details>
@@ -706,25 +704,25 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>sample_dat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>sample_mean <span class="ot">&lt;-</span> <span class="fu">mean</span>(sample_dat)</span>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_hat)</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap NULL: mean=9</span></span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap shift: center each bootstrap resample so that the distribution satisfies the null hypothesis on average.</span></span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="dv">9</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>bootstrap_means_null <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_means_null)){</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    dat_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    mean_b <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b) <span class="sc">+</span> (mu <span class="sc">-</span> sample_mean) <span class="co"># impose the null via Bootstrap shift</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    bootstrap_means_null[b] <span class="ot">&lt;-</span> mean_b</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>null_mean <span class="ot">&lt;-</span> <span class="dv">9</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>boot_means_null <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_means_null)){</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    m_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot) <span class="sc">+</span> (null_mean <span class="sc">-</span> m_hat) <span class="co"># impose the null via Bootstrap shift</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    boot_means_null[b] <span class="ot">&lt;-</span> m_b_hat</span>
 <span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_means_null, <span class="at">breaks=</span><span class="dv">25</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_means_null, <span class="at">breaks=</span><span class="dv">25</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
 <span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>,</span>
 <span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Null Bootstrap Samples'</span>)</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_means_null, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>)) <span class="co"># critical region</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(boot_means_null, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>)) <span class="co"># critical region</span></span>
 <span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>ci_95, <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sample_mean, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span></code></pre></div>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>m_hat, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -749,11 +747,11 @@ window.Quarto = {
 </div>
 <div id="callout-7" class="callout-7-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>Why does adding <span class="math inline">\((\mu - \hat{M})\)</span> impose the null? A bootstrap resample of the data has a mean that varies around the sample mean <span class="math inline">\(\hat{M}\)</span>, not around the hypothesized <span class="math inline">\(\mu\)</span>. Adding the constant <span class="math inline">\((\mu - \hat{M})\)</span> slides the whole resampling distribution over so it is centered at <span class="math inline">\(\mu\)</span> instead. A shift moves the center but leaves the spread and shape unchanged, so the result is a sampling distribution with the null mean and the same variability as the data.</p>
+<p>Why does adding <span class="math inline">\((m_0 - \hat{m})\)</span> impose the null? A bootstrap resample of the data has a mean that varies around the sample mean <span class="math inline">\(\hat{m}\)</span>, not around the hypothesized <span class="math inline">\(m_0\)</span>. Adding the constant <span class="math inline">\((m_0 - \hat{m})\)</span> slides the whole resampling distribution over so it is centered at <span class="math inline">\(m_0\)</span> instead. A shift moves the center but leaves the spread and shape unchanged, so the result is a sampling distribution with the null mean and the same variability as the data.</p>
 </div>
 </div>
 </div>
-<p>The Normal approximation from the previous chapter can also impose the null: center the interval at the hypothesized value <span class="math inline">\(\mu\)</span> and use <span class="math inline">\(\mu \pm q(\alpha/2) \cdot SE(M)\)</span>, where <span class="math inline">\(SE(M)\)</span> is estimated via bootstrap or classical formulas. (While we could also use a Null Jackknife distribution, that is rarely done in practice.) Altogether, there are two different types of confidence intervals that “impose the null”. Until you know more, a conservative rule-of-thumb is to take the larger estimate.</p>
+<p>The Normal approximation from the previous chapter can also impose the null: center the interval at the hypothesized value <span class="math inline">\(m_0\)</span> and use <span class="math inline">\(m_0 \pm q(\alpha/2) \cdot SE(M)\)</span>, where <span class="math inline">\(SE(M)\)</span> is estimated via bootstrap or classical formulas. (While we could also use a Null Jackknife distribution, that is rarely done in practice.) Altogether, there are two different types of confidence intervals that “impose the null”. Until you know more, a conservative rule-of-thumb is to take the larger estimate.</p>
 <table class="caption-top table">
 <caption>Types of Confidence Interval Estimates that “impose the null”</caption>
 <colgroup>
@@ -798,12 +796,12 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>The <span class="math inline">\(p\)</span>-value is useful as a <em>continuous summary</em> of how strongly the data oppose the null, whereas a confidence interval gives only a yes/no answer at a fixed coverage level. For the running mean example, we want the probability that the random variable <span class="math inline">\(M\)</span> is at least as extreme (far from the null mean of <span class="math inline">\(9\)</span>) as our observed sample mean <span class="math inline">\(\hat{M}\)</span>.</p>
-<p>Recall that we used the bootstrap to estimate the distribution of the sample statistic like the mean, and the null-bootstrap shifted the bootstrap to be centered at a hypothesized value. The bootstrap idea here is to approximate <span class="math inline">\(M-\mu\)</span>, the difference between the sample mean <span class="math inline">\(M\)</span> and the unknown theoretical mean <span class="math inline">\(\mu\)</span>, with the null-bootstrap analogue <span class="math inline">\(M^{\text{boot}}_{0}-\mu\)</span>, where <span class="math inline">\(M^{\text{boot}}_{0}=M^{\text{boot}}+(\mu-\hat{M})\)</span> is the recentered bootstrap mean. <span class="math display">\[\begin{aligned}
-&amp;  Prob( |M - \mu| \geq |\hat{M} - \mu| \mid \mu = 9 ) \\
-&amp;  \approx Prob( |M^{\text{boot}}_{0}- \mu| \geq |\hat{M}- \mu|  \mid \mu = 9) \\
-&amp;  = 1-\hat{F}^{|\text{boot}|}_{0}(|\hat{M}-9|),
-\end{aligned}\]</span> where <span class="math inline">\(\hat{F}^{|\text{boot}|}_{0}\)</span> is the ECDF of <span class="math inline">\(|M^{\text{boot}}_{0}- \mu|\)</span>.</p>
+<p>The <span class="math inline">\(p\)</span>-value is useful as a <em>continuous summary</em> of how strongly the data oppose the null, whereas a confidence interval gives only a yes/no answer at a fixed coverage level. For the running mean example, we want the probability that the random variable <span class="math inline">\(M\)</span> is at least as extreme (far from the null mean of <span class="math inline">\(9\)</span>) as our observed sample mean <span class="math inline">\(\hat{m}\)</span>.</p>
+<p>Recall that we used the bootstrap to estimate the distribution of the sample statistic like the mean, and the null-bootstrap shifted the bootstrap to be centered at a hypothesized value. The bootstrap idea here is to approximate <span class="math inline">\(M-\mathbb{E}[X_i]\)</span>, the difference between the sample mean <span class="math inline">\(M\)</span> and the unknown theoretical mean <span class="math inline">\(\mathbb{E}[X_i]\)</span>, with <span class="math inline">\(M^{\text{boot}}-\hat{m}\)</span>. To test <span class="math inline">\(H_0: \mathbb{E}[X_i]=m_0\)</span>, we recenter the bootstrap mean as <span class="math inline">\(M^{\text{boot}}_{0}=M^{\text{boot}}+(m_0-\hat{m})\)</span>, so <span class="math inline">\(M^{\text{boot}}_{0}-m_0=M^{\text{boot}}-\hat{m}\)</span>. For the running example, <span class="math inline">\(m_0=9\)</span>. <span class="math display">\[\begin{aligned}
+&amp;  Prob( |M - m_0| \geq |\hat{m} - m_0| \mid \mathbb{E}[X_i] = m_0 ) \\
+&amp;  \approx Prob( |M^{\text{boot}}_{0}- m_0| \geq |\hat{m}- m_0| ) \\
+&amp;  = 1-\hat{F}^{|\text{boot}|}_{0}(|\hat{m}-9|),
+\end{aligned}\]</span> where <span class="math inline">\(\hat{F}^{|\text{boot}|}_{0}\)</span> is the ECDF of <span class="math inline">\(|M^{\text{boot}}_{0}- m_0|\)</span>.</p>
 <div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-9-contents" aria-controls="callout-9" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -820,25 +818,25 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>sample_dat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>sample_mean <span class="ot">&lt;-</span> <span class="fu">mean</span>(sample_dat)</span>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>]</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_hat)</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap NULL: mean=9</span></span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap shift: center each bootstrap resample so that the distribution satisfies the null hypothesis on average.</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="dv">9</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>bootstrap_means_null <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_means_null)){</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    dat_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    mean_b <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b) <span class="sc">+</span> (mu <span class="sc">-</span> sample_mean) <span class="co"># impose the null via Bootstrap shift</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    bootstrap_means_null[b] <span class="ot">&lt;-</span> mean_b</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>null_mean <span class="ot">&lt;-</span> <span class="dv">9</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>boot_means_null <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_means_null)){</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    m_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot) <span class="sc">+</span> (null_mean <span class="sc">-</span> m_hat) <span class="co"># impose the null via Bootstrap shift</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    boot_means_null[b] <span class="ot">&lt;-</span> m_b_hat</span>
 <span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_means_null, <span class="at">breaks=</span><span class="dv">25</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_means_null, <span class="at">breaks=</span><span class="dv">25</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
 <span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>,</span>
 <span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Null Bootstrap Samples'</span>)</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_means_null, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>)) <span class="co"># critical region</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(boot_means_null, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>)) <span class="co"># critical region</span></span>
 <span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>ci_95, <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sample_mean, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span></code></pre></div>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>m_hat, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -854,24 +852,24 @@ window.Quarto = {
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Two-Sided Test, ALTERNATIVE: mean &lt; 9 or mean &gt;9</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize Two Sided Prob. &amp; reject region boundary</span></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_means_null<span class="sc">-</span>mu,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_means_null<span class="sc">-</span>null_mean,</span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">breaks=</span><span class="dv">20</span>,</span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>,</span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>,</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="st">'Null Bootstrap for M - '</span><span class="sc">~</span>mu))</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sample_mean<span class="sc">-</span>mu, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_means_null<span class="sc">-</span>mu, <span class="at">probs=</span><span class="fu">c</span>(<span class="fl">0.025</span>, .<span class="dv">975</span>))</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="st">'Null Bootstrap for M - '</span><span class="sc">~</span>m[<span class="dv">0</span>]))</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>m_hat<span class="sc">-</span>null_mean, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(boot_means_null<span class="sc">-</span>null_mean, <span class="at">probs=</span><span class="fu">c</span>(<span class="fl">0.025</span>, .<span class="dv">975</span>))</span>
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>ci_95, <span class="at">lwd=</span><span class="dv">2</span>)</span>
 <span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Equivalent Visualization</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>boot_absval <span class="ot">&lt;-</span> <span class="fu">abs</span>(bootstrap_means_null<span class="sc">-</span>mu)</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>Fhat_abs0 <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(boot_absval)</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(Fhat_abs0,</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>boot_absval <span class="ot">&lt;-</span> <span class="fu">abs</span>(boot_means_null<span class="sc">-</span>null_mean)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>F_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(boot_absval)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(F_hat,</span>
 <span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>,</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="st">'Null Bootstrap for |M - '</span><span class="sc">~</span>mu<span class="sc">~</span><span class="st">'|'</span>))</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">abs</span>(sample_mean<span class="sc">-</span>mu), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="st">'Null Bootstrap for |M - '</span><span class="sc">~</span>m[<span class="dv">0</span>]<span class="sc">~</span><span class="st">'|'</span>))</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">abs</span>(m_hat<span class="sc">-</span>null_mean), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
 <span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co"># with Two Sided Probability</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">Fhat_abs0</span>( <span class="fu">abs</span>(sample_mean<span class="sc">-</span>mu) )</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">F_hat</span>( <span class="fu">abs</span>(m_hat<span class="sc">-</span>null_mean) )</span>
 <span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>( <span class="fu">paste0</span>(<span class="st">'p='</span>, <span class="fu">round</span>(p2, <span class="dv">3</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
@@ -904,28 +902,28 @@ window.Quarto = {
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>n_questions <span class="ot">&lt;-</span> <span class="dv">44</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>n_correct <span class="ot">&lt;-</span> <span class="dv">34</span></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>outcomes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">1</span>, n_correct), <span class="fu">rep</span>(<span class="dv">0</span>, n_questions <span class="sc">-</span> n_correct))</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>sample_phat <span class="ot">&lt;-</span> <span class="fu">mean</span>(outcomes)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>p_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(outcomes)</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap NULL: p=0.85</span></span>
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap shift: center each bootstrap resample so that the distribution satisfies the null hypothesis on average.</span></span>
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>p0 <span class="ot">&lt;-</span> <span class="fl">0.85</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>bootstrap_props_null <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_props_null)){</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    outcomes_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(outcomes, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    bootstrap_props_null[b] <span class="ot">&lt;-</span> <span class="fu">mean</span>(outcomes_b) <span class="sc">+</span> (p0 <span class="sc">-</span> sample_phat) <span class="co"># impose the null via Bootstrap shift</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>boot_props_null <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_props_null)){</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(outcomes, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    boot_props_null[b] <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot) <span class="sc">+</span> (p0 <span class="sc">-</span> p_hat) <span class="co"># impose the null via Bootstrap shift</span></span>
 <span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Two-Sided p-value</span></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>boot_absval <span class="ot">&lt;-</span> <span class="fu">abs</span>(bootstrap_props_null <span class="sc">-</span> p0)</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>Fhat_abs0 <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(boot_absval)</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">Fhat_abs0</span>( <span class="fu">abs</span>(sample_phat <span class="sc">-</span> p0) )</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>boot_absval <span class="ot">&lt;-</span> <span class="fu">abs</span>(boot_props_null <span class="sc">-</span> p0)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>F_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(boot_absval)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">F_hat</span>( <span class="fu">abs</span>(p_hat <span class="sc">-</span> p0) )</span>
 <span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_props_null, <span class="at">breaks=</span><span class="dv">25</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_props_null, <span class="at">breaks=</span><span class="dv">25</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
 <span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'Null Bootstrap Proportion (H0: p=0.85)'</span>)</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_props_null, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(boot_props_null, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
 <span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>ci_95, <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sample_phat, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>p_hat, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
 <span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>( <span class="fu">paste0</span>(<span class="st">'p='</span>, <span class="fu">round</span>(p2, <span class="dv">3</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
@@ -969,14 +967,14 @@ window.Quarto = {
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>p_values <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">300</span>)</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b2 <span class="cf">in</span> <span class="fu">seq</span>(p_values)){</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    bootstrap_means_null_p <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_means_null_p)){</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>        dat_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>        mean_b <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b) <span class="sc">+</span> (mu <span class="sc">-</span> sample_mean) <span class="co"># impose the null</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>        bootstrap_means_null_p[b] <span class="ot">&lt;-</span> mean_b</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    boot_means_null_p <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_means_null_p)){</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>        x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>        m_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot) <span class="sc">+</span> (null_mean <span class="sc">-</span> m_hat) <span class="co"># impose the null</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>        boot_means_null_p[b] <span class="ot">&lt;-</span> m_b_hat</span>
 <span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    Fhat_abs0 <span class="ot">&lt;-</span> <span class="fu">ecdf</span>( <span class="fu">abs</span>(bootstrap_means_null_p<span class="sc">-</span>mu) )</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    p2 <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">-</span> <span class="fu">Fhat_abs0</span>( <span class="fu">abs</span>(sample_mean<span class="sc">-</span>mu) )</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    F_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>( <span class="fu">abs</span>(boot_means_null_p<span class="sc">-</span>null_mean) )</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    p2 <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">-</span> <span class="fu">F_hat</span>( <span class="fu">abs</span>(m_hat<span class="sc">-</span>null_mean) )</span>
 <span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    p_values[b2] <span class="ot">&lt;-</span> p2</span>
 <span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a></span>
@@ -997,7 +995,7 @@ window.Quarto = {
 <h2 data-number="8.3" class="anchored" data-anchor-id="other-statistics"><span class="header-section-number">8.3</span> Other Statistics</h2>
 <section id="t-values" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="t-values"><strong><span class="math inline">\(t\)</span>-values</strong></h4>
-<p>Different studies have different <span class="math inline">\(SE(M)\)</span>, so the raw difference <span class="math inline">\(\hat{M} - \mu\)</span> is hard to compare across studies; we need to express the deviation in standard-error units.</p>
+<p>Different studies have different <span class="math inline">\(SE(M)\)</span>, so the raw difference <span class="math inline">\(\hat{m} - m_0\)</span> is hard to compare across studies; we need to express the deviation in standard-error units.</p>
 <div class="callout callout-style-default callout-important no-icon callout-titled" title="Key Definition">
 <div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-11-contents" aria-controls="callout-11" aria-expanded="true" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -1010,11 +1008,11 @@ window.Quarto = {
 </div>
 <div id="callout-11" class="callout-11-contents callout-collapse collapse show">
 <div class="callout-body-container callout-body">
-<p>The <em><span class="math inline">\(t\)</span>-value</em> (or <span class="math inline">\(t\)</span>-statistic) standardizes the deviation of <span class="math inline">\(\hat{M}\)</span> from the hypothesized <span class="math inline">\(\mu\)</span> by the standard error, <span class="math display">\[t = \frac{M - \mu}{SE(M)}.\]</span> Using a standardized statistic makes results comparable across studies and connects to a well-studied reference distribution (Normal in large samples, Student’s <span class="math inline">\(t\)</span> in small).</p>
+<p>The <em><span class="math inline">\(t\)</span>-value</em> (or <span class="math inline">\(t\)</span>-statistic) standardizes the deviation of <span class="math inline">\(\hat{m}\)</span> from the hypothesized <span class="math inline">\(m_0\)</span> by the standard error, <span class="math display">\[t = \frac{M - m_0}{SE(M)}.\]</span> Using a standardized statistic makes results comparable across studies and connects to a well-studied reference distribution (Normal in large samples, Student’s <span class="math inline">\(t\)</span> in small).</p>
 </div>
 </div>
 </div>
-<p>The <span class="math inline">\(t\)</span>-value is useful as a portable <em>test statistic</em>: a <span class="math inline">\(t\)</span> of <span class="math inline">\(2.05\)</span> has roughly the same evidentiary weight whether the underlying data are measured in dollars, hours, or grams, because the units cancel between numerator and denominator. For any specific sample we must approximate the standard error. Using the theory-driven approach, we compute <span class="math inline">\(\hat{t}=(\hat{M}-\mu)/(\hat{S}/\sqrt{n})\)</span>. Using the data-driven approach, we compute <span class="math inline">\(\hat{t}=(\hat{M}-\mu)/(\hat{SE}^{\text{jack}})\)</span> or <span class="math inline">\(\hat{t}=(\hat{M}-\mu)/(\hat{SE}^{\text{boot}})\)</span>. In any case, we can use bootstrapping to estimate the variability of the <span class="math inline">\(t\)</span> statistic, just like we did with the mean.</p>
+<p>The <span class="math inline">\(t\)</span>-value is useful as a portable <em>test statistic</em>: a <span class="math inline">\(t\)</span> of <span class="math inline">\(2.05\)</span> has roughly the same evidentiary weight whether the underlying data are measured in dollars, hours, or grams, because the units cancel between numerator and denominator. For any specific sample we must approximate the standard error. Using the theory-driven approach, we compute <span class="math inline">\(\hat{t}=(\hat{m}-m_0)/(\hat{s}/\sqrt{n})\)</span>. Using the data-driven approach, we compute <span class="math inline">\(\hat{t}=(\hat{m}-m_0)/(\hat{SE}^{\text{jack}})\)</span> or <span class="math inline">\(\hat{t}=(\hat{m}-m_0)/(\hat{SE}^{\text{boot}})\)</span>. In any case, we can use bootstrapping to estimate the variability of the <span class="math inline">\(t\)</span> statistic, just like we did with the mean.</p>
 <div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-12-contents" aria-controls="callout-12" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -1031,48 +1029,48 @@ window.Quarto = {
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">#null hypothesis</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="dv">9</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>null_mean <span class="ot">&lt;-</span> <span class="dv">9</span></span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># t statistic</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>jackknife_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(sample_dat))</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(jackknife_means)){</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    dat_i <span class="ot">&lt;-</span> sample_dat[<span class="sc">-</span>i]</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    jackknife_means[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_i)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>jack_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x_hat))</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(jack_means)){</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    x_jack <span class="ot">&lt;-</span> x_hat[<span class="sc">-</span>i]</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    jack_means[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_jack)</span>
 <span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>jackknife_se <span class="ot">&lt;-</span> <span class="fu">sd</span>(jackknife_means)<span class="sc">*</span><span class="fu">sqrt</span>(<span class="fu">length</span>(sample_dat))</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>sample_t <span class="ot">&lt;-</span> (sample_mean <span class="sc">-</span> mu)<span class="sc">/</span>jackknife_se</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>jackknife_se <span class="ot">&lt;-</span> <span class="fu">sd</span>(jack_means)<span class="sc">*</span><span class="fu">sqrt</span>(<span class="fu">length</span>(x_hat))</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>t_hat <span class="ot">&lt;-</span> (m_hat <span class="sc">-</span> null_mean)<span class="sc">/</span>jackknife_se</span>
 <span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Boostrap Null Distribution</span></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>bootstrap_t_null <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_t_null)){</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    dat_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>    mean_b <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b) <span class="sc">+</span> (mu <span class="sc">-</span> sample_mean) <span class="co"># impose the null by recentering</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>boot_t_null <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_t_null)){</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>    m_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot) <span class="sc">+</span> (null_mean <span class="sc">-</span> m_hat) <span class="co"># impose the null by recentering</span></span>
 <span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute t stat using jackknife ses (same as above)</span></span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    jackknife_means_b <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(dat_b))</span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(jackknife_means_b)){</span>
-<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>        jackknife_means_b[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(dat_b[<span class="sc">-</span>i])</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    jack_means_b <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x_boot))</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(jack_means_b)){</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>        jack_means_b[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot[<span class="sc">-</span>i])</span>
 <span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>    jackknife_se_b <span class="ot">&lt;-</span> <span class="fu">sd</span>(jackknife_means_b)<span class="sc">*</span><span class="fu">sqrt</span>(<span class="fu">length</span>(dat_b))</span>
-<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>    jackknife_t_b <span class="ot">&lt;-</span> (mean_b <span class="sc">-</span> mu)<span class="sc">/</span>jackknife_se_b</span>
-<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>    bootstrap_t_null[b] <span class="ot">&lt;-</span> jackknife_t_b</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>    jackknife_se_b <span class="ot">&lt;-</span> <span class="fu">sd</span>(jack_means_b)<span class="sc">*</span><span class="fu">sqrt</span>(<span class="fu">length</span>(x_boot))</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>    t_b_hat <span class="ot">&lt;-</span> (m_b_hat <span class="sc">-</span> null_mean)<span class="sc">/</span>jackknife_se_b</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>    boot_t_null[b] <span class="ot">&lt;-</span> t_b_hat</span>
 <span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the null distribution and CI</span></span>
 <span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_t_null, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">breaks=</span><span class="dv">50</span>,</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_t_null, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">breaks=</span><span class="dv">50</span>,</span>
 <span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'Null Bootstrap for t'</span>)</span>
-<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sample_t, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
-<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_t_null, <span class="at">probs=</span><span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>) )</span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>t_hat, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>ci_95 <span class="ot">&lt;-</span> <span class="fu">quantile</span>(boot_t_null, <span class="at">probs=</span><span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>) )</span>
 <span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>ci_95, <span class="at">lwd=</span><span class="dv">2</span>)</span>
 <span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute the p-value for two-sided test</span></span>
-<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>Fhat0 <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(<span class="fu">abs</span>(bootstrap_t_null))</span>
-<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(Fhat0,</span>
-<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlim=</span><span class="fu">range</span>(bootstrap_t_null, sample_t),</span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>F_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(<span class="fu">abs</span>(boot_t_null))</span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(F_hat,</span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlim=</span><span class="fu">range</span>(boot_t_null, t_hat),</span>
 <span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Null Bootstrap for |t|'</span>,</span>
 <span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">abs</span>(sample_t), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
-<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">Fhat0</span>( <span class="fu">abs</span>(sample_t) )</span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">abs</span>(t_hat), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">F_hat</span>( <span class="fu">abs</span>(t_hat) )</span>
 <span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>( <span class="fu">paste0</span>(<span class="st">'p='</span>, <span class="fu">round</span>(p, <span class="dv">3</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
@@ -1113,26 +1111,26 @@ window.Quarto = {
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Test for Median Differences (Impose the Null)</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap Null Distribution for the median</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Each Bootstrap shifts medians so that median = q_null</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Each Bootstrap shifts medians so that median = null_median</span></span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>q_obs <span class="ot">&lt;-</span> <span class="fu">quantile</span>(sample_dat, <span class="at">probs=</span>.<span class="dv">5</span>)</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>q_null <span class="ot">&lt;-</span> <span class="fl">7.8</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>bootstrap_quantile_null <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(bootstrap_quantile_null)){</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    x_b <span class="ot">&lt;-</span> <span class="fu">sample</span>(sample_dat, <span class="at">replace=</span><span class="cn">TRUE</span>) <span class="co">#bootstrap sample</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    q_b <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x_b, <span class="at">probs=</span>.<span class="dv">5</span>) <span class="co"># median</span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    q_b_null <span class="ot">&lt;-</span> q_b <span class="sc">+</span> (q_null <span class="sc">-</span> q_obs) <span class="co"># impose the null</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    bootstrap_quantile_null[b] <span class="ot">&lt;-</span> q_b_null</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>med_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x_hat, <span class="at">probs=</span>.<span class="dv">5</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>null_median <span class="ot">&lt;-</span> <span class="fl">7.8</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>boot_medians_null <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_medians_null)){</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">replace=</span><span class="cn">TRUE</span>) <span class="co">#bootstrap sample</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    med_b_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x_boot, <span class="at">probs=</span>.<span class="dv">5</span>) <span class="co"># median</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    med_null_b_hat <span class="ot">&lt;-</span> med_b_hat <span class="sc">+</span> (null_median <span class="sc">-</span> med_hat) <span class="co"># impose the null</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    boot_medians_null[b] <span class="ot">&lt;-</span> med_null_b_hat</span>
 <span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="co"># 2-Sided Test for Medians</span></span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_quantile_null<span class="sc">-</span>q_null,</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_medians_null<span class="sc">-</span>null_median,</span>
 <span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">xlab=</span><span class="st">'Null Bootstrap'</span>,</span>
 <span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
 <span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Medians (Impose Null)'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>median_ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_quantile_null<span class="sc">-</span>q_null, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>median_ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(boot_medians_null<span class="sc">-</span>null_median, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
 <span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>median_ci, <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>q_obs<span class="sc">-</span>q_null, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span></code></pre></div>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>med_hat<span class="sc">-</span>null_median, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1146,7 +1144,7 @@ window.Quarto = {
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 2-Sided Test for Median Difference</span></span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="do">## Null: No Median Difference</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">-</span> <span class="fu">ecdf</span>( <span class="fu">abs</span>(bootstrap_quantile_null<span class="sc">-</span>q_null))( <span class="fu">abs</span>(q_obs<span class="sc">-</span>q_null) )</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">-</span> <span class="fu">ecdf</span>( <span class="fu">abs</span>(boot_medians_null<span class="sc">-</span>null_median))( <span class="fu">abs</span>(med_hat<span class="sc">-</span>null_median) )</span>
 <span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5435435</span></span></code></pre></div>
 </details>
 </div>
@@ -1166,7 +1164,7 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>q_obs <span class="ot">&lt;-</span> <span class="fu">quantile</span>(sample_dat, <span class="at">probs=</span>.<span class="dv">75</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>q_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x_hat, <span class="at">probs=</span>.<span class="dv">75</span>)</span></code></pre></div>
 </details>
 </div>
 </div>
@@ -1176,11 +1174,11 @@ window.Quarto = {
 </section>
 <section id="one-sided-tests" class="level2" data-number="8.4">
 <h2 data-number="8.4" class="anchored" data-anchor-id="one-sided-tests"><span class="header-section-number">8.4</span> One-Sided Tests</h2>
-<p>Above, we tested whether the observed statistic is either extremely high or low. This is known as a <em>two-sided test</em>. There are also two <em>one-sided tests</em> (left tail: observed statistic is extremely low, right tail: observed statistic is extremely high). For a concrete example, consider whether the mean statistic, <span class="math inline">\(M\)</span>, is centered on a theoretical value of <span class="math inline">\(\mu=9\)</span> for the population. If your null hypothesis is that the theoretical mean is nine, <span class="math inline">\(H_{0}: \mu =9\)</span>, and you calculated the mean for your sample as <span class="math inline">\(\hat{M}\)</span>, then you can consider any one of these three <em>alternative hypotheses</em>:</p>
+<p>Above, we tested whether the observed statistic is either extremely high or low. This is known as a <em>two-sided test</em>. There are also two <em>one-sided tests</em> (left tail: observed statistic is extremely low, right tail: observed statistic is extremely high). For a concrete example, consider whether the mean statistic, <span class="math inline">\(M\)</span>, is centered on a theoretical value of <span class="math inline">\(\mathbb{E}[X_i]=9\)</span> for the population. If your null hypothesis is that the theoretical mean is nine, <span class="math inline">\(H_{0}: \mathbb{E}[X_i] =9\)</span>, and you calculated the mean for your sample as <span class="math inline">\(\hat{m}\)</span>, then you can consider any one of these three <em>alternative hypotheses</em>:</p>
 <ul>
-<li><span class="math inline">\(H_{A}: \mu \neq 9\)</span>, a two-tail test</li>
-<li><span class="math inline">\(H_{A}: \mu &lt; 9\)</span>, a left-tail test</li>
-<li><span class="math inline">\(H_{A}: \mu &gt; 9\)</span>, a right-tail test</li>
+<li><span class="math inline">\(H_{A}: \mathbb{E}[X_i] \neq 9\)</span>, a two-tail test</li>
+<li><span class="math inline">\(H_{A}: \mathbb{E}[X_i] &lt; 9\)</span>, a left-tail test</li>
+<li><span class="math inline">\(H_{A}: \mathbb{E}[X_i] &gt; 9\)</span>, a right-tail test</li>
 </ul>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-14-contents" aria-controls="callout-14" aria-expanded="false" aria-label="Toggle callout">
@@ -1194,20 +1192,20 @@ window.Quarto = {
 </div>
 <div id="callout-14" class="callout-14-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>A fitness tracker manufacturer claims that users take more than <span class="math inline">\(8{,}000\)</span> steps per day on average. A sample of <span class="math inline">\(25\)</span> users has <span class="math inline">\(\hat{M}=8{,}492\)</span> steps and <span class="math inline">\(\hat{S}=1{,}200\)</span> steps. Test at the <span class="math inline">\(5\%\)</span> level using theory-based intervals.</p>
-<p><strong>(a) Hypotheses.</strong> The claim is a right-tail alternative: <span class="math inline">\(H_{0}: \mu = 8000\)</span> versus <span class="math inline">\(H_{A}: \mu &gt; 8000\)</span>.</p>
-<p><strong>(b) Test statistic.</strong> The classical standard error is <span class="math inline">\(\hat{S}/\sqrt{n} = 1200/\sqrt{25} = 240\)</span>, so <span class="math inline">\(t = (8492 - 8000)/240 \approx 2.05\)</span>.</p>
+<p>A fitness tracker manufacturer claims that users take more than <span class="math inline">\(8{,}000\)</span> steps per day on average. A sample of <span class="math inline">\(25\)</span> users has <span class="math inline">\(\hat{m}=8{,}492\)</span> steps and <span class="math inline">\(\hat{s}=1{,}200\)</span> steps. Test at the <span class="math inline">\(5\%\)</span> level using theory-based intervals.</p>
+<p><strong>(a) Hypotheses.</strong> The claim is a right-tail alternative: <span class="math inline">\(H_{0}: \mathbb{E}[X_i] = 8000\)</span> versus <span class="math inline">\(H_{A}: \mathbb{E}[X_i] &gt; 8000\)</span>.</p>
+<p><strong>(b) Test statistic.</strong> The classical standard error is <span class="math inline">\(\hat{s}/\sqrt{n} = 1200/\sqrt{25} = 240\)</span>, so <span class="math inline">\(t = (8492 - 8000)/240 \approx 2.05\)</span>.</p>
 <p><strong>(c) Decision.</strong> The right-tail critical value at <span class="math inline">\(5\%\)</span> is <span class="math inline">\(q_{0.95} \approx 1.645\)</span> from the Normal. Since <span class="math inline">\(t = 2.05 &gt; 1.645\)</span>, we reject <span class="math inline">\(H_{0}\)</span>.</p>
 <p><strong>(d) Conclusion.</strong> At the <span class="math inline">\(5\%\)</span> level, the data are consistent with the manufacturer’s claim: there is evidence the population mean exceeds <span class="math inline">\(8{,}000\)</span> steps per day.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>M_hat <span class="ot">&lt;-</span> <span class="dv">8492</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>S_hat <span class="ot">&lt;-</span> <span class="dv">1200</span></span>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>m_steps_hat <span class="ot">&lt;-</span> <span class="dv">8492</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>s_steps_hat <span class="ot">&lt;-</span> <span class="dv">1200</span></span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">25</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>mu0 <span class="ot">&lt;-</span> <span class="dv">8000</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>SE <span class="ot">&lt;-</span> S_hat <span class="sc">/</span> <span class="fu">sqrt</span>(n)</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>t_stat <span class="ot">&lt;-</span> (M_hat <span class="sc">-</span> mu0) <span class="sc">/</span> SE</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>steps_null_mean <span class="ot">&lt;-</span> <span class="dv">8000</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>SE <span class="ot">&lt;-</span> s_steps_hat <span class="sc">/</span> <span class="fu">sqrt</span>(n)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>t_stat <span class="ot">&lt;-</span> (m_steps_hat <span class="sc">-</span> steps_null_mean) <span class="sc">/</span> SE</span>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>t_stat</span>
 <span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 2.05</span></span>
 <span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a></span>
@@ -1224,21 +1222,21 @@ window.Quarto = {
 <h4 class="unnumbered anchored" data-anchor-id="one-sided-p-values"><strong>One-Sided <span class="math inline">\(p\)</span>-values</strong></h4>
 <p>The <span class="math inline">\(p\)</span>-value for a one-sided test is more straightforward to implement via a bootstrap null distribution.</p>
 <p>For a left-tail test, we examine <span class="math display">\[\begin{aligned}
-p = Prob( M &lt; \hat{M} \mid \mu = 9 )
-    &amp;\approx Prob( M^{\text{boot}} &lt; \hat{M} \mid  \mu = 9 ) = \hat{F}^{\text{boot}}_{0}(\hat{M}),
+p = Prob( M &lt; \hat{m} \mid \mathbb{E}[X_i] = 9 )
+    &amp;\approx Prob( M^{\text{boot}}_{0} &lt; \hat{m} ) = \hat{F}^{\text{boot}}_{0}(\hat{m}),
 \end{aligned}\]</span> where <span class="math inline">\(\hat{F}^{\text{boot}}_{0}\)</span> is the ECDF of the bootstrap null distribution. We reject the null if <span class="math inline">\(p &lt; 0.05\)</span> at the <span class="math inline">\(5\%\)</span> level, and otherwise fail to reject.</p>
-<p>For a right-tail test, we examine <span class="math inline">\(p=Prob( M &gt; \hat{M} \mid \mu = 9 ) \approx 1-\hat{F}^{\text{boot}}_{0}(\hat{M})\)</span>.</p>
+<p>For a right-tail test, we examine <span class="math inline">\(p=Prob( M &gt; \hat{m} \mid \mathbb{E}[X_i] = 9 ) \approx 1-\hat{F}^{\text{boot}}_{0}(\hat{m})\)</span>.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Right-tail Test, ALTERNATIVE: mean &gt; 9</span></span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Equivalent Visualization with p-value</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>Fhat0 <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(bootstrap_means_null) <span class="co"># Look at right tail</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(Fhat0,</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>F_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(boot_means_null) <span class="co"># Look at right tail</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(F_hat,</span>
 <span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>,</span>
 <span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Null Bootstrap'</span>)</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>sample_mean, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">-</span> <span class="fu">Fhat0</span>(sample_mean) <span class="co">#Compute right tail prob: 0.987</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>m_hat, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">-</span> <span class="fu">F_hat</span>(m_hat) <span class="co">#Compute right tail prob: 0.987</span></span>
 <span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>( <span class="fu">paste0</span>(<span class="st">'p='</span>, <span class="fu">round</span>(p1, <span class="dv">3</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
@@ -1264,8 +1262,8 @@ p = Prob( M &lt; \hat{M} \mid \mu = 9 )
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Left-tail Test, ALTERNATIVE: mean &lt; 9</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute left-tail prob: p = F(sample_mean)</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>p_left <span class="ot">&lt;-</span> <span class="fu">Fhat0</span>(sample_mean)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute left-tail prob: p = F(m_hat)</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>p_left <span class="ot">&lt;-</span> <span class="fu">F_hat</span>(m_hat)</span>
 <span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>p_left</span>
 <span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.01301301</span></span>
 <span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a></span>
@@ -1289,20 +1287,20 @@ p = Prob( M &lt; \hat{M} \mid \mu = 9 )
 </div>
 <div id="callout-15" class="callout-15-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>Notice that the recentering adjustment affects two-sided tests (because they depend on distance from the null mean) but not one-sided tests (because adding a constant does not change rank order). Specifically, <span class="math inline">\(p = Prob( M &lt; \hat{M} \mid \mu = 9 ) =  Prob( M - \mu &lt; \hat{M} - \mu \mid \mu = 9 )\)</span>. That is intuitively also why the <span class="math inline">\(t\)</span>-value can be used for both one and two-sided hypothesis tests.</p>
+<p>For two-sided tests, measure distance from <span class="math inline">\(m_0\)</span> by subtracting it before taking absolute values. For one-sided tests, subtracting <span class="math inline">\(m_0\)</span> from both the null-bootstrap statistic and the observed statistic leaves their ordering unchanged. Specifically, <span class="math inline">\(p = Prob( M &lt; \hat{m} \mid \mathbb{E}[X_i] = 9 ) = Prob( M - m_0 &lt; \hat{m} - m_0 \mid \mathbb{E}[X_i] = 9 )\)</span>. That is intuitively also why the <span class="math inline">\(t\)</span>-value can be used for both one and two-sided hypothesis tests.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># See that the 'recentering' matters for two-sided tests</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ecdf</span>( <span class="fu">abs</span>(bootstrap_means_null<span class="sc">-</span>mu) )( <span class="fu">abs</span>(sample_mean<span class="sc">-</span>mu) )</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ecdf</span>( <span class="fu">abs</span>(boot_means_null<span class="sc">-</span>null_mean) )( <span class="fu">abs</span>(m_hat<span class="sc">-</span>null_mean) )</span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.966967</span></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ecdf</span>( <span class="fu">abs</span>(bootstrap_means_null) )( <span class="fu">abs</span>(sample_mean) )</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ecdf</span>( <span class="fu">abs</span>(boot_means_null) )( <span class="fu">abs</span>(m_hat) )</span>
 <span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.01301301</span></span>
 <span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="co"># See that the 'recentering' doesn't matter for one-sided ones</span></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ecdf</span>( bootstrap_means_null<span class="sc">-</span>mu)( sample_mean<span class="sc">-</span>mu)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ecdf</span>( boot_means_null<span class="sc">-</span>null_mean)( m_hat<span class="sc">-</span>null_mean)</span>
 <span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.01301301</span></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ecdf</span>( bootstrap_means_null )( sample_mean)</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ecdf</span>( boot_means_null )( m_hat)</span>
 <span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.01301301</span></span></code></pre></div>
 </details>
 </div>
@@ -1316,7 +1314,7 @@ p = Prob( M &lt; \hat{M} \mid \mu = 9 )
 <ol type="1">
 <li><p>Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in <a href="./04_A_WorkingWithAI.html">Working with AI</a>. Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing. Finish with your own questions about whatever you found hardest.</p></li>
 <li><p>Explain the difference between “rejecting the null hypothesis” and “proving the alternative hypothesis is true.” Why is the phrase “fail to reject” used instead of “accept the null”?</p></li>
-<li><p>Suppose you collect a sample of <span class="math inline">\(n = 50\)</span> observations with <span class="math inline">\(\hat{M} = 22.4\)</span> and <span class="math inline">\(\hat{S} = 6.0\)</span>. You want to test <span class="math inline">\(H_{0}: \mu = 20\)</span> against <span class="math inline">\(H_{A}: \mu \neq 20\)</span> at the <span class="math inline">\(5\%\)</span> level. Compute the <span class="math inline">\(t\)</span>-value using theory-driven standard errors and determine whether you reject or fail to reject.</p></li>
+<li><p>Suppose you collect a sample of <span class="math inline">\(n = 50\)</span> observations with <span class="math inline">\(\hat{m} = 22.4\)</span> and <span class="math inline">\(\hat{s} = 6.0\)</span>. You want to test <span class="math inline">\(H_{0}: \mathbb{E}[X_i] = 20\)</span> against <span class="math inline">\(H_{A}: \mathbb{E}[X_i] \neq 20\)</span> at the <span class="math inline">\(5\%\)</span> level. Compute the <span class="math inline">\(t\)</span>-value using theory-driven standard errors and determine whether you reject or fail to reject.</p></li>
 <li><p>Using the <code>USArrests</code> dataset in R, test the hypothesis that the population mean of <code>Assault</code> equals <span class="math inline">\(150\)</span> by constructing a bootstrap null distribution. Compute the two-sided <span class="math inline">\(p\)</span>-value and state whether you reject or fail to reject at the <span class="math inline">\(5\%\)</span> level.</p></li>
 </ol>
 <section id="further-reading" class="level4 unnumbered">
@@ -1328,7 +1326,7 @@ p = Prob( M &lt; \hat{M} \mid \mu = 9 )
 </section>
 <section id="recall" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="recall"><strong>Recall</strong></h4>
-<p>This chapter built <em>hypothesis tests</em> two ways (<em>invert a CI</em> and <em>impose the null</em>), introduced the <em><span class="math inline">\(p\)</span>-value</em> and the <em><span class="math inline">\(t\)</span>-value</em>, and flagged the multiple-comparisons pitfall. The fitness-tracker example tied these ideas together: with <span class="math inline">\(\hat{M}=8492\)</span>, <span class="math inline">\(\hat{S}=1200\)</span>, and <span class="math inline">\(n=25\)</span>, the standard error is <span class="math inline">\(SE = 1200/\sqrt{25} = 240\)</span> and the <span class="math inline">\(t\)</span>-value for <span class="math inline">\(H_{0}: \mu = 8000\)</span> is <span class="math inline">\((8492 - 8000)/240 \approx 2.05\)</span>, which exceeds the right-tail critical value <span class="math inline">\(1.645\)</span> at the <span class="math inline">\(5\%\)</span> level and so rejects the null. In the next chapter we round out the probability toolbox with the Binomial, Poisson, and Beta distributions, plus Bayes’ theorem and the Law of Total Probability.</p>
+<p>This chapter built <em>hypothesis tests</em> two ways (<em>invert a CI</em> and <em>impose the null</em>), introduced the <em><span class="math inline">\(p\)</span>-value</em> and the <em><span class="math inline">\(t\)</span>-value</em>, and flagged the multiple-comparisons pitfall. The fitness-tracker example tied these ideas together: with <span class="math inline">\(\hat{m}=8492\)</span>, <span class="math inline">\(\hat{s}=1200\)</span>, and <span class="math inline">\(n=25\)</span>, the standard error is <span class="math inline">\(SE = 1200/\sqrt{25} = 240\)</span> and the <span class="math inline">\(t\)</span>-value for <span class="math inline">\(H_{0}: \mathbb{E}[X_i] = 8000\)</span> is <span class="math inline">\((8492 - 8000)/240 \approx 2.05\)</span>, which exceeds the right-tail critical value <span class="math inline">\(1.645\)</span> at the <span class="math inline">\(5\%\)</span> level and so rejects the null. In the next chapter we round out the probability toolbox with the Binomial, Poisson, and Beta distributions, plus Bayes’ theorem and the Law of Total Probability.</p>
 
 
 </section>
