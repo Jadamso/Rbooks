@@ -24,17 +24,17 @@ table(dat$Region)
 
 #### **ANOVA** {-}
 
-The model $\hat{Y}_{ig} = b_0 + \sum_{g=2}^{G} b_g \hat{D}_{ig} + \hat{E}_{ig}$ produces the same $F$-statistic as the ANOVA model fit above.
-After fitting, $\hat{B}_0$ estimates the mean of the reference group and each $\hat{B}_g$ estimates the difference between group $g$ and the reference.
+The model $\hat{y}_{ig} = b_0 + \sum_{g=2}^{G} b_g \hat{d}_{ig} + \hat{e}_{ig}$ produces the same $F$-statistic as the ANOVA model fit above.
+After fitting, $\hat{b}_0$ estimates the mean of the reference group and each $\hat{b}_g$ estimates the difference between group $g$ and the reference.
 This default representation is called *treatment coding*.
 
 ```{r}
 # Compare the regional means to treatment-coded coefficients.
-M_g <- aggregate(Murder ~ Region, data=dat, FUN=mean)[,'Murder']
-M_g
+m_g_hat <- aggregate(Murder ~ Region, data=dat, FUN=mean)[,'Murder']
+m_g_hat
 
 # The intercept is the reference mean.
-M_g - M_g[1]
+m_g_hat - m_g_hat[1]
 
 # Each remaining coefficient is a difference from the reference.
 fit_lm <- lm(Murder ~ Region, data=dat)
@@ -50,15 +50,15 @@ anova(fit_lm)
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Suppose there are $G=3$ groups with means $\hat{M}_1=4$, $\hat{M}_2=7$, and $\hat{M}_3=5$.
-Using group 1 as the reference, the regression coefficients are $\hat{B}_0=4$, $\hat{B}_2=7-4=3$, and $\hat{B}_3=5-4=1$.
+Suppose there are $G=3$ groups with means $\hat{m}_1=4$, $\hat{m}_2=7$, and $\hat{m}_3=5$.
+Using group 1 as the reference, the regression coefficients are $\hat{b}_0=4$, $\hat{b}_2=7-4=3$, and $\hat{b}_3=5-4=1$.
 The intercept equals the reference-group mean, and each slope equals a difference from that reference.
 
 ```{r}
 # Verify the treatment-coded coefficients.
-Y <- c(3, 4, 5, 6, 7, 8, 4, 5, 6)
+y_hat <- c(3, 4, 5, 6, 7, 8, 4, 5, 6)
 g <- factor(c(1, 1, 1, 2, 2, 2, 3, 3, 3))
-coef(lm(Y ~ g))
+coef(lm(y_hat ~ g))
 ```
 :::
 
@@ -70,7 +70,7 @@ Effect coding instead compares each displayed group with the mean across all gro
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 With $G$ factor levels, *effect coding* creates $G-1$ columns.
 For column $g$, observations in level $g$ receive $1$, observations in the omitted level receive $-1$, and observations in the other levels receive $0$.
-In a factor-only regression, $\hat{B}_0$ is the unweighted mean of the $G$ group means, each displayed $\hat{B}_g$ is that group's deviation from the unweighted mean, and the omitted group's effect is $-\sum_{g=1}^{G-1}\hat{B}_g$.
+In a factor-only regression, $\hat{b}_0$ is the unweighted mean of the $G$ group means, each displayed $\hat{b}_g$ is that group's deviation from the unweighted mean, and the omitted group's effect is $-\sum_{g=1}^{G-1}\hat{b}_g$.
 :::
 
 Effect coding is useful when no group is a natural reference and the deviations from a common center are easier to discuss than several pairwise differences.
@@ -146,7 +146,7 @@ This framing is useful when group identity captures features we cannot otherwise
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 *Fixed effects* are group-specific intercepts that absorb every time-invariant feature of the group, entering the regression as
 $$
-\hat{Y}_{i} = \sum_{k=0}^{K} b_k \hat{X}_{ik} + \sum_{g}\hat{D}_{g}b_{g}.
+\hat{y}_{i} = \sum_{k=0}^{K} b_k \hat{x}_{ik} + \sum_{g}\hat{d}_{g}b_{g}.
 $$
 Including the dummy variables directly in OLS or using a dedicated routine such as `fixest::feols()` gives the same coefficients on the remaining regressors and the same residuals.
 :::
@@ -165,9 +165,9 @@ reg_fe <- fixest::feols(Murder ~ Assault | Region, data=dat)
 coef(reg_fe)
 ```
 
-With fixed effects, we can also compute averages for each group: $\hat{M}_{Yg}=\sum_{i}^{n_{g}}\hat{Y}_{ig}/n_{g}$, where group $g$ has $n_g$ observations denoted $\hat{Y}_{ig}$.
-We can construct a *between estimator* from $\hat{M}_{Yg}=b_0+\hat{M}_{Xg}b_1$.
-Alternatively, we can subtract each group average to construct a *within estimator*: $(\hat{Y}_{ig}-\hat{M}_{Yg})=(\hat{X}_{ig}-\hat{M}_{Xg})b_1$.
+With fixed effects, we can also compute averages for each group: $\hat{m}_{Yg}=\sum_{i}^{n_{g}}\hat{y}_{ig}/n_{g}$, where group $g$ has $n_g$ observations denoted $\hat{y}_{ig}$.
+We can construct a *between estimator* from $\hat{m}_{Yg}=b_0+\hat{m}_{Xg}b_1$.
+Alternatively, we can subtract each group average to construct a *within estimator*: $(\hat{y}_{ig}-\hat{m}_{Yg})=(\hat{x}_{ig}-\hat{m}_{Xg})b_1$.
 Absorbing fixed group differences does not remove confounders that vary within a group.
 
 #### **Comparing Models** {-}
@@ -238,23 +238,23 @@ It is also coding-invariant, so treatment and effect coding produce the same obs
 
 set.seed(23)
 
-F_stat <- function(Y, group) {
-    fit <- lm(Y ~ group)
+F_stat <- function(y_hat, group) {
+    fit <- lm(y_hat ~ group)
     F_value <- anova(fit)[['F value']][1]
     return(F_value)
 }
 
-F_obs <- F_stat(Y=dat[,'Murder'], group=dat[,'Region'])
-B <- 9999
-F_perm <- rep(NA, B)
+F_obs <- F_stat(y_hat=dat[,'Murder'], group=dat[,'Region'])
+n_perm <- 9999
+F_perm <- rep(NA, n_perm)
 
-for (b in seq(B)) {
+for (b in seq(n_perm)) {
     group_b <- sample(dat[,'Region'], replace=FALSE)
-    F_perm[b] <- F_stat(Y=dat[,'Murder'], group=group_b)
+    F_perm[b] <- F_stat(y_hat=dat[,'Murder'], group=group_b)
 }
 
 # Add one simulated result to avoid reporting a zero Monte Carlo p-value.
-p_perm <- (sum(F_perm >= F_obs) + 1)/(B + 1)
+p_perm <- (sum(F_perm >= F_obs) + 1)/(n_perm + 1)
 p_param <- anova(fit_lm)[['Pr(>F)']][1]
 c(F_obs=F_obs, p_permutation=p_perm, p_parametric=p_param)
 
@@ -310,13 +310,13 @@ The table compares it with the [bootstrap](01_05_Sampling.qmd#bootstrap-distribu
 The raw spread of estimates across overlapping subsamples is not the standard error of the full-sample estimator.
 For the random delete-$d$ jackknife used here, the variance estimate applies the correction [@PolitisEtAl1999]
 $$
-\hat{V}^{\text{sub}}
+\hat{v}^{\text{sub}}
 =
 \frac{m}{dB}
 \sum_{b=1}^{B}
-\left(\hat{B}^{\text{sub}}_{b}-\bar{\hat{B}}^{\text{sub}}\right)^2,
+\left(\hat{b}^{\text{sub}}_{b}-\bar{\hat{b}}^{\text{sub}}\right)^2,
 $$
-and $\hat{SE}^{\text{sub}}=\sqrt{\hat{V}^{\text{sub}}}$.
+and $\hat{SE}^{\text{sub}}=\sqrt{\hat{v}^{\text{sub}}}$.
 The example uses a Normal approximation around the full-sample coefficient rather than taking raw percentiles of the overlapping subsample estimates.
 
 ```{r}
@@ -324,22 +324,22 @@ The example uses a Normal approximation around the full-sample coefficient rathe
 #| fig-alt: "Histogram of regression slopes across delete-10 subsamples. The full-sample slope is marked in red and the corrected Normal confidence limits are marked with blue dashed lines."
 
 xy <- USArrests[,c('Murder', 'UrbanPop')]
-colnames(xy) <- c('y', 'x')
-reg <- lm(y ~ x, data=xy)
-b_full <- coef(reg)['x']
+colnames(xy) <- c('y_hat', 'x_hat')
+reg <- lm(y_hat ~ x_hat, data=xy)
+b_full <- coef(reg)['x_hat']
 
 # Draw random delete-10 samples without replacement.
 n <- nrow(xy)
 d <- 10
 m <- n - d
-B_sub <- 999
-rs_coefs <- rep(NA, B_sub)
+n_sub <- 999
+rs_coefs <- rep(NA, n_sub)
 
-for (b in seq(B_sub)) {
+for (b in seq(n_sub)) {
     b_id <- sample(n, m, replace=FALSE)
     xy_b <- xy[b_id,]
-    reg_b <- lm(y ~ x, data=xy_b)
-    rs_coefs[b] <- coef(reg_b)['x']
+    reg_b <- lm(y_hat ~ x_hat, data=xy_b)
+    rs_coefs[b] <- coef(reg_b)['x_hat']
 }
 
 # Correct the spread for overlapping delete-d samples.

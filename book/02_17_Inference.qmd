@@ -3,7 +3,7 @@
 ***
 
 Often, we are interested in *gradients*: how $Y$ changes with $X$.
-The linear model from [Simple Regression](02_15_SimpleRegression.qmd) depicts this as a single constant, $\hat{B}_{1}$, but the local-regression models from [Local Regression](02_16_LocalRegression.qmd) do not.
+The linear model from [Simple Regression](02_15_SimpleRegression.qmd) depicts this as a single constant, $\hat{b}_{1}$, but the local-regression models from [Local Regression](02_16_LocalRegression.qmd) do not.
 A great first step to assess gradients is to plot the predicted values over the explanatory values.
 A great second step is to compute gradients and summarize them.
 In any case, we compute confidence intervals to account for variability across samples.
@@ -12,7 +12,7 @@ In any case, we compute confidence intervals to account for variability across s
 
 #### **LOESS** {-}
 
-When $\hat{X}_{i}$ is unevenly distributed across its range, a fixed bandwidth $h$ leaves some local fits with many neighbors and others with very few.
+When $\hat{x}_{i}$ is unevenly distributed across its range, a fixed bandwidth $h$ leaves some local fits with many neighbors and others with very few.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 *LOESS* (locally estimated scatterplot smoothing) fits a local linear (or quadratic) regression at each design point using an *adaptive bandwidth*: instead of fixing $h$, it includes a fixed *share* of the data at each $x$, set by the parameter `span`.
@@ -57,19 +57,19 @@ The same bootstrap that produces the band also produces standard errors for any 
 ```{r}
 # Same loess fit as above (default span)
 pred_design <- data.frame(school=unique(dat[, 'school']))
-preds_lo <- predict(reg_lo, newdata=pred_design)
+y_fit <- predict(reg_lo, newdata=pred_design)
 
 plot(wage ~ school, pch=16, col=grey(0, .1), data=dat,
     main=NA, xlab='School', ylab='Wage')
 lo_col <- adjustcolor('#20B2AA', alpha.f=.5)  # same teal green
-lines(pred_design[, 'school'], preds_lo,
+lines(pred_design[, 'school'], y_fit,
     col=lo_col, type='o', pch=2)
 
 # Boot CI with the same default-span loess
 boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
 for (b in 1:399) {
-    xy_b <- dat[sample(nrow(dat), replace=TRUE), ]
-    reg_b <- loess(wage ~ school, data=xy_b)
+    xy_boot <- dat[sample(nrow(dat), replace=TRUE), ]
+    reg_b <- loess(wage ~ school, data=xy_boot)
     boot_lo[, b] <- predict(reg_b, newdata=pred_design)
 }
 boot_cb <- apply(boot_lo, 1, quantile,
@@ -90,14 +90,14 @@ Construct a bootstrap confidence band for the following loess regression
 # Adaptive-width subsamples with non-uniform weights
 xy <- USArrests[, c('UrbanPop', 'Murder')]
 xy0 <- xy[order(xy[, 'UrbanPop']), ]
-names(xy0) <- c('x', 'y')
+names(xy0) <- c('x_hat', 'y_hat')
 
-plot(y ~ x, pch=16, col=grey(0, .5), data=xy0,
+plot(y_hat ~ x_hat, pch=16, col=grey(0, .5), data=xy0,
     main=NA, xlab='Urban Population', ylab='Murder Arrests')
-reg_lo2 <- loess(y ~ x, data=xy0, span=.6)
+reg_lo2 <- loess(y_hat ~ x_hat, data=xy0, span=.6)
 
 red_col <- rgb(1, 0, 0, .5)
-lines(xy0[, 'x'], predict(reg_lo2),
+lines(xy0[, 'x_hat'], predict(reg_lo2),
     col=red_col, type='o', pch=2)
 ```
 :::
@@ -123,7 +123,7 @@ A loess fit narrow enough to interpolate every point has $\hat{MSE}=0$ on the fi
 # Two-span loess with bootstrap confidence bands on one scatterplot
 pred_design <- data.frame(school=sort(unique(dat[, 'school'])))
 spans <- c(4.0, 0.4)
-B <- 399
+n_boot <- 399
 span_col <- hcl.colors(3, alpha=.9)[c(1, 3)]
 
 plot(wage ~ school, data=dat, pch=16, col=grey(0, .1),
@@ -132,10 +132,10 @@ plot(wage ~ school, data=dat, pch=16, col=grey(0, .1),
 for (s in seq_along(spans)) {
     sp <- spans[s]
     fit <- loess(wage ~ school, data=dat, span=sp)
-    boot_preds <- matrix(NA, nrow=nrow(pred_design), ncol=B)
-    for (b in 1:B) {
-        d_b <- dat[sample(nrow(dat), replace=TRUE), ]
-        fit_b <- loess(wage ~ school, data=d_b, span=sp)
+    boot_preds <- matrix(NA, nrow=nrow(pred_design), ncol=n_boot)
+    for (b in 1:n_boot) {
+        xy_boot <- dat[sample(nrow(dat), replace=TRUE), ]
+        fit_b <- loess(wage ~ school, data=xy_boot, span=sp)
         boot_preds[, b] <- predict(fit_b, newdata=pred_design)
     }
     boot_cb <- apply(boot_preds, 1, quantile,
@@ -163,38 +163,38 @@ Note that the simple linear regression is nested as a special case with $span \t
 
 #### **Model Fit** {-}
 
-Each local model produces fitted values $\hat{y}_{i}$ and residuals $\hat{E}_{i} = \hat{Y}_{i} - \hat{y}_{i}$.
+Each local model produces fitted values $\hat{y}_{i}^{\mathrm{fit}}$ and residuals $\hat{e}_{i} = \hat{y}_{i} - \hat{y}_{i}^{\mathrm{fit}}$.
 To compare models, we often summarize the residuals with a single number.
 
 
 The *mean squared error* averages the squared residuals,
 $$\begin{aligned}
-\hat{MSE} &= \frac{1}{n}\sum_{i=1}^{n} \hat{E}_{i}^2 = \frac{1}{n}\sum_{i=1}^{n} \left(\hat{Y}_{i} - \hat{y}_{i}\right)^2.
+\hat{MSE} &= \frac{1}{n}\sum_{i=1}^{n} \hat{e}_{i}^2 = \frac{1}{n}\sum_{i=1}^{n} \left(\hat{y}_{i} - \hat{y}_{i}^{\mathrm{fit}}\right)^2.
 \end{aligned}$$
-Squaring penalizes large misses heavily, and the units are the square of $\hat{Y}_{i}$ (squared dollars for wages).
+Squaring penalizes large misses heavily, and the units are the square of $\hat{y}_{i}$ (squared dollars for wages).
 
 
 The *mean absolute percentage error* instead averages each residual relative to its observed value,
 $$\begin{aligned}
-\hat{MAPE} &= \frac{100}{n}\sum_{i=1}^{n} \left| \frac{\hat{E}_{i}}{\hat{Y}_{i}} \right|.
+\hat{MAPE} &= \frac{100}{n}\sum_{i=1}^{n} \left| \frac{\hat{e}_{i}}{\hat{y}_{i}} \right|.
 \end{aligned}$$
-MAPE is unit-free, which makes it easy to communicate, but it is undefined when $\hat{Y}_{i}=0$ and over-weights observations with small $\hat{Y}_{i}$.
+MAPE is unit-free, which makes it easy to communicate, but it is undefined when $\hat{y}_{i}=0$ and over-weights observations with small $\hat{y}_{i}$.
 MSE is easier to analyze theoretically (formally deriving the bias-variance tradeoff)
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Suppose three workers have wages $\hat{Y}=(8, 10, 15)$ and a model predicts $\hat{y}=(9, 9, 14)$.
-The residuals are $\hat{E}=(-1, 1, 1)$, so
+Suppose three workers have wages $\hat{y}=(8, 10, 15)$ and a model predicts $\hat{y}^{\mathrm{fit}}=(9, 9, 14)$.
+The residuals are $\hat{e}=(-1, 1, 1)$, so
 $$\begin{aligned}
 \hat{MSE} &= \frac{(-1)^2 + 1^2 + 1^2}{3} = \frac{3}{3} = 1, \\
 \hat{MAPE} &= \frac{100}{3}\left( \frac{1}{8} + \frac{1}{10} + \frac{1}{15} \right) \approx \frac{100}{3}(0.292) \approx 9.7.
 \end{aligned}$$
 The model misses by $1$ squared-dollar on average, or about $10\%$ of each wage.
 ```{r}
-Y     <- c(8, 10, 15)
-y_hat <- c(9, 9, 14)
-e <- Y - y_hat
-mean(e^2)           # MSE
-100*mean(abs(e/Y))  # MAPE
+y_hat     <- c(8, 10, 15)
+y_fit <- c(9, 9, 14)
+e_hat <- y_hat - y_fit
+mean(e_hat^2)           # MSE
+100*mean(abs(e_hat/y_hat))  # MAPE
 ```
 :::
 
@@ -211,9 +211,9 @@ reg_pw    <- lm(wage ~ xcf*school, data=dat)  # piecewise, 3 bins
 
 # Mean squared error and mean absolute percentage error
 fit_stats <- function(model){
-    e <- resid(model)
-    Y <- dat[, 'wage']
-    c(MSE=mean(e^2), MAPE=100*mean(abs(e/Y)))
+    e_hat <- resid(model)
+    y_hat <- dat[, 'wage']
+    c(MSE=mean(e_hat^2), MAPE=100*mean(abs(e_hat/y_hat)))
 }
 round(rbind(
     Linear       = fit_stats(reg_lin),
@@ -228,34 +228,34 @@ round(rbind(
 Once the fitted curve can bend, "the slope" is no longer a single number; we want the slope locally at each $x$.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-A *gradient* $\hat{B}_{1}(x)$ at the design point $x$ is the rate of change of the fitted value $\hat{y}(x)$ with respect to $\hat{X}_{i}$ in a neighborhood of $x$.
+A *gradient* $\hat{b}_{1}(x)$ at the design point $x$ is the rate of change of the fitted value $\hat{y}^{\mathrm{fit}}(x)$ with respect to $\hat{x}_{i}$ in a neighborhood of $x$.
 :::
 
-The gradient is useful as the local analog of the simple-regression slope: for a globally linear model it equals the single coefficient $\hat{B}_{1}$ everywhere; for a local model it varies with $x$ and traces out how the marginal relationship changes across the range of $X$.
+The gradient is useful as the local analog of the simple-regression slope: for a globally linear model it equals the single coefficient $\hat{b}_{1}$ everywhere; for a local model it varies with $x$ and traces out how the marginal relationship changes across the range of $X$.
 Three common ways to summarize gradients are:
 
 1. For all methods, including regressograms, you can approximate gradients with small finite differences.
    For some small difference $d$, we can manually compute
 $$\begin{aligned}
-\hat{B}_{1}(x) &= \frac{ \hat{y}(x+\frac{d}{2}) - \hat{y}(x-\frac{d}{2})}{d},
+\hat{b}_{1}(x) &= \frac{ \hat{y}^{\mathrm{fit}}(x+\frac{d}{2}) - \hat{y}^{\mathrm{fit}}(x-\frac{d}{2})}{d},
 \end{aligned}$$
 
-2. When using split-sample regressions or local linear regressions, you can use the estimated slope coefficients $\hat{B}_{1}(x)$ as a gradient estimate.^[One benefit of LLLS is that it is theoretically motivated: assuming that $Y_{i}=M_{Y}(X_{i}) + \epsilon_{i}$, we can then take a Taylor approximation: $M_{Y}(X_{i}) + \epsilon_{i} \approx M_{Y}(x) + M_{Y}'(x)[X_{i}-x] + \epsilon_{i} = [M_{Y}(x) - M_{Y}'(x)x ] + M_{Y}'(x)X_{i} + \epsilon_{i} = b_{0}(x,h) + b_{1}(x,h) X_{i}$.]
+2. When using split-sample regressions or local linear regressions, you can use the estimated slope coefficients $\hat{b}_{1}(x)$ as a gradient estimate.^[One benefit of LLLS is that it is theoretically motivated: assuming that $Y_{i}=M_{Y}(X_{i}) + \epsilon_{i}$, we can then take a Taylor approximation: $M_{Y}(X_{i}) + \epsilon_{i} \approx M_{Y}(x) + M_{Y}'(x)[X_{i}-x] + \epsilon_{i} = [M_{Y}(x) - M_{Y}'(x)x ] + M_{Y}'(x)X_{i} + \epsilon_{i} = b_{0}(x,h) + b_{1}(x,h) X_{i}$.]
 
 3. More sophisticated methods that are beyond the scope of this class.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Suppose a local model predicts wages near $x=12$ years of schooling: $\hat{y}(11.5)=9.2$ and $\hat{y}(12.5)=10.4$ (dollars per hour).
+Suppose a local model predicts wages near $x=12$ years of schooling: $\hat{y}^{\mathrm{fit}}(11.5)=9.2$ and $\hat{y}^{\mathrm{fit}}(12.5)=10.4$ (dollars per hour).
 With step $d=1$, the finite-difference gradient at $x=12$ is
 $$
-\hat{B}_{1}(12) = \frac{\hat{y}(12.5) - \hat{y}(11.5)}{d} = \frac{10.4 - 9.2}{1} = 1.2.
+\hat{b}_{1}(12) = \frac{\hat{y}^{\mathrm{fit}}(12.5) - \hat{y}^{\mathrm{fit}}(11.5)}{d} = \frac{10.4 - 9.2}{1} = 1.2.
 $$
 Near $12$ years of schooling, each extra year is associated with about $\$1.20$ more per hour.
 ```{r}
 d <- 1
-y_hi <- 10.4  # prediction at x + d/2
-y_lo <- 9.2   # prediction at x - d/2
-(y_hi - y_lo) / d
+y_fit_hi <- 10.4  # prediction at x + d/2
+y_fit_lo <- 9.2   # prediction at x - d/2
+(y_fit_hi - y_fit_lo) / d
 ```
 :::
 
@@ -265,9 +265,9 @@ You can also plot all Gradients with their CI's [@Chaudhuri1999; @HendersonEtAl2
 
 ```{r}
 ## Gradients
-pred_lo <- predict(reg_lo)
+y_fit <- predict(reg_lo)
 grad_dx <- diff(dat[, 'school'])
-grad_dy <- diff(pred_lo)
+grad_dy <- diff(y_fit)
 grad_lo <-grad_dy/grad_dx
 
 ## Visual Summary
@@ -275,13 +275,14 @@ par(mfrow=c(1, 2))
 hist(grad_lo,  breaks=20,
     border=NA, freq=FALSE,
     col=lo_col,
-    xlab=expression(d~hat(y)/dx),
+    xlab=expression(d~hat(y)^plain(fit)/dx),
     main=NA) ## Distributional Summary
   
 ## Visual Summary 2
 grad_x  <- dat[, 'school'][-1]
 plot(grad_x+grad_dx, grad_lo,
-    xlab='x', ylab=expression(d~hat(y)/dx),
+    xlab='x', ylab=expression(d~hat(y)^plain(fit)/dx),
+    mgp=c(2.5, 1, 0),
     col=lo_col, pch=16, main=NA) ## Diminishing Returns?
 ```
 
@@ -289,9 +290,9 @@ A different kind of summary collapses the whole gradient curve into a single num
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *gradient at the mean* (sometimes called the *marginal effect at the mean*) evaluates the gradient at a single design point:
-$$\hat{B}_{1}(x=\hat{M}_{X}).$$
-The *mean of the gradients* (sometimes called the *average effect* or *mean marginal effect*) averages $\hat{B}_{1}(x)$ across every observation in the dataset:
-$$\frac{1}{n}\sum_{i=1}^{n} \hat{B}_{1}(x=\hat{X}_{i}).$$
+$$\hat{b}_{1}(x=\hat{m}_{X}).$$
+The *mean of the gradients* (sometimes called the *average effect* or *mean marginal effect*) averages $\hat{b}_{1}(x)$ across every observation in the dataset:
+$$\frac{1}{n}\sum_{i=1}^{n} \hat{b}_{1}(x=\hat{x}_{i}).$$
 :::
 
 These two summaries are useful for different questions: the *gradient at the mean* answers "what is the slope at a typical $X$?", while the *mean of the gradients* answers "what is the average slope across the sample?".
@@ -301,9 +302,9 @@ Such statistics can be presented in tabular form: "mean gradient (sd gradient)" 
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 These two summaries usually differ.
-Suppose a local model has gradients $\hat{B}_{1}(x)$ at schooling levels $x=(8,10,12,14,16)$ equal to $(0.4, 0.8, 1.2, 0.9, 0.3)$, and the sample mean schooling is $\hat{M}_{X}=12$.
+Suppose a local model has gradients $\hat{b}_{1}(x)$ at schooling levels $x=(8,10,12,14,16)$ equal to $(0.4, 0.8, 1.2, 0.9, 0.3)$, and the sample mean schooling is $\hat{m}_{X}=12$.
 
-* The *marginal effect at the mean* is the single gradient at $x=\hat{M}_{X}$: $\hat{B}_{1}(12) = 1.2$.
+* The *marginal effect at the mean* is the single gradient at $x=\hat{m}_{X}$: $\hat{b}_{1}(12) = 1.2$.
 * The *mean of the gradients* averages over all five points: $\frac{0.4+0.8+1.2+0.9+0.3}{5} = \frac{3.6}{5} = 0.72$.
 
 They differ because the gradient is not constant: here the relationship is steepest near the mean and flatter at the extremes.
@@ -324,14 +325,14 @@ tab_stats <- c(
 boot_stats <- matrix(NA, nrow=299, ncol=2)
 colnames(boot_stats) <- c('Mean SE', 'SD SE')
 for(b in 1:nrow(boot_stats)){
-    xy_b <- dat[sample(1:nrow(dat), replace=TRUE), ]
-    reg_lo <- loess(wage ~ school, data=xy_b, span=.6)
-    pred_lo <- predict(reg_lo)
-    grad_lo <- diff(pred_lo)/diff(xy_b[, 'school'])
-    dydx_mean <- mean(grad_lo, na.rm=TRUE)
-    dydx_sd <- sd(grad_lo, na.rm=TRUE)
-    boot_stats[b, 1] <- dydx_mean
-    boot_stats[b, 2] <- dydx_sd
+    xy_boot <- dat[sample(1:nrow(dat), replace=TRUE), ]
+    reg_lo <- loess(wage ~ school, data=xy_boot, span=.6)
+    y_fit <- predict(reg_lo)
+    grad_lo <- diff(y_fit)/diff(xy_boot[, 'school'])
+    m_grad_b_hat <- mean(grad_lo, na.rm=TRUE)
+    s_grad_b_hat <- sd(grad_lo, na.rm=TRUE)
+    boot_stats[b, 1] <- m_grad_b_hat
+    boot_stats[b, 2] <- s_grad_b_hat
 }
 ## SEs and CIs
 boot_se <- apply(boot_stats, 2, sd)
@@ -381,11 +382,11 @@ Under $H_0$, the mean gradient equals zero, so we center the bootstrap distribut
 boot_centered <- boot_stats[, 'Mean SE'] - mean(boot_stats[, 'Mean SE'])
 
 ## ECDF of centered bootstrap distribution
-boot_ecdf <- ecdf(boot_centered)
+F_hat <- ecdf(boot_centered)
 
 ## Two-sided p-value: P(|centered mean| >= |observed mean|)
-p_boot <- 1 - boot_ecdf(abs(tab_stats['Mean'])) +
-              boot_ecdf(-abs(tab_stats['Mean']))
+p_boot <- 1 - F_hat(abs(tab_stats['Mean'])) +
+              F_hat(-abs(tab_stats['Mean']))
 
 cat('Bootstrap p-value (ECDF):', format.pval(p_boot, digits=3), '\n')
 ```
@@ -419,8 +420,8 @@ jack_means <- numeric(n)
 for (i in 1:n) {
     dat_i  <- dat[-i, ]
     reg_i  <- loess(wage ~ school, data=dat_i, span=.6)
-    pred_i <- predict(reg_i)
-    grad_i <- diff(pred_i) / diff(dat_i[, 'school'])
+    y_fit_i <- predict(reg_i)
+    grad_i <- diff(y_fit_i) / diff(dat_i[, 'school'])
     jack_means[i] <- mean(grad_i, na.rm=TRUE)
 }
 
@@ -450,8 +451,8 @@ cat('p-value:      ', format.pval(p_jack, digits=3), '\n')
    Explain why increasing the sample size $n$ helps reduce the standard error for both models, but only helps reduce bias for loess (with an appropriate bandwidth rule).
 
 3. Using the `USArrests` dataset, fit a loess regression of `Murder` on `UrbanPop` with `span = 0.6`.
-   Compute the finite-difference gradients $\hat{B}_{1}(x)$ and report their mean and standard deviation.
-   Compare these to the OLS slope $\hat{B}_{1}$ from a simple linear regression.
+   Compute the finite-difference gradients $\hat{b}_{1}(x)$ and report their mean and standard deviation.
+   Compare these to the OLS slope $\hat{b}_{1}$ from a simple linear regression.
 
 4. Using the `USArrests` dataset and the loess fit from the previous question, write R code to construct a bootstrap confidence band with $B = 399$ replicates.
    Plot the scatterplot, the loess curve, and the shaded 95% confidence band.
@@ -465,5 +466,5 @@ cat('p-value:      ', format.pval(p_jack, digits=3), '\n')
 #### **Recall** {-}
 
 This chapter put inference around the local fits from the previous chapter on the `Wages1` data: model-fit metrics ($\hat{MSE}$ and $\hat{MAPE}$) and the bias-variance tradeoff, bootstrap confidence bands for a LOESS fit, gradient summaries (marginal effect at the mean vs mean of the gradients), and hypothesis tests.
-The small worked example with $\hat{y}(11.5)=9.2$ and $\hat{y}(12.5)=10.4$ gave a finite-difference gradient $\hat{B}_{1}(12)=1.2$ dollars per year of schooling, and the gradient-vector example $(0.4, 0.8, 1.2, 0.9, 0.3)$ at $x=(8, 10, 12, 14, 16)$ showed the marginal-effect-at-the-mean ($1.2$) and the mean-of-the-gradients ($0.72$) diverging when the relationship bends.
+The small worked example with $\hat{y}^{\mathrm{fit}}(11.5)=9.2$ and $\hat{y}^{\mathrm{fit}}(12.5)=10.4$ gave a finite-difference gradient $\hat{b}_{1}(12)=1.2$ dollars per year of schooling, and the gradient-vector example $(0.4, 0.8, 1.2, 0.9, 0.3)$ at $x=(8, 10, 12, 14, 16)$ showed the marginal-effect-at-the-mean ($1.2$) and the mean-of-the-gradients ($0.72$) diverging when the relationship bends.
 The next chapter separates descriptive and predictive relationships from causal claims.

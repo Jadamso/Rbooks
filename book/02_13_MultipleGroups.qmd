@@ -74,8 +74,8 @@ par(mar=c(4, 4, 4.5, 1))
 plot(NULL, xlim=range(dat$Murder), ylim=c(0, 1),
     xlab='Murder arrests (per 100,000)', ylab='Proportion of states', main=NA)
 for (g in seq_along(levels(dat$Region))) {
-    F_g <- ecdf(dat$Murder[dat$Region == levels(dat$Region)[g]])
-    plot(F_g, add=TRUE, col=line_cols[g], lwd=lwd_g[g],
+    F_g_hat <- ecdf(dat$Murder[dat$Region == levels(dat$Region)[g]])
+    plot(F_g_hat, add=TRUE, col=line_cols[g], lwd=lwd_g[g],
         verticals=TRUE, do.points=FALSE, col.01line=NA)
 }
 legend('topleft', inset=c(0, -.2), xpd=TRUE, ncol=2, bty='n',
@@ -85,12 +85,12 @@ legend('topleft', inset=c(0, -.2), xpd=TRUE, ncol=2, bty='n',
 The South's curve sits to the right of the others over its whole range, so its higher center in the boxplot is not driven by a few states.
 
 A table of group sizes and centers puts numbers on the figure.
-The *conditional mean* $\hat{M}_{Y}(g)$ is the average of $\hat{Y}_{i}$ among the $n_g$ observations in group $g$, and `aggregate()` computes it for every group at once.
+The *conditional mean* $\hat{m}_{Y}(g)$ is the average of $\hat{y}_{i}$ among the $n_g$ observations in group $g$, and `aggregate()` computes it for every group at once.
 
 ```{r}
 # Group size, mean, and median of the murder rate by region
-summary_fun <- function(y) {
-    out <- c(n=length(y), mean=mean(y), median=median(y))
+summary_fun <- function(y_hat) {
+    out <- c(n=length(y_hat), mean=mean(y_hat), median=median(y_hat))
     return(out)
 }
 aggregate(Murder ~ Region, data=dat, FUN=summary_fun)
@@ -111,20 +111,20 @@ If group means differ, some of the spread in $Y$ must come from differences *bet
 We can split each piece out.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-Label each observation $\hat{Y}_{ig}$ for individual $i$ in group $g$, where group $g=1,\dots,G$ has $n_g$ observations with group mean $\hat{M}_{Y}(g)$, and the grand mean across all $n=\sum_g n_g$ observations is $\hat{M}_{Y}$.
+Label each observation $\hat{y}_{ig}$ for individual $i$ in group $g$, where group $g=1,\dots,G$ has $n_g$ observations with group mean $\hat{m}_{Y}(g)$, and the grand mean across all $n=\sum_g n_g$ observations is $\hat{m}_{Y}$.
 The *ANOVA decomposition* splits the total sum of squares into between-group and within-group pieces:
 $$\begin{aligned}
-\underbrace{\sum_{g=1}^{G}\sum_{i=1}^{n_g}(\hat{Y}_{ig}-\hat{M}_{Y})^2}_{\hat{TSS}}
+\underbrace{\sum_{g=1}^{G}\sum_{i=1}^{n_g}(\hat{y}_{ig}-\hat{m}_{Y})^2}_{\hat{TSS}}
 &=
-\underbrace{\sum_{g=1}^{G} n_g (\hat{M}_{Y}(g)-\hat{M}_{Y})^2}_{\hat{BSS}}
+\underbrace{\sum_{g=1}^{G} n_g (\hat{m}_{Y}(g)-\hat{m}_{Y})^2}_{\hat{BSS}}
 \;+\;
-\underbrace{\sum_{g=1}^{G}\sum_{i=1}^{n_g}(\hat{Y}_{ig}-\hat{M}_{Y}(g))^2}_{\hat{WSS}},
+\underbrace{\sum_{g=1}^{G}\sum_{i=1}^{n_g}(\hat{y}_{ig}-\hat{m}_{Y}(g))^2}_{\hat{WSS}},
 \end{aligned}$$
 where $\hat{BSS}$ measures variation in group means around the grand mean and $\hat{WSS}$ measures variation of observations around their own group mean.
 :::
 
 The decomposition is useful as the foundation for any test of "do group means differ?": if they do not, $\hat{BSS}$ should be small relative to $\hat{WSS}$.
-The equality holds exactly because the cross-term $\sum_{g,i}(\hat{Y}_{ig}-\hat{M}_{Y}(g))(\hat{M}_{Y}(g)-\hat{M}_{Y})$ vanishes, since the within-group deviations sum to zero around their own group mean.
+The equality holds exactly because the cross-term $\sum_{g,i}(\hat{y}_{ig}-\hat{m}_{Y}(g))(\hat{m}_{Y}(g)-\hat{m}_{Y})$ vanishes, since the within-group deviations sum to zero around their own group mean.
 
 In R, `aov()` fits the ANOVA model and `summary()` returns the standard ANOVA table.
 The ANOVA table reports $\hat{BSS}$ ("Sum Sq" for `Region`), $\hat{WSS}$ ("Sum Sq" for `Residuals`).
@@ -143,8 +143,8 @@ For example, suppose we have $G=3$ groups with the following data:
 | 5 | 7 | 6 |
 | 6 | 9 | 7 |
 
-Group means: $\hat{M}_{Y}(A) = 5$, $\hat{M}_{Y}(B) = 8$, $\hat{M}_{Y}(C) = 6$.
-Grand mean: $\hat{M}_Y = (5+8+6)/3 = 19/3 \approx 6.33$.
+Group means: $\hat{m}_{Y}(A) = 5$, $\hat{m}_{Y}(B) = 8$, $\hat{m}_{Y}(C) = 6$.
+Grand mean: $\hat{m}_Y = (5+8+6)/3 = 19/3 \approx 6.33$.
 Each group has $n_g = 3$.
 
 Between-group sum of squares:
@@ -160,19 +160,19 @@ $$\begin{aligned}
 
 ```{r}
 # Data
-Y <- c(4, 5, 6, 8, 7, 9, 5, 6, 7)
+y_hat <- c(4, 5, 6, 8, 7, 9, 5, 6, 7)
 g <- factor(c('A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C'))
 
 # Verify by hand
-n <- length(Y)
+n <- length(y_hat)
 G <- nlevels(g)
 
-M_Y <- mean(Y)
-M_g <- aggregate(Y, list(g), mean)$x
-n_g <- aggregate(Y, list(g), length)$x
+m_y_hat <- mean(y_hat)
+m_g_hat <- aggregate(y_hat, list(g), mean)$x
+n_g <- aggregate(y_hat, list(g), length)$x
 
-BSS <- sum(n_g * (M_g - M_Y)^2)
-WSS <- sum(aggregate(Y, list(g), function(y) sum((y - mean(y))^2))$x)
+BSS <- sum(n_g * (m_g_hat - m_y_hat)^2)
+WSS <- sum(aggregate(y_hat, list(g), function(y_hat) sum((y_hat - mean(y_hat))^2))$x)
 ```
 :::
 
@@ -183,26 +183,27 @@ We have the decomposition; now we need a single number that tells us when the be
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *ANOVA $F$-statistic* is the ratio of average between-group variation to average within-group variation:
 $$\hat{F} = \frac{\hat{BSS}/(G-1)}{\hat{WSS}/(n-G)}.$$
-Under the null $H_0: \mu_1=\mu_2=\dots=\mu_G$ (with the usual parametric assumptions) it follows an $F_{G-1, n-G}$ distribution; we can also get a $p$-value nonparametrically by bootstrapping the labels.
+Writing $Y_{ig}$ for the random outcome of individual $i$ in group $g$, the null is $H_0: \mathbb{E}[Y_{i1}]=\mathbb{E}[Y_{i2}]=\dots=\mathbb{E}[Y_{iG}]$.
+Under the null (with the usual parametric assumptions) it follows an $F_{G-1, n-G}$ distribution; we can also get a $p$-value nonparametrically by bootstrapping the labels.
 :::
 
 The ANOVA F-statistic is useful as the global "do any means differ?" test: one number and one $p$-value, regardless of how many groups you have.
 The numerator is the average between-group variation per degree of freedom, the denominator is the average within-group variation, and a large $\hat{F}$ means group means are more spread out than individual-level noise would predict.
 
 ```{r}
-F_fun <- function(Y,g){
-    M_Y <- mean(Y)
-    M_g <- aggregate(Y, list(g), mean)$x
-    n_g <- aggregate(Y, list(g), length)$x
+F_fun <- function(y_hat,g){
+    m_y_hat <- mean(y_hat)
+    m_g_hat <- aggregate(y_hat, list(g), mean)$x
+    n_g <- aggregate(y_hat, list(g), length)$x
 
-    BSS <- sum(n_g * (M_g - M_Y)^2)
-    WSS <- sum(aggregate(Y, list(g), function(y) sum((y - mean(y))^2))$x)
+    BSS <- sum(n_g * (m_g_hat - m_y_hat)^2)
+    WSS <- sum(aggregate(y_hat, list(g), function(y_hat) sum((y_hat - mean(y_hat))^2))$x)
 
-    n <- length(Y)
+    n <- length(y_hat)
     G <- nlevels(g)
     F_obs <- (BSS/(G-1)) / (WSS/(n-G))
 }
-F_obs <- F_fun(Y=dat$Murder, g=dat$Region)
+F_obs <- F_fun(y_hat=dat$Murder, g=dat$Region)
 F_obs
 ```
 
@@ -221,7 +222,7 @@ F_nullboot <- vector(length=999)
 for( b in seq_along(F_nullboot)){
     idx <- sample(n, replace = TRUE)
     g_boot <- dat[idx, 'Region']
-    F_b <- F_fun(Y=dat$Murder, g=g_boot)
+    F_b <- F_fun(y_hat=dat$Murder, g=g_boot)
     F_nullboot[b] <- F_b
 }
 
@@ -259,7 +260,7 @@ As a quick diagnostic, visually compare side-by-side boxplots: if the spread dif
 With $G-1=2$ and $n-G=6$ degrees of freedom, we compare to an $F_{2,6}$ distribution: $p = 1 - F_{2,6}(7) \approx 0.027$.
 ```{r}
 # Computation
-summary(aov(Y~g))
+summary(aov(y_hat~g))
 
 # Verify by hand (from Before)
 Fstat <- (BSS/(G-1)) / (WSS/(n-G))
@@ -300,7 +301,7 @@ The corresponding test statistic is
 $$\begin{aligned}
 \hat{U}   &= \min(\hat{U}_1, \hat{U}_2) \\
 \hat{U}_g &= \sum_{i\in g}\sum_{j\in -g}
-           \Bigl[\mathbf 1( \hat{Y}_{i} > \hat{Y}_{j}) + \tfrac12\mathbf 1(\hat{Y}_{i} = \hat{Y}_{j})\Bigr].
+           \Bigl[\mathbf 1( \hat{y}_{i} > \hat{y}_{j}) + \tfrac12\mathbf 1(\hat{y}_{i} = \hat{y}_{j})\Bigr].
 \end{aligned}$$
 
 Interpretation template:
@@ -330,17 +331,17 @@ $$
 $$
 
 ```{r}
-Y <- c(1,2,3, 4,5,6, 7,8,9)
+y_hat <- c(1,2,3, 4,5,6, 7,8,9)
 g <- factor(rep(c('A','B','C'), each=3))
-kruskal.test(Y ~ g)
+kruskal.test(y_hat ~ g)
 ```
 
 For the two-group case, the Mann-Whitney statistic counts pairwise wins.
 Compare $A=\{1,3,5\}$ to $B=\{2,4,6\}$: out of $3\times 3 = 9$ pairs, $A$ wins three ($(3,2), (5,2), (5,4)$), so $\hat{U}_A=3$, $\hat{U}_B=6$, giving $\hat{U}=\min(3,6)=3$.
 
 ```{r}
-A <- c(1,3,5); B <- c(2,4,6)
-wilcox.test(A, B)
+y1_hat <- c(1,3,5); y2_hat <- c(2,4,6)
+wilcox.test(y1_hat, y2_hat)
 ```
 :::
 
@@ -380,6 +381,6 @@ Looking back at the boxplot in [Describing Groups](#describing-groups), which re
 #### **Recall** {-}
 
 This chapter first described several groups with boxplots, ECDFs, and a table of group means, then tested whether the description reflected more than chance.
-ANOVA's decomposition of variation between and within groups produced an $F$-statistic; the worked three-group example with $A=\{4,5,6\}, B=\{8,7,9\}, C=\{5,6,7\}$ made the arithmetic concrete, giving $\hat{BSS}=14$ and $\hat{WSS}=6$ by hand, which `aov(Y ~ g)` reproduces exactly.
+ANOVA's decomposition of variation between and within groups produced an $F$-statistic; the worked three-group example with $A=\{4,5,6\}, B=\{8,7,9\}, C=\{5,6,7\}$ made the arithmetic concrete, giving $\hat{BSS}=14$ and $\hat{WSS}=6$ by hand, which `aov(y_hat ~ g)` reproduces exactly.
 The Kruskal-Wallis test replaced outcomes with ranks when the equal-variance normal-error assumptions were doubtful.
 Part III's [Mixed-Data Regression](03_24_NotCausation.qmd) chapter rewrites these group comparisons as regressions, compares treatment and effect coding, and builds a permutation test for the factor as a whole.

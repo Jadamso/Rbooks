@@ -4,7 +4,7 @@
 
 ## Theoretical Distributions
 
-We now consider a bivariate *random vector* $(X_{i}, Y_{i})$, which is a theoretical version of the bivariate observations $(\hat{X}_{i}, \hat{Y}_{i})$. E.g., If we are going to flip two coins, then $(X_{i}, Y_{i})$ corresponds to the unflipped coins and $(\hat{X}_{i}, \hat{Y}_{i})$ corresponds to concrete values after they are flipped.
+We now consider a bivariate *random vector* $(X_{i}, Y_{i})$, which is a theoretical version of the bivariate observations $(\hat{x}_{i}, \hat{y}_{i})$. E.g., If we are going to flip two coins, then $(X_{i}, Y_{i})$ corresponds to the unflipped coins and $(\hat{x}_{i}, \hat{y}_{i})$ corresponds to concrete values after they are flipped.
 
 
 #### **Definitions for Discrete Data** {-}
@@ -196,7 +196,7 @@ which is also known as the *law of total probability*.
 Variables are statistically independent if $F(x, y) = F_{X}(x)F_{Y}(y)$ for all $x, y$.
 
 
-For example, suppose $(X_{i},Y_{i})$ is bivariate normal with means $(\mu_{X}, \mu_{Y})$, variances $(\sigma_{X}, \sigma_{Y})$ and covariance $\rho$.
+For example, suppose $(X_{i},Y_{i})$ is bivariate normal with means $(\mathbb{E}[X_{i}], \mathbb{E}[Y_{i}])$, variances $(\mathbb{V}[X_{i}], \mathbb{V}[Y_{i}])$ and covariance $\mathbb{C}[X_{i}, Y_{i}]$.
 
 ```{r}
 # Simulate Bivariate Data
@@ -286,11 +286,11 @@ bayes_result
 We will now dig a little deeper theoretically into the statistics we compute.
 When we know how the data are generated theoretically, we can often compute the theoretical value of the most basic and often-used bivariate statistic: the Pearson correlation.
 To see this, we focus on two discrete random variables, first showing their covariance and then their correlation.
-Referring to $\mu_{X}=\mathbb{E}[X_{i}]$ and $\mu_{Y}=\mathbb{E}[Y_{i}]$, the covariance is
+The covariance is the expected product of deviations from the population means:
 $$\begin{aligned}
 \mathbb{C}[X_{i}, Y_{i}]
-&= \mathbb{E}[(X_{i} –  \mu_{X})(Y_{i} – \mu_{Y}])]
-= \sum_{x}\sum_{y} (x –  \mu_{X})(y –  \mu_{Y}) Prob(X_{i} = x, Y_{i} = y)
+&= \mathbb{E}\left[(X_{i} - \mathbb{E}[X_{i}])(Y_{i} - \mathbb{E}[Y_{i}])\right] \\
+&= \sum_{x}\sum_{y} (x - \mathbb{E}[X_{i}])(y - \mathbb{E}[Y_{i}]) Prob(X_{i} = x, Y_{i} = y)
 \end{aligned}$$
 The correlation is then
 $$
@@ -438,9 +438,9 @@ Just as with one sample tests, we can compute a standardized differences, where 
 In particular, the $t$-statistic is used to compare two groups.
 $$
 \hat{t} = \frac{
-    \hat{M}_{Y1} - \hat{M}_{Y2}
+    \hat{m}_{Y1} - \hat{m}_{Y2}
 }{
-    \sqrt{\hat{S}_{Y1}+\hat{S}_{Y2}}/\sqrt{n}
+    \sqrt{\hat{s}_{Y1}+\hat{s}_{Y2}}/\sqrt{n}
 },
 $$
 With normally distributed means, this statistic follows Student's [t-distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution).
@@ -449,30 +449,30 @@ Welch's [$t$-statistic](https://en.wikipedia.org/wiki/Welch%27s_t-test) is an ad
 ```{r}
 # Sample 1 (e.g., males)
 n1 <- 100
-Y1 <- rnorm(n1, 0, 2)
-#hist(Y1, freq=F, main='Sample 1')
+y1_hat <- rnorm(n1, 0, 2)
+#hist(y1_hat, freq=F, main='Sample 1')
 
 # Sample 2 (e.g., females)
 n2 <- 80
-Y2 <- rnorm(n2, 1, 1)
-#hist(Y2, freq=F, main='Sample 2')
+y2_hat <- rnorm(n2, 1, 1)
+#hist(y2_hat, freq=F, main='Sample 2')
 
-t.test(Y1, Y2, var.equal=FALSE)
+t.test(y1_hat, y2_hat, var.equal=FALSE)
 ```
 
 
 ```{r, eval=FALSE, echo=FALSE}
 ## Manual T-stat
-n1  <- length(Y1)
-n2  <- length(Y2)
-se_hat <- sqrt(var(Y1)/n1 + var(Y2)/n2);
+n1  <- length(y1_hat)
+n2  <- length(y2_hat)
+se_hat <- sqrt(var(y1_hat)/n1 + var(y2_hat)/n2);
 t_obs <- d/se_hat
 
 # Alt estimate
-s1  <- var(Y1)
-s2  <- var(Y2)
-s   <- ((n1-1)*s1 + (n2-1)*s2)/(n1+n2-2)
-d_se <- sqrt(s*(1/n1+1/n2))
+v1_hat  <- var(y1_hat)
+v2_hat  <- var(y2_hat)
+v_hat   <- ((n1-1)*v1_hat + (n2-1)*v2_hat)/(n1+n2-2)
+d_se <- sqrt(v_hat*(1/n1+1/n2))
 # t stat
 t_stat <- d/d_se
 t_stat
@@ -482,16 +482,16 @@ t_stat
 If we want to test for the differences in medians across groups with independent observations, we can also use notches in the boxplot.
 If the notches of two boxes do not overlap, then there is rough evidence that the difference in medians is statistically significant.
 The square root of the sample size is also shown as the bin width in each boxplot.^[
-Let each group $g$ have median $\tilde{M}_{g}$, interquartile range $\hat{IQR}_{g}$, observations $n_{g}$.
+Let each group $g$ have median $\tilde{m}_{g}$, interquartile range $\hat{IQR}_{g}$, observations $n_{g}$.
 We can compute standard deviation of the median as $\tilde{S}_{g}= \frac{1.25 \hat{IQR}_{g}}{1.35 \sqrt{n_{g}}}$.
-As a rough guess, the interval $\tilde{M}_{g} \pm 1.7 \tilde{S}_{g}$ is the historical default and displayed as a *notch* in the boxplot.
+As a rough guess, the interval $\tilde{m}_{g} \pm 1.7 \tilde{S}_{g}$ is the historical default and displayed as a *notch* in the boxplot.
 Notches and variable-width boxes are both due to @mcgill1978.
 ]
 
 ```{r}
-Y3 <- rnorm(n1, 3, 3)
+y3_hat <- rnorm(n1, 3, 3)
 
-boxplot(Y1, Y2, Y3,
+boxplot(y1_hat, y2_hat, y3_hat,
     col=c(
         rgb(1, 0, 0, .5),
         rgb(0, 1, 0, .5),
@@ -539,31 +539,32 @@ Significance is often chosen by statistical analysts to be $\alpha=0.05$. Power 
 
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-The code below runs a small simulation using a shifted, nonparametric bootstrap. Two-sided test; studentized statistic, for $H_0: \mu = 0$
+The code below runs a small simulation using a shifted, nonparametric bootstrap.
+It uses a two-sided test with a studentized statistic for $H_0: \mathbb{E}[X_i] = 0$.
 
 ```{r power-sim, eval=FALSE}
 # Power for Two-sided test;
 # nonparametric bootstrap, studentized statistic
 n <- 25
-mu <- 0
+null_mean <- 0
 alpha <- 0.05
-B <- 299
+n_boot <- 299
 
 sim_reps <- 100
 
 p_values <- rep(NA, sim_reps)
 for (i in seq(p_values)) {
     # Generate data
-    X <- rnorm(n, mean=0.2, sd=1)
+    x_hat <- rnorm(n, mean=0.2, sd=1)
     # Observed statistic
-    X_bar <- mean(X)
-    T_obs <-  (X_bar - mu) / (sd(X)/ sqrt(n)) ##studentized
+    m_hat <- mean(x_hat)
+    T_obs <-  (m_hat - null_mean) / (sd(x_hat)/ sqrt(n)) ##studentized
     # Bootstrap null distribution of the statistic
-    T_boot <- rep(NA, B)
-    X_null <- X - X_bar + mu # Impose the null by recentering
+    T_boot <- rep(NA, n_boot)
+    x_null_hat <- x_hat - m_hat + null_mean # Impose the null by recentering
     for (b in seq(T_boot)) {
-      X_b <- sample(X_null, size = n, replace = TRUE)
-      T_b <- (mean(X_b) - mu) / (sd(X_b)/sqrt(n))
+      x_boot <- sample(x_null_hat, size = n, replace = TRUE)
+      T_b <- (mean(x_boot) - null_mean) / (sd(x_boot)/sqrt(n))
       T_boot[b] <- T_b
     }
     # Two-sided bootstrap p-value

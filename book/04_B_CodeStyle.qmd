@@ -15,22 +15,43 @@ The code blocks on this page are shown for reference and are not run.
 Always use `<-` for assignment, never `=`.
 The two are not interchangeable, because `=` also passes arguments to functions, and mixing the two makes it hard to see which is happening.
 
-Use snake_case for multi-word names, capital letters for mathematical objects, and short lowercase names for loop indices and counts.
+Use snake_case for multi-word names and `_hat` for generic names that hold observed values or sample summaries.
+Use `y_fit` for fitted or predicted values and `e_hat` for residuals.
+Keep capitals where the mathematical notation uses them, such as the design matrix `X` and the empirical CDF `F_hat`.
 
 | Kind of name | Convention | Examples |
 |---|---|---|
 | Multi-word object | snake_case | `sample_means`, `boot_se`, `col_high` |
-| Mathematical object | single capital | `X`, `Y`, `M` (mean), `V` (variance) |
-| Loop index or count | short lowercase | `i`, `n`, `b`, `h` |
-| Coefficient | matches the book's notation | `b0`, `b1`, `b_k` |
+| Observed or simulated sample values | lowercase with `_hat` | `x_hat`, `y_hat` |
+| Sample mean, variance, standard deviation | lowercase with `_hat` | `m_hat`, `v_hat`, `s_hat` |
+| Sample median | `med_hat` | `med_hat <- median(x_hat)` |
+| Empirical CDF | `F_hat` | `F_hat <- ecdf(x_hat)` |
+| Kernel density or histogram | `f_hat` | `f_hat <- density(x_hat)`, `f_hat <- hist(x_hat, plot=FALSE)` |
+| Fitted values and residuals | distinguish the fit from the observations | `y_fit`, `e_hat` |
+| Bootstrap sample | `_boot` | `x_boot` |
+| Bootstrap means and their average | distinguish the collection from its average | `boot_means`, `m_boot` |
+| Loop index or count | lowercase | `i`, `n`, `b`, `n_boot` |
+| Mathematical matrix | uppercase | `X` (design matrix) |
+| Coefficient | lowercase, with context where needed | `b0`, `b1`, `b_k`, `b_hat` |
 
 ```r
-X <- USArrests[,'Murder']
-X_mean <- mean(X)
-sample_means <- rep(NA, B)
+x_hat <- USArrests[, 'Murder']
+m_hat <- mean(x_hat)
+v_hat <- var(x_hat)
+s_hat <- sd(x_hat)
+med_hat <- median(x_hat)
 ```
 
 Names that match the notation in [Notation](04_D_Notation.qmd) let you read a formula and the code that implements it side by side.
+For example, `x_hat[i]` corresponds to $\hat{x}_i$, `m_hat` to $\hat{m}$, and `y_fit[i]` to $\hat{y}_i^{\mathrm{fit}}$.
+The sample median is `med_hat` in code and $\tilde{m}$ in formulas.
+Use `F_hat` for an empirical cumulative distribution function and `f_hat` for a kernel density estimate or a stored histogram.
+The capital `F` distinguishes the cumulative distribution from the density.
+Add a group or variable label when needed, as in `x1_hat`, `x2_hat`, `m_x_hat`, and `m_y_hat`.
+For two distributions, use names such as `F1_hat` and `F2_hat`, or `f_x_hat` and `f_y_hat`.
+Descriptive names such as `wage` and `region_means` can stay descriptive, and existing dataset column names keep their spelling.
+Possible outcomes and evaluation points can use `x` or `x_values`, while known population quantities use names such as `population_mean`.
+These are different roles from the sample values in `x_hat`.
 
 ## Base R
 
@@ -52,9 +73,9 @@ Writing `car::vif()` rather than loading the package makes it obvious where a fu
 Use bracket notation with the column name for subsetting, the dollar sign for quick single-column access inline, and double brackets for pulling an element out of a list.
 
 ```r
-xy <- USArrests[,c('Murder','UrbanPop')]
-x <- xy[,'UrbanPop']
-y <- xy[,'Murder']
+xy <- USArrests[, c('Murder', 'UrbanPop')]
+x_hat <- xy[, 'UrbanPop']
+y_hat <- xy[, 'Murder']
 
 # also acceptable for single columns
 assault_high <- USArrests$Assault > median(USArrests$Assault)
@@ -67,11 +88,11 @@ Naming the column, rather than its position, means your code keeps working when 
 Put the opening brace on the same line as `function()`, indent the body, end with an explicit `return()`, and close the brace on its own line.
 
 ```r
-skewness <- function(X) {
-    X_mean <- mean(X)
-    m3 <- mean((X - X_mean)^3)
-    s3 <- sd(X)^3
-    skew <- m3 / s3
+skewness <- function(x_hat) {
+    m_hat <- mean(x_hat)
+    m3_hat <- mean((x_hat - m_hat)^3)
+    s3_hat <- sd(x_hat)^3
+    skew <- m3_hat / s3_hat
     return(skew)
 }
 ```
@@ -82,11 +103,11 @@ It makes the output of a function unambiguous at a glance.
 Use `#` with a space after it, and let comments explain purpose rather than mechanics.
 
 ```r
-X <- rnorm(1000)        # simulated data
-X_mean <- mean(X)       # sample mean
+x_hat <- rnorm(1000)        # simulated sample values
+m_hat <- mean(x_hat)        # sample mean
 ```
 
-A comment that restates the code (`# take the mean`) adds nothing, while one that says why (`# sample mean, to compare against mu`) does.
+A comment that restates the code (`# take the mean`) adds nothing, while one that says why (`# sample mean, to compare against the population mean`) does.
 This is the style [Working with AI](04_A_WorkingWithAI.qmd) asks you to comment in, and Step 3 there checks these comments against what the code actually does.
 
 #### **Spacing and Strings** {-}
@@ -100,8 +121,8 @@ x <- y + 1
 c(1, 2, 3)
 X[1, 2]
 grey(0, .5)
-mean(X)                        # not mean( X )
-hist(X, breaks=25, freq=FALSE)     # not breaks = 25
+mean(x_hat)                        # not mean( x_hat )
+hist(x_hat, breaks=25, freq=FALSE)     # not breaks = 25
 ```
 
 Use single quotes for all strings, including column names, package names, and axis labels.
@@ -118,8 +139,8 @@ xlab='Murder arrests (per 100k)'
 Write logical values in full, as `TRUE` and `FALSE`.
 
 ```r
-hist(X, freq=FALSE, border=NA)
-x_boot <- sample(X, replace=TRUE)
+hist(x_hat, freq=FALSE, border=NA)
+x_boot <- sample(x_hat, replace=TRUE)
 ```
 
 R also accepts the abbreviations `T` and `F`, and you will see them constantly in other people's code, but they are not safe.
@@ -137,13 +158,18 @@ Pre-allocate with `rep(NA, n)`.
 
 ```r
 set.seed(1)
-B <- 999
-sample_means <- rep(NA, B)
-for (b in seq(B)) {
-    x_boot <- sample(X, replace=TRUE)
-    sample_means[b] <- mean(x_boot)
+n_boot <- 999
+boot_means <- rep(NA, n_boot)
+for (b in seq(n_boot)) {
+    x_boot <- sample(x_hat, replace=TRUE)
+    boot_means[b] <- mean(x_boot)
 }
+m_boot <- mean(boot_means)
 ```
+
+Here `boot_means[b]` is one replicate mean, while `m_boot` averages all the replicate means.
+If a loop stores its current replicate mean separately, use `m_b_hat`.
+The corresponding jackknife collection and its average are `jack_means` and `m_jack`.
 
 Pre-allocating with `rep(NA, n)` rather than `numeric(n)` matters because `numeric(n)` fills the vector with zeros.
 If a bug leaves some entries unfilled, zeros look like real results and `NA` does not.
@@ -153,16 +179,16 @@ If a bug leaves some entries unfilled, zeros look like real results and `NA` doe
 These two are not interchangeable, and the book uses each for a different job.
 
 ```r
-for (b in seq(B))         { ... }   # B is a count, so seq(B) gives 1, 2, ..., B
-for (i in seq_along(X))   { ... }   # X is a vector, so this gives 1, ..., length(X)
+for (b in seq(n_boot))        { ... }   # n_boot is a count, so seq(n_boot) gives 1, 2, ..., n_boot
+for (i in seq_along(x_hat))   { ... }   # x_hat is a vector, so this gives 1, ..., length(x_hat)
 ```
 
-Writing `seq_along(B)` when `B` is a single number is a silent bug: it returns just `1`, so the loop runs once and the code appears to work.
-Writing `seq(X)` when `X` is a vector happens to work, but it reads as though `X` were a count.
+Writing `seq_along(n_boot)` when `n_boot` is a single number is a silent bug: it returns just `1`, so the loop runs once and the code appears to work.
+Writing `seq(x_hat)` when `x_hat` is a vector happens to work, but it reads as though `x_hat` were a count.
 
 One edge case is worth knowing.
-`seq(B)` returns `c(1, 0)` when `B` is zero, so a loop that should not run at all runs twice.
-`seq_len(B)` returns nothing in that case and is the safer form.
+`seq(n_boot)` returns `c(1, 0)` when `n_boot` is zero, so a loop that should not run at all runs twice.
+`seq_len(n_boot)` returns nothing in that case and is the safer form.
 The book uses `seq()` because its counts are never zero.
 
 #### **Formulas and Output** {-}
@@ -170,14 +196,16 @@ The book uses `seq()` because its counts are never zero.
 Use standard R formula syntax with spaces around `~`.
 
 ```r
-reg <- lm(y ~ x, data=xy)
-plot(y ~ x, xy, pch=16, col=grey(0, .5))
+reg <- lm(y_hat ~ x_hat)
+y_fit <- fitted(reg)
+e_hat <- y_hat - y_fit
+plot(y_hat ~ x_hat, pch=16, col=grey(0, .5))
 ```
 
 Round for display with `round(value, 2)`, build label strings with `paste0()`, and rely on auto-printing rather than calling `print()` except inside a loop or conditional.
 
 ```r
-title(paste0('mean= ', round(X_mean, 2)), font.main=1)
+title(paste0('mean= ', round(m_hat, 2)), font.main=1)
 ```
 
 ## Reference Card
@@ -194,6 +222,8 @@ title(paste0('mean= ', round(X_mean, 2)), font.main=1)
 10. Pre-allocate with `rep(NA, n)`, not `numeric(n)`.
 11. `seq()` for counts, `seq_along()` for vectors.
 12. Comments explain purpose, not mechanics.
+13. `x_hat`, `y_hat`, `m_hat`, `v_hat`, `s_hat`, and `med_hat` for generic sample quantities; `y_fit` for fitted values and `e_hat` for residuals.
+14. `F_hat` for ECDFs; `f_hat` for kernel density estimates and stored histograms.
 
 #### **Further Reading** {-}
 

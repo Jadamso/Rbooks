@@ -134,20 +134,20 @@ cols <- ifelse(as.numeric(dat2$cost)==2, rgb(0, 0, 1, .5), rgb(0, 0, 0, .5))
 plot(P ~ T, dat2, main=NA, pch=16, col=cols)
 title('Effect of Cost Shock on Price', font.main=1)
 regP1 <- loess(P ~ T, dat2[dat2$cost==1, ])
-x1 <- regP1$x
-#lm(): x1 <- regP1$model$T
-lines(x1, predict(regP1), col=rgb(0, 0, 0, .8), lwd=2)
+x1_hat <- regP1$x
+#lm(): x1_hat <- regP1$model$T
+lines(x1_hat, predict(regP1), col=rgb(0, 0, 0, .8), lwd=2)
 regP2 <- loess(P ~ T, dat2[dat2$cost==2, ])
-x2 <- regP2$x #regP1$model$T
-lines(x2, predict(regP2), col=rgb(0, 0, 1, .8), lwd=2)
+x2_hat <- regP2$x #regP1$model$T
+lines(x2_hat, predict(regP2), col=rgb(0, 0, 1, .8), lwd=2)
 
 plot(Q ~ T, dat2, main=NA, pch=16, col=cols)
 title('Effect of Cost Shock on Quantity', font.main=1)
 regQ1 <- loess(Q ~ T, dat2[dat2$cost==1, ])
-lines(x1, predict(regQ1), col=rgb(0, 0, 0, .8), lwd=2)
+lines(x1_hat, predict(regQ1), col=rgb(0, 0, 0, .8), lwd=2)
 regQ2 <- loess(Q ~ T, dat2[dat2$cost==2, ])
-x2 <- regP2$x #regP1$model$T
-lines(x2, predict(regQ2), col=rgb(0, 0, 1, .8), lwd=2)
+x2_hat <- regP2$x #regP1$model$T
+lines(x2_hat, predict(regQ2), col=rgb(0, 0, 1, .8), lwd=2)
 ```
 
 ```{r, message=FALSE, warning=FALSE, results='asis'}
@@ -208,29 +208,29 @@ dat3_post <- dat3[dat3$T > N , ]
 par(mfrow=c(1, 2))
 plot(P ~ T, dat2, main=NA, pch=16, col=cols, cex=.5)
 title('Effect of Cost Shock on Price', font.main=1)
-lines(x1, predict(regP1), col=rgb(0, 0, 0, .8), lwd=2)
-lines(x2, predict(regP2), col=rgb(0, 0, 1, .8), lwd=2)
+lines(x1_hat, predict(regP1), col=rgb(0, 0, 0, .8), lwd=2)
+lines(x2_hat, predict(regP2), col=rgb(0, 0, 1, .8), lwd=2)
 # W/ Control group
 points(P ~ T, dat3, pch=16, col=rgb(1, 0, 0, .5), cex=.5)
 regP3a <- loess(P ~ T, dat3_pre)
-x3a <- regP3a$x
-lines(x3a, predict(regP3a), col=rgb(1, 0, 0, .8), lwd=2)
+x3a_hat <- regP3a$x
+lines(x3a_hat, predict(regP3a), col=rgb(1, 0, 0, .8), lwd=2)
 regP3b <- loess(P ~ T, dat3_post)
-x3b <- regP3b$x
-lines(x3b, predict(regP3b), col=rgb(1, 0, 0, .8), lwd=2)
+x3b_hat <- regP3b$x
+lines(x3b_hat, predict(regP3b), col=rgb(1, 0, 0, .8), lwd=2)
 
 
 # Plot Quantity Data
 plot(Q ~ T, dat2, main=NA, pch=17, col=cols, cex=.5)
 title('Effect of Cost Shock on Quantity', font.main=1)
-lines(x1, predict(regQ1), col=rgb(0, 0, 0, .8), lwd=2)
-lines(x2, predict(regQ2), col=rgb(0, 0, 1, .8), lwd=2)
+lines(x1_hat, predict(regQ1), col=rgb(0, 0, 0, .8), lwd=2)
+lines(x2_hat, predict(regQ2), col=rgb(0, 0, 1, .8), lwd=2)
 # W/ Control group
 points(Q ~ T, dat3, pch=16, col=rgb(1, 0, 0, .5), cex=.5)
 regQ3a <- loess(Q ~ T, dat3_pre)
-lines(x3a, predict(regQ3a), col=rgb(1, 0, 0, .8), lwd=2)
+lines(x3a_hat, predict(regQ3a), col=rgb(1, 0, 0, .8), lwd=2)
 regQ3b <- loess(Q ~ T, dat3_post)
-lines(x3b, predict(regQ3b), col=rgb(1, 0, 0, .8), lwd=2)
+lines(x3b_hat, predict(regQ3b), col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 Linear Regression Estimates
@@ -335,7 +335,7 @@ Just running a second OLS regression on the pooled data would still be biased, a
 reg2 <- lm(Q ~ P, data=dat2)
 summary(reg2)
 ```
-It turns out that the noisiness of the process within each group affects our OLS estimate: $\hat{B}=\hat{C}_{Q^{*}P^{*}} / \hat{V}_{P^{*}}$.
+It turns out that the noisiness of the process within each group affects our OLS estimate: $\hat{b}=\hat{c}_{Q^{*}P^{*}} / \hat{v}_{P^{*}}$.
 For details, see
 <details>
 <summary><i>Within Group Variance</i></summary>
@@ -385,8 +385,8 @@ dat_mean <- rbind(
     colMeans(dat2[dat2$cost==1, 1:2]),
     colMeans(dat2[dat2$cost==2, 1:2]))
 dat_mean
-B_est <- diff(dat_mean[, 2])/diff(dat_mean[, 1])
-round(B_est, 2)
+b_est <- diff(dat_mean[, 2])/diff(dat_mean[, 1])
+round(b_est, 2)
 ```
 
 
@@ -395,16 +395,16 @@ We can also separately recover $d \mathbb{E}[Q^{*}] / d \mathbb{E}[\alpha_{S}]$ 
 # Heckman (2000, p.58) Estimate
 ols_1 <- lm(P ~ cost, data=dat2)
 ols_2 <- lm(Q ~ cost, data=dat2)
-B_est2 <- coef(ols_2)/coef(ols_1)
-round(B_est2[[2]], 2)
+b_est2 <- coef(ols_2)/coef(ols_1)
+round(b_est2[[2]], 2)
 ```
 Alternatively, we can recover the same estimate using a *2SLS* regression with two equations:
 $$\begin{aligned}
-\hat{P} &= b_{0p} + b_{1p} \alpha_{S} + \hat{E}_{p} \\
-\hat{Q} &= b_{0q} + b_{1q} \hat{p}  + \hat{E}_{q}.
+\hat{p} &= b_{0p} + b_{1p} \alpha_{S} + \hat{e}_{p} \\
+\hat{q} &= b_{0q} + b_{1q} \hat{p}^{\mathrm{fit}}  + \hat{e}_{q}.
 \end{aligned}$$
-where $\hat{p}$, the predicted value of $\hat{P}$ from the first equation, is used to explain quantity in the second equation.
-In the first regression, we estimate how the cost shock affects prices: $\hat{B}_{1p}$ and then predict prices $\hat{p}$.
+where $\hat{p}^{\mathrm{fit}}$, the predicted value of $\hat{p}$ from the first equation, is used to explain quantity in the second equation.
+In the first regression, we estimate how the cost shock affects prices: $\hat{b}_{1p}$ and then predict prices $\hat{p}^{\mathrm{fit}}$.
 In the second equation, we estimate how the average effect of predicted prices (which are exogenous to demand) affect quantity demanded.
 
 To understand this theoretically, first substitute the equilibrium condition into the supply equation: $Q_{D}=Q_{S}=\alpha_{S}+ \beta_{S} P + E_{S}$, lets us rewrite $P$ as a function of $Q_{D}$.
@@ -417,8 +417,8 @@ Q_{D} &= \alpha_{D} + \beta_{D} P  + E_{D}.
 ```{r}
 # Two Stage Least Squares Estimate
 ols_1 <- lm(P ~ cost, data=dat2)
-dat2_new  <- cbind(dat2, Phat=predict(ols_1))
-reg_2sls <- lm(Q ~ Phat, data=dat2_new)
+dat2_new  <- cbind(dat2, p_fit=predict(ols_1))
+reg_2sls <- lm(Q ~ p_fit, data=dat2_new)
 summary(reg_2sls)
 
 # One Stage Instrumental Variables Estimate
@@ -474,7 +474,7 @@ The next chapter pushes this caution further, showing that the same recipes can 
 
 4. Simulate a difference-in-differences setup in R.
    Generate two groups of 100 observations each over 200 time periods, where one group receives a treatment (a level shift of +2) at $T = 100$.
-   Estimate the DID coefficient using `lm(y ~ PostPeriod * EverTreated, data = dat)` and verify that it recovers the treatment effect.
+   Estimate the DID coefficient using `lm(y_hat ~ PostPeriod * EverTreated, data = dat)` and verify that it recovers the treatment effect.
 
 #### **Further Reading** {-}
 

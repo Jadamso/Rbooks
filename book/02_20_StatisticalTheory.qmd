@@ -14,12 +14,13 @@ Under the assumption that both populations are independently distributed, we can
 
 #### **Differences in Means** {-}
 
+Let $Y_{ig}$ denote the random outcome for individual $i$ in group $g$.
 To compare two group means, we standardize the observed difference by its estimated standard error.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *two-sample t-statistic* divides the observed mean difference by its estimated standard error:
-$$\hat{t} = \frac{\hat{M}_1 - \hat{M}_2}{\sqrt{\hat{S}^2_1/n_1+\hat{S}^2_2/n_2}},$$
-where $\hat{S}^2_g$ is the sample variance and $n_g$ is the sample size for group $g$.
+$$\hat{t} = \frac{\hat{m}_1 - \hat{m}_2}{\sqrt{\hat{s}^2_1/n_1+\hat{s}^2_2/n_2}},$$
+where $\hat{s}^2_g$ is the sample variance and $n_g$ is the sample size for group $g$.
 
 *Welch's t-test* modifies the two-sample $\hat{t}$ above to account for unequal variances or unequal sample sizes.
 The modifications use the [Welch-Satterthwaite approximation](https://en.wikipedia.org/wiki/Welch%E2%80%93Satterthwaite_equation).
@@ -33,15 +34,15 @@ When the two groups have unequal variances or sample sizes, a small adjustment t
 ```{r}
 # Sample 1 (e.g., males)
 n1 <- 100
-Y1 <- rnorm(n1, 0, 2)
-#hist(Y1, freq=F, main='Sample 1')
+y1_hat <- rnorm(n1, 0, 2)
+#hist(y1_hat, freq=F, main='Sample 1')
 
 # Sample 2 (e.g., females)
 n2 <- 80
-Y2 <- rnorm(n2, 1, 1)
-#hist(Y2, freq=F, main='Sample 2')
+y2_hat <- rnorm(n2, 1, 1)
+#hist(y2_hat, freq=F, main='Sample 2')
 
-t.test(Y1, Y2, var.equal=FALSE)
+t.test(y1_hat, y2_hat, var.equal=FALSE)
 ```
 
 Welch's $t$-test is useful as the standard default when comparing two means without assuming equal variances, which is the realistic setting in most applied work (two job markets, two policy regimes, two countries).
@@ -50,34 +51,34 @@ With the variance-and-normality assumptions in place, the test can be conducted 
 :::{.callout-tip icon=false collapse="true" title="Must Know"}
 The *Welch-Satterthwaite equation* approximates the degrees of freedom when the two groups have unequal variances:
 $$
-df = \frac{\left(\hat{S}^2_1/n_1 + \hat{S}^2_2/n_2\right)^2}{\frac{(\hat{S}^2_1/n_1)^2}{n_1-1} + \frac{(\hat{S}^2_2/n_2)^2}{n_2-1}}.
+df = \frac{\left(\hat{s}^2_1/n_1 + \hat{s}^2_2/n_2\right)^2}{\frac{(\hat{s}^2_1/n_1)^2}{n_1-1} + \frac{(\hat{s}^2_2/n_2)^2}{n_2-1}}.
 $$
-For example, suppose both groups have $n_1=n_2=10$, with sample variances $\hat{S}^2_1=4$ and $\hat{S}^2_2=1$.
-Writing $v_g=\hat{S}^2_g/n_g$, we have $v_1=0.4$ and $v_2=0.1$, so
+For example, suppose both groups have $n_1=n_2=10$, with sample variances $\hat{s}^2_1=4$ and $\hat{s}^2_2=1$.
+Writing $v_g=\hat{s}^2_g/n_g$, we have $v_1=0.4$ and $v_2=0.1$, so
 $$
 df = \frac{(0.4+0.1)^2}{0.4^2/9 + 0.1^2/9} = \frac{0.25}{0.17/9} \approx 13.2.
 $$
 This is below the equal-variance value $n_1+n_2-2=18$: unequal variances cost degrees of freedom, which widens the $t$-distribution and makes the test more conservative.
 ```{r}
 n1 <- 10; n2 <- 10
-v1 <- 4/n1
-v2 <- 1/n2
-(v1 + v2)^2 / (v1^2/(n1-1) + v2^2/(n2-1))
+v1_hat <- 4/n1
+v2_hat <- 1/n2
+(v1_hat + v2_hat)^2 / (v1_hat^2/(n1-1) + v2_hat^2/(n2-1))
 ```
 :::
 
 
 
-We can visualize this by simulating many samples *under the null* ($\mu_1=\mu_2$) and comparing the distribution of $\hat{t}$ with the theoretical $t$-distribution.
+We can visualize this by simulating many samples *under the null* ($\mathbb{E}[Y_{i1}]=\mathbb{E}[Y_{i2}]$) and comparing the distribution of $\hat{t}$ with the theoretical $t$-distribution.
 
 ```{r}
 # Simulate the t-statistic under the null (both groups same mean)
-B <- 399
-boot_t2 <- vector(length = B)
-for (b in seq(B)) {
-    Y1_b <- rnorm(n1, 0, 2)
-    Y2_b <- rnorm(n2, 0, 1)
-    boot_t2[b] <- t.test(Y1_b, Y2_b, var.equal = FALSE)$statistic
+n_sim <- 399
+boot_t2 <- vector(length = n_sim)
+for (b in seq(n_sim)) {
+    y1_sim <- rnorm(n1, 0, 2)
+    y2_sim <- rnorm(n2, 0, 1)
+    boot_t2[b] <- t.test(y1_sim, y2_sim, var.equal = FALSE)$statistic
 }
 
 # Welch-Satterthwaite degrees of freedom
@@ -106,14 +107,14 @@ legend('topright', legend = c('Simulated', paste0('t(', round(df_ws), ')')),
 If we want to test for the differences in medians across groups with independent observations, we can also use notches in the boxplot.
 If the notches of two boxes do not overlap, then there is rough evidence that the difference in medians is statistically significant.
 The square root of the sample size is also shown as the bin width in each boxplot.^[
-Let each group $g$ have median $\tilde{M}_{g}$, interquartile range $\hat{IQR}_{g}$, observations $n_{g}$.
+Let each group $g$ have median $\tilde{m}_{g}$, interquartile range $\hat{IQR}_{g}$, observations $n_{g}$.
 We can compute standard deviation of the median as $\tilde{S}_{g}= \frac{1.25 \hat{IQR}_{g}}{1.35 \sqrt{n_{g}}}$.
-As a rough guess, the interval $\tilde{M}_{g} \pm 1.7 \tilde{S}_{g}$ is the historical default and displayed as a *notch* in the boxplot.
+As a rough guess, the interval $\tilde{m}_{g} \pm 1.7 \tilde{S}_{g}$ is the historical default and displayed as a *notch* in the boxplot.
 Notches and variable-width boxes are both due to @mcgill1978.
 ]
 
 ```{r}
-boxplot(Y1, Y2,
+boxplot(y1_hat, y2_hat,
     col=c(rgb(1, 0, 0, .5), rgb(0, 0, 1, .5)),
     main=NA,
     whisklty=0, staplelty=0, outline=FALSE,
@@ -134,11 +135,11 @@ kruskal.test(Wages1[, 'wage'], Wages1[, 'school'])
 #### **Regression Slope** {-}
 
 The same ideas apply to regression coefficients.
-Recall that the OLS slope $\hat{B}_1 = \hat{C}_{XY}/\hat{V}_X$ is a statistic computed from the data.
+Recall that the OLS slope $\hat{b}_1 = \hat{c}_{XY}/\hat{v}_X$ is a statistic computed from the data.
 In the Simple Regression chapter, we estimated variability using data-driven methods (jackknife and bootstrap).
 Under standard assumptions, we can instead derive the sampling distribution analytically: the $t$-statistic
 $$
-\hat{t} = \frac{\hat{B}_1}{\widehat{SE}(B_1)}
+\hat{t} = \frac{\hat{b}_1}{\widehat{SE}(B_1)}
 $$
 follows a $t$-distribution with $n-2$ degrees of freedom, where $\widehat{SE}(B_1)$ is the classical estimated standard error of the slope.
 This allows us to test $H_0: \beta_1 = 0$ using math alone.
@@ -146,8 +147,8 @@ This allows us to test $H_0: \beta_1 = 0$ using math alone.
 ```{r}
 # USArrests data (same as Simple Regression chapter)
 xy <- USArrests[, c('Murder', 'UrbanPop')]
-colnames(xy) <- c('y', 'x')
-reg <- lm(y ~ x, data = xy)
+colnames(xy) <- c('y_hat', 'x_hat')
+reg <- lm(y_hat ~ x_hat, data = xy)
 
 # The summary reports theoretical t-statistics and p-values
 summary(reg)$coefficients
@@ -158,9 +159,9 @@ Manual verification of the theoretical $t$-statistic for the slope:
 ```{r}
 n <- nrow(xy)
 b1 <- coef(reg)[2]
-e <- resid(reg)
-s_e <- sqrt(sum(e^2) / (n - 2))               # residual standard error
-s_b1 <- s_e / sqrt(sum((xy[, 'x'] - mean(xy[, 'x']))^2)) # SE of slope
+e_hat <- resid(reg)
+s_e_hat <- sqrt(sum(e_hat^2) / (n - 2))               # residual standard error
+s_b1 <- s_e_hat / sqrt(sum((xy[, 'x_hat'] - mean(xy[, 'x_hat']))^2)) # SE of slope
 t_stat <- b1 / s_b1
 
 # Compare with summary output
@@ -174,12 +175,12 @@ They should be similar, but are not identical because the theoretical result ass
 ```{r}
 # Bootstrap distribution of the t-statistic
 n <- nrow(xy)
-B <- 399
-boot_t <- vector(length = B)
-for (b in seq(B)) {
+n_boot <- 399
+boot_t <- vector(length = n_boot)
+for (b in seq(n_boot)) {
     b_id <- sample(nrow(xy), replace = TRUE)
-    xy_b <- xy[b_id, ]
-    reg_b <- lm(y ~ x, data = xy_b)
+    xy_boot <- xy[b_id, ]
+    reg_b <- lm(y_hat ~ x_hat, data = xy_boot)
     # Use theoretical SE from summary
     boot_t[b] <- summary(reg_b)$coefficients[2, 3]
 }
@@ -261,31 +262,31 @@ Power is less often chosen directly; it follows from the chosen sample size and 
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 The code below runs a small simulation using a shifted, nonparametric bootstrap.
-Two-sided test; studentized statistic, for $H_0: \mu = 0$
+It uses a two-sided test with a studentized statistic for $H_0: \mathbb{E}[X_i] = 0$.
 
 ```{r power-sim, eval=FALSE}
 # Power for Two-sided test;
 # nonparametric bootstrap, studentized statistic
 n <- 25
-mu <- 0
+null_mean <- 0
 alpha <- 0.05
-B <- 299
+n_boot <- 299
 
 sim_reps <- 100
 
 p_values <- rep(NA, sim_reps)
 for (i in seq(p_values)) {
     # Generate data
-    X <- rnorm(n, mean=0.2, sd=1)
+    x_hat <- rnorm(n, mean=0.2, sd=1)
     # Observed statistic
-    X_bar <- mean(X)
-    T_obs <-  (X_bar - mu) / (sd(X)/ sqrt(n)) ##studentized
+    m_hat <- mean(x_hat)
+    T_obs <-  (m_hat - null_mean) / (sd(x_hat)/ sqrt(n)) ##studentized
     # Bootstrap null distribution of the statistic
-    T_boot <- rep(NA, B)
-    X_null <- X - X_bar + mu # Impose the null by recentering
+    T_boot <- rep(NA, n_boot)
+    x_null_hat <- x_hat - m_hat + null_mean # Impose the null by recentering
     for (b in seq(T_boot)) {
-      X_b <- sample(X_null, size = n, replace = TRUE)
-      T_b <- (mean(X_b) - mu) / (sd(X_b)/sqrt(n))
+      x_boot <- sample(x_null_hat, size = n, replace = TRUE)
+      T_b <- (mean(x_boot) - null_mean) / (sd(x_boot)/sqrt(n))
       T_boot[b] <- T_b
     }
     # Two-sided bootstrap p-value
@@ -311,15 +312,15 @@ When the true slope is nonzero (null is false), failing to reject is a Type II E
 # DGP calibrated to USArrests regression
 beta0 <- coef(reg)[1]
 beta1_true <- coef(reg)[2]
-sigma_e <- summary(reg)$sigma
-x_mean <- mean(xy[, 'x'])
-x_sd <- sd(xy[, 'x'])
+s_e_hat <- summary(reg)$sigma
+m_x_hat <- mean(xy[, 'x_hat'])
+s_x_hat <- sd(xy[, 'x_hat'])
 
 # Function: simulate data, return theoretical p-value for slope
 sim_pval <- function(n, beta1) {
-    X <- rnorm(n, mean = x_mean, sd = x_sd)
-    Y <- beta0 + beta1 * X + rnorm(n, 0, sigma_e)
-    summary(lm(Y ~ X))$coefficients[2, 4]
+    x_hat <- rnorm(n, mean = m_x_hat, sd = s_x_hat)
+    y_hat <- beta0 + beta1 * x_hat + rnorm(n, 0, s_e_hat)
+    summary(lm(y_hat ~ x_hat))$coefficients[2, 4]
 }
 
 sim_reps <- 200

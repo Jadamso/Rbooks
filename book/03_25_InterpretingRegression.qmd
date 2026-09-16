@@ -26,29 +26,29 @@ Eyeballing the plot will not tell us which ones actually move the fit, so we nee
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 For a regression with $n$ observations and $K$ parameters:
 
-The *leverage* $h_i \in [0, 1]$ of observation $i$ measures how unusual its predictor values $\hat{X}_i$ are relative to the rest of the sample: small $h_i$ when $\hat{X}_i$ sits near the centre of the predictor cloud, large $h_i$ when it sits at the edges.
-Equivalently, $h_i$ is the share of the fitted value $\hat{y}_i$ that is determined by $\hat{Y}_i$ itself rather than by the other observations, and the $h_i$ across the sample sum to the number of coefficients $K$.
+The *leverage* $h_i \in [0, 1]$ of observation $i$ measures how unusual its predictor values $\hat{x}_i$ are relative to the rest of the sample: small $h_i$ when $\hat{x}_i$ sits near the centre of the predictor cloud, large $h_i$ when it sits at the edges.
+Equivalently, $h_i$ is the share of the fitted value $\hat{y}_i^{\mathrm{fit}}$ that is determined by $\hat{y}_i$ itself rather than by the other observations, and the $h_i$ across the sample sum to the number of coefficients $K$.
 
-The *standardized residual* $r_i = \hat{E}_i / (s^{(-i)}\sqrt{1-h_i})$ rescales the raw residual by an estimate of its standard deviation, where $s^{(-i)}$ is the root mean squared error of a regression with observation $i$ removed.
+The *standardized residual* $r_i = \hat{e}_i / (s^{(-i)}\sqrt{1-h_i})$ rescales the raw residual by an estimate of its standard deviation, where $s^{(-i)}$ is the root mean squared error of a regression with observation $i$ removed.
 
 *Cook's Distance* sums all prediction changes when observation $i$ is removed, scaled by the mean square error:
-$$D_{i} = \frac{\sum_{j} \left( \hat{y}_j - \hat{y}_j^{(-i)} \right)^2 }{ K \hat{S}^2 } = \frac{\hat{E}_{i}^2}{K \hat{S}^2 } \frac{h_i}{(1-h_i)^2}, \quad \hat{S}^2 = \frac{\sum_{i} \hat{E}_{i}^2}{n-K}.$$
+$$D_{i} = \frac{\sum_{j} \left( \hat{y}_j^{\mathrm{fit}} - \hat{y}_j^{\mathrm{fit}(-i)} \right)^2 }{ K \hat{s}^2 } = \frac{\hat{e}_{i}^2}{K \hat{s}^2 } \frac{h_i}{(1-h_i)^2}, \quad \hat{s}^2 = \frac{\sum_{i} \hat{e}_{i}^2}{n-K}.$$
 In Cook's distance, the subscript $j$ identifies the prediction target and the superscript $(-i)$ identifies the observation omitted from the fit.
 :::
 
-These three statistics are useful for triage: *leverage* flags points whose $\hat{X}_i$ is unusual, the *standardized residual* flags points whose $\hat{Y}_i$ is far from prediction, and *Cook's Distance* combines both into one number that says how much the overall fit depends on each observation.
+These three statistics are useful for triage: *leverage* flags points whose $\hat{x}_i$ is unusual, the *standardized residual* flags points whose $\hat{y}_i$ is far from prediction, and *Cook's Distance* combines both into one number that says how much the overall fit depends on each observation.
 The first diagnostic plot (residuals vs fitted) is the picture for outliers in the outcome, and the fourth (residuals vs leverage with Cook's contours) is the picture for outliers in $X$-space; both can but do not have to be problematic.
 
 ```{r}
 N <- 40
-x <- c(25, runif(N-1, 3, 8))
+x_hat <- c(25, runif(N-1, 3, 8))
 e <- rnorm(N, 0, 0.4)
-y <- 3 + 0.6*sqrt(x) + e
-plot(y ~ x, pch=16, col=grey(0, .5), main=NA)
-points(x[1], y[1], pch=16, col=rgb(1, 0, 0, .5))
+y_hat <- 3 + 0.6*sqrt(x_hat) + e
+plot(y_hat ~ x_hat, pch=16, col=grey(0, .5), main=NA)
+points(x_hat[1], y_hat[1], pch=16, col=rgb(1, 0, 0, .5))
 
-abline(lm(y ~ x), col=rgb(1, 0, 0, .8), lty=2)
-abline(lm(y[-1] ~ x[-1]))
+abline(lm(y_hat ~ x_hat), col=rgb(1, 0, 0, .8), lty=2)
+abline(lm(y_hat[-1] ~ x_hat[-1]))
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
@@ -71,17 +71,17 @@ which.max(cooks.distance(reg))
 # Influence plot: leverage vs. standardized residual,
 # with point area proportional to Cook's Distance
 h_i <- hatvalues(reg)
-r_i <- rstandard(reg)
+e_std_hat <- rstandard(reg)
 d_i <- cooks.distance(reg)
 
-plot(h_i, r_i, pch=16, col=grey(0, .5),
+plot(h_i, e_std_hat, pch=16, col=grey(0, .5),
     cex=1 + 4*d_i/max(d_i), main=NA,
     xlab='Leverage', ylab='Standardized residual')
 abline(h=0, lty=2)
 
 # Label the most influential observations
 inf_id <- order(d_i, decreasing=TRUE)[1:3]
-text(h_i[inf_id], r_i[inf_id],
+text(h_i[inf_id], e_std_hat[inf_id],
     labels=rownames(USArrests)[inf_id], pos=3, cex=.7)
 ```
 
@@ -98,10 +98,10 @@ When two regressors carry nearly the same information, OLS cannot tell their sep
 *Collinearity* is when one explanatory variable can be closely predicted by a linear combination of the others.
 The *Variance Inflation Factor* for variable $k$,
 $$\hat{VIF}_{k}=\frac{1}{1-\hat{R}^2_{k}},$$
-quantifies how much collinearity inflates the variance of $\hat{B}_{k}$ compared to the no-collinearity case, where $\hat{R}^2_{k}$ comes from regressing $\hat{X}_{k}$ on the other covariates $\hat{X}_{-k}$ (a regression that does not involve the response variable $\hat{Y}$).
+quantifies how much collinearity inflates the variance of $\hat{b}_{k}$ compared to the no-collinearity case, where $\hat{R}^2_{k}$ comes from regressing $\hat{x}_{k}$ on the other covariates $\hat{x}_{-k}$ (a regression that does not involve the response variable $\hat{y}$).
 :::
 
-The *Variance Inflation Factor* is useful as a quick diagnostic for overlapping information between regressors: a $\hat{VIF}_{k}$ near $1$ means $\hat{X}_{k}$ is uncorrelated with the others, and a common rule of thumb flags $\sqrt{\hat{VIF}_{k}} > 2$.
+The *Variance Inflation Factor* is useful as a quick diagnostic for overlapping information between regressors: a $\hat{VIF}_{k}$ near $1$ means $\hat{x}_{k}$ is uncorrelated with the others, and a common rule of thumb flags $\sqrt{\hat{VIF}_{k}} > 2$.
 Collinearity does not bias the coefficients, it only widens their standard errors so that coefficient estimates may change erratically in response to small changes in the model or the data; in the extreme case with more variables than observations ($K>n$), the linear model has infinitely many solutions.
 ```{r}
 # Variance Inflation Factor from its definition: VIF_k = 1/(1 - R^2_k),
@@ -118,7 +118,7 @@ sqrt(vif) > 2
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 A $\hat{VIF}_k$ of $1$ means covariate $k$ is uncorrelated with the others.
-A $\hat{VIF}_k$ of $4$ means the variance of $\hat{B}_k$ is $4$ times larger than it would be with no collinearity, so its standard error is $\sqrt{4}=2$ times larger.
+A $\hat{VIF}_k$ of $4$ means the variance of $\hat{b}_k$ is $4$ times larger than it would be with no collinearity, so its standard error is $\sqrt{4}=2$ times larger.
 With only two covariates, $\hat{R}^2_1 = \hat{R}^2_2$ (it is just their squared correlation), so the two VIFs are equal.
 Collinearity does not bias the coefficients; it only makes them less precise.
 :::
@@ -159,8 +159,8 @@ The third diagnostic plot (scale-location) is the visual check; the *Breusch-Pag
 # Breusch-Pagan test for heteroskedasticity, by hand.
 # Regress the squared residuals on the original regressors:
 # a good fit (high R^2) signals non-constant variance.
-e2 <- resid(reg)^2
-aux <- lm(e2 ~ Assault + UrbanPop, data=USArrests)
+e_sq_hat <- resid(reg)^2
+aux <- lm(e_sq_hat ~ Assault + UrbanPop, data=USArrests)
 R2_aux <- summary(aux)$r.squared
 
 # Test statistic n*R^2 ~ chi-squared with K degrees of freedom
@@ -221,16 +221,16 @@ In this CES case, $\rho \in (-\infty,1]$ controls the *substitutability* of expl
 
 We compute the mean squared error in the original scale by inverting the predictions;
 $$
-\hat{y}_{i} =
+\hat{y}_{i}^{\mathrm{fit}} =
 \begin{cases}
-\left[ \hat{y}_{i}^{(\lambda)} \cdot \lambda \right]^{1/\lambda} -1 & \lambda  \neq 0 \\
-\exp\left( \hat{y}_{i}^{(\lambda)} \right) -1 &  \lambda=0
+\left[ \hat{y}_{i}^{\mathrm{fit},(\lambda)} \cdot \lambda \right]^{1/\lambda} -1 & \lambda  \neq 0 \\
+\exp\left( \hat{y}_{i}^{\mathrm{fit},(\lambda)} \right) -1 &  \lambda=0
 \end{cases}.
 $$
 
 
 It is easiest to optimize parameters in a 2-step procedure called  *concentrated optimization*.
-We first solve for $\hat{\mathbf{B}}(\rho,\lambda)$ and compute the mean squared error $MSE(\rho,\lambda)$.
+We first solve for $\hat{\mathbf{b}}(\rho,\lambda)$ and compute the mean squared error $MSE(\rho,\lambda)$.
 We then find the $(\rho,\lambda)$ which minimizes $MSE$.
 ```{r, fig.height=10, fig.width=10, fig.align="center"}
 # Box-Cox Transformation Function
@@ -256,7 +256,7 @@ bxcx_inv <- function( xy, rho){
 # Which Variables
 reg <- lm(Murder ~ Assault+UrbanPop, data=USArrests)
 X <- USArrests[, c('Assault', 'UrbanPop')]
-Y <- USArrests[, 'Murder']
+y_hat <- USArrests[, 'Murder']
 
 # Simple Grid Search over potential (Rho, Lambda)
 rl_df <- expand.grid(rho=seq(-2, 2, by=.5), lambda=seq(-2, 2, by=.5))
@@ -265,12 +265,12 @@ rl_df <- expand.grid(rho=seq(-2, 2, by=.5), lambda=seq(-2, 2, by=.5))
 # from OLS on Transformed Data
 errors <- apply(rl_df, 1, function(rl){
     Xr <- bxcx(X, rl[[1]])
-    Yr <- bxcx(Y, rl[[2]])
-    Datr <- cbind(Murder=Yr, Xr)
+    y_trans_hat <- bxcx(y_hat, rl[[2]])
+    Datr <- cbind(Murder=y_trans_hat, Xr)
     Regr <- lm(Murder ~ Assault+UrbanPop, data=Datr)
-    Predr <- bxcx_inv(predict(Regr), rl[[2]])
-    Resr  <- (Y - Predr)
-    return(Resr)
+    y_fit <- bxcx_inv(predict(Regr), rl[[2]])
+    e_hat  <- (y_hat - y_fit)
+    return(e_hat)
 })
 rl_df$mse <- colMeans(errors^2)
 
@@ -307,15 +307,15 @@ You can also plot the specific predictions to better understand the effect of da
 ```{r}
 # Plot for Specific Comparisons
 Xr <- bxcx(X, rl0[[1]])
-Yr <- bxcx(Y, rl0[[2]])
-Datr <- cbind(Murder=Yr, Xr)
+y_trans_hat <- bxcx(y_hat, rl0[[2]])
+Datr <- cbind(Murder=y_trans_hat, Xr)
 Regr <- lm(Murder ~ Assault+UrbanPop, data=Datr)
-Predr <- bxcx_inv(predict(Regr), rl0[[2]])
+y_fit <- bxcx_inv(predict(Regr), rl0[[2]])
 
 cols <- c(rgb(1, 0, 0, .5), col=rgb(0, 0, 1, .5))
-plot(Y, Predr, pch=16, col=cols[1], ylab='Prediction', xlab='Observed Murder',
-    main=NA, ylim=range(Y, Predr))
-points(Y, predict(reg), pch=16, col=cols[2])
+plot(y_hat, y_fit, pch=16, col=cols[1], ylab='Prediction', xlab='Observed Murder',
+    main=NA, ylim=range(y_hat, y_fit))
+points(y_hat, predict(reg), pch=16, col=cols[2])
 legend('topleft', pch=c(16), col=cols,
     title=expression(rho~', '~lambda),
     legend=c( paste0(rl0, collapse=', '), '1, 1') )

@@ -2,7 +2,7 @@
 ***
 
 This chapter collects the remaining multivariate topics that did not fit cleanly into the preceding chapters.
-We cover prediction (including prediction intervals and cross-validation), time-series filtering, arrays and the matrix-form OLS theory and the bias of $\hat{\mathbf{B}}$, and finally multiple testing corrections, the formal remedy for the kind of search-induced false positives raised in [Data Scientism](03_29_DataScientism.qmd).
+We cover prediction (including prediction intervals and cross-validation), time-series filtering, arrays and the matrix-form OLS theory and the bias of $\hat{\mathbf{b}}$, and finally multiple testing corrections, the formal remedy for the kind of search-induced false positives raised in [Data Scientism](03_29_DataScientism.qmd).
 
 ## Prediction
 
@@ -52,8 +52,8 @@ Because they also include the residual variability of $Y_i$ around the mean, the
 ```{r}
 # Bivariate Data from USArrests
 xy <- USArrests[, c('Murder', 'UrbanPop')]
-colnames(xy) <- c('y', 'x')
-xy0 <- xy[order(xy[, 'x']), ]
+colnames(xy) <- c('y_hat', 'x_hat')
+xy0 <- xy[order(xy[, 'x_hat']), ]
 ```
 
 For a nice overview of different types of intervals, see <https://www.jstor.org/stable/2685212>.
@@ -71,10 +71,10 @@ dat <- dat[order(wage1[, 'educ']), ]
 
 
 # Design Points
-X0 <- unique(dat[, 'educ'])
+x_values <- unique(dat[, 'educ'])
 # Regression
 reg_lo <- loess(wage ~ educ, data=dat, span=.8)
-preds_lo <- predict(reg_lo, newdata=data.frame(educ=X0))
+preds_lo <- predict(reg_lo, newdata=data.frame(educ=x_values))
 
 # Bootstrap Residuals
 n <- nrow(dat)
@@ -82,7 +82,7 @@ res_lo <- lapply(1:399, function(i){
     dat_b <- dat[sample(n, replace=TRUE), ]
     reg_b <- loess(wage ~ educ, data=dat_b, span=.8)
     resids_b <- resid(reg_b)
-    cbind(e=resids_b, educ=dat_b[, 'educ'])
+    cbind(e_hat=resids_b, educ=dat_b[, 'educ'])
 })
 res_lo <- do.call(rbind, res_lo)
 
@@ -91,12 +91,12 @@ res_fun <- function(x0, h){
 	# Include only residuals within h distance to x0
     ki0 <- abs(res_lo[, 'educ']-x0)/h
     ki0 <- dunif(ki0)/h
-    ei0 <- res_lo[ki0 != 0, 'e'] #subset estimates   
+    e_local_hat <- res_lo[ki0 != 0, 'e_hat'] #subset estimates
     ## Local quantiles
-    res_i <- quantile(ei0, probs=c(.025, .975), na.rm=TRUE)
+    res_i <- quantile(e_local_hat, probs=c(.025, .975), na.rm=TRUE)
     res_i
 }
-res_ci <- sapply(X0, res_fun, h=5)
+res_ci <- sapply(x_values, res_fun, h=5)
 
 ## Prediction Interval
 pi_lo1 <- preds_lo + res_ci[1, ]
@@ -106,9 +106,9 @@ pi_lo2 <- preds_lo + res_ci[2, ]
 col <- hcl.colors(3, alpha=.5)[2]
 plot(wage ~ educ, pch=16, col=grey(0, .25),
     data=dat, ylim=c(0, 20), main=NA)
-lines(X0, preds_lo,
+lines(x_values, preds_lo,
     col=col, type='o', pch=2)
-polygon( c(X0, rev(X0)),
+polygon( c(x_values, rev(x_values)),
 	c(pi_lo1, rev(pi_lo2)),
     col=col, density=12, angle=90)
 ```
@@ -126,33 +126,33 @@ boot_resids <- lapply(1:399, function(b){
     b_id <- sample( nrow(dat), replace=TRUE)
     dat_b <- dat[b_id, ]
     reg_b <- lm(wage ~ educ, data=dat_b)
-    e_b <- resid(reg_b)
-    x_b <- reg_b[['model']][['educ']]
-    res_b <- cbind(e_b, x_b)
+    e_b_hat <- resid(reg_b)
+    x_boot <- reg_b[['model']][['educ']]
+    res_b <- cbind(e_b_hat, x_boot)
 })
 boot_resids <- as.data.frame(do.call(rbind, boot_resids))
 
-# Errors do not vary with x
-ehat <- quantile(boot_resids[, 'e_b'], probs=c(.025, .975))
+# Errors do not vary with x_hat
+q_e_hat <- quantile(boot_resids[, 'e_b_hat'], probs=c(.025, .975))
 
 # PI
-phat <- predict(reg)
-boot_pi <- cbind(phat + ehat[1], phat + ehat[2])
+y_fit <- predict(reg)
+boot_pi <- cbind(y_fit + q_e_hat[1], y_fit + q_e_hat[2])
 
 # Plot Bootstrap PI
 plot(wage ~ educ, data=dat, pch=16, col=grey(0, .25), main=NA,
     ylim=c(-5, 20))
 title('Prediction Intervals', font.main=1)
-x <- dat[, 'educ']
-lines(x, phat, type='o', pch=2)
-polygon( c(x, rev(x)),
+x_hat <- dat[, 'educ']
+lines(x_hat, y_fit, type='o', pch=2)
+polygon( c(x_hat, rev(x_hat)),
     c(boot_pi[, 1], rev(boot_pi[, 2])),
     col=grey(0, .2), border=NA)
 
 # Normal PI (Make by hand)
 #pi <- predict(reg, interval='prediction')
-#lines( x, pi[, 'lwr'], lty=2)
-#lines( x, pi[, 'upr'], lty=2)
+#lines( x_hat, pi[, 'lwr'], lty=2)
+#lines( x_hat, pi[, 'upr'], lty=2)
 ```
 :::
 
@@ -162,8 +162,8 @@ A model that fits the training data perfectly can still predict new observations
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 *Leave-one-out cross-validation (LOO-CV)* fits the model $n$ times, each time leaving one observation out and predicting it from the rest, then chooses the bandwidth $h$ that minimizes the average squared prediction error,
-$$\min_{h} \quad \frac{1}{n} \sum_{i=1}^{n} \left[ \hat{Y}_{i} - \hat{y}_i^{(-i)}(X,h) \right]^2,$$
-where $\hat{y}_i^{(-i)}(X,h)$ is the model's predicted value at $X_{i}$ from a fit that excluded $X_{i}$ and $h$ is the bandwidth (e.g., bin size in a regressogram).
+$$\min_{h} \quad \frac{1}{n} \sum_{i=1}^{n} \left[ \hat{y}_{i} - \hat{y}_i^{\mathrm{fit}(-i)}(X,h) \right]^2,$$
+where $\hat{y}_i^{\mathrm{fit}(-i)}(X,h)$ is the model's predicted value at $X_{i}$ from a fit that excluded $X_{i}$ and $h$ is the bandwidth (e.g., bin size in a regressogram).
 :::
 
 *Leave-one-out cross-validation* is useful as the simplest computational way to choose bandwidths, and it directly addresses an issue that plagues observational studies in the social sciences: your model explains everything and predicts nothing.
@@ -176,19 +176,19 @@ The same idea selects bin counts and bandwidths in [Local Relationships](03_26_R
 ```{r}
 library(wooldridge)
 # Crossvalidated bandwidth for regression
-xy_mat <- data.frame(x=wage1[, 'educ'], y=wage1[, 'wage'])
+xy_mat <- data.frame(x_hat=wage1[, 'educ'], y_hat=wage1[, 'wage'])
 
 ## Grid Search
 BWS <- c(0.5, 0.6, 0.7, 0.8)
 BWS_CV <- sapply(BWS, function(h){
-    E_bw <- sapply(1:nrow(xy_mat), function(i){
-        llls <- loess(y ~ x, data=xy_mat[-i, ], span=h,
+    e_bw_hat <- sapply(1:nrow(xy_mat), function(i){
+        llls <- loess(y_hat ~ x_hat, data=xy_mat[-i, ], span=h,
             degree=1, surface='direct')
-        pred_i <- predict(llls, newdata=xy_mat[i, ])
-        e_i <-  (pred_i- xy_mat[i, 'y'])
-        return(e_i)
+        y_i_fit <- predict(llls, newdata=xy_mat[i, ])
+        e_i_hat <-  (y_i_fit- xy_mat[i, 'y_hat'])
+        return(e_i_hat)
     })
-    return( mean(E_bw^2) )
+    return( mean(e_bw_hat^2) )
 })
 
 ## Plot MSE
@@ -198,21 +198,21 @@ plot(BWS, BWS_CV, ylab='CV error', pch=3,
 
 ## Plot Optimal Predictions
 h_star <- BWS[which.min(BWS_CV)]
-llls <- loess(y ~ x, data=xy_mat, span=h_star,
+llls <- loess(y_hat ~ x_hat, data=xy_mat, span=h_star,
     degree=1, surface='direct')
 plot(xy_mat, pch=16, col=grey(0, .25),
     xlab='X', ylab='Predictions', main=NA)
 
-pred_id <- order(xy_mat[, 'x'])
-lines(xy_mat[pred_id, 'x'], predict(llls)[pred_id],
+pred_id <- order(xy_mat[, 'x_hat'])
+lines(xy_mat[pred_id, 'x_hat'], predict(llls)[pred_id],
     col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Leave-one-out cross-validation is just an average of out-of-sample errors.
-Suppose $n=4$ and, for one bandwidth $h$, leaving out each point in turn gives the predictions $\hat{y}_i^{(-i)}$ below.
+Suppose $n=4$ and, for one bandwidth $h$, leaving out each point in turn gives the predictions $\hat{y}_i^{\mathrm{fit}(-i)}$ below.
 
-| $i$ | $\hat{Y}_i$ | $\hat{y}_i^{(-i)}$ | $\hat{Y}_i - \hat{y}_i^{(-i)}$ |
+| $i$ | $\hat{y}_i$ | $\hat{y}_i^{\mathrm{fit}(-i)}$ | $\hat{y}_i - \hat{y}_i^{\mathrm{fit}(-i)}$ |
 |:---:|:---:|:---:|:---:|
 | 1 | 10 | 9 | 1 |
 | 2 | 12 | 14 | -2 |
@@ -243,19 +243,19 @@ set.seed(1)
 ## Underlying Trend
 x0 <- cumsum(rnorm(500, 0, 1))
 ## Observed Datapoints
-x <- x0 + runif(length(x0), -10, 10)
-dat <- data.frame(t=seq_along(x), x0=x0, x=x)
+x_hat <- x0 + runif(length(x0), -10, 10)
+dat <- data.frame(t=seq_along(x_hat), x0=x0, x_hat=x_hat)
 
 ## Asymmetric kernel (filtering: uses current and past only)
 bw1 <- c(2/3, 1/3)
-s1 <- filter(x, bw1/sum(bw1), sides=1)
+s1 <- filter(x_hat, bw1/sum(bw1), sides=1)
 
 ## Symmetric kernel (smoothing: also uses future)
 bw2 <- c(1/6, 2/3, 1/6)
-s2 <- filter(x, bw2/sum(bw2), sides=2)
+s2 <- filter(x_hat, bw2/sum(bw2), sides=2)
 
 ## Plot the series with both smoothers
-plot(x ~ t, data=dat, pch=16, col=grey(0, .25),
+plot(x_hat ~ t, data=dat, pch=16, col=grey(0, .25),
     main=NA, xlab='Time', ylab='x')
 lines(dat$t, s1, col=rgb(1, 0, 0, .8), lwd=2)
 lines(dat$t, s2, col=rgb(0, 0, 1, .8), lwd=2)
@@ -271,13 +271,13 @@ We use it below to choose the window of a one-sided moving average.
 ```{r}
 # Time series cross-validation for a one-sided moving average
 # For each window h, predict each point from the previous h points
-x <- dat$x
+x_hat <- dat$x_hat
 ma_windows <- 2:20
 tscv_mse <- sapply(ma_windows, function(h){
     ## Weight the previous h points equally, 0 weight on the current point
     ma_coefs <- c(0, rep(1/h, h))
-    x_pred <- filter(x, ma_coefs, sides=1)
-    mean((x - x_pred)^2, na.rm=TRUE)
+    x_fit <- filter(x_hat, ma_coefs, sides=1)
+    mean((x_hat - x_fit)^2, na.rm=TRUE)
 })
 
 ## CV-optimal window
@@ -290,8 +290,8 @@ plot(ma_windows, tscv_mse, type='o', pch=16, main=NA,
 abline(v=h_star, col=rgb(1, 0, 0, .8), lwd=2)
 
 ## Plot the series with the CV-optimal filter
-x_smooth <- filter(x, c(0, rep(1/h_star, h_star)), sides=1)
-plot(x ~ t, data=dat, pch=16, col=grey(0, .25), main=NA,
+x_smooth <- filter(x_hat, c(0, rep(1/h_star, h_star)), sides=1)
+plot(x_hat ~ t, data=dat, pch=16, col=grey(0, .25), main=NA,
     xlab='Time', ylab='x')
 lines(dat$t, x_smooth, col=rgb(1, 0, 0, .8), lwd=2)
 title(paste0('One-sided MA, h = ', h_star), font.main=1)
@@ -457,38 +457,38 @@ solve(x_mat1[1:2, 1:2])
 
 Third, note that we can conduct OLS regressions efficiently using matrix algebra.
 Grouping the trial coefficients as a vector $\mathbf{b}=(b_0 ~~ b_1 ~~... ~~ b_{K})$, we want to find coefficients that minimize the sum of squared errors.
-The linear model has a fairly simple solution for $\hat{\mathbf{B}}$ if you know linear algebra.
-Denoting $\hat{\mathbf{X}}_{i} = [1~~  \hat{X}_{i1} ~~...~~ \hat{X}_{iK}]$ as a row vector, we can write the model as $\hat{Y}_{i} = \hat{\mathbf{X}}_{i}\mathbf{b} + \hat{E}_{i}$.
-The residuals $\hat{E}_i$ depend on the trial coefficients but are computed from the observed sample.
+The linear model has a fairly simple solution for $\hat{\mathbf{b}}$ if you know linear algebra.
+Denoting $\hat{\mathbf{X}}_{i} = [1~~  \hat{x}_{i1} ~~...~~ \hat{x}_{iK}]$ as a row vector, we can write the model as $\hat{y}_{i} = \hat{\mathbf{X}}_{i}\mathbf{b} + \hat{e}_{i}$.
+The residuals $\hat{e}_i$ depend on the trial coefficients but are computed from the observed sample.
 We can then write the model in matrix form
 $$\begin{aligned}
-\hat{Y} &= \hat{\textbf{X}}\mathbf{b} + \hat{\mathbf{E}} \\
-\hat{Y} &= \begin{pmatrix} 
-\hat{Y}_{1} \\ \vdots \\ \hat{Y}_{N}
+\hat{y} &= \hat{\textbf{X}}\mathbf{b} + \hat{\mathbf{e}} \\
+\hat{y} &= \begin{pmatrix}
+\hat{y}_{1} \\ \vdots \\ \hat{y}_{N}
 \end{pmatrix} \quad
 \hat{\textbf{X}} = \begin{pmatrix} 
-1 & \hat{X}_{11} & ... & \hat{X}_{1K} \\
+1 & \hat{x}_{11} & ... & \hat{x}_{1K} \\
 & \vdots & & \\
-1 & \hat{X}_{n1} & ... & \hat{X}_{nK} 
+1 & \hat{x}_{n1} & ... & \hat{x}_{nK}
 \end{pmatrix}
 \end{aligned}$$
-Minimizing the squared errors: $\min_{\mathbf{b}} \hat{E}_{i}^2 = \min_{\mathbf{b}} (\hat{\mathbf{E}}' \hat{\mathbf{E}})$, yields coefficient estimates and predictions 
+Minimizing the squared errors: $\min_{\mathbf{b}} \hat{e}_{i}^2 = \min_{\mathbf{b}} (\hat{\mathbf{e}}' \hat{\mathbf{e}})$, yields coefficient estimates and predictions
 $$\begin{aligned}
-\hat{\mathbf{B}} &= (\hat{\textbf{X}}'\hat{\textbf{X}})^{-1}\hat{\textbf{X}}'\hat{Y} \\
-\hat{y} &= \hat{\textbf{X}} \hat{\mathbf{B}} \\
-\hat{\mathbf{E}} &= \hat{Y} - \hat{y}
+\hat{\mathbf{b}} &= (\hat{\textbf{X}}'\hat{\textbf{X}})^{-1}\hat{\textbf{X}}'\hat{y} \\
+\hat{y}^{\mathrm{fit}} &= \hat{\textbf{X}} \hat{\mathbf{b}} \\
+\hat{\mathbf{e}} &= \hat{y} - \hat{y}^{\mathrm{fit}}
 \end{aligned}$$
 ```{r}
-# Manually compute B_hat = (X'X)^{-1} X'Y step by step.
-Y <- USArrests[, 'Murder']
+# Manually compute b_hat = (X'X)^{-1} X'y_hat step by step.
+y_hat <- USArrests[, 'Murder']
 X <- USArrests[, c('Assault', 'UrbanPop')]
 X <- as.matrix(cbind(1, X))
 
 XtX  <- t(X) %*% X         # K+1 by K+1 cross-product
 XtXi <- solve(XtX)         # invert
-XtY  <- t(X) %*% Y          # K+1 by 1 cross-product with Y
-Bhat <- XtXi %*% XtY        # K+1 coefficient vector
-c(Bhat)
+XtY  <- t(X) %*% y_hat          # K+1 by 1 cross-product with y_hat
+b_hat <- XtXi %*% XtY        # K+1 coefficient vector
+c(b_hat)
 
 # Confirms the same answer as lm()
 coef(lm(Murder ~ Assault + UrbanPop, data=USArrests))
@@ -507,7 +507,7 @@ $$\begin{aligned}
 \mathbb{E}\left[ \mathbf{B} \right] &= \mathbb{E}\left[ (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'Y \right] = \beta + (\mathbf{X}'\mathbf{X})^{-1}\mathbb{E}\left[ \mathbf{X}'\epsilon \right] = \beta
 \end{aligned}$$
 
-If we do not know that the data generating process is additively separable and linear, then we do not know how to interpret $\hat{\mathbf{B}}$ (outside of a very mathematical expression, which I do not cover here).
+If we do not know that the data generating process is additively separable and linear, then we do not know how to interpret $\hat{\mathbf{b}}$ (outside of a very mathematical expression, which I do not cover here).
 If we run a local linear regression analysis, on the other hand, we get the estimator
 $$\begin{aligned}
 \beta(\mathbf{x}) &= [\mathbf{X}'\mathbf{K}(\mathbf{x})\mathbf{X}]^{-1} \mathbf{X}'\mathbf{K}(\mathbf{x})Y \\
@@ -636,7 +636,7 @@ The uncorrected version flags more differences; explain why, and state which ver
    For each objective, state what statistical tools you would use and what kind of evidence would be needed.
 
 3. Using the `USArrests` dataset, regress `Murder` on `Assault` and `UrbanPop`.
-   Compute $\hat{\mathbf{B}}$ both with `lm()` and manually via $(\hat{\mathbf{X}}'\hat{\mathbf{X}})^{-1}\hat{\mathbf{X}}'\hat{Y}$ using matrix operations in R.
+   Compute $\hat{\mathbf{b}}$ both with `lm()` and manually via $(\hat{\mathbf{X}}'\hat{\mathbf{X}})^{-1}\hat{\mathbf{X}}'\hat{y}$ using matrix operations in R.
    Verify that the two approaches give the same coefficients.
 
 4. Using the `wage1` dataset from the `wooldridge` package, fit a `loess` regression of `wage` on `educ` for three different span values (e.g., 0.4, 0.6, 0.8).
@@ -658,6 +658,6 @@ The uncorrected version flags more differences; explain why, and state which ver
 #### **Recall** {-}
 
 This chapter wrapped up the multivariate part with the describe/explain/predict taxonomy, prediction intervals and cross-validation, time-series filtering, the matrix form of OLS, and multiple-testing corrections.
-The matrix-OLS sense-check on `USArrests` made the algebra concrete: computing $\hat{\mathbf{B}}=(\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\hat{Y}$ step by step with `XtX <- t(X) %*% X`, `XtXi <- solve(XtX)`, and `Bhat <- XtXi %*% XtY` recovers exactly the coefficient vector that `lm(Murder ~ Assault + UrbanPop, data=USArrests)` returns.
+The matrix-OLS sense-check on `USArrests` made the algebra concrete: computing $\hat{\mathbf{b}}=(\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\hat{y}$ step by step with `XtX <- t(X) %*% X`, `XtXi <- solve(XtX)`, and `b_hat <- XtXi %*% XtY` recovers exactly the coefficient vector that `lm(Murder ~ Assault + UrbanPop, data=USArrests)` returns.
 These tools close the loop with earlier chapters: cross-validation chooses models, multiple-testing corrections discipline the search problem flagged in [Data Scientism](03_29_DataScientism.qmd), and the matrix form makes the OLS algebra of [Multiple Regression](03_23_MultipleRegression.qmd) explicit.
 The appendices that follow revisit reproducible workflows and probability theory in greater depth.

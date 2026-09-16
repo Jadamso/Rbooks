@@ -292,43 +292,44 @@ Vectors are probably your most common object in R, but we will start with scalar
 
 Make your first scalar
 ```{r}
-xs <- 2   # <1>
-xs        # <2>
+x <- 2   # <1>
+x        # <2>
 ```
-1. Assign a single number to `xs`; this is a scalar.
+1. Assign a single number to `x`; this is a scalar.
 2. Typing the object's name at the console prints its value.
 
 Perform simple calculations and see how R is doing the math for you
 ```{r}
-xs + 2
-xs*2 # Perform and print a simple calculation
-(xs+1)^2 # Perform and print a simple calculation
-xs + NA # often used for missing values
+x + 2
+x*2 # Perform and print a simple calculation
+(x+1)^2 # Perform and print a simple calculation
+x + NA # often used for missing values
 ```
 
-Now change `xs`, predict what will happen, then re-run the code.
+Now change `x`, predict what will happen, then re-run the code.
 
 #### **Vectors** {-}
 
 Make your first vector
+The name `x_hat` will identify sample values throughout the book.
 ```{r}
-x <- c(0, 1, 3, 10, 6)   # <1>
-x                        # <2>
-x[2]                     # <3>
-x + 2                    # <4>
-x*2                      # <4>
-x^2                      # <4>
+x_hat <- c(0, 1, 3, 10, 6)   # <1>
+x_hat                        # <2>
+x_hat[2]                     # <3>
+x_hat + 2                    # <4>
+x_hat*2                      # <4>
+x_hat^2                      # <4>
 ```
 1. Combine values into a vector with `c()`.
 2. Print the whole vector.
 3. Use square brackets `[ ]` to extract the 2nd element.
-4. Arithmetic is applied elementwise to each entry of `x`.
+4. Arithmetic is applied elementwise to each entry of `x_hat`.
 
 Apply mathematical calculations elementwise
 ```{r}
-x+x
-x*x
-x^x
+x_hat+x_hat
+x_hat*x_hat
+x_hat^x_hat
 ```
 
 In R, scalars are treated as a vector with one element.
@@ -341,9 +342,9 @@ c(1)
 
 Matrices are also common objects
 ```{r}
-x1 <- c(1, 4, 9)              # <1>
-x2 <- c(3, 0, 2)              # <1>
-x_mat <- rbind(x1, x2)        # <2>
+x1_hat <- c(1, 4, 9)              # <1>
+x2_hat <- c(3, 0, 2)              # <1>
+x_mat <- rbind(x1_hat, x2_hat)        # <2>
 
 x_mat                         # <3>
 x_mat[2,  ]                   # <4>
@@ -371,27 +372,19 @@ x_mat * x_mat
 
 ## Mathematical Functions
 
-#### **Functions** {-}
-
-Calculations you find yourself doing again and again deserve a single name and a single place to live.
-
-A *function* is a named recipe that takes input values (called arguments), performs a calculation, and returns an output.
-
-Functions are useful for any calculation you intend to reuse: define the recipe once, and a single edit to the recipe propagates to every call.
-Naming the calculation also makes scripts easier to read, since a well-chosen function name documents what the code is doing.
-
-
-#### **Common Functions** {-}
+A *function* is a named recipe that takes input objects, performs a calculation, and returns an output.
 
 Perhaps the most common function we will use is summation.
 You can see exactly what a function does with `?`.
 
 ```{r}
-x <- c(1, 10, 4)            # <1>
-x
-sum(x)                      # <2>
+x_hat <- c(1, 10, 4)            # <1>
+x_hat
+sum(x_hat)                      # <2>
 # ?sum                      # <3>
-mean(x)
+
+mean(x_hat)
+max(x_hat)
 ```
 1. A vector with three entries.
 2. `sum()` adds the entries of a vector.
@@ -403,23 +396,23 @@ An *indicator function* $\mathbf{1}(\cdot)$ takes a logical statement and return
 :::
 
 Summing an indicator counts how many observations satisfy the condition. 
-For example, $\sum_{i=1}^{n}\mathbf{1}\left(\hat{X}_{i}=x\right)$ counts the number of observations equal to $x$.
+For example, $\sum_{i=1}^{n}\mathbf{1}\left(\hat{x}_{i}=x\right)$ counts the number of observations equal to $x$.
 
 ```{r}
-1*(x == 4)                # <1>
-sum(x == 4, na.rm=TRUE)   # <2>
-mean(x == 4, na.rm=TRUE)  # <3>
+1*(x_hat == 4)                # <1>
+sum(x_hat == 4, na.rm=TRUE)   # <2>
+mean(x_hat == 4, na.rm=TRUE)  # <3>
 ```
-1. Multiplying by `1` converts `TRUE` to `1` and `FALSE` to `0`; this is the indicator function $\mathbf{1}(\hat{X}_{i}=4)$ applied.
+1. Multiplying by `1` converts `TRUE` to `1` and `FALSE` to `0`; this is the indicator function $\mathbf{1}(\hat{x}_{i}=4)$ applied.
 2. Summing an indicator counts how many entries equal `4`.
 3. Averaging an indicator gives the proportion of entries that equal `4`; `na.rm=TRUE` drops the missing value first.
 
 Sometimes, we will use vectors that are entirely ordered.
 ```{r}
-x
-order(x)
-x[order(x)]
-sort(x, na.last=TRUE)
+x_hat
+order(x_hat)
+x_hat[order(x_hat)]
+sort(x_hat, na.last=TRUE)
 ```
 
 We can also make ordered vectors with functions.
@@ -428,13 +421,174 @@ seq(1, 7, by=1) #same as 1:7
 seq(1, 7, by=0.5)
 ```
 
+
+#### **Loops** {-}
+
+Sometimes the same calculation must be performed on many inputs, with each result depending on the previous one or stored alongside the others.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *loop* repeats the same block of code several times.
+A `for` loop runs the block once for each value of an index variable.
+We typically pre-allocate a vector to hold the results, then fill one entry per pass.
+:::
+
+Loops are useful when each iteration depends on the previous one (recursion) or when you want to perform a sequence of operations whose order matters; for purely elementwise calculations, vectorized arithmetic on a single vector is usually faster and cleaner.
+
+Applying the same function over and over again
+```{r}
+# Example 1: simple division
+x_hat <- rep(NA, 3)              # <1>
+x_hat
+for(i in seq(1, 3)){         # <2>
+    x_hat[i] <- i/2              # <3>
+}
+x_hat                            # <4>
+
+
+# Example 2: using existing data
+x_hat <- c(1, 3, 9, 2)
+y_hat <- rep(NA, length(x_hat))
+for(i in seq(1, 4) ){
+    y_hat[i] <- x_hat[i] + 1
+}
+y_hat
+
+
+#Example 3: recursion
+x_hat <- rep(NA, 4)
+x_hat[1] <- 1
+for(i in seq(2, 4) ){
+    x_hat[i] <- x_hat[i-1]^2
+}
+x_hat
+```
+1. Pre-allocate a length-3 vector of `NA`s to hold the results.
+2. Loop with `i` taking the values `1, 2, 3` in turn.
+3. On each pass, assign a value into the `i`-th slot of `x_hat`.
+4. Print the filled-in vector.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Predict the value of `y_hat` after this loop runs, then check your answer in R.
+```{r}
+y_hat <- rep(NA, 4)
+y_hat[1] <- 2
+for(i in seq(2, 4)){
+    y_hat[i] <- y_hat[i-1] + 3
+}
+y_hat
+```
+:::
+
+
+#### **Creating Functions** {-}
+
+Functions are useful for any calculation you intend to reuse: define the recipe once, and a single edit to the recipe propagates to every call.
+Naming the calculation also makes scripts easier to read, since a well-chosen function name documents what the code is doing.
+
+```{r}
+add_two <- function(input) {     # <1>
+    output <- input + 2          # <2>
+    return(output)               # <3>
+}
+x_hat <- c(0, 1, 3, 10, 6)           # <4>
+add_two(input=x_hat)                 # <5>
+```
+1. Declare a function with one argument; `input` is a placeholder name.
+2. Compute the result; `output` exists only inside the function.
+3. Hand the result back to whoever called the function.
+4. Build a vector to feed in.
+5. Call the function; `add_two(x_hat)` works the same as naming the argument.
+
+Common mistakes:
+```{r, eval=FALSE}
+print(input)
+print(output)
+# These are not available globally, only locally (inside of the function)
+
+# Double check typos
+x_hat  < - add_two(Input=X_hat)
+
+# Seeing '+' in the bottom console
+# often means you forgot to close the function with '}' 
+# click the bottom left panel, press 'Escape', and try again in the top left panel
+add_two <- function(input_vector) { 
+    output_vector <- input_vector + 2 
+    return(output_vector)
+x_hat <- c(0, 1, 3, 10, 6)
+add_two(x_hat)
+```
+
+There are many different functions.
+Many of which functions have defaults.
+```{r}
+add_scalar <- function(input_vector1, input_scalar2) {
+    output_vector <- input_vector1 + input_scalar2
+    return(output_vector)
+}
+add_scalar(x_hat, 3)
+add_scalar(x_hat, 4)
+
+add_scalar3 <- function(input_vector1, input_scalar2=3) {
+    output_vector <- input_vector1 + input_scalar2
+    return(output_vector)
+}
+add_scalar3(x_hat)
+add_scalar3(x_hat, 4)
+```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+A function lets you name a calculation once and then reuse it.
+Here is one that computes the *range* of a vector: the largest value minus the smallest.
+```{r}
+my_range <- function(input) {
+    output <- max(input) - min(input)
+    return(output)
+}
+x_hat <- c(0, 1, 3, 10, 6)
+my_range(x_hat)
+```
+:::
+
+
+#### **Logic** {-}
+
+Calculations that are either `TRUE` or `FALSE`
+```{r}
+x_hat <- c(1, 2, 3, NA)   # <1>
+
+x_hat == 2                # <2>
+any(x_hat==2)             # <3>
+all(x_hat==2)             # <4>
+2 %in% x_hat              # <5>
+is.na(x_hat)              # <6>
+```
+1. A vector with a missing value (`NA`).
+2. `==` tests each entry for equality; returns a vector of `TRUE`/`FALSE`.
+3. `any()` returns `TRUE` if at least one entry of its input is `TRUE`.
+4. `all()` returns `TRUE` only if every entry is `TRUE`.
+5. `%in%` checks whether the left value appears anywhere on the right.
+6. `is.na()` flags the missing entries.
+
+
+The `&` and `|` commands are logical calculations that compare vectors to the left and right.
+```{r}
+x_hat <- c(1, 2, 3, NA)
+
+x_hat < 2
+x_hat >= 1
+(x_hat >= 1) & (x_hat < 2)
+(x_hat >= 1) | (x_hat < 2)
+```
+
+
+
 #### **Functions for Matrices** {-}
 
 You can apply functions to all matrix elements
 ```{r}
-x1 <- c(1, 4, 10) 
-x2 <- c(3, 0, 2)
-x_mat <- rbind(x1, x2)
+x1_hat <- c(1, 4, 10)
+x2_hat <- c(3, 0, 2)
+x_mat <- rbind(x1_hat, x2_hat)
 x_mat
 sum(x_mat)                  # <1>
 ```
@@ -462,164 +616,6 @@ y_col
 
 
 
-
-
-#### **Creating Simple Functions** {-}
-
-*Functions* are applied to objects
-```{r}
-add_two <- function(input) {     # <1>
-    output <- input + 2          # <2>
-    return(output)               # <3>
-}
-x <- c(0, 1, 3, 10, 6)           # <4>
-add_two(input=x)                 # <5>
-```
-1. Declare a function with one argument; `input` is a placeholder name.
-2. Compute the result; `output` exists only inside the function.
-3. Hand the result back to whoever called the function.
-4. Build a vector to feed in.
-5. Call the function; `add_two(x)` works the same as naming the argument.
-
-Common mistakes:
-```{r, eval=FALSE}
-print(input)
-print(output)
-# These are not available globally, only locally (inside of the function)
-
-# Double check typos
-x  < - add_two(Input=X) 
-
-# Seeing '+' in the bottom console
-# often means you forgot to close the function with '}' 
-# click the bottom left panel, press 'Escape', and try again in the top left panel
-add_two <- function(input_vector) { 
-    output_vector <- input_vector + 2 
-    return(output_vector)
-x <- c(0, 1, 3, 10, 6)
-add_two(x)
-```
-
-There are many different functions.
-Many of which functions have defaults.
-```{r}
-add_scalar <- function(input_vector1, input_scalar2) {
-    output_vector <- input_vector1 + input_scalar2
-    return(output_vector)
-}
-add_scalar(x, 3)
-add_scalar(x, 4)
-
-add_scalar3 <- function(input_vector1, input_scalar2=3) {
-    output_vector <- input_vector1 + input_scalar2
-    return(output_vector)
-}
-add_scalar3(x)
-add_scalar3(x, 4)
-```
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-A function lets you name a calculation once and then reuse it.
-Here is one that computes the *range* of a vector: the largest value minus the smallest.
-```{r}
-my_range <- function(input) {
-    output <- max(input) - min(input)
-    return(output)
-}
-x <- c(0, 1, 3, 10, 6)
-my_range(x)
-```
-:::
-
-
-#### **Loops** {-}
-
-Sometimes the same calculation must be performed on many inputs, with each result depending on the previous one or stored alongside the others.
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
-A *loop* repeats the same block of code several times.
-A `for` loop runs the block once for each value of an index variable.
-We typically pre-allocate a vector to hold the results, then fill one entry per pass.
-:::
-
-Loops are useful when each iteration depends on the previous one (recursion) or when you want to perform a sequence of operations whose order matters; for purely elementwise calculations, vectorized arithmetic on a single vector is usually faster and cleaner.
-
-Applying the same function over and over again
-```{r}
-# Example 1: simple division
-x <- rep(NA, 3)              # <1>
-x
-for(i in seq(1, 3)){         # <2>
-    x[i] <- i/2              # <3>
-}
-x                            # <4>
-
-
-# Example 2: using existing data
-x <- c(1, 3, 9, 2)
-y <- rep(NA, length(x))
-for(i in seq(1, 4) ){
-    y[i] <- x[i] + 1
-}
-y
-
-
-#Example 3: recursion
-x <- rep(NA, 4)
-x[1] <- 1
-for(i in seq(2, 4) ){
-    x[i] <- x[i-1]^2
-}
-x
-```
-1. Pre-allocate a length-3 vector of `NA`s to hold the results.
-2. Loop with `i` taking the values `1, 2, 3` in turn.
-3. On each pass, assign a value into the `i`-th slot of `x`.
-4. Print the filled-in vector.
-
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Predict the value of `y` after this loop runs, then check your answer in R.
-```{r}
-y <- rep(NA, 4)
-y[1] <- 2
-for(i in seq(2, 4)){
-    y[i] <- y[i-1] + 3
-}
-y
-```
-:::
-
-
-#### **Logic** {-}
-
-Calculations that are either `TRUE` or `FALSE`
-```{r}
-x <- c(1, 2, 3, NA)   # <1>
-
-x == 2                # <2>
-any(x==2)             # <3>
-all(x==2)             # <4>
-2 %in% x              # <5>
-is.na(x)              # <6>
-```
-1. A vector with a missing value (`NA`).
-2. `==` tests each entry for equality; returns a vector of `TRUE`/`FALSE`.
-3. `any()` returns `TRUE` if at least one entry of its input is `TRUE`.
-4. `all()` returns `TRUE` only if every entry is `TRUE`.
-5. `%in%` checks whether the left value appears anywhere on the right.
-6. `is.na()` flags the missing entries.
-
-
-The `&` and `|` commands are logical calculations that compare vectors to the left and right.
-```{r}
-x <- c(1, 2, 3, NA) 
-
-x < 2
-x >= 1
-(x >= 1) & (x < 2)
-(x >= 1) | (x < 2)
-```
-
 ## Working with AI
 
 An AI assistant is a normal part of writing code now, and this book suggests one order for using one: you attempt the task first, and the assistant then evaluates what you produced.
@@ -638,12 +634,13 @@ The full workflow, along with the prompts, the notes on what to upload, and a wo
 2. Explain the difference between *replicable* and *reproducible* research.
    Why is programming your analysis in R better for reproducibility than a point-and-click approach?
 
-3. Let `x <- c(2, 5, 8, 3, 7)`.
-   Without running the code, predict the output of `sum(x) / length(x)`, then verify in R.
-   Next, use `sort(x)` and extract the second element of the sorted vector with bracket indexing.
+3. Let `x_hat <- c(2, 5, 8, 3, 7)`.
+   Without running the code, predict the output of `sum(x_hat) / length(x_hat)`, then verify in R.
+   Next, use `sort(x_hat)` and extract the second element of the sorted vector with bracket indexing.
 
 4. Write a function called `square_plus` that takes a vector and a scalar as inputs, squares each element of the vector, and then adds the scalar.
-   Test it on `x <- c(1, 4, 9)` with a scalar of 5. Confirm your result by computing the answer manually.
+   Test it on `x_hat <- c(1, 4, 9)` with a scalar of 5.
+   Confirm your result by computing the answer manually.
 
 #### **Further Reading** {-}
 
@@ -654,5 +651,5 @@ The full workflow, along with the prompts, the notes on what to upload, and a wo
 #### **Recall** {-}
 
 This chapter introduced the R environment, the three basic objects (*scalars*, *vectors*, *matrices*), and the tools to manipulate them: *functions*, `for` *loops*, and logical comparisons.
-The `my_range` function in the *Must Know* box compressed the function pattern into four lines (take a vector input, compute `max(input) - min(input)`, return the result), and applying it to `x <- c(0, 1, 3, 10, 6)` returned $10$.
+The `my_range` function in the *Must Know* box compressed the function pattern into four lines (take a vector input, compute `max(input) - min(input)`, return the result), and applying it to `x_hat <- c(0, 1, 3, 10, 6)` returned $10$.
 In the next chapter we use these tools to read real datasets into R and to visualize the distribution of a single variable.

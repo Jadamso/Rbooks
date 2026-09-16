@@ -23,8 +23,9 @@ A *two-sided hypothesis test* covers deviations from the null in either directio
 :::
 
 This setup is useful because it forces a single direction of inference: the data either contradict $H_{0}$ enough to reject it, or they do not, but in no case do they "prove" $H_{A}$.
-The most common test concerns the mean, $H_{0}: \mu = \mu_{0}$, where $\mu_{0}$ is a hypothesized value, and the alternative values are $\mu \neq \mu_{0}$.
-E.g., you hypothesize your stock-retruns have earnings $\mu_{0}=0$ and consider that the returns could truly be either positive or negative.
+The most common test concerns the mean, $H_{0}: \mathbb{E}[X_i] = m_0$, where $m_0$ is a hypothesized value.
+The two-sided alternative is $H_A: \mathbb{E}[X_i] \neq m_0$.
+E.g., you hypothesize your stock-retruns have earnings $m_0=0$ and consider that the returns could truly be either positive or negative.
 
 
 #### **Invert a CI** {-}
@@ -49,28 +50,26 @@ You then construct a bootstrap distribution with $95\%$ confidence interval, and
 Then, after accounting for sampling variability (which you estimate), it still seems extremely unlikely that the theoretical mean actually equals $9$, so you reject that hypothesis.
 (If the theoretical value landed in the interval, you would "fail to reject" the theoretical mean equals $9$.)
 ```{r}
-sample_dat <- USArrests[, 'Murder']
-sample_mean <- mean(sample_dat)
+x_hat <- USArrests[, 'Murder']
+m_hat <- mean(x_hat)
 
 # Bootstrap Distribution
-n <- length(sample_dat)
+n <- length(x_hat)
 set.seed(1) # to be replicable
-bootstrap_means <- rep(NA, 999)
-for(b in seq_along(bootstrap_means)){
-    dat_id <- seq_along(sample_dat)
-    boot_id <- sample(dat_id, replace=TRUE)
-    dat_b <- sample_dat[boot_id] # c.f. jackknife
-    mean_b <- mean(dat_b)
-    bootstrap_means[b] <- mean_b
+boot_means <- rep(NA, 999)
+for(b in seq_along(boot_means)){
+    x_boot <- sample(x_hat, replace=TRUE) # c.f. jackknife
+    m_b_hat <- mean(x_boot)
+    boot_means[b] <- m_b_hat
 }
 
-hist(bootstrap_means, breaks=25,
+hist(boot_means, breaks=25,
     border=NA,
     freq=FALSE,
     main=NA,
     xlab='Bootstrap Samples')
 # CI
-ci_95 <- quantile(bootstrap_means, probs=c(.025, .975))
+ci_95 <- quantile(boot_means, probs=c(.025, .975))
 abline(v=ci_95, lwd=2)
 # H0: mean=9
 abline(v=9, col=rgb(1, 0, 0, .8), lwd=2)
@@ -85,26 +84,26 @@ E.g., you can conduct hypothesis tests for `sd` and `IQR`, or `skew` and `kurtos
 
 ```{r}
 # Bootstrap Distribution for SD
-sd_obs <- sd(sample_dat)
-bootstrap_sd <- rep(NA, 999)
-for(b in seq_along(bootstrap_sd)){
-    x_b <- sample(sample_dat, replace=TRUE)
-    sd_b <- sd(x_b)
-    bootstrap_sd[b] <- sd_b
+s_hat <- sd(x_hat)
+boot_sds <- rep(NA, 999)
+for(b in seq_along(boot_sds)){
+    x_boot <- sample(x_hat, replace=TRUE)
+    s_b_hat <- sd(x_boot)
+    boot_sds[b] <- s_b_hat
 }
 
 # Test for SD Differences (Invert CI)
 sd_null <- 3.6
-hist(bootstrap_sd, freq=FALSE,
+hist(boot_sds, freq=FALSE,
     border=NA, xlab='Bootstrap',
     main=NA)
 title('Standard Deviations (Invert CI)', font.main=1)
-sd_ci <- quantile(bootstrap_sd, probs=c(0.025, .975) )
+sd_ci <- quantile(boot_sds, probs=c(0.025, .975) )
 abline(v=sd_ci, lwd=2)
 abline(v=sd_null, lwd=2, col=rgb(1, 0, 0, .8))
 ```
 
-To better your understanding, try redoing the above for any function (such as `IQR(x_b)/median(x_b)`)
+To better your understanding, try redoing the above for any function (such as `IQR(x_boot)/median(x_boot)`)
 :::
 
 :::{.callout-note icon=false collapse="false" title="Must Know"}
@@ -125,16 +124,16 @@ outcomes <- c(rep(1, n_correct), rep(0, n_questions - n_correct)) # 1=correct, 0
 
 # Bootstrap Distribution for the proportion correct
 set.seed(1)
-bootstrap_props <- rep(NA, 999)
-for(b in seq_along(bootstrap_props)){
-    outcomes_b <- sample(outcomes, replace=TRUE)
-    bootstrap_props[b] <- mean(outcomes_b)
+boot_props <- rep(NA, 999)
+for(b in seq_along(boot_props)){
+    x_boot <- sample(outcomes, replace=TRUE)
+    boot_props[b] <- mean(x_boot)
 }
 
-hist(bootstrap_props, breaks=25,
+hist(boot_props, breaks=25,
     border=NA, freq=FALSE,
     main=NA, xlab='Bootstrap Proportion Correct')
-ci_95 <- quantile(bootstrap_props, probs=c(.025, .975))
+ci_95 <- quantile(boot_props, probs=c(.025, .975))
 abline(v=ci_95, lwd=2)
 abline(v=c(.70, .85), col=rgb(1, 0, 0, .8), lwd=2, lty=c(2, 1))
 ```
@@ -162,39 +161,39 @@ If your sample mean falls outside of that interval, then even after accounting f
 (If the sample mean landed in the interval, you would "fail to reject" the theoretical mean equals $9$.)
 
 ```{r}
-sample_dat <- USArrests[, 'Murder']
-sample_mean <- mean(sample_dat)
+x_hat <- USArrests[, 'Murder']
+m_hat <- mean(x_hat)
 
 # Bootstrap NULL: mean=9
 # Bootstrap shift: center each bootstrap resample so that the distribution satisfies the null hypothesis on average.
 set.seed(1)
-mu <- 9
-bootstrap_means_null <- rep(NA, 999)
-for(b in seq_along(bootstrap_means_null)){
-    dat_b <- sample(sample_dat, replace=TRUE)
-    mean_b <- mean(dat_b) + (mu - sample_mean) # impose the null via Bootstrap shift
-    bootstrap_means_null[b] <- mean_b
+null_mean <- 9
+boot_means_null <- rep(NA, 999)
+for(b in seq_along(boot_means_null)){
+    x_boot <- sample(x_hat, replace=TRUE)
+    m_b_hat <- mean(x_boot) + (null_mean - m_hat) # impose the null via Bootstrap shift
+    boot_means_null[b] <- m_b_hat
 }
-hist(bootstrap_means_null, breaks=25, border=NA, freq=FALSE,
+hist(boot_means_null, breaks=25, border=NA, freq=FALSE,
     main=NA,
     xlab='Null Bootstrap Samples')
-ci_95 <- quantile(bootstrap_means_null, probs=c(.025, .975)) # critical region
+ci_95 <- quantile(boot_means_null, probs=c(.025, .975)) # critical region
 abline(v=ci_95, lwd=2)
-abline(v=sample_mean, lwd=2, col=rgb(0, 0, 1, .8))
+abline(v=m_hat, lwd=2, col=rgb(0, 0, 1, .8))
 ```
 :::
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Why does adding $(\mu - \hat{M})$ impose the null?
-A bootstrap resample of the data has a mean that varies around the sample mean $\hat{M}$, not around the hypothesized $\mu$.
-Adding the constant $(\mu - \hat{M})$ slides the whole resampling distribution over so it is centered at $\mu$ instead.
+Why does adding $(m_0 - \hat{m})$ impose the null?
+A bootstrap resample of the data has a mean that varies around the sample mean $\hat{m}$, not around the hypothesized $m_0$.
+Adding the constant $(m_0 - \hat{m})$ slides the whole resampling distribution over so it is centered at $m_0$ instead.
 A shift moves the center but leaves the spread and shape unchanged, so the result is a sampling distribution with the null mean and the same variability as the data.
 :::
 
 
 
 
-The Normal approximation from the previous chapter can also impose the null: center the interval at the hypothesized value $\mu$ and use $\mu \pm q(\alpha/2) \cdot SE(M)$, where $SE(M)$ is estimated via bootstrap or classical formulas.
+The Normal approximation from the previous chapter can also impose the null: center the interval at the hypothesized value $m_0$ and use $m_0 \pm q(\alpha/2) \cdot SE(M)$, where $SE(M)$ is estimated via bootstrap or classical formulas.
 (While we could also use a Null Jackknife distribution, that is rarely done in practice.)
 Altogether, there are two different types of confidence intervals that "impose the null".
 Until you know more, a conservative rule-of-thumb is to take the larger estimate.
@@ -218,65 +217,67 @@ The $p$-value is *not* the probability that the null is true.
 :::
 
 The $p$-value is useful as a *continuous summary* of how strongly the data oppose the null, whereas a confidence interval gives only a yes/no answer at a fixed coverage level.
-For the running mean example, we want the probability that the random variable $M$ is at least as extreme (far from the null mean of $9$) as our observed sample mean $\hat{M}$.
+For the running mean example, we want the probability that the random variable $M$ is at least as extreme (far from the null mean of $9$) as our observed sample mean $\hat{m}$.
 
 Recall that we used the bootstrap to estimate the distribution of the sample statistic like the mean, and the null-bootstrap shifted the bootstrap to be centered at a hypothesized value.
-The bootstrap idea here is to approximate $M-\mu$, the difference between the sample mean $M$ and the unknown theoretical mean $\mu$, with the null-bootstrap analogue $M^{\text{boot}}_{0}-\mu$, where $M^{\text{boot}}_{0}=M^{\text{boot}}+(\mu-\hat{M})$ is the recentered bootstrap mean.
+The bootstrap idea here is to approximate $M-\mathbb{E}[X_i]$, the difference between the sample mean $M$ and the unknown theoretical mean $\mathbb{E}[X_i]$, with $M^{\text{boot}}-\hat{m}$.
+To test $H_0: \mathbb{E}[X_i]=m_0$, we recenter the bootstrap mean as $M^{\text{boot}}_{0}=M^{\text{boot}}+(m_0-\hat{m})$, so $M^{\text{boot}}_{0}-m_0=M^{\text{boot}}-\hat{m}$.
+For the running example, $m_0=9$.
 $$\begin{aligned}
-&  Prob( |M - \mu| \geq |\hat{M} - \mu| \mid \mu = 9 ) \\
-&  \approx Prob( |M^{\text{boot}}_{0}- \mu| \geq |\hat{M}- \mu|  \mid \mu = 9) \\
-&  = 1-\hat{F}^{|\text{boot}|}_{0}(|\hat{M}-9|),
+&  Prob( |M - m_0| \geq |\hat{m} - m_0| \mid \mathbb{E}[X_i] = m_0 ) \\
+&  \approx Prob( |M^{\text{boot}}_{0}- m_0| \geq |\hat{m}- m_0| ) \\
+&  = 1-\hat{F}^{|\text{boot}|}_{0}(|\hat{m}-9|),
 \end{aligned}$$
-where $\hat{F}^{|\text{boot}|}_{0}$ is the ECDF of $|M^{\text{boot}}_{0}- \mu|$.
+where $\hat{F}^{|\text{boot}|}_{0}$ is the ECDF of $|M^{\text{boot}}_{0}- m_0|$.
 
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 (Repeating the null bootstrap from above for reference.)
 
 ```{r}
-sample_dat <- USArrests[, 'Murder']
-sample_mean <- mean(sample_dat)
+x_hat <- USArrests[, 'Murder']
+m_hat <- mean(x_hat)
 
 set.seed(1)
 # Bootstrap NULL: mean=9
 # Bootstrap shift: center each bootstrap resample so that the distribution satisfies the null hypothesis on average.
-mu <- 9
-bootstrap_means_null <- rep(NA, 999)
-for(b in seq_along(bootstrap_means_null)){
-    dat_b <- sample(sample_dat, replace=TRUE)
-    mean_b <- mean(dat_b) + (mu - sample_mean) # impose the null via Bootstrap shift
-    bootstrap_means_null[b] <- mean_b
+null_mean <- 9
+boot_means_null <- rep(NA, 999)
+for(b in seq_along(boot_means_null)){
+    x_boot <- sample(x_hat, replace=TRUE)
+    m_b_hat <- mean(x_boot) + (null_mean - m_hat) # impose the null via Bootstrap shift
+    boot_means_null[b] <- m_b_hat
 }
-hist(bootstrap_means_null, breaks=25, border=NA, freq=FALSE,
+hist(boot_means_null, breaks=25, border=NA, freq=FALSE,
     main=NA,
     xlab='Null Bootstrap Samples')
-ci_95 <- quantile(bootstrap_means_null, probs=c(.025, .975)) # critical region
+ci_95 <- quantile(boot_means_null, probs=c(.025, .975)) # critical region
 abline(v=ci_95, lwd=2)
-abline(v=sample_mean, lwd=2, col=rgb(0, 0, 1, .8))
+abline(v=m_hat, lwd=2, col=rgb(0, 0, 1, .8))
 ```
 
 ```{r}
 # Two-Sided Test, ALTERNATIVE: mean < 9 or mean >9
 # Visualize Two Sided Prob. & reject region boundary
 par(mfrow=c(1, 2))
-hist(bootstrap_means_null-mu,
+hist(boot_means_null-null_mean,
     freq=FALSE, breaks=20,
     border=NA,
     main=NA,
-    xlab=expression('Null Bootstrap for M - '~mu))
-abline(v=sample_mean-mu, col=rgb(0, 0, 1, .8))
-ci_95 <- quantile(bootstrap_means_null-mu, probs=c(0.025, .975))
+    xlab=expression('Null Bootstrap for M - '~m[0]))
+abline(v=m_hat-null_mean, col=rgb(0, 0, 1, .8))
+ci_95 <- quantile(boot_means_null-null_mean, probs=c(0.025, .975))
 abline(v=ci_95, lwd=2)
 
 # Equivalent Visualization
-boot_absval <- abs(bootstrap_means_null-mu)
-Fhat_abs0 <- ecdf(boot_absval)
-plot(Fhat_abs0,
+boot_absval <- abs(boot_means_null-null_mean)
+F_hat <- ecdf(boot_absval)
+plot(F_hat,
     main=NA,
-    xlab=expression('Null Bootstrap for |M - '~mu~'|'))
-abline(v=abs(sample_mean-mu), col=rgb(0, 0, 1, .8))
+    xlab=expression('Null Bootstrap for |M - '~m[0]~'|'))
+abline(v=abs(m_hat-null_mean), col=rgb(0, 0, 1, .8))
 # with Two Sided Probability
-p2 <- 1 - Fhat_abs0( abs(sample_mean-mu) )
+p2 <- 1 - F_hat( abs(m_hat-null_mean) )
 title( paste0('p=', round(p2, 3)), font.main=1)
 ```
 :::
@@ -289,28 +290,28 @@ Imposing the null shifts the bootstrap distribution of the proportion correct so
 n_questions <- 44
 n_correct <- 34
 outcomes <- c(rep(1, n_correct), rep(0, n_questions - n_correct))
-sample_phat <- mean(outcomes)
+p_hat <- mean(outcomes)
 
 set.seed(1)
 # Bootstrap NULL: p=0.85
 # Bootstrap shift: center each bootstrap resample so that the distribution satisfies the null hypothesis on average.
 p0 <- 0.85
-bootstrap_props_null <- rep(NA, 999)
-for(b in seq_along(bootstrap_props_null)){
-    outcomes_b <- sample(outcomes, replace=TRUE)
-    bootstrap_props_null[b] <- mean(outcomes_b) + (p0 - sample_phat) # impose the null via Bootstrap shift
+boot_props_null <- rep(NA, 999)
+for(b in seq_along(boot_props_null)){
+    x_boot <- sample(outcomes, replace=TRUE)
+    boot_props_null[b] <- mean(x_boot) + (p0 - p_hat) # impose the null via Bootstrap shift
 }
 
 # Two-Sided p-value
-boot_absval <- abs(bootstrap_props_null - p0)
-Fhat_abs0 <- ecdf(boot_absval)
-p2 <- 1 - Fhat_abs0( abs(sample_phat - p0) )
+boot_absval <- abs(boot_props_null - p0)
+F_hat <- ecdf(boot_absval)
+p2 <- 1 - F_hat( abs(p_hat - p0) )
 
-hist(bootstrap_props_null, breaks=25, border=NA, freq=FALSE,
+hist(boot_props_null, breaks=25, border=NA, freq=FALSE,
     main=NA, xlab='Null Bootstrap Proportion (H0: p=0.85)')
-ci_95 <- quantile(bootstrap_props_null, probs=c(.025, .975))
+ci_95 <- quantile(boot_props_null, probs=c(.025, .975))
 abline(v=ci_95, lwd=2)
-abline(v=sample_phat, lwd=2, col=rgb(0, 0, 1, .8))
+abline(v=p_hat, lwd=2, col=rgb(0, 0, 1, .8))
 title( paste0('p=', round(p2, 3)), font.main=1)
 ```
 
@@ -356,14 +357,14 @@ Given that the $5\%$ level is somewhat arbitrary, and that the $p$-value both va
 ```{r}
 p_values <- rep(NA, 300)
 for(b2 in seq(p_values)){
-    bootstrap_means_null_p <- rep(NA, 999)
-    for(b in seq_along(bootstrap_means_null_p)){
-        dat_b <- sample(sample_dat, replace=TRUE)
-        mean_b <- mean(dat_b) + (mu - sample_mean) # impose the null
-        bootstrap_means_null_p[b] <- mean_b
+    boot_means_null_p <- rep(NA, 999)
+    for(b in seq_along(boot_means_null_p)){
+        x_boot <- sample(x_hat, replace=TRUE)
+        m_b_hat <- mean(x_boot) + (null_mean - m_hat) # impose the null
+        boot_means_null_p[b] <- m_b_hat
     }
-    Fhat_abs0 <- ecdf( abs(bootstrap_means_null_p-mu) )
-    p2 <- 1- Fhat_abs0( abs(sample_mean-mu) )
+    F_hat <- ecdf( abs(boot_means_null_p-null_mean) )
+    p2 <- 1- F_hat( abs(m_hat-null_mean) )
     p_values[b2] <- p2
 }
 
@@ -375,66 +376,66 @@ hist(p_values, freq=FALSE,
 
 #### **$t$-values** {-}
 
-Different studies have different $SE(M)$, so the raw difference $\hat{M} - \mu$ is hard to compare across studies; we need to express the deviation in standard-error units.
+Different studies have different $SE(M)$, so the raw difference $\hat{m} - m_0$ is hard to compare across studies; we need to express the deviation in standard-error units.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *$t$-value* (or $t$-statistic) standardizes the deviation of $\hat{M}$ from the hypothesized $\mu$ by the standard error,
-$$t = \frac{M - \mu}{SE(M)}.$$
+The *$t$-value* (or $t$-statistic) standardizes the deviation of $\hat{m}$ from the hypothesized $m_0$ by the standard error,
+$$t = \frac{M - m_0}{SE(M)}.$$
 Using a standardized statistic makes results comparable across studies and connects to a well-studied reference distribution (Normal in large samples, Student's $t$ in small).
 :::
 
 The $t$-value is useful as a portable *test statistic*: a $t$ of $2.05$ has roughly the same evidentiary weight whether the underlying data are measured in dollars, hours, or grams, because the units cancel between numerator and denominator.
 For any specific sample we must approximate the standard error.
-Using the theory-driven approach, we compute $\hat{t}=(\hat{M}-\mu)/(\hat{S}/\sqrt{n})$.
-Using the data-driven approach, we compute $\hat{t}=(\hat{M}-\mu)/(\hat{SE}^{\text{jack}})$ or $\hat{t}=(\hat{M}-\mu)/(\hat{SE}^{\text{boot}})$.
+Using the theory-driven approach, we compute $\hat{t}=(\hat{m}-m_0)/(\hat{s}/\sqrt{n})$.
+Using the data-driven approach, we compute $\hat{t}=(\hat{m}-m_0)/(\hat{SE}^{\text{jack}})$ or $\hat{t}=(\hat{m}-m_0)/(\hat{SE}^{\text{boot}})$.
 In any case, we can use bootstrapping to estimate the variability of the $t$ statistic, just like we did with the mean.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 
 ```{r}
 #null hypothesis
-mu <- 9
+null_mean <- 9
 
 # t statistic
-jackknife_means <- rep(NA, length(sample_dat))
-for(i in seq_along(jackknife_means)){
-    dat_i <- sample_dat[-i]
-    jackknife_means[i] <- mean(dat_i)
+jack_means <- rep(NA, length(x_hat))
+for(i in seq_along(jack_means)){
+    x_jack <- x_hat[-i]
+    jack_means[i] <- mean(x_jack)
 }
-jackknife_se <- sd(jackknife_means)*sqrt(length(sample_dat))
-sample_t <- (sample_mean - mu)/jackknife_se
+jackknife_se <- sd(jack_means)*sqrt(length(x_hat))
+t_hat <- (m_hat - null_mean)/jackknife_se
 
 # Boostrap Null Distribution
-bootstrap_t_null <- rep(NA, 999)
-for(b in seq_along(bootstrap_t_null)){
-    dat_b <- sample(sample_dat, replace=TRUE)
-    mean_b <- mean(dat_b) + (mu - sample_mean) # impose the null by recentering
+boot_t_null <- rep(NA, 999)
+for(b in seq_along(boot_t_null)){
+    x_boot <- sample(x_hat, replace=TRUE)
+    m_b_hat <- mean(x_boot) + (null_mean - m_hat) # impose the null by recentering
     # Compute t stat using jackknife ses (same as above)
-    jackknife_means_b <- rep(NA, length(dat_b))
-    for(i in seq_along(jackknife_means_b)){
-        jackknife_means_b[i] <- mean(dat_b[-i])
+    jack_means_b <- rep(NA, length(x_boot))
+    for(i in seq_along(jack_means_b)){
+        jack_means_b[i] <- mean(x_boot[-i])
     }
-    jackknife_se_b <- sd(jackknife_means_b)*sqrt(length(dat_b))
-    jackknife_t_b <- (mean_b - mu)/jackknife_se_b
-    bootstrap_t_null[b] <- jackknife_t_b
+    jackknife_se_b <- sd(jack_means_b)*sqrt(length(x_boot))
+    t_b_hat <- (m_b_hat - null_mean)/jackknife_se_b
+    boot_t_null[b] <- t_b_hat
 }
 
 # Plot the null distribution and CI
 par(mfrow=c(1, 2))
-hist(bootstrap_t_null, border=NA, breaks=50,
+hist(boot_t_null, border=NA, breaks=50,
     freq=FALSE, main=NA, xlab='Null Bootstrap for t')
-abline(v=sample_t, col=rgb(0, 0, 1, .8))
-ci_95 <- quantile(bootstrap_t_null, probs=c(0.025, 0.975) )
+abline(v=t_hat, col=rgb(0, 0, 1, .8))
+ci_95 <- quantile(boot_t_null, probs=c(0.025, 0.975) )
 abline(v=ci_95, lwd=2)
 
 # Compute the p-value for two-sided test
-Fhat0 <- ecdf(abs(bootstrap_t_null))
-plot(Fhat0,
-    xlim=range(bootstrap_t_null, sample_t),
+F_hat <- ecdf(abs(boot_t_null))
+plot(F_hat,
+    xlim=range(boot_t_null, t_hat),
     xlab='Null Bootstrap for |t|',
     main=NA)
-abline(v=abs(sample_t), col=rgb(0, 0, 1, .8))
-p <- 1 - Fhat0( abs(sample_t) )
+abline(v=abs(t_hat), col=rgb(0, 0, 1, .8))
+p <- 1 - F_hat( abs(t_hat) )
 title( paste0('p=', round(p, 3)), font.main=1)
 
 if(p >.05){
@@ -464,36 +465,36 @@ For example, the above procedures generalize from means to quantile statistics l
 ```{r}
 # Test for Median Differences (Impose the Null)
 # Bootstrap Null Distribution for the median
-# Each Bootstrap shifts medians so that median = q_null
+# Each Bootstrap shifts medians so that median = null_median
 
-q_obs <- quantile(sample_dat, probs=.5)
-q_null <- 7.8
-bootstrap_quantile_null <- rep(NA, 999)
-for(b in seq_along(bootstrap_quantile_null)){
-    x_b <- sample(sample_dat, replace=TRUE) #bootstrap sample
-    q_b <- quantile(x_b, probs=.5) # median
-    q_b_null <- q_b + (q_null - q_obs) # impose the null
-    bootstrap_quantile_null[b] <- q_b_null
+med_hat <- quantile(x_hat, probs=.5)
+null_median <- 7.8
+boot_medians_null <- rep(NA, 999)
+for(b in seq_along(boot_medians_null)){
+    x_boot <- sample(x_hat, replace=TRUE) #bootstrap sample
+    med_b_hat <- quantile(x_boot, probs=.5) # median
+    med_null_b_hat <- med_b_hat + (null_median - med_hat) # impose the null
+    boot_medians_null[b] <- med_null_b_hat
 }
 
 # 2-Sided Test for Medians
-hist(bootstrap_quantile_null-q_null,
+hist(boot_medians_null-null_median,
     border=NA, freq=FALSE, xlab='Null Bootstrap',
     main=NA)
 title('Medians (Impose Null)', font.main=1)
-median_ci <- quantile(bootstrap_quantile_null-q_null, probs=c(.025, .975))
+median_ci <- quantile(boot_medians_null-null_median, probs=c(.025, .975))
 abline(v=median_ci, lwd=2)
-abline(v=q_obs-q_null, lwd=2, col=rgb(0, 0, 1, .8))
+abline(v=med_hat-null_median, lwd=2, col=rgb(0, 0, 1, .8))
 
 # 2-Sided Test for Median Difference
 ## Null: No Median Difference
-1 - ecdf( abs(bootstrap_quantile_null-q_null))( abs(q_obs-q_null) )
+1 - ecdf( abs(boot_medians_null-null_median))( abs(med_hat-null_median) )
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Conduct a hypothesis test for whether the upper quartile is statistically different from $12$.
 ```{r}
-q_obs <- quantile(sample_dat, probs=.75)
+q_hat <- quantile(x_hat, probs=.75)
 ```
 :::
 
@@ -503,23 +504,23 @@ q_obs <- quantile(sample_dat, probs=.75)
 Above, we tested whether the observed statistic is either extremely high or low.
 This is known as a *two-sided test*.
 There are also two *one-sided tests* (left tail: observed statistic is extremely low, right tail: observed statistic is extremely high).
-For a concrete example, consider whether the mean statistic, $M$, is centered on a theoretical value of $\mu=9$ for the population.
-If your null hypothesis is that the theoretical mean is nine, $H_{0}: \mu =9$, and you calculated the mean for your sample as $\hat{M}$, then you can consider any one of these three *alternative hypotheses*:
+For a concrete example, consider whether the mean statistic, $M$, is centered on a theoretical value of $\mathbb{E}[X_i]=9$ for the population.
+If your null hypothesis is that the theoretical mean is nine, $H_{0}: \mathbb{E}[X_i] =9$, and you calculated the mean for your sample as $\hat{m}$, then you can consider any one of these three *alternative hypotheses*:
 
-* $H_{A}: \mu \neq 9$, a two-tail test
-* $H_{A}: \mu < 9$, a left-tail test
-* $H_{A}: \mu > 9$, a right-tail test
+* $H_{A}: \mathbb{E}[X_i] \neq 9$, a two-tail test
+* $H_{A}: \mathbb{E}[X_i] < 9$, a left-tail test
+* $H_{A}: \mathbb{E}[X_i] > 9$, a right-tail test
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 A fitness tracker manufacturer claims that users take more than $8{,}000$ steps per day on average.
-A sample of $25$ users has $\hat{M}=8{,}492$ steps and $\hat{S}=1{,}200$ steps.
+A sample of $25$ users has $\hat{m}=8{,}492$ steps and $\hat{s}=1{,}200$ steps.
 Test at the $5\%$ level using theory-based intervals.
 
 **(a) Hypotheses.**
-The claim is a right-tail alternative: $H_{0}: \mu = 8000$ versus $H_{A}: \mu > 8000$.
+The claim is a right-tail alternative: $H_{0}: \mathbb{E}[X_i] = 8000$ versus $H_{A}: \mathbb{E}[X_i] > 8000$.
 
 **(b) Test statistic.**
-The classical standard error is $\hat{S}/\sqrt{n} = 1200/\sqrt{25} = 240$, so $t = (8492 - 8000)/240 \approx 2.05$.
+The classical standard error is $\hat{s}/\sqrt{n} = 1200/\sqrt{25} = 240$, so $t = (8492 - 8000)/240 \approx 2.05$.
 
 **(c) Decision.**
 The right-tail critical value at $5\%$ is $q_{0.95} \approx 1.645$ from the Normal.
@@ -528,12 +529,12 @@ Since $t = 2.05 > 1.645$, we reject $H_{0}$.
 **(d) Conclusion.**
 At the $5\%$ level, the data are consistent with the manufacturer's claim: there is evidence the population mean exceeds $8{,}000$ steps per day.
 ```{r}
-M_hat <- 8492
-S_hat <- 1200
+m_steps_hat <- 8492
+s_steps_hat <- 1200
 n <- 25
-mu0 <- 8000
-SE <- S_hat / sqrt(n)
-t_stat <- (M_hat - mu0) / SE
+steps_null_mean <- 8000
+SE <- s_steps_hat / sqrt(n)
+t_stat <- (m_steps_hat - steps_null_mean) / SE
 t_stat
 
 # Right-tail p-value from the standard Normal approximation
@@ -548,24 +549,24 @@ One-sided hypothesis tests can be conducted by inverting a one-sided confidence 
 The $p$-value for a one-sided test is more straightforward to implement via a bootstrap null distribution.
 
 For a left-tail test, we examine $$\begin{aligned}
-p = Prob( M < \hat{M} \mid \mu = 9 )
-    &\approx Prob( M^{\text{boot}} < \hat{M} \mid  \mu = 9 ) = \hat{F}^{\text{boot}}_{0}(\hat{M}),
+p = Prob( M < \hat{m} \mid \mathbb{E}[X_i] = 9 )
+    &\approx Prob( M^{\text{boot}}_{0} < \hat{m} ) = \hat{F}^{\text{boot}}_{0}(\hat{m}),
 \end{aligned}$$
 where $\hat{F}^{\text{boot}}_{0}$ is the ECDF of the bootstrap null distribution.
 We reject the null if $p < 0.05$ at the $5\%$ level, and otherwise fail to reject.
 
-For a right-tail test, we examine $p=Prob( M > \hat{M} \mid \mu = 9 ) \approx 1-\hat{F}^{\text{boot}}_{0}(\hat{M})$.
+For a right-tail test, we examine $p=Prob( M > \hat{m} \mid \mathbb{E}[X_i] = 9 ) \approx 1-\hat{F}^{\text{boot}}_{0}(\hat{m})$.
 
 
 ```{r}
 # Right-tail Test, ALTERNATIVE: mean > 9
 # Equivalent Visualization with p-value
-Fhat0 <- ecdf(bootstrap_means_null) # Look at right tail
-plot(Fhat0,
+F_hat <- ecdf(boot_means_null) # Look at right tail
+plot(F_hat,
     main=NA,
     xlab='Null Bootstrap')
-abline(v=sample_mean, col=rgb(0, 0, 1, .8))
-p1 <- 1- Fhat0(sample_mean) #Compute right tail prob: 0.987
+abline(v=m_hat, col=rgb(0, 0, 1, .8))
+p1 <- 1- F_hat(m_hat) #Compute right tail prob: 0.987
 title( paste0('p=', round(p1, 3)), font.main=1)
 
 if(p1 >.05){
@@ -578,8 +579,8 @@ if(p1 >.05){
 The left-tail test uses the other side of the same null distribution.
 ```{r}
 # Left-tail Test, ALTERNATIVE: mean < 9
-# Compute left-tail prob: p = F(sample_mean)
-p_left <- Fhat0(sample_mean)
+# Compute left-tail prob: p = F(m_hat)
+p_left <- F_hat(m_hat)
 p_left
 
 if(p_left >.05){
@@ -590,18 +591,19 @@ if(p_left >.05){
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Notice that the recentering adjustment affects two-sided tests (because they depend on distance from the null mean) but not one-sided tests (because adding a constant does not change rank order).
-Specifically, $p = Prob( M < \hat{M} \mid \mu = 9 ) =  Prob( M - \mu < \hat{M} - \mu \mid \mu = 9 )$.
+For two-sided tests, measure distance from $m_0$ by subtracting it before taking absolute values.
+For one-sided tests, subtracting $m_0$ from both the null-bootstrap statistic and the observed statistic leaves their ordering unchanged.
+Specifically, $p = Prob( M < \hat{m} \mid \mathbb{E}[X_i] = 9 ) = Prob( M - m_0 < \hat{m} - m_0 \mid \mathbb{E}[X_i] = 9 )$.
 That is intuitively also why the $t$-value can be used for both one and two-sided hypothesis tests.
 
 ```{r}
 # See that the 'recentering' matters for two-sided tests
-ecdf( abs(bootstrap_means_null-mu) )( abs(sample_mean-mu) )
-ecdf( abs(bootstrap_means_null) )( abs(sample_mean) )
+ecdf( abs(boot_means_null-null_mean) )( abs(m_hat-null_mean) )
+ecdf( abs(boot_means_null) )( abs(m_hat) )
 
 # See that the 'recentering' doesn't matter for one-sided ones
-ecdf( bootstrap_means_null-mu)( sample_mean-mu)
-ecdf( bootstrap_means_null )( sample_mean)
+ecdf( boot_means_null-null_mean)( m_hat-null_mean)
+ecdf( boot_means_null )( m_hat)
 ```
 :::
 
@@ -614,8 +616,8 @@ ecdf( bootstrap_means_null )( sample_mean)
 2. Explain the difference between "rejecting the null hypothesis" and "proving the alternative hypothesis is true."
    Why is the phrase "fail to reject" used instead of "accept the null"?
 
-3. Suppose you collect a sample of $n = 50$ observations with $\hat{M} = 22.4$ and $\hat{S} = 6.0$.
-   You want to test $H_{0}: \mu = 20$ against $H_{A}: \mu \neq 20$ at the $5\%$ level.
+3. Suppose you collect a sample of $n = 50$ observations with $\hat{m} = 22.4$ and $\hat{s} = 6.0$.
+   You want to test $H_{0}: \mathbb{E}[X_i] = 20$ against $H_{A}: \mathbb{E}[X_i] \neq 20$ at the $5\%$ level.
    Compute the $t$-value using theory-driven standard errors and determine whether you reject or fail to reject.
 
 4. Using the `USArrests` dataset in R, test the hypothesis that the population mean of `Assault` equals $150$ by constructing a bootstrap null distribution.
@@ -629,5 +631,5 @@ ecdf( bootstrap_means_null )( sample_mean)
 #### **Recall** {-}
 
 This chapter built *hypothesis tests* two ways (*invert a CI* and *impose the null*), introduced the *$p$-value* and the *$t$-value*, and flagged the multiple-comparisons pitfall.
-The fitness-tracker example tied these ideas together: with $\hat{M}=8492$, $\hat{S}=1200$, and $n=25$, the standard error is $SE = 1200/\sqrt{25} = 240$ and the $t$-value for $H_{0}: \mu = 8000$ is $(8492 - 8000)/240 \approx 2.05$, which exceeds the right-tail critical value $1.645$ at the $5\%$ level and so rejects the null.
+The fitness-tracker example tied these ideas together: with $\hat{m}=8492$, $\hat{s}=1200$, and $n=25$, the standard error is $SE = 1200/\sqrt{25} = 240$ and the $t$-value for $H_{0}: \mathbb{E}[X_i] = 8000$ is $(8492 - 8000)/240 \approx 2.05$, which exceeds the right-tail critical value $1.645$ at the $5\%$ level and so rejects the null.
 In the next chapter we round out the probability toolbox with the Binomial, Poisson, and Beta distributions, plus Bayes' theorem and the Law of Total Probability.

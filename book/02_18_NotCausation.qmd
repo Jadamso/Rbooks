@@ -10,11 +10,11 @@ This chapter brings together three warnings: Simpson's paradox shows that poolin
 ## Simpson's Paradox
 
 A relationship visible inside every subgroup can flip direction once those subgroups are pooled.
-The [conditional distributions](02_11_BivariateDistributions.qmd#conditional-distributions) from Chapter 11 compare outcomes within values of another variable; adding a subgroup $g$ lets us compare $\hat{P}(y\mid x,g)$ within each group to the pooled $\hat{P}(y\mid x)$.
+The [conditional distributions](02_11_BivariateDistributions.qmd#conditional-distributions) from Chapter 11 compare outcomes within values of another variable; adding a subgroup $g$ lets us compare $\hat{p}(y\mid x,g)$ within each group to the pooled $\hat{p}(y\mid x)$.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 *Simpson's paradox* arises when a relationship that holds inside every subgroup reverses when the data are pooled.
-The within-group conditional distributions $\hat{P}(y\mid x, g)$ point one way; the overall $\hat{P}(y\mid x)$ points the other.
+The within-group conditional distributions $\hat{p}(y\mid x, g)$ point one way; the overall $\hat{p}(y\mid x)$ points the other.
 :::
 
 Simpson's paradox is useful as a warning whenever you are tempted to pool subgroups: the pooled relationship reflects both the within-group pattern and how the subgroups differ in size.
@@ -107,32 +107,32 @@ set.seed(123)
 n <- 10000
 
 # X causes Y via Y = X^2 + noise
-X <- runif(n, min = -1, max = 1)
+x_hat <- runif(n, min = -1, max = 1)
 epsilon <- rnorm(n, mean = 0, sd = 0.1)
-Y <- X^2 + epsilon  # clear causal effect of X on Y
-plot(X, Y, pch=16, col=grey(0, .05),
+y_hat <- x_hat^2 + epsilon  # clear causal effect of X on Y
+plot(x_hat, y_hat, pch=16, col=grey(0, .05),
     main=NA, xlab='X', ylab='Y')
 
 # Correlation over the entire range
-title( paste0('Cor: ', round( cor(X, Y), 1) ) ,
+title( paste0('Cor: ', round( cor(x_hat, y_hat), 1) ) ,
     font.main=1)
 ```
 
 ```{r}
 # Heterogeneous Effects
-X <- rnorm(n) # Randomized 'treatment'
+x_hat <- rnorm(n) # Randomized 'treatment'
 
 # Heterogeneous effects based on group
 group <- rbinom(n, size = 1, prob = 0.5)
 epsilon <- rnorm(n, mean = 0, sd = 1)
-Y <- ifelse(group == 1,
-            X + epsilon,   # positive effect
-            -X + epsilon)  # negative effect
-plot(X, Y, pch=16, col=grey(0, .05),
+y_hat <- ifelse(group == 1,
+            x_hat + epsilon,   # positive effect
+            -x_hat + epsilon)  # negative effect
+plot(x_hat, y_hat, pch=16, col=grey(0, .05),
     main=NA, xlab='X', ylab='Y')
 
 # Correlation in the pooled sample
-title( paste0('Cor: ', round( cor(X, Y), 1) ),
+title( paste0('Cor: ', round( cor(x_hat, y_hat), 1) ),
     font.main=1 )
 ```
 
@@ -157,14 +157,14 @@ plot(A, B, pch=16, col=grey(0, .05),
 title('Independent Variables', font.main=1)
 
 # Ratios with a shared denominator
-X <- A / C
-Y <- B / C
-plot(X, Y, pch=16, col=grey(0, .05),
+x_hat <- A / C
+y_hat <- B / C
+plot(x_hat, y_hat, pch=16, col=grey(0, .05),
     main=NA, xlab='X', ylab='Y')
 title('With Common Divisor', font.main=1)
 
 # Correlation
-cor(X, Y)
+cor(x_hat, y_hat)
 ```
 
 Consider an admissions rule into university: applicants are accepted if they have either high test scores or strong extracurriculars.
@@ -227,28 +227,28 @@ Xmn <- 15
 
 ##Generate Sample Data
 dat_sim <- function(n=1000){
-    X <- seq(Xmn, Xmx, length.out=n)
+    x_hat <- seq(Xmn, Xmx, length.out=n)
     ## Random Productivity
     e <- runif(n, 0, 1E6)
-    beta <-  1E-10*exp(1.4*X -.015*X^2)
-    Y    <-  (beta*X + e)/10
-    return(data.frame(Y, X))
+    beta <-  1E-10*exp(1.4*x_hat -.015*x_hat^2)
+    y_hat    <-  (beta*x_hat + e)/10
+    return(data.frame(y_hat, x_hat))
 }
 dat0 <- dat_sim(1000)
-dat0 <- dat0[order(dat0[, 'X']), ]
+dat0 <- dat0[order(dat0[, 'x_hat']), ]
 
 ## Data from one sample
-plot(Y ~ X, data=dat0, pch=16, col=grey(0, .05),
+plot(y_hat ~ x_hat, data=dat0, pch=16, col=grey(0, .05),
     main=NA, ylab='Yearly Productivity ($)', xlab='Age' )
-reg_lo <- loess(Y ~ X, data=dat0, span=.8)
+reg_lo <- loess(y_hat ~ x_hat, data=dat0, span=.8)
 
 ## Plot Bootstrap CI for Single Sample
-pred_design <- data.frame(X=seq(Xmn, Xmx))
-preds_lo <- predict(reg_lo, newdata=pred_design)
+pred_design <- data.frame(x_hat=seq(Xmn, Xmx))
+y_fit <- predict(reg_lo, newdata=pred_design)
 boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
 for (b in 1:399) {
-    dat0_i <- dat0[sample(nrow(dat0), replace=TRUE), ]
-    reg_i <- loess(Y ~ X, data=dat0_i, span=.8)
+    xy_boot <- dat0[sample(nrow(dat0), replace=TRUE), ]
+    reg_i <- loess(y_hat ~ x_hat, data=xy_boot, span=.8)
     boot_lo[, b] <- predict(reg_i, newdata=pred_design)
 }
 boot_cb <- apply(boot_lo, 1, quantile,
@@ -262,8 +262,8 @@ polygon(
 # Construct CI across Multiple Samples
 sample_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
 for (b in 1:399) {
-    xy_b <- dat_sim(1000) #Entirely new sample
-    reg_b <- loess(Y ~ X, data=xy_b, span=.8)
+    xy_sim <- dat_sim(1000) #Entirely new sample
+    reg_b <- loess(y_hat ~ x_hat, data=xy_sim, span=.8)
     sample_lo[, b] <- predict(reg_b, newdata=pred_design)
 }
 ci_lo <- apply(sample_lo, 1, quantile,
@@ -286,32 +286,32 @@ Notice that a linear model does not.
 set.seed(123)
 
 ## Shared parameters used by Bias and Variance
-B        <- 300
+n_sim        <- 300
 n_bias   <- 200
 Nseq     <- seq(50, 500, by=50)
 span_lo  <- 0.5
 true_m   <- function(x) (1E-10*exp(1.4*x - .015*x^2)*x + 5E5) / 10
 x0       <- seq(Xmn, Xmx, length.out=120)
 m0       <- true_m(x0)
-pred_design <- data.frame(X=x0)
+pred_design <- data.frame(x_hat=x0)
 
 ## Storage for Bias predictions (filled via <<- when n == n_bias)
-pred_lm_bias <- matrix(NA_real_, nrow=length(x0), ncol=B)
-pred_lo_bias <- matrix(NA_real_, nrow=length(x0), ncol=B)
+pred_lm_bias <- matrix(NA_real_, nrow=length(x0), ncol=n_sim)
+pred_lo_bias <- matrix(NA_real_, nrow=length(x0), ncol=n_sim)
 
 ## One sweep: gradient SEs across all n, plus bias predictions at n_bias
 SE <- matrix(NA, nrow=2, ncol=length(Nseq))
 for (ni in seq_along(Nseq)) {
     n <- Nseq[ni]
-    stats <- matrix(NA, nrow=2, ncol=B)
-    for (b in 1:B) {
+    stats <- matrix(NA, nrow=2, ncol=n_sim)
+    for (b in 1:n_sim) {
         dat_b  <- dat_sim(n)
-        fit_lm <- lm(Y ~ X, data=dat_b)
-        fit_lo <- loess(Y ~ X, data=dat_b, span=0.8)
-        grad_lo <- diff(predict(fit_lo))/diff(dat_b[, 'X'])
+        fit_lm <- lm(y_hat ~ x_hat, data=dat_b)
+        fit_lo <- loess(y_hat ~ x_hat, data=dat_b, span=0.8)
+        grad_lo <- diff(predict(fit_lo))/diff(dat_b[, 'x_hat'])
         if(n == n_bias){
             pred_lm_bias[, b] <- predict(fit_lm, newdata=pred_design)
-            fit_lo_b <- loess(Y ~ X, data=dat_b, span=span_lo)
+            fit_lo_b <- loess(y_hat ~ x_hat, data=dat_b, span=span_lo)
             pred_lo_bias[, b] <- predict(fit_lo_b, newdata=pred_design)
         }
         stats[, b] <- c(coef(fit_lm)[2], mean(grad_lo, na.rm=TRUE))
@@ -321,14 +321,14 @@ for (ni in seq_along(Nseq)) {
 ```
 
 ```{r}
-m_lm <- rowMeans(pred_lm_bias, na.rm=TRUE)
-m_lo <- rowMeans(pred_lo_bias, na.rm=TRUE)
+m_lm_hat <- rowMeans(pred_lm_bias, na.rm=TRUE)
+m_lo_hat <- rowMeans(pred_lo_bias, na.rm=TRUE)
 
-y_rng <- range(c(m0, m_lm, m_lo), na.rm=TRUE)
+y_rng <- range(c(m0, m_lm_hat, m_lo_hat), na.rm=TRUE)
 plot(x0, m0, type='l', lwd=2, col=rgb(0, 0, 0, .8), ylim=y_rng,
   xlab='Age', ylab=' Mean Productivity ($)', main=NA)
-lines(x0[is.finite(m_lm)], m_lm[is.finite(m_lm)], lwd=2, col=rgb(1, 0, 0, .8))
-lines(x0[is.finite(m_lo)], m_lo[is.finite(m_lo)], lwd=2, col=rgb(0, 0, 1, .8))
+lines(x0[is.finite(m_lm_hat)], m_lm_hat[is.finite(m_lm_hat)], lwd=2, col=rgb(1, 0, 0, .8))
+lines(x0[is.finite(m_lo_hat)], m_lo_hat[is.finite(m_lo_hat)], lwd=2, col=rgb(0, 0, 1, .8))
 legend('topright', lty=1, lwd=2, col=c(rgb(0, 0, 0, .8), rgb(1, 0, 0, .8), rgb(0, 0, 1, .8)),
   legend=c('True mean',
     'Linear',
@@ -434,17 +434,17 @@ set.seed(42)
 
 x0_target <- 40  # mid-career age
 n_grid <- c(60, 120, 240, 480)
-R <- 120
+n_sim <- 120
 
 avg_abs_err <- numeric(length(n_grid))
 for (ni in seq_along(n_grid)) {
   n <- n_grid[ni]
   span_n <- min(0.9, 1.8*n^(-1/4)) # shrinks with n
-  errs <- replicate(R, {
+  errs <- replicate(n_sim, {
     dat_b <- dat_sim(n)
-    fit <- loess(Y ~ X, data=dat_b, span=span_n, degree=1)
-    mhat <- predict(fit, newdata=data.frame(X=x0_target))
-    abs(mhat - true_m(x0_target))
+    fit <- loess(y_hat ~ x_hat, data=dat_b, span=span_n, degree=1)
+    y_fit <- predict(fit, newdata=data.frame(x_hat=x0_target))
+    abs(y_fit - true_m(x0_target))
   })
   avg_abs_err[ni] <- mean(errs, na.rm=TRUE)
 }
@@ -468,7 +468,7 @@ These results concern prediction across samples; they do not establish that chan
 2. Use `UCBAdmissions` to compute the overall admission rate for men and women and the admission rate for each group within each department.
    Identify any reversal between the pooled and within-department relationships, then explain why that reversal does not by itself establish whether admissions were discriminatory.
 
-3. Give an example of a dataset where Pearson's correlation $\hat{R}_{XY}$ is close to zero but there is a clear causal relationship between $X$ and $Y$.
+3. Give an example of a dataset where Pearson's correlation $\hat{r}_{XY}$ is close to zero but there is a clear causal relationship between $X$ and $Y$.
    What feature of the relationship causes the correlation to miss it, and which alternative statistic from [Statistics of Association](02_14_Associations.qmd) might detect it?
 
 4. Explain why a model can have low prediction error but still fail to estimate the causal effect of $X$ on $Y$.

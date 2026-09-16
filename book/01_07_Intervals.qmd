@@ -10,7 +10,7 @@ A *confidence interval* is a range of values, computed from the sample, intended
 The *coverage* level $1-\alpha$ is the long-run proportion of intervals (constructed from repeated samples by the same procedure) that contain the true parameter.
 :::
 
-Confidence intervals are useful for *reporting uncertainty* alongside an estimate: instead of saying only "the mean is $\hat{M}$", we report a range and a coverage level, communicating both the best guess and how much sampling noise could plausibly move it.
+Confidence intervals are useful for *reporting uncertainty* alongside an estimate: instead of saying only "the mean is $\hat{m}$", we report a range and a coverage level, communicating both the best guess and how much sampling noise could plausibly move it.
 The width depends on the sample size, the spread of the data, and the coverage level $1-\alpha$ that the user chooses.
 
 
@@ -32,27 +32,25 @@ Often, we have only one sample, in which case we can construct a bootstrap or ja
 
 
 ```{r}
-sample_dat <- USArrests[, 'Murder']
-sample_mean <- mean(sample_dat)
-sample_mean
+x_hat <- USArrests[, 'Murder']
+m_hat <- mean(x_hat)
+m_hat
 
 # Bootstrap Distribution
 set.seed(1) # to be replicable
-bootstrap_means <- rep(NA, 9999)
-for(b in seq_along(bootstrap_means)){
-    dat_id <- seq_along(sample_dat)
-    boot_id <- sample(dat_id , replace=TRUE)
-    dat_b  <- sample_dat[boot_id] # c.f. jackknife
-    mean_b <- mean(dat_b)
-    bootstrap_means[b] <-mean_b
+boot_means <- rep(NA, 9999)
+for(b in seq_along(boot_means)){
+    x_boot <- sample(x_hat, replace=TRUE) # c.f. jackknife
+    m_b_hat <- mean(x_boot)
+    boot_means[b] <-m_b_hat
 }
 
 # 95% CI
-boot_ci <- quantile(bootstrap_means, probs=c(.025, .975), na.rm=TRUE)
+boot_ci <- quantile(boot_means, probs=c(.025, .975), na.rm=TRUE)
 boot_ci
 
 # Visualize
-hist(bootstrap_means, freq=FALSE,
+hist(boot_means, freq=FALSE,
     main=NA,
     border=NA, breaks=50)
 title('Bootstrap CI', font.main=1)
@@ -63,10 +61,10 @@ abline(v=boot_ci)
 Using the bootstrap distribution above, here are the $90\%$ and $99\%$ confidence intervals.
 ```{r}
 # 90% CI: 5th and 95th percentiles
-quantile(bootstrap_means, probs=c(.05, .95), na.rm=TRUE)
+quantile(boot_means, probs=c(.05, .95), na.rm=TRUE)
 
 # 99% CI: 0.5th and 99.5th percentiles
-quantile(bootstrap_means, probs=c(.005, .995), na.rm=TRUE)
+quantile(boot_means, probs=c(.005, .995), na.rm=TRUE)
 ```
 The $99\%$ interval is wider than the $90\%$ interval: demanding higher coverage forces a longer interval.
 :::
@@ -80,27 +78,25 @@ Edit it to create a jackknife CI instead.
 Then edit it to create a bootstrap CI for the upper quartile. 
 
 ```{r}
-sample_dat <- USArrests[, 'Murder']
-sample_stat <- quantile(sample_dat, probs=0.5) #median
-sample_stat
+x_hat <- USArrests[, 'Murder']
+med_hat <- quantile(x_hat, probs=0.5) #median
+med_hat
 
 # Bootstrap Distribution
 set.seed(1) # to be replicable
-bootstrap_stats <- rep(NA, 9999)
-for(b in seq_along(bootstrap_stats)){
-    dat_id <- seq_along(sample_dat)
-    boot_id <- sample(dat_id, replace=TRUE)
-    dat_b  <- sample_dat[boot_id] # c.f. jackknife
-    stat_b <- quantile(dat_b, probs=0.5)
-    bootstrap_stats[b] <-stat_b
+boot_medians <- rep(NA, 9999)
+for(b in seq_along(boot_medians)){
+    x_boot <- sample(x_hat, replace=TRUE) # c.f. jackknife
+    med_b_hat <- quantile(x_boot, probs=0.5)
+    boot_medians[b] <-med_b_hat
 }
 
 # 95% CI
-boot_ci <- quantile(bootstrap_stats, probs=c(.025, .975), na.rm=TRUE)
+boot_ci <- quantile(boot_medians, probs=c(.025, .975), na.rm=TRUE)
 boot_ci
 
 # Visualize
-hist(bootstrap_stats, freq=FALSE,
+hist(boot_medians, freq=FALSE,
     main=NA,
     border=NA, breaks=50)
 title('Bootstrap CI', font.main=1)
@@ -113,24 +109,24 @@ abline(v=boot_ci)
 When the sampling distribution is well approximated by a Normal curve, the confidence interval has a simple closed form built from the standard error.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *margin of error* $E$ is the half-width of a Normal-approximation confidence interval, so the interval is $\hat{M} \pm E$.
+The *margin of error* $E$ is the half-width of a Normal-approximation confidence interval, so the interval is $\hat{m} \pm E$.
 It equals the critical value times the standard error, $E = q(\alpha/2) \cdot SE(M)$, and shrinks as $n$ grows.
 :::
 
-The Normal-approximation interval is useful because it requires only an estimate $\hat{M}$, a standard error $SE(M)$, and a single Normal quantile (no resampling loop, no full sampling distribution).
+The Normal-approximation interval is useful because it requires only an estimate $\hat{m}$, a standard error $SE(M)$, and a single Normal quantile (no resampling loop, no full sampling distribution).
 The $95\%$ interval is the most common and uses critical value $q=1.96$ (the $97.5$th percentile of the standard Normal); the $90\%$ interval uses $q=1.645$.
-$SE(M)$ can come from the classical formula $\hat{S}/\sqrt{n}$, the bootstrap, or the jackknife.
+$SE(M)$ can come from the classical formula $\hat{s}/\sqrt{n}$, the bootstrap, or the jackknife.
 
 A *coverage* level of $1-\alpha$ means that if the same sampling procedure were repeated $100$ times from the same population, approximately $1-\alpha$ percent of the intervals are expected to contain the true population mean.
-^[Generally, a coverage level of $1-\alpha$ means $Prob( M - E < \mu < M + E)=1-\alpha$.
-Notice that $Prob( M - E < \mu < M + E) = Prob( - E < \mu - M < + E) = Prob( \mu + E > M > \mu - E)$.
-So if the interval $[\mu - 10, \mu + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mu$ in $95\%$ of the samples because whenever $M$ is within $10$ of $\mu$, the value $\mu$ is also within $10$ of $M$.
-But for any particular sample, the interval $[\hat{M}-10, \hat{M}+10]$ either does or does not contain $\mu$.
-Similarly, if you compute $\hat{M}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mu < 9 + E)=95\%$.]
+^[Generally, a coverage level of $1-\alpha$ means $Prob( M - E < \mathbb{E}[X_i] < M + E)=1-\alpha$.
+Notice that $Prob( M - E < \mathbb{E}[X_i] < M + E) = Prob( - E < \mathbb{E}[X_i] - M < + E) = Prob( \mathbb{E}[X_i] + E > M > \mathbb{E}[X_i] - E)$.
+So if the interval $[\mathbb{E}[X_i] - 10, \mathbb{E}[X_i] + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mathbb{E}[X_i]$ in $95\%$ of the samples because whenever $M$ is within $10$ of $\mathbb{E}[X_i]$, the value $\mathbb{E}[X_i]$ is also within $10$ of $M$.
+But for any particular sample, the interval $[\hat{m}-10, \hat{m}+10]$ either does or does not contain $\mathbb{E}[X_i]$.
+Similarly, if you compute $\hat{m}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $Prob(9 - E < \mathbb{E}[X_i] < 9 + E)=95\%$.]
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-For example, suppose we sample $n=36$ monthly electricity bills (in dollars) and find $\hat{M}=142$ and $\hat{S}=30$.
-The classical standard error is $SE(M) \approx \hat{S}/\sqrt{n} = 30/\sqrt{36} = 5$.
+For example, suppose we sample $n=36$ monthly electricity bills (in dollars) and find $\hat{m}=142$ and $\hat{s}=30$.
+The classical standard error is $SE(M) \approx \hat{s}/\sqrt{n} = 30/\sqrt{36} = 5$.
 From theory, we also know that $95\%$ confidence interval has upper and lower critical value of 
 $$\begin{aligned}
 F^{-1}_{Normal}\left(0.975, SE(M) \right) &= +1.96 \cdot SE(M) \\
@@ -139,21 +135,21 @@ F^{-1}_{Normal}\left(0.025, SE(M) \right) &= -1.96 \cdot SE(M)
 Together, we can calculate
 $$\begin{aligned}
 E &= q(\alpha/2) \cdot SE(M) = 1.96 \cdot 5 = 9.8 \\
-[\hat{M} - E, \hat{M} + E] &= [142 - 9.8, 142 + 9.8] = [132.2,~ 151.8].
+[\hat{m} - E, \hat{m} + E] &= [142 - 9.8, 142 + 9.8] = [132.2,~ 151.8].
 \end{aligned}$$
 We are $95\%$ confident that the population mean electricity bill is between $\$132.20$ and $\$151.80$.
 ```{r}
-M_hat <- 142
-S_hat <- 30
+m_bill_hat <- 142
+s_bill_hat <- 30
 n <- 36
-SE <- S_hat / sqrt(n)
+SE <- s_bill_hat / sqrt(n)
 SE
 
 # 95% CI Manual Calculation
-M_hat + c(-1.96, 1.96) * SE
+m_bill_hat + c(-1.96, 1.96) * SE
 
 ## 95% CI Intuition
-qnorm( c(0.025, 0.975), M_hat, SE)
+qnorm( c(0.025, 0.975), m_bill_hat, SE)
 ```
 :::
 
@@ -169,27 +165,27 @@ The main disadvantage is that
 * the sampling distribution might be far from normal.
 
 In the example below, they are all quite similar, but that does not always need to be the case.
-The Normal approximation is least reliable when the sample is small or the data are strongly skewed: the sampling distribution is then asymmetric, and a symmetric $\hat{M}\pm E$ interval cannot capture that.
+The Normal approximation is least reliable when the sample is small or the data are strongly skewed: the sampling distribution is then asymmetric, and a symmetric $\hat{m}\pm E$ interval cannot capture that.
 The percentile bootstrap interval reads quantiles directly off the resampling distribution, so it can be lopsided when the data call for it.
 
 
 ```{r}
 # Bootstrap Distribution with Percentile CI
-hist(bootstrap_means, breaks=25,
+hist(boot_means, breaks=25,
     main=NA, border=NA,
     freq=FALSE, ylim=c(0, 0.7),
-    xlab=expression(hat(M)^group('(', b, ')')))
+    xlab=expression(hat(m)^group('(', b, ')')))
 title('Percentile vs Normal 95% CIs', font.main=1)
-boot_ci_percentile <- quantile(bootstrap_means, probs=c(.025, .975))
+boot_ci_percentile <- quantile(boot_means, probs=c(.025, .975))
 abline(v=boot_ci_percentile, lty=1)
 
 # Normal Approximation with IID Theory SEs
-classic_se <- sd(sample_dat)/sqrt(length(sample_dat))
+classic_se <- sd(x_hat)/sqrt(length(x_hat))
 x <- seq(5, 10, by=0.01)
-fx2 <- dnorm(x, sample_mean, classic_se)
+fx2 <- dnorm(x, m_hat, classic_se)
 lines(x, fx2, col=rgb(1, 0, 0, .8), lty=1)
-ci_normal <- qnorm(c(.025, .975), sample_mean, classic_se)
-#ci_normal <- sample_mean+c(-1.96, +1.96)*classic_se
+ci_normal <- qnorm(c(.025, .975), m_hat, classic_se)
+#ci_normal <- m_hat+c(-1.96, +1.96)*classic_se
 abline(v=ci_normal, col=rgb(1, 0, 0, .8), lty=3)
 ```
 
@@ -198,81 +194,84 @@ abline(v=ci_normal, col=rgb(1, 0, 0, .8), lty=3)
 Note that you can also plug in Bootstrap or Jacknife SEs to the Normal Approximation.
 ```{r}
 ## Bootstrap Distribution
-hist(bootstrap_means, breaks=25,
+hist(boot_means, breaks=25,
     main=NA, border=NA,
     freq=FALSE, ylim=c(0, 0.7),
-    xlab=expression(hat(M)^group('(', b, ')')))
+    xlab=expression(hat(m)^group('(', b, ')')))
 abline(v=boot_ci_percentile, lty=1)
 title('Percentile vs Normal 95% CIs (with Jackknife SE)', font.main=1)
 
 # Jackknife SE Estimate
-n <- length(sample_dat)
-jackknife_means <- rep(NA, n)
-for(i in seq_along(jackknife_means)){
-    dat_noti <- sample_dat[-i]
-    mean_noti <- mean(dat_noti)
-    jackknife_means[i] <- mean_noti
+n <- length(x_hat)
+jack_means <- rep(NA, n)
+for(i in seq_along(jack_means)){
+    x_jack <- x_hat[-i]
+    m_i_hat <- mean(x_jack)
+    jack_means[i] <- m_i_hat
 }
-se_jack <- sd(jackknife_means)*sqrt(n)
+se_jack <- sd(jack_means)*sqrt(n)
 
 # Normal Approx with Jack SE
 x <- seq(5, 10, by=0.01)
-fx <- dnorm(x, sample_mean, se_jack)
+fx <- dnorm(x, m_hat, se_jack)
 lines(x, fx, col=rgb(0, 0, 1, .8), lty=1)
-ci_normal_alt <- qnorm(c(.025, .975), sample_mean, se_jack)
+ci_normal_alt <- qnorm(c(.025, .975), m_hat, se_jack)
 abline(v=ci_normal_alt, col=rgb(0, 0, 1, .8), lty=3)
 ```
-Update the example to use `se_boot <- sd(bootstrap_means)` in place of `se_jack`
+Update the example to use `se_boot <- sd(boot_means)` in place of `se_jack`
 :::
 
 
 
 ## Theoretical Properties
 
-A $Z\%$ confidence interval for the mean is an interval where $Z\%$ of the intervals generated on different samples will contain the population mean $\mu$.
+A $Z\%$ confidence interval for the mean is an interval where $Z\%$ of the intervals generated on different samples will contain the population mean $\mathbb{E}[X_i]$.
 
 ```{r, echo=TRUE}
 n <- 30
-B <- 100
-sample_CIs <- matrix(nrow=B, ncol=2)
-for(i in seq(1, B)){
+n_samples <- 100
+sample_CIs <- matrix(nrow=n_samples, ncol=2)
+for(i in seq(1, n_samples)){
     # Random Sample
-    X <- runif(n)
+    x_sim_hat <- runif(n)
     # Confidence Interval for each sample
-    M <- mean(X)
-    SE <- sd(X)/sqrt(n)
-    CI <- qnorm( c(0.05, 0.95), M, SE)
+    m_sim_hat <- mean(x_sim_hat)
+    SE <- sd(x_sim_hat)/sqrt(n)
+    CI <- qnorm( c(0.05, 0.95), m_sim_hat, SE)
     sample_CIs[i, ] <- CI
 }
 
 
 # Explicit calculation: whether the true mean is in each CI
-mu_true <- 0.5 # theoretical result for uniform samples
-covered <- mu_true >= sample_CIs[, 1] & mu_true <= sample_CIs[, 2]
+true_mean <- 0.5 # theoretical result for uniform samples
+covered <- true_mean >= sample_CIs[, 1] & true_mean <= sample_CIs[, 2]
 
 # Visualize confidence intervals
 plot.new()
-plot.window(xlim = range(sample_CIs), ylim = c(0, B))
-for(i in seq(1, B) ) {
+plot.window(xlim = range(sample_CIs), ylim = c(0, n_samples))
+for(i in seq(1, n_samples) ) {
   col_i <- if (covered[i]) rgb(0, 0, 0, 0.3) else rgb(1, 0, 0, 0.5)
   segments(
     sample_CIs[i, 1], i,
     sample_CIs[i, 2], i,
     col = col_i, lwd = 2)
 }
-abline(v = mu_true, col = rgb(0, 0, 1, .8), lwd = 2)
+abline(v = true_mean, col = rgb(0, 0, 1, .8), lwd = 2)
 axis(1)
 title('90% Coverage (Red = Missed)', font.main=1)
 ```
 
 We typically have only one sample and compute a single confidence interval with the data we have.
-The interval you computed either contains the true mean or it does not.^[As such, a $Z\%$ confidence interval does not imply a $Z\%$ probability that the true parameter lies within a particular calculated interval. In practice, people often interpret confidence intervals informally as "showing the uncertainty around our estimate": wider intervals correspond to higher sampling variability and less precise information about $\mu$. ] So "$Z\%$ confident" translates to "$Z\%$ of intervals constructed on different samples will contain $\mu$".
+The interval you computed either contains the true mean or it does not.
+^[As such, a $Z\%$ confidence interval does not imply a $Z\%$ probability that the true parameter lies within a particular calculated interval.
+In practice, people often interpret confidence intervals informally as "showing the uncertainty around our estimate": wider intervals correspond to higher sampling variability and less precise information about $\mathbb{E}[X_i]$.]
+So "$Z\%$ confident" translates to "$Z\%$ of intervals constructed on different samples will contain $\mathbb{E}[X_i]$".
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 A confidence interval contains many values, and every one of them is a hypothesis the data cannot rule out.
 Suppose a $95\%$ confidence interval for a population mean comes out as $[6.6, 9.0]$.
-The data are consistent with $\mu=7$, and also with $\mu=8$, and also with $\mu=8.9$: none of these competing values can be ruled out at the $5\%$ level.
-You would, however, rule out $\mu=5$ and $\mu=10$, since they fall outside the interval.
+The data are consistent with $\mathbb{E}[X_i]=7$, and also with $\mathbb{E}[X_i]=8$, and also with $\mathbb{E}[X_i]=8.9$: none of these competing values can be ruled out at the $5\%$ level.
+You would, however, rule out $\mathbb{E}[X_i]=5$ and $\mathbb{E}[X_i]=10$, since they fall outside the interval.
 "Failing to reject" a value is therefore a weak statement: it says only that the value is one of many still compatible with the data, not that it is correct.
 We make this link between intervals and hypotheses precise in [Hypothesis Testing](01_08_HypothesisTests.qmd).
 :::
@@ -366,16 +365,16 @@ Change to $\pm 2 sd$ to see Precision-Accuracy tradeoff.
 
 ```{r}
 # Normal CI for each sample
-xq <- apply(X_samples, 1, function(r){ #theoretical se's
-    mean(r) + c(-1, 1)*sd(r)/sqrt(length(r))
+xq <- apply(X_samples, 1, function(x_row_hat){ #theoretical se's
+    mean(x_row_hat) + c(-1, 1)*sd(x_row_hat)/sqrt(length(x_row_hat))
 })
 # First 3 interval estimates
 xq[, c(1, 2, 3)]
 
 # Explicit calculation
-mu_true <- 0.5 # theoretical result for uniform samples
+true_mean <- 0.5 # theoretical result for uniform samples
 # Logical vector: whether the true mean is in each CI
-covered <- mu_true >= xq[1, ] & mu_true <= xq[2, ]
+covered <- true_mean >= xq[1, ] & true_mean <= xq[2, ]
 # Empirical coverage rate
 coverage_rate <- mean(covered)
 cat(sprintf('Estimated coverage probability: %.2f%%\n', 100 * coverage_rate))
@@ -394,15 +393,15 @@ For example, an upper-bounded interval uses $(-\infty, q_{0.95}]$, where $q_{0.9
 A lower-bounded interval uses $[q_{0.05}, \infty)$, where $q_{0.05}$ is the $5^{\text{th}}$ percentile of the bootstrap distribution: we are $95\%$ confident the true value is at least $q_{0.05}$.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-For the electricity bill example above with $\hat{M}=142$ and $SE=5$, a one-sided $95\%$ upper-bounded confidence interval is
-$$(-\infty,~ \hat{M} + 1.645 \times SE] = (-\infty,~ 142 + 1.645 \times 5] = (-\infty,~ 150.2].$$
+For the electricity bill example above with $\hat{m}=142$ and $SE=5$, a one-sided $95\%$ upper-bounded confidence interval is
+$$(-\infty,~ \hat{m} + 1.645 \times SE] = (-\infty,~ 142 + 1.645 \times 5] = (-\infty,~ 150.2].$$
 We are $95\%$ confident the population mean bill is at most $\$150.20$.
 Note that $1.645$ is the $95^{\text{th}}$ percentile of the standard normal (compared to $1.96$ for the two-sided case).
 ```{r}
-M_hat <- 142
+m_bill_hat <- 142
 SE <- 5
 # One-sided 95% upper bound
-M_hat + qnorm(0.95) * SE
+m_bill_hat + qnorm(0.95) * SE
 ```
 :::
 
@@ -411,21 +410,19 @@ Here is a bootstrap right-tail example
 ```{r}
 # Bootstrap Distribution
 set.seed(1) # to be replicable
-bootstrap_means <- rep(NA, 9999)
-for(b in seq_along(bootstrap_means)){
-    dat_id <- seq(1, length(sample_dat))
-    boot_id <- sample(dat_id, replace=TRUE)
-    dat_b  <- sample_dat[boot_id] # c.f. jackknife
-    mean_b <- mean(dat_b)
-    bootstrap_means[b] <-mean_b
+boot_means <- rep(NA, 9999)
+for(b in seq_along(boot_means)){
+    x_boot <- sample(x_hat, replace=TRUE) # c.f. jackknife
+    m_b_hat <- mean(x_boot)
+    boot_means[b] <-m_b_hat
 }
 
 # One-sided 95% lower bound
 # We are 95% confident the mean is at least q_05
-hist(bootstrap_means, border=NA, breaks=50,
+hist(boot_means, border=NA, breaks=50,
     freq=FALSE, main=NA, xlab='Bootstrap')
-abline(v=sample_mean, col=rgb(0, 0, 1, .8))
-ci_95 <- quantile(bootstrap_means, probs=c(0.05, 1) )
+abline(v=m_hat, col=rgb(0, 0, 1, .8))
+ci_95 <- quantile(boot_means, probs=c(0.05, 1) )
 abline(v=ci_95, lwd=2)
 ```
 :::
@@ -443,13 +440,13 @@ We compute it from the lower and upper quantiles of the data themselves, so its 
 Prediction intervals are useful when the decision depends on individual outcomes rather than averages: forecasting whether a single warranty claim, a single weather day, or a single test score will fall in a tolerable range.
 Note that $Z\%$ confidence intervals do not generally cover $Z\%$ of the data: in the examples above, the $90\%$ confidence interval for the mean is roughly $[0.48, 0.52]$, which theoretically covers only a $0.04$ proportion of uniform random data, far less than $0.9$.
 ```{r}
-x <- runif(1000)
+x_future_hat <- runif(1000)
 # Middle 90% of values
-xq0 <- quantile(x, probs=c(.05, .95))
+xq0 <- quantile(x_future_hat, probs=c(.05, .95))
 paste0('we are 90% confident that a future data point will be between ', 
     round(xq0[1], 2), ' and ', round(xq0[2], 2) )
 
-hist(x,
+hist(x_future_hat,
     breaks=seq(0, 1, by=.01), border=NA,
     freq=FALSE, main=NA)
 title('Prediction Interval', font.main=1)
@@ -469,7 +466,7 @@ See [Simple Regression](02_15_SimpleRegression.qmd) for how these ideas extend t
 2. A 95% confidence interval does not mean there is a 95% probability the true parameter lies inside that particular interval.
    Explain what "95% confident" actually means in terms of repeated sampling.
 
-3. Suppose a sample of $n = 49$ light bulbs has a mean lifetime of $\hat{M} = 1200$ hours with a sample standard deviation of $\hat{S} = 140$ hours.
+3. Suppose a sample of $n = 49$ light bulbs has a mean lifetime of $\hat{m} = 1200$ hours with a sample standard deviation of $\hat{s} = 140$ hours.
    Compute the 90% and 99% Normal-approximation confidence intervals for the population mean lifetime.
    Which interval is wider, and why?
 
@@ -485,5 +482,5 @@ See [Simple Regression](02_15_SimpleRegression.qmd) for how these ideas extend t
 #### **Recall** {-}
 
 This chapter built *confidence intervals* two ways (the *bootstrap percentile* method and the *Normal approximation*), explained what "$Z\%$ confident" means in repeated sampling, and showed the precision–accuracy trade-off.
-The electricity-bill example tied the Normal formula to numbers: with $\hat{M}=142$, $\hat{S}=30$, and $n=36$, the classical standard error is $SE(M) = 30/\sqrt{36} = 5$, and the $95\%$ margin of error is $E = 1.96 \times 5 = 9.8$, giving a confidence interval of $[\$132.20, \$151.80]$.
+The electricity-bill example tied the Normal formula to numbers: with $\hat{m}=142$, $\hat{s}=30$, and $n=36$, the classical standard error is $SE(M) = 30/\sqrt{36} = 5$, and the $95\%$ margin of error is $E = 1.96 \times 5 = 9.8$, giving a confidence interval of $[\$132.20, \$151.80]$.
 In the next chapter we use the same machinery to test specific hypotheses about the population.

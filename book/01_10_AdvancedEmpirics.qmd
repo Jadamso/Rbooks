@@ -20,14 +20,14 @@ Kernel densities are useful when we want a continuous picture of shape: easier t
 Different kernels weight nearby points in different ways, producing curves with visually distinct (but qualitatively similar) shapes.
 The simplest *kernel function* is the "uniform" (or "rectangular") kernel, which places a weight of $1/2$ on every point inside the interval $\left[ x-h, x + h\right]$ and zero outside:
 $$\begin{aligned}
-k_{U}\left( \hat{X}_{i}, x, h \right) 
-&= \frac{\mathbf{1}\left(\frac{|\hat{X}_{i}-x|}{h} \leq 1\right)}{2} 
-= \frac{\mathbf{1}\left( \hat{X}_{i} \in \left[ x-h, x + h\right] \right) }{2} \\
-\hat{f}_{U}(x) &= \frac{1}{nh} \sum_{i}^{n} k_{U}(\hat{X}_{i}, x, h)  = \frac{ \sum_{i}^{n} \mathbf{1}\left( \hat{X}_{i} \in \left[ x-h, x + h\right] \right) }{n 2 h}
+k_{U}\left( \hat{x}_{i}, x, h \right)
+&= \frac{\mathbf{1}\left(\frac{|\hat{x}_{i}-x|}{h} \leq 1\right)}{2}
+= \frac{\mathbf{1}\left( \hat{x}_{i} \in \left[ x-h, x + h\right] \right) }{2} \\
+\hat{f}_{U}(x) &= \frac{1}{nh} \sum_{i}^{n} k_{U}(\hat{x}_{i}, x, h)  = \frac{ \sum_{i}^{n} \mathbf{1}\left( \hat{x}_{i} \in \left[ x-h, x + h\right] \right) }{n 2 h}
 \end{aligned}$$
 
 For example, take the dataset $\{3, 3.1, 0.02\}$ with bandwidth $h=1/2$ and evaluate the density at $x=3$.
-The interval $[x-h, x+h]=[2.5, 3.5]$ contains the two points $3$ and $3.1$, so $\sum_{i}\mathbf{1}\left(\hat{X}_{i} \in [2.5,3.5]\right)=2$ and $\hat{f}_{U}(3)=\frac{2}{n 2h}=\frac{2}{3\times 1}=2/3$.
+The interval $[x-h, x+h]=[2.5, 3.5]$ contains the two points $3$ and $3.1$, so $\sum_{i}\mathbf{1}\left(\hat{x}_{i} \in [2.5,3.5]\right)=2$ and $\hat{f}_{U}(3)=\frac{2}{n 2h}=\frac{2}{3\times 1}=2/3$.
 
 Notice that the uniform kernel is essentially the histogram but without the restriction that $x$ must be a midpoint of *exclusive* bins.
 Typically, the points $x$ are chosen to be either the unique observations or some equidistant set of "design points" (e.g., at $512$ evenly spaced values of $x$ the dataset, not just the midpoints of exclusive bins).^[
@@ -39,8 +39,8 @@ The conversion is a constant that depends on the kernel: the half-width is $\sqr
 
 ```{r}
 # Practical Example
-X <- USArrests[, 'Murder']
-hist(X,
+x_hat <- USArrests[, 'Murder']
+hist(x_hat,
     breaks=seq(0, 20, by=2), # bin width =2, so h=1
     freq=FALSE,
     border=NA,
@@ -50,9 +50,10 @@ title('Murder Arrests', font.main=1)
 # Density Estimate with half-width h=3
 # 'density' reads bw as the kernel's standard deviation, so pass bw=h/sqrt(3)
 h <- 3
-lines( density(X, bw=h/sqrt(3), kernel='rectangular') )
+f_hat <- density(x_hat, bw=h/sqrt(3), kernel='rectangular')
+lines(f_hat)
 # Raw Observations
-rug(X, col=grey(0, .5))
+rug(x_hat, col=grey(0, .5))
 ```
 
 We can also replace the uniform kernel with other kernel functions to create even smoother lines. 
@@ -63,43 +64,43 @@ There are many [kernels](https://en.wikipedia.org/wiki/Kernel_(statistics)#In_no
 # Kernel Density Functions
 
 x <- 0 # Design point
-X <- seq(-2, 2, length.out=1001) # Where to compute weight
-h <- 1 # Half-width: all three kernels are zero beyond |X-x| > h
+x_values <- seq(-2, 2, length.out=1001) # Where to compute weight
+h <- 1 # Half-width: all three kernels are zero beyond |x_values-x| > h
 
 
 plot.new()
 plot.window(xlim=c(-1.2, 1.2), ylim=c(0, 1))
 
 ## Uniform/rectangular
-d_unif <- function(X, x, h){
-    u <- abs(X-x)/h
+d_unif <- function(x_values, x, h){
+    u <- abs(x_values-x)/h
     fu <- 1/2*(u <= 1)
     return(fu)
 }
-kU <- d_unif(X, x, h)
+kU <- d_unif(x_values, x, h)
 kern_cols <- hcl.colors(3, alpha=.45)
-lines( kU ~ X, col=kern_cols[1], lty=1)
+lines( kU ~ x_values, col=kern_cols[1], lty=1)
 
 ## Epanechnikov
-d_epan <- function(X, x, h){
-    u <- abs(X-x)/h
+d_epan <- function(x_values, x, h){
+    u <- abs(x_values-x)/h
     fu <- 3/4*(1-u^2)*(u <= 1)
     return(fu)
 }
-kE <- d_epan(X, x, h)
-lines( kE ~ X, col=kern_cols[2], lty=1)
+kE <- d_epan(x_values, x, h)
+lines( kE ~ x_values, col=kern_cols[2], lty=1)
 ## Try others using the 'density' function
 # 'density' reads bw as the kernel's standard deviation, not the half-width h
 #kE <-  density(x=0, bw=h/sqrt(5), kernel='epanechnikov')
 
 ## Tricubic
-d_tricub <- function(X, x, h){
-    u <- abs(X-x)/h
+d_tricub <- function(x_values, x, h){
+    u <- abs(x_values-x)/h
     fu <- 70/81*(1-u^3)^3*(u <= 1)
     return(fu)
 }
-kT <- d_tricub(X, x, h)
-lines( kT ~ X, col=kern_cols[3], lty=1)
+kT <- d_tricub(x_values, x, h)
+lines( kT ~ x_values, col=kern_cols[3], lty=1)
 
 
 rug(0, lwd=2)
@@ -110,14 +111,14 @@ legend('topright', lty=1, col=kern_cols,
     legend=c('Uniform (h=1)', 'Epanechnikov (h=1)', 'Tricubic (h=1)'))
 ```
 
-Each of the three functions integrates to one over $u=(\hat{X}_{i}-x)/h$, so the same $\frac{1}{nh}$ rescaling above turns any of them into a density.
+Each of the three functions integrates to one over $u=(\hat{x}_{i}-x)/h$, so the same $\frac{1}{nh}$ rescaling above turns any of them into a density.
 
 Once we have picked a kernel (which particular one is not particularly important) we can use it to compute density estimates at each design point.
 
 ```{r}
 # Practical Example
-X <- USArrests[, 'Murder']
-hist(X,
+x_hat <- USArrests[, 'Murder']
+hist(x_hat,
     breaks=seq(0, 20, by=2), # bin width 2h=2, so h=1
     freq=FALSE,
     border=NA,
@@ -127,9 +128,10 @@ title('Murder Arrests', font.main=1)
 # Same half-width h=3 as the rectangular kernel above, but a smoother weight
 # For the Epanechnikov kernel, bw=h/sqrt(5)
 h <- 3
-lines( density(X, bw=h/sqrt(5), kernel='epanechnikov') )
+f_hat <- density(x_hat, bw=h/sqrt(5), kernel='epanechnikov')
+lines(f_hat)
 # Raw Observations
-rug(X, col=grey(0, .5))
+rug(x_hat, col=grey(0, .5))
 ```
 
 :::
@@ -147,13 +149,13 @@ Other examples include the *exponential transformation*: $y=\exp(x)$ for any $x\
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 The exponential function is $e^{x}=1+x/1+x^2/2+x^3/6....=\sum_{k=0}^{\infty} x^k/k!$ and the $log$ function is its inverse.
 ```{r}
-x <- 1:4
+x_hat <- 1:4
 
-y <- exp(x)
-y
+y_hat <- exp(x_hat)
+y_hat
 
-z <- log(y)
-z
+z_hat <- log(y_hat)
+z_hat
 ```
 :::
 
@@ -170,21 +172,21 @@ This function is continuous over $\lambda$.
 
 ```{r}
 # Box–Cox transform and inverse
-bc_transform <- function(x, lambda) {
-  if (any(x <= 0)) stop('Box-Cox requires x > 0')
-  if (abs(lambda) < 1e-8) log(x) else (x^lambda - 1)/lambda
+bc_transform <- function(x_hat, lambda) {
+  if (any(x_hat <= 0)) stop('Box-Cox requires x > 0')
+  if (abs(lambda) < 1e-8) log(x_hat) else (x_hat^lambda - 1)/lambda
 }
 bc_inverse <- function(t, lambda) {
   if (abs(lambda) < 1e-8) exp(t) else (lambda*t + 1)^(1/lambda)
 }
 
-X <- USArrests[, 'Murder']
-hist(X, main=NA, border=NA, freq=FALSE)
+x_hat <- USArrests[, 'Murder']
+hist(x_hat, main=NA, border=NA, freq=FALSE)
 
 par(mfrow=c(1, 3))
 for(lambda in c(-1, 0, 1)){
-    Y <- bc_transform(X, lambda)
-    hist(Y,
+    y_hat <- bc_transform(x_hat, lambda)
+    hist(y_hat,
         main=NA,
         border=NA, freq=FALSE)
     title(bquote(paste(lambda, '=', .(lambda))), font.main=1)
@@ -203,39 +205,39 @@ To do that, we define two types of functions:
 * *Concave* functions curve inwards, like the inside of a cave.
 * *Convex* functions curve outward, the opposite of concave.
 
-Let $\hat{Y}_{i}=g( \hat{X}_{i})$, and denote the mean as $\hat{M}_{Y}$.
+Let $\hat{y}_{i}=g( \hat{x}_{i})$, and denote the mean as $\hat{m}_{Y}$.
 
-If $g$ is a *concave* function, then $g( \hat{M}_{X} ) \geq \hat{M}_{Y}$.
+If $g$ is a *concave* function, then $g( \hat{m}_{X} ) \geq \hat{m}_{Y}$.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Here are some examples.
 ```{r}
 # Continuous Example 1
-x <- c(0, 1.123, 2.987, 3.654)
-mean( sqrt(x) )
-sqrt( mean(x) ) 
+x_hat <- c(0, 1.123, 2.987, 3.654)
+mean( sqrt(x_hat) )
+sqrt( mean(x_hat) )
 
 # Continuous Example 2
-mean( log(x) )
-log( mean(x) ) 
+mean( log(x_hat) )
+log( mean(x_hat) )
 ```
 
 ```{r}
 ## Discrete Example
 x  <- c(1, 2, 3)
 px <- c(0.2, 0.5, 0.3)
-MX <- sum(x * px)
-MX
+population_mean_x <- sum(x * px)
+population_mean_x
 
 g  <- sqrt
-g(MX)
+g(population_mean_x)
 
-MY <- sum(g(x) * px)
-MY
+population_mean_y <- sum(g(x) * px)
+population_mean_y
 ```
 :::
 
-If $g$ is a *convex* function, then the inequality reverses: $g( \hat{M}_{X}) \leq \hat{M}_{Y}$.
+If $g$ is a *convex* function, then the inequality reverses: $g( \hat{m}_{X}) \leq \hat{m}_{Y}$.
 ```{r}
 mean( exp(x) )
 exp( mean(x) )
@@ -267,19 +269,19 @@ To implement this, we
 Here is an example of generating random murder rates for US states.
 ```{r}
 # Empirical Distribution
-X <- USArrests[, 'Murder']
-FX_hat <- ecdf(X)
-plot(FX_hat, lwd=2, xlim=c(0, 20),
+x_hat <- USArrests[, 'Murder']
+F_hat <- ecdf(x_hat)
+plot(F_hat, lwd=2, xlim=c(0, 20),
     pch=16, col=grey(0, .5), main=NA)
 
 # Generating random variables via inverse ECDF
 p <- runif(3000) ## Multiple Draws
-QX_hat <- quantile(FX_hat, p, type=1)
-QX_hat[c(1, 2, 3)]
+x_draw_hat <- quantile(F_hat, p, type=1)
+x_draw_hat[c(1, 2, 3)]
 
 ## Can also do directly from the data
-QX_hat <- quantile(X, p, type=1)
-QX_hat[c(1, 2, 3)]
+x_draw_hat <- quantile(x_hat, p, type=1)
+x_draw_hat[c(1, 2, 3)]
 ```
 :::
 
@@ -319,14 +321,14 @@ qdagum <- function(p, scale.b=1, shape1.a, shape2.c) {
 # Generate Random Variables (VGAM::rdagum)
 rdagum <-function(n, scale.b=1, shape1.a, shape2.c){
     p <- runif(n) # generate random probabilities
-    x <- qdagum(p, scale.b=scale.b, shape1.a=shape1.a, shape2.c=shape2.c) #find the inverses
-    return(x)
+    x_hat <- qdagum(p, scale.b=scale.b, shape1.a=shape1.a, shape2.c=shape2.c) #find the inverses
+    return(x_hat)
 }
 
 # Example
 set.seed(123)
-X <- rdagum(3000, 1, 3, 1)
-X[c(1, 2, 3)]
+x_hat <- rdagum(3000, 1, 3, 1)
+x_hat[c(1, 2, 3)]
 ```
 
 
@@ -341,7 +343,7 @@ X[c(1, 2, 3)]
    Then write a short R function that does the same count and verify your three answers.
 
 3. Load `USArrests` in R and extract the `Assault` variable.
-   Compute `mean(log(X))` and `log(mean(X))`.
+   Compute `mean(log(x_hat))` and `log(mean(x_hat))`.
    Which is larger, and which case of Jensen's inequality does this illustrate?
    Then apply the Box–Cox transform with $\lambda \in \{-1, 0, 1/2, 1\}$ using `bc_transform` from this chapter, and plot the four histograms side by side.
    Which $\lambda$ gives the most symmetric histogram?
@@ -349,7 +351,7 @@ X[c(1, 2, 3)]
 4. The [exponential](01_04_RandomVariables.qmd#exponential) distribution with rate $\lambda$ has distribution function $F(x)=1-e^{-\lambda x}$ for $x \geq 0$.
    Solve for the quantile function $F^{-1}(p)$ by hand.
    Write an R function that draws $n$ values of $p$ from a uniform distribution and returns $F^{-1}(p)$, then generate $5000$ draws with $\lambda=2$.
-   Plot a histogram of your draws with `freq=FALSE` and overlay `dexp(x, rate=2)` to check that they match.
+   Plot a histogram of your draws with `freq=FALSE` and overlay `dexp(x_hat, rate=2)` to check that they match.
 
 #### **Further Reading** {-}
 
@@ -361,5 +363,5 @@ X[c(1, 2, 3)]
 
 This chapter collected three tools that extend the univariate toolkit: the *kernel density*, which smooths a histogram by averaging a weight function centered on each observation with half-width $h$; *data transformations* such as the log and the *Box–Cox* family, together with *Jensen's inequality* on how the mean of transformed data compares to the transformed mean; and *inverse sampling*, which generates random draws by feeding uniform probabilities through a quantile function.
 The running three-point dataset $\{3, 3.1, 0.02\}$ pins the first of these down: the uniform kernel density at $x=3$ with half-width $h=1/2$ equals $2/3$, because two points fall inside the interval $[2.5, 3.5]$ and $2/(3 \times 1)=2/3$.
-For the second, `mean(sqrt(x))` is never larger than `sqrt(mean(x))` because the square root is concave, and the inequality flips for a convex function like the exponential.
+For the second, `mean(sqrt(x_hat))` is never larger than `sqrt(mean(x_hat))` because the square root is concave, and the inequality flips for a convex function like the exponential.
 In the next part we extend distributions, statistics, and probability rules to pairs of variables.

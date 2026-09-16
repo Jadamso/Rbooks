@@ -27,14 +27,14 @@ Each new value is just the previous value plus a random shock (white noise).
 ```{r}
 # Generate Random Walk
 tN <- 200
-y <- numeric(tN)
-y[1] <- stock$AAPL.High[1]
+y_hat <- numeric(tN)
+y_hat[1] <- stock$AAPL.High[1]
 for (ti in 2:tN) {
-    y[ti] <- y[ti-1] + runif(1, -10, 10)
+    y_hat[ti] <- y_hat[ti-1] + runif(1, -10, 10)
 }
-#x <- runif(tN, -1, 1) White Noise
+#x_hat <- runif(tN, -1, 1) White Noise
 
-y_dat <- data.frame(Date=1:tN, RandomWalk=y)
+y_dat <- data.frame(Date=1:tN, RandomWalk=y_hat)
 fig <- plot_ly(y_dat, type = 'scatter', mode = 'lines') %>%
   add_trace(x= ~ Date, y= ~ RandomWalk) %>%
   layout(showlegend = FALSE)
@@ -62,13 +62,13 @@ A nonstationary series can disguise itself in a histogram because the histogram 
 layout(matrix(c(1, 2), nrow = 1), widths = c(4, 1))
 
 par(mar=c(4, 4, 1, 1))
-plot(1:tN, y, type='l', lwd=2,
+plot(1:tN, y_hat, type='l', lwd=2,
     xlab='t', ylab=expression(y[t]))
 title('Random walk: time path', font.main=1, adj=0)
 
 par(mar=c(4, 1, 1, 2))
-y_hist <- hist(y, breaks=20, plot=FALSE)
-barplot(y_hist$counts, horiz=TRUE, space=0, border=NA,
+f_hat <- hist(y_hat, breaks=20, plot=FALSE)
+barplot(f_hat$counts, horiz=TRUE, space=0, border=NA,
     col=grey(.5, .5), axes=FALSE)
 axis(1)
 title('Marginal', font.main=1, adj=0)
@@ -87,18 +87,20 @@ A time series is *stationary* if both its mean and variance do not depend on $t$
 
 Stationarity is useful as a precondition for most classical time-series tools, and violations come in distinct flavors: a series with a deterministic trend is mean-nonstationary, while a random walk is variance-nonstationary because $\mathbb{V}[Y_t]$ grows linearly in $t$.
 
-For example, consider the data generating process $Y_t = \beta t + \epsilon_t$, with $\epsilon_t \sim \text{N}(0, \sigma + \alpha t)$, with parameters $\beta$ affecting mean stationarity and $\alpha$ affecting variance stationarity.
+For example, consider the data generating process $Y_t = \beta t + \epsilon_t$, where $\epsilon_t$ is Normal with $\mathbb{E}[\epsilon_t]=0$ and $\sqrt{\mathbb{V}[\epsilon_t]}=\sigma+\alpha t>0$.
+Here $\sigma$ is the baseline standard deviation in this Normal model.
+Then $\mathbb{E}[Y_t]=\beta t$ and $\mathbb{V}[Y_t]=(\sigma+\alpha t)^2$, so $\beta$ affects mean stationarity and $\alpha$ affects variance stationarity.
 
 ```{r}
 tN <- 200
 simulate_series <- function(beta, alpha, sigma=.2){
-    y <- numeric(tN)
+    y_hat <- numeric(tN)
     for (ti in 1:tN) {
         mean_ti <- beta*ti
-        sd_ti <- (.2 + alpha*ti)
-        y[ti] <- mean_ti + rnorm(1, sd=sd_ti)
+        sd_ti <- (sigma + alpha*ti)
+        y_hat[ti] <- mean_ti + rnorm(1, sd=sd_ti)
     }
-    return(y)
+    return(y_hat)
 }
 
 # Plotting Functions
@@ -122,8 +124,8 @@ for(beta in c(0, .05)){
     plot_setup(alpha=alpha, beta=beta)
     sim_cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
     for( sim in 1:2){
-        y_sim <- simulate_series(beta=beta, alpha=alpha)
-        lines(y_sim, col=sim_cols[sim], lwd=2)
+        y_sim_hat <- simulate_series(beta=beta, alpha=alpha)
+        lines(y_sim_hat, col=sim_cols[sim], lwd=2)
     }
     plot_title(alpha=alpha, beta=beta)
 }}
@@ -161,8 +163,8 @@ Sum of squared deviations is $16+4+0+4+16=40$.
 So $\widehat{ACF}(1) = 16/40 = 0.4$.
 
 ```{r}
-y_acf <- c(2,4,6,8,10)
-acf(y_acf, plot=FALSE)$acf[2]
+y_acf_hat <- c(2,4,6,8,10)
+acf(y_acf_hat, plot=FALSE)$acf[2]
 ```
 :::
 
@@ -170,8 +172,8 @@ acf(y_acf, plot=FALSE)$acf[2]
 par(mfrow = c(2, 2))
 for(alpha in c(0, .015)){
 for(beta in c(0, .05)){
-    y_sim <- simulate_series(beta=beta, alpha=alpha)
-    acf(y_sim, main=NA)
+    y_sim_hat <- simulate_series(beta=beta, alpha=alpha)
+    acf(y_sim_hat, main=NA)
     plot_title(alpha=alpha, beta=beta)
 }}
 ```
@@ -184,19 +186,19 @@ Let $y=(1,2,3,4,5)$ and $x=(2,3,4,5,6)$, with $\bar{y}=3, \bar{x}=4$.
 The lag-1 cross-correlation pairs $y_t$ with $x_{t-1}$, giving three cross-products $(2-3)(2-4) = 2$, $(3-3)(3-4) = 0$, $(4-3)(4-4) = 0$, $(5-3)(5-4) = 2$.
 With $n=5$, the (biased) denominator is $\sqrt{\sum_t(y_t-\bar y)^2 \sum_t(x_t-\bar x)^2}/n = \sqrt{10 \cdot 10}/5 = 2$, so $\widehat{CCF}(1) = (2+0+0+2)/5 / 2 = 0.4$.
 ```{r}
-y_ccf <- c(1,2,3,4,5)
-x_ccf <- c(2,3,4,5,6)
-ccf(y_ccf, x_ccf, lag.max=1, plot=FALSE)$acf
+y_ccf_hat <- c(1,2,3,4,5)
+x_ccf_hat <- c(2,3,4,5,6)
+ccf(y_ccf_hat, x_ccf_hat, lag.max=1, plot=FALSE)$acf
 ```
 :::
 
 ```{r}
-x_sim <- runif(tN, -1, 1) # White Noise
+x_sim_hat <- runif(tN, -1, 1) # White Noise
 par(mfrow = c(2, 2))
 for(alpha in c(0, .015)){
 for(beta in c(0, .05)){
-    y_sim <- simulate_series(beta=beta, alpha=alpha)
-    ccf(y_sim, x_sim, main=NA)
+    y_sim_hat <- simulate_series(beta=beta, alpha=alpha)
+    ccf(y_sim_hat, x_sim_hat, main=NA)
     plot_title(alpha=alpha, beta=beta)
 }}
 ```
@@ -299,7 +301,7 @@ We can also assesses the relationship between two variables at varying distances
 ```{r}
 # Vector Data Example
 dat <- as.data.frame(northcarolina_vector)[, c('BIR74', 'SID74')]
-mu <- colMeans(dat)
+column_means <- colMeans(dat)
 
 # Format Distances
 dmat <- st_distance( st_centroid(northcarolina_vector) )
@@ -321,8 +323,8 @@ CCF <- lapply( seq(2, length(rdists)), function(ri){
     covs_r <- lapply(1:nrow(dmat_r), function(i){
         pairsi <- which(!is.na(dmat_r[i, ]))        
         covXiYj <- sapply(pairsi, function(j) {
-            dXi <- dat[i, 1] - mu[1]
-            dYj <- dat[j, 2] - mu[2]
+            dXi <- dat[i, 1] - column_means[1]
+            dYj <- dat[j, 2] - column_means[2]
             return(dXi*dYj)
         })
         return(covXiYj)
@@ -403,15 +405,15 @@ For each, explain the direction in which you expect the OLS estimate to be biase
 ```{r}
 # Simulate data with an endogeneity issue
 n <- 300
-z <- rbinom(n, 1, .5)
-xy <- sapply(z, function(zi){
-    y <- rnorm(1, zi, 1)
-    x <- rnorm(1, zi*2, 1)
-    c(x, y)
+z_hat <- rbinom(n, 1, .5)
+xy <- sapply(z_hat, function(zi){
+    y_hat <- rnorm(1, zi, 1)
+    x_hat <- rnorm(1, zi*2, 1)
+    c(x_hat, y_hat)
 })
-xy <- data.frame(x=xy[1, ], y=xy[2, ])
-plot(y ~ x, data=xy, pch=16, col=grey(0, .25), main=NA)
-abline(lm(y ~ x, data=xy), col=rgb(1, 0, 0, .8))
+xy <- data.frame(x_hat=xy[1, ], y_hat=xy[2, ])
+plot(y_hat ~ x_hat, data=xy, pch=16, col=grey(0, .25), main=NA)
+abline(lm(y_hat ~ x_hat, data=xy), col=rgb(1, 0, 0, .8))
 ```
 
 I will focus on the seminal economic example to provide some intuition.
@@ -490,7 +492,7 @@ mtext('Price', 2, line=2)
 ```
 
 Suppose we ask "what is the effect of price on quantity?"
-You can simply run a regression of quantity, $Y$, on price, $X$, and get the slope coefficient $\hat{B}_{1} = \hat{C}_{Q^{*} P^{*}} / \hat{V}_{P^{*}}$.
+You can simply run a regression of quantity, $Y$, on price, $X$, and get the slope coefficient $\hat{b}_{1} = \hat{c}_{Q^{*} P^{*}} / \hat{v}_{P^{*}}$.
 You always get a number back, but it is hard to interpret meaningfully. 
 ```{r}
 # Analyze Market Data
@@ -516,14 +518,14 @@ With multiple linear regression, endogeneity biases are not just a problem for y
 Suppose you are interested in how $X_{1}$ affects $Y$, conditioning on $X_{2}$, and that the data generating process is linear: $Y=\beta_{0}+\beta_{1}X_{1}+\beta_{2}X_{2}+\epsilon$.
 You paid special attention in your research design to find a case where $X_{1}$ is truly exogenous.
 Unfortunately, if $X_{2}$ is correlated with the error term, then there is also a bias for $X_{1}$.
-The magnitude of the bias for $X_{1}$ depends on the correlations between $X_{1}$ and $X_{2}$ as well as $X_{2}$ and $\epsilon$.^[Denoting $X=[X_{1}, X_{2}]$, you estimate the OLS coefficients $\hat{\mathbf{B}}$. After algebraic work, you can find the bias $\mathbb{E}[ \hat{\mathbf{B}} - \beta]$ suffers from a contamination effect.
+The magnitude of the bias for $X_{1}$ depends on the correlations between $X_{1}$ and $X_{2}$ as well as $X_{2}$ and $\epsilon$.^[Denoting $X=[X_{1}, X_{2}]$, you estimate the OLS coefficients $\hat{\mathbf{b}}$. After algebraic work, you can find the bias $\mathbb{E}[ \hat{\mathbf{b}} - \beta]$ suffers from a contamination effect.
 $$\begin{aligned}
-\hat{\mathbf{B}} &= [\hat{X}'\hat{X}]^{-1}X'y \\
+\hat{\mathbf{b}} &= [\hat{X}'\hat{X}]^{-1}X'y \\
 \mathbb{E}[X'\epsilon] &= 
 \begin{bmatrix}
 0 \\ \rho
 \end{bmatrix} \\
-\mathbb{E}[ \hat{\mathbf{B}} - \beta] &= [\hat{X}'\hat{X}]^{-1} \begin{bmatrix}
+\mathbb{E}[ \hat{\mathbf{b}} - \beta] &= [\hat{X}'\hat{X}]^{-1} \begin{bmatrix}
 0 \\ \rho
 \end{bmatrix} \neq
 \begin{bmatrix}
@@ -543,7 +545,7 @@ In the next chapter we look at the standard remedy: experimental and quasi-exper
    Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing.
    Finish with your own questions about whatever you found hardest.
 
-2. Explain why simultaneity in a competitive market makes it difficult to interpret the OLS slope $\hat{B}_1$ from a regression of quantity on price.
+2. Explain why simultaneity in a competitive market makes it difficult to interpret the OLS slope $\hat{b}_1$ from a regression of quantity on price.
    In your answer, distinguish between the structural demand slope $\beta_D$ and what OLS actually estimates.
 
 3. Using the North Carolina births data (`sf::st_read(system.file("shape/nc.shp", package="sf"))`), compute Moran's I for the variable `SID74` (sudden infant deaths in 1974). Is there evidence of spatial autocorrelation?
@@ -564,4 +566,3 @@ In the next chapter we look at the standard remedy: experimental and quasi-exper
 This chapter introduced three forms of observational dependence (temporal, spatial, and economic) and the diagnostic tools for each: ACF/CCF, Moran's I, and the endogeneity taxonomy.
 The supply-demand simulation made the endogeneity bite concrete: we ran 300 market periods through `qd_fun`/`qs_fun`, fit `lm(Q ~ P, data=dat1)`, and got a slope that confuses the supply and demand sides because price and quantity are jointly determined.
 In the next chapter we turn to experimental and quasi-experimental designs that supply the exogenous variation needed to identify causal effects: RDD, DID, and 2SLS.
-

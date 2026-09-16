@@ -90,7 +90,7 @@ x <- c(0, 1, 2)
 px <- dbinom(x, size=20, prob=0.05)
 round(px, 2)
 
-# CDF: Prob(X <= 2)
+# CDF: Prob(x_hat <= 2)
 pbinom(2, size=20, prob=0.05)
 ```
 :::
@@ -104,7 +104,7 @@ Try conducting a simulation first,
 ```{r}
 n <- 8
 p <- 0.3
-X <- rbinom(1000, n, p)
+x_hat <- rbinom(1000, n, p)
 ```
 :::
 
@@ -117,13 +117,13 @@ Build on the case $n=2$ above, then consider case $n=3$, and then the general ca
 # Compare empirical simulation vs theoretical
 n <- 2
 p <- 3/4
-X <-  rbinom(1000, size=n, prob=p)
+x_hat <-  rbinom(1000, size=n, prob=p)
 
 # Mean
-c(empirical = mean(X), theoretical = n*p)
+c(empirical = mean(x_hat), theoretical = n*p)
 
 # Variance
-c(empirical  = var(X),  theoretical  = n*p*(1-p))
+c(empirical  = var(x_hat),  theoretical  = n*p*(1-p))
 ```
 :::
 
@@ -191,9 +191,9 @@ That is, the Poisson mean and variance are both equal to the rate parameter.
 ```{r}
 # Compare empirical simulation vs theoretical
 lambda <- 3.5
-X <- rpois(1e4, lambda)
-c(emp_mean = mean(X), th_mean = lambda)
-c(emp_var  = var(X),  th_var  = lambda)
+x_hat <- rpois(1e4, lambda)
+c(emp_mean = mean(x_hat), th_mean = lambda)
+c(emp_var  = var(x_hat),  th_var  = lambda)
 ```
 :::
 
@@ -206,7 +206,7 @@ $$\begin{aligned}
 Prob(X_{i} > 7) &= 1 - \sum_{k=0}^{7} \frac{e^{-4.5} \cdot 4.5^{k}}{k!}
 \end{aligned}$$
 ```{r}
-# Prob(X > 7)
+# Prob(x_hat > 7)
 1 - ppois(7, lambda=4.5)
 
 # Verify: sum the PMF from 0 to 7
@@ -248,12 +248,14 @@ Suppose that $100$ employable people are selected randomly.
 What is the probability that this sample contains between $9$ and $12$ unemployed people.
 Use the normal approximation to binomial probabilities.
 
-Parameters are 
+Let $X_i$ be the number of unemployed people in the sample.
+Its mean, variance, and standard deviation are
 $$\begin{aligned}
-\mu &\approx n p = 10 \\
-\sigma^2 &= n p (1−p) = 100 (0.1)(0.9)=9 \\
-\sigma &= \sqrt{9}=3.
+\mathbb{E}[X_i] &= n p = 10 \\
+\mathbb{V}[X_i] &= n p (1-p) = 100 (0.1)(0.9)=9 \\
+\sqrt{\mathbb{V}[X_i]} &= \sqrt{9}=3.
 \end{aligned}$$
+These are exact Binomial moments; the Normal approximation uses the same mean and variance.
 :::
 
 The *Poisson Limit Theorem* says that as $n$ grows large, with $p$ growing smaller at the same time, and $n p$ converging to a fixed number $\lambda$, the Binomial distribution is approximately Poisson with parameter $\lambda$.
@@ -297,9 +299,10 @@ legend('topright', c('Binomial', 'Poisson'),
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 For another example, consider $n=1000$ independent trials each with probability $p=0.004$, so $\lambda = np = 4$.
-We can compare the exact Binomial to both approximations at once: the Poisson ($\lambda=4$) and the Normal ($\mu=np=4$, $\sigma^{2}=np(1-p)\approx 3.98$).
+The Binomial count $X_i$ has $\mathbb{E}[X_i]=np=4$ and $\mathbb{V}[X_i]=np(1-p)\approx 3.98$.
+We can compare the exact Binomial to both approximations at once: the Poisson with $\lambda=4$ and the Normal with the same mean and variance as the Binomial.
 ```{r}
-# Binom(1000, 0.004) vs Pois(4) vs Normal(4, 3.98)
+# Binom(1000, 0.004) vs Pois(4) vs Normal with mean 4 and variance 3.98.
 n <- 1000
 p <- 0.004
 x <- seq(0, 15)
@@ -315,7 +318,7 @@ title('Approximating the Binomial', font.main=1)
 points(x + 0.15, f_pois, type='h', col=approx_cols[2], lwd=2)
 lines(x, f_norm, col=approx_cols[3], lwd=2)
 legend('topright',
-    c('Binom(1000, 0.004)', 'Pois(4)', 'Normal(4, 3.98)'),
+    c('Binom(1000, 0.004)', 'Pois(4)', 'Normal (mean 4, variance 3.98)'),
     col=approx_cols, lwd=c(4, 2, 2))
 ```
 The Poisson is nearly exact here because $p$ is very small.
@@ -387,8 +390,8 @@ The density formula is mathematically involved, so we omit it and work graphical
 
 ```{r}
 ## Daily purchase rate: Beta(2, 2)
-X4 <- rbeta(2000, 2, 2)
-hist(X4, breaks=20, border=NA, main=NA, freq=FALSE,
+x4_hat <- rbeta(2000, 2, 2)
+hist(x4_hat, breaks=20, border=NA, main=NA, freq=FALSE,
     xlab='Purchase rate')
 
 x <- seq(0, 1, by=.01)
@@ -403,7 +406,7 @@ What is the probability that the daily purchase rate falls between $20\%$ and $8
 Intuitively depict this as the area under the density.
 Then compute it numerically using the CDF.
 ```{r}
-plot(ecdf(X4), main=NA,
+plot(ecdf(x4_hat), main=NA,
     xlab='Purchase rate') # Empirical
 
 x <- seq(0, 1, by=.01) # Theoretical
@@ -633,4 +636,3 @@ Prob(A \mid B) &= \frac{Prob(B \mid A) \cdot Prob(A)}{Prob(B \mid A) \cdot Prob(
 This chapter rounded out univariate probability with the *Binomial* and *Poisson* (discrete counts), the *Irwin–Hall* and *Beta* (continuous random variables built from Uniforms), and the set-theoretic machinery of *independence*, *conditional probability*, *Bayes' theorem*, and the *Law of Total Probability*.
 The defective-parts example wired these ideas together: with $Prob(A)=0.6$, $Prob(D \mid A)=0.03$, and $Prob(D \mid \lnot A)=0.05$, the Law of Total Probability gives $Prob(D)= 0.03 \times 0.6 + 0.05 \times 0.4 = 0.038$, and Bayes' theorem then reverses the conditioning: $Prob(A \mid D) = (0.03 \times 0.6)/0.038 \approx 0.474$.
 In the next chapter we collect three advanced empirical tools: kernel densities, data transformations, and drawing samples by inverting a distribution function.
-

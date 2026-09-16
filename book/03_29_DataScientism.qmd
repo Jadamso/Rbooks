@@ -79,7 +79,7 @@ The practice is both [pernicious](https://elephantinthelab.org/a-replication-cri
 # P-hacking OLS with different explanatory vars
 set.seed(123)
 n <- 50
-X1 <- runif(n)
+x1_hat <- runif(n)
 
 # Regression Machine:
 # repeatedly finds covariate, runs regression
@@ -88,17 +88,17 @@ p <- 1
 i <- 0
 while(p >= .001){ 
     # Get Random Covariate
-    X2 <-  runif(n)
+    x2_hat <-  runif(n)
     # Merge and `Analyze'
-    dat_i <- data.frame(X1, X2)
-    reg_i <- lm(X1 ~ X2, data=dat_i)
+    dat_i <- data.frame(x1_hat, x2_hat)
+    reg_i <- lm(x1_hat ~ x2_hat, data=dat_i)
     # update results in global environment
     p <- summary(reg_i)$coefficients[2, 4]
     i <- i+1
 }
 #summary(reg_i)
 
-plot(X1 ~ X2, data=dat_i,
+plot(x1_hat ~ x2_hat, data=dat_i,
     pch=16, col=grey(0, .5), main=NA)
 title(paste0('Random Dataset ', i, ':   p=',
     formatC(p, digits=2, format='fg')), font.main=1)
@@ -130,15 +130,15 @@ ii <- 0
 set.seed(123)
 while(p >= .05){
     # Get Random Covariates
-    X2 <-  runif(n)    
-    X3 <-  runif(n)
+    x2_hat <-  runif(n)
+    x3_hat <-  runif(n)
     # Create Treatment Variable based on Cutoff
     cutoffs <- seq(0, 1, length.out=11)[-c(1, 11)]
     for(tau in cutoffs){
-        T3 <- 1*(X3 > tau)
+        T3 <- 1*(x3_hat > tau)
         # Merge and `Analyze'
-        dat_i <- data.frame(X1, X2, T3)
-        ivreg_i <- feols(X1 ~ 1|X2 ~ T3, data=dat_i)
+        dat_i <- data.frame(x1_hat, x2_hat, T3)
+        ivreg_i <- feols(x1_hat ~ 1|x2_hat ~ T3, data=dat_i)
         # Update results in global environment
         ptab <- summary(ivreg_i)$coeftable
         if( nrow(ptab)==2){
@@ -280,12 +280,12 @@ ivreg_list <- vector('list', factorial(length(knames))/factorial(length(knames)-
 for( k1 in knames){
 for( k2 in setdiff(knames, k1)){
 for( k3 in setdiff(knames, c(k1, k2)) ){   
-    X1 <- vigen_csv[, k1]
-    X2 <- vigen_csv[, k2]
-    X3 <- vigen_csv[, k3]
+    x1_hat <- vigen_csv[, k1]
+    x2_hat <- vigen_csv[, k2]
+    x3_hat <- vigen_csv[, k3]
     # Merge and `Analyze'        
-    dat_i <- na.omit(data.frame(X1, X2, X3))
-    ivreg_i <- feols(X1 ~ 1|X2 ~ X3, data=dat_i)
+    dat_i <- na.omit(data.frame(x1_hat, x2_hat, x3_hat))
+    ivreg_i <- feols(x1_hat ~ 1|x2_hat ~ x3_hat, data=dat_i)
     ivreg_list[[ii]] <- list(ivreg_i, c(k1, k2, k3))
     ii <- ii+1
 }}}
@@ -339,10 +339,10 @@ plot(random_walk2, pch=16, col=rgb(0, 0, 1, .25),
 library(fixest)
 random_walk3 <- cumsum(runif(n, -1, 1))
 dat_i <- data.frame(
-    X1=random_walk1,
-    X2=random_walk2,
-    X3=random_walk3)
-ivreg_i <- feols(X1 ~ 1|X2 ~ X3, data=dat_i)
+    x1_hat=random_walk1,
+    x2_hat=random_walk2,
+    x3_hat=random_walk3)
+ivreg_i <- feols(x1_hat ~ 1|x2_hat ~ x3_hat, data=dat_i)
 summary(ivreg_i)
 
 # After experimenting with different instruments
@@ -356,12 +356,12 @@ You can use this as an instrument too, also providing a causal estimate of $X_{2
 # (around the large differences before and after)
 n1 <- 290
 wind1 <- c(n1-300, n1+300)
-dat1 <- data.frame(t=n_index, y=random_walk1, d=1*(n_index > n1))
+dat1 <- data.frame(t=n_index, y_hat=random_walk1, d=1*(n_index > n1))
 dat1_sub <- dat1[ n_index>wind1[1] & n_index < wind1[2], ]
 
 # Then find your big break
-reg0 <- lm(y ~ t, data=dat1_sub[dat1_sub$d==0, ])
-reg1 <- lm(y ~ t, data=dat1_sub[dat1_sub$d==1, ])
+reg0 <- lm(y_hat ~ t, data=dat1_sub[dat1_sub$d==0, ])
+reg1 <- lm(y_hat ~ t, data=dat1_sub[dat1_sub$d==1, ])
 
 # The evidence should show openly (it's just science)
 plot(random_walk1, pch=16, col=rgb(0, 0, 1, .25),
@@ -373,8 +373,8 @@ lines(reg1$model$t, reg1$fitted.values, col=rgb(0, 0, 0, .8))
 
 ```{r, message=FALSE, warning=FALSE, results='asis'}
 # Dress with some statistics for added credibility
-rdd_sub <- lm(y ~ d+t+d*t, data=dat1_sub)
-rdd_full <- lm(y ~ d+t+d*t, data=dat1)
+rdd_sub <- lm(y_hat ~ d+t+d*t, data=dat1_sub)
+rdd_full <- lm(y_hat ~ d+t+d*t, data=dat1)
 stargazer::stargazer(rdd_sub, rdd_full, 
     type='html',
     title='Recipe RDD',
@@ -399,8 +399,8 @@ abline(v=n2, lty=2)
 
 ```{r, message=FALSE, warning=FALSE, results='asis'}
 # Knead out any effects that are non-causal (aka correlation)
-dat2A <- data.frame(t=n_index, y=random_walk1, d=1*(n_index > n2), RWid=1)
-dat2B <- data.frame(t=n_index, y=random_walk2, d=0, RWid=2)
+dat2A <- data.frame(t=n_index, y_hat=random_walk1, d=1*(n_index > n2), RWid=1)
+dat2B <- data.frame(t=n_index, y_hat=random_walk2, d=0, RWid=2)
 dat2  <- rbind(dat2A, dat2B)
 dat2$RWid <- as.factor(dat2$RWid)
 dat2$tid <- as.factor(dat2$t)
@@ -409,9 +409,9 @@ dat2_sub <- dat2[ dat2$t>wind2[1] & dat2$t < wind2[2], ]
 # Report the stars for all to enjoy
 # (what about the intercept?)
 # (stable coefficients are the good ones?)
-did_fe1 <- lm(y ~ d+tid, data=dat2_sub)
-did_fe2 <- lm(y ~ d+RWid, data=dat2_sub)
-did_fe3 <- lm(y ~ d*RWid+tid, data=dat2_sub)
+did_fe1 <- lm(y_hat ~ d+tid, data=dat2_sub)
+did_fe2 <- lm(y_hat ~ d+RWid, data=dat2_sub)
+did_fe3 <- lm(y_hat ~ d*RWid+tid, data=dat2_sub)
 stargazer::stargazer(did_fe1, did_fe2, did_fe3,
     type='html',
     title='Recipe DID',
@@ -460,5 +460,5 @@ In your own empirical work, how would you distinguish a genuine causal finding f
 #### **Recall** {-}
 
 This chapter cataloged three ways significant results arise from noise (data errors, $p$-hacking, and spurious regression) and showed that all three causal-inference recipes (IV, RDD, DID) can produce statistically significant findings from purely random data.
-The p-hacking loop made the search problem concrete: with a strict cutoff of $p < 0.001$, the `while` loop kept regenerating random `X2` values until it eventually hit a "significant" regression, and the cumulative-$p$ formula $1-(1-\alpha)^k$ showed how the chance of at least one false discovery grows past $50\%$ by $k=700$ tries.
+The p-hacking loop made the search problem concrete: with a strict cutoff of $p < 0.001$, the `while` loop kept regenerating random `x2_hat` values until it eventually hit a "significant" regression, and the cumulative-$p$ formula $1-(1-\alpha)^k$ showed how the chance of at least one false discovery grows past $50\%$ by $k=700$ tries.
 In the next chapter we collect the remaining multivariate topics: prediction, multiple testing corrections, and the matrix-form OLS theory that underlies everything above.
