@@ -4,7 +4,7 @@
 
 There are several ways to statistically assess the relationship between two variables.
 The major differences surround whether the data are cardinal or an ordered/unordered factor.
-In all cases, these statistics measure association; [Association and Prediction Are Not Causation](02_18_NotCausation.qmd#association-is-not-causation) explains why they do not identify causal effects.
+In all cases, these statistics measure association, not causation.
 
 ## Cardinal Data
 
@@ -89,26 +89,26 @@ Note that this value suggests a positive relationship between the variables.
 Computationally, we do the same steps
 ```{r}
 # Create the Data
-x_hat <- c(0, 1, 2)
-x_hat
-y_hat <- c(0.1, 0.3, 0.2)
-y_hat
+x0_hat <- c(0, 1, 2)
+x0_hat
+y0_hat <- c(0.1, 0.3, 0.2)
+y0_hat
 
 # Compute the Means
-m_x_hat <- mean(x_hat)
-m_y_hat <- mean(y_hat)
+m_x_hat <- mean(x0_hat)
+m_y_hat <- mean(y0_hat)
 
 # Compute the Deviances
-dev_X <- x_hat - m_x_hat
-dev_Y <- y_hat - m_y_hat
+dev_X <- x0_hat - m_x_hat
+dev_Y <- y0_hat - m_y_hat
 
 # Compute the Covariance
-cov_manual <-  sum(dev_X * dev_Y) / length(x_hat)
+cov_manual <-  sum(dev_X * dev_Y) / length(x0_hat)
 
 # Compute the Standard Deviations
-v_x_hat <- sum(dev_X^2) / length(x_hat)
+v_x_hat <- sum(dev_X^2) / length(x0_hat)
 s_x_hat <- sqrt(v_x_hat)
-v_y_hat <- sum(dev_Y^2) / length(y_hat)
+v_y_hat <- sum(dev_Y^2) / length(y0_hat)
 s_y_hat <- sqrt(v_y_hat)
 
 # Compute the Correlation
@@ -116,7 +116,7 @@ cor_manual <- cov_manual / (s_x_hat * s_y_hat)
 cor_manual
 
 # Verify with the built-in function
-cor(x_hat, y_hat)
+cor(x0_hat, y0_hat)
 ```
 :::
 
@@ -128,16 +128,17 @@ For example, by inverting a confidence interval.
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 ```{r}
 # Load the Data
-xy <- USArrests[, c('Murder', 'UrbanPop')]
-xy_cor <- cor(xy[, 1], xy[, 2])
-#plot(xy, pch=16, col=grey(0, .25))
+xy_hat <- USArrests[, c('UrbanPop', 'Murder')]
+colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+xy_cor <- cor(xy_hat[, 'x_hat'], xy_hat[, 'y_hat'])
+#plot(xy_hat, pch=16, col=grey(0, .25))
     
 # Bootstrap Distribution of Correlation
-n <- nrow(xy)
+n <- nrow(xy_hat)
 bootstrap_cor <- rep(NA, 9999)
 for(b in seq(bootstrap_cor) ){
-    xy_boot <- xy[sample(n, replace=TRUE), ]
-    xy_cor_b <- cor(xy_boot[, 1], xy_boot[, 2])
+    xy_boot <- xy_hat[sample(n, replace=TRUE), ]
+    xy_cor_b <- cor(xy_boot[, 'x_hat'], xy_boot[, 'y_hat'])
     bootstrap_cor[b] <- xy_cor_b
 }
 hist(bootstrap_cor, breaks=100,
@@ -159,17 +160,14 @@ If we resample without replacement, this is known as a *permutation test*.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 ```{r}
-xy <- USArrests[, c('Murder', 'UrbanPop')]
-xy_cor <- cor(xy[, 1], xy[, 2])
-#plot(xy, pch=16, col=grey(0, .25))
-    
+# xy_hat and xy_cor defined above
 # Null Bootstrap Distribution of Correlation
-n <- nrow(xy)
+n <- nrow(xy_hat)
 null_bootstrap_cor <- rep(NA, 9999)
 for(b in seq(null_bootstrap_cor) ){
-    xy_boot <- xy
-    xy_boot[, 'UrbanPop'] <- xy[sample(n, replace=TRUE), 'UrbanPop'] ## Reshuffle X
-    xy_cor_b <- cor(xy_boot[, 1], xy_boot[, 2])
+    xy_boot <- xy_hat
+    xy_boot[, 'x_hat'] <- xy_hat[sample(n, replace=TRUE), 'x_hat'] ## Reshuffle X
+    xy_cor_b <- cor(xy_boot[, 'x_hat'], xy_boot[, 'y_hat'])
     null_bootstrap_cor[b] <- xy_cor_b
 }
 hist(null_bootstrap_cor, breaks=100,
@@ -212,7 +210,7 @@ $$\tilde{C}_{XY} = \text{Med}\left\{ (\hat{x}_{i} - \tilde{m}_{X})(\hat{y}_i - \
 The *median correlation* $\tilde{R}_{XY}$ rescales the codeviance by the product of the two median absolute deviations:
 $$\tilde{R}_{XY} = \frac{ \tilde{C}_{XY} }{ \hat{\text{MAD}}_{X} \hat{\text{MAD}}_{Y}}.$$
 
-The Falk codeviance is useful for cardinal data with outliers or heavy tails (income, prices, response times), where one extreme observation can move $\hat{c}_{XY}$ by a lot but $\tilde{C}_{XY}$ by very little (the same robustness rationale as for the median, $IQR$, and $\text{MAD}$ from Part 1).^[See [Medians and Absolute Deviations](01_03_DescriptiveStatistics.qmd#medians-and-absolute-deviations). See also the *Theil-Sen Estimator*, which may be seen as a precursor.]
+The Falk codeviance is useful for cardinal data with outliers or heavy tails (income, prices, response times), where one extreme observation can move $\hat{c}_{XY}$ by a lot but $\tilde{C}_{XY}$ by very little (the same robustness rationale as for the median, $IQR$, and $\text{MAD}$ from Part 1).^[See [Medians and Absolute Deviations](01_03_SummaryStatistics.qmd#medians-and-absolute-deviations). See also the *Theil-Sen Estimator*, which may be seen as a precursor.]
 Unlike the Pearson correlation, the median correlation $\tilde{R}_{XY}$ typically lies in $[-1,1]$ but not always.
 ```{r}
 codev <- function(xy) {
@@ -227,7 +225,7 @@ codev <- function(xy) {
   # Return the robust correlation measure
   return( CoDev / MadProd)
 }
-xy_codev <- codev(xy)
+xy_codev <- codev(xy_hat)
 xy_codev
 ```
 
@@ -246,8 +244,8 @@ The Codeviance is the median of those products: $\tilde{C}_{XY}=\text{Med}\{0,0,
 The median absolute deviations are $\hat{\text{MAD}}_{X}=\text{Med}\{0,1,1,2,2\}=1$ and $\hat{\text{MAD}}_{Y}=\text{Med}\{0,1,1,2,3\}=1$, so the median correlation is $\tilde{R}_{XY}=2/(1\cdot1)=2$.
 Here $\tilde{R}_{XY}$ exceeds $1$: unlike Pearson's correlation, the median correlation is not confined to $[-1,1]$.
 ```{r}
-xy_small <- cbind(x_hat=c(1,2,3,4,5), y_hat=c(2,1,4,3,6))
-codev(xy_small)
+xy0_hat <- cbind(x_hat=c(1,2,3,4,5), y_hat=c(2,1,4,3,6))
+codev(xy0_hat)
 ```
 :::
 
@@ -255,16 +253,13 @@ You construct sampling distributions and conduct hypothesis tests for Falk's Cod
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 ```{r}
-xy <- USArrests[, c('Murder', 'UrbanPop')]
-xy_cor <- cor(xy[, 1], xy[, 2])
-#plot(xy, pch=16, col=grey(0, .25))
-    
+# xy_hat and xy_codev defined above
 # Null Permutation Distribution of Codeviance
-n <- nrow(xy)
+n <- nrow(xy_hat)
 null_permutation_codev <- rep(NA, 9999)
 for(b in seq(null_permutation_codev) ){
-    xy_perm <- xy
-    xy_perm[, 'UrbanPop'] <- xy[sample(n, replace=FALSE), 'UrbanPop'] ## Reshuffle X
+    xy_perm <- xy_hat
+    xy_perm[, 'x_hat'] <- xy_hat[sample(n, replace=FALSE), 'x_hat'] ## Reshuffle X
     xy_codev_b <- codev(xy_perm)
     null_permutation_codev[b] <- xy_codev_b
 }
@@ -298,11 +293,12 @@ Kendall's $\hat{KT}$ is useful for any *monotone* relationship: the values do no
 Because it only uses signs, it works for any ordinal data (rankings, ordered categories) where arithmetic averages are not meaningful.
 The bounds $[-1, 1]$ make it directly comparable to the Pearson correlation: a value closer to $+1$ suggests positive association in rankings, $-1$ negative, and $0$ no association in the ordering.
 ```{r}
-xy <- USArrests[, c('Murder', 'UrbanPop')]
-xy[, 1] <- rank(xy[, 1] )
-xy[, 2] <- rank(xy[, 2] )
-# plot(xy, pch=16, col=grey(0, .25))
-KT <- cor(xy[, 1], xy[, 2], method = 'kendall')
+# Convert each variable to ranks
+xy_rank_hat <- xy_hat
+xy_rank_hat[, 'x_hat'] <- rank(xy_hat[, 'x_hat'])
+xy_rank_hat[, 'y_hat'] <- rank(xy_hat[, 'y_hat'])
+# plot(xy_rank_hat, pch=16, col=grey(0, .25))
+KT <- cor(xy_rank_hat[, 'x_hat'], xy_rank_hat[, 'y_hat'], method = 'kendall')
 round(KT, 3)
 ```
 
@@ -336,8 +332,8 @@ You construct sampling distributions and conduct hypothesis tests for Kendall's 
 Test whether Kendal's correlation statistic is statistically different from $0$.
 Expand on the example below to use bootstrapping.
 ```{r}
-xy <- USArrests[, c('Murder', 'UrbanPop')]
-KT <- cor(xy[, 1], xy[, 2], method='kendall')
+# xy_hat defined above
+KT <- cor(xy_hat[, 'x_hat'], xy_hat[, 'y_hat'], method='kendall')
 ```
 :::
 
@@ -378,9 +374,9 @@ MyPlot <- function(xy, xlim = c(-4, 4), ylim = c(-3, 3)) {
 MvNormal <- function(n = 1000, cor, f) {
    for (i in cor) {
       sd = matrix(c(1, i, i, 1), ncol = 2)
-      xy_hat = mvtnorm::rmvnorm(n, c(0, 0), sd)
-      xy_hat[, 2] <- f(xy_hat[, 2])
-      MyPlot(xy_hat)
+      xy_sim <- mvtnorm::rmvnorm(n, c(0, 0), sd)
+      xy_sim[, 2] <- f(xy_sim[, 2])
+      MyPlot(xy_sim)
    }
 }
 
@@ -410,10 +406,11 @@ Cramer's V is useful for two unordered categorical variables (occupation, region
 The chi-squared piece measures how far observed counts are from what we would expect if $\hat{x}$ and $\hat{y}$ were independent, and dividing by $n \cdot \min(J - 1, K - 1)$ rescales it into a bounded score so different tables are comparable: $0$ suggests no association, and a value closer to $1$ suggests a strong association.
 
 ```{r}
-xy <- USArrests[, c('Murder', 'UrbanPop')]
-xy[, 1] <- cut(xy[, 1], 3)
-xy[, 2] <- cut(xy[, 2], 4)
-table(xy)
+# Cut each variable into bins: UrbanPop into 4, Murder into 3
+xy_bin_hat <- xy_hat
+xy_bin_hat[, 'x_hat'] <- cut(xy_hat[, 'x_hat'], 4)
+xy_bin_hat[, 'y_hat'] <- cut(xy_hat[, 'y_hat'], 3)
+table(xy_bin_hat)
 
 CV <- function(xy){
     # Create a contingency table from the categorical variables
@@ -428,9 +425,9 @@ CV <- function(xy){
     V <- sqrt((chi2 / n) / df_min)
     return(V)
 }
-CV(xy)
+CV(xy_bin_hat)
 
-# DescTools::CramerV( table(xy) )
+# DescTools::CramerV( table(xy_bin_hat) )
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
@@ -493,5 +490,4 @@ You construct sampling distributions and conduct hypothesis tests for  Cramer's 
 #### **Recall** {-}
 
 This chapter summarized two-variable association with a small toolbox matched to data type: Pearson correlation $\hat{r}_{XY}$ for cardinal data (worked out by hand on $\{(0, 0.1), (1, 0.3), (2, 0.2)\}$, yielding $\hat{r}_{XY}=1/2$), Falk codeviance $\tilde{C}_{XY}$ as the robust cousin for outlier-prone data, Kendall's $\hat{KT}$ for ordered factors (walked through the six pairs of $\{(1, 1), (2, 3), (3, 2), (4, 4)\}$ to get $\hat{KT}=2/3$), and Cramer's V $\hat{CV}$ for unordered factors (the $2\times 2$ degree-vs-employment table giving $\hat{CV}\approx 0.41$).
-These statistics describe association rather than causation, a distinction developed in [Association and Prediction Are Not Causation](02_18_NotCausation.qmd).
-The next chapter takes the cardinal case and fits a line, which moves from "how strongly do $X$ and $Y$ move together" to "by how much does $Y$ change per unit of $X$".
+These statistics describe association rather than causation.

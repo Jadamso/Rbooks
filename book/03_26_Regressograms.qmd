@@ -22,16 +22,16 @@ The multivariate regressogram is useful for estimating a conditional mean withou
 This flexibility is also its main drawback: as the number of explanatory variables grows, the cells empty out and predictions in sparse regions become noisy; the simulated data below uses two predictors to keep things visible.
 
 ```{r}
-## Simulate data: y_hat is a nonlinear function of x1_hat and x2_hat plus noise.
+## Simulate data: y_sim is a nonlinear function of x1_sim and x2_sim plus noise.
 N <- 10000
 e <- rnorm(N)
-x1_hat <- seq(.1, 20, length.out=N)
-x2_hat <- runif(N, 0, 1)
-y_hat  <- 3*exp(-2*x2_hat + 1.5*x1_hat - .1*x1_hat^2)*x1_hat + e
-dat <- data.frame(x1_hat, x2_hat, y_hat)
+x1_sim <- seq(.1, 20, length.out=N)
+x2_sim <- runif(N, 0, 1)
+y_sim  <- 3*exp(-2*x2_sim + 1.5*x1_sim - .1*x1_sim^2)*x1_sim + e
+xy_sim <- data.frame(x1_sim, x2_sim, y_sim)
 
 ## Create color palette (reused in later examples)
-col_scale <- seq(min(y_hat)*1.1, max(y_hat)*1.1, length.out=401)
+col_scale <- seq(min(y_sim)*1.1, max(y_sim)*1.1, length.out=401)
 ycol_pal <- hcl.colors(length(col_scale), alpha=.5)
 names(ycol_pal) <- sort(col_scale)
 
@@ -55,8 +55,8 @@ add_legend <- function(col_scale,
 
 ## Plot Data
 par(oma=c(0, 0, 0, 2))
-plot(x1_hat ~ x2_hat, dat,
-    col=ycol_pal[cut(y_hat, col_scale)],
+plot(x1_sim ~ x2_sim, xy_sim,
+    col=ycol_pal[cut(y_sim, col_scale)],
     pch=16, cex=.5,
     main=NA)
 title('Raw Data', font.main=1)
@@ -69,7 +69,7 @@ add_legend(x='topright', col_scale=col_scale,
 We start with a global linear baseline, fitted without an interaction.
 ```{r}
 ## OLS (without interaction; the additive baseline)
-reg <- lm(y_hat ~ x1_hat+x2_hat, data=dat)
+reg <- lm(y_sim ~ x1_sim+x2_sim, data=xy_sim)
 
 ## Grid Points for Prediction
 # X1 bins
@@ -83,7 +83,7 @@ bks2 <- seq(0, 1, length.out=l2)
 h2 <- diff(bks2)[1]/2
 mids2 <- bks2[-1]-h2
 # Grid
-pred_x <- expand.grid(x1_hat=mids1, x2_hat=mids2)
+pred_x <- expand.grid(x1_sim=mids1, x2_sim=mids2)
 
 ## OLS Predictions
 pred_ols <- predict(reg, newdata=pred_x)
@@ -91,7 +91,7 @@ pred_df_ols  <- cbind(pred_ols, pred_x)
 
 ## Plot Predictions
 par(oma=c(0, 0, 0, 2))
-plot(x1_hat ~ x2_hat, pred_df_ols,
+plot(x1_sim ~ x2_sim, pred_df_ols,
     col=ycol_pal[cut(pred_ols, col_scale)],
     pch=15, cex=2,
     main=NA)
@@ -107,25 +107,25 @@ add_legend(x='topright', col_scale=col_scale,
 # Multivariate Regressogram
 ##################
 
-## Cut each variable into bins, then interact them: each (x1c_hat, x2c_hat) cell
+## Cut each variable into bins, then interact them: each (x1c_sim, x2c_sim) cell
 ## gets its own mean. With the `*` interaction the model is fully saturated.
-dat$x1c_hat <- cut(dat$x1_hat, bks1)
-dat$x2c_hat <- cut(dat$x2_hat, bks2)
+xy_sim$x1c_sim <- cut(xy_sim$x1_sim, bks1)
+xy_sim$x2c_sim <- cut(xy_sim$x2_sim, bks2)
 
-## Regressogram (interacted bins -> one mean per (x1c_hat, x2c_hat) cell)
-reg <- lm(y_hat ~ x1c_hat*x2c_hat, data=dat)
+## Regressogram (interacted bins -> one mean per (x1c_sim, x2c_sim) cell)
+reg <- lm(y_sim ~ x1c_sim*x2c_sim, data=xy_sim)
 
 ## Predicted Values
 ## For Points in Middle of Each Bin
 pred_df_rgrm <- expand.grid(
-    x1c_hat=levels(dat$x1c_hat),
-    x2c_hat=levels(dat$x2c_hat))
+    x1c_sim=levels(xy_sim$x1c_sim),
+    x2c_sim=levels(xy_sim$x2c_sim))
 pred_df_rgrm$y_fit <- predict(reg, newdata=pred_df_rgrm)
 pred_df_rgrm <- cbind(pred_df_rgrm, pred_x)
 
 ## Plot Predictions
 par(oma=c(0, 0, 0, 2))
-plot(x1_hat ~ x2_hat, pred_df_rgrm,
+plot(x1_sim ~ x2_sim, pred_df_rgrm,
     col=ycol_pal[cut(pred_df_rgrm$y_fit, col_scale)],
     pch=15, cex=2,
     main=NA)
@@ -145,13 +145,13 @@ A regressogram prediction is just the average of $\hat{y}_i$ within a bin.
 Consider six observations, with $x_1$ and $x_2$ each split into "low" and "high".
 
 ```{r}
-ex <- data.frame(
+xy0_hat <- data.frame(
     y_hat  = c(2, 4, 5, 9, 8, 12),
     x1_hat = c('low', 'low', 'low', 'high', 'high', 'high'),
     x2_hat = c('low', 'low', 'high', 'low', 'high', 'high'))
 
 # Regressogram prediction = mean of y_hat within each (x1_hat, x2_hat) cell
-aggregate(y_hat ~ x1_hat + x2_hat, data=ex, FUN=mean)
+aggregate(y_hat ~ x1_hat + x2_hat, data=xy0_hat, FUN=mean)
 ```
 
 The fitted value for any point is its cell mean: $(2+4)/2 = 3$ for the (low, low) cell, $5$ for (low, high), $9$ for (high, low), and $(8+12)/2 = 10$ for (high, high).
@@ -177,19 +177,19 @@ We bin one variable, then fit a full linear model of $\hat{y}$ on the explanator
 # Multivariate Piecewise Regression
 ##################
 
-## Bin x1_hat, then fit a linear model of y_hat on (x1_hat, x2_hat) within each bin
-dat$x1c_hat <- cut(dat$x1_hat, bks1)
-preg <- lm(y_hat ~ x1c_hat/(x1_hat + x2_hat), data=dat)
+## Bin x1_sim, then fit a linear model of y_sim on (x1_sim, x2_sim) within each bin
+xy_sim$x1c_sim <- cut(xy_sim$x1_sim, bks1)
+preg <- lm(y_sim ~ x1c_sim/(x1_sim + x2_sim), data=xy_sim)
 
 ## Predicted Values
 ## For the same grid of points used above
 pred_df_preg <- pred_x
-pred_df_preg$x1c_hat <- cut(pred_df_preg$x1_hat, bks1)
+pred_df_preg$x1c_sim <- cut(pred_df_preg$x1_sim, bks1)
 pred_df_preg$y_fit <- predict(preg, newdata=pred_df_preg)
 
 ## Plot Predictions
 par(oma=c(0, 0, 0, 2))
-plot(x1_hat ~ x2_hat, pred_df_preg,
+plot(x1_sim ~ x2_sim, pred_df_preg,
     col=ycol_pal[cut(pred_df_preg$y_fit, col_scale)],
     pch=15, cex=2,
     main=NA)
@@ -198,13 +198,13 @@ add_legend(x='topright', col_scale=col_scale,
     yl=6, inset=c(0, .05), title='y')
 ```
 
-The formula `y_hat ~ x1c_hat/(x1_hat + x2_hat)` gives each `x1_hat` bin its own intercept and its own slopes on `x1_hat` and `x2_hat`.
+The formula `y_sim ~ x1c_sim/(x1_sim + x2_sim)` gives each `x1_sim` bin its own intercept and its own slopes on `x1_sim` and `x2_sim`.
 Running one regression per data subset with `split()` gives identical predictions, as shown for the bivariate case in [Local Regression](02_16_LocalRegression.qmd#piecewise-regression).
 A fully *local linear regression* generalizes this further, replacing hard bins with kernel weights and a separate bandwidth for each variable; see [Local Regression](02_16_LocalRegression.qmd#local-linear-regression) for the bivariate version.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Compare the three sets of predictions in this chapter (OLS, regressogram, and piecewise).
-Which captures the curvature in `x1_hat`?
+Which captures the curvature in `x1_sim`?
 Which is smoothest?
 Refit the piecewise model with finer bins (`bks1 <- seq(0, 20, length.out=21)`) and describe how the prediction plot changes.
 :::
@@ -216,19 +216,21 @@ We can then use $F$-tests to examine whether a break is statistically significan
 Both the interaction-model $F$-test (`anova`) and the *Chow test* below test the same null of "no break", and give the same answer.
 ```{r}
 library(Ecdat)
-reg <- lm(wage ~ school, data=Wages1)
+xy2_hat <- Wages1[, c('school', 'wage')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
+reg <- lm(y_hat ~ x_hat, data=xy2_hat)
 
 # F-test for a break at school = 12
-reg2 <- lm(wage ~ school*I(school>12), data=Wages1)
+reg2 <- lm(y_hat ~ x_hat*I(x_hat>12), data=xy2_hat)
 anova(reg, reg2)
 
 # Chow test for the same break
-data_splits <- split(Wages1, Wages1$school <= 12)
-resids <- sapply(data_splits, function(subdat){
-    reg_sub <- lm(wage ~ school, data=subdat)
+data_splits <- split(xy2_hat, xy2_hat$x_hat <= 12)
+resids <- sapply(data_splits, function(xy2_sub){
+    reg_sub <- lm(y_hat ~ x_hat, data=xy2_sub)
     sum(resid(reg_sub)^2)
 })
-Ns <- sapply(data_splits, function(subdat){ nrow(subdat) })
+Ns <- sapply(data_splits, function(xy2_sub){ nrow(xy2_sub) })
 
 # Chow F-statistic: does splitting the sample reduce RSS enough?
 Rt <- (sum(resid(reg)^2) - sum(resids))/sum(resids)
@@ -237,7 +239,7 @@ Ft <- Rt*Rb
 pf(Ft, reg$rank, sum(Ns)-2*reg$rank, lower.tail=FALSE)
 
 # See also
-# strucchange::sctest(wage ~ school, data=Wages1, type='Chow', point=.5)
+# strucchange::sctest(y_hat ~ x_hat, data=xy2_hat, type='Chow', point=.5)
 # segmented::segmented(reg)
 ```
 A small $p$-value is evidence that the wage-schooling slope changes at 12 years (the end of secondary school).
@@ -288,26 +290,26 @@ A model that overfits (e.g., too many bins) will have low in-sample error but hi
 The bandwidth $\mathbf{H}$ that minimizes cross-validation error balances flexibility against overfitting.
 :::
 
-To make this concrete, we use cross-validation to choose the number of `x1_hat` bins for the piecewise regression above.
+To make this concrete, we use cross-validation to choose the number of `x1_sim` bins for the piecewise regression above.
 We split the data into 5 folds, fit the model on 4 of them, and measure the squared prediction error on the held-out fold.
 
 ```{r}
-## 5-fold cross-validation for the number of x1_hat bins
+## 5-fold cross-validation for the number of x1_sim bins
 set.seed(1)
 n_folds <- 5
-fold_id <- sample(rep(1:n_folds, length.out=nrow(dat)))
+fold_id <- sample(rep(1:n_folds, length.out=nrow(xy_sim)))
 bin_counts <- c(2, 6, 10, 14, 18, 22)
 
 cv_mse <- sapply(bin_counts, function(L){
     bks <- seq(0, 20, length.out=L+1)
     fold_mse <- sapply(1:n_folds, function(k){
-        train <- dat[fold_id != k, ]
-        test  <- dat[fold_id == k, ]
-        train$x1c_hat <- cut(train$x1_hat, bks)
-        test$x1c_hat  <- cut(test$x1_hat, bks)
-        reg_k <- lm(y_hat ~ x1c_hat/(x1_hat + x2_hat), data=train)
-        pred_k <- predict(reg_k, newdata=test)
-        mean((test$y_hat - pred_k)^2, na.rm=TRUE)
+        xy_train_sim <- xy_sim[fold_id != k, ]
+        xy_test_sim  <- xy_sim[fold_id == k, ]
+        xy_train_sim$x1c_sim <- cut(xy_train_sim$x1_sim, bks)
+        xy_test_sim$x1c_sim  <- cut(xy_test_sim$x1_sim, bks)
+        reg_k <- lm(y_sim ~ x1c_sim/(x1_sim + x2_sim), data=xy_train_sim)
+        pred_k <- predict(reg_k, newdata=xy_test_sim)
+        mean((xy_test_sim$y_sim - pred_k)^2, na.rm=TRUE)
     })
     mean(fold_mse)
 })
@@ -321,12 +323,12 @@ abline(v=L_star, col=rgb(1, 0, 0, .8), lwd=2)
 title(paste0('CV-optimal: ', L_star, ' bins'), font.main=1)
 ```
 
-Too few bins cannot capture the curvature in `x1_hat` (high bias); too many bins split the data so finely that each local regression is noisy (high variance).
+Too few bins cannot capture the curvature in `x1_sim` (high bias); too many bins split the data so finely that each local regression is noisy (high variance).
 The cross-validated error is smallest in between.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 The cross-validation above selects bins for the piecewise model.
-Adapt the code to instead select bins for the *regressogram* `lm(y_hat ~ x1c_hat*x2c_hat)`, cutting both `x1_hat` and `x2_hat` into `L` bins.
+Adapt the code to instead select bins for the *regressogram* `lm(y_sim ~ x1c_sim*x2c_sim)`, cutting both `x1_sim` and `x2_sim` into `L` bins.
 What happens to the cross-validated error once `L` is large enough that some grid cells are empty?
 (Hint: empty cells give `NA` predictions.)
 :::
@@ -374,11 +376,11 @@ Method 1 differences the regressogram predictions; method 2 reads the slopes dir
 # Method 1: finite-difference gradients from the regressogram
 ##################
 
-## Arrange the regressogram predictions into an x1_hat-by-x2_hat grid
+## Arrange the regressogram predictions into an x1_sim-by-x2_sim grid
 grid_y_fit <- matrix(pred_df_rgrm$y_fit,
     nrow=length(mids1), ncol=length(mids2))
 
-## Approximate the x1_hat-gradient by differencing adjacent x1_hat bins
+## Approximate the x1_sim-gradient by differencing adjacent x1_sim bins
 bin_width1 <- diff(bks1)[1]
 grad_x1 <- apply(grid_y_fit, 2, diff)/bin_width1
 
@@ -401,11 +403,11 @@ title('Gradient vs x1', font.main=1)
 # Method 2: slope coefficients from the piecewise regression
 ##################
 
-## The within-bin slope on x1_hat is itself a gradient estimate
+## The within-bin slope on x1_sim is itself a gradient estimate
 coef_preg <- coef(preg)
-slope_x1 <- coef_preg[grep(':x1_hat$', names(coef_preg))]
+slope_x1 <- coef_preg[grep(':x1_sim$', names(coef_preg))]
 
-## Mean and standard deviation of the x1_hat-gradient
+## Mean and standard deviation of the x1_sim-gradient
 c(mean=mean(slope_x1, na.rm=TRUE), sd=sd(slope_x1, na.rm=TRUE))
 ```
 
@@ -430,8 +432,8 @@ A piecewise or local linear regression avoids this approximation, because its wi
    How does this differ from a standard OLS regression with the same variables?
    What advantage does it have when the true relationship is nonlinear, and what is its main drawback as the number of explanatory variables grows?
 
-3. Using the simulated data from this chapter (`x1_hat <- seq(.1, 20, length.out = 1000)`, `x2_hat <- runif(1000, 0, 1)`, `y_hat <- 3*exp(-2*x2_hat + 1.5*x1_hat - .1*x1_hat^2)*x1_hat + rnorm(1000)`), build a regressogram by cutting `x1_hat` into 5 bins and `x2_hat` into 5 bins.
-   Compute the mean of `y_hat` within each of the 25 bin combinations.
+3. Using the simulated data from this chapter (`x1_sim <- seq(.1, 20, length.out = 1000)`, `x2_sim <- runif(1000, 0, 1)`, `y_sim <- 3*exp(-2*x2_sim + 1.5*x1_sim - .1*x1_sim^2)*x1_sim + rnorm(1000)`), build a regressogram by cutting `x1_sim` into 5 bins and `x2_sim` into 5 bins.
+   Compute the mean of `y_sim` within each of the 25 bin combinations.
    Which bin combination has the highest predicted value?
 
 4. Using `lm()`, fit two models to the `mtcars` dataset with `mpg` as the outcome: (a) a standard linear model `mpg ~ wt + hp`, and (b) a regressogram model where `wt` and `hp` are each cut into 4 bins using `cut()` and interacted (`mpg ~ cut(wt,4) * cut(hp,4)`).
@@ -447,6 +449,4 @@ A piecewise or local linear regression avoids this approximation, because its wi
 #### **Recall** {-}
 
 This chapter generalized regressograms, piecewise regression, and cross-validation to the multivariate setting, and showed two ways to summarize gradients: finite differences from the regressogram, and within-bin slopes from the piecewise model.
-The 5-fold CV exercise on `y_hat ~ x1c_hat/(x1_hat + x2_hat)` made the bias-variance trade-off concrete: we swept the number of `x1_hat` bins through $\{2, 6, 10, 14, 18, 22\}$, watched the cross-validated MSE bottom out at the CV-optimal $L^{*}$, and saw it rise again as we kept adding bins.
-In the next chapter we step back from estimation and ask what happens when the data themselves are dependent over time, across space, or through market equilibrium.
-These observational complications violate the independence assumption used here.
+The 5-fold CV exercise on `y_sim ~ x1c_sim/(x1_sim + x2_sim)` made the bias-variance trade-off concrete: we swept the number of `x1_sim` bins through $\{2, 6, 10, 14, 18, 22\}$, watched the cross-validated MSE bottom out at the CV-optimal $L^{*}$, and saw it rise again as we kept adding bins.

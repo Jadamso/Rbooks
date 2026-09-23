@@ -3,6 +3,7 @@
 
 This chapter classifies the kinds of data you will work with and gives you the basic tools to visualize and summarize a single variable.
 We start with data types (cardinal vs factor), then look at the structures that hold datasets in R (lists and data.frames), and finish with the standard ways to depict a distribution: proportions, histograms, ECDFs, quantiles, and boxplots.
+Which depiction fits depends on the data type: proportions suit discrete data, histograms suit continuous data, and the ECDF, quantiles, and boxplot work for either.
 
 ## Data Types
 
@@ -88,9 +89,9 @@ But they can be analyzed in R in three basic ways.
 
 Lists are probably the most basic type
 ```{r}
-x_hat <- seq(1, 10)                       # vector of 1..10
-y_hat <- 2*x_hat                              # element-wise doubling
-list(x_hat, y_hat)                            # list holds two vectors of equal length
+x0_hat <- seq(1, 10)                       # vector of 1..10
+y_hat <- 2*x0_hat                              # element-wise doubling
+list(x0_hat, y_hat)                            # list holds two vectors of equal length
 
 x_mat1 <- matrix( seq(2, 7), 2, 3)    # 2x3 matrix
 x_mat2 <- matrix( seq(4, -1), 2, 3)
@@ -119,7 +120,7 @@ This allows you to combine different data types into a single object for analysi
 # data.frames: your most common data type
     # matrix of different data-types
     # well-ordered lists
-data.frame(x=x_hat, y=y_hat)  # list of vectors
+data.frame(x=x0_hat, y=y_hat)  # list of vectors
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -134,7 +135,7 @@ dat[, 'y']
 :::
 
 Data.frames stack two dimensions, rows and columns.
-The generalization to three or more dimensions is the *array*, covered in [Misc. Multivariate Topics](03_30_MiscTopics.qmd#arrays).
+The generalization to three or more dimensions is the *array*.
 
 #### **Initial Data Inspection** {-}
 Regardless of the data types you have, you typically begin by inspecting your data by examining the first few observations.
@@ -145,8 +146,8 @@ Consider, for example, historical data on crime in the US.
 head(USArrests) # Actual Data
 
 # Check NA values
-x_hat <- c(3, 3.1, NA, 0.02) #Small dataset we will use in numerical examples
-sum( is.na(x_hat) )
+x0_na <- c(3, 3.1, NA, 0.02) # Small dataset with a missing value
+sum( is.na(x0_na) )
 ```
 
 
@@ -157,14 +158,14 @@ sum( is.na(x_hat) )
 
 
 In what follows, we will often work with data as a vector, where there are $n$ observations and $\hat{x}_{i}$ is the value of the $i$th one.
-The hat marks a value computed from observed data; we will contrast it with theoretical quantities in [Population Statistics](01_06_PopStatistics.qmd#statistical-theory).
+The hat marks a value computed from observed data.
 We often analyze observations in comparison to some value $x$.
 
 ```{r}
-x_hat <- c(3, 3.1, 0.02) # Observed values
+x0_hat <- c(3, 3.1, 0.02) # Small dataset we will use in numerical examples
 x <- 2 # particular value: 'little x'
-sum(x_hat <= x)
-sum(x_hat == x)
+sum(x0_hat <= x)
+sum(x0_hat == x)
 ```
 
 #### **Empirical Mass Function**  {-}
@@ -183,15 +184,15 @@ The value $x=2$ appears once, so $\hat{p}(2)=1/5$.
 The value $x=3$ appears once, so $\hat{p}(3)=1/5$.
 The proportions sum to one: $3/5 + 1/5 + 1/5 = 1$.
 ```{r}
-x_hat <- c(1, 2, 1, 3, 1)
-table(x_hat)
-table(x_hat)/length(x_hat)
+x0_hat <- c(1, 2, 1, 3, 1)
+table(x0_hat)
+table(x0_hat)/length(x0_hat)
 ```
 :::
 
 ```{r}
 # Discretized data
-x_hat <- USArrests[, 'Murder']
+x_hat <- USArrests[, 'Murder'] # lab data: murder arrests per 100,000
 x_hat[1:3]
 x_rounded <- floor(x_hat) #rounded down, to be discrete
 x_rounded[1:3]
@@ -213,7 +214,7 @@ For continuous data, no single value is likely to repeat, so we summarize the di
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 A *histogram density* divides the range of the data into bins of equal half-width $h$.
 For an exclusive bin $(x-h, x+h]$ with midpoint $x$, it reports the rescaled count
-$$\hat{f}(x) = \frac{\sum_{i=1}^{n} \mathbf{1}\left( \hat{x}_{i} \in (x-h, x+h] \right)}{n \cdot 2h},$$
+$$\hat{f}(x) = \frac{\sum_{i=1}^{n} \mathbf{1}\left( \hat{x}_{i}~\text{in}~(x-h, x+h] \right)}{n \cdot 2h},$$
 where $\mathbf{1}(\cdot)$ is an *indicator function* that equals $1$ if the expression inside is TRUE and $0$ otherwise.
 :::
 
@@ -223,23 +224,22 @@ This rescaling makes the total area of all bars equal to one, so bar heights hav
 It also makes histogram heights comparable across samples of different sizes and lets us interpret the bar height as a *density*: the proportion of data per unit of $x$.
 The half-width $h$ acts as a *bandwidth*: a small $h$ produces a jagged picture sensitive to single observations, while a large $h$ smooths over real features.
 Note that $h$ is measured from the bin midpoint out to one edge, so a bin is $2h$ wide.
-The same $h$ reappears in the [kernel density](01_10_AdvancedEmpirics.qmd#kernel-density), and again in [Local Regression](02_16_LocalRegression.qmd#regressograms), where it sets how much data around a point a local model uses.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 E.g., suppose $\hat{x}_{i}=3.8$ and $h=1/2$.
 
-For $x=1$ we have $\mathbf{1}\left( \hat{x}_{i} \in \left(1-h, 1+h \right] \right)=\mathbf{1}\left( 3.8 \in \left(0.5, 1.5\right] \right)=0$.
+For $x=1$ we have $\mathbf{1}\left( \hat{x}_{i}~\text{in}~\left(1-h, 1+h \right] \right)=\mathbf{1}\left( 3.8~\text{in}~\left(0.5, 1.5\right] \right)=0$.
 
-For $x=4$ $\mathbf{1}\left( \hat{x}_{i} \in \left(4-h, 4+h \right] \right)=\mathbf{1}\left(  3.8 \in \left(3.5, 4.5\right] \right)=1$.
+For $x=4$ $\mathbf{1}\left( \hat{x}_{i}~\text{in}~\left(4-h, 4+h \right] \right)=\mathbf{1}\left(  3.8~\text{in}~\left(3.5, 4.5\right] \right)=1$.
 :::
 
 Note that rectangle area equals the proportion of data in the bin.
 Recalling that the area of the rectangle is "base x height":
 $$\begin{aligned}
-2h \times \hat{f}(x) &= \frac{\sum_{i=1}^{n} \mathbf{1}\left( \hat{x}_{i} \in \left(x-h, x+h \right] \right)}{n}.
+2h \times \hat{f}(x) &= \frac{\sum_{i=1}^{n} \mathbf{1}\left( \hat{x}_{i}~\text{in}~\left(x-h, x+h \right] \right)}{n}.
 \end{aligned}$$
 We compute $\hat{f}(x)$ for each bin midpoint $x$, and the area of all rectangles sums to one.
-^[If $L$ distinct bins exactly cover the range, then $2h=[\text{max}(\hat{x}_{i}) - \text{min}(\hat{x}_{i})]/L$ and we can write the design points as $x \in \left\{ \text{min}(\hat{x}_{i}) + (2\ell-1)h \right\}_{\ell=1}^{L}$, since consecutive midpoints sit $2h$ apart.]
+^[If $L$ distinct bins exactly cover the range, then $2h=[\text{max}(\hat{x}_{i}) - \text{min}(\hat{x}_{i})]/L$ and we can write the design points as $x~\text{in}~\left\{ \text{min}(\hat{x}_{i}) + (2\ell-1)h \right\}_{\ell=1}^{L}$, since consecutive midpoints sit $2h$ apart.]
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 For example, consider the dataset $\{3,3.1,0.02\}$ and use bins $(0,1], (1,2], (2,3], (3,4]$.
@@ -249,8 +249,8 @@ Since $\frac{1}{n 2h}=\frac{1}{3\times1}=\frac{1}{3}$, we can rescale the counts
 
 ```{r}
 # Intuitive Examples
-x_hat <- c(3, 3.1, 0.02)
-f_hat <- hist(x_hat, breaks=c(0, 1, 2, 3, 4), plot=FALSE, freq=FALSE)
+x0_hat <- c(3, 3.1, 0.02)
+f_hat <- hist(x0_hat, breaks=c(0, 1, 2, 3, 4), plot=FALSE, freq=FALSE)
 f_hat
 
 # base x height
@@ -270,20 +270,19 @@ The area of the first bin's rectangle is $2 \times \hat{f}(1)=2/6=1/3$ and the a
 Now intuitively work through an example with three bins instead of four.
 Compute the areas 
 ```{r}
-f_hat <- hist(x_hat, breaks=c(0, 4/3, 8/3, 4), plot=FALSE, freq=FALSE)
+f_hat <- hist(x0_hat, breaks=c(0, 4/3, 8/3, 4), plot=FALSE, freq=FALSE)
 base <- 4/3
 height <- f_hat[['density']]
 sum(base*height)
 
 # as a default, R uses bins (, ] instead of [, )
 # but you can change that with 'right=F'
-# hist(x_hat, breaks=c(0, 4/3, 8/3, 4), plot=F, right=F)
+# hist(x0_hat, breaks=c(0, 4/3, 8/3, 4), plot=F, right=F)
 ```
 :::
 
 ```{r}
 # Practical Example
-x_hat <- USArrests[, 'Murder']
 hist(x_hat,
     breaks=seq(0, 20, by=1), # bin width =1, so the half-width is h=1/2
     freq=FALSE,
@@ -314,6 +313,7 @@ mean( x_hat > 2 & x_hat <4)
 #### **Empirical *Cumulative* Distribution Function** {-}
 
 Another way to summarize a distribution asks, for each candidate value $x$, what proportion of the sample lies at or below it.
+It is a *step function* (see this [ECDF walkthrough](https://library.virginia.edu/data/articles/understanding-empirical-cumulative-distribution-functions) for visual examples) and contains exactly the same information as the sorted dataset, just packaged as a function of $x$ rather than a list of values.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *empirical cumulative distribution function* (ECDF) is the proportion of observations in the sample whose values are less than or equal to $x$,
@@ -321,43 +321,46 @@ $$\hat{F}(x) = \frac{1}{n}\sum_{i=1}^{n}\mathbf{1}(\hat{x}_{i} \leq x).$$
 It jumps up by $1/n$ at each data point and equals $1$ once $x$ passes the largest observation.
 :::
 
-The ECDF is useful when we want precise numbers rather than a picture of shape: "what fraction of states have at most $10$ murders per $100$k?" reads off directly without choosing bin widths or smoothing parameters.
-It is a *step function* (see this [ECDF walkthrough](https://library.virginia.edu/data/articles/understanding-empirical-cumulative-distribution-functions) for visual examples) and contains exactly the same information as the sorted dataset, just packaged as a function of $x$ rather than a list of values.
-Inverting the picture horizontally (asking "at what value $x$ does the proportion reach $p$?") gives the quantiles introduced next.
+
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 For example, consider the dataset $\{3,3.1,0.02 \}$.
 We reorder the observations as $\{0.02, 3, 3.1 \}$, so that there are discrete jumps of $1/n=1/3$ at each value.
-Consider the points $x \in \{0.5,2.5,3.5\}$.
-At $x=0.5$, $F(0.5)$ measures the proportion of the data $\leq 0.5$.
-Since only one observations, $0.02$, of three is $\leq 0.5$, we can compute $F(0.5)=1/3$.
-Similarly, since only one observations, $0.02$, of three is $\leq 2.5$, we can compute $F(2.5)=1/3$.
-Since all observations are $\leq 3.5$, we can compute $F(3.5)=1$.
+Consider the points $x~\text{in}~\{0.5,2.5,3.5\}$.
+At $x=0.5$, $\hat{F}(0.5)$ measures the proportion of the data $\leq 0.5$.
+Since only one observation, $0.02$, of three is $\leq 0.5$, we can compute $\hat{F}(0.5)=1/3$.
+Similarly, since only one observation, $0.02$, of three is $\leq 2.5$, we can compute $\hat{F}(2.5)=1/3$.
+Since all observations are $\leq 3.5$, we can compute $\hat{F}(3.5)=1$.
+
 ```{r}
-x_hat <- c(3, 3.1, 0.02)
-F_hat <- ecdf(x_hat)
+F_hat <- ecdf(x0_hat)
 
 # Visualized
 plot(F_hat)
 
 # Evaluated at each data point
-x <- x_hat
-F_hat(x_hat)
-#sum(x_hat<=3)/length(x_hat)
-#sum(x_hat<=3.1)/length(x_hat)
-#sum(x_hat<=0.02)/length(x_hat)
+x <- x0_hat
+F_hat(x0_hat)
+#sum(x0_hat<=3)/length(x0_hat)
+#sum(x0_hat<=3.1)/length(x0_hat)
+#sum(x0_hat<=0.02)/length(x0_hat)
 
 # Evaluated at other points
 x <- c(0.5, 2.5, 3.5)
 F_hat(x)
-#sum(x_hat<=0.5)/length(x_hat)
-#sum(x_hat<=2.5)/length(x_hat)
-#sum(x_hat<=3.5)/length(x_hat)
+#sum(x0_hat<=0.5)/length(x0_hat)
+#sum(x0_hat<=2.5)/length(x0_hat)
+#sum(x0_hat<=3.5)/length(x0_hat)
+
+# Evaluated at the histogram bin edges
+x <- c(0, 1, 2, 3, 4)
+F_hat(x)
+diff(F_hat(x)) # proportion of data in each bin, as in the histogram
 ```
 :::
 
 ```{r}
-F_hat <- ecdf(USArrests[, 'Murder'])
+F_hat <- ecdf(x_hat)
 # proportion of murders <= 10
 F_hat(10)
 # proportion of murders <= x, for all x
@@ -366,8 +369,93 @@ plot(F_hat, main=NA,
     ylab='Proportion of States with Murder Arrests <= x',
     pch=16, col=grey(0, .5))
 title('Murder Arrests ECDF', font.main=1)
-rug(USArrests[, 'Murder'])
+rug(x_hat)
 ```
+
+The ECDF is useful when we want precise numbers rather than a picture of shape: "what fraction of states have at most $10$ murders per $100$k?" reads off directly without choosing bin widths or smoothing parameters.
+The ECDF also applies to more data types than the two previous depictions.
+The mass function $\hat{p}$ needs values that repeat, so it suits discrete data, and the histogram $\hat{f}$ needs a bin width, so it suits continuous data.
+The ECDF needs neither, since its only operation is checking whether $\hat{x}_{i} \leq x$, so it works for discrete and continuous data alike.
+The ECDF does not work for unordered factors, where "$\leq$" has no meaning, but it does work for ordered factors such as letter grades.
+
+Still, the ECDF and the histogram are two views of the same counts.
+The area of a histogram bar is the proportion of data in the bin $(x-h, x+h]$, which is also the rise in the ECDF across that bin.
+$$\begin{aligned}
+2h \times \hat{f}(x) &= \hat{F}(x+h) - \hat{F}(x-h).
+\end{aligned}$$
+Conversely, adding up bar areas from left to right recovers $\hat{F}$ at each bin edge.^[
+Summing the identity above over the bin midpoints $x'$ at or below $x$ telescopes, since the upper edge of each bin is the lower edge of the next:
+$\sum_{x' \leq x} 2h \times \hat{f}(x') = \sum_{x' \leq x} \left[ \hat{F}(x'+h) - \hat{F}(x'-h) \right] = \hat{F}(x+h) - \hat{F}(x_{1}-h)$
+where $x_{1}$ is the first midpoint.
+The lowest bin edge $x_{1}-h$ lies below every observation, so $\hat{F}(x_{1}-h)=0$ and the bar areas up to $x$ add up to $\hat{F}(x+h)$.
+For discrete data the same relationship holds without bins: $\hat{F}(x)=\sum_{x' \leq x} \hat{p}(x')$ accumulates the proportions, and the size of each jump in $\hat{F}$ is $\hat{p}(x)$.
+]
+For a continuous example, the shaded bars on the histogram cover the states with at most $5$ murder arrests, and their total area equals the height of the colored point on the ECDF, $\hat{F}(5)$.
+
+
+```{r}
+F_hat <- ecdf(x_hat)
+breaks <- seq(0, 20, by=1) # bin width 2h=1
+f_hat <- hist(x_hat, breaks=breaks, plot=FALSE)
+
+# Same data, stacked: the shaded area on top equals the height of the point below
+x <- 5 # particular value
+below <- f_hat[['mids']] < x # bins at or below x
+col_x <- rgb(1, 0, 0, .5)
+par(mfrow=c(2, 1), mar=c(4, 4, 1, 1))
+
+# Numerically verify shaded area equals point height
+sum(f_hat[['density']][below]*diff(breaks)[below])
+F_hat(x)
+
+# Histogram: shade the bins at or below x
+hist(x_hat, breaks=breaks, freq=FALSE, border=NA,
+    col=ifelse(below, col_x, grey(.8)),
+    main=NA, xlab=NA, ylab='Density')
+
+# ECDF: mark the point (x, F_hat(x))
+plot(F_hat, xlim=range(breaks), pch=16, col=grey(0, .5),
+    main=NA, xlab='Murder Arrests', ylab='Proportion <= x')
+segments(x, F_hat(x), -10, F_hat(x), col=col_x)
+segments(x, F_hat(x), x, -1, col=col_x)
+points(x, F_hat(x), pch=16, col=rgb(1, 0, 0, .8), cex=1.5)
+```
+
+
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+For a concrete example, consider the dataset $\{3,3.1,0.02 \}$.
+At the bin edges $x~\text{in}~\{0,1,2,3,4\}$, the ECDF is $\hat{F}=(0,1/3,1/3,2/3,1)$, so it rises by $(1/3, 0, 1/3, 1/3)$ across the bins $(0,1], (1,2], (2,3], (3,4]$.
+Those rises are exactly the bin proportions that the histogram rescaled by $1/(2h)$ to get $\hat{f}(x)=(1/3,0,1/3,1/3)$.
+The relationship between $\hat{f}$ and $\hat{F}$ is easy to check with real data.
+```{r}
+# Histogram density from the ECDF, and back again
+F_hat <- ecdf(x_hat)
+breaks <- seq(0, 20, by=1) # bin width 2h=1
+f_hat <- hist(x_hat, breaks=breaks, plot=FALSE)
+
+# Rise in F_hat across each bin, divided by the bin width
+f_from_F <- diff(F_hat(breaks))/diff(breaks)
+all.equal(f_from_F, f_hat[['density']])
+
+# Bar areas added up from the left, evaluated at the upper bin edges
+F_from_f <- cumsum(f_hat[['density']]*diff(breaks))
+all.equal(F_from_f, F_hat(breaks[-1]))
+```
+
+To see this generally, start from the definition of $\hat{f}$ and write the indicator for the bin as the difference of two "at or below" indicators:
+$$\begin{aligned}
+2h \times \hat{f}(x) &= 2h \times \frac{\sum_{i=1}^{n} \mathbf{1}\left( \hat{x}_{i}~\text{in}~(x-h, x+h] \right)}{n \cdot 2h} \\
+&= \frac{1}{n}\sum_{i=1}^{n} \mathbf{1}\left( x-h < \hat{x}_{i} \leq x+h \right) \\
+&= \frac{1}{n}\sum_{i=1}^{n} \left[ \mathbf{1}\left( \hat{x}_{i} \leq x+h \right) - \mathbf{1}\left( \hat{x}_{i} \leq x-h \right) \right] \\
+&= \frac{1}{n}\sum_{i=1}^{n} \mathbf{1}\left( \hat{x}_{i} \leq x+h \right) - \frac{1}{n}\sum_{i=1}^{n} \mathbf{1}\left( \hat{x}_{i} \leq x-h \right) \\
+&= \hat{F}(x+h) - \hat{F}(x-h).
+\end{aligned}$$
+The step that splits the indicator holds observation by observation: an $\hat{x}_{i}$ at or below $x-h$ contributes $1-1=0$, one inside the bin contributes $1-0=1$, and one above $x+h$ contributes $0-0=0$.
+Dividing by the bin width, $\hat{f}(x)$ is the slope of $\hat{F}$ across the bin ("rise over run"): where $\hat{F}$ climbs steeply the histogram is tall, and where $\hat{F}$ is flat the histogram is near zero.
+:::
+
+
 
 #### **Quantiles** {-}
 
@@ -375,7 +463,7 @@ Reading the ECDF in reverse asks: at what value $x$ does a given proportion $p$ 
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *$p$th quantile* of a sample is the value $x$ where $p$ percent of the data fall below $x$ and $(1-p)$ percent fall above.
-The *empirical quantile function* $\hat{q}(p) = \hat{F}^{-1}(p)$ inverts the ECDF, returning the quantile at any probability $p \in [0,1]$.
+The *empirical quantile function* $\hat{q}(p) = \hat{F}^{-1}(p)$ inverts the ECDF, returning the quantile at any probability $p~\text{in}~[0,1]$.
 :::
 
 Quantiles are useful for precise numerical anchors: "the top $10\%$ of cities", "half of households earn less than...", or "the middle $50\%$ of test scores fall between $x_1$ and $x_2$".
@@ -393,11 +481,10 @@ We also speak of *deciles* at $p=0.1, 0.2, \ldots, 0.9$ when we want a finer spl
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 For example, that dataset $\{0,0,0.02,3,5\}$ has a median of $0.02$, with the lower quartile $0$ and the upper quartile $3$.
-(The number $0$ is also special: the most frequent observation is called the *mode*, which we revisit in [Numerical Statistics](01_03_DescriptiveStatistics.qmd#mode-and-share-concentration).)
+(The number $0$ is also special: the most frequent observation is called the *mode*.)
 
 ```{r}
-x_hat <-  c(3.1, 3, 0.02)
-quantile(x_hat, probs=c(0, .5, 1))
+quantile(x0_hat, probs=c(0, .5, 1))
 ```
 
 Now work through an intuitive example with observations $\{1,2,...,13\}$.
@@ -406,7 +493,6 @@ Hint: split the ordered observations into four groups.
 
 ```{r}
 # common quantiles
-x_hat <- USArrests[, 'Murder']
 quantile(x_hat)
 
 # All deciles are quantiles
@@ -431,14 +517,10 @@ There are some issues with quantiles with smaller datasets.
 E.g., to compute the median of $\{3,3.1,0,1\}$, we need some ways to break ties (of which there are many options).
 The most common way is perhaps a simple average of the tied values: $(3+1)/2=2$.
 
-
-
-
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-To calculate quantiles, the computer defaults to sorting the observations from smallest to largest as $\hat{x}_{(1)}, \hat{x}_{(2)},... \hat{x}_{(n)}$, and then computes quantiles as $\hat{x}_{ (p \times n) }$, where $p \in [0,1]$ refers to probability and $(p\times n)$ is rounded.
+To calculate quantiles, the computer defaults to sorting the observations from smallest to largest as $\hat{x}_{(1)}, \hat{x}_{(2)},... \hat{x}_{(n)}$, and then computes quantiles as $\hat{x}_{ (p \times n) }$, where $p~\text{in}~[0,1]$ refers to probability and $(p\times n)$ is rounded.
 There are different ways to break ties and the min ($p=0$) is a special case.
 ```{r}
-x_hat <- USArrests[, 'Murder']
 x_sorted_hat <- sort(x_hat)
 x_sorted_hat
 
@@ -468,11 +550,12 @@ See also <https://stackoverflow.com/questions/40634693/lower-and-upper-quartiles
 ]
 As a default, whiskers are shown as $1.5\times IQR$ and values beyond that are highlighted as *outliers* (so whiskers do not typically show the data range).
 No state sits more than $1.5\times IQR$ beyond a quartile, so the boxplot below draws no outlier circles.
-They show up in [Numerical Statistics](01_03_DescriptiveStatistics.qmd#kurtosis), where heavier-tailed data push observations past the whiskers.
+Like the ECDF, the boxplot works for discrete and continuous data alike, since it is built from quantiles rather than from bins or repeated values.
+It does need cardinal data: the whiskers extend $1.5\times IQR$ beyond the box, and that distance is only meaningful when differences are.
 
 ```{r}
 # Default: median, box (IQR), whiskers at 1.5*IQR, outliers as circles
-boxplot(USArrests[, 'Murder'],
+boxplot(x_hat,
     main=NA, ylab='Murder Arrests')
 title('Default', font.main=1)
 ```
@@ -483,18 +566,29 @@ This exposes the gaps, clusters, and repeated values that a five-number summary 
 
 ```{r}
 # Alternative: every observation, in place of whiskers and outliers
-boxplot(USArrests[, 'Murder'],
+boxplot(x_hat,
     main=NA, ylab='Murder Arrests',
     whisklty=0, staplelty=0, outline=FALSE)
 title('With Raw Data', font.main=1)
 # Raw Observations
-stripchart(USArrests[, 'Murder'],
+stripchart(x_hat,
     pch='-', col=grey(0, .5), cex=2,
     vert=TRUE, add=TRUE)
 ```
 
-These univariate visualization tools extend to examining relationships between two variables.
-See [Bivariate Distributions](02_11_BivariateDistributions.qmd) for how histograms, ECDFs, and boxplots adapt to bivariate data.
+Each depiction in this chapter suits some data types and not others.
+Boxplots are generally not well suited for factor data but better suited for comparing groups (discussed later in Bivariate Data).
+For a single data vector, the mass function needs repeating values but works for unordered factors whereas the ECDF works for discrete and continuous data requires an ordering.^[
+In R, `ecdf` and `quantile(..., type=1)` accept ordered factors, but `boxplot` silently treats the levels as the numbers $1, 2, 3, \ldots$.
+]
+Here is a table to help you recall
+
+| Visual | Unordered factor | Ordered factor | Discrete cardinal | Continuous cardinal |
+|-----------|------------------|----------------|-------------------|---------------------|
+| Mass Function $\hat{p}(x)$ | Yes | Yes | Yes | No |
+| Histogram $\hat{f}(x)$ | No | No | Yes | Yes |
+| ECDF $\hat{F}(x)$ | No | Yes | Yes | Yes |
+| Boxplot | No | No | Yes | Yes |
 
 
 ## Exercises
@@ -524,6 +618,6 @@ Finish with your own questions about whatever you found hardest.
 #### **Recall** {-}
 
 This chapter sorted observations into *cardinal* and *factor* types and then showed several complementary ways to picture the distribution of a single variable: bar plots and lollipops for proportions, the *histogram density*, the *empirical CDF*, *quantiles* (min, median, max, quartiles), and the boxplot.
-The running three-point dataset $\{3, 3.1, 0.02\}$ ties two of them together: the ECDF jumps by $1/3$ at each of $0.02$, $3$, and $3.1$ before flattening at $1$, and the median reads off as $3$.
+Proportions suit discrete data and histograms suit continuous data, while the ECDF, quantiles, and boxplot work for either.
+The running three-point dataset $\{3, 3.1, 0.02\}$ ties them together: the ECDF jumps by $1/3$ at each of $0.02$, $3$, and $3.1$ before flattening at $1$, its rises across the unit bins $(1/3, 0, 1/3, 1/3)$ are the histogram bar areas, and the median reads off as $3$.
 Each picture answers a different question about the same data, and switching between them is a habit worth building.
-In the next chapter we summarize the same distributions with single numbers: mean, variance, median, MAD, skewness, and kurtosis.

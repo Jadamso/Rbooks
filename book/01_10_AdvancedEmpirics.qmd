@@ -22,12 +22,12 @@ The simplest *kernel function* is the "uniform" (or "rectangular") kernel, which
 $$\begin{aligned}
 k_{U}\left( \hat{x}_{i}, x, h \right)
 &= \frac{\mathbf{1}\left(\frac{|\hat{x}_{i}-x|}{h} \leq 1\right)}{2}
-= \frac{\mathbf{1}\left( \hat{x}_{i} \in \left[ x-h, x + h\right] \right) }{2} \\
-\hat{f}_{U}(x) &= \frac{1}{nh} \sum_{i}^{n} k_{U}(\hat{x}_{i}, x, h)  = \frac{ \sum_{i}^{n} \mathbf{1}\left( \hat{x}_{i} \in \left[ x-h, x + h\right] \right) }{n 2 h}
+= \frac{\mathbf{1}\left( \hat{x}_{i}~\text{in}~\left[ x-h, x + h\right] \right) }{2} \\
+\hat{f}_{U}(x) &= \frac{1}{nh} \sum_{i}^{n} k_{U}(\hat{x}_{i}, x, h)  = \frac{ \sum_{i}^{n} \mathbf{1}\left( \hat{x}_{i}~\text{in}~\left[ x-h, x + h\right] \right) }{n 2 h}
 \end{aligned}$$
 
 For example, take the dataset $\{3, 3.1, 0.02\}$ with bandwidth $h=1/2$ and evaluate the density at $x=3$.
-The interval $[x-h, x+h]=[2.5, 3.5]$ contains the two points $3$ and $3.1$, so $\sum_{i}\mathbf{1}\left(\hat{x}_{i} \in [2.5,3.5]\right)=2$ and $\hat{f}_{U}(3)=\frac{2}{n 2h}=\frac{2}{3\times 1}=2/3$.
+The interval $[x-h, x+h]=[2.5, 3.5]$ contains the two points $3$ and $3.1$, so $\sum_{i}\mathbf{1}\left(\hat{x}_{i}~\text{in}~[2.5,3.5]\right)=2$ and $\hat{f}_{U}(3)=\frac{2}{n 2h}=\frac{2}{3\times 1}=2/3$.
 
 Notice that the uniform kernel is essentially the histogram but without the restriction that $x$ must be a midpoint of *exclusive* bins.
 Typically, the points $x$ are chosen to be either the unique observations or some equidistant set of "design points" (e.g., at $512$ evenly spaced values of $x$ the dataset, not just the midpoints of exclusive bins).^[
@@ -39,7 +39,7 @@ The conversion is a constant that depends on the kernel: the half-width is $\sqr
 
 ```{r}
 # Practical Example
-x_hat <- USArrests[, 'Murder']
+x_hat <- USArrests[, 'Murder'] # lab data: murder arrests per 100,000
 hist(x_hat,
     breaks=seq(0, 20, by=2), # bin width =2, so h=1
     freq=FALSE,
@@ -117,7 +117,6 @@ Once we have picked a kernel (which particular one is not particularly important
 
 ```{r}
 # Practical Example
-x_hat <- USArrests[, 'Murder']
 hist(x_hat,
     breaks=seq(0, 20, by=2), # bin width 2h=2, so h=1
     freq=FALSE,
@@ -144,14 +143,14 @@ Transformations can stabilize variance, reduce skewness, and make model errors c
 
 Perhaps the most common examples are *power transformations*: $y= x^\lambda$, which includes $\sqrt{x}$ and $x^2$.
 
-Other examples include the *exponential transformation*: $y=\exp(x)$ for any $x\in (-\infty, \infty)$ and *logarithmic transformation*: $y=\log(x)$ for any $x>0$.
+Other examples include the *exponential transformation*: $y=\exp(x)$ for any $x~\text{in}~(-\infty, \infty)$ and *logarithmic transformation*: $y=\log(x)$ for any $x>0$.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 The exponential function is $e^{x}=1+x/1+x^2/2+x^3/6....=\sum_{k=0}^{\infty} x^k/k!$ and the $log$ function is its inverse.
 ```{r}
-x_hat <- 1:4
+x0_hat <- 1:4
 
-y_hat <- exp(x_hat)
+y_hat <- exp(x0_hat)
 y_hat
 
 z_hat <- log(y_hat)
@@ -180,7 +179,6 @@ bc_inverse <- function(t, lambda) {
   if (abs(lambda) < 1e-8) exp(t) else (lambda*t + 1)^(1/lambda)
 }
 
-x_hat <- USArrests[, 'Murder']
 hist(x_hat, main=NA, border=NA, freq=FALSE)
 
 par(mfrow=c(1, 3))
@@ -213,13 +211,13 @@ If $g$ is a *concave* function, then $g( \hat{m}_{X} ) \geq \hat{m}_{Y}$.
 Here are some examples.
 ```{r}
 # Continuous Example 1
-x_hat <- c(0, 1.123, 2.987, 3.654)
-mean( sqrt(x_hat) )
-sqrt( mean(x_hat) )
+x0_hat <- c(0, 1.123, 2.987, 3.654)
+mean( sqrt(x0_hat) )
+sqrt( mean(x0_hat) )
 
 # Continuous Example 2
-mean( log(x_hat) )
-log( mean(x_hat) )
+mean( log(x0_hat) )
+log( mean(x0_hat) )
 ```
 
 ```{r}
@@ -262,14 +260,13 @@ Inverse sampling randomly selects observations from the dataset with equal proba
 To implement this, we 
 
 * order the data and associate each observation with an ECDF value
-* draw $p \in [0,1]$ as a uniform random variable
+* draw $p~\text{in}~[0,1]$ as a uniform random variable
 * find the associated quantile via the ECDF
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Here is an example of generating random murder rates for US states.
 ```{r}
 # Empirical Distribution
-x_hat <- USArrests[, 'Murder']
 F_hat <- ecdf(x_hat)
 plot(F_hat, lwd=2, xlim=c(0, 20),
     pch=16, col=grey(0, .5), main=NA)
@@ -327,8 +324,8 @@ rdagum <-function(n, scale.b=1, shape1.a, shape2.c){
 
 # Example
 set.seed(123)
-x_hat <- rdagum(3000, 1, 3, 1)
-x_hat[c(1, 2, 3)]
+x_sim <- rdagum(3000, 1, 3, 1)
+x_sim[c(1, 2, 3)]
 ```
 
 
@@ -345,7 +342,7 @@ x_hat[c(1, 2, 3)]
 3. Load `USArrests` in R and extract the `Assault` variable.
    Compute `mean(log(x_hat))` and `log(mean(x_hat))`.
    Which is larger, and which case of Jensen's inequality does this illustrate?
-   Then apply the Box–Cox transform with $\lambda \in \{-1, 0, 1/2, 1\}$ using `bc_transform` from this chapter, and plot the four histograms side by side.
+   Then apply the Box–Cox transform with $\lambda~\text{in}~\{-1, 0, 1/2, 1\}$ using `bc_transform` from this chapter, and plot the four histograms side by side.
    Which $\lambda$ gives the most symmetric histogram?
 
 4. The [exponential](01_04_RandomVariables.qmd#exponential) distribution with rate $\lambda$ has distribution function $F(x)=1-e^{-\lambda x}$ for $x \geq 0$.

@@ -13,9 +13,9 @@ We continue with `USArrests` and the four-level `state.region` factor from [Comp
 
 ```{r}
 # Recreate the regional data so this chapter runs independently.
-dat <- USArrests
-dat$Region <- state.region
-table(dat$Region)
+xy_hat <- USArrests
+xy_hat$Region <- state.region
+table(xy_hat$Region)
 ```
 
 ## Regression
@@ -30,21 +30,21 @@ This default representation is called *treatment coding*.
 
 ```{r}
 # Compare the regional means to treatment-coded coefficients.
-m_g_hat <- aggregate(Murder ~ Region, data=dat, FUN=mean)[,'Murder']
+m_g_hat <- aggregate(Murder ~ Region, data=xy_hat, FUN=mean)[,'Murder']
 m_g_hat
 
 # The intercept is the reference mean.
 m_g_hat - m_g_hat[1]
 
 # Each remaining coefficient is a difference from the reference.
-fit_lm <- lm(Murder ~ Region, data=dat)
+fit_lm <- lm(Murder ~ Region, data=xy_hat)
 coef(fit_lm)
 ```
 
 The ANOVA table for a regression with a single factor is therefore the same as the table from `aov()`.
 
 ```{r}
-fit_aov <- aov(Murder ~ Region, data=dat)
+fit_aov <- aov(Murder ~ Region, data=xy_hat)
 anova(fit_aov)
 anova(fit_lm)
 ```
@@ -56,9 +56,9 @@ The intercept equals the reference-group mean, and each slope equals a differenc
 
 ```{r}
 # Verify the treatment-coded coefficients.
-y_hat <- c(3, 4, 5, 6, 7, 8, 4, 5, 6)
+y0_hat <- c(3, 4, 5, 6, 7, 8, 4, 5, 6)
 g <- factor(c(1, 1, 1, 2, 2, 2, 3, 3, 3))
-coef(lm(y_hat ~ g))
+coef(lm(y0_hat ~ g))
 ```
 :::
 
@@ -78,20 +78,20 @@ Because the four regions contain different numbers of states, the unweighted mea
 
 ```{r}
 # Display the sum-to-zero contrast matrix used for effect coding.
-effect_matrix <- contr.sum(nlevels(dat$Region))
-rownames(effect_matrix) <- levels(dat$Region)
+effect_matrix <- contr.sum(nlevels(xy_hat$Region))
+rownames(effect_matrix) <- levels(xy_hat$Region)
 effect_matrix
 
 # Apply contrasts to this model only, without changing global options.
 fit_effect <- lm(
     Murder ~ Region,
-    data=dat,
+    data=xy_hat,
     contrasts=list(Region='contr.sum')
 )
 coef(fit_effect)
 
 # Compare each regional mean with the unweighted mean of group means.
-region_means <- aggregate(Murder ~ Region, data=dat, FUN=mean)
+region_means <- aggregate(Murder ~ Region, data=xy_hat, FUN=mean)
 effect_mean <- mean(region_means[,'Murder'])
 region_effects <- region_means[,'Murder'] - effect_mean
 data.frame(
@@ -120,7 +120,7 @@ c(
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 The effect-coded intercept is about $7.28$, while the overall mean of `Murder` across all states is about $7.79$.
-Use `table(dat$Region)` and the regional means to explain why these numbers differ.
+Use `table(xy_hat$Region)` and the regional means to explain why these numbers differ.
 Then change the order of the factor levels and verify that the fitted values remain unchanged.
 :::
 
@@ -131,7 +131,7 @@ For example, we might ask whether regional differences in murder arrest rates pe
 
 ```{r}
 # Add a continuous predictor to the regional model.
-reg_combined <- lm(Murder ~ Region + Assault, data=dat)
+reg_combined <- lm(Murder ~ Region + Assault, data=xy_hat)
 summary(reg_combined)
 ```
 
@@ -157,11 +157,11 @@ The dummy-variable approach and a dedicated fixed-effects estimator are algebrai
 
 ```{r}
 # Estimate the Assault coefficient with explicit region indicators.
-reg_dv <- lm(Murder ~ -1 + Assault + Region, data=dat)
+reg_dv <- lm(Murder ~ -1 + Assault + Region, data=xy_hat)
 coef(reg_dv)['Assault']
 
 # Estimate the same coefficient by absorbing the region effects.
-reg_fe <- fixest::feols(Murder ~ Assault | Region, data=dat)
+reg_fe <- fixest::feols(Murder ~ Assault | Region, data=xy_hat)
 coef(reg_fe)
 ```
 
@@ -179,10 +179,10 @@ The first asks whether group means differ, the second whether a continuous predi
 
 ```{r}
 # Order the nested models from simplest to most complex.
-reg0 <- lm(Murder ~ 1, data=dat)
-reg1 <- lm(Murder ~ Region, data=dat)
-reg2 <- lm(Murder ~ Region + Assault, data=dat)
-reg3 <- lm(Murder ~ Region * Assault, data=dat)
+reg0 <- lm(Murder ~ 1, data=xy_hat)
+reg1 <- lm(Murder ~ Region, data=xy_hat)
+reg2 <- lm(Murder ~ Region + Assault, data=xy_hat)
+reg3 <- lm(Murder ~ Region * Assault, data=xy_hat)
 
 # Test whether Region adds information.
 anova(reg0, reg1)
@@ -244,13 +244,13 @@ F_stat <- function(y_hat, group) {
     return(F_value)
 }
 
-F_obs <- F_stat(y_hat=dat[,'Murder'], group=dat[,'Region'])
+F_obs <- F_stat(y_hat=xy_hat[,'Murder'], group=xy_hat[,'Region'])
 n_perm <- 9999
 F_perm <- rep(NA, n_perm)
 
 for (b in seq(n_perm)) {
-    group_b <- sample(dat[,'Region'], replace=FALSE)
-    F_perm[b] <- F_stat(y_hat=dat[,'Murder'], group=group_b)
+    group_b <- sample(xy_hat[,'Region'], replace=FALSE)
+    F_perm[b] <- F_stat(y_hat=xy_hat[,'Murder'], group=group_b)
 }
 
 # Add one simulated result to avoid reporting a zero Monte Carlo p-value.
@@ -323,13 +323,11 @@ The example uses a Normal approximation around the full-sample coefficient rathe
 #| fig-cap: "Slope estimates from random delete-10 subsamples."
 #| fig-alt: "Histogram of regression slopes across delete-10 subsamples. The full-sample slope is marked in red and the corrected Normal confidence limits are marked with blue dashed lines."
 
-xy <- USArrests[,c('Murder', 'UrbanPop')]
-colnames(xy) <- c('y_hat', 'x_hat')
-reg <- lm(y_hat ~ x_hat, data=xy)
-b_full <- coef(reg)['x_hat']
+reg <- lm(Murder ~ UrbanPop, data=xy_hat)
+b_full <- coef(reg)['UrbanPop']
 
 # Draw random delete-10 samples without replacement.
-n <- nrow(xy)
+n <- nrow(xy_hat)
 d <- 10
 m <- n - d
 n_sub <- 999
@@ -337,9 +335,9 @@ rs_coefs <- rep(NA, n_sub)
 
 for (b in seq(n_sub)) {
     b_id <- sample(n, m, replace=FALSE)
-    xy_b <- xy[b_id,]
-    reg_b <- lm(y_hat ~ x_hat, data=xy_b)
-    rs_coefs[b] <- coef(reg_b)['x_hat']
+    xy_sub <- xy_hat[b_id,]
+    reg_b <- lm(Murder ~ UrbanPop, data=xy_sub)
+    rs_coefs[b] <- coef(reg_b)['UrbanPop']
 }
 
 # Correct the spread for overlapping delete-d samples.
@@ -382,7 +380,6 @@ The subsampling result shows how a coefficient responds to deleting observations
 A stable coefficient can still be confounded, and an unstable coefficient is not necessarily biased.
 
 These limits extend the distinction introduced in [Association and Prediction Are Not Causation](02_18_NotCausation.qmd).
-The later chapters on [Observational Data](03_27_ObservationalData.qmd) and [Experimental Data](03_28_ExperimentalData.qmd) develop the designs and assumptions required for causal claims.
 
 ## Exercises
 
@@ -395,7 +392,7 @@ The later chapters on [Observational Data](03_27_ObservationalData.qmd) and [Exp
    Then compute the effect-coded intercept and all three group effects, checking that the effects sum to zero.
 
 3. Using `USArrests` and `state.region`, construct a permutation test of whether mean `Assault` arrest rates differ across regions.
-   Use $B=9999$ permutations, report the global $F$-statistic and permutation $p$-value, and compare the result with `anova(lm(Assault ~ Region, data=dat))`.
+   Use $B=9999$ permutations, report the global $F$-statistic and permutation $p$-value, and compare the result with `anova(lm(Assault ~ Region, data=xy_hat))`.
 
 4. Extend the running example by fitting `Murder ~ Region + Assault + UrbanPop` and `Murder ~ Region * Assault + UrbanPop`.
    Use `anova()` to test whether the Region-Assault interaction terms are jointly significant after controlling for `UrbanPop`.
@@ -418,4 +415,3 @@ This chapter rewrote ANOVA as a regression with a factor variable and showed tha
 The regional example gave an effect-coded intercept of about $7.28$, the unweighted mean of the four regional means, while its global $F$-statistic was identical under both codings.
 The permutation test shuffled the factor labels to test a no-association null, whereas random delete-$d$ subsampling preserved each row and measured sensitivity to omitted observations.
 None of these operations made the regional regression causal.
-The next chapter audits fitted regressions for outliers, leverage, collinearity, and misspecification.

@@ -6,13 +6,13 @@ Earlier chapters summarized one variable at a time.
 We now study two variables together.
 This chapter builds the two basic ways to summarize them: the *joint* distribution, which records how often each combination of values occurs, and the *conditional* distribution, which records the distribution of one variable within fixed values of the other.
 We do each for discrete data and then for continuous data.
-[Association and Prediction Are Not Causation](02_18_NotCausation.qmd#simpsons-paradox) later uses these conditional distributions to show how a relationship inside every subgroup can reverse after pooling.
 Throughout, the data for each observation are grouped together as a vector $(\hat{x}_{i}, \hat{y}_{i})$.
 ```{r}
 # USArrests has 50 rows (one per US state) and four crime columns;
 # pick two of those columns to form a bivariate dataset.
-xy <- USArrests[, c('Murder', 'UrbanPop')]
-xy[1, ]                                # first state's two values
+xy_hat <- USArrests[, c('UrbanPop', 'Murder')]
+colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+xy_hat[1, ]                             # first state's two values
 ```
 
 ## Joint Distributions
@@ -22,7 +22,7 @@ xy[1, ]                                # first state's two values
 When two variables are recorded together for each observation, the first question is how often each combination of values appears.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *joint distribution* of two discrete variables $X_{i}$ and $Y_{i}$ is the table giving the share of observations with $X_{i}=x$ and $Y_{i}=y$, for every combination of values $(x,y)$:
+The *joint distribution* of two discrete variables $\hat{x}_{i}$ and $\hat{y}_{i}$ is the table giving the share of observations with $\hat{x}_{i}=x$ and $\hat{y}_{i}=y$, for every combination of values $(x,y)$:
 $$\hat{p}(x,y) = \sum_{i=1}^{n}\mathbf{1}\left( \hat{x}_{i}=x, \hat{y}_{i}=y \right)/n,$$
 where $\mathbf{1}(\cdot)$ is an *indicator function* that equals $1$ if the expression inside is TRUE and $0$ otherwise.
 :::
@@ -33,8 +33,9 @@ Dividing the count by $n$ puts the cells on a probability scale, so each cell re
 Sometimes we only need to summarize one of the two variables and ignore the other.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *marginal distribution* of $X_{i}$ is the univariate distribution obtained by summing the joint distribution over all values of $Y_{i}$:
-$$\hat{p}(x) = \sum_{y} \hat{p}(x,y).$$
+The *marginal distribution* of $\hat{x}_{i}$ is the univariate distribution obtained by summing the joint distribution over all values of $\hat{y}_{i}$.
+The marginal distribution of $\hat{y}_{i}$ is obtained by summing the joint distribution over all values of $\hat{x}_{i}$.
+$$\hat{p}(x) = \sum_{y} \hat{p}(x,y) \quad \quad \hat{p}(y) = \sum_{x} \hat{p}(x,y).$$
 :::
 
 The *marginal* (so called because it lives in the row and column margins of the joint table) is useful for recovering the univariate picture once the joint table is built, and for supplying the base rates ($\hat{p}(x)$, $\hat{p}(y)$) that conditional distributions divide by.
@@ -42,8 +43,8 @@ The same numbers can also be computed directly from the univariate data without 
 
 For example, suppose we observe a sample of $n=13$ students with two discrete variables:
 
-* $X_{i}$ depicts years of education, taking values in $\{12, 14\}$
-* $Y_{i}$ depicts sex, where $y=1$ means female and $y=0$ means male
+* $\hat{x}_{i}$ depicts years of education, taking values in $\{12, 14\}$
+* $\hat{y}_{i}$ depicts sex, where $y=1$ means female and $y=0$ means male
 
 Assume the count data are summarized by the following table:
 
@@ -62,12 +63,12 @@ The joint distributions divides each cell count by the total number of observati
 x=12 & 4/13 & 3/13 \\
 x=14 & 1/13 & 5/13
 \end{array}
-The marginal distribution of $X_{i}$ is
+The marginal distribution of $\hat{x}_{i}$ is
 $$\begin{aligned}
 \hat{p}(x=12) &= \hat{p}(x=12,y=0) + \hat{p}(x=12,y=1) = \frac{4}{13} + \frac{3}{13} = \frac{7}{13}, \\
 \hat{p}(x=14) &= \hat{p}(x=14,y=0) + \hat{p}(x=14,y=1) = \frac{1}{13} + \frac{5}{13} = \frac{6}{13}.
 \end{aligned}$$
-The marginal distribution of $Y_{i}$ is
+The marginal distribution of $\hat{y}_{i}$ is
 $$\begin{aligned}
 \hat{p}(y=0) &= \hat{p}(x=12,y=0) + \hat{p}(x=14,y=0) = \frac{4}{13}  + \frac{1}{13} = \frac{5}{13}, \\
 \hat{p}(y=1) &= \hat{p}(x=12,y=1) + \hat{p}(x=14,y=1) = \frac{3}{13}  + \frac{5}{13} = \frac{8}{13} .
@@ -87,16 +88,16 @@ $$ {#eq-joint-educ-sex}
 
 ```{r}
 # Simple hand-built dataset: 13 students, two variables each
-dat <- rbind(
+xy0_hat <- rbind(
     c(12, 0), c(12, 0), c(12, 0), c(12, 0), # 4 male with 12 years
     c(14, 0),                                # 1 male with 14 years
     c(12, 1), c(12, 1), c(12, 1),            # 3 female with 12 years
     c(14, 1), c(14, 1), c(14, 1), c(14, 1), c(14, 1)) # 5 female with 14 years
-colnames(dat) <- c('educ', 'female')
-dat <- as.data.frame(dat)
+colnames(xy0_hat) <- c('educ', 'female')
+xy0_hat <- as.data.frame(xy0_hat)
 
 # Frequency table and joint distribution
-tab  <- table(dat)          # raw counts: rows=educ, cols=female
+tab  <- table(xy0_hat)      # raw counts: rows=educ, cols=female
 prop <- tab / sum(tab)      # joint sample distribution (sums to 1)
 
 # addmargins() appends row and column totals (i.e., the marginals)
@@ -112,7 +113,7 @@ Try computing the standard deviation $\hat{s}_{X}$ yourself.
 # marginals and univariate statistics
 p_x <- margin.table(prop, 1)
 sum(p_x* as.numeric(names(p_x)) )
-mean(dat[, 1])
+mean(xy0_hat[, 'educ'])
 
 # p_y <- margin.table(prop, 2)
 ```
@@ -125,12 +126,12 @@ Summarize the distribution of sex and education attainment for highschool studen
 library(Ecdat)
 
 # Highschool Students, Sex and Education Attainment
-dat <- Wages1[, c('school', 'sex')]
-dat <- dat[ dat[, 'school'] >=10, ]
+xy3_hat <- Wages1[, c('school', 'sex')]
+xy3_hat <- xy3_hat[ xy3_hat[, 'school'] >=10, ]
 ```
 Try it yourself before looking at this answer
 ```{r}
-tab <- table(dat) ## counts
+tab <- table(xy3_hat) ## counts
 tab
 
 prop <- tab/sum(tab) ## frequencies
@@ -147,10 +148,10 @@ round(prop_full, 3)
 *Scatterplots* are used frequently to summarizes the joint distribution of continuous data.
 They can be enhanced in several ways.
 As a default, use semi-transparent points so as not to hide any points (and perhaps see if your observations are concentrated anywhere).
-You can also add other features that help summarize the relationship, although I will defer this until later.
+You can also add other features that help summarize the relationship.
 
 ```{r}
-plot(Murder ~ UrbanPop, USArrests, pch=16, col=grey(0, .5),
+plot(y_hat ~ x_hat, xy_hat, pch=16, col=grey(0, .5),
     main=NA, xlab='Urban Population', ylab='Murder Arrests')
 ```
 
@@ -163,16 +164,16 @@ layout( matrix(c(2, 0, 1, 3), ncol=2, byrow=TRUE),
 
 # Scatterplot
 par(mar=c(4, 4, 1, 1))
-plot(Murder ~ UrbanPop, USArrests, pch=16, col=grey(0, .5),
+plot(y_hat ~ x_hat, xy_hat, pch=16, col=grey(0, .5),
     main=NA, xlab='Urban Population', ylab='Murder Arrests')
 
 # Add Marginals
 par(mar=c(0, 4, 1, 1))
-f_x_hat <- hist(USArrests[, 'UrbanPop'], plot=FALSE)
+f_x_hat <- hist(xy_hat[, 'x_hat'], plot=FALSE)
 barplot(f_x_hat[['counts']], axes=FALSE, space=0, border=NA)
 
 par(mar=c(4, 0, 1, 1))
-f_y_hat <- hist(USArrests[, 'Murder'], plot=FALSE)
+f_y_hat <- hist(xy_hat[, 'y_hat'], plot=FALSE)
 barplot(f_y_hat[['counts']], axes=FALSE, space=0, horiz=TRUE, border=NA)
 ```
 
@@ -183,15 +184,15 @@ barplot(f_y_hat[['counts']], axes=FALSE, space=0, horiz=TRUE, border=NA)
 Often we want to know how the distribution of one variable changes when we restrict attention to a subgroup defined by another.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *conditional distribution* of $Y_{i}$ given $X_{i}=x$ is the joint share renormalized so the row at $X_{i}=x$ sums to one:
+The *conditional distribution* of $\hat{y}_{i}$ given $\hat{x}_{i}=x$ is the joint share renormalized so the row at $\hat{x}_{i}=x$ sums to one:
 $$\hat{p}(y \mid x) = \frac{\hat{p}(x,y)}{\hat{p}(x)},$$
-where $\hat{p}(x) = \sum_y \hat{p}(x,y)$ is the marginal of $X_{i}$.
+where $\hat{p}(x) = \sum_y \hat{p}(x,y)$ is the marginal of $\hat{x}_{i}$.
 :::
 
 Conditional distributions are useful when one variable splits the data into meaningful subgroups (sex, education level, treatment status) and we want to compare the outcome distribution across those subgroups.
 The renormalization is what changes the unit of analysis: row sums equal to one means each row is itself a probability distribution over $y$ for the given $x$, rather than a share of the whole sample.
 
-For example, return to the same sample of $n=13$ students and its joint distribution table, @eq-joint-educ-sex. To compute the conditional distribution of $Y_{i}$ given $X_{i}=x$, we rescale the numbers in each row so that each row sums to 1.
+For example, return to the same sample of $n=13$ students and its joint distribution table, @eq-joint-educ-sex. To compute the conditional distribution of $\hat{y}_{i}$ given $\hat{x}_{i}=x$, we rescale the numbers in each row so that each row sums to 1.
 Specifically, for $x=12$, we compute
 $$\begin{aligned}
 \hat{p}(y=0 \mid x=12)
@@ -229,7 +230,7 @@ In this example, we say that
 * conditional on students having $14$ years of education, $1/6$ are male and $5/6$ are female.
 
 
-We can also compute the conditional distribution of $X_{i}$ given $Y_{i}=y$, $\hat{p}(x \mid y) = \hat{p}(x,y) / \hat{p}(y)$, just as we did above.
+We can also compute the conditional distribution of $\hat{x}_{i}$ given $\hat{y}_{i}=y$, $\hat{p}(x \mid y) = \hat{p}(x,y) / \hat{p}(y)$, just as we did above.
 In this case, we rescale the numbers in each *column* of the joint distribution table so that each column sums to 1.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -241,15 +242,15 @@ Continuing the example above, show that
 Try programming the results, especially if you are stuck or uncertain
 
 ```{r}
-dat <- rbind(
+xy0_hat <- rbind(
     c(12, 0), c(12, 0), c(12, 0), c(12, 0), #Male
     c(14, 0), 
     c(12, 1), c(12, 1), c(12, 1),
     c(14, 1), c(14, 1), c(14, 1), c(14, 1), c(14, 1))
-colnames(dat) <- c('educ', 'female')
-dat <- as.data.frame(dat)
+colnames(xy0_hat) <- c('educ', 'female')
+xy0_hat <- as.data.frame(xy0_hat)
 
-tab <- table(dat)
+tab <- table(xy0_hat)
 tab
 
 # Joint distribution
@@ -345,7 +346,7 @@ Does that mean a Civic is more likely to be stolen than other cars?
 Not necessarily.
 
 Imagine a city with $100{,}000$ cars: $70{,}000$ Civics and $30{,}000$ of other models.
-Let $X_{i}$ be the model and $Y_{i}$ whether car $i$ was stolen.
+Let $\hat{x}_{i}$ be the model and $\hat{y}_{i}$ whether car $i$ was stolen.
 The counts are
 
 \begin{array}{c|cc|c}
@@ -390,7 +391,7 @@ The fraud-detection example below applies one screen to a rare outcome and then 
 What is the chance that a flagged transaction is fraud?
 The answer depends on the base rate $\hat{p}(y)$: the share of all transactions that are fraud.
 
-Let $X_{i}$ be whether the model flags transaction $i$ and $Y_{i}$ be whether the transaction is fraud.
+Let $\hat{x}_{i}$ be whether the model flags transaction $i$ and $\hat{y}_{i}$ be whether the transaction is fraud.
 Suppose fraud is rare, $100$ of $100{,}000$ transactions, so $\hat{p}(\text{fraud}) = 0.001$.
 The counts are
 
@@ -454,25 +455,25 @@ E.g.,
 
 ```{r}
 # Split Data by Urban Population above/below mean
-m_pop_hat <- mean(USArrests[, 'UrbanPop'])
-pop_cut <- USArrests[, 'UrbanPop'] <= m_pop_hat
-murder_lowpop <- USArrests[pop_cut, 'Murder']
-murder_highpop <- USArrests[!pop_cut, 'Murder']
+m_pop_hat <- mean(xy_hat[, 'x_hat'])
+pop_cut <- xy_hat[, 'x_hat'] <= m_pop_hat
+y1_hat <- xy_hat[pop_cut, 'y_hat']  # murder arrests, low urban population
+y2_hat <- xy_hat[!pop_cut, 'y_hat'] # murder arrests, high urban population
 cols <- c(low=rgb(0, 0, 1, .75), high=rgb(1, 0, 0, .75))
 
 # Common Histogram 
 ylim <- c(0, .25)
-xbks <-  seq(min(USArrests[, 'Murder'])-1, max(USArrests[, 'Murder'])+1, by=1)
+xbks <-  seq(min(xy_hat[, 'y_hat'])-1, max(xy_hat[, 'y_hat'])+1, by=1)
 
 par(mfrow=c(1, 2))
-hist(murder_lowpop,
+hist(y1_hat,
     breaks=xbks, col=cols[1],
     main=NA,
     xlab='Murder Arrests', freq=FALSE,
     border=NA, ylim=ylim)
 title('Urban Pop <= Mean', font.main=1)
 
-hist(murder_highpop,
+hist(y2_hat,
     breaks=xbks, col=cols[2],
     main=NA,
     xlab='Murder Arrests', freq=FALSE,
@@ -486,19 +487,19 @@ And you can glue various combinations together to convey more information all at
 ```{r}
 layout( t(c(1, 2, 2)))
 # Full Sample Density
-hist(USArrests[, 'Murder'],
+hist(xy_hat[, 'y_hat'],
     main=NA,
     xlab='Murder Arrests',
     breaks=xbks, freq=FALSE, border=NA)
 title('Full Sample Density', font.main=1)
 
 # Split Sample Distribution Comparison
-F_lowpop_hat <- ecdf(murder_lowpop)
+F_lowpop_hat <- ecdf(y1_hat)
 plot(F_lowpop_hat, col=cols[1],
     pch=16, xlab='Murder Arrests',
     main=NA, bty='n')
 title('Split Sample Distributions', font.main=1)
-F_highpop_hat <- ecdf(murder_highpop)
+F_highpop_hat <- ecdf(y2_hat)
 plot(F_highpop_hat, add=TRUE, col=cols[2], pch=16)
 
 legend('bottomright', col=cols,
@@ -519,16 +520,16 @@ For more than three groups, boxplots are often more effective than histograms or
 ```{r}
 # K Groups with even spacing (not even counts)
 K <- 4
-USArrests[, 'UrbanPop_Kcut'] <- cut(USArrests[, 'UrbanPop'], K)
-table(USArrests[, 'UrbanPop_Kcut'] )
+x_cut_hat <- cut(xy_hat[, 'x_hat'], K)
+table(x_cut_hat)
 
 # Full sample
-#boxplot(USArrests[, 'Murder'], main='',
+#boxplot(xy_hat[, 'y_hat'], main='',
 #    xlab='All Data', ylab='Murder Arrests')
 
 # Boxplots for each group
 Kcols <- hcl.colors(K, alpha=.5)
-boxplot(Murder ~ UrbanPop_Kcut, USArrests,
+boxplot(xy_hat[, 'y_hat'] ~ x_cut_hat,
     main=NA, col=Kcols,
     whisklty=0, staplelty=0, outline=FALSE,
     varwidth=TRUE, #show number of obs. per group
@@ -536,10 +537,10 @@ boxplot(Murder ~ UrbanPop_Kcut, USArrests,
 
 # 4 Groups with equal numbers of observations
 #Qcuts <- c(
-#    '0%'=min(USArrests[, 'UrbanPop'])-10*.Machine[['double.eps']],
-#    quantile(USArrests[, 'UrbanPop'], probs=c(.25, .5, .75, 1)))
-#USArrests[, 'UrbanPop_cut'] <- cut(USArrests[, 'UrbanPop'], Qcuts)
-#boxplot(Murder ~ UrbanPop_cut, USArrests, col=hcl.colors(4, alpha=.5))
+#    '0%'=min(xy_hat[, 'x_hat'])-10*.Machine[['double.eps']],
+#    quantile(xy_hat[, 'x_hat'], probs=c(.25, .5, .75, 1)))
+#x_qcut_hat <- cut(xy_hat[, 'x_hat'], Qcuts)
+#boxplot(xy_hat[, 'y_hat'] ~ x_qcut_hat, col=hcl.colors(4, alpha=.5))
 ```
 
 
@@ -552,7 +553,7 @@ boxplot(Murder ~ UrbanPop_Kcut, USArrests,
 2. Explain the difference between a joint distribution, a marginal distribution, and a conditional distribution.
    Using the education-and-sex example from this chapter, describe in words what $\hat{p}(y=1 \mid x=14)$ tells you and how it differs from $\hat{p}(x=14 \mid y=1)$.
 
-3. Suppose you observe a sample of $n=20$ people with two discrete variables: $X_{i}$ takes values in $\{A, B\}$ and $Y_{i}$ takes values in $\{1, 2\}$.
+3. Suppose you observe a sample of $n=20$ people with two discrete variables: $\hat{x}_{i}$ takes values in $\{A, B\}$ and $\hat{y}_{i}$ takes values in $\{1, 2\}$.
    The counts are: $(A,1)=6$, $(A,2)=4$, $(B,1)=3$, $(B,2)=7$.
    Compute the joint distribution $\hat{p}(x,y)$, both marginal distributions, and the conditional distribution $\hat{p}(y \mid x)$.
 
@@ -570,4 +571,3 @@ boxplot(Murder ~ UrbanPop_Kcut, USArrests,
 
 This chapter built up two-variable summaries from joint to marginal to conditional distributions, illustrated with the 13-student education-and-sex table where $\hat{p}(y=1\mid x=14)=5/6$ is the share of female students *within* the 14-years-of-school subgroup.
 We then saw how confusing the direction of conditioning produces the base-rate fallacy (the "most-stolen car" calculation, where Civics are the most-stolen model but the *least* likely to be stolen per car).
-The next chapter conditions on a factor variable to compare two groups directly, and tests the differences with the resampling tools from Part 1.

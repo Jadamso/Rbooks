@@ -1,9 +1,10 @@
-# Numerical Statistics
+# Summary Statistics
 ***
 
 We often summarize distributions with *statistics*: functions of data.
 We will go through some specific examples mathematically below, but can intuitively understand that they are generally computed as `statistic <- function(x){ .... }`.
-This chapter covers measures of center (mean, median, mode), spread (variance, IQR, MAD), and shape (skewness, kurtosis).
+This chapter covers measures of center (mean, median), spread (variance, IQR, MAD), and shape (skewness, kurtosis) for cardinal data.
+It then covers the statistics that remain meaningful for factor data: the mode, the Herfindahl index, and quantiles of ordered levels.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Note that functions can take functions as arguments, meaning we can also program statistics generally as 
@@ -13,8 +14,8 @@ statistic <- function(x_hat, f){
     return(stat_hat)
 }
 
-x_hat <- c(0, 1, 3, 10, 6) # Data
-statistic(x_hat, sum)
+x0_hat <- c(0, 1, 3, 10, 6) # Data
+statistic(x0_hat, sum)
 ```
 :::
 
@@ -23,16 +24,16 @@ The most basic way to compute statistics is with `summary`, which reports multip
 
 ```{r}
 # A random sample (real data)
-x_hat <- USArrests[, 'Murder']
+x_hat <- USArrests[, 'Murder'] # lab data: murder arrests per 100,000
 summary(x_hat)
 
 # A random sample (computer simulation)
-x_hat <-  runif(1000)
-summary(x_hat)
+x1_sim <- runif(1000)
+summary(x1_sim)
 
 # Another random sample (computer simulation)
-x_hat <- rnorm(1000)
-summary(x_hat)
+x2_sim <- rnorm(1000)
+summary(x2_sim)
 ```
 
 Together, the sample mean and variance statistics summarize the central tendency and dispersion of a distribution.
@@ -62,22 +63,21 @@ Because every observation contributes equally to the sum, a single extreme value
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 For example, a dataset of $\{1,4,10\}$ has a mean of $[1+4+10]/3=5$.
 ```{r}
-x_hat <- c(1, 4, 10)
-sum(x_hat)/length(x_hat)
-mean(x_hat)
+x0_hat <- c(1, 4, 10)
+sum(x0_hat)/length(x0_hat)
+mean(x0_hat)
 ```
 :::
 
 ```{r}
 # compute the mean of a random sample
-x1_hat <- USArrests[, 'Murder']
-m1_hat <- mean(x1_hat)
-m1_hat
+m_hat <- mean(x_hat)
+m_hat
 
 # visualize on a histogram
-hist(x1_hat, border=NA, main=NA, freq=FALSE)
-abline(v=m1_hat, col=rgb(1, 0, 0, .8), lwd=2)
-title(paste0('mean= ', round(m1_hat, 2)), font.main=1)
+hist(x_hat, border=NA, main=NA, freq=FALSE)
+abline(v=m_hat, col=rgb(1, 0, 0, .8), lwd=2)
+title(paste0('mean= ', round(m_hat, 2)), font.main=1)
 ```
 
 #### **Variance**{-}
@@ -99,23 +99,23 @@ Squaring the deviations also means a few extreme values can dominate the result,
 For example, a dataset of $\{1,4,10\}$ has a mean of $[1+4+10]/3=5$.
 The variance is $[(1-5)^2+(4-5)^2+(10-5)^2]/3=[16+1+25]/3=42/3=14$ and the standard deviation is $\sqrt{14}$.
 ```{r}
-x_hat <- c(1, 4, 10)
-m_hat <- mean(x_hat)
-v_hat <- mean( (x_hat - m_hat)^2 )
+x0_hat <- c(1, 4, 10)
+m_hat <- mean(x0_hat)
+v_hat <- mean( (x0_hat - m_hat)^2 )
 sqrt(v_hat)
 ```
 :::
 
 ```{r}
-s1_hat <- sd(x1_hat) # sqrt(var(x_hat))
-hist(x1_hat, border=NA, main=NA, freq=FALSE)
-m1_sd_bounds <- c(m1_hat - s1_hat,  m1_hat + s1_hat)
-abline(v=m1_hat, col=rgb(1, 0, 0, .8), lwd=2) #mean
+s1_hat <- sd(x_hat) # sqrt(var(x_hat))
+hist(x_hat, border=NA, main=NA, freq=FALSE)
+m1_sd_bounds <- c(m_hat - s1_hat,  m_hat + s1_hat)
+abline(v=m_hat, col=rgb(1, 0, 0, .8), lwd=2) #mean
 abline(v=m1_sd_bounds, col=rgb(0, 0, 1, .8)) # +- sd
 text(m1_sd_bounds, -.02,
     c( expression(bar(X)-s[X]), expression(bar(X)+s[X])),
     col=rgb(0, 0, 1, .8), adj=0)
-title(paste0('sd= ', round(s1_hat, 2)), font.main=1)
+title(paste0('mean ± 1 sd= ', round(s1_hat, 2)), font.main=1)
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -123,18 +123,18 @@ Note that a "unbiased version" of the empirical variance is used by R and many s
 In this class, we use the version defined previously because we do not yet know about "bias/unbiased" statistics.
 Do not be concerned, as there is hardly any difference when $n$ is large: e.g., $\frac{1}{n}\approx \frac{1}{n-1}$ for $n=100,000$.
 ```{r}
-x_hat <- c(1, 4, 10)
+x0_hat <- c(1, 4, 10)
 
-m_hat <- mean(x_hat)
-v_hat <- mean( (x_hat - m_hat)^2 )
+m_hat <- mean(x0_hat)
+v_hat <- mean( (x0_hat - m_hat)^2 )
 v_hat
 
 # Corrected Version
-n <- length(x_hat)
-v_corrected_hat <- sum( (x_hat - m_hat)^2 )/(n-1)
+n <- length(x0_hat)
+v_corrected_hat <- sum( (x0_hat - m_hat)^2 )/(n-1)
 v_corrected_hat
 
-var(x_hat) # R-Version
+var(x0_hat) # R-Version
 ```
 :::
 
@@ -160,25 +160,24 @@ A single outlier can pull the *mean* by an arbitrary amount, but moves the media
 Reach for these robust summaries when the distribution is skewed or contains values you cannot trust to be typical: income, house prices, response times, and similar heavy-tailed quantities where a small fraction of large values would swamp the mean.
 
 ```{r}
-x1_hat <- USArrests[, 'Murder']
-median(x1_hat)
-quantile(x1_hat, prob=0.5)
+median(x_hat)
+quantile(x_hat, prob=0.5)
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Examine robustness to an extreme value
 ```{r}
-x1_extreme_hat <- c(x1_hat, 1000) # add one extreme value
+x1_extreme_hat <- c(x_hat, 1000) # add one extreme value
 #par(mfrow=c(1, 2)) # visualize side-by-side
-#hist(x1_hat)
+#hist(x_hat)
 #hist(x1_extreme_hat)
 
 # Which measures of central tendency are robust
 # to a single extreme value?
-mean( x1_hat)
+mean( x_hat)
 mean( x1_extreme_hat )
 
-quantile(x1_hat, prob=0.5)
+quantile(x_hat, prob=0.5)
 quantile(x1_extreme_hat, prob=0.5)
 ```
 :::
@@ -188,8 +187,8 @@ quantile(x1_extreme_hat, prob=0.5)
 The $IQR$ corresponds to the box in the boxplot, and the $\text{MAD}$ uses the same robust idea but measures distances from the median directly rather than reading off quartile cut-offs.
 
 ```{r}
-IQR(x1_hat)
-mad(x1_hat)
+IQR(x_hat)
+mad(x_hat)
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
@@ -198,22 +197,22 @@ Compute the $IQR$ statistic for the dataset $\{-100,1,4,10,10\}$.
 $IQR =$ Upper quartile $-$ Lower quartile $= 10 - 1 = 9$. 
 
 ```{r}
-x_hat <- c(-100, 1, 4, 10, 10)
-# An intuitive alternative to sd(x_hat), used in the boxplot
-quants <- quantile(x_hat, probs=c(.25, .75))
+x0_hat <- c(-100, 1, 4, 10, 10)
+# An intuitive alternative to sd(x0_hat), used in the boxplot
+quants <- quantile(x0_hat, probs=c(.25, .75))
 quants[2]-quants[1]
-IQR(x_hat)
+IQR(x0_hat)
 ```
 Compute the $\text{MAD}$ statistic for the dataset $\{1,4,10\}$.
-First compute the median, $\text{Med}(1,4,10)=4$.
-Then compute $\text{Med}( |1-4|,~ |4-4|,~ |10-4| )= \text{Med}( 3, 0, 6 ) = 3$.
+First compute the median, $\text{Med}(-100,1,4,10,10)=4$.
+Then compute $\text{Med}(,~ |99-4|, |1-4|,~ |4-4|,~ |10-4|,~ |10-4| )= \text{Med}(95, 3, 0, 6, 6 ) = 6$.
 ```{r}
-#Another alternative to sd(x_hat)
-mad(x_hat, constant=1)
+#Another alternative to sd(x0_hat)
+mad(x0_hat, constant=1)
 
 # Computationally equivalent
-# med_hat <- quantile(x_hat, probs=.5)
-# absdev_hat <- abs(x_hat -med_hat)
+# med_hat <- quantile(x0_hat, probs=.5)
+# absdev_hat <- abs(x0_hat -med_hat)
 # quantile(absdev_hat, probs=.5)
 ```
 :::
@@ -221,13 +220,13 @@ mad(x_hat, constant=1)
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Compare the robustness of various "spread" metrics to an extreme value
 ```{r}
-sd(x1_hat)
+sd(x_hat)
 sd(x1_extreme_hat)
 
-IQR(x1_hat)
+IQR(x_hat)
 IQR(x1_extreme_hat)
 
-mad(x1_hat, constant=1)
+mad(x_hat, constant=1)
 mad(x1_extreme_hat, constant=1)
 ```
 :::
@@ -237,8 +236,8 @@ mad(x1_extreme_hat, constant=1)
 Note that there other "absolute deviation" statistics
 ```{r, eval=FALSE}
 # sometimes seen elsewhere
-mean( abs(x1_hat - mean(x1_hat)) )
-mean( abs(x1_hat - median(x1_hat)) )
+mean( abs(x_hat - mean(x_hat)) )
+mean( abs(x_hat - median(x_hat)) )
 ```
 :::
 
@@ -286,12 +285,12 @@ Then, sorting the dataset as \{1,1,1,2,3\}, we can see that $\hat{m} = [1+1+1+2+
 In either case, we end up with $\frac{3+2+3}{5}=8/5=1.6$
 
 ```{r}
-x_hat <- c(1, 2, 1, 3, 1)
-mean(x_hat)
+x0_hat <- c(1, 2, 1, 3, 1)
+mean(x0_hat)
 
-proportions <- table(x_hat)/length(x_hat)
+proportions <- table(x0_hat)/length(x0_hat)
 proportions
-vals <- sort(unique(x_hat))
+vals <- sort(unique(x0_hat))
 sum(vals*proportions)
 ```
 :::
@@ -314,45 +313,14 @@ weighted.quantile <- function(x_hat, w, probs){
 }
 
 ## Unweighted
-quantile(x_hat, probs=.5)
-weights <- rep(1, length(x_hat))
-weighted.quantile(x_hat=x_hat, w=weights, probs=.5)
+quantile(x0_hat, probs=.5)
+weights <- rep(1, length(x0_hat))
+weighted.quantile(x_hat=x0_hat, w=weights, probs=.5)
 
 ## Weighted
-weights <- seq(x_hat)
+weights <- seq(x0_hat)
 weights <- weights/sum(weights) # normalize
-weighted.quantile(x_hat=x_hat, w=weights, probs=.5)
-```
-:::
-
-#### **Mode and Share Concentration** {-}
-Sometimes, none of the above work well.
-With categorical data, for example, distributions are easier to describe with other statistics.
-The sample mode is the most common observation: the value with the highest observed frequency.
-We can also measure the spread of the frequencies or concentration at the mode vs elsewhere.
-
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Here is an example of the mode.
-In the data below, $A$ appears three times, $C$ twice, and $B$ once, so the mode is $A$.
-Notice the mode is not the alphabetically middle letter, $B$.
-```{r}
-x_hat <- c('A', 'B', 'A', 'C', 'C', 'A')
-proportions <- table(x_hat)/length(x_hat)
-plot(proportions, col=grey(0, 0.5))
-
-# mode(s)
-mode_id <- which(proportions==max(proportions))
-names(proportions)[ mode_id ]
-```
-
-Here is an example of spread for categorical data.
-```{r}
-# freq. spreads
-sd(proportions)
-sum(proportions^2)
-
-# freq. concentration at mode
-max(proportions)/mean(proportions)
+weighted.quantile(x_hat=x0_hat, w=weights, probs=.5)
 ```
 :::
 
@@ -396,7 +364,6 @@ m3_hat / sd(x_demo_hat)^3 # skewness
 :::
 
 ```{r}
-x_hat <- USArrests[, 'Murder']
 hist( x_hat^2, border=NA,
 	xlab='[Murder Rate]^2',
 	main=NA, freq=FALSE, breaks=20)
@@ -444,7 +411,7 @@ m4_hat / sd(x_demo_hat)^4 # kurtosis
 
 Some authors further subtract $3$ to explicitly compare against the normal distribution (the normal distribution has a *kurtosis* of $3$).
 
-Boxplot whiskers are a great way to examine kurtosis, with more circle ``outliers'' indicating more kurtosis.
+Boxplot whiskers are a great way to examine kurtosis, with more circle "outliers" indicating more kurtosis.
 You can also see skew in the boxplot when one quartile is much further from the median than the other. 
 
 ```{r}
@@ -490,8 +457,8 @@ r_ugly0 <- function(n, population_means=c(-2, 3), population_vars=c(1, 4), prob=
   rnorm(n, mean=population_means[di], sd=sqrt(population_vars)[di])
 }
 
-x_hat <- r_ugly0(6000)
-hist(x_hat, breaks=60,
+x_sim <- r_ugly0(6000)
+hist(x_sim, breaks=60,
     freq=FALSE, border=NA,
     xlab='x', main=NA)
 
@@ -507,10 +474,149 @@ r_ugly1 <- function(n, theta1=c(-8, -1), theta2=c(-2, 2), rho=.25){
     return(x_hat)
 }
 # Very Large Sample
-x_hat <- r_ugly1(1000000)
-hist(x_hat, breaks=1000, freq=FALSE, border=NA,
+x_sim <- r_ugly1(1000000)
+hist(x_sim, breaks=1000, freq=FALSE, border=NA,
     xlab='x', main=NA)
 ```
+
+## Factor Data
+
+The statistics above all add, subtract, or rank the observations, so they require cardinal data.
+For factor data, we instead start from the proportions $\hat{p}(x)$ from the [empirical mass function](01_02_Data.qmd#empirical-mass-function) and summarize those.
+Which summaries make sense depends on whether the factor is ordered.
+
+#### **Ordered Factors** {-}
+
+Ordered factors, such as letter grades or survey responses from *strongly disagree* to *strongly agree*, have a ranking but no meaningful distance between levels.
+The mode and Herfindahl index apply as before, since they only use the proportions.
+Because the levels can be sorted, the [median and other quantiles](01_02_Data.qmd#quantiles) also apply: the median is the middle level, and the quartiles bracket the middle half of the observations.
+Quantiles are useful for ordered factors because they only use the ordering: "half the class earned a $B$ or better" is a statement the data can support.
+The mean and variance do not apply, because there is nothing to add.
+A grade point average gets around this by coding the levels as numbers, treating the gap between $C$ and $B$ as equal to the gap between $B$ and $A$, but that is an assumption imposed by the grader rather than a property of the data.
+Surveys often record a cardinal variable only in bands, such as income brackets, which turns it into an ordered factor.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+For example, the letter grades $\{B, A, C, B, F, B, A\}$ of $n=7$ students sort from lowest to highest as $F, C, B, B, B, A, A$.
+The median is the fourth sorted value, $B$, the lower quartile is the second, $C$, and the upper quartile is the sixth, $A$.
+The mode is also $B$.
+```{r}
+grade <- factor(c('B', 'A', 'C', 'B', 'F', 'B', 'A'),
+    levels=c('F', 'D', 'C', 'B', 'A'), ordered=TRUE)
+sort(grade)
+
+# median and quartiles (type=1 is required for ordered factors)
+quantile(grade, probs=c(.25, .5, .75), type=1)
+```
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Compute the median of the original `USArrests[, 'UrbanPop']` and check which band it falls in.
+Then move the inner breaks from $50$ and $75$ to $40$ and $60$ and recompute the median band.
+Does the median band always contain the cardinal median?
+
+Below, the urban share of each state's population is recorded in three bands.
+```{r}
+# urban population in bands, an ordered factor
+urban_band <- cut(USArrests[, 'UrbanPop'], breaks=c(0, 50, 75, 100),
+    labels=c('mostly rural', 'mixed', 'mostly urban'), ordered_result=TRUE)
+p_hat <- table(urban_band)/length(urban_band)
+plot(p_hat, col=grey(0, .5),
+    xlab='Urban Population', ylab='Proportion of States')
+
+# mode and Herfindahl index
+names(p_hat)[p_hat==max(p_hat)]
+sum(p_hat^2)
+
+# median and quartiles
+quantile(urban_band, probs=c(.25, .5, .75), type=1)
+```
+:::
+
+
+
+#### **Unordered Factors** {-}
+
+For categories with no natural order, such as regions or brands, the center of a distribution is simply the most common category.
+Categories have no distance between them, so for factor data spread instead means how evenly the observations divide across the categories.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The sample *mode* is the value that occurs most often: the $x$ with the largest proportion $\hat{p}(x)$.
+
+The *Herfindahl index* is the sum of the squared proportions across the distinct values, $\hat{H} = \sum_{x} \hat{p}(x)^2.$
+:::
+
+The mode is useful when the question is "which category is typical?": the most common region, the best-selling brand, the most frequent answer on a survey.
+It is the only measure of center that applies to unordered factors, since the categories can be neither averaged nor ranked.
+If several categories tie for the highest proportion, the data have more than one mode.
+
+
+
+The Herfindahl index ranges from $1/K$, when every category has the same proportion, up to $1$, when every observation falls in a single category.
+It is useful for asking how dominated a distribution is by its largest categories.
+Economists use the same statistic, with market shares in place of proportions, to measure how concentrated an industry is, and antitrust agencies report it with shares in percentage points so that the scale runs to $10{,}000$.
+The complement $1-\hat{H}$ is sometimes reported instead so that larger values mean a more even spread, and after rescaling by $K/(K-1)$ it is called the *index of qualitative variation*.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+For example, the dataset $\{A, B, A, C, C, A\}$ has $n=6$ observations in $K=3$ categories.
+$A$ appears three times, $C$ twice, and $B$ once, so $\hat{p}(A)=1/2$, $\hat{p}(B)=1/6$, $\hat{p}(C)=1/3$, and the mode is $A$.
+Notice the mode is not the alphabetically middle letter, $B$.
+The Herfindahl index is $(1/2)^2+(1/6)^2+(1/3)^2=[9+1+4]/36=14/36\approx 0.39$, above the minimum of $1/3$ that would occur if all three letters were equally common.
+```{r}
+x0_hat <- c('A', 'B', 'A', 'C', 'C', 'A')
+p_hat <- table(x0_hat)/length(x0_hat)
+p_hat
+
+# mode(s)
+names(p_hat)[p_hat==max(p_hat)]
+
+# Herfindahl index
+sum(p_hat^2)
+```
+:::
+
+```{r}
+# census region of each state, an unordered factor
+region <- state.region
+p_hat <- table(region)/length(region)
+plot(p_hat, col=grey(0, .5),
+    xlab='Census Region', ylab='Proportion of States')
+
+# mode
+names(p_hat)[p_hat==max(p_hat)]
+
+# Herfindahl index, compared to its minimum 1/K
+K <- length(p_hat)
+c(H_hat=sum(p_hat^2), H_min=1/K)
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Suppose $100$ customers each buy from one of four firms: $60$ from firm $A$, $20$ from $B$, $10$ from $C$, and $10$ from $D$.
+Compute each firm's market share, the mode, and the Herfindahl index.
+Then suppose firms $C$ and $D$ merge into a single firm and recompute.
+Does the merger raise or lower concentration?
+```{r}
+x0_hat <- rep(c('A', 'B', 'C', 'D'), times=c(60, 20, 10, 10))
+p_hat <- table(x0_hat)/length(x0_hat)
+sum(p_hat^2)
+
+# after the merger, C and D are one firm
+x_merged_hat <- x0_hat
+x_merged_hat[x_merged_hat=='D'] <- 'C'
+```
+:::
+
+
+
+Each statistic in this chapter suits some data types and not others.
+Here is a table to help you recall which apply.
+Note that the mode and Herfindahl index need repeated values, so for continuous cardinal data we can describe proportions with a histogram instead (seeing the highest peak as the mode, for example).
+
+| Statistic | Factor | Cardinal |
+|-----------|------------------|----------------|----------|
+| Mean, variance, skewness, kurtosis | No | Yes |
+| Median, quantiles, $IQR$ | Ordered only (not Unordered) | Yes |
+| Mode, Herfindahl index| Yes | Discrete only (not Continuous)* |
+
 
 
 
@@ -531,6 +637,10 @@ hist(x_hat, breaks=1000, freq=FALSE, border=NA,
    Then apply a log transformation with `log(USArrests[,'Assault'])` and compute the skewness of both the original and transformed data using the `skewness` function defined in the chapter.
    Which version is less skewed?
 
+5. A survey asks $12$ customers to rate a product on a five-level scale from *poor* to *excellent*, with responses $\{good, fair, excellent, good, poor, good, fair, excellent, good, very~good, fair, good\}$.
+   Store the responses as an ordered factor in R, then report the proportions, the mode, the median, and the Herfindahl index.
+   Explain why the median is a meaningful summary here but the mean of the numeric codes $1$ to $5$ requires an extra assumption.
+
 #### **Further Reading** {-}
 
 * <https://learningstatisticswithr.com/book/descriptives.html> -- Thorough treatment of measures of center, spread, and skewness with R examples.
@@ -540,6 +650,6 @@ hist(x_hat, breaks=1000, freq=FALSE, border=NA,
 #### **Recall** {-}
 
 This chapter compressed a distribution into single numbers: the *mean* and *variance* (and *standard deviation*) for center and spread, the *median*, *IQR*, and *MAD* as robust alternatives, and the *skewness* and *kurtosis* for shape.
+For factor data, where nothing can be added, the *mode* and the *Herfindahl index* $\hat{H}$ took over: the four census regions in `state.region` have mode *South* and $\hat{H}=0.26$, barely above the $0.25$ floor for four equally common categories, and ordered factors such as letter grades also keep the median and quartiles.
 The running five-point dataset $\{0, 1, 2, 3, 9\}$ tied the shape statistics together: its mean is $3$, its cubed deviations average to $36$ giving a skewness of about $0.81$ (long right tail), and its quartic deviations give a kurtosis of about $1.78$ (both driven by the single outlier at $9$).
 On real data such as `USArrests[, 'Murder']`, a histogram plus the mean and standard deviation already reveal most of the shape; the median, MAD, skew, and kurtosis fill in what symmetry assumptions hide.
-In the next chapter we flip the script: instead of computing statistics from observed data, we generate data from a known random-variable model.

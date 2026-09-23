@@ -110,8 +110,8 @@ library(extraDistr) # every time you need it
 
 par(mfrow=c(1, 2))
 for(p in c(-.5, 0)){
-    x_hat <- rgev(2000, mu=0, sigma=1, xi=p)
-    hist(x_hat, breaks=50, border=NA, main=NA, freq=FALSE)
+    x_sim <- rgev(2000, mu=0, sigma=1, xi=p)
+    hist(x_sim, breaks=50, border=NA, main=NA, freq=FALSE)
 }
 title('GEV densities', outer=TRUE, line=-1)
 ```
@@ -121,8 +121,8 @@ library(extraDistr)
 
 par(mfrow=c(1, 3))
 for(p in c(-1, 0, 2)){
-    x_hat <- rtlambda(2000, p)
-    hist(x_hat, breaks=100, border=NA, main=NA, freq=FALSE)
+    x_sim <- rtlambda(2000, p)
+    hist(x_sim, breaks=100, border=NA, main=NA, freq=FALSE)
 }
 title('Tukey-Lambda densities', outer=TRUE, line=-1)
 ```
@@ -228,67 +228,67 @@ Data transformation is often necessary before analysis, so remember to be carefu
 # Function to Create Sample Datasets
 make_noisy_data <- function(n, b=0){
     # Simple Data Generating Process
-    x_hat <- seq(1, 10, length.out=n)
+    x_sim <- seq(1, 10, length.out=n)
     e <- rnorm(n, mean=0, sd=10)
-    y_hat <- b*x_hat + e
+    y_sim <- b*x_sim + e
     # Obervations
-    xy_mat <- data.frame(ID=seq(x_hat), x=x_hat, y=y_hat)
-    return(xy_mat)
+    xy_sim <- data.frame(ID=seq(x_sim), x=x_sim, y=y_sim)
+    return(xy_sim)
 }
 
 # Two simulated datasets
-dat1 <- make_noisy_data(6)
-dat2 <- make_noisy_data(6)
+xy1_sim <- make_noisy_data(6)
+xy2_sim <- make_noisy_data(6)
 
 # Merging data in long format
-dat_merged_long <- rbind(
-    cbind(dat1, DF=1),
-    cbind(dat2, DF=2))
+xy_long_sim <- rbind(
+    cbind(xy1_sim, DF=1),
+    cbind(xy2_sim, DF=2))
 ```
 
 Now suppose we want to transform into wide format
 ```{r}
 # Merging data in wide format, First Attempt
-dat_merged_wide <- cbind( dat1, dat2)
-names(dat_merged_wide) <- c(paste0(names(dat1), '.1'), paste0(names(dat2), '.2'))
+xy_wide_sim <- cbind( xy1_sim, xy2_sim)
+names(xy_wide_sim) <- c(paste0(names(xy1_sim), '.1'), paste0(names(xy2_sim), '.2'))
 
 # Merging data in wide format, Second Attempt
 # higher performance
-dat_merged_wide2 <- merge(dat1, dat2,
+xy_wide2_sim <- merge(xy1_sim, xy2_sim,
     by='ID', suffixes=c('.1', '.2'))
 ## CHECK they are the same.
-identical(dat_merged_wide, dat_merged_wide2)
+identical(xy_wide_sim, xy_wide2_sim)
 # Inspect any differences
 
 # Merging data in wide format, Third Attempt with dedicated package
 # (highest performance but with new type of object)
 library(data.table)
-dat_merged_longDT <- as.data.table(dat_merged_long)
-dat_melted <- melt(dat_merged_longDT, id.vars=c('ID', 'DF'))
-dat_merged_wide3 <- dcast(dat_melted, ID ~ DF+variable)
+xy_long_dt_sim <- as.data.table(xy_long_sim)
+xy_melt_sim <- melt(xy_long_dt_sim, id.vars=c('ID', 'DF'))
+xy_wide3_sim <- dcast(xy_melt_sim, ID ~ DF+variable)
 
 ## CHECK they are the same.
-identical(dat_merged_wide, dat_merged_wide3)
+identical(xy_wide_sim, xy_wide3_sim)
 ```
 
 Often, however, we ultimately want data in long format
 ```{r}
 # Merging data in long format, Second Attempt with dedicated package 
-dat_melted2 <- melt(dat_merged_wide3, measure=c('1_x', '1_y', '2_x', '2_y'))
-melt_vars <- strsplit(as.character(dat_melted2[['variable']]), '_')
+xy_melt2_sim <- melt(xy_wide3_sim, measure=c('1_x', '1_y', '2_x', '2_y'))
+melt_vars <- strsplit(as.character(xy_melt2_sim[['variable']]), '_')
 for (i in seq_along(melt_vars)) {
-    dat_melted2[i, 'DF'] <- melt_vars[[i]][1]
-    dat_melted2[i, 'variable'] <- melt_vars[[i]][2]
+    xy_melt2_sim[i, 'DF'] <- melt_vars[[i]][1]
+    xy_melt2_sim[i, 'variable'] <- melt_vars[[i]][2]
 }
-dat_merged_long2 <- dcast(dat_melted2, DF+ID ~ variable)
-dat_merged_long2 <- as.data.frame(dat_merged_long2)
+xy_long2_sim <- dcast(xy_melt2_sim, DF+ID ~ variable)
+xy_long2_sim <- as.data.frame(xy_long2_sim)
 
 ## CHECK they are the same.
-identical( dat_merged_long2, dat_merged_long)
+identical( xy_long2_sim, xy_long_sim)
 
 # Further Inspect
-dat_merged_long2 <- dat_merged_long2[, c('ID', 'x', 'y', 'DF')]
-mapply( identical, dat_merged_long2, dat_merged_long)
+xy_long2_sim <- xy_long2_sim[, c('ID', 'x', 'y', 'DF')]
+mapply( identical, xy_long2_sim, xy_long_sim)
 ```
 
 
@@ -331,8 +331,8 @@ sweep(m, 2, colMeans(m), '-')
 You can also easily bin and aggregate data
 
 ```{r}
-x_hat <- 1:10
-x_bins <- cut(x_hat, 4)
+x_toy <- 1:10
+x_bins <- cut(x_toy, 4)
 x_bins
 
 # Compute the mean within each bin
@@ -340,12 +340,12 @@ bin_levels <- levels(x_bins)
 bin_means <- numeric(length(bin_levels))
 names(bin_means) <- bin_levels
 for (i in seq_along(bin_levels)) {
-    bin_means[i] <- mean(x_hat[x_bins == bin_levels[i]])
+    bin_means[i] <- mean(x_toy[x_bins == bin_levels[i]])
 }
 bin_means
 
 # shortcut
-aggregate(x_hat, list(x_bins), mean)
+aggregate(x_toy, list(x_bins), mean)
 ```
 
 See also <https://bookdown.org/rwnahhas/IntroToR/logical.html>
@@ -1041,9 +1041,9 @@ For identifying bottlenecks, the simplest approach is to time how long a code-ch
 
 ```{r}
 system.time({
-    x0_hat <- runif(1e5)
-    x1_hat <- sqrt(x0_hat)
-    x2_hat <- paste0('J-', x1_hat)
+    x_sim <- runif(1e5)
+    x1_sim <- sqrt(x_sim)
+    x2_sim <- paste0('J-', x1_sim)
 })
 ##    user  system elapsed 
 ##   0.130   0.004   0.134
@@ -1054,17 +1054,17 @@ You can *visually* identify bottlenecks in larger blocks
 ```{r}
 # Generate Large Random Dataset
 n <- 2e6
-x_hat <- runif(n)
-y_hat <- runif(n)
-z_hat <- runif(n)
-XYZ <- cbind(x_hat, y_hat, z_hat)
+x_sim <- runif(n)
+y_sim <- runif(n)
+z_sim <- runif(n)
+xyz_sim <- cbind(x_sim, y_sim, z_sim)
 
 # Inspect 4 equivalent `row mean` calculations 
 profvis::profvis({
-    m_hat <- rowSums(XYZ)/ncol(XYZ)
-    m_hat <- rowMeans(XYZ)
-    m_hat <- apply(XYZ, 1, mean)
-    m_hat <- rep(NA, n);  for(i in 1:n){ m_hat[i] <- (x_hat[i] + y_hat[i] + z_hat[i]) / 3 }
+    m_hat <- rowSums(xyz_sim)/ncol(xyz_sim)
+    m_hat <- rowMeans(xyz_sim)
+    m_hat <- apply(xyz_sim, 1, mean)
+    m_hat <- rep(NA, n);  for(i in 1:n){ m_hat[i] <- (x_sim[i] + y_sim[i] + z_sim[i]) / 3 }
 })
 ```
 
@@ -1085,32 +1085,32 @@ mean2 <- function(x_hat, p=1) sum(x_hat^p) / length(x_hat)
 mean3 <- function(x_hat, p=1) mean.default(x_hat^p)
 
 # Time them
-x_hat <- runif(1e6)
+x_sim <- runif(1e6)
 microbenchmark::microbenchmark(
-  mean1(x_hat, .5),
-  mean2(x_hat, .5),
-  mean3(x_hat, .5),
+  mean1(x_sim, .5),
+  mean2(x_sim, .5),
+  mean3(x_sim, .5),
   times=20
 )
 ## Unit: milliseconds
 ##           expr      min       lq     mean   median       uq      max neval cld
-##  mean1(x_hat, 0.5) 19.99996 21.08001 21.74110 22.06529 22.31428 23.07532    20   a
-##  mean2(x_hat, 0.5) 19.15722 20.10658 20.91981 21.12252 21.73134 22.79755    20   a
-##  mean3(x_hat, 0.5) 19.94863 20.39546 22.13567 22.02917 22.52014 32.40659    20   a
+##  mean1(x_sim, 0.5) 19.99996 21.08001 21.74110 22.06529 22.31428 23.07532    20   a
+##  mean2(x_sim, 0.5) 19.15722 20.10658 20.91981 21.12252 21.73134 22.79755    20   a
+##  mean3(x_sim, 0.5) 19.94863 20.39546 22.13567 22.02917 22.52014 32.40659    20   a
 
 # Time them (w/ memory)
 bench::mark(
-  mean1(x_hat, .5),
-  mean2(x_hat, .5),
-  mean3(x_hat, .5),
+  mean1(x_sim, .5),
+  mean2(x_sim, .5),
+  mean3(x_sim, .5),
   iterations=20
 )
 ## # A tibble: 3 × 6
 ##   expression         min   median `itr/sec` mem_alloc `gc/sec`
 ##   <bch:expr>    <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-## 1 mean1(x_hat, 0.5)   19.9ms   22.6ms      45.9    7.63MB     0
-## 2 mean2(x_hat, 0.5)   19.1ms   21.6ms      48.3    7.63MB     2.54
-## 3 mean3(x_hat, 0.5)   19.8ms   22.6ms      45.3    7.63MB     2.39
+## 1 mean1(x_sim, 0.5)   19.9ms   22.6ms      45.9    7.63MB     0
+## 2 mean2(x_sim, 0.5)   19.1ms   21.6ms      48.3    7.63MB     2.54
+## 3 mean3(x_sim, 0.5)   19.8ms   22.6ms      45.3    7.63MB     2.39
 ```
 
 #### **Vectorize** {-}
@@ -1126,7 +1126,7 @@ Vector operations are generally faster and easier to read than loops
 
 ```{r}
 # Compare 2 moving averages
-x_hat <- runif(2e6)
+x_sim <- runif(2e6)
 
 # First Try
 ma1 <- function(y_hat){
@@ -1147,18 +1147,18 @@ ma2 <- function(y_hat){
     return(z2_hat)
 }
 
-all.equal(ma1(x_hat), ma2(x_hat))
+all.equal(ma1(x_sim), ma2(x_sim))
 ## [1] TRUE
 
-system.time( ma1(x_hat) )
+system.time( ma1(x_sim) )
 ##    user  system elapsed 
 ##   0.173   0.000   0.174
-system.time( ma2(x_hat) )
+system.time( ma2(x_sim) )
 ##    user  system elapsed 
 ##   0.031   0.006   0.037
 
 ma3 <- compiler::cmpfun(ma2)
-system.time( ma3(x_hat) )
+system.time( ma3(x_sim) )
 ##    user  system elapsed 
 ##   0.028   0.000   0.028
 ```
@@ -1204,15 +1204,15 @@ For finding problematic blocks `utils::Rprof(memory.profiling = TRUE)` logs tota
 ```{r}
 Rprof( interval = 0.005)
     # Create Data
-    x_hat <- runif(2e6)
-    y_hat <- sqrt(x_hat)
+    x_sim <- runif(2e6)
+    y_sim <- sqrt(x_sim)
     # Loop Format Data
-    z_full_hat <- y_hat*NA
-    for(i in 2:length(y_hat)){ z_full_hat[i] <- (y_hat[i]-y_hat[i-1])/2 }
+    z_full_sim <- y_sim*NA
+    for(i in 2:length(y_sim)){ z_full_sim[i] <- (y_sim[i]-y_sim[i-1])/2 }
     # Regression
-    X <- cbind(1, x_hat)[-1, ]
-    z_hat <- z_full_hat[-1]
-    reg_fast <- .lm.fit(X, z_hat)
+    X <- cbind(1, x_sim)[-1, ]
+    z_sim <- z_full_sim[-1]
+    reg_fast <- .lm.fit(X, z_sim)
 Rprof(NULL)
 summaryRprof()
 ```
@@ -1229,16 +1229,16 @@ Some functions are simply wrappers for the function you want, and calling it dir
 
 ```{r}
 X <- cbind(1, runif(1e6))
-y_hat <- X %*% c(1, 2) + rnorm(1e6)
-DAT <- as.data.frame(cbind(y_hat, X))
+y_sim <- X %*% c(1, 2) + rnorm(1e6)
+xy_sim <- as.data.frame(cbind(y_sim, X))
 
-system.time({ lm(y_hat ~ X, data=DAT) })
+system.time({ lm(y_sim ~ X, data=xy_sim) })
 ##    user  system elapsed 
 ##   0.324   0.007   0.134
-system.time({ .lm.fit(X, y_hat) })
+system.time({ .lm.fit(X, y_sim) })
 ##    user  system elapsed 
 ##   0.093   0.000   0.026
-system.time({ solve(t(X)%*%X) %*% (t(X)%*%y_hat) })
+system.time({ solve(t(X)%*%X) %*% (t(X)%*%y_sim) })
 ##    user  system elapsed 
 ##   0.029   0.000   0.024
 ```

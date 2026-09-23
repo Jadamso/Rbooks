@@ -13,7 +13,8 @@ Calling `plot()` on an `lm` object returns four standard plots: (1) residuals vs
 We next go through what each shows.
 ```{r, fig.height=10, fig.width=10, fig.align="center"}
 # Fit a multiple regression and produce the four standard diagnostic plots.
-reg <- lm(Murder ~ Assault+UrbanPop, data=USArrests)
+xy_hat <- USArrests
+reg <- lm(Murder ~ Assault+UrbanPop, data=xy_hat)
 par(mfrow=c(2, 2))
 plot(reg, pch=16, col=grey(0, .5))
 ```
@@ -26,7 +27,7 @@ Eyeballing the plot will not tell us which ones actually move the fit, so we nee
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 For a regression with $n$ observations and $K$ parameters:
 
-The *leverage* $h_i \in [0, 1]$ of observation $i$ measures how unusual its predictor values $\hat{x}_i$ are relative to the rest of the sample: small $h_i$ when $\hat{x}_i$ sits near the centre of the predictor cloud, large $h_i$ when it sits at the edges.
+The *leverage* $h_i~\text{in}~[0, 1]$ of observation $i$ measures how unusual its predictor values $\hat{x}_i$ are relative to the rest of the sample: small $h_i$ when $\hat{x}_i$ sits near the centre of the predictor cloud, large $h_i$ when it sits at the edges.
 Equivalently, $h_i$ is the share of the fitted value $\hat{y}_i^{\mathrm{fit}}$ that is determined by $\hat{y}_i$ itself rather than by the other observations, and the $h_i$ across the sample sum to the number of coefficients $K$.
 
 The *standardized residual* $r_i = \hat{e}_i / (s^{(-i)}\sqrt{1-h_i})$ rescales the raw residual by an estimate of its standard deviation, where $s^{(-i)}$ is the root mean squared error of a regression with observation $i$ removed.
@@ -41,14 +42,14 @@ The first diagnostic plot (residuals vs fitted) is the picture for outliers in t
 
 ```{r}
 N <- 40
-x_hat <- c(25, runif(N-1, 3, 8))
+x_sim <- c(25, runif(N-1, 3, 8))
 e <- rnorm(N, 0, 0.4)
-y_hat <- 3 + 0.6*sqrt(x_hat) + e
-plot(y_hat ~ x_hat, pch=16, col=grey(0, .5), main=NA)
-points(x_hat[1], y_hat[1], pch=16, col=rgb(1, 0, 0, .5))
+y_sim <- 3 + 0.6*sqrt(x_sim) + e
+plot(y_sim ~ x_sim, pch=16, col=grey(0, .5), main=NA)
+points(x_sim[1], y_sim[1], pch=16, col=rgb(1, 0, 0, .5))
 
-abline(lm(y_hat ~ x_hat), col=rgb(1, 0, 0, .8), lty=2)
-abline(lm(y_hat[-1] ~ x_hat[-1]))
+abline(lm(y_sim ~ x_sim), col=rgb(1, 0, 0, .8), lty=2)
+abline(lm(y_sim[-1] ~ x_sim[-1]))
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
@@ -82,7 +83,7 @@ abline(h=0, lty=2)
 # Label the most influential observations
 inf_id <- order(d_i, decreasing=TRUE)[1:3]
 text(h_i[inf_id], e_std_hat[inf_id],
-    labels=rownames(USArrests)[inf_id], pos=3, cex=.7)
+    labels=rownames(xy_hat)[inf_id], pos=3, cex=.7)
 ```
 
 
@@ -106,8 +107,8 @@ Collinearity does not bias the coefficients, it only widens their standard error
 ```{r}
 # Variance Inflation Factor from its definition: VIF_k = 1/(1 - R^2_k),
 # where R^2_k comes from regressing covariate k on the other covariates.
-R2_assault  <- summary(lm(Assault ~ UrbanPop, data=USArrests))$r.squared
-R2_urbanpop <- summary(lm(UrbanPop ~ Assault, data=USArrests))$r.squared
+R2_assault  <- summary(lm(Assault ~ UrbanPop, data=xy_hat))$r.squared
+R2_urbanpop <- summary(lm(UrbanPop ~ Assault, data=xy_hat))$r.squared
 
 vif <- c(Assault=1/(1-R2_assault), UrbanPop=1/(1-R2_urbanpop))
 vif
@@ -160,11 +161,11 @@ The third diagnostic plot (scale-location) is the visual check; the *Breusch-Pag
 # Regress the squared residuals on the original regressors:
 # a good fit (high R^2) signals non-constant variance.
 e_sq_hat <- resid(reg)^2
-aux <- lm(e_sq_hat ~ Assault + UrbanPop, data=USArrests)
+aux <- lm(e_sq_hat ~ Assault + UrbanPop, data=xy_hat)
 R2_aux <- summary(aux)$r.squared
 
 # Test statistic n*R^2 ~ chi-squared with K degrees of freedom
-n <- nrow(USArrests)
+n <- nrow(xy_hat)
 K <- 2
 BP <- n*R2_aux
 c(statistic=BP, p.value=1-pchisq(BP, df=K))
@@ -217,7 +218,7 @@ The family also nests:
  * log-linear $(\rho=0, \lambda=1)$.
 
 When $\rho=\lambda$ we get the CES production function, which spans the "perfect substitutes" linear-linear model and the "cobb-douglas" log-log model among others.
-In this CES case, $\rho \in (-\infty,1]$ controls the *substitutability* of explanatory variables ($\rho<0$ is "complementary") and $\lambda$ governs the *returns to scale* ($\lambda<1$ is "decreasing returns").
+In this CES case, $\rho~\text{in}~(-\infty,1]$ controls the *substitutability* of explanatory variables ($\rho<0$ is "complementary") and $\lambda$ governs the *returns to scale* ($\lambda<1$ is "decreasing returns").
 
 We compute the mean squared error in the original scale by inverting the predictions;
 $$
@@ -254,9 +255,9 @@ bxcx_inv <- function( xy, rho){
 }
 
 # Which Variables
-reg <- lm(Murder ~ Assault+UrbanPop, data=USArrests)
-X <- USArrests[, c('Assault', 'UrbanPop')]
-y_hat <- USArrests[, 'Murder']
+reg <- lm(Murder ~ Assault+UrbanPop, data=xy_hat)
+X <- xy_hat[, c('Assault', 'UrbanPop')]
+y_hat <- xy_hat[, 'Murder']
 
 # Simple Grid Search over potential (Rho, Lambda)
 rl_df <- expand.grid(rho=seq(-2, 2, by=.5), lambda=seq(-2, 2, by=.5))
@@ -266,8 +267,8 @@ rl_df <- expand.grid(rho=seq(-2, 2, by=.5), lambda=seq(-2, 2, by=.5))
 errors <- apply(rl_df, 1, function(rl){
     Xr <- bxcx(X, rl[[1]])
     y_trans_hat <- bxcx(y_hat, rl[[2]])
-    Datr <- cbind(Murder=y_trans_hat, Xr)
-    Regr <- lm(Murder ~ Assault+UrbanPop, data=Datr)
+    xy_trans_hat <- cbind(Murder=y_trans_hat, Xr)
+    Regr <- lm(Murder ~ Assault+UrbanPop, data=xy_trans_hat)
     y_fit <- bxcx_inv(predict(Regr), rl[[2]])
     e_hat  <- (y_hat - y_fit)
     return(e_hat)
@@ -308,8 +309,8 @@ You can also plot the specific predictions to better understand the effect of da
 # Plot for Specific Comparisons
 Xr <- bxcx(X, rl0[[1]])
 y_trans_hat <- bxcx(y_hat, rl0[[2]])
-Datr <- cbind(Murder=y_trans_hat, Xr)
-Regr <- lm(Murder ~ Assault+UrbanPop, data=Datr)
+xy_trans_hat <- cbind(Murder=y_trans_hat, Xr)
+Regr <- lm(Murder ~ Assault+UrbanPop, data=xy_trans_hat)
 y_fit <- bxcx_inv(predict(Regr), rl0[[2]])
 
 cols <- c(rgb(1, 0, 0, .5), col=rgb(0, 0, 1, .5))
@@ -333,7 +334,7 @@ The Box-Cox grid lowers the prediction MSE relative to the linear baseline, at t
 
 When explicitly transforming data according to $\lambda$ and $\rho$, these parameters increase the degrees of freedom by two.
 The default hypothesis testing procedures do not account for you trying out different transformations, and should be adjusted by the increased degrees of freedom.
-*Specification searches* deflate standard errors and are a major source for false discoveries (see [Data Scientism](03_29_DataScientism.qmd)).
+*Specification searches* deflate standard errors and are a major source for false discoveries.
 
 Note that if you are ultimately interested in the outcome $Y$, then transforming/untransforming $Y$ can introduce a bias.
 To understand when you might be better off sticking with an untransformed outcome variable, see the literature on "smearing".
@@ -355,7 +356,7 @@ To understand when you might be better off sticking with an untransformed outcom
    Identify the state with the highest leverage (using `hatvalues()`) and the state with the largest standardized residual (using `rstandard()`).
    Are they the same state?
 
-4. Fit the model `lm(Murder ~ Assault + UrbanPop, data = USArrests)` and then fit a log-linear version `lm(log(Murder + 1) ~ Assault + UrbanPop, data = USArrests)`.
+4. Fit the model `lm(Murder ~ Assault + UrbanPop, data=xy_hat)` and then fit a log-linear version `lm(log(Murder + 1) ~ Assault + UrbanPop, data=xy_hat)`.
    Compare the two models by computing the mean squared prediction error in the original (untransformed) scale for each.
    Which specification fits better?
 
@@ -370,4 +371,3 @@ To understand when you might be better off sticking with an untransformed outcom
 
 This chapter audited a fitted regression with four diagnostic plots (outliers, leverage, normality, scale) and three numerical companions: the Variance Inflation Factor for collinearity, the Breusch-Pagan test for heteroskedasticity, and Box-Cox transformations as a way to rescue a misspecified linear model.
 The Box-Cox grid-search on `Murder ~ Assault + UrbanPop` made the trade-off concrete: searching over $(\rho, \lambda)$ on $\{-2, -1.5, \ldots, 2\}^2$ found a fit with lower MSE on the original Murder scale than the untransformed baseline.
-In the next chapter we keep the multivariate setup but drop the linear assumption: local regressions and regressograms estimate the conditional mean without committing to a single line.

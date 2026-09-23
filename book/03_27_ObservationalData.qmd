@@ -27,15 +27,15 @@ Each new value is just the previous value plus a random shock (white noise).
 ```{r}
 # Generate Random Walk
 tN <- 200
-y_hat <- numeric(tN)
-y_hat[1] <- stock$AAPL.High[1]
+y_rw_sim <- numeric(tN)
+y_rw_sim[1] <- stock$AAPL.High[1]
 for (ti in 2:tN) {
-    y_hat[ti] <- y_hat[ti-1] + runif(1, -10, 10)
+    y_rw_sim[ti] <- y_rw_sim[ti-1] + runif(1, -10, 10)
 }
-#x_hat <- runif(tN, -1, 1) White Noise
+#x_sim <- runif(tN, -1, 1) White Noise
 
-y_dat <- data.frame(Date=1:tN, RandomWalk=y_hat)
-fig <- plot_ly(y_dat, type = 'scatter', mode = 'lines') %>%
+xy_rw_sim <- data.frame(Date=1:tN, RandomWalk=y_rw_sim)
+fig <- plot_ly(xy_rw_sim, type = 'scatter', mode = 'lines') %>%
   add_trace(x= ~ Date, y= ~ RandomWalk) %>%
   layout(showlegend = FALSE)
 fig
@@ -62,12 +62,12 @@ A nonstationary series can disguise itself in a histogram because the histogram 
 layout(matrix(c(1, 2), nrow = 1), widths = c(4, 1))
 
 par(mar=c(4, 4, 1, 1))
-plot(1:tN, y_hat, type='l', lwd=2,
+plot(1:tN, y_rw_sim, type='l', lwd=2,
     xlab='t', ylab=expression(y[t]))
 title('Random walk: time path', font.main=1, adj=0)
 
 par(mar=c(4, 1, 1, 2))
-f_hat <- hist(y_hat, breaks=20, plot=FALSE)
+f_hat <- hist(y_rw_sim, breaks=20, plot=FALSE)
 barplot(f_hat$counts, horiz=TRUE, space=0, border=NA,
     col=grey(.5, .5), axes=FALSE)
 axis(1)
@@ -94,13 +94,13 @@ Then $\mathbb{E}[Y_t]=\beta t$ and $\mathbb{V}[Y_t]=(\sigma+\alpha t)^2$, so $\b
 ```{r}
 tN <- 200
 simulate_series <- function(beta, alpha, sigma=.2){
-    y_hat <- numeric(tN)
+    y_sim <- numeric(tN)
     for (ti in 1:tN) {
         mean_ti <- beta*ti
         sd_ti <- (sigma + alpha*ti)
-        y_hat[ti] <- mean_ti + rnorm(1, sd=sd_ti)
+        y_sim[ti] <- mean_ti + rnorm(1, sd=sd_ti)
     }
-    return(y_hat)
+    return(y_sim)
 }
 
 # Plotting Functions
@@ -124,8 +124,8 @@ for(beta in c(0, .05)){
     plot_setup(alpha=alpha, beta=beta)
     sim_cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
     for( sim in 1:2){
-        y_sim_hat <- simulate_series(beta=beta, alpha=alpha)
-        lines(y_sim_hat, col=sim_cols[sim], lwd=2)
+        y_sim <- simulate_series(beta=beta, alpha=alpha)
+        lines(y_sim, col=sim_cols[sim], lwd=2)
     }
     plot_title(alpha=alpha, beta=beta)
 }}
@@ -163,8 +163,8 @@ Sum of squared deviations is $16+4+0+4+16=40$.
 So $\widehat{ACF}(1) = 16/40 = 0.4$.
 
 ```{r}
-y_acf_hat <- c(2,4,6,8,10)
-acf(y_acf_hat, plot=FALSE)$acf[2]
+y0_hat <- c(2,4,6,8,10)
+acf(y0_hat, plot=FALSE)$acf[2]
 ```
 :::
 
@@ -172,8 +172,8 @@ acf(y_acf_hat, plot=FALSE)$acf[2]
 par(mfrow = c(2, 2))
 for(alpha in c(0, .015)){
 for(beta in c(0, .05)){
-    y_sim_hat <- simulate_series(beta=beta, alpha=alpha)
-    acf(y_sim_hat, main=NA)
+    y_sim <- simulate_series(beta=beta, alpha=alpha)
+    acf(y_sim, main=NA)
     plot_title(alpha=alpha, beta=beta)
 }}
 ```
@@ -183,22 +183,22 @@ A *cross-correlation* plot diagnoses lagged dependence between two series at onc
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Worked CCF example.
 Let $y=(1,2,3,4,5)$ and $x=(2,3,4,5,6)$, with $\bar{y}=3, \bar{x}=4$.
-The lag-1 cross-correlation pairs $y_t$ with $x_{t-1}$, giving three cross-products $(2-3)(2-4) = 2$, $(3-3)(3-4) = 0$, $(4-3)(4-4) = 0$, $(5-3)(5-4) = 2$.
+The lag-1 cross-correlation pairs $y_t$ with $x_{t-1}$, giving four cross-products $(2-3)(2-4) = 2$, $(3-3)(3-4) = 0$, $(4-3)(4-4) = 0$, $(5-3)(5-4) = 2$.
 With $n=5$, the (biased) denominator is $\sqrt{\sum_t(y_t-\bar y)^2 \sum_t(x_t-\bar x)^2}/n = \sqrt{10 \cdot 10}/5 = 2$, so $\widehat{CCF}(1) = (2+0+0+2)/5 / 2 = 0.4$.
 ```{r}
-y_ccf_hat <- c(1,2,3,4,5)
-x_ccf_hat <- c(2,3,4,5,6)
-ccf(y_ccf_hat, x_ccf_hat, lag.max=1, plot=FALSE)$acf
+y0_hat <- c(1,2,3,4,5)
+x0_hat <- c(2,3,4,5,6)
+ccf(y0_hat, x0_hat, lag.max=1, plot=FALSE)$acf
 ```
 :::
 
 ```{r}
-x_sim_hat <- runif(tN, -1, 1) # White Noise
+x_sim <- runif(tN, -1, 1) # White Noise
 par(mfrow = c(2, 2))
 for(alpha in c(0, .015)){
 for(beta in c(0, .05)){
-    y_sim_hat <- simulate_series(beta=beta, alpha=alpha)
-    ccf(y_sim_hat, x_sim_hat, main=NA)
+    y_sim <- simulate_series(beta=beta, alpha=alpha)
+    ccf(y_sim, x_sim, main=NA)
     plot_title(alpha=alpha, beta=beta)
 }}
 ```
@@ -300,8 +300,8 @@ Cross-Correlation.
 We can also assesses the relationship between two variables at varying distances. 
 ```{r}
 # Vector Data Example
-dat <- as.data.frame(northcarolina_vector)[, c('BIR74', 'SID74')]
-column_means <- colMeans(dat)
+xy_hat <- as.data.frame(northcarolina_vector)[, c('BIR74', 'SID74')]
+column_means <- colMeans(xy_hat)
 
 # Format Distances
 dmat <- st_distance( st_centroid(northcarolina_vector) )
@@ -313,7 +313,7 @@ rdists <- c(-1, seq(0, 100, by=25)) # includes 0
 rdists <- units::set_units(rdists , 'km')
 
 # Compute Cross-Covariances
-varXY <- prod( apply(dat, 2, sd) )
+varXY <- prod( apply(xy_hat, 2, sd) )
 CCF <- lapply( seq(2, length(rdists)), function(ri){
     # Which Observations are within (rmin, rmax] distance
     dmat_r <- dmat
@@ -323,8 +323,8 @@ CCF <- lapply( seq(2, length(rdists)), function(ri){
     covs_r <- lapply(1:nrow(dmat_r), function(i){
         pairsi <- which(!is.na(dmat_r[i, ]))        
         covXiYj <- sapply(pairsi, function(j) {
-            dXi <- dat[i, 1] - column_means[1]
-            dYj <- dat[j, 2] - column_means[2]
+            dXi <- xy_hat[i, 1] - column_means[1]
+            dYj <- xy_hat[j, 2] - column_means[2]
             return(dXi*dYj)
         })
         return(covXiYj)
@@ -394,7 +394,6 @@ The three classic sources are
 :::
 
 Endogeneity is the central reason observational data resist clean causal interpretation: in the linear model $Y=X\beta + \epsilon$, endogeneity means $\mathbb{E}[X'\epsilon] \neq 0$, so OLS is biased away from the structural causal parameter.^[$X$ and $\epsilon$ may be correlated for other reasons too, such as when $X$ is measured with error.]
-The next chapter introduces experimental and quasi-experimental designs that supply exogenous variation in $X$ and recover what OLS alone cannot.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Consider the relationship between education and wages.
@@ -405,15 +404,15 @@ For each, explain the direction in which you expect the OLS estimate to be biase
 ```{r}
 # Simulate data with an endogeneity issue
 n <- 300
-z_hat <- rbinom(n, 1, .5)
-xy <- sapply(z_hat, function(zi){
-    y_hat <- rnorm(1, zi, 1)
-    x_hat <- rnorm(1, zi*2, 1)
-    c(x_hat, y_hat)
+z_sim <- rbinom(n, 1, .5)
+xy_sim <- sapply(z_sim, function(zi){
+    y_sim <- rnorm(1, zi, 1)
+    x_sim <- rnorm(1, zi*2, 1)
+    c(x_sim, y_sim)
 })
-xy <- data.frame(x_hat=xy[1, ], y_hat=xy[2, ])
-plot(y_hat ~ x_hat, data=xy, pch=16, col=grey(0, .25), main=NA)
-abline(lm(y_hat ~ x_hat, data=xy), col=rgb(1, 0, 0, .8))
+xy_sim <- data.frame(x_sim=xy_sim[1, ], y_sim=xy_sim[2, ])
+plot(y_sim ~ x_sim, data=xy_sim, pch=16, col=grey(0, .25), main=NA)
+abline(lm(y_sim ~ x_sim, data=xy_sim), col=rgb(1, 0, 0, .8))
 ```
 
 I will focus on the seminal economic example to provide some intuition.
@@ -437,7 +436,7 @@ Neither variable is "exogenous" when the two are jointly determined in equilibri
 The *reduced form* of a structural system writes each endogenous outcome (here $P^{*}$ and $Q^{*}$) as a function of the exogenous variables (here the intercepts and shocks) only.
 :::
 
-The reduced form is useful as a clean separation between what observational data can identify and what they cannot: the reduced-form intercepts and shocks combine in known ways, but the structural slopes $\beta_S, \beta_D$ require additional identifying variation (introduced in the next chapter) to recover.
+The reduced form is useful as a clean separation between what observational data can identify and what they cannot: the reduced-form intercepts and shocks combine in known ways, but the structural slopes $\beta_S, \beta_D$ require additional identifying variation to recover.
 The equilibrium condition $Q_D = Q_S$ in the structural equations above is exactly what triggers this simultaneity, leaving both price and quantity as outcomes.
 ```{r}
 # Demand Curve Simulator
@@ -496,8 +495,8 @@ You can simply run a regression of quantity, $Y$, on price, $X$, and get the slo
 You always get a number back, but it is hard to interpret meaningfully. 
 ```{r}
 # Analyze Market Data
-dat1 <- data.frame(t(EQ1), cost='1', T=1:N)
-reg1 <- lm(Q ~ P, data=dat1)
+xy1_sim <- data.frame(t(EQ1), cost='1', T=1:N)
+reg1 <- lm(Q ~ P, data=xy1_sim)
 summary(reg1)
 ```
 This simple example has a profound insight: price-quantity data does not generally tell you how price affects quantity (or vice-versa).
@@ -520,12 +519,12 @@ You paid special attention in your research design to find a case where $X_{1}$ 
 Unfortunately, if $X_{2}$ is correlated with the error term, then there is also a bias for $X_{1}$.
 The magnitude of the bias for $X_{1}$ depends on the correlations between $X_{1}$ and $X_{2}$ as well as $X_{2}$ and $\epsilon$.^[Denoting $X=[X_{1}, X_{2}]$, you estimate the OLS coefficients $\hat{\mathbf{b}}$. After algebraic work, you can find the bias $\mathbb{E}[ \hat{\mathbf{b}} - \beta]$ suffers from a contamination effect.
 $$\begin{aligned}
-\hat{\mathbf{b}} &= [\hat{X}'\hat{X}]^{-1}X'y \\
+\hat{\mathbf{b}} &= [X'X]^{-1}X'y \\
 \mathbb{E}[X'\epsilon] &= 
 \begin{bmatrix}
 0 \\ \rho
 \end{bmatrix} \\
-\mathbb{E}[ \hat{\mathbf{b}} - \beta] &= [\hat{X}'\hat{X}]^{-1} \begin{bmatrix}
+\mathbb{E}[ \hat{\mathbf{b}} - \beta] &= [X'X]^{-1} \begin{bmatrix}
 0 \\ \rho
 \end{bmatrix} \neq
 \begin{bmatrix}
@@ -535,8 +534,6 @@ $$\begin{aligned}
 In words: when $X_2$'s row of $X'\epsilon$ has expectation $\rho$, the bias *spreads* through the inverse $(X'X)^{-1}$ onto every coefficient.
 That includes the one you cared about, $X_1$.
 ]
-
-In the next chapter we look at the standard remedy: experimental and quasi-experimental designs that supply exogenous variation in a regressor and let us recover structural parameters that observational data alone cannot identify.
 
 
 ## Exercises
@@ -564,5 +561,4 @@ In the next chapter we look at the standard remedy: experimental and quasi-exper
 #### **Recall** {-}
 
 This chapter introduced three forms of observational dependence (temporal, spatial, and economic) and the diagnostic tools for each: ACF/CCF, Moran's I, and the endogeneity taxonomy.
-The supply-demand simulation made the endogeneity bite concrete: we ran 300 market periods through `qd_fun`/`qs_fun`, fit `lm(Q ~ P, data=dat1)`, and got a slope that confuses the supply and demand sides because price and quantity are jointly determined.
-In the next chapter we turn to experimental and quasi-experimental designs that supply the exogenous variation needed to identify causal effects: RDD, DID, and 2SLS.
+The supply-demand simulation made the endogeneity bite concrete: we ran 300 market periods through `qd_fun`/`qs_fun`, fit `lm(Q ~ P, data=xy1_sim)`, and got a slope that confuses the supply and demand sides because price and quantity are jointly determined.

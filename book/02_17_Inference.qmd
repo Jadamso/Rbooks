@@ -24,15 +24,16 @@ The `span` parameter plays the role $h$ does for fixed-bandwidth methods, so sma
 ```{r}
 ## Data
 library(Ecdat)
-dat <- Wages1[order(Wages1[, 'school']), c('wage', 'school')]
+xy2_hat <- Wages1[order(Wages1[, 'school']), c('school', 'wage')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
 
 # Fit loess with the default span
-reg_lo <- loess(wage ~ school, data=dat)
+reg_lo <- loess(y_hat ~ x_hat, data=xy2_hat)
 
-plot(wage ~ school, pch=16, col=grey(0, .1), data=dat,
+plot(y_hat ~ x_hat, pch=16, col=grey(0, .1), data=xy2_hat,
     main=NA, xlab='School', ylab='Wage')
 lo_col <- adjustcolor('#20B2AA', alpha.f=.75)  # teal green
-lines(dat[, 'school'], predict(reg_lo),
+lines(xy2_hat[, 'x_hat'], predict(reg_lo),
     col=lo_col, type='o', pch=2)
 
 legend('topleft',
@@ -56,20 +57,20 @@ The same bootstrap that produces the band also produces standard errors for any 
 
 ```{r}
 # Same loess fit as above (default span)
-pred_design <- data.frame(school=unique(dat[, 'school']))
+pred_design <- data.frame(x_hat=unique(xy2_hat[, 'x_hat']))
 y_fit <- predict(reg_lo, newdata=pred_design)
 
-plot(wage ~ school, pch=16, col=grey(0, .1), data=dat,
+plot(y_hat ~ x_hat, pch=16, col=grey(0, .1), data=xy2_hat,
     main=NA, xlab='School', ylab='Wage')
 lo_col <- adjustcolor('#20B2AA', alpha.f=.5)  # same teal green
-lines(pred_design[, 'school'], y_fit,
+lines(pred_design[, 'x_hat'], y_fit,
     col=lo_col, type='o', pch=2)
 
 # Boot CI with the same default-span loess
 boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
 for (b in 1:399) {
-    xy_boot <- dat[sample(nrow(dat), replace=TRUE), ]
-    reg_b <- loess(wage ~ school, data=xy_boot)
+    xy2_boot <- xy2_hat[sample(nrow(xy2_hat), replace=TRUE), ]
+    reg_b <- loess(y_hat ~ x_hat, data=xy2_boot)
     boot_lo[, b] <- predict(reg_b, newdata=pred_design)
 }
 boot_cb <- apply(boot_lo, 1, quantile,
@@ -88,16 +89,16 @@ polygon(
 Construct a bootstrap confidence band for the following loess regression
 ```{r}
 # Adaptive-width subsamples with non-uniform weights
-xy <- USArrests[, c('UrbanPop', 'Murder')]
-xy0 <- xy[order(xy[, 'UrbanPop']), ]
-names(xy0) <- c('x_hat', 'y_hat')
+xy_hat <- USArrests[, c('UrbanPop', 'Murder')]
+colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+xy_ord_hat <- xy_hat[order(xy_hat[, 'x_hat']), ]
 
-plot(y_hat ~ x_hat, pch=16, col=grey(0, .5), data=xy0,
+plot(y_hat ~ x_hat, pch=16, col=grey(0, .5), data=xy_ord_hat,
     main=NA, xlab='Urban Population', ylab='Murder Arrests')
-reg_lo2 <- loess(y_hat ~ x_hat, data=xy0, span=.6)
+reg_lo2 <- loess(y_hat ~ x_hat, data=xy_ord_hat, span=.6)
 
 red_col <- rgb(1, 0, 0, .5)
-lines(xy0[, 'x_hat'], predict(reg_lo2),
+lines(xy_ord_hat[, 'x_hat'], predict(reg_lo2),
     col=red_col, type='o', pch=2)
 ```
 :::
@@ -121,30 +122,30 @@ A loess fit narrow enough to interpolate every point has $\hat{MSE}=0$ on the fi
 
 ```{r}
 # Two-span loess with bootstrap confidence bands on one scatterplot
-pred_design <- data.frame(school=sort(unique(dat[, 'school'])))
+pred_design <- data.frame(x_hat=sort(unique(xy2_hat[, 'x_hat'])))
 spans <- c(4.0, 0.4)
 n_boot <- 399
 span_col <- hcl.colors(3, alpha=.9)[c(1, 3)]
 
-plot(wage ~ school, data=dat, pch=16, col=grey(0, .1),
+plot(y_hat ~ x_hat, data=xy2_hat, pch=16, col=grey(0, .1),
     main=NA, xlab='School', ylab='Wage')
 
 for (s in seq_along(spans)) {
     sp <- spans[s]
-    fit <- loess(wage ~ school, data=dat, span=sp)
+    fit <- loess(y_hat ~ x_hat, data=xy2_hat, span=sp)
     boot_preds <- matrix(NA, nrow=nrow(pred_design), ncol=n_boot)
     for (b in 1:n_boot) {
-        xy_boot <- dat[sample(nrow(dat), replace=TRUE), ]
-        fit_b <- loess(wage ~ school, data=xy_boot, span=sp)
+        xy2_boot <- xy2_hat[sample(nrow(xy2_hat), replace=TRUE), ]
+        fit_b <- loess(y_hat ~ x_hat, data=xy2_boot, span=sp)
         boot_preds[, b] <- predict(fit_b, newdata=pred_design)
     }
     boot_cb <- apply(boot_preds, 1, quantile,
         probs=c(.025, .975), na.rm=TRUE)
 
-    polygon(c(pred_design[, 'school'], rev(pred_design[, 'school'])),
+    polygon(c(pred_design[, 'x_hat'], rev(pred_design[, 'x_hat'])),
         c(boot_cb[1, ], rev(boot_cb[2, ])),
         col=adjustcolor(span_col[s], alpha.f=0.3), border=NA)
-    lines(pred_design[, 'school'], predict(fit, newdata=pred_design),
+    lines(pred_design[, 'x_hat'], predict(fit, newdata=pred_design),
         col=span_col[s], lwd=2)
 }
 
@@ -155,9 +156,8 @@ legend('topleft', title='LOESS span',
 
 With span $4.0$ the fitted curve is very smooth and stable, and the bootstrap band sits tightly around it.
 With span $0.4$ the curve tracks more local variation, and the bootstrap band fans wider, directly displaying the variance penalty for chasing local detail.
-(`school` is integer-valued with only $14$ distinct values, so spans below about $0.4$ collapse to single-point neighborhoods and `loess()` cannot fit.)
+(Schooling `x_hat` is integer-valued with only $14$ distinct values, so spans below about $0.4$ collapse to single-point neighborhoods and `loess()` cannot fit.)
 Choosing the span (the bandwidth $h$) means trading bias against variance.
-We make this tradeoff precise in [Association and Prediction Are Not Causation](02_18_NotCausation.qmd#bias-variance-tradeoff), where the bias-variance decomposition gives a formal expression and simulations check both pieces.
 
 Note that the simple linear regression is nested as a special case with $span \to \infty$.
 
@@ -190,29 +190,28 @@ $$\begin{aligned}
 \end{aligned}$$
 The model misses by $1$ squared-dollar on average, or about $10\%$ of each wage.
 ```{r}
-y_hat     <- c(8, 10, 15)
-y_fit <- c(9, 9, 14)
-e_hat <- y_hat - y_fit
-mean(e_hat^2)           # MSE
-100*mean(abs(e_hat/y_hat))  # MAPE
+y0_hat <- c(8, 10, 15)
+y0_fit <- c(9, 9, 14)
+e0_hat <- y0_hat - y0_fit
+mean(e0_hat^2)           # MSE
+100*mean(abs(e0_hat/y0_hat))  # MAPE
 ```
 :::
 
 We can compute these for the linear, regressogram, and piecewise models on the wage~school data.
 ```{r}
-library(Ecdat)
-dat <- Wages1[order(Wages1[, 'school']), c('wage', 'school')]
+# xy2_hat defined above
 
 # Three models for wage on schooling
-reg_lin <- lm(wage ~ school, data=dat)        # globally linear
-dat[, 'xcf'] <- cut(dat[, 'school'], 3)
-reg_rgram <- lm(wage ~ xcf, data=dat)         # regressogram, 3 bins
-reg_pw    <- lm(wage ~ xcf*school, data=dat)  # piecewise, 3 bins
+reg_lin <- lm(y_hat ~ x_hat, data=xy2_hat)        # globally linear
+xy2_hat[, 'xcf'] <- cut(xy2_hat[, 'x_hat'], 3)
+reg_rgram <- lm(y_hat ~ xcf, data=xy2_hat)         # regressogram, 3 bins
+reg_pw    <- lm(y_hat ~ xcf*x_hat, data=xy2_hat)  # piecewise, 3 bins
 
 # Mean squared error and mean absolute percentage error
 fit_stats <- function(model){
     e_hat <- resid(model)
-    y_hat <- dat[, 'wage']
+    y_hat <- xy2_hat[, 'y_hat']
     c(MSE=mean(e_hat^2), MAPE=100*mean(abs(e_hat/y_hat)))
 }
 round(rbind(
@@ -266,7 +265,7 @@ You can also plot all Gradients with their CI's [@Chaudhuri1999; @HendersonEtAl2
 ```{r}
 ## Gradients
 y_fit <- predict(reg_lo)
-grad_dx <- diff(dat[, 'school'])
+grad_dx <- diff(xy2_hat[, 'x_hat'])
 grad_dy <- diff(y_fit)
 grad_lo <-grad_dy/grad_dx
 
@@ -279,7 +278,7 @@ hist(grad_lo,  breaks=20,
     main=NA) ## Distributional Summary
   
 ## Visual Summary 2
-grad_x  <- dat[, 'school'][-1]
+grad_x  <- xy2_hat[, 'x_hat'][-1]
 plot(grad_x+grad_dx, grad_lo,
     xlab='x', ylab=expression(d~hat(y)^plain(fit)/dx),
     mgp=c(2.5, 1, 0),
@@ -325,10 +324,10 @@ tab_stats <- c(
 boot_stats <- matrix(NA, nrow=299, ncol=2)
 colnames(boot_stats) <- c('Mean SE', 'SD SE')
 for(b in 1:nrow(boot_stats)){
-    xy_boot <- dat[sample(1:nrow(dat), replace=TRUE), ]
-    reg_lo <- loess(wage ~ school, data=xy_boot, span=.6)
+    xy2_boot <- xy2_hat[sample(1:nrow(xy2_hat), replace=TRUE), ]
+    reg_lo <- loess(y_hat ~ x_hat, data=xy2_boot, span=.6)
     y_fit <- predict(reg_lo)
-    grad_lo <- diff(y_fit)/diff(xy_boot[, 'school'])
+    grad_lo <- diff(y_fit)/diff(xy2_boot[, 'x_hat'])
     m_grad_b_hat <- mean(grad_lo, na.rm=TRUE)
     s_grad_b_hat <- sd(grad_lo, na.rm=TRUE)
     boot_stats[b, 1] <- m_grad_b_hat
@@ -415,13 +414,13 @@ Compute the t-statistic and p-value using jackknife standard errors instead of t
 
 ```{r}
 ## Jackknife SE for mean gradient
-n <- nrow(dat)
+n <- nrow(xy2_hat)
 jack_means <- numeric(n)
 for (i in 1:n) {
-    dat_i  <- dat[-i, ]
-    reg_i  <- loess(wage ~ school, data=dat_i, span=.6)
+    xy2_i  <- xy2_hat[-i, ]
+    reg_i  <- loess(y_hat ~ x_hat, data=xy2_i, span=.6)
     y_fit_i <- predict(reg_i)
-    grad_i <- diff(y_fit_i) / diff(dat_i[, 'school'])
+    grad_i <- diff(y_fit_i) / diff(xy2_i[, 'x_hat'])
     jack_means[i] <- mean(grad_i, na.rm=TRUE)
 }
 
@@ -467,4 +466,3 @@ cat('p-value:      ', format.pval(p_jack, digits=3), '\n')
 
 This chapter put inference around the local fits from the previous chapter on the `Wages1` data: model-fit metrics ($\hat{MSE}$ and $\hat{MAPE}$) and the bias-variance tradeoff, bootstrap confidence bands for a LOESS fit, gradient summaries (marginal effect at the mean vs mean of the gradients), and hypothesis tests.
 The small worked example with $\hat{y}^{\mathrm{fit}}(11.5)=9.2$ and $\hat{y}^{\mathrm{fit}}(12.5)=10.4$ gave a finite-difference gradient $\hat{b}_{1}(12)=1.2$ dollars per year of schooling, and the gradient-vector example $(0.4, 0.8, 1.2, 0.9, 0.3)$ at $x=(8, 10, 12, 14, 16)$ showed the marginal-effect-at-the-mean ($1.2$) and the mean-of-the-gradients ($0.72$) diverging when the relationship bends.
-The next chapter separates descriptive and predictive relationships from causal claims.

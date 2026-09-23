@@ -58,7 +58,7 @@ EQ1 <- sapply(1:N, function(n){
     eq <- eq_fun(demand, supply, P)    
     return(eq)
 })
-dat1 <- data.frame(t(EQ1), cost='1', T=1:N)
+xy1_sim <- data.frame(t(EQ1), cost='1', T=1:N)
 ```
 
 
@@ -93,14 +93,14 @@ EQ2 <- sapply(1:N, function(n){
     # lines(supply2, P, col=rgb(0, 0, 1, .01))
     #points(eq[2], eq[1], col=rgb(0, 0, 1, .05), pch=16)
 })
-dat2 <- data.frame(t(EQ2), cost='2', T=(1:N) + N)
-dat2 <- rbind(dat1, dat2)
+xy2_sim <- data.frame(t(EQ2), cost='2', T=(1:N) + N)
+xy2_sim <- rbind(xy1_sim, xy2_sim)
 
 # Plot Simulated Market Data
-cols <- ifelse(as.numeric(dat2$cost)==2, rgb(0, 0, 1, .2), rgb(0, 0, 0, .2))
+cols <- ifelse(as.numeric(xy2_sim$cost)==2, rgb(0, 0, 1, .2), rgb(0, 0, 0, .2))
 plot.new()
 plot.window(xlim=c(0, 2), ylim=range(P))
-points(dat2$Q, dat2$P, col=cols, pch=16)
+points(xy2_sim$Q, xy2_sim$P, col=cols, pch=16)
 axis(1)
 axis(2)
 mtext('Quantity', 1, line=2)
@@ -130,32 +130,33 @@ In our canonical competitive market example, the RDD estimate is the difference 
 # Locally Linear Regression 
 # (Compare means near break)
 
-cols <- ifelse(as.numeric(dat2$cost)==2, rgb(0, 0, 1, .5), rgb(0, 0, 0, .5))
-plot(P ~ T, dat2, main=NA, pch=16, col=cols)
+cols <- ifelse(as.numeric(xy2_sim$cost)==2, rgb(0, 0, 1, .5), rgb(0, 0, 0, .5))
+plot(P ~ T, xy2_sim, main=NA, pch=16, col=cols)
 title('Effect of Cost Shock on Price', font.main=1)
-regP1 <- loess(P ~ T, dat2[dat2$cost==1, ])
-x1_hat <- regP1$x
-#lm(): x1_hat <- regP1$model$T
-lines(x1_hat, predict(regP1), col=rgb(0, 0, 0, .8), lwd=2)
-regP2 <- loess(P ~ T, dat2[dat2$cost==2, ])
-x2_hat <- regP2$x #regP1$model$T
-lines(x2_hat, predict(regP2), col=rgb(0, 0, 1, .8), lwd=2)
+regP1 <- loess(P ~ T, xy2_sim[xy2_sim$cost==1, ])
+x1_sim <- regP1$x
+#lm(): x1_sim <- regP1$model$T
+lines(x1_sim, predict(regP1), col=rgb(0, 0, 0, .8), lwd=2)
+regP2 <- loess(P ~ T, xy2_sim[xy2_sim$cost==2, ])
+x2_sim <- regP2$x #regP1$model$T
+lines(x2_sim, predict(regP2), col=rgb(0, 0, 1, .8), lwd=2)
 
-plot(Q ~ T, dat2, main=NA, pch=16, col=cols)
+plot(Q ~ T, xy2_sim, main=NA, pch=16, col=cols)
 title('Effect of Cost Shock on Quantity', font.main=1)
-regQ1 <- loess(Q ~ T, dat2[dat2$cost==1, ])
-lines(x1_hat, predict(regQ1), col=rgb(0, 0, 0, .8), lwd=2)
-regQ2 <- loess(Q ~ T, dat2[dat2$cost==2, ])
-x2_hat <- regP2$x #regP1$model$T
-lines(x2_hat, predict(regQ2), col=rgb(0, 0, 1, .8), lwd=2)
+regQ1 <- loess(Q ~ T, xy2_sim[xy2_sim$cost==1, ])
+lines(x1_sim, predict(regQ1), col=rgb(0, 0, 0, .8), lwd=2)
+regQ2 <- loess(Q ~ T, xy2_sim[xy2_sim$cost==2, ])
+lines(x2_sim, predict(regQ2), col=rgb(0, 0, 1, .8), lwd=2)
 ```
 
 ```{r, message=FALSE, warning=FALSE, results='asis'}
 # Linear Regression Alternative
-sub_id <- (dat2$cost==1 & dat2$T > 250) | (dat2$cost==2 & dat2$T < 300)
-dat2W <- dat2[sub_id,  ]
-regP <- lm(P ~ T*cost, dat2)
-regQ <- lm(Q ~ T*cost, dat2)
+# Keep 50 periods on each side of the break at T=300
+sub_id <- (xy2_sim$cost==1 & xy2_sim$T > 250) | (xy2_sim$cost==2 & xy2_sim$T <= 350)
+xy2_win_sim <- xy2_sim[sub_id,  ]
+# Centering T at the break makes the cost2 coefficient the jump at T=300
+regP <- lm(P ~ I(T-300)*cost, xy2_win_sim)
+regQ <- lm(Q ~ I(T-300)*cost, xy2_win_sim)
 stargazer::stargazer(regP, regQ, 
     type='html',
     title='Recipe RDD',
@@ -200,51 +201,51 @@ EQ3 <- sapply(1:(2*N), function(n){
     # Return Equilibrium Observations
     return(eq)
 })
-dat3 <- data.frame(t(EQ3), cost='1', T=1:ncol(EQ3))
-dat3_pre  <- dat3[dat3$T <= N , ]
-dat3_post <- dat3[dat3$T > N , ]
+xy3_sim <- data.frame(t(EQ3), cost='1', T=1:ncol(EQ3))
+xy3_pre_sim  <- xy3_sim[xy3_sim$T <= N , ]
+xy3_post_sim <- xy3_sim[xy3_sim$T > N , ]
 
 # Plot Price Data
 par(mfrow=c(1, 2))
-plot(P ~ T, dat2, main=NA, pch=16, col=cols, cex=.5)
+plot(P ~ T, xy2_sim, main=NA, pch=16, col=cols, cex=.5)
 title('Effect of Cost Shock on Price', font.main=1)
-lines(x1_hat, predict(regP1), col=rgb(0, 0, 0, .8), lwd=2)
-lines(x2_hat, predict(regP2), col=rgb(0, 0, 1, .8), lwd=2)
+lines(x1_sim, predict(regP1), col=rgb(0, 0, 0, .8), lwd=2)
+lines(x2_sim, predict(regP2), col=rgb(0, 0, 1, .8), lwd=2)
 # W/ Control group
-points(P ~ T, dat3, pch=16, col=rgb(1, 0, 0, .5), cex=.5)
-regP3a <- loess(P ~ T, dat3_pre)
-x3a_hat <- regP3a$x
-lines(x3a_hat, predict(regP3a), col=rgb(1, 0, 0, .8), lwd=2)
-regP3b <- loess(P ~ T, dat3_post)
-x3b_hat <- regP3b$x
-lines(x3b_hat, predict(regP3b), col=rgb(1, 0, 0, .8), lwd=2)
+points(P ~ T, xy3_sim, pch=16, col=rgb(1, 0, 0, .5), cex=.5)
+regP3a <- loess(P ~ T, xy3_pre_sim)
+x3a_sim <- regP3a$x
+lines(x3a_sim, predict(regP3a), col=rgb(1, 0, 0, .8), lwd=2)
+regP3b <- loess(P ~ T, xy3_post_sim)
+x3b_sim <- regP3b$x
+lines(x3b_sim, predict(regP3b), col=rgb(1, 0, 0, .8), lwd=2)
 
 
 # Plot Quantity Data
-plot(Q ~ T, dat2, main=NA, pch=17, col=cols, cex=.5)
+plot(Q ~ T, xy2_sim, main=NA, pch=17, col=cols, cex=.5)
 title('Effect of Cost Shock on Quantity', font.main=1)
-lines(x1_hat, predict(regQ1), col=rgb(0, 0, 0, .8), lwd=2)
-lines(x2_hat, predict(regQ2), col=rgb(0, 0, 1, .8), lwd=2)
+lines(x1_sim, predict(regQ1), col=rgb(0, 0, 0, .8), lwd=2)
+lines(x2_sim, predict(regQ2), col=rgb(0, 0, 1, .8), lwd=2)
 # W/ Control group
-points(Q ~ T, dat3, pch=16, col=rgb(1, 0, 0, .5), cex=.5)
-regQ3a <- loess(Q ~ T, dat3_pre)
-lines(x3a_hat, predict(regQ3a), col=rgb(1, 0, 0, .8), lwd=2)
-regQ3b <- loess(Q ~ T, dat3_post)
-lines(x3b_hat, predict(regQ3b), col=rgb(1, 0, 0, .8), lwd=2)
+points(Q ~ T, xy3_sim, pch=16, col=rgb(1, 0, 0, .5), cex=.5)
+regQ3a <- loess(Q ~ T, xy3_pre_sim)
+lines(x3a_sim, predict(regQ3a), col=rgb(1, 0, 0, .8), lwd=2)
+regQ3b <- loess(Q ~ T, xy3_post_sim)
+lines(x3b_sim, predict(regQ3b), col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 Linear Regression Estimates
 ```{r, message=FALSE, warning=FALSE, results='asis'}
 # Pool Data
-dat_pooled <- rbind(
-    cbind(dat2, EverTreated=1, PostPeriod=(dat2$T > N)),
-    cbind(dat3, EverTreated=0, PostPeriod=(dat3$T > N)))
-dat_pooled$EverTreated <- as.factor(dat_pooled$EverTreated)
-dat_pooled$PostPeriod <- as.factor(dat_pooled$PostPeriod)
+xy_pooled_sim <- rbind(
+    cbind(xy2_sim, EverTreated=1, PostPeriod=(xy2_sim$T > N)),
+    cbind(xy3_sim, EverTreated=0, PostPeriod=(xy3_sim$T > N)))
+xy_pooled_sim$EverTreated <- as.factor(xy_pooled_sim$EverTreated)
+xy_pooled_sim$PostPeriod <- as.factor(xy_pooled_sim$PostPeriod)
 
 # Estimate Level Shift for Different Groups after T=300
-regP <- lm(P ~ PostPeriod*EverTreated, dat_pooled)
-regQ <- lm(Q ~ PostPeriod*EverTreated, dat_pooled)
+regP <- lm(P ~ PostPeriod*EverTreated, xy_pooled_sim)
+regQ <- lm(Q ~ PostPeriod*EverTreated, xy_pooled_sim)
 stargazer::stargazer(regP, regQ, 
     type='html',
     title='Recipe DiD',
@@ -268,7 +269,7 @@ The stargazer output for the DID model `P ~ PostPeriod * EverTreated` has four r
   This is the coefficient to interpret as the treatment effect.
 
 A statistically significant interaction term whose sign matches what theory predicts is the headline DID result.
-The same logic applies to the RDD table, where the `T:cost2` interaction captures the change in slope at the discontinuity.
+In the RDD table, `cost2` is the jump at the discontinuity, and the `I(T - 300):cost2` interaction captures the change in slope there.
 :::
 
 
@@ -332,7 +333,7 @@ For example, the cost shock supplies exogenous variation in price that lets us t
 Just running a second OLS regression on the pooled data would still be biased, as we will see below.
 ```{r}
 # Not exactly right, but at least right sign
-reg2 <- lm(Q ~ P, data=dat2)
+reg2 <- lm(Q ~ P, data=xy2_sim)
 summary(reg2)
 ```
 It turns out that the noisiness of the process within each group affects our OLS estimate: $\hat{b}=\hat{c}_{Q^{*}P^{*}} / \hat{v}_{P^{*}}$.
@@ -360,13 +361,13 @@ Egrid_regs <- lapply(1:nrow(Egrid), function(i){
         supply2 <- qs_fun(P, As=-6.5, Es_sigma=Es_sigma)
         return(eq_fun(demand, supply2, P))
     })
-    dat <- rbind(
+    xy_sim_b <- rbind(
         data.frame(t(EQ1), cost='1'),
         data.frame(t(EQ2), cost='2'))
-    return(dat)
+    return(xy_sim_b)
 })
-Egrid_OLS <- sapply(Egrid_regs, function(dat) coef( lm(Q ~ P, data=dat)))
-Egrid_IV <- sapply(Egrid_regs, function(dat) coef( feols(Q ~ 1|P ~ cost, data=dat)))
+Egrid_OLS <- sapply(Egrid_regs, function(xy_sim_b) coef( lm(Q ~ P, data=xy_sim_b)))
+Egrid_IV <- sapply(Egrid_regs, function(xy_sim_b) coef( feols(Q ~ 1|P ~ cost, data=xy_sim_b)))
 
 #cbind(Egrid, coef_OLS=t(Egrid_OLS)[, 2], coef_IV=t(Egrid_IV)[, 2])
 lapply( list(Egrid_OLS, Egrid_IV), function(ei){
@@ -381,11 +382,11 @@ To overcome this issue, we can compute the change in the expected values $d \mat
 Empirically, this is estimated via the change in average value.
 ```{r}
 # Wald (1940) Estimate
-dat_mean <- rbind(
-    colMeans(dat2[dat2$cost==1, 1:2]),
-    colMeans(dat2[dat2$cost==2, 1:2]))
-dat_mean
-b_est <- diff(dat_mean[, 2])/diff(dat_mean[, 1])
+xy_mean_sim <- rbind(
+    colMeans(xy2_sim[xy2_sim$cost==1, 1:2]),
+    colMeans(xy2_sim[xy2_sim$cost==2, 1:2]))
+xy_mean_sim
+b_est <- diff(xy_mean_sim[, 2])/diff(xy_mean_sim[, 1])
 round(b_est, 2)
 ```
 
@@ -393,8 +394,8 @@ round(b_est, 2)
 We can also separately recover $d \mathbb{E}[Q^{*}] / d \mathbb{E}[\alpha_{S}]$ and $d \mathbb{E}[P^{*}] / d \mathbb{E}[\alpha_{S}]$ from separate regressions.^[Mathematically, we can also do this in a single step by exploiting linear algebra: $\frac{\frac{ Cov(Q^{*},\alpha_{S})}{ V(\alpha_{S}) } }{\frac{ Cov(P^{*},\alpha_{S})}{ V(\alpha_{S}) }} = \frac{Cov(Q^{*},\alpha_{S} )}{ Cov(P^{*},\alpha_{S})}.$]
 ```{r}
 # Heckman (2000, p.58) Estimate
-ols_1 <- lm(P ~ cost, data=dat2)
-ols_2 <- lm(Q ~ cost, data=dat2)
+ols_1 <- lm(P ~ cost, data=xy2_sim)
+ols_2 <- lm(Q ~ cost, data=xy2_sim)
 b_est2 <- coef(ols_2)/coef(ols_1)
 round(b_est2[[2]], 2)
 ```
@@ -416,14 +417,14 @@ Q_{D} &= \alpha_{D} + \beta_{D} P  + E_{D}.
 \end{aligned}$$
 ```{r}
 # Two Stage Least Squares Estimate
-ols_1 <- lm(P ~ cost, data=dat2)
-dat2_new  <- cbind(dat2, p_fit=predict(ols_1))
-reg_2sls <- lm(Q ~ p_fit, data=dat2_new)
+ols_1 <- lm(P ~ cost, data=xy2_sim)
+xy2_new_sim  <- cbind(xy2_sim, p_fit=predict(ols_1))
+reg_2sls <- lm(Q ~ p_fit, data=xy2_new_sim)
 summary(reg_2sls)
 
 # One Stage Instrumental Variables Estimate
 library(fixest)
-reg2_iv <- feols(Q ~ 1|P ~ cost, data=dat2)
+reg2_iv <- feols(Q ~ 1|P ~ cost, data=xy2_sim)
 summary(reg2_iv)
 ```
 
@@ -455,7 +456,6 @@ We always get coefficients back when running `feols`, and sometimes the computed
 The interpretation of those numbers rests on many assumptions, and we are rarely sure that all of these assumptions hold.
 Researchers often also report their OLS results, but that is insufficient.
 A nonparametric estimator (e.g. `loess`) at each stage can help diagnose departures from linearity; other packages such as `ivreg::ivreg` provide alternative IV implementations.
-The next chapter pushes this caution further, showing that the same recipes can produce statistically significant results from data with no causal structure at all.
 
 
 ## Exercises
@@ -467,14 +467,14 @@ The next chapter pushes this caution further, showing that the same recipes can 
 2. In the competitive market simulation, a supply cost shock is used to identify the demand slope via 2SLS.
    Explain why simply regressing $Q$ on $P$ with both cost regimes pooled does not recover the demand slope $-\beta_D$, and what role the exclusion restriction plays in the 2SLS approach.
 
-3. Using the pooled market data (`dat2`) from the chapter, compute the Wald estimate of the demand slope by hand: take the difference in mean quantity across cost groups divided by the difference in mean price.
-   Compare this to the 2SLS estimate from `fixest::feols(Q ~ 1 | P ~ cost, data = dat2)`.
+3. Using the pooled market data (`xy2_sim`) from the chapter, compute the Wald estimate of the demand slope by hand: take the difference in mean quantity across cost groups divided by the difference in mean price.
+   Compare this to the 2SLS estimate from `fixest::feols(Q ~ 1 | P ~ cost, data = xy2_sim)`.
    Are they the same?
    Why or why not?
 
 4. Simulate a difference-in-differences setup in R.
    Generate two groups of 100 observations each over 200 time periods, where one group receives a treatment (a level shift of +2) at $T = 100$.
-   Estimate the DID coefficient using `lm(y_hat ~ PostPeriod * EverTreated, data = dat)` and verify that it recovers the treatment effect.
+   Estimate the DID coefficient using `lm(y_sim ~ PostPeriod * EverTreated, data = xy_sim)` and verify that it recovers the treatment effect.
 
 #### **Further Reading** {-}
 
@@ -488,5 +488,4 @@ The following resources discuss causal inference methods (IV, RDD, DID) in more 
 #### **Recall** {-}
 
 This chapter introduced the experimental and quasi-experimental tools for recovering causal effects from data with limited control: RDD, DID, blocking, and 2SLS.
-The cost-shock experiment threaded through the chapter made the trade-off explicit: with $\alpha_S = -8$ vs $-6.5$ in `qs_fun`, the Wald, Heckman, and 2SLS estimates of $-\beta_D$ from `feols(Q ~ 1 | P ~ cost, data=dat2)` are algebraically identical and recover the demand slope that pooled OLS confused.
-In the next chapter we caution that the same recipes can produce statistically significant findings from data that contain no causal signal at all.
+The cost-shock experiment threaded through the chapter made the trade-off explicit: with $\alpha_S = -8$ vs $-6.5$ in `qs_fun`, the Wald, Heckman, and 2SLS estimates of $-\beta_D$ from `feols(Q ~ 1 | P ~ cost, data=xy2_sim)` are algebraically identical and recover the demand slope that pooled OLS confused.

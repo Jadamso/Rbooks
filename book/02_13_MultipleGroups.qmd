@@ -32,15 +32,16 @@ Be careful not to handle categorical data as if they were cardinal.
 E.g., generate city data with Leipzig=1, Lausanne=2, LosAngeles=3, ... and then include city as if it were a cardinal number (that's a big no-no).
 The same applies to ordinal data; PopulationLeipzig=2, PopulationLausanne=3, PopulationLosAngeles=1.
 
-The built-in `state.region` vector labels the US Census region of each state, in the same order as the rows of `USArrests`, so it can be attached directly as a column.
+The built-in `state.region` vector labels the US Census region of each state, in the same order as the rows of `USArrests`, so it can be paired directly with the murder rates.
 
 ```{r}
-# Attach the four-level region factor to USArrests; the levels
-# are the values the categorical variable can take.
-dat <- USArrests
-dat$Region <- state.region
-levels(dat$Region)
-table(dat$Region)
+# Outcome: murder arrests per 100K, one value per state
+y_hat <- USArrests[, 'Murder']
+# Group: the four-level region factor, in the same state order as USArrests.
+# Its levels are the values the categorical variable can take.
+region <- state.region
+levels(region)
+table(region)
 ```
 
 #### **Group Summaries** {-}
@@ -50,11 +51,11 @@ The group summaries from [Bivariate Distributions](02_11_BivariateDistributions.
 
 ```{r}
 # Order regions by their median murder rate, lowest to highest
-region_order <- names(sort(tapply(dat$Murder, dat$Region, median)))
-dat$Region <- factor(dat$Region, levels=region_order)
+region_order <- names(sort(tapply(y_hat, region, median)))
+region <- factor(region, levels=region_order)
 
 # Visual summary: one boxplot per region, box width scaled to group size
-boxplot(Murder ~ Region, data=dat,
+boxplot(y_hat ~ region,
     col=hcl.colors(4, alpha=.45), varwidth=TRUE,
     ylab='Murder arrests (per 100,000)', xlab='Region', main=NA)
 title('Murder rates by region', font.main=1)
@@ -65,21 +66,21 @@ The [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function) shows ever
 The same low-to-high order carries over, so South is last in the legend, and each line's thickness scales with its group size the same way the boxes do.
 
 ```{r, fig.height=5.2}
-# One ECDF per region, on the same axes (Region is already ordered by median)
+# One ECDF per region, on the same axes (region is already ordered by median)
 line_cols <- hcl.colors(4)
-n_g <- table(dat$Region)
+n_g <- table(region)
 lwd_g <- 1.5 + 2.5 * (n_g - min(n_g)) / (max(n_g) - min(n_g))
 
 par(mar=c(4, 4, 4.5, 1))
-plot(NULL, xlim=range(dat$Murder), ylim=c(0, 1),
+plot(NULL, xlim=range(y_hat), ylim=c(0, 1),
     xlab='Murder arrests (per 100,000)', ylab='Proportion of states', main=NA)
-for (g in seq_along(levels(dat$Region))) {
-    F_g_hat <- ecdf(dat$Murder[dat$Region == levels(dat$Region)[g]])
+for (g in seq_along(levels(region))) {
+    F_g_hat <- ecdf(y_hat[region == levels(region)[g]])
     plot(F_g_hat, add=TRUE, col=line_cols[g], lwd=lwd_g[g],
         verticals=TRUE, do.points=FALSE, col.01line=NA)
 }
 legend('topleft', inset=c(0, -.2), xpd=TRUE, ncol=2, bty='n',
-    legend=paste0(levels(dat$Region), ' (n=', n_g, ')'), col=line_cols, lty=1, lwd=lwd_g)
+    legend=paste0(levels(region), ' (n=', n_g, ')'), col=line_cols, lty=1, lwd=lwd_g)
 ```
 
 The South's curve sits to the right of the others over its whole range, so its higher center in the boxplot is not driven by a few states.
@@ -93,7 +94,7 @@ summary_fun <- function(y_hat) {
     out <- c(n=length(y_hat), mean=mean(y_hat), median=median(y_hat))
     return(out)
 }
-aggregate(Murder ~ Region, data=dat, FUN=summary_fun)
+aggregate(y_hat ~ region, FUN=summary_fun)
 ```
 
 The South has the highest center and the Northeast the lowest.
@@ -127,10 +128,10 @@ The decomposition is useful as the foundation for any test of "do group means di
 The equality holds exactly because the cross-term $\sum_{g,i}(\hat{y}_{ig}-\hat{m}_{Y}(g))(\hat{m}_{Y}(g)-\hat{m}_{Y})$ vanishes, since the within-group deviations sum to zero around their own group mean.
 
 In R, `aov()` fits the ANOVA model and `summary()` returns the standard ANOVA table.
-The ANOVA table reports $\hat{BSS}$ ("Sum Sq" for `Region`), $\hat{WSS}$ ("Sum Sq" for `Residuals`).
+The ANOVA table reports $\hat{BSS}$ ("Sum Sq" for `region`), $\hat{WSS}$ ("Sum Sq" for `Residuals`).
 ```{r}
 # Fit ANOVA
-fit_aov <- aov(Murder ~ Region, data = dat)
+fit_aov <- aov(y_hat ~ region)
 fit_aov
 ```
 
@@ -160,19 +161,19 @@ $$\begin{aligned}
 
 ```{r}
 # Data
-y_hat <- c(4, 5, 6, 8, 7, 9, 5, 6, 7)
+y0_hat <- c(4, 5, 6, 8, 7, 9, 5, 6, 7)
 g <- factor(c('A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'C'))
 
 # Verify by hand
-n <- length(y_hat)
-G <- nlevels(g)
+n0 <- length(y0_hat)
+G0 <- nlevels(g)
 
-m_y_hat <- mean(y_hat)
-m_g_hat <- aggregate(y_hat, list(g), mean)$x
-n_g <- aggregate(y_hat, list(g), length)$x
+m_y_hat <- mean(y0_hat)
+m_g_hat <- aggregate(y0_hat, list(g), mean)$x
+n_g <- aggregate(y0_hat, list(g), length)$x
 
 BSS <- sum(n_g * (m_g_hat - m_y_hat)^2)
-WSS <- sum(aggregate(y_hat, list(g), function(y_hat) sum((y_hat - mean(y_hat))^2))$x)
+WSS <- sum(aggregate(y0_hat, list(g), function(y_hat) sum((y_hat - mean(y_hat))^2))$x)
 ```
 :::
 
@@ -203,26 +204,25 @@ F_fun <- function(y_hat,g){
     G <- nlevels(g)
     F_obs <- (BSS/(G-1)) / (WSS/(n-G))
 }
-F_obs <- F_fun(y_hat=dat$Murder, g=dat$Region)
+F_obs <- F_fun(y_hat=y_hat, g=region)
 F_obs
 ```
 
 
 To compute a $p$-value, we can use permutation or bootstrap methods to build a null distribution, just as in previous chapters.
-The [Permutation Tests](03_24_NotCausation.qmd#permutation-tests) section of Part III's Mixed-Data Regression chapter instead shuffles the observed labels without replacement, preserving the number of states in each region.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Pairing the observed `Murder` values with a *resampled* `Region` vector breaks the link between outcome and group: under the null, group labels are exchangeable, so this approximates the distribution of $\hat{F}$ when no group effect exists.
+Pairing the observed murder rates `y_hat` with a *resampled* `region` vector breaks the link between outcome and group: under the null, group labels are exchangeable, so this approximates the distribution of $\hat{F}$ when no group effect exists.
 
 ```{r}
 # Pairs bootstrap: resample group labels to break the Y--group pairing
-n <- nrow(dat)
+n <- length(y_hat)
 
 F_nullboot <- vector(length=999)
 for( b in seq_along(F_nullboot)){
     idx <- sample(n, replace = TRUE)
-    g_boot <- dat[idx, 'Region']
-    F_b <- F_fun(y_hat=dat$Murder, g=g_boot)
+    g_boot <- region[idx]
+    F_b <- F_fun(y_hat=y_hat, g=g_boot)
     F_nullboot[b] <- F_b
 }
 
@@ -246,6 +246,9 @@ From that theoretical null distribution, we can then compute p-values (which is 
 ```{r}
 summary(fit_aov)
 
+# Degrees of freedom for the regional data
+n <- length(y_hat)
+G <- nlevels(region)
 p_param <- 1 - pf(F_obs, G-1, n-G)
 
  # Compare parametric and bootstrap p-values
@@ -260,11 +263,11 @@ As a quick diagnostic, visually compare side-by-side boxplots: if the spread dif
 With $G-1=2$ and $n-G=6$ degrees of freedom, we compare to an $F_{2,6}$ distribution: $p = 1 - F_{2,6}(7) \approx 0.027$.
 ```{r}
 # Computation
-summary(aov(y_hat~g))
+summary(aov(y0_hat~g))
 
 # Verify by hand (from Before)
-Fstat <- (BSS/(G-1)) / (WSS/(n-G))
-pval  <- 1 - pf(Fstat, G-1, n-G)
+Fstat <- (BSS/(G0-1)) / (WSS/(n0-G0))
+pval  <- 1 - pf(Fstat, G0-1, n0-G0)
 cbind(BSS, WSS, Fstat, pval)
 ```
 :::
@@ -300,7 +303,7 @@ In this case, we can write the hypotheses in terms of individual outcomes in eac
 The corresponding test statistic is
 $$\begin{aligned}
 \hat{U}   &= \min(\hat{U}_1, \hat{U}_2) \\
-\hat{U}_g &= \sum_{i\in g}\sum_{j\in -g}
+\hat{U}_g &= \sum_{i~\text{in}~g}\sum_{j~\text{in}~-g}
            \Bigl[\mathbf 1( \hat{y}_{i} > \hat{y}_{j}) + \tfrac12\mathbf 1(\hat{y}_{i} = \hat{y}_{j})\Bigr].
 \end{aligned}$$
 
@@ -311,12 +314,12 @@ Interpretation template:
 * Report both statistical and practical importance (distribution plots + effect size summaries), not only p-values.
 
 ```{r}
-kw <- kruskal.test(Murder ~ Region, data = dat)
+kw <- kruskal.test(y_hat ~ region)
 kw
 ```
 
 A significant Kruskal-Wallis result tells us *that* some group differs, not *which*.
-To answer *which*, use a post-hoc pairwise test together with a multiple-comparisons correction (see [Multiple Testing](03_30_MiscTopics.qmd#multiple-testing) in Part III).
+To answer *which*, use a post-hoc pairwise test together with a multiple-comparisons correction.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Worked example: $G=3$ groups with values $A=\{1,2,3\}$, $B=\{4,5,6\}$, $C=\{7,8,9\}$.
@@ -331,17 +334,17 @@ $$
 $$
 
 ```{r}
-y_hat <- c(1,2,3, 4,5,6, 7,8,9)
+y0_hat <- c(1,2,3, 4,5,6, 7,8,9)
 g <- factor(rep(c('A','B','C'), each=3))
-kruskal.test(y_hat ~ g)
+kruskal.test(y0_hat ~ g)
 ```
 
 For the two-group case, the Mann-Whitney statistic counts pairwise wins.
 Compare $A=\{1,3,5\}$ to $B=\{2,4,6\}$: out of $3\times 3 = 9$ pairs, $A$ wins three ($(3,2), (5,2), (5,4)$), so $\hat{U}_A=3$, $\hat{U}_B=6$, giving $\hat{U}=\min(3,6)=3$.
 
 ```{r}
-y1_hat <- c(1,3,5); y2_hat <- c(2,4,6)
-wilcox.test(y1_hat, y2_hat)
+a0_hat <- c(1,3,5); b0_hat <- c(2,4,6)
+wilcox.test(a0_hat, b0_hat)
 ```
 :::
 
@@ -350,7 +353,7 @@ The Kruskal-Wallis test rejected the null on the regional data, so at least one 
 A post-hoc check pinpoints which pair differs.
 
 ```{r}
-pairwise.wilcox.test(dat$Murder, dat$Region, p.adjust.method='holm')
+pairwise.wilcox.test(y_hat, region, p.adjust.method='holm')
 ```
 Looking back at the boxplot in [Describing Groups](#describing-groups), which region stands out?
 :::
@@ -381,6 +384,5 @@ Looking back at the boxplot in [Describing Groups](#describing-groups), which re
 #### **Recall** {-}
 
 This chapter first described several groups with boxplots, ECDFs, and a table of group means, then tested whether the description reflected more than chance.
-ANOVA's decomposition of variation between and within groups produced an $F$-statistic; the worked three-group example with $A=\{4,5,6\}, B=\{8,7,9\}, C=\{5,6,7\}$ made the arithmetic concrete, giving $\hat{BSS}=14$ and $\hat{WSS}=6$ by hand, which `aov(y_hat ~ g)` reproduces exactly.
+ANOVA's decomposition of variation between and within groups produced an $F$-statistic; the worked three-group example with $A=\{4,5,6\}, B=\{8,7,9\}, C=\{5,6,7\}$ made the arithmetic concrete, giving $\hat{BSS}=14$ and $\hat{WSS}=6$ by hand, which `aov(y0_hat ~ g)` reproduces exactly.
 The Kruskal-Wallis test replaced outcomes with ranks when the equal-variance normal-error assumptions were doubtful.
-Part III's [Mixed-Data Regression](03_24_NotCausation.qmd) chapter rewrites these group comparisons as regressions, compares treatment and effect coding, and builds a permutation test for the factor as a whole.

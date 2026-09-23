@@ -34,15 +34,15 @@ When the two groups have unequal variances or sample sizes, a small adjustment t
 ```{r}
 # Sample 1 (e.g., males)
 n1 <- 100
-y1_hat <- rnorm(n1, 0, 2)
-#hist(y1_hat, freq=F, main='Sample 1')
+y1_sim <- rnorm(n1, 0, 2)
+#hist(y1_sim, freq=F, main='Sample 1')
 
 # Sample 2 (e.g., females)
 n2 <- 80
-y2_hat <- rnorm(n2, 1, 1)
-#hist(y2_hat, freq=F, main='Sample 2')
+y2_sim <- rnorm(n2, 1, 1)
+#hist(y2_sim, freq=F, main='Sample 2')
 
-t.test(y1_hat, y2_hat, var.equal=FALSE)
+t.test(y1_sim, y2_sim, var.equal=FALSE)
 ```
 
 Welch's $t$-test is useful as the standard default when comparing two means without assuming equal variances, which is the realistic setting in most applied work (two job markets, two policy regimes, two countries).
@@ -76,9 +76,9 @@ We can visualize this by simulating many samples *under the null* ($\mathbb{E}[Y
 n_sim <- 399
 boot_t2 <- vector(length = n_sim)
 for (b in seq(n_sim)) {
-    y1_sim <- rnorm(n1, 0, 2)
-    y2_sim <- rnorm(n2, 0, 1)
-    boot_t2[b] <- t.test(y1_sim, y2_sim, var.equal = FALSE)$statistic
+    y1_sim_b <- rnorm(n1, 0, 2)
+    y2_sim_b <- rnorm(n2, 0, 1)
+    boot_t2[b] <- t.test(y1_sim_b, y2_sim_b, var.equal = FALSE)$statistic
 }
 
 # Welch-Satterthwaite degrees of freedom
@@ -114,7 +114,7 @@ Notches and variable-width boxes are both due to @mcgill1978.
 ]
 
 ```{r}
-boxplot(y1_hat, y2_hat,
+boxplot(y1_sim, y2_sim,
     col=c(rgb(1, 0, 0, .5), rgb(0, 0, 1, .5)),
     main=NA,
     whisklty=0, staplelty=0, outline=FALSE,
@@ -146,9 +146,9 @@ This allows us to test $H_0: \beta_1 = 0$ using math alone.
 
 ```{r}
 # USArrests data (same as Simple Regression chapter)
-xy <- USArrests[, c('Murder', 'UrbanPop')]
-colnames(xy) <- c('y_hat', 'x_hat')
-reg <- lm(y_hat ~ x_hat, data = xy)
+xy_hat <- USArrests[, c('UrbanPop', 'Murder')]
+colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+reg <- lm(y_hat ~ x_hat, data = xy_hat)
 
 # The summary reports theoretical t-statistics and p-values
 summary(reg)$coefficients
@@ -157,11 +157,11 @@ summary(reg)$coefficients
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Manual verification of the theoretical $t$-statistic for the slope:
 ```{r}
-n <- nrow(xy)
+n <- nrow(xy_hat)
 b1 <- coef(reg)[2]
 e_hat <- resid(reg)
 s_e_hat <- sqrt(sum(e_hat^2) / (n - 2))               # residual standard error
-s_b1 <- s_e_hat / sqrt(sum((xy[, 'x_hat'] - mean(xy[, 'x_hat']))^2)) # SE of slope
+s_b1 <- s_e_hat / sqrt(sum((xy_hat[, 'x_hat'] - mean(xy_hat[, 'x_hat']))^2)) # SE of slope
 t_stat <- b1 / s_b1
 
 # Compare with summary output
@@ -174,12 +174,12 @@ They should be similar, but are not identical because the theoretical result ass
 
 ```{r}
 # Bootstrap distribution of the t-statistic
-n <- nrow(xy)
+n <- nrow(xy_hat)
 n_boot <- 399
 boot_t <- vector(length = n_boot)
 for (b in seq(n_boot)) {
-    b_id <- sample(nrow(xy), replace = TRUE)
-    xy_boot <- xy[b_id, ]
+    b_id <- sample(nrow(xy_hat), replace = TRUE)
+    xy_boot <- xy_hat[b_id, ]
     reg_b <- lm(y_hat ~ x_hat, data = xy_boot)
     # Use theoretical SE from summary
     boot_t[b] <- summary(reg_b)$coefficients[2, 3]
@@ -277,15 +277,15 @@ sim_reps <- 100
 p_values <- rep(NA, sim_reps)
 for (i in seq(p_values)) {
     # Generate data
-    x_hat <- rnorm(n, mean=0.2, sd=1)
+    x_sim <- rnorm(n, mean=0.2, sd=1)
     # Observed statistic
-    m_hat <- mean(x_hat)
-    T_obs <-  (m_hat - null_mean) / (sd(x_hat)/ sqrt(n)) ##studentized
+    m_hat <- mean(x_sim)
+    T_obs <-  (m_hat - null_mean) / (sd(x_sim)/ sqrt(n)) ##studentized
     # Bootstrap null distribution of the statistic
     T_boot <- rep(NA, n_boot)
-    x_null_hat <- x_hat - m_hat + null_mean # Impose the null by recentering
+    x_null_sim <- x_sim - m_hat + null_mean # Impose the null by recentering
     for (b in seq(T_boot)) {
-      x_boot <- sample(x_null_hat, size = n, replace = TRUE)
+      x_boot <- sample(x_null_sim, size = n, replace = TRUE)
       T_b <- (mean(x_boot) - null_mean) / (sd(x_boot)/sqrt(n))
       T_boot[b] <- T_b
     }
@@ -313,14 +313,14 @@ When the true slope is nonzero (null is false), failing to reject is a Type II E
 beta0 <- coef(reg)[1]
 beta1_true <- coef(reg)[2]
 s_e_hat <- summary(reg)$sigma
-m_x_hat <- mean(xy[, 'x_hat'])
-s_x_hat <- sd(xy[, 'x_hat'])
+m_x_hat <- mean(xy_hat[, 'x_hat'])
+s_x_hat <- sd(xy_hat[, 'x_hat'])
 
 # Function: simulate data, return theoretical p-value for slope
 sim_pval <- function(n, beta1) {
-    x_hat <- rnorm(n, mean = m_x_hat, sd = s_x_hat)
-    y_hat <- beta0 + beta1 * x_hat + rnorm(n, 0, s_e_hat)
-    summary(lm(y_hat ~ x_hat))$coefficients[2, 4]
+    x_sim <- rnorm(n, mean = m_x_hat, sd = s_x_hat)
+    y_sim <- beta0 + beta1 * x_sim + rnorm(n, 0, s_e_hat)
+    summary(lm(y_sim ~ x_sim))$coefficients[2, 4]
 }
 
 sim_reps <- 200
@@ -376,7 +376,7 @@ For two states, the posterior odds equal the prior odds times a likelihood ratio
 Building on the coin-flip examples from the previous chapter, suppose we observe the outcome of the second coin ($Y_i$) and want to update our belief about the first coin ($X_i$).
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-**Fair coins.** With $Prob(X_i=x,Y_i=y)=1/4$ for all $x,y\in\{0,1\}$, the prior is $Prob(X_i=1)=1/2$ and the likelihoods are
+**Fair coins.** With $Prob(X_i=x,Y_i=y)=1/4$ for all $x,y~\text{in}~\{0,1\}$, the prior is $Prob(X_i=1)=1/2$ and the likelihoods are
 $$
 Prob(Y_i=1|X_i=1)=1/2,\quad Prob(Y_i=1|X_i=0)=1/2.
 $$
@@ -578,5 +578,4 @@ See also the further reading in [Bivariate Probability](02_19_BivariateProbabili
 #### **Recall** {-}
 
 This chapter built theoretical tests on top of the population objects from the previous chapter: Welch's $t$-test for two means, the theoretical $t_{n-2}$ distribution for a regression slope, the Type I / Type II error distinction with statistical power, and Bayes' theorem for converting a test rejection into a posterior.
-The `USArrests` slope simulation showed both ideas concretely: the bootstrap histogram of $\hat{t}$ matched the theoretical $t_{n-2}$ density, and the same regression was used to estimate power across sample sizes $n \in \{10, 25, 50, 100, 200\}$.
-The next chapter closes Part 2 by turning to communication: interactive figures and tables, polishing, and Quarto reports.
+The `USArrests` slope simulation showed both ideas concretely: the bootstrap histogram of $\hat{t}$ matched the theoretical $t_{n-2}$ density, and the same regression was used to estimate power across sample sizes $n~\text{in}~\{10, 25, 50, 100, 200\}$.

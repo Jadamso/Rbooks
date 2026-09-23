@@ -16,7 +16,7 @@ The only prerequisites are the data frames, proportions, ECDFs, and boxplots fro
 With three, the table gains a third dimension.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *joint distribution* of three discrete variables $X_{i}$, $Y_{i}$, and $Z_{i}$ is the share of observations with each combination of values:
+The *joint distribution* of three discrete variables $\hat{x}_{i}$, $\hat{y}_{i}$, and $\hat{z}_{i}$ is the share of observations with each combination of values:
 $$\hat{p}(x,y,z) = \sum_{i=1}^{n}\mathbf{1}\left( \hat{x}_{i}=x, \hat{y}_{i}=y, \hat{z}_{i}=z \right)/n.$$
 Summing over the values of one variable *collapses* the table to the two-way joint distribution of the other two, for example $\hat{p}(x,y) = \sum_{z} \hat{p}(x,y,z)$.
 :::
@@ -64,12 +64,12 @@ Collapsing again, the marginal share of men is $(2+6+4+2)/20 = 0.70$.
 
 ```{r}
 # Build the same table from a small data frame, one row per worker
-dat <- data.frame(
+xy0_hat <- data.frame(
     sex=rep(c('man', 'woman'), c(14, 6)),
     degree=c(rep(c('no', 'yes'), c(8, 6)), rep(c('no', 'yes'), c(2, 4))),
     promoted=c(rep(c(1, 0), c(2, 6)), rep(c(1, 0), c(4, 2)),
         rep(c(1, 0), c(1, 1)), rep(c(1, 0), c(3, 1))))
-tab <- table(dat)
+tab <- table(xy0_hat)
 ftable(tab, row.vars=c('sex', 'promoted'), col.vars='degree')
 
 # Collapse over degree
@@ -83,7 +83,7 @@ Collapsing hides the third variable.
 Conditioning does the opposite: it fixes the third variable at one value and compares within that slice.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *conditional distribution* of $Y_{i}$ given $X_{i}=x$ and $Z_{i}=z$ is the share of observations with $Y_{i}=y$ inside the subgroup where both conditioning variables take the stated values:
+The *conditional distribution* of $\hat{y}_{i}$ given $\hat{x}_{i}=x$ and $\hat{z}_{i}=z$ is the share of observations with $\hat{y}_{i}=y$ inside the subgroup where both conditioning variables take the stated values:
 $$\hat{p}(y \mid x, z) = \frac{\hat{p}(x,y,z)}{\hat{p}(x,z)}.$$
 :::
 
@@ -135,8 +135,11 @@ We return to `USArrests`, which records four cardinal variables for each state, 
 A *scatterplot matrix* draws all of them in one grid, so you can scan every pairwise relationship at once.
 
 ```{r, fig.height=7, fig.width=7}
+# Store the observed data, one row per state
+xy_hat <- USArrests
+
 # Every pair of variables, one panel each
-pairs(USArrests, pch=16, col=grey(0, .5), main=NA)
+pairs(xy_hat, pch=16, col=grey(0, .5), main=NA)
 ```
 
 The panel in row `Murder` and column `Assault` plots murder rates on the vertical axis against assault rates on the horizontal axis.
@@ -146,7 +149,7 @@ The `psych` package adds histograms on the diagonal and a summary of each pairwi
 ```{r, fig.height=7, fig.width=7}
 # pairs.panels lays out univariate histograms on the diagonal,
 # scatterplots in the lower triangle, and correlations in the upper triangle.
-psych::pairs.panels(USArrests,
+psych::pairs.panels(xy_hat,
     hist.col=grey(0, .25), breaks=30, density=FALSE, hist.border=NA, # Diagonal
     ellipses=FALSE, rug=FALSE, smoother=FALSE, pch=16, col=rgb(1, 0, 0, .8) # Lower Triangle
     )
@@ -167,18 +170,18 @@ The figure below colors and shapes each state by whether its assault rate is abo
 
 ```{r}
 # Split states at the median assault rate
-assault_high <- USArrests$Assault > median(USArrests$Assault)
+assault_high <- xy_hat$Assault > median(xy_hat$Assault)
 col_high <- rgb(1, 0, 0, .5)
 col_low <- rgb(0, 0, 1, .5)
 cols <- ifelse(assault_high, col_high, col_low)
 pchs <- ifelse(assault_high, 16, 17)
 
 # Scale point size by a fourth variable
-sizes <- USArrests$Rape / max(USArrests$Rape) * 2.5
+sizes <- xy_hat$Rape / max(xy_hat$Rape) * 2.5
 
 # Legends go in the margin above the plot so they cover no points
 par(mar=c(4, 4, 4, 1))
-plot(Murder ~ UrbanPop, data=USArrests, pch=pchs, col=cols, cex=sizes,
+plot(Murder ~ UrbanPop, data=xy_hat, pch=pchs, col=cols, cex=sizes,
     xlab='Percent of population in urban areas',
     ylab='Murder arrests (per 100,000)', main=NA)
 legend('topleft', inset=c(0, -.14), xpd=TRUE, horiz=TRUE, bty='n',
@@ -186,7 +189,7 @@ legend('topleft', inset=c(0, -.14), xpd=TRUE, horiz=TRUE, bty='n',
     pch=c(16, 17), col=c(col_high, col_low))
 legend('topright', inset=c(0, -.14), xpd=TRUE, horiz=TRUE, bty='n',
     title='Rape arrests (per 100,000)', legend=c('10', '40'),
-    pch=16, col=grey(0, .5), pt.cex=c(10, 40) / max(USArrests$Rape) * 2.5)
+    pch=16, col=grey(0, .5), pt.cex=c(10, 40) / max(xy_hat$Rape) * 2.5)
 ```
 
 Two patterns appear that the plain `Murder` against `UrbanPop` panel of the matrix hid.
@@ -204,18 +207,17 @@ A *conditioning plot* holds the factor fixed within each panel, so any pattern t
 [Comparing More Than Two Groups](02_13_MultipleGroups.qmd#factor-variables) develops the factor-variable idea and its boxplot and ECDF summaries for one factor at a time; here we go straight to conditioning, and then combine two factors at once below.
 
 ```{r}
-# Attach the four-level region factor to USArrests
-dat <- USArrests
-dat$Region <- state.region
+# Attach the four-level region factor to the observed data
+xy_hat$Region <- state.region
 ```
 
 ```{r, fig.height=7, fig.width=7}
 # One scatterplot per region, on common axes so the panels are comparable
 par(mfrow=c(2, 2))
-for (r in levels(dat$Region)) {
-    dat_r <- dat[dat$Region == r, ]
-    plot(Murder ~ UrbanPop, data=dat_r, pch=16, col=grey(0, .5),
-        xlim=range(dat$UrbanPop), ylim=range(dat$Murder),
+for (r in levels(xy_hat$Region)) {
+    xy_r_hat <- xy_hat[xy_hat$Region == r, ]
+    plot(Murder ~ UrbanPop, data=xy_r_hat, pch=16, col=grey(0, .5),
+        xlim=range(xy_hat$UrbanPop), ylim=range(xy_hat$Murder),
         xlab='Percent urban', ylab='Murder arrests (per 100,000)', main=NA)
     title(r, font.main=1)
 }
@@ -234,14 +236,14 @@ reg_cols <- hcl.colors(4, alpha=.6)
 reg_pch <- c(15, 16, 17, 18)
 reg_pch_hollow <- c(0, 1, 2, 5)
 par(mar=c(4, 4, 4, 1))
-plot(Murder ~ UrbanPop, data=dat, pch=reg_pch[dat$Region], col=reg_cols[dat$Region],
+plot(Murder ~ UrbanPop, data=xy_hat, pch=reg_pch[xy_hat$Region], col=reg_cols[xy_hat$Region],
     xlab='Percent urban', ylab='Murder arrests (per 100,000)', main=NA)
-means <- aggregate(cbind(UrbanPop, Murder) ~ Region, data=dat, FUN=mean)
+means <- aggregate(cbind(UrbanPop, Murder) ~ Region, data=xy_hat, FUN=mean)
 points(means$UrbanPop, means$Murder, pch=reg_pch_hollow, col=hcl.colors(4), cex=2.5, lwd=2)
 
 # Legends in the margin above the plot
 legend('topleft', inset=c(0, -.14), xpd=TRUE, horiz=TRUE, bty='n',
-    legend=levels(dat$Region), pch=reg_pch, col=hcl.colors(4))
+    legend=levels(xy_hat$Region), pch=reg_pch, col=hcl.colors(4))
 legend('topright', inset=c(0, -.14), xpd=TRUE, bty='n',
     legend='region mean', pch=1, col='black', pt.cex=1.8, pt.lwd=2)
 ```
@@ -268,9 +270,9 @@ c(men=m_men_hat, women=m_women_hat)
 :::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Load `Wages1` from the `Ecdat` package and draw a conditioning plot of `wage` against `exper` with one panel per `sex`.
+Load `Wages1` from the `Ecdat` package, store it as `xy2_hat <- Wages1`, and draw a conditioning plot of `wage` against `exper` with one panel per `sex`.
 Use `col=grey(0, .1)` since there are $3294$ points.
-Then compute the mean wage by sex, pooled and within each value of `school`, with `aggregate(wage ~ sex + school, data=Wages1, FUN=mean)`.
+Then compute the mean wage by sex, pooled and within each value of `school`, with `aggregate(wage ~ sex + school, data=xy2_hat, FUN=mean)`.
 Does the pooled gap match the within-schooling gaps?
 :::
 
@@ -281,9 +283,9 @@ A group summary is not limited to one factor.
 
 ```{r}
 # A second factor: assault rate split at the median, same split as Encoding More Variables
-dat$AssaultLevel <- factor(ifelse(dat$Assault > median(dat$Assault), 'High assault', 'Low assault'),
+xy_hat$AssaultLevel <- factor(ifelse(xy_hat$Assault > median(xy_hat$Assault), 'High assault', 'Low assault'),
     levels=c('Low assault', 'High assault'))
-table(dat$Region, dat$AssaultLevel)
+table(xy_hat$Region, xy_hat$AssaultLevel)
 ```
 
 A grouped boxplot places the two low/high assault boxes side by side within each region, so a within-region comparison and a between-region comparison are both visible at once.
@@ -293,15 +295,15 @@ Regions are ordered left to right by their median murder rate, from lowest to hi
 ```{r}
 # Region hue stays fixed to each region's identity; shade (light/dark) marks assault level.
 # Regions are ordered along the x-axis by their median murder rate.
-region_order <- names(sort(tapply(dat$Murder, dat$Region, median)))
-dat$RegionOrdered <- factor(dat$Region, levels=region_order)
-reg_hues <- setNames(hcl.colors(4), levels(dat$Region))
+region_order <- names(sort(tapply(xy_hat$Murder, xy_hat$Region, median)))
+xy_hat$RegionOrdered <- factor(xy_hat$Region, levels=region_order)
+reg_hues <- setNames(hcl.colors(4), levels(xy_hat$Region))
 col_low_shade  <- sapply(reg_hues[region_order], adjustcolor, alpha.f=.35)
 col_high_shade <- sapply(reg_hues[region_order], adjustcolor, alpha.f=.85)
 box_cols <- as.vector(rbind(col_low_shade, col_high_shade))
 
 par(mar=c(4, 4, 4, 1))
-boxplot(Murder ~ AssaultLevel + RegionOrdered, data=dat,
+boxplot(Murder ~ AssaultLevel + RegionOrdered, data=xy_hat,
     col=box_cols, xaxt='n',
     xlab='Region (ordered by median murder rate)', ylab='Murder arrests (per 100,000)', main=NA)
 axis(1, at=seq(1.5, by=2, length.out=4), labels=region_order, tick=FALSE, line=0.5)
@@ -317,12 +319,12 @@ The same comparison as an ECDF, one panel per region, shows the full distributio
 col_high <- rgb(1, 0, 0, .5)
 col_low  <- rgb(0, 0, 1, .5)
 par(mfrow=c(2, 2), oma=c(0, 0, 3, 0))
-for (r in levels(dat$Region)) {
-    dat_r <- dat[dat$Region == r, ]
-    plot(NULL, xlim=range(dat$Murder), ylim=c(0, 1),
+for (r in levels(xy_hat$Region)) {
+    xy_r_hat <- xy_hat[xy_hat$Region == r, ]
+    plot(NULL, xlim=range(xy_hat$Murder), ylim=c(0, 1),
         xlab='Murder arrests (per 100,000)', ylab='Proportion of states', main=NA)
-    F_lo_hat <- ecdf(dat_r$Murder[dat_r$AssaultLevel == 'Low assault'])
-    F_hi_hat <- ecdf(dat_r$Murder[dat_r$AssaultLevel == 'High assault'])
+    F_lo_hat <- ecdf(xy_r_hat$Murder[xy_r_hat$AssaultLevel == 'Low assault'])
+    F_hi_hat <- ecdf(xy_r_hat$Murder[xy_r_hat$AssaultLevel == 'High assault'])
     plot(F_lo_hat, add=TRUE, col=col_low, lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA)
     plot(F_hi_hat, add=TRUE, col=col_high, lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA)
     title(r, font.main=1)
@@ -369,4 +371,3 @@ The Northeast panel is the thinnest, with only two high-assault states, so its c
 This chapter described data with three or more variables without fitting a model.
 Three-way tables and `prop.table()` with a `margin=` argument showed that men were admitted to Berkeley at a higher rate than women when departments were pooled, yet women were admitted at a similar or higher rate within most departments, because women applied to the more selective departments.
 Scatterplot matrices and extra point channels did the same job for continuous data, and conditioning plots and grouped boxplots and ECDFs did it for mixed data: the region panels revealed within-region patterns in murder rates that the pooled scatterplot hid, and crossing region with assault level showed the same assault-murder link holding inside every region.
-In the next chapter we begin modeling: multiple regression summarizes how an outcome moves with several cardinal variables at once.

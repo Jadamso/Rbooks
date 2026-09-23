@@ -90,17 +90,19 @@ fig
 ```
 
 ```{r, message=FALSE, message=FALSE}
-m_pop_hat <- mean(USArrests[, 'UrbanPop'])
-pop_cut <- USArrests[, 'UrbanPop'] < m_pop_hat
-murder_lowpop <- USArrests[ pop_cut, 'Murder']
-murder_highpop <- USArrests[ !pop_cut, 'Murder']
+xy_hat <- USArrests[, c('UrbanPop', 'Murder')]
+colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+m_pop_hat <- mean(xy_hat[, 'x_hat'])
+pop_cut <- xy_hat[, 'x_hat'] < m_pop_hat
+y1_hat <- xy_hat[pop_cut, 'y_hat']  # murder arrests, low urban population
+y2_hat <- xy_hat[!pop_cut, 'y_hat'] # murder arrests, high urban population
 
 # Overlapping Histograms
 fig <- plot_ly(alpha=0.6, hovertemplate='%{y}')
-fig <- add_histogram(fig, murder_lowpop, name='Low Pop. (< Mean)',
+fig <- add_histogram(fig, y1_hat, name='Low Pop. (< Mean)',
     histnorm = 'probability density',
     xbins = list(start=0, size=2))
-fig <- add_histogram(fig, murder_highpop, name='High Pop (>= Mean)',
+fig <- add_histogram(fig, y2_hat, name='High Pop (>= Mean)',
     histnorm = 'probability density',
     xbins = list(start=0, size=2))
 fig <- layout(fig,
@@ -156,17 +158,17 @@ vars <- names(USArrests)
 stats_list <- vector('list', length(vars))
 for (i in seq_along(vars)) {
   v <- vars[i]
-  x_hat <- USArrests[[v]]
+  x_v_hat <- USArrests[[v]]
   stats_list[[i]] <- c(
     Variable = v,
-    N       = sum(!is.na(x_hat)),
-    Mean    = mean(x_hat, na.rm = TRUE),
-    SD      = sd(x_hat, na.rm = TRUE),
-    Min     = min(x_hat, na.rm = TRUE),
-    Q1      = as.numeric(quantile(x_hat, 0.25, na.rm = TRUE)),
-    Median  = median(x_hat, na.rm = TRUE),
-    Q3      = as.numeric(quantile(x_hat, 0.75, na.rm = TRUE)),
-    Max     = max(x_hat, na.rm = TRUE)
+    N       = sum(!is.na(x_v_hat)),
+    Mean    = mean(x_v_hat, na.rm = TRUE),
+    SD      = sd(x_v_hat, na.rm = TRUE),
+    Min     = min(x_v_hat, na.rm = TRUE),
+    Q1      = as.numeric(quantile(x_v_hat, 0.25, na.rm = TRUE)),
+    Median  = median(x_v_hat, na.rm = TRUE),
+    Q3      = as.numeric(quantile(x_v_hat, 0.75, na.rm = TRUE)),
+    Max     = max(x_v_hat, na.rm = TRUE)
   )
 }
 
@@ -218,7 +220,7 @@ Both panels carry the same information about the data.
 par(mfrow=c(1, 2), mar=c(4, 4, 2, 1))
 
 # Cluttered: heavy background, gridlines, default symbols, redundant title
-plot(Murder ~ UrbanPop, data=USArrests,
+plot(y_hat ~ x_hat, data=xy_hat,
     pch=21, bg='red', col='blue', cex=1.5,
     main='Murder Arrests vs Urban Pop. (US, 1975)',
     sub='Source: USArrests',
@@ -229,7 +231,7 @@ box(lwd=2)
 legend('topright', legend='State', pch=21, pt.bg='red', col='blue')
 
 # Polished: light points, no grid, no redundant labels or legend
-plot(Murder ~ UrbanPop, data=USArrests,
+plot(y_hat ~ x_hat, data=xy_hat,
     pch=16, col=grey(0, .5),                     # transparent black points
     main=NA, xlab='Urban Population', ylab='Murder Arrests',
     bty='n')                                     # drop the surrounding box
@@ -251,18 +253,18 @@ If a few months are special (say, a promotion), a short text label on those poin
 
 ```{r}
 # Random Data
-x_hat <- seq(1, 10, by=.0002)
-e <- rnorm(length(x_hat), mean=0, sd=1)
-y_hat <- .25*x_hat + e
+x_sim <- seq(1, 10, by=.0002)
+e <- rnorm(length(x_sim), mean=0, sd=1)
+y_sim <- .25*x_sim + e
 
 # First Draft
-# plot(x_hat, y_hat)
+# plot(x_sim, y_sim)
 
 # Second Draft: Focus
 # (In this example: relationship magnitude)
-x_std_hat <- scale(x_hat)
-y_std_hat <- scale(y_hat)
-plot(y_std_hat, x_std_hat,
+x_std_sim <- scale(x_sim)
+y_std_sim <- scale(y_sim)
+plot(x_std_sim, y_std_sim,
     xlab='', ylab='',
     pch=16, cex=.5, col=grey(0, .05),
     main=NA)
@@ -280,13 +282,13 @@ title('Standardized Relationship', font.main=1)
 
 ```{r}
 # Another Example
-xy_dat <- data.frame(x_hat=x_hat, y_hat=y_hat)
+xy_sim <- data.frame(x_sim=x_sim, y_sim=y_sim)
 par(fig=c(0, 1, 0, 0.9), new=FALSE)
-plot(y_hat ~ x_hat, xy_dat, pch=16, col=grey(0, .05), cex=.5,
+plot(y_sim ~ x_sim, xy_sim, pch=16, col=grey(0, .05), cex=.5,
     main=NA, xlab='', ylab='') # Format Axis Labels Seperately
 mtext( 'y=0.25 x + e\n e ~ standard-normal', 2, line=2.2)
 mtext( expression(x%in%~'[0, 10]'), 1, line=2.2)
-#abline( lm(y_hat ~ x_hat, data=xy_dat), lty=2)
+#abline( lm(y_sim ~ x_sim, data=xy_sim), lty=2)
 title('Plot with good features, but too excessive in several ways',
     adj=0, font.main=1)
 
@@ -326,8 +328,8 @@ For small datasets, you can plot individual data points with a strip chart.
 A *strip chart* shows every observation as a point along one axis, which works well when there are too few points to justify a histogram or boxplot.
 ```{r}
 # Six states: show each Murder arrest value directly
-small <- USArrests[1:6, 'Murder']
-stripchart(small, pch=16, col=grey(0, .6),
+y_small_hat <- xy_hat[1:6, 'y_hat']
+stripchart(y_small_hat, pch=16, col=grey(0, .6),
     xlab='Murder Arrests')
 ```
 With only six values, the strip chart shows the data honestly; a boxplot here would hide the individual points behind summary statistics.
@@ -496,5 +498,4 @@ Now try each of the following steps, re-rendering the document after each step
 
 This chapter closed Part 2 with the communication side of analysis: interactive figures, interactive tables, the data-ink ratio, and Quarto as a reproducible-report format.
 The `USArrests` data ran through every example: a `plotly` scatterplot with state-name hover text, a `reactable` table of summary statistics, and a side-by-side comparison of a cluttered scatterplot against a polished one of `Murder` vs. `UrbanPop`.
-The next chapter opens Part 3 with multiple linear regression, extending the single-predictor model from [Simple Regression](02_15_SimpleRegression.qmd) to many explanatory variables at once.
 
