@@ -1,4 +1,4 @@
-#  Testing Theory
+# Testing Theory
 ***
 
 Earlier chapters tested hypotheses with resampling.
@@ -31,24 +31,38 @@ With normally distributed group means, this statistic follows Student's [t-distr
 When the two groups have unequal variances or sample sizes, a small adjustment to the degrees of freedom keeps the $t$-distribution approximation accurate.
 
 
+For example, we can compare the mean hourly wage of women and men in the `Wages1` data.
+The `sex` variable has levels `female` and `male`, in that order, so the reported difference is the female mean minus the male mean.
 ```{r}
-# Sample 1 (e.g., males)
+data(Wages1, package='Ecdat')
+levels(Wages1[, 'sex'])
+
+# Welch's t-test (the default for t.test)
+t.test(wage ~ sex, data=Wages1)
+```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+The same test works on simulated data, where we choose the group means ourselves.
+Here the two groups have different means and different variances.
+```{r}
+# Sample 1
 n1 <- 100
 y1_sim <- rnorm(n1, 0, 2)
 #hist(y1_sim, freq=F, main='Sample 1')
 
-# Sample 2 (e.g., females)
+# Sample 2
 n2 <- 80
 y2_sim <- rnorm(n2, 1, 1)
 #hist(y2_sim, freq=F, main='Sample 2')
 
 t.test(y1_sim, y2_sim, var.equal=FALSE)
 ```
+:::
 
 Welch's $t$-test is useful as the standard default when comparing two means without assuming equal variances, which is the realistic setting in most applied work (two job markets, two policy regimes, two countries).
 With the variance-and-normality assumptions in place, the test can be conducted entirely with formulas (no bootstrap resampling required).
 
-:::{.callout-tip icon=false collapse="true" title="Must Know"}
+:::{.callout-note icon=false collapse="true" title="Must Know"}
 The *Welch-Satterthwaite equation* approximates the degrees of freedom when the two groups have unequal variances:
 $$
 df = \frac{\left(\hat{s}^2_1/n_1 + \hat{s}^2_2/n_2\right)^2}{\frac{(\hat{s}^2_1/n_1)^2}{n_1-1} + \frac{(\hat{s}^2_2/n_2)^2}{n_2-1}}.
@@ -60,36 +74,47 @@ df = \frac{(0.4+0.1)^2}{0.4^2/9 + 0.1^2/9} = \frac{0.25}{0.17/9} \approx 13.2.
 $$
 This is below the equal-variance value $n_1+n_2-2=18$: unequal variances cost degrees of freedom, which widens the $t$-distribution and makes the test more conservative.
 ```{r}
-n1 <- 10; n2 <- 10
-v1_hat <- 4/n1
-v2_hat <- 1/n2
-(v1_hat + v2_hat)^2 / (v1_hat^2/(n1-1) + v2_hat^2/(n2-1))
+n01 <- 10; n02 <- 10
+v01_hat <- 4/n01
+v02_hat <- 1/n02
+(v01_hat + v02_hat)^2 / (v01_hat^2/(n01-1) + v02_hat^2/(n02-1))
 ```
 :::
 
 
 
 We can visualize this by simulating many samples *under the null* ($\mathbb{E}[Y_{i1}]=\mathbb{E}[Y_{i2}]$) and comparing the distribution of $\hat{t}$ with the theoretical $t$-distribution.
+As in [Sampling](01_05_Sampling.qmd#wages-as-a-population), pretend the $3294$ workers in `Wages1` are the whole population.
+If we draw both groups from the same population of wages, then the null of equal means holds exactly.
 
 ```{r}
-# Simulate the t-statistic under the null (both groups same mean)
+# Pretend these 3294 workers are the whole population
+data(Wages1, package='Ecdat')
+population_xy <- Wages1[, c('school', 'wage')]
+colnames(population_xy) <- c('x', 'y') # x=years of schooling, y=hourly wage
+population_slope <- coef(lm(y ~ x, data=population_xy))[2]
+population_wages <- population_xy[, 'y']
+
+# Simulate the t-statistic under the null (both groups from the same population)
+n1 <- 100
+n2 <- 80
 n_sim <- 399
-boot_t2 <- vector(length = n_sim)
+t_sim <- vector(length = n_sim)
 for (b in seq(n_sim)) {
-    y1_sim_b <- rnorm(n1, 0, 2)
-    y2_sim_b <- rnorm(n2, 0, 1)
-    boot_t2[b] <- t.test(y1_sim_b, y2_sim_b, var.equal = FALSE)$statistic
+    y1_sim_b <- population_wages[sample(length(population_wages), n1, replace=FALSE)]
+    y2_sim_b <- population_wages[sample(length(population_wages), n2, replace=FALSE)]
+    t_sim[b] <- t.test(y1_sim_b, y2_sim_b, var.equal = FALSE)$statistic
 }
 
 # Welch-Satterthwaite degrees of freedom
-# (use population variances as approximation)
-v1 <- 2^2 / n1
-v2 <- 1^2 / n2
+# (use the population variance for both groups)
+v1 <- var(population_wages) / n1
+v2 <- var(population_wages) / n2
 df_ws <- (v1 + v2)^2 / (v1^2 / (n1 - 1) + v2^2 / (n2 - 1))
 
 # Overlay: simulated histogram vs. theoretical t-distribution
-t_range <- range(c(boot_t2, -4, 4))
-hist(boot_t2, breaks = 30, freq = FALSE, border = NA,
+t_range <- range(c(t_sim, -4, 4))
+hist(t_sim, breaks = 30, freq = FALSE, border = NA,
     col = grey(0.5, 0.5),
     xlim = t_range,
     xlab = expression(hat(t)),
@@ -101,6 +126,45 @@ legend('topright', legend = c('Simulated', paste0('t(', round(df_ws), ')')),
     fill = c(grey(0.5, 0.5), NA), border = NA,
     lwd = c(NA, 2), lty = c(NA, 1), bty = 'n')
 ```
+
+Wages are right-skewed, so the group means are not exactly normal and the $t$-distribution is only an approximation.
+With groups of $100$ and $80$ workers, the histogram is typically close to the curve.
+With much smaller groups, the approximation can be noticeably worse.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+We can also simulate under the null with normally distributed data, where the $t$-distribution result applies more directly.
+Here the two groups have the same mean but different variances.
+```{r}
+# Simulate the t-statistic under the null (both groups same mean)
+n_sim <- 399
+t_sim_norm <- vector(length = n_sim)
+for (b in seq(n_sim)) {
+    y1_sim_b <- rnorm(n1, 0, 2)
+    y2_sim_b <- rnorm(n2, 0, 1)
+    t_sim_norm[b] <- t.test(y1_sim_b, y2_sim_b, var.equal = FALSE)$statistic
+}
+
+# Welch-Satterthwaite degrees of freedom
+# (use population variances as approximation)
+v1_norm <- 2^2 / n1
+v2_norm <- 1^2 / n2
+df_ws_norm <- (v1_norm + v2_norm)^2 / (v1_norm^2 / (n1 - 1) + v2_norm^2 / (n2 - 1))
+
+# Overlay: simulated histogram vs. theoretical t-distribution
+t_range <- range(c(t_sim_norm, -4, 4))
+hist(t_sim_norm, breaks = 30, freq = FALSE, border = NA,
+    col = grey(0.5, 0.5),
+    xlim = t_range,
+    xlab = expression(hat(t)),
+    main = NA)
+title('Simulated vs. Theoretical Distribution', font.main = 1)
+t_grid <- seq(t_range[1], t_range[2], length = 200)
+lines(t_grid, dt(t_grid, df = df_ws_norm), lwd = 2)
+legend('topright', legend = c('Simulated', paste0('t(', round(df_ws_norm), ')')),
+    fill = c(grey(0.5, 0.5), NA), border = NA,
+    lwd = c(NA, 2), lty = c(NA, 1), bty = 'n')
+```
+:::
 
 #### **Differences in Medians** {-}
 
@@ -114,6 +178,22 @@ Notches and variable-width boxes are both due to @mcgill1978.
 ]
 
 ```{r}
+# Hourly wage by sex, with notches around each median
+boxplot(wage ~ sex, data=Wages1,
+    col=c(rgb(1, 0, 0, .5), rgb(0, 0, 1, .5)),
+    main=NA,
+    xlab='Sex', ylab='Hourly wage',
+    whisklty=0, staplelty=0, outline=FALSE,
+    notch=TRUE, ## Adds a CI
+    varwidth=TRUE)
+```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Notched boxplots also work for simulated data, where we choose the group distributions ourselves.
+```{r}
+# Two simulated groups with different means and variances
+y1_sim <- rnorm(100, 0, 2)
+y2_sim <- rnorm(80, 1, 1)
 boxplot(y1_sim, y2_sim,
     col=c(rgb(1, 0, 0, .5), rgb(0, 0, 1, .5)),
     main=NA,
@@ -121,15 +201,14 @@ boxplot(y1_sim, y2_sim,
     notch=TRUE, ## Adds a CI
     varwidth=TRUE)
 ```
+:::
 
 There are also non-parametric alternatives for distributional comparisons.
 The [*Mann-Whitney U test*](https://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test) compares distributions using ranks rather than assuming normality.
-```{r, eval=FALSE}
-library(Ecdat)
-kruskal.test(Wages1[, 'wage'], Wages1[, 'school'])
-
-# Multiple pairwise tests
-# pairwise.wilcox.test(Wages1[, 'wage'], Wages1[, 'school'])
+In R, it is computed with `wilcox.test`.
+```{r}
+# Mann-Whitney U test of hourly wages, female versus male
+wilcox.test(wage ~ sex, data=Wages1)
 ```
 
 #### **Regression Slope** {-}
@@ -158,11 +237,11 @@ summary(reg)$coefficients
 Manual verification of the theoretical $t$-statistic for the slope:
 ```{r}
 n <- nrow(xy_hat)
-b1 <- coef(reg)[2]
+b1_hat <- coef(reg)[2]
 e_hat <- resid(reg)
 s_e_hat <- sqrt(sum(e_hat^2) / (n - 2))               # residual standard error
 s_b1 <- s_e_hat / sqrt(sum((xy_hat[, 'x_hat'] - mean(xy_hat[, 'x_hat']))^2)) # SE of slope
-t_stat <- b1 / s_b1
+t_stat <- b1_hat / s_b1
 
 # Compare with summary output
 c(manual = t_stat, summary = summary(reg)$coefficients[2, 3])
@@ -170,19 +249,22 @@ c(manual = t_stat, summary = summary(reg)$coefficients[2, 3])
 :::
 
 We can compare the bootstrap sampling distribution of $\hat{t}$ (histogram) with the theoretical $t_{n-2}$ distribution (curve).
+Each bootstrap $\hat{t}$ is centered at the original slope estimate, which plays the role of the true slope in the bootstrap world, so the histogram approximates the distribution of $\hat{t}$ when the null is true.
 They should be similar, but are not identical because the theoretical result assumes normally distributed errors.
 
 ```{r}
 # Bootstrap distribution of the t-statistic
 n <- nrow(xy_hat)
+b1_hat <- coef(reg)[2]
 n_boot <- 399
 boot_t <- vector(length = n_boot)
 for (b in seq(n_boot)) {
     b_id <- sample(nrow(xy_hat), replace = TRUE)
     xy_boot <- xy_hat[b_id, ]
     reg_b <- lm(y_hat ~ x_hat, data = xy_boot)
-    # Use theoretical SE from summary
-    boot_t[b] <- summary(reg_b)$coefficients[2, 3]
+    # Center at the original estimate and use the theoretical SE from summary
+    coef_b <- summary(reg_b)$coefficients[2, ]
+    boot_t[b] <- (coef_b[1] - b1_hat) / coef_b[2]
 }
 
 # Overlay: bootstrap histogram vs. theoretical t-distribution
@@ -216,7 +298,7 @@ p_boot <- mean(abs(boot_t) >= abs(t_obs))
 c(theoretical = p_theory, bootstrap = p_boot)
 ```
 
-## Type II Errors
+## Type I and Type II Errors
 
 A hypothesis test starts with a null $H_0$ and an alternative $H_A$, and produces a decision (reject or fail-to-reject) from finite sample data.
 Because the data have variability, the decision can be wrong in two ways.
@@ -303,11 +385,84 @@ Generally, power depends on the effect size and sample size: bigger true effects
 
 #### **Regression Slope Example** {-}
 
-Continuing the USArrests regression, consider testing $H_0: \beta_1 = 0$.
-We can simulate Type I and Type II error rates by generating data that resemble the original.
-When the true slope is $0$ (null is true), rejecting is a Type I Error.
-When the true slope is nonzero (null is false), failing to reject is a Type II Error.
+Consider testing $H_0: \beta_1 = 0$ for the regression of hourly wage on years of schooling.
+With the pretend population of `Wages1` workers, we know the true slope, so we know whether the null is true.
+When the true slope is nonzero (null is false), failing to reject is a Type II Error, and the share of samples that reject estimates the power.
+The population slope is `population_slope`, about $0.557$, so the null is false.
 
+```{r}
+# Function: draw one sample of n workers, return the theoretical p-value for the slope
+sample_pval <- function(n, population) {
+    s_id <- sample(nrow(population), n, replace=FALSE)
+    xy_sim <- population[s_id, ]
+    colnames(xy_sim) <- c('x_hat', 'y_hat')
+    reg_s <- lm(y_hat ~ x_hat, data=xy_sim)
+    summary(reg_s)$coefficients[2, 4]
+}
+
+sim_reps <- 300
+alpha <- 0.05
+n_grid <- c(10, 20, 50, 100, 200)
+
+# Power: share of samples that reject, for each sample size
+power_by_n <- rep(NA, length(n_grid))
+for (k in seq_along(n_grid)) {
+    p_values <- replicate(sim_reps, sample_pval(n_grid[k], population_xy))
+    power_by_n[k] <- mean(p_values < alpha)
+}
+names(power_by_n) <- n_grid
+power_by_n
+
+# Power with samples of 50 workers
+power_est <- power_by_n['50']
+```
+
+To study Type I errors, we need a population where the null is true.
+Shuffling the wages once breaks the link between schooling and wages.
+By chance, the shuffled population still has a small slope, so we subtract it to make the population slope exactly $0$.
+When the true slope is $0$ (null is true), rejecting is a Type I Error.
+The share of samples that reject should be near $\alpha=0.05$ for every sample size.
+
+```{r}
+# A population where schooling and wages are unrelated
+population_null <- population_xy
+population_null[, 'y'] <- sample(population_xy[, 'y'])
+
+# Remove the small slope left over by chance
+slope_left <- coef(lm(y ~ x, data=population_null))[2]
+x_centered <- population_null[, 'x'] - mean(population_null[, 'x'])
+population_null[, 'y'] <- population_null[, 'y'] - slope_left * x_centered
+coef(lm(y ~ x, data=population_null))[2] # zero, up to rounding
+
+# Type I Error rate: share of samples that reject, for each sample size
+type1_by_n <- rep(NA, length(n_grid))
+for (k in seq_along(n_grid)) {
+    p_values_null <- replicate(sim_reps, sample_pval(n_grid[k], population_null))
+    type1_by_n[k] <- mean(p_values_null < alpha)
+}
+names(type1_by_n) <- n_grid
+type1_by_n
+```
+
+Power rises with the sample size, while the Type I Error rate stays near $\alpha$.
+
+```{r}
+# Rejection rates by sample size
+plot(n_grid, power_by_n, type = 'b', pch = 16,
+    xlab = 'Sample size (n)', ylab = 'Share of samples that reject',
+    ylim = c(0, 1),
+    main = NA)
+lines(n_grid, type1_by_n, type = 'b', pch = 16, col = grey(0.5, 0.8))
+title('Rejection Rates for Regression Slope', font.main = 1)
+abline(h = alpha, lty = 2, col = rgb(1, 0, 0, .8))
+legend('right', legend = c('Power (true slope 0.557)', 'Type I Error (true slope 0)', expression(alpha)),
+    col = c(1, grey(0.5, 0.8), rgb(1, 0, 0, .8)),
+    lty = c(1, 1, 2), pch = c(16, 16, NA), bty = 'n')
+```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+We can also compute error rates from a simulated data generating process, where we set the true slope ourselves.
+The process below is calibrated to the USArrests regression, with normally distributed $X_i$ and errors.
 ```{r}
 # DGP calibrated to USArrests regression
 beta0 <- coef(reg)[1]
@@ -323,35 +478,35 @@ sim_pval <- function(n, beta1) {
     summary(lm(y_sim ~ x_sim))$coefficients[2, 4]
 }
 
-sim_reps <- 200
-alpha <- 0.05
+sim_reps_dgp <- 200
 
 # Type I Error rate: true slope = 0
-pvals_null <- replicate(sim_reps, sim_pval(n = 50, beta1 = 0))
-type1_rate <- mean(pvals_null < alpha)
-type1_rate  # should be close to alpha
+pvals_null <- replicate(sim_reps_dgp, sim_pval(n = 50, beta1 = 0))
+type1_rate_dgp <- mean(pvals_null < alpha)
+type1_rate_dgp  # should be close to alpha
 
 # Power: true slope = beta1_true
-pvals_alt <- replicate(sim_reps, sim_pval(n = 50, beta1 = beta1_true))
-power_est <- mean(pvals_alt < alpha)
-power_est
+pvals_alt <- replicate(sim_reps_dgp, sim_pval(n = 50, beta1 = beta1_true))
+power_dgp <- mean(pvals_alt < alpha)
+power_dgp
 ```
 
 ```{r}
 # Power increases with sample size
-n_grid <- c(10, 25, 50, 100, 200)
-power_by_n <- sapply(n_grid, function(ni) {
-    pvals <- replicate(sim_reps, sim_pval(ni, beta1 = beta1_true))
+n_grid_dgp <- c(10, 25, 50, 100, 200)
+power_by_n_dgp <- sapply(n_grid_dgp, function(ni) {
+    pvals <- replicate(sim_reps_dgp, sim_pval(ni, beta1 = beta1_true))
     mean(pvals < alpha)
 })
 
-plot(n_grid, power_by_n, type = 'b', pch = 16,
+plot(n_grid_dgp, power_by_n_dgp, type = 'b', pch = 16,
     xlab = 'Sample size (n)', ylab = 'Power',
     ylim = c(0, 1),
     main = NA)
 title('Power for Regression Slope', font.main = 1)
 abline(h = alpha, lty = 2, col = rgb(1, 0, 0, .8))
 ```
+:::
 
 ## Bayesian Updating
 
@@ -578,4 +733,5 @@ See also the further reading in [Bivariate Probability](02_19_BivariateProbabili
 #### **Recall** {-}
 
 This chapter built theoretical tests on top of the population objects from the previous chapter: Welch's $t$-test for two means, the theoretical $t_{n-2}$ distribution for a regression slope, the Type I / Type II error distinction with statistical power, and Bayes' theorem for converting a test rejection into a posterior.
-The `USArrests` slope simulation showed both ideas concretely: the bootstrap histogram of $\hat{t}$ matched the theoretical $t_{n-2}$ density, and the same regression was used to estimate power across sample sizes $n~\text{in}~\{10, 25, 50, 100, 200\}$.
+The `USArrests` bootstrap showed that the histogram of $\hat{t}$ roughly matched the theoretical $t_{n-2}$ density.
+Treating the `Wages1` workers as a population showed the error rates concretely: samples from the real population estimated power across sample sizes $n~\text{in}~\{10, 20, 50, 100, 200\}$, and samples from the shuffled population rejected at a rate near $\alpha$.

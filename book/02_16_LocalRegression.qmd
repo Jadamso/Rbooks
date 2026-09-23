@@ -3,7 +3,6 @@
 
 This chapter models how the average of $\hat{y}_{i}$ changes with $\hat{x}_{i}$ without assuming a single straight line.
 We build up from regressograms (bin averages) to piecewise and local linear regression, carrying one running example throughout: wages and years of schooling.
-We close by measuring how well each model fits and introducing the bias-variance tradeoff.
 
 ## Local Averages
 
@@ -75,11 +74,11 @@ plot(y_hat ~ x_hat, data=xy2_hat, pch=16, col=grey(0, .1),
 ## Simple Regression
 reg  <- lm(y_hat ~ x_hat, data=xy2_hat) ## OLS
 
-# Regressogram: Course Age Bins
+# Regressogram: Coarse Schooling Bins
 xy2_hat[, 'xcc'] <- cut(xy2_hat[, 'x_hat'], 2)
 rgram_c  <- lm(y_hat ~ xcc, data=xy2_hat)
 
-# Regressogram: Fine Age Bins
+# Regressogram: Fine Schooling Bins
 xy2_hat[, 'xcf']   <- cut(xy2_hat[, 'x_hat'], 3)
 rgram_f  <- lm(y_hat ~ xcf, data=xy2_hat)
 
@@ -143,7 +142,7 @@ In any case, the values predicted by the model are found as
 $$
 \hat{y}_{i}^{\mathrm{fit}} = \sum_{x} \hat{b}_{0}(x,h) \hat{d}_{i}(x,h) = \sum_{x} \hat{m}_{Y}(x,h) \hat{d}_{i}(x,h).
 $$
-I.e., the predicted value of observation $i$ is the the average value for its bin. 
+I.e., the predicted value of observation $i$ is the average value for its bin. 
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Consider this two-bin regressogram example of how schooling affects wage for people with $\leq 9$ years of school completed vs $> 9$.
@@ -190,11 +189,11 @@ plot(y_hat ~ x_hat, data=xy2_hat, pch=16, col=grey(0, .1),
     main=NA, xlab='School', ylab='Wage')
 # xy2_hat defined above
 
-# Piecewise: Course Age Bins
+# Piecewise: Coarse Schooling Bins
 xy2_hat[, 'xcc'] <- cut(xy2_hat[, 'x_hat'], 2)
 preg_c  <- lm(y_hat ~ xcc*x_hat, data=xy2_hat)
 
-# Piecewise: Fine Age Bins
+# Piecewise: Fine Schooling Bins
 xy2_hat[, 'xcf']   <- cut(xy2_hat[, 'x_hat'], 3)
 preg_f  <- lm(y_hat ~ xcf*x_hat, data=xy2_hat)
 
@@ -223,7 +222,7 @@ $$\begin{aligned}
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 ```{r}
 # See that two methods give the same predictions
-# Piecewise: Course Age Bins
+# Piecewise: Coarse Schooling Bins
 xy2_hat[, 'xcc'] <- cut(xy2_hat[, 'x_hat'], 2)
 preg_c  <- lm(y_hat ~ xcc*x_hat, data=xy2_hat)
 y_fit_piecewise <- predict(preg_c)
@@ -270,7 +269,7 @@ for (i in seq_along(xy_list2)) {
 }
 
 # Linear in 3 Pieces (subsets or bins)
-xcut3 <- cut(xy_hat[, 'x_hat'], seq(32, 92, by=20)) # Finer Bins
+xcut3 <- cut(xy_hat[, 'x_hat'], seq(32, 92, by=20), include.lowest=TRUE) # Finer Bins
 xy_list3 <- split(xy_hat, xcut3)
 regs3 <- vector('list', length(xy_list3))
 names(regs3) <- names(xy_list3)
@@ -335,7 +334,7 @@ k_{U}\left( \hat{x}_{i}, x, h \right)
 &= \frac{\mathbf{1}\left(\frac{|\hat{x}_{i}-x|}{h} \leq 1\right)}{2}
 = \frac{\mathbf{1}\left( \hat{x}_{i}~\text{in}~\left[ x-h, x + h\right] \right) }{2}
 \end{aligned}$$
-with is nearly identical to $\hat{d}_{i}(x,h)/ 2$, but uses intervals $[]$ instead of $(]$.
+which is nearly identical to $\hat{d}_{i}(x,h)/ 2$, but uses intervals $[]$ instead of $(]$.
 As such we can see that
 $$\begin{aligned}
 \sum_{i}^{n}\left[ \hat{e}_{i} \right]^2 k_{U}\left( \hat{x}_{i}, x, h \right)
@@ -344,37 +343,14 @@ $$\begin{aligned}
 \end{aligned}$$
 The constant term $1/2$ is irrelevant to finding the optimal solution (you can check the math yourself).
 
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Here is an example going into the details of the weights.
+Here is the weighted regression on the wage data, at the midpoint of the first bin of the two-bin piecewise regression.
+Both predictions are the same, about $4.551$.
 ```{r}
-## Generate Sample Data
-x0_hat <- 1:5
-y_sim <- round( rnorm(length(x0_hat)) , 2)
-y_sim
-## plot(x0_hat, y_sim)
-
-## Manually Compute Estimate at x=3
-h <- 1
-k3_weights <- dunif( abs(x0_hat-3)/h, -1, 1) #(x0_hat >= 2)*(x0_hat <= 4)
-k3_weights
-
-# Divide by the total so the weights sum to one
-w3 <- k3_weights/sum(k3_weights)
-y_fit_3 <- sum(w3*y_sim)
-y_fit_3
-
-# Equals the simple average of the y's within h of x=3
-mean( y_sim[ abs(x0_hat-3) <= h ] )
-```
-
-
-```{r}
-library(Ecdat) # Data from before
 # xy2_hat defined above
 
 ## Weighted Regression
-x <- 4.5
-h <- 9.036/2 #makes bin large enough to include 0: (-0.018, 9]
+x <- 4.5 # regressogram bin1 midpoint
+h <- 9.036/2 #window [-0.018, 9.018] covers schooling levels 3 to 9
 k <- abs(xy2_hat[, 'x_hat']-x) /h
 k_weights <- dunif(k, -1, 1) # the uniform kernel k_U
 preg_k  <- lm(y_hat ~ x_hat, data=xy2_hat, weights=k_weights)
@@ -383,7 +359,47 @@ predict(preg_k, newdata=data.frame(x_hat=x))
 # Compare to Piecewise
 xy2_hat[, 'xcc'] <- cut(xy2_hat[, 'x_hat'], 2)
 preg_c  <- lm(y_hat ~ xcc*x_hat, data=xy2_hat)
+predict(preg_c, newdata=data.frame(x_hat=x, xcc='(2.99,9.5]'))
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Check the same result at a different design point.
+Use the second bin, `(9.5,16]`, which holds schooling levels $10$ to $16$.
+```{r}
+x <- 13 # middle of schooling levels 10 to 16
+h <- 3 # uniform window [10, 16]
+
+## Weighted Regression
+k_weights <- dunif( abs(xy2_hat[, 'x_hat']-x)/h, -1, 1)
+preg_k  <- lm(y_hat ~ x_hat, data=xy2_hat, weights=k_weights)
+predict(preg_k, newdata=data.frame(x_hat=x))
+
+# Compare to Piecewise
 predict(preg_c, newdata=data.frame(x_hat=x, xcc='(9.5,16]'))
+```
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Here is an example going into the details of the weights.
+```{r}
+## Generate Sample Data
+x0_hat <- 1:5
+y0_hat <- round( rnorm(length(x0_hat)) , 2)
+y0_hat
+## plot(x0_hat, y0_hat)
+
+## Manually Compute Estimate at x=3
+h <- 1
+k3_weights <- dunif( abs(x0_hat-3)/h, -1, 1) #(x0_hat >= 2)*(x0_hat <= 4)
+k3_weights
+
+# Divide by the total so the weights sum to one
+w3 <- k3_weights/sum(k3_weights)
+y_fit_3 <- sum(w3*y0_hat)
+y_fit_3
+
+# Equals the simple average of the y's within h of x=3
+mean( y0_hat[ abs(x0_hat-3) <= h ] )
 ```
 :::
 
@@ -422,34 +438,36 @@ If we use exclusive bins, then we are essentially running a regressogram.
 As such, the regressogram is more crude but can be estimated more easily.
 
 
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-See how the results are nearly identical below.
-Then consider different design points.
+Here is the locally constant regression on the wage data.
+At each design point, we take the kernel-weighted average of wages for people with nearby years of schooling.
 ```{r}
-#library(Ecdat) # Data from before
 # xy2_hat defined above
-x <- 4.5 # regressogram bin1 midpoint
-h <- 9.036/2 #regressogram half-width
+x_values <- seq(3, 16, by=.5) # Design points
+h <- 2 # bandwidth
 
-# Piecewise Regression
-xy2_hat[, 'xcc'] <- cut(xy2_hat[, 'x_hat'], 2)
-preg_c  <- lm(y_hat ~ xcc*x_hat, data=xy2_hat)
-predict(preg_c, newdata=data.frame(x_hat=x, xcc='(9.5,16]'))
+# Kernel-weighted mean at each design point
+y_fit_lc <- rep(NA, length(x_values))
+for (i in seq_along(x_values)) {
+    ki <- dunif( abs(xy2_hat[, 'x_hat']-x_values[i])/h, -1, 1) # the uniform kernel k_U
+    wi <- ki/sum(ki) # weights sum to one
+    y_fit_lc[i] <- sum(wi*xy2_hat[, 'y_hat'])
+}
 
-## Weighted Regression
-k_weights <- dunif( abs(xy2_hat[, 'x_hat']-x)/h, -1, 1)
-preg_k  <- lm(y_hat ~ x_hat, data=xy2_hat, weights=k_weights)
-predict(preg_k, newdata=data.frame(x_hat=x))
+# Plot
+plot(y_hat ~ x_hat, data=xy2_hat, pch=16, col=grey(0, .1),
+    main=NA, xlab='School', ylab='Wage')
+lines(x_values, y_fit_lc, col=rgb(0, 0, 1, .8), lwd=2, type='o')
+legend('topleft', title='Locally Constant',
+    legend='h=2',
+    lty=1, col=rgb(0, 0, 1, .8), cex=.8)
 ```
-
-:::
 
 #### **Notes**{-}
 
 When $n$ is small, $\hat{b}_{U}(x, h)$ is typically estimated for each unique observed value: $x~\text{in}~\{ x_{1},...x_{n} \}$.
 For large datasets, you can select a subset or evenly spaced values of $x$ for which to make predictions.
 
-If $\hat{x}_{i}$ represents time, then the local constant regressions is also called a *moving average*.
+If $\hat{x}_{i}$ represents time, then the local constant regression is also called a *moving average*.
 We can create a *weighted* moving average by using a different distribution.
 I.e. using the Normal `dnorm` instead of the Uniform `dunif`.
 
@@ -469,20 +487,20 @@ Here is an example going into the details of the weights.
 ```{r}
 ## Generate Sample Data
 x0_hat <- 1:5
-y_sim <- rnorm(length(x0_hat))
-y_sim
+y0_hat <- rnorm(length(x0_hat))
+y0_hat
 
 ## Manually Compute Estimate at x=5
 h <- 2
 k5_weights <- dunif( abs(x0_hat-5)/h, -1, 1) #(x0_hat >= 3)*(x0_hat =< 7)/2
-k5_weights 
+k5_weights
 
-y_fit_5 <- sum(k5_weights*y_sim)
+y_fit_5 <- sum(k5_weights*y0_hat)
 y_fit_5
 
 ## Edge Correction
-k5_weights_ec <- k5_weights/sum(k5_weights) 
-y_fit_5_ec <- sum(k5_weights_ec*y_sim)
+k5_weights_ec <- k5_weights/sum(k5_weights)
+y_fit_5_ec <- sum(k5_weights_ec*y0_hat)
 y_fit_5_ec
 ```
 :::
@@ -519,7 +537,7 @@ y_fit_1 <- rep(NA, length(x_values))
 for(i in seq_along(x_values)){
 	y_fit_1[i] <- pred_fun(x0=x_values[i], h=2)
 }
-# Course Bins
+# Coarse Bins
 y_fit_2 <- rep(NA, length(x_values))
 for(i in seq_along(x_values)){
 	y_fit_2[i] <- pred_fun(x0=x_values[i], h=6)
@@ -586,7 +604,7 @@ legend('topleft', title='Locally Linear',
    Finish with your own questions about whatever you found hardest.
 
 2. Explain the difference between a regressogram and a local linear regression.
-   In what sense does increasing the number of bins in a regressogram create a bias-variance tradeoff?
+   As you increase the number of bins in a regressogram, what happens to the number of observations in each bin, and how does that change the fitted values?
 
 3. Using the `Wages1` dataset from the `Ecdat` package, fit a regressogram with 4 bins and a piecewise regression with 4 bins for the relationship between `wage` and `school`.
    Compute the predicted value at `school = 10` for each model.
@@ -602,7 +620,6 @@ legend('topleft', title='Locally Linear',
 
 * <https://www.econometrics-with-r.org/11-1-heteroskedasticity-and-homoskedasticity.html> -- motivates nonparametric methods by showing where linear models break down.
 * <https://cran.r-project.org/doc/manuals/R-intro.html#LOESS> -- R's built-in documentation on `loess()`, including span selection and fitting options.
-* <https://www.khanacademy.org/computing/computer-science/informationtheory/moderninfotheory/v/bias-variance> -- visual introduction to the bias-variance tradeoff that drives bandwidth choice.
 
 #### **Recall** {-}
 

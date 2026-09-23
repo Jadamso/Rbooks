@@ -85,7 +85,7 @@ polygon(
 ```
 
 
-:::{.callout-note icon=false collapse="true" title="Must Know"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Construct a bootstrap confidence band for the following loess regression
 ```{r}
 # Adaptive-width subsamples with non-uniform weights
@@ -95,10 +95,10 @@ xy_ord_hat <- xy_hat[order(xy_hat[, 'x_hat']), ]
 
 plot(y_hat ~ x_hat, pch=16, col=grey(0, .5), data=xy_ord_hat,
     main=NA, xlab='Urban Population', ylab='Murder Arrests')
-reg_lo2 <- loess(y_hat ~ x_hat, data=xy_ord_hat, span=.6)
+reg_lo_usa <- loess(y_hat ~ x_hat, data=xy_ord_hat, span=.6)
 
 red_col <- rgb(1, 0, 0, .5)
-lines(xy_ord_hat[, 'x_hat'], predict(reg_lo2),
+lines(xy_ord_hat[, 'x_hat'], predict(reg_lo_usa),
     col=red_col, type='o', pch=2)
 ```
 :::
@@ -132,12 +132,12 @@ plot(y_hat ~ x_hat, data=xy2_hat, pch=16, col=grey(0, .1),
 
 for (s in seq_along(spans)) {
     sp <- spans[s]
-    fit <- loess(y_hat ~ x_hat, data=xy2_hat, span=sp)
+    reg_s <- loess(y_hat ~ x_hat, data=xy2_hat, span=sp)
     boot_preds <- matrix(NA, nrow=nrow(pred_design), ncol=n_boot)
     for (b in 1:n_boot) {
         xy2_boot <- xy2_hat[sample(nrow(xy2_hat), replace=TRUE), ]
-        fit_b <- loess(y_hat ~ x_hat, data=xy2_boot, span=sp)
-        boot_preds[, b] <- predict(fit_b, newdata=pred_design)
+        reg_s_b <- loess(y_hat ~ x_hat, data=xy2_boot, span=sp)
+        boot_preds[, b] <- predict(reg_s_b, newdata=pred_design)
     }
     boot_cb <- apply(boot_preds, 1, quantile,
         probs=c(.025, .975), na.rm=TRUE)
@@ -145,7 +145,7 @@ for (s in seq_along(spans)) {
     polygon(c(pred_design[, 'x_hat'], rev(pred_design[, 'x_hat'])),
         c(boot_cb[1, ], rev(boot_cb[2, ])),
         col=adjustcolor(span_col[s], alpha.f=0.3), border=NA)
-    lines(pred_design[, 'x_hat'], predict(fit, newdata=pred_design),
+    lines(pred_design[, 'x_hat'], predict(reg_s, newdata=pred_design),
         col=span_col[s], lwd=2)
 }
 
@@ -157,9 +157,86 @@ legend('topleft', title='LOESS span',
 With span $4.0$ the fitted curve is very smooth and stable, and the bootstrap band sits tightly around it.
 With span $0.4$ the curve tracks more local variation, and the bootstrap band fans wider, directly displaying the variance penalty for chasing local detail.
 (Schooling `x_hat` is integer-valued with only $14$ distinct values, so spans below about $0.4$ collapse to single-point neighborhoods and `loess()` cannot fit.)
+
+The bootstrap bands show variance, but not bias, because we never see the true curve in one sample.
+As in [Sampling](01_05_Sampling.qmd#wages-as-a-population), pretend the $3294$ workers in `Wages1` are the whole population, so the true curve is known.
+The population curve is the mean wage at each schooling level over all $3294$ workers.
+We then draw many samples of $n=300$ workers, fit a wide span ($4.0$) and a narrow span ($0.5$) to each, and see how the fitted curves compare to the population curve.
+At $n=300$, span $0.4$ sometimes fails, so we use $0.5$ for the narrow window.
+
+```{r}
+# Pretend these 3294 workers are the whole population
+data(Wages1, package='Ecdat')
+population_xy <- Wages1[, c('school', 'wage')]
+colnames(population_xy) <- c('x', 'y') # x=years of schooling, y=hourly wage
+population_slope <- coef(lm(y ~ x, data=population_xy))[2]
+
+# Population curve: mean wage at each schooling level
+population_curve <- tapply(population_xy[, 'y'], population_xy[, 'x'], mean)
+
+# Evaluate at schooling levels with many workers (8 to 15 years)
+# Rare levels are often missing from a sample, and loess does not extrapolate
+x_levels <- 8:15
+population_levels <- population_curve[as.character(x_levels)]
+
+# Repeated samples, each fit with a wide and a narrow span
+spans_sim <- c(4.0, 0.5)
+n <- 300
+n_rep <- 200
+curves_sim <- array(NA, dim=c(length(x_levels), n_rep, length(spans_sim)))
+for (r in 1:n_rep) {
+    s_id <- sample(nrow(population_xy), n, replace=FALSE)
+    xy_sim <- population_xy[s_id, ]
+    colnames(xy_sim) <- c('x_hat', 'y_hat')
+    for (s in seq_along(spans_sim)) {
+        # Return NA if loess fails on this sample
+        curves_sim[, r, s] <- tryCatch(
+            suppressWarnings(predict(
+                loess(y_hat ~ x_hat, data=xy_sim, span=spans_sim[s]),
+                newdata=data.frame(x_hat=x_levels))),
+            error=function(e) rep(NA, length(x_levels)))
+    }
+}
+
+# Plot a few sample curves for each span, plus the population curve
+par(mfrow=c(1, 2))
+for (s in seq_along(spans_sim)) {
+    matplot(x_levels, curves_sim[, 1:20, s], type='l', lty=1,
+        col=adjustcolor(span_col[s], alpha.f=.4),
+        ylim=range(curves_sim[, 1:20, ], population_levels, na.rm=TRUE),
+        xlab='School', ylab='Wage', main=NA)
+    lines(x_levels, population_levels, col=rgb(1, 0, 0, .8), lwd=2, type='o', pch=16)
+    title(paste0('Span = ', spans_sim[s]), font.main=1)
+}
+```
+
+Each thin line is the fit from one sample, and the red line is the population curve.
+The wide-span curves stay close to one another, but they are too straight to follow the bend in the population curve.
+The narrow-span curves follow the bend better on average, but they spread out much more from sample to sample.
+
+We can summarize this with two numbers per span.
+At each schooling level, the squared bias is the squared gap between the average fitted value and the population curve, and the variance is the spread of the fitted values across samples.
+We then average each over the schooling levels.
+
+```{r}
+# Average squared bias and variance across schooling levels
+bias_var <- sapply(seq_along(spans_sim), function(s) {
+    curves_s <- curves_sim[, , s]
+    bias2_s <- (rowMeans(curves_s, na.rm=TRUE) - population_levels)^2
+    var_s <- apply(curves_s, 1, var, na.rm=TRUE)
+    c(Bias2=mean(bias2_s), Variance=mean(var_s), MSE=mean(bias2_s + var_s))
+})
+colnames(bias_var) <- paste0('Span ', spans_sim)
+round(bias_var, 3)
+```
+
+The wide span typically has the larger squared bias and the smaller variance, while the narrow span has the opposite.
+Here the variance term is the larger of the two, so the wide span often has the lower total error at $n=300$.
+With a larger sample, the variance of both fits falls, and the narrow span becomes more attractive.
 Choosing the span (the bandwidth $h$) means trading bias against variance.
 
-Note that the simple linear regression is nested as a special case with $span \to \infty$.
+Note that when the local fits are linear (`degree=1`), the simple linear regression is nested as a special case with $span \to \infty$, because every observation then gets nearly the same weight.
+By default, `loess()` fits local quadratics (`degree=2`), so a very wide default fit approaches a global quadratic instead of a straight line.
 
 #### **Model Fit** {-}
 
@@ -278,8 +355,8 @@ hist(grad_lo,  breaks=20,
     main=NA) ## Distributional Summary
   
 ## Visual Summary 2
-grad_x  <- xy2_hat[, 'x_hat'][-1]
-plot(grad_x+grad_dx, grad_lo,
+grad_x  <- xy2_hat[-nrow(xy2_hat), 'x_hat'] + grad_dx/2 # midpoint of consecutive x
+plot(grad_x, grad_lo,
     xlab='x', ylab=expression(d~hat(y)^plain(fit)/dx),
     mgp=c(2.5, 1, 0),
     col=lo_col, pch=16, main=NA) ## Diminishing Returns?
@@ -322,14 +399,15 @@ tab_stats <- c(
 
 ## Use bootstrap to approximate sampling dist
 boot_stats <- matrix(NA, nrow=299, ncol=2)
-colnames(boot_stats) <- c('Mean SE', 'SD SE')
+colnames(boot_stats) <- c('Mean', 'SD')
 for(b in 1:nrow(boot_stats)){
     xy2_boot <- xy2_hat[sample(1:nrow(xy2_hat), replace=TRUE), ]
-    reg_lo <- loess(y_hat ~ x_hat, data=xy2_boot, span=.6)
-    y_fit <- predict(reg_lo)
-    grad_lo <- diff(y_fit)/diff(xy2_boot[, 'x_hat'])
-    m_grad_b_hat <- mean(grad_lo, na.rm=TRUE)
-    s_grad_b_hat <- sd(grad_lo, na.rm=TRUE)
+    xy2_boot <- xy2_boot[order(xy2_boot[, 'x_hat']), ] # sort so diff() runs along x
+    reg_lo_b <- loess(y_hat ~ x_hat, data=xy2_boot)
+    y_fit_b <- predict(reg_lo_b)
+    grad_lo_b <- diff(y_fit_b)/diff(xy2_boot[, 'x_hat'])
+    m_grad_b_hat <- mean(grad_lo_b, na.rm=TRUE)
+    s_grad_b_hat <- sd(grad_lo_b, na.rm=TRUE)
     boot_stats[b, 1] <- m_grad_b_hat
     boot_stats[b, 2] <- s_grad_b_hat
 }
@@ -378,7 +456,7 @@ Under $H_0$, the mean gradient equals zero, so we center the bootstrap distribut
 ```{r}
 ## P-value via null bootstrap ECDF
 ## Center bootstrap means at zero (impose H0)
-boot_centered <- boot_stats[, 'Mean SE'] - mean(boot_stats[, 'Mean SE'])
+boot_centered <- boot_stats[, 'Mean'] - mean(boot_stats[, 'Mean'])
 
 ## ECDF of centered bootstrap distribution
 F_hat <- ecdf(boot_centered)
@@ -400,11 +478,11 @@ and the p-value comes from the standard normal distribution.
 ```{r}
 ## P-value for mean gradient
 ## Standard Normal Approximation
-t_stat <- tab_stats['Mean'] / boot_se['Mean SE']
+t_stat <- tab_stats['Mean'] / boot_se['Mean']
 p_val  <- 2 * pnorm(-abs(t_stat))
 
 cat('Mean gradient:', round(tab_stats['Mean'], 3), '\n')
-cat('Bootstrap SE: ', round(boot_se['Mean SE'], 3), '\n')
+cat('Bootstrap SE: ', round(boot_se['Mean'], 3), '\n')
 cat('t-statistic:  ', round(t_stat, 3), '\n')
 cat('p-value:      ', format.pval(p_val, digits=3), '\n')
 ```
@@ -418,7 +496,7 @@ n <- nrow(xy2_hat)
 jack_means <- numeric(n)
 for (i in 1:n) {
     xy2_i  <- xy2_hat[-i, ]
-    reg_i  <- loess(y_hat ~ x_hat, data=xy2_i, span=.6)
+    reg_i  <- loess(y_hat ~ x_hat, data=xy2_i)
     y_fit_i <- predict(reg_i)
     grad_i <- diff(y_fit_i) / diff(xy2_i[, 'x_hat'])
     jack_means[i] <- mean(grad_i, na.rm=TRUE)
@@ -461,6 +539,7 @@ cat('p-value:      ', format.pval(p_jack, digits=3), '\n')
 * <https://www.econometrics-with-r.org/5-htaciam.html> -- hypothesis tests and confidence intervals for regression coefficients, with worked R examples.
 * <https://learningstatisticswithr.com/book/regression.html#hypothesistestsforregressionmodels> -- testing regression slopes, interpreting p-values, and understanding standard errors.
 * <https://www.khanacademy.org/math/statistics-probability/significance-tests-one-sample/more-significance-testing-videos/v/hypothesis-testing-and-p-values> -- video introduction to hypothesis testing logic and p-values.
+* <https://www.khanacademy.org/computing/computer-science/informationtheory/moderninfotheory/v/bias-variance> -- visual introduction to the bias-variance tradeoff that drives bandwidth choice.
 
 #### **Recall** {-}
 

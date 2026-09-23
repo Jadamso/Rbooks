@@ -17,6 +17,29 @@ $$\hat{m}_{Y}(x)=\sum_{y} y\,\hat{p}(y\mid x).$$
 Comparing $\hat{m}_{Y}(x)$ across values of $x$ is useful as the simplest summary of association between a cardinal outcome and a factor: a single number per subgroup shows whether $Y$ tends to be higher in one category.
 The calculation breaks into two steps: row-by-row, compute the conditional distribution $\hat{p}(y\mid x)$, then take its weighted average using the values of $y$.
 
+For example, consider years of schooling (treated as cardinal) across sex in the `Wages1` data from the `Ecdat` package.
+We first compute the conditional distribution of schooling within each sex, so that each column sums to 1.
+We then take the weighted average of the schooling values within each column.
+
+```{r}
+library('Ecdat')
+# Counts of years of schooling (rows) by sex (columns)
+school_sex <- table(Wages1[, 'school'], Wages1[, 'sex'])
+
+# Conditional distribution p(y|x): each column sums to 1
+p_school_sex <- prop.table(school_sex, 2)
+round(p_school_sex, 3)
+
+# Conditional mean of schooling within each sex
+school_values <- as.numeric(rownames(p_school_sex))
+m_school_sex <- colSums(school_values * p_school_sex)
+m_school_sex
+```
+
+Women in this sample average about $11.8$ years of schooling and men about $11.4$ years.
+Men are more common at $10$ years or fewer, while women are more common at $12$ years or more.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
 Suppose our data is given in the table shown below.
 
 |      | $x=0$ | $x=1$ |
@@ -29,7 +52,7 @@ Suppose our data is given in the table shown below.
 First, we compute conditional probabilities to examine how the distribution changes.
 
 |      | $x=0$ | $x=1$ |
-|:----:|:---:|:---:|:---:|
+|:----:|:---:|:---:|
 | $y=1$ | $12/40$ | $8/30$  |
 | $y=2$ | $18/40$ | $6/30$  |
 | $y=3$ | $10/40$ | $16/30$ |
@@ -42,13 +65,15 @@ $$\begin{aligned}
 \end{aligned}$$
 Notice that $\hat{m}_{Y}(x=0) < 2 < \hat{m}_{Y}(x=1)$, which shows that the mean value of $Y$ is higher when $X$ is higher.
 I.e., there is a positive association.
+:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 We can compute the mean $\hat{m}_{Y}$ using the marginal distributions, as already shown in the last chapter.
-To compute the mean, $\hat{m}_{Y}$, we first compute the joint distribution by dividing each cell with $12+8+18+6+10+16 = 70$ so that all cells sum to 1. We then sum up proportions along each row and column to compute the marginals.
+To compute the mean, $\hat{m}_{Y}$, we first compute the joint distribution by dividing each cell with $12+8+18+6+10+16 = 70$ so that all cells sum to 1.
+We then sum up proportions along each row and column to compute the marginals.
 $$\begin{gathered}
 \hat{p}(x=0) = (12+18+10)/70 = 40/70,\quad
-\hat{p}(x=1) = (8+6+6)/70 = 30/70.\\
+\hat{p}(x=1) = (8+6+16)/70 = 30/70.\\
 \hat{p}(y=1) = (12+8)/70 = 20/70 ,\quad
 \hat{p}(y=2) = (18+6)/70 = 24/70 ,\quad
 \hat{p}(y=3) = (10+16)/70 = 26/70.
@@ -114,10 +139,10 @@ colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourl
 y_hat <- xy2_hat[, 'y_hat']             # cardinal outcome (hourly wage)
 
 # Logical index for each group, then subset y_hat by it
-X1_id <- xy2_hat[, 'x_hat'] == 12   # TRUE for high-school only
-y1_hat <- y_hat[X1_id]                      # wages of high-school group
-X2_id <- xy2_hat[, 'x_hat'] == 16   # TRUE for university graduates
-y2_hat <- y_hat[X2_id]                      # wages of university group
+x1_id <- xy2_hat[, 'x_hat'] == 12   # TRUE for high-school only
+y1_hat <- y_hat[x1_id]                      # wages of high-school group
+x2_id <- xy2_hat[, 'x_hat'] == 16   # TRUE for university graduates
+y2_hat <- y_hat[x2_id]                      # wages of university group
 
 
 # Initial summary figure: two overlaid histograms on a common grid
@@ -153,10 +178,10 @@ We often want to know whether two samples have the same mean.
 
 The *mean difference* is useful as the workhorse single-number summary of "how different are these two groups, on average", because it is on the same scale as the outcome itself and the natural null hypothesis $\hat{d}=0$ corresponds to "no difference in population means".
 We can test that hypothesis either by inverting a confidence interval or by imposing the null.
-The bootstrap below pegs $\hat{m}_1$ and $\hat{m}_2$ at the wage data and reports $\hat{d}$: the university group has the higher mean wage, so $\hat{d}<0$ here, and the next step is asking whether the gap is bigger than sampling noise alone would produce.
+The bootstrap below computes $\hat{m}_1$ and $\hat{m}_2$ from the wage data and reports $\hat{d}$: the university group has the higher mean wage, so $\hat{d}<0$ here, and the next step is asking whether the gap is bigger than sampling noise alone would produce.
 
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-Here is an example of inverting a CI
+Here is an example of inverting a CI.
+
 ```{r}
 # Differences between means
 m1_hat <- mean(y1_hat)
@@ -183,7 +208,6 @@ boot_ci <- quantile(bootstrap_diff, probs=c(.025, .975))
 abline(v=boot_ci, lwd=2)
 abline(v=0, lwd=2, col=rgb(1, 0, 0, .8))
 ```
-:::
 
 
 For "imposing the null", it is more common to use $p$-values instead of confidence intervals.
@@ -197,16 +221,51 @@ The *permutation test* (also called a *randomization test*) is useful whenever t
 The shuffled distribution always sums to the same pooled data, so the only variability comes from re-splitting the labels.
 If using a hard decision rule, it is most common to reject the null at the $5\%$ level when $p<0.05$ and fail to reject when $p>0.05$.
 
-
 :::{.callout-note icon=false collapse="true" title="Must Know"}
+Suppose there are two groups of summer workers, with earnings in thousands of Canadian Dollars.
+Group $A$ has earnings $\{18,20,25,30\}$ and group $B$ has earnings $\{19,21,24,35\}$.
+The observed mean difference is $\hat{d}=23.25-24.75=-1.5$.
+A permutation keeps the eight pooled values but reassigns which four belong to group $A$.
+```{r}
+# Pooled earnings and group labels (1=A, 2=B)
+y0_hat <- c(18, 20, 25, 30, 19, 21, 24, 35)
+g0 <- c(1, 1, 1, 1, 2, 2, 2, 2)
+d0_hat <- mean(y0_hat[g0==1]) - mean(y0_hat[g0==2])
+d0_hat
+
+# A few reshuffled labels, written out by hand
+g0_perm1 <- c(2, 1, 1, 2, 1, 2, 1, 2)
+g0_perm2 <- c(1, 2, 2, 1, 1, 2, 1, 2)
+g0_perm3 <- c(2, 2, 1, 1, 1, 2, 2, 1)
+mean(y0_hat[g0_perm1==1]) - mean(y0_hat[g0_perm1==2])
+mean(y0_hat[g0_perm2==1]) - mean(y0_hat[g0_perm2==2])
+mean(y0_hat[g0_perm3==1]) - mean(y0_hat[g0_perm3==2])
+
+# With 8 values there are only choose(8, 4)=70 ways to pick group A
+id_A <- combn(8, 4)
+d0_perm <- apply(id_A, 2, function(id){
+    mean(y0_hat[id]) - mean(y0_hat[-id])
+})
+hist(d0_perm, breaks=20, border=NA, freq=FALSE,
+    main=NA, xlab='Difference in Means')
+abline(v=d0_hat, col=rgb(1, 0, 0, .8))
+
+# Two-sided p-value: share of relabelings at least as extreme as observed
+mean(abs(d0_perm) >= abs(d0_hat))
+```
+About $77\%$ of the $70$ relabelings produce a gap at least as large as $1.5$, so this small difference is easy to explain by chance.
+:::
+
+For the wage data, there are far too many relabelings to list, so we draw many of them at random.
+
 ```{r}
 # Permutation Distribution
 permute_diff <- rep(NA, 9999)
 for(b in seq(permute_diff) ){
     #randomize data
     y_perm  <- sample(y_hat, replace=FALSE)
-    y1_perm <- y_perm[X1_id]
-    y2_perm <- y_perm[X2_id]
+    y1_perm <- y_perm[x1_id]
+    y2_perm <- y_perm[x2_id]
     # recompute statistic
     m1_perm_hat <- mean(y1_perm)
     m2_perm_hat <- mean(y2_perm)
@@ -223,21 +282,20 @@ F_hat <- ecdf(abs(permute_diff))
 p <- 1 - F_hat( abs(d) )
 p
 ```
-:::
 
 
 Those are purely statistical statements that only speak to how frequent differences are generated by random chance.
 They do not say why there are any differences or how large they are.
-Even on purely statistical grounds, however, we would want to be cautious about a making data-driven decisions when
+Even on purely statistical grounds, however, we would want to be cautious about making data-driven decisions when
 
 * the significance level is somewhat arbitrary (what if we reject at the $5\%$ level but not $10\%$ level?) 
 * the test statistic is somewhat arbitrary (what if we reject for means but not medians?)
 * there are multiple differences
 
-For such reasons, applied statisticians consider many statistics
+For such reasons, applied statisticians consider many statistics.
 
 #### **Quantile Differences** {-}
-The above procedure generalized from differences in means to other quantiles statistics like medians.
+The above procedure generalizes from differences in means to other quantile statistics like medians.
 To start, we plot the [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function)'s for both groups.
 
 ```{r}
@@ -286,8 +344,8 @@ boot_quant <- function(y1_hat, y2_hat, n_boot=9999, probs=0.5, ...){
 }
 
 # 2-Sided Test for Median Differences
-# d <- quantile(y2_hat, probs=0.5) - quantile(y1_hat, probs=0.5)
-boot_d <- boot_quant(y1_hat, y2_hat, n_boot=999, probs=0.5)
+# d <- quantile(y1_hat, probs=0.5) - quantile(y2_hat, probs=0.5)
+boot_d <- boot_quant(y1_hat, y2_hat, n_boot=9999, probs=0.5)
 hist(boot_d, border=NA, freq=FALSE,
     main=NA, xlab='Difference in Medians')
 title('Bootstrap Difference in Medians', font.main=1)
@@ -302,7 +360,7 @@ To see this yourself, make a simulation with skewed data and unequal variances.
 
 #### **Other Statistics**{-}
 In principle, we can also examine whether there are differences in spread (`sd` or `IQR`) or shape (`skew` or `kurtosis`).
-We use the same hypothesis testing procedure as above
+We use the same hypothesis testing procedure as above.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Here is an example to look at differences in "spread"
@@ -321,7 +379,7 @@ boot_fun <- function( fun, n_boot=9999, ...){
 }
 
 # 2-Sided Test for SD Differences
-#d <- sd(y2_hat) - sd(y1_hat)
+#d <- sd(y1_hat) - sd(y2_hat)
 boot_d <- boot_fun(sd)
 hist(boot_d, border=NA, font.main=1,
     main='Difference in Standard Deviations')
@@ -402,30 +460,30 @@ $\hat{CVM}$ is useful for accumulated small differences spread across the suppor
 ```{r}
 # Distributions
 y_values <- sort(c(y1_hat, y2_hat))
-F1_hat <- ecdf(y1_hat)(y_values)
-F2_hat <- ecdf(y2_hat)(y_values)
+F1_vals <- ecdf(y1_hat)(y_values)
+F2_vals <- ecdf(y2_hat)(y_values)
 
 # Kolmogorov-Smirnov statistic: largest vertical gap
-KS_gap <- abs(F1_hat - F2_hat)
+KS_gap <- abs(F1_vals - F2_vals)
 KSq  <- which.max(KS_gap)
 KSqv <- round(KS_gap[KSq], 2)
 
 # Cramer-von Mises statistic (p=2): summed squared gaps
-CVMqv <- round(sum((F1_hat - F2_hat)^2), 2)
+CVMqv <- round(sum((F1_vals - F2_vals)^2), 2)
 
 # Visualize Differences
-plot(range(y_values), c(0, 1), type='n', xlab='x', ylab='ECDF')
-lines(y_values, F1_hat, col=cols[1], lwd=2)
-lines(y_values, F2_hat, col=cols[2], lwd=2)
+plot(range(y_values), c(0, 1), type='n', xlab='Wages', ylab='ECDF')
+lines(y_values, F1_vals, col=cols[1], lwd=2)
+lines(y_values, F2_vals, col=cols[2], lwd=2)
 
 # KS
 title( paste0('KS: ', KSqv), adj=0, font.main=1)
-segments(y_values[KSq], F1_hat[KSq], y_values[KSq], F2_hat[KSq],
+segments(y_values[KSq], F1_vals[KSq], y_values[KSq], F2_vals[KSq],
     lwd=3, col=grey(0, .75), lty=2)
 
 # CVM
 title( paste0('CVM: ', CVMqv), adj=1, font.main=1)
-segments(y_values, F1_hat, y_values, F2_hat, lwd=.25, col=grey(0, .2))
+segments(y_values, F1_vals, y_values, F2_vals, lwd=.25, col=grey(0, .2))
 ```
 
 
@@ -466,9 +524,9 @@ A small $p$-value means the observed gap is hard to explain by chance.
 # KS and CVM statistics for any two-group split
 ks_cvm <- function(y1_hat, y2_hat){
     y_values  <- sort(c(y1_hat, y2_hat))
-    F1_hat <- ecdf(y1_hat)(y_values)
-    F2_hat <- ecdf(y2_hat)(y_values)
-    gap <- abs(F1_hat - F2_hat)
+    F1_vals <- ecdf(y1_hat)(y_values)
+    F2_vals <- ecdf(y2_hat)(y_values)
+    gap <- abs(F1_vals - F2_vals)
     c(KS=max(gap), CVM=sum(gap^2))
 }
 stat_obs <- ks_cvm(y1_hat, y2_hat)
@@ -511,7 +569,7 @@ countymurders
 2. A permutation test shuffles the group labels to build a null distribution, while a bootstrap test resamples with replacement from each group separately.
    Explain why permutation is appropriate for testing "no difference between groups" and when you might prefer the bootstrap instead.
 
-3. Using the `Wages1` data from the `Ecdat` package, compute the difference in mean wages $\hat{d} = \hat{m}_1 - \hat{m}_2$ between workers with $12$ years of schooling and workers with $16$ years of schooling.
+3. Using the `Wages1` data from the `Ecdat` package, compute the difference in mean wages $\hat{d} = \hat{m}_1 - \hat{m}_2$ between men and women (the `sex` variable).
    Then compute the Kolmogorov-Smirnov statistic $\hat{KS}$ between the two wage distributions by hand (i.e., find the maximum absolute difference between the two ECDF's evaluated at the pooled sorted data).
 
 4. Using the `mtcars` dataset, split cars into two groups based on transmission type (`am`: 0 = automatic, 1 = manual).
@@ -527,4 +585,4 @@ countymurders
 #### **Recall** {-}
 
 This chapter compared two groups in three ways: mean differences, quantile differences, and distributional comparisons via $\hat{KS}$ and $\hat{CVM}$.
-The worked example throughout used wages from the `Wages1` dataset split by schooling (12 vs 16 years), with permutation tests for $p$-values; the small worked example of summer earnings $A=\{18,20,25,30\}$ and $B=\{19,21,24,35\}$ walked through the cell-by-cell $\hat{CVM}=1/4$ calculation.
+The worked example throughout used wages from the `Wages1` dataset split by schooling (12 vs 16 years), with permutation tests for $p$-values; the small worked example of summer earnings $A=\{18,20,25,30\}$ and $B=\{19,21,24,35\}$ walked through a hand permutation of the mean difference ($\hat{d}=-1.5$, $p\approx 0.77$) and the cell-by-cell $\hat{CVM}=1/4$ calculation.

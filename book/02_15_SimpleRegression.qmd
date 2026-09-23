@@ -111,7 +111,7 @@ With the coefficients in hand, we can evaluate the regression line at the sample
 Fitted values are useful for *in-sample* diagnostics: comparing $\hat{y}_{i}^{\mathrm{fit}}$ to $\hat{y}_{i}$ shows where the model fits well and where it misses (these are the residuals $\hat{e}_{i}$ we minimized).
 
 A *prediction* $\hat{y}^{\mathrm{fit}}(x)$ uses the same line at any new design point $x$.
-Predictions $\hat{y}^{\mathrm{fit}}(x)$ are useful for *out-of-sample* questions like "what wage would the model predict for someone with 14 years of schooling?".
+Predictions $\hat{y}^{\mathrm{fit}}(x)$ are useful for *out-of-sample* questions like "what murder arrest rate would the model predict for a state with 70 percent of people in urban areas?".
 Extrapolating well beyond the range of $\hat{x}_{i}$ in the sample is risky: the model has no data there to anchor its prediction.
 
 
@@ -286,19 +286,6 @@ R^2
 
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Suppose you have data on education level and wages.
-Conduct a linear regression.
-Then summarize the model relationship and how well it fits the data. 
-```{r, eval=FALSE}
-library(Ecdat)
-xy2_hat <- Wages1[, c('school', 'wage')]
-colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
-```
-:::
-
-
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
 We use the dataset $\{(1,2), (2,2.5), (3,4)\}$ to compute Goodness of fit.
 
 From before, we know that $\hat{m}_Y = \frac{17}{6}$ and the fitted values and residuals from the regression are
@@ -379,7 +366,7 @@ $$
 = \frac{\hat{ESS}}{\hat{TSS}}
 = \frac{2}{13/6}
 = \frac{12}{13}
-\approx 0.9
+\approx 0.92
 $$
 
 (Verification)
@@ -396,12 +383,14 @@ e0_hat <- resid(reg0)
 RSS0  <- sum(e0_hat^2)
 y0_hat <- xy0_hat[, 'y_hat']
 TSS0  <- sum((y0_hat-mean(y0_hat))^2)
-R2 <- 1 - RSS0/TSS0
+R2_0 <- 1 - RSS0/TSS0
+R2_0
 
 # compare with our calculation: 12/13
+12/13
 
-# compare with our intuitive benchmark
-cor(y0_hat, predict(reg0))
+# compare with our intuitive benchmark: squared correlation of actuals and fitted values
+cor(y0_hat, predict(reg0))^2
 ```
 
 :::
@@ -458,7 +447,7 @@ abline(v=boot_ci_percentile, lty=2)
 
 
 #### **Normal Approximation with Jackknife SE** {-}
-We also the jackknife, which loops through each row of the dataset.
+We also use the jackknife, which loops through each row of the dataset.
 In each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest.
 We then calculate the standard deviation of the statistic across all subsamples to get jackknife standard errors and, assuming the data are approximately normal, use Normal quantiles to construct a CI.^[Recall that jackknife standard errors need to be rescaled because each jackknife resample is too similar to the next. For this reason, we also do not simply take the percentiles of the jackknife distribution. We can also calculate the standard deviation of the statistic across all bootstrap samples instead.]
 
@@ -472,10 +461,12 @@ for(i in seq_along(jack_coefs)){
     slope_i <- coef(reg_i)[2]
     jack_coefs[i] <- slope_i
 }
-jack_se <- sd(jack_coefs)*sqrt(nrow(xy_hat))
+n_jack <- length(jack_coefs)
+jack_se <- sqrt((n_jack - 1)/n_jack * sum((jack_coefs - mean(jack_coefs))^2))
 
 # Plot Estimated Sampling Distribution
-x <- seq(-.2, +.25, by=.001)
+# Grid spans four jackknife SEs on either side of the estimate
+x <- seq(slope - 4*jack_se, slope + 4*jack_se, length.out=500)
 fx <- dnorm(x, mean(jack_coefs), jack_se)
 plot(x, fx, type='l', bty='n')
 title('Normal Approx. with 95% CIs', font.main=1)
@@ -490,6 +481,69 @@ legend('topright', lty=c(2,3), bty='n', cex=.75,
     title='Confidence Interval',
     legend=c('Bootstrap Percentile', 'Normal Approx.'))
 ```
+
+#### **Checking with a Known Population** {-}
+
+With real data, we never see the population slope, so we cannot check whether our intervals work.
+As in [Sampling](01_05_Sampling.qmd#wages-as-a-population), pretend the $3294$ workers in `Wages1` are the whole population, so we know the population slope of wages on schooling.
+We then draw many samples of $n=100$ workers, fit a regression on each, and see how the sample slopes scatter around the population slope.
+
+```{r}
+# Pretend these 3294 workers are the whole population
+data(Wages1, package='Ecdat')
+population_xy <- Wages1[, c('school', 'wage')]
+colnames(population_xy) <- c('x', 'y') # x=years of schooling, y=hourly wage
+population_slope <- coef(lm(y ~ x, data=population_xy))[2]
+population_slope
+
+# Draw many samples and fit a regression on each
+n <- 100
+slopes_sim <- rep(NA, 300)
+for(s in seq_along(slopes_sim)){
+    s_id <- sample(nrow(population_xy), n, replace=FALSE)
+    xy_sim <- population_xy[s_id, ]
+    colnames(xy_sim) <- c('x_hat', 'y_hat')
+    reg_s <- lm(y_hat ~ x_hat, data=xy_sim)
+    slopes_sim[s] <- coef(reg_s)[2]
+}
+
+# Sampling distribution of the slope
+hist(slopes_sim, breaks=25,
+    main=NA, border=NA, freq=FALSE,
+    xlab=expression(hat(b)[1]))
+title('Sample Slopes from the Known Population', font.main=1)
+abline(v=population_slope, col=rgb(1, 0, 0, .8), lwd=2)
+```
+
+The sample slopes center on the population slope, but any one sample can miss it by a fair amount.
+A $95\%$ confidence interval should contain the population slope in about $95\%$ of samples.
+We check that for the jackknife Normal interval from above.
+Inside the jackknife loop, we compute each slope as $\hat{c}_{XY}/\hat{v}_{X}$, which gives the same number as `lm` but runs faster.
+
+```{r}
+# Jackknife Normal CI for each sample, and whether it covers the population slope
+covered <- rep(NA, 300)
+for(s in seq_along(covered)){
+    s_id <- sample(nrow(population_xy), n, replace=FALSE)
+    x_sim <- population_xy[s_id, 'x']
+    y_sim <- population_xy[s_id, 'y']
+    slope_s <- cov(x_sim, y_sim)/var(x_sim)
+    # Jackknife SE
+    jack_coefs_s <- rep(NA, n)
+    for(i in seq_along(jack_coefs_s)){
+        jack_coefs_s[i] <- cov(x_sim[-i], y_sim[-i])/var(x_sim[-i])
+    }
+    jack_se_s <- sqrt((n - 1)/n * sum((jack_coefs_s - mean(jack_coefs_s))^2))
+    ci_s <- qnorm(c(.025, .975), slope_s, jack_se_s)
+    covered[s] <- population_slope >= ci_s[1] & population_slope <= ci_s[2]
+}
+
+# Percent of intervals that contain the population slope
+mean(covered)*100
+```
+
+The percent printed above is typically in the low to mid $90$s.
+Wages are right-skewed, so with $n=100$ the Normal approximation is not exact, and coverage can fall a little short of $95\%$.
 
 ## Hypothesis Tests
 
@@ -521,7 +575,8 @@ for(b in seq_along(boot_t)){
 		slope_b_i <- coef(reg_b_i)[2]
 		jack_coefs_b[i] <- slope_b_i
 	}
-	jack_se_b <- sd(jack_coefs_b)*sqrt(nrow(xy_boot))
+	n_b <- length(jack_coefs_b)
+	jack_se_b <- sqrt((n_b - 1)/n_b * sum((jack_coefs_b - mean(jack_coefs_b))^2))
 	# Redo t with Jackknife SE
     t_hat_b <- slope_b/jack_se_b
 	boot_t[b] <- t_hat_b
@@ -536,18 +591,6 @@ abline(v=quantile(boot_t, probs=c(.025, .975)), lty=2)
 abline(v=0, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-Suppose you have data on education level and wages.
-Conduct a linear regression.
-Then construct a $95\%$ confidence interval for the slope coefficient and test the hypothesis of no relationship.
-```{r, eval=FALSE}
-library(Ecdat)
-xy2_hat <- Wages1[, c('school', 'wage')]
-colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
-```
-:::
-
 #### **Impose the Null**{-}
 We can also compute a null distribution.
 We focus on the simplest: simulations that each impose the null hypothesis and re-estimate the statistic of interest.
@@ -561,7 +604,6 @@ for(b in seq_along(null_t)){
 	# Permuted data
     xy_perm <- xy_hat
     xy_perm[, 'y_hat'] <- sample( xy_perm[, 'y_hat'], replace=FALSE) #Bootstrap: replace=T
-    reg_b <- lm(y_hat ~ x_hat, data=xy_perm)
     # Redo regression
     reg_b <- lm(y_hat ~ x_hat, data=xy_perm)
     slope_b <- coef(reg_b)[2]
@@ -573,8 +615,10 @@ for(b in seq_along(null_t)){
 		slope_b_i <- coef(reg_b_i)[2]
 		jack_coefs_b[i] <- slope_b_i
 	}
+	n_b <- length(jack_coefs_b)
+	jack_se_b <- sqrt((n_b - 1)/n_b * sum((jack_coefs_b - mean(jack_coefs_b))^2))
 	# Redo t with Jackknife SE
-    t_hat_b <- slope_b/ (sd(jack_coefs_b)*sqrt(nrow(xy_perm)))
+    t_hat_b <- slope_b/jack_se_b
 	null_t[b] <- t_hat_b
 }
 
@@ -624,15 +668,46 @@ if(Phat2 < 0.05){
 ```
 :::
 
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-Suppose you have data on grades completed and wages.
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Suppose you have data on years of schooling and hourly wages for all $3294$ workers in `Wages1`.
 Conduct a linear regression.
-Then compute a $p$-value for the null hypothesis of no relationship between education level and wages.
-```{r, eval=FALSE}
-library(Ecdat)
+Summarize the model relationship and how well it fits the data.
+Then construct a $95\%$ bootstrap confidence interval for the slope coefficient.
+Finally, compute a permutation $p$-value for the null hypothesis of no relationship between schooling and wages.
+```{r}
+data(Wages1, package='Ecdat')
 xy2_hat <- Wages1[, c('school', 'wage')]
 colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
+
+# Regression and goodness of fit
+reg2 <- lm(y_hat ~ x_hat, data=xy2_hat)
+coef(reg2)
+summary(reg2)$r.squared
+
+# Bootstrap percentile CI for the slope
+slope2 <- coef(reg2)[2]
+boot_coefs2 <- rep(NA, 399)
+for(b in seq_along(boot_coefs2)){
+    b_id <- sample(nrow(xy2_hat), replace=TRUE)
+    reg2_b <- lm(y_hat ~ x_hat, data=xy2_hat[b_id, ])
+    boot_coefs2[b] <- coef(reg2_b)[2]
+}
+quantile(boot_coefs2, probs=c(.025, .975))
+
+# Permutation p-value, using the slope as the statistic
+null_coefs2 <- rep(NA, 399)
+for(b in seq_along(null_coefs2)){
+    xy2_perm <- xy2_hat
+    xy2_perm[, 'y_hat'] <- sample(xy2_perm[, 'y_hat'], replace=FALSE)
+    reg2_b <- lm(y_hat ~ x_hat, data=xy2_perm)
+    null_coefs2[b] <- coef(reg2_b)[2]
+}
+F2_hat <- ecdf(abs(null_coefs2))
+1-F2_hat(abs(slope2))
 ```
+Each extra year of schooling goes with a higher hourly wage, on average.
+The $\hat{R}^{2}$ is small, so schooling alone leaves most of the variation in wages unexplained.
+The bootstrap interval is far from zero, and no permuted slope comes close to the observed one, so the $p$-value is essentially zero.
 :::
 
 
@@ -643,6 +718,7 @@ However, just like confidence intervals, those hard decision rules can be sensit
 
 "No association" is the most common null hypothesis in practice, but we can also use bootstrapping to test against other specific hypothesis: $\beta_1$, the population slope.
 To impose the null in this case, you recenter the sampling distribution around the hypothetical value; $\hat{t} = \frac{\hat{b}_1 - \beta_1}{\widehat{SE}(B_1)}$.^[Under some additional assumptions, the null distribution follows a $t$-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)]
+In the known-population check above, the population slope is `population_slope`, which we could compute only because we pretended `Wages1` was the whole population.
 
 Although two-sided hypothesis tests are most common, you can also test one-sided hypotheses.
 
@@ -671,7 +747,7 @@ for(i in 1:4){
     title(paste0('Slope=', b, ', p=', p), font.main=1)
 }
 
-## For an even better example, see `Datasaurus Dozen'F
+## For an even better example, see `Datasaurus Dozen'
 #browseURL(
 #'https://bookdown.org/paul/applied-data-visualization/
 #why-look-the-datasaurus-dozen.html')
