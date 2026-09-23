@@ -84,23 +84,49 @@ choose(20, 3)
 
 
 Often, we think of the population as being infinitely large.
-This is an approximation that makes mathematical and computational work much simpler. 
-```{r}
-#All possible samples of two from a bag of numbers {1, 2, 3, 4} with replacement 
-#{1, 1} {1, 2} {1, 3}, {3, 4}
-#{2, 2} {2, 3} {2, 4}
-#{3, 3} {3, 4}
-#{4, 4}
-
-# Simple random sample (duplicates, equal probability)
-sample(population_values, 2, replace=TRUE)
-```
+This is an approximation that makes mathematical and computational work much simpler.
 
 Intuition for infinite populations: imagine drawing names from a giant urn.
 If the urn has only $10$ names, then removing one name slightly changes the composition of the urn, and the probabilities shift for the next name you draw.
 Now imagine the urn has $100$ billion names, so that removing one makes no noticeable difference.
 We can pretend the composition never changes: each draw is essentially identical and independent (iid).
 We can actually guarantee the names are iid by putting any names drawn back into the urn (sampling with replacement).
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Sampling with replacement from the small population $\{1, 2, 3, 4\}$ allows duplicates, so every draw has the same four possible values.
+```{r}
+#All possible samples of two from a bag of numbers {1, 2, 3, 4} with replacement
+#{1, 1} {1, 2} {1, 3}, {3, 4}
+#{2, 2} {2, 3} {2, 4}
+#{3, 3} {3, 4}
+#{4, 4}
+
+# Simple random sample (duplicates, equal probability)
+population_values <- c(1, 2, 3, 4) # population
+sample(population_values, 2, replace=TRUE)
+```
+:::
+
+#### **Wages as a Population** {-}
+
+In practice, we never see the whole population, so we cannot check how close a sample statistic is to the truth.
+To make such checks possible, this chapter pretends that the $3294$ workers in the `Wages1` dataset are the entire population.
+They are really a sample themselves, but pretending lets us compute the true population mean and compare it with what one sample of workers tells us.
+The data come from the `Ecdat` package, which you need to install once.
+```{r}
+# install.packages('Ecdat') # only once
+data(Wages1, package='Ecdat')
+
+# Pretend these 3294 hourly wages are the whole population
+population_wages <- Wages1[, 'wage']
+population_wage_mean <- mean(population_wages)
+population_wage_mean
+
+# One simple random sample of 50 workers
+x_sim <- sample(population_wages, 50, replace=FALSE)
+mean(x_sim)
+```
+Each time you run the last two lines, you get a different sample of workers and a different sample mean.
 
 
 
@@ -123,7 +149,7 @@ population_values <- c(18, 20, 22, 24) # Ages for student population
 # six possible samples
 m1_hat <- mean( population_values[c(1, 2)] ) #{1, 2}
 m2_hat <- mean( population_values[c(1, 3)] ) #{1, 3}
-m3_hat <- mean( population_values[c(1, 4)] ) #{3, 4}
+m3_hat <- mean( population_values[c(1, 4)] ) #{1, 4}
 m4_hat <- mean( population_values[c(2, 3)] ) #{2, 3}
 m5_hat <- mean( population_values[c(2, 4)] ) #{2, 4}
 m6_hat <- mean( population_values[c(3, 4)] ) #{3, 4}
@@ -133,12 +159,25 @@ hist(sample_means,
     freq=FALSE, breaks=100,
     main=NA, border=NA)
 ```
+:::
 
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Now compute the sampling distribution for the median with samples of $n=3$.
+There are four possible samples, $\{18,20,22\}$, $\{18,20,24\}$, $\{18,22,24\}$, and $\{20,22,24\}$, with medians $20$, $20$, $22$, and $22$.
+```{r}
+population_values <- c(18, 20, 22, 24) # Ages for student population
+# four possible samples
+med1_hat <- median( population_values[c(1, 2, 3)] )
+med2_hat <- median( population_values[c(1, 2, 4)] )
+med3_hat <- median( population_values[c(1, 3, 4)] )
+med4_hat <- median( population_values[c(2, 3, 4)] )
+sample_medians <- c(med1_hat, med2_hat, med3_hat, med4_hat)
+sample_medians
+```
 :::
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-To consider an infinite population, expand the loop below to consider 3000 samples and then make a histogram.
+To consider an infinite population, draw from a uniform distribution instead of a list of values.
 ```{r}
 # Three Sample Example from infinite population
 x1_sim <- runif(100)
@@ -160,8 +199,8 @@ for(i in seq(sample_means)){
 sample_means
 ```
 For more on loops, see [Loops](00_01_FirstSteps.qmd#loops).
-:::
 
+Each sample has its own histogram and its own mean.
 ```{r}
 # Three Sample Example w/ Visual
 par(mfrow=c(1, 3))
@@ -176,7 +215,7 @@ for(b in 1:3){
 }
 ```
 
-Examine the sampling distribution of the mean
+Expanding the loop to many samples gives the sampling distribution of the mean.
 ```{r}
 # Many sample example
 sample_means <- rep(NA, 500)
@@ -193,6 +232,44 @@ hist(sample_means,
     main=NA)
 title('Sampling Distribution of the mean', font.main=1)
 ```
+:::
+
+Now draw three samples of $50$ workers from the wage population.
+Each sample mean (red) lands near, but not on, the population mean (black).
+```{r}
+# Three samples of workers, each with its own mean
+par(mfrow=c(1, 3))
+for(b in 1:3){
+    x_sim <- sample(population_wages, 50, replace=FALSE)
+    m_hat <- mean(x_sim)
+    hist(x_sim,
+        breaks=seq(0, 40, by=2), #for comparability
+        freq=FALSE, main=NA, border=NA,
+        xlab='hourly wage')
+    abline(v=m_hat, col=rgb(1, 0, 0, .8), lwd=2)
+    abline(v=population_wage_mean)
+    title(paste0('mean= ', round(m_hat, 2)), font.main=1)
+}
+```
+
+Repeating this for many samples of workers gives the sampling distribution of the mean wage.
+```{r}
+# Many samples of workers
+wage_means <- rep(NA, 500)
+for(i in seq_along(wage_means)){
+    x_sim <- sample(population_wages, 50, replace=FALSE)
+    m_hat <- mean(x_sim)
+    wage_means[i] <- m_hat
+}
+hist(wage_means,
+    breaks=30,
+    border=NA, freq=FALSE,
+    col=rgb(1, 0, 0, .5),
+    xlab=expression(hat(m)),
+    main=NA)
+abline(v=population_wage_mean)
+title('Sampling Distribution of the mean wage', font.main=1)
+```
 
 In this figure, you see one of the most profound results known in statistics: the sampling distribution of the mean is approximately Normal around the true mean.
 
@@ -206,7 +283,14 @@ The CLT is useful because it lets us treat sample means as approximately Normal 
 There are different variants of the theorem, but all say some version of "the sampling distribution of the mean is approximately Normal"; the histogram shown above is one such example.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
+The means of uniform samples are approximately Normal.
 ```{r}
+sample_means <- rep(NA, 500)
+for(i in seq_along(sample_means)){
+    x_sim <- runif(1000)
+    m_hat <- mean(x_sim)
+    sample_means[i] <- m_hat
+}
 hist(sample_means,
     breaks=seq(0.45, 0.55, by=.001),
     border=NA, freq=FALSE,
@@ -224,6 +308,34 @@ lines(x, fx, col=rgb(1, 0, 0, .8))
 ```
 :::
 
+The wage population is a harder case, because wages are strongly skewed: most workers earn a moderate wage and a few earn much more.
+The means of samples of $50$ workers are not skewed in the same way.
+```{r}
+par(mfrow=c(1, 2))
+
+# Population: skewed
+hist(population_wages,
+    breaks=seq(0, 40, by=1),
+    border=NA, freq=FALSE,
+    xlab='hourly wage',
+    main=NA)
+abline(v=population_wage_mean)
+title('Population', font.main=1)
+
+# Sampling distribution: approximately Normal?
+hist(wage_means,
+    breaks=30,
+    border=NA, freq=FALSE,
+    col=rgb(1, 0, 0, .5),
+    xlab=expression(hat(m)),
+    main=NA)
+m_sampling_hat <- mean(wage_means)
+s_sampling_hat <- sd(wage_means)
+x <- seq(min(wage_means), max(wage_means), length.out=200)
+fx <- dnorm(x, m_sampling_hat, s_sampling_hat)
+lines(x, fx, col=rgb(1, 0, 0, .8))
+title('Sample means, n=50', font.main=1)
+```
 
 Many statistics have an approximately Normal sampling distribution.
 
@@ -287,9 +399,16 @@ hist(x_maxs, breaks=100, main=NA,
 title('Max', font.main=1)
 title('Sampling Distributions', outer=TRUE, line=-1, adj=0, font.main=1)
 ```
-Explore another function, such as
-` my_function <- function(x){ diff(range(x)) } `
+:::
 
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Explore the sampling distribution of another statistic, such as the range.
+```{r}
+my_function <- function(x){ diff(range(x)) }
+x_ranges <- apply(X_samples, 1, my_function)
+hist(x_ranges, breaks=100, main=NA,
+    xlab='Sample Range', border=NA, freq=FALSE)
+```
 :::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -325,8 +444,14 @@ There are different variants of the theorem (weak vs. strong, with vs. without f
 
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
+Uniform draws on $[0,1]$ have a population mean of $0.5$.
 Notice where the sampling distribution is centered
 ```{r}
+sample_means <- rep(NA, 500)
+for(i in seq_along(sample_means)){
+    x_sim <- runif(1000)
+    sample_means[i] <- mean(x_sim)
+}
 m_sampling_hat <- mean(sample_means)
 round(m_sampling_hat, 3)
 ```
@@ -351,6 +476,31 @@ for(n in c(5, 50, 500)){
 ```
 :::
 
+In the wage population, the sample means are centered on the population mean
+```{r}
+round(mean(wage_means), 3) # center of the sampling distribution
+round(population_wage_mean, 3) # population mean
+```
+and are more tightly centered with larger samples of workers.
+```{r}
+par(mfrow=c(1, 3))
+for(n in c(5, 50, 500)){
+    wage_means_n <- rep(NA, 299)
+    for(i in seq_along(wage_means_n)){
+        x_sim <- sample(population_wages, n, replace=FALSE)
+        m_hat <- mean(x_sim)
+        wage_means_n[i] <- m_hat
+    }
+    hist(wage_means_n,
+        breaks=seq(0, 20, by=.25),
+        border=NA, freq=FALSE,
+        col=rgb(1, 0, 0, .5),
+        xlab=expression(hat(m)),
+        main=NA)
+    abline(v=population_wage_mean)
+    title(paste0('n=', n), font.main=1)
+}
+```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Plot the variability of the sample mean as a function of sample size
@@ -476,11 +626,27 @@ for (n in c(50, 500, 5000)) {
 ```
 :::
 
+In the wage population, the ECDF of a sample of workers (red) gets closer to the population CDF (black) as the sample grows.
+```{r}
+F_population <- ecdf(population_wages)
+par(mfrow=c(1, 3))
+for(n in c(5, 50, 500)){
+    x_sim <- sample(population_wages, n, replace=FALSE)
+    F_hat <- ecdf(x_sim)
+    plot(F_population, do.points=FALSE,
+        xlim=c(0, 20), xlab='hourly wage', main=NA)
+    plot(F_hat, do.points=FALSE, add=TRUE, col=rgb(1, 0, 0, .8))
+    title(paste0('n=', n), font.main=1)
+}
+```
+
 
 ## Resampling Distributions 
 
-Often, we only have one sample.
-How then can we estimate the sampling distribution of a statistic? 
+With the wage population, we could draw as many samples as we liked.
+Often, we only have one sample, and no population to draw more samples from.
+The lab data on murder arrests are one such sample.
+How then can we estimate the sampling distribution of a statistic?
 ```{r}
 x_hat <- USArrests[, 'Murder'] # lab data: murder arrests per 100,000
 m_hat <- mean(x_hat)
@@ -792,6 +958,30 @@ sd(boot_means) # standard error estimate for the mean
 We modify the `sd` calculation with a correction, $\sqrt{n}$, because leave-one-out estimates barely move (only one point changes out of $n$).
 Their spread is therefore of order $1/n$ smaller than the real sampling spread, and the correction puts us back on the right scale.
 :::
+
+The wage population lets us check whether the bootstrap works.
+Take one sample of $50$ workers, and pretend it is all we observed.
+Its bootstrap standard error can then be compared with the true standard error: the standard deviation of the $500$ sample means `wage_means` drawn from the population in [Sampling Distributions](#sampling-distributions).
+```{r}
+# One sample of 50 workers, as if it were all we observed
+x_sim <- sample(population_wages, 50, replace=FALSE)
+
+# Bootstrap standard error, from that one sample
+boot_means_wage <- rep(NA, 9999)
+for(b in seq_along(boot_means_wage)){
+    x_boot <- sample(x_sim, replace=TRUE)
+    m_b_hat <- mean(x_boot)
+    boot_means_wage[b] <- m_b_hat
+}
+round(sd(boot_means_wage), 3)
+
+# True standard error, from many samples of the population
+round(sd(wage_means), 3)
+```
+The bootstrap used only one sample, so its answer is itself noisy.
+It lands in the same range as the true standard error, but not exactly on it.
+With skewed data like wages, one sample may include a few very high earners or none at all, which moves the bootstrap estimate.
+Run the chunk again to see how much the bootstrap estimate itself changes from one sample to the next.
 
 
 Also note that each additional data point you have provides more information, which ultimately decreases the standard error of your estimates.
