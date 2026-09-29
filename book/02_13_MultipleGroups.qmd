@@ -2,37 +2,12 @@
 ***
 
 [Comparing Two Groups](02_12_TwoGroups.qmd) split a cardinal outcome by a two-level factor and tested whether the two groups differed.
-This chapter extends that idea to $G$ groups: how to describe several groups at once, and then two ways to test whether they differ, one built on means and one built on ranks.
+This chapter extends that idea to $G$ groups: how to describe several groups at once, how to compare their medians with bootstrap intervals, and then three ways to test whether they differ, one built on means, one built on ranks, and one built on category proportions.
 
 ## Describing Groups
 
-#### **Factor Variables** {-}
-
-So far the variables were all cardinal, where $4-3=2-1$; many useful variables are instead labels of group membership that do not do arithmetic this way.
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
-A *factor variable* labels which group each observation belongs to.
-Its possible values are called *levels*.
-:::
-
-Factor variables are useful for splitting a dataset into groups that can be compared: regions, industries, treatment arms.
-They come in two flavors:
-
-* *Ordered*: refers to *ordinal* data.
-  The difference between units means something, but not always the same thing.
-  For example, $4th - 3rd \neq 2nd - 1st$.
-* *Unordered*: refers to *categorical* data.
-  The difference between units is meaningless.
-  For example, $D-C=?$
-
-One common case is if you have observations of individuals over time periods, then you may have two factor variables: an unordered factor that indicates who an individual is, and an ordered factor that indicates the time period.
-There are many other cases you see factor variables, including spatial ID's in purely cross sectional data.
-
-Be careful not to handle categorical data as if they were cardinal.
-E.g., generate city data with Leipzig=1, Lausanne=2, LosAngeles=3, ... and then include city as if it were a cardinal number (that's a big no-no).
-The same applies to ordinal data; PopulationLeipzig=2, PopulationLausanne=3, PopulationLosAngeles=1.
-
-The built-in `state.region` vector labels the US Census region of each state, in the same order as the rows of `USArrests`, so it can be paired directly with the murder rates.
+The [census regions](01_03_SummaryStatistics.qmd#unordered-factors) are an unordered factor with $G=4$ levels.
+The built-in `state.region` vector lists them in the same state order as the rows of `USArrests`, so it can be paired directly with the murder rates.
 
 ```{r}
 # Outcome: murder arrests per 100K, one value per state
@@ -47,26 +22,16 @@ table(region)
 #### **Group Summaries** {-}
 
 A factor with $G$ levels splits a cardinal variable into $G$ conditional distributions, one per group.
-The group summaries from [Bivariate Distributions](02_11_BivariateDistributions.qmd#conditional-distributions) apply directly, and with more than two or three groups, side-by-side boxplots are usually the clearest figure, ordered here by median murder rate from lowest to highest.
+The group summaries from [Bivariate Distributions](02_11_BivariateDistributions.qmd#conditional-distributions) apply directly.
+The [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function) shows every observation, and drawing one per group on the same axes compares the whole distributions at once: a curve further to the right has higher values at every quantile.
+The regions are ordered by median murder rate from lowest to highest, so South is last in the legend, and each line's thickness scales with its group size.
 
-```{r}
+```{r, fig.height=5.2}
 # Order regions by their median murder rate, lowest to highest
 region_order <- names(sort(tapply(y_hat, region, median)))
 region <- factor(region, levels=region_order)
 
-# Visual summary: one boxplot per region, box width scaled to group size
-boxplot(y_hat ~ region,
-    col=hcl.colors(4, alpha=.45), varwidth=TRUE,
-    ylab='Murder arrests (per 100,000)', xlab='Region', main=NA)
-title('Murder rates by region', font.main=1)
-```
-
-A boxplot shows five numbers per group; `varwidth=TRUE` also scales each box's width to $\sqrt{n_g}$, so a region with more states draws a wider box.
-The [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function) shows every observation, and drawing one per group on the same axes compares the whole distributions at once: a curve further to the right has higher values at every quantile.
-The same low-to-high order carries over, so South is last in the legend, and each line's thickness scales with its group size the same way the boxes do.
-
-```{r, fig.height=5.2}
-# One ECDF per region, on the same axes (region is already ordered by median)
+# One ECDF per region, on the same axes
 line_cols <- hcl.colors(4)
 n_g <- table(region)
 lwd_g <- 1.5 + 2.5 * (n_g - min(n_g)) / (max(n_g) - min(n_g))
@@ -83,7 +48,7 @@ legend('topleft', inset=c(0, -.2), xpd=TRUE, ncol=2, bty='n',
     legend=paste0(levels(region), ' (n=', n_g, ')'), col=line_cols, lty=1, lwd=lwd_g)
 ```
 
-The South's curve sits to the right of the others over its whole range, so its higher center in the boxplot is not driven by a few states.
+The South's curve sits to the right of the others over its whole range, so its higher values are not driven by a few states.
 
 A table of group sizes and centers puts numbers on the figure.
 The *conditional mean* $\hat{m}_{Y}(g)$ is the average of $\hat{y}_{i}$ among the $n_g$ observations in group $g$, and `aggregate()` computes it for every group at once.
@@ -99,6 +64,56 @@ aggregate(y_hat ~ region, FUN=summary_fun)
 
 The South has the highest center and the Northeast the lowest.
 Whether such differences are larger than chance alone would produce is the question the rest of this chapter takes up.
+
+## Equal Medians
+
+In [Comparing Two Groups](02_12_TwoGroups.qmd#quantile-differences), we bootstrapped a confidence interval for the difference between two medians; with $G$ groups, we can instead bootstrap one interval per group and compare them all on one figure.
+
+A *notched boxplot* cuts a notch into the side of each group's box, showing a confidence interval for that group's median.
+These are useful for comparing medians across many groups at a glance: if two notches do not overlap, that is strong evidence the two medians differ.
+Overlapping notches do not show that the medians are equal, because comparing two separate $95\%$ intervals is stricter than a $95\%$ test of their difference.
+Here we use a bootstrap percentile interval for the median in each region, which needs no such formula.^[
+R's built-in `notch=TRUE` draws $\pm 1.58 \hat{IQR}/\sqrt{n_g}$ around each median, a rule of thumb from normal theory (see `?boxplot.stats`).]
+
+
+```{r, warning=FALSE}
+# Bootstrap the median within each region, keeping each region's size
+n_boot <- 999
+boot_medians <- matrix(NA, n_boot, nlevels(region))
+colnames(boot_medians) <- levels(region)
+for (b in seq(n_boot)) {
+    for (g in levels(region)) {
+        y_boot <- sample(y_hat[region == g], replace=TRUE)
+        boot_medians[b, g] <- median(y_boot)
+    }
+}
+
+# 95% bootstrap percentile intervals: one column per region
+med_ci <- apply(boot_medians, 2, quantile, probs=c(.025, .975))
+round(med_ci, 2)
+
+# Boxplot statistics, with the bootstrap intervals as the notches
+bx <- boxplot(y_hat ~ region, plot=FALSE)
+bx[['conf']] <- med_ci
+
+# One notched box per region, box width scaled to group size
+bxp(bx, notch=TRUE, varwidth=TRUE,
+    boxfill=hcl.colors(4, alpha=.45),
+    whisklty=0, staplelty=0,
+    ylab='Murder arrests (per 100,000)', xlab='Region', main=NA)
+title('Murder rates by region', font.main=1)
+# Raw Observations, in place of whiskers and outliers
+stripchart(y_hat ~ region,
+    pch='-', col=grey(0, .5), cex=2,
+    vert=TRUE, add=TRUE)
+```
+
+Each box shows the median and the two quartiles, and each dash is one state's murder rate.
+`varwidth=TRUE` also scales each box's width to $\sqrt{n_g}$, so a region with more states draws a wider box.
+With only $9$ to $16$ states per region, each median's interval is nearly as wide as the box itself.
+When an interval reaches past a quartile, the notch folds back outside the box.
+The South's notch lies above the Northeast's, so the South's median is higher.
+Which other pairs of regions have notches that do not overlap?
 
 ## Equal Means (ANOVA)
 
@@ -334,7 +349,7 @@ Here, `pairwise.wilcox.test()` runs a Mann-Whitney test on each pair of regions,
 pairwise.wilcox.test(y_hat, region, p.adjust.method='holm')
 ```
 
-Looking back at the boxplot in [Describing Groups](#describing-groups), which region stands out?
+Looking back at the boxplot in [Equal Medians](#equal-medians), which region stands out?
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Worked example: $G=3$ groups with values $A=\{1,2,3\}$, $B=\{4,5,6\}$, $C=\{7,8,9\}$.
@@ -363,6 +378,144 @@ wilcox.test(a0_hat, b0_hat)
 ```
 :::
 
+#### **Categorical ANOVA** {-}
+
+When the outcome is a factor, we can still ask whether the groups spread their observations across the categories in the same proportions.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+Let $\hat{p}(y)$ be the proportion of all $n$ observations in category $y$, and $\hat{p}(y \mid g)$ the proportion of the $n_g$ observations in group $g$.
+The *categorical ANOVA* measures variation with one minus the [Herfindahl index](01_03_SummaryStatistics.qmd#unordered-factors), and splits it into between-group and within-group pieces:
+$$\begin{aligned}
+\underbrace{\frac{n}{2}\left(1-\hat{H}\right)}_{\hat{TSS}}
+&=
+\underbrace{\frac{1}{2}\sum_{g=1}^{G} n_g \sum_{y}\left(\hat{p}(y \mid g)-\hat{p}(y)\right)^2}_{\hat{BSS}}
+\;+\;
+\underbrace{\sum_{g=1}^{G} \frac{n_g}{2}\left(1-\hat{H}(g)\right)}_{\hat{WSS}},
+\end{aligned}$$
+where $\hat{H}=\sum_{y}\hat{p}(y)^2$ is the Herfindahl index of the pooled data and $\hat{H}(g)=\sum_{y}\hat{p}(y \mid g)^2$ is the Herfindahl index within group $g$.
+:::
+
+The categorical ANOVA is useful when the outcome is an unordered factor, such as occupation, brand, or vote choice, where there are no means to compare and no ranks to sort.
+Recall that $1-\hat{H}$ is zero when every observation falls in one category and grows as the categories become equally common, so it plays the role of the variance.
+The pieces are also ordinary ANOVA sums of squares.
+Make one 0/1 indicator for each category and compute its $\hat{TSS}$, $\hat{BSS}$, and $\hat{WSS}$ as in the [decomposition](#decomposition) above.
+Adding each piece up across the categories and halving it gives the three pieces here.
+With a binary outcome, the two indicators have the same sums of squares, so the categorical ANOVA is exactly the ANOVA of a single 0/1 variable.
+The share $\hat{BSS}/\hat{TSS}$ reports the fraction of the variation in $Y$ that lies between groups.^[See Light, R. J., and B. H. Margolin (1971), "An Analysis of Variance for Categorical Data," *Journal of the American Statistical Association*, 66(335), 534--544, <https://doi.org/10.1080/01621459.1971.10482297>.]
+
+For example, the urban population bands from [Ordered Factors](01_03_SummaryStatistics.qmd#ordered-factors) sort each region's states into mostly rural, mixed, and mostly urban.
+The bands are ordered, but the categorical ANOVA ignores that order, so it treats them as it would any unordered factor.
+
+```{r, fig.height=5.2}
+# Outcome: urban population in three bands, an ordered factor
+urban_band <- cut(USArrests[, 'UrbanPop'], breaks=c(0, 50, 75, 100),
+    labels=c('mostly rural', 'mixed', 'mostly urban'), ordered_result=TRUE)
+tab <- table(region, urban_band)
+tab
+
+# Proportions within each region: each bar sums to 1
+p_band_region <- prop.table(tab, 1)
+cols <- hcl.colors(3, alpha=.45)
+par(mar=c(4, 4, 3.5, 1))
+barplot(t(p_band_region), col=cols, border=NA,
+    xlab='Region', ylab='Proportion of states', main=NA)
+legend('top', inset=c(0, -.15), xpd=TRUE, ncol=3, bty='n',
+    fill=cols, border=NA, legend=levels(urban_band))
+```
+
+The South and North Central lean rural, while the Northeast and West lean urban.
+The function below computes the three pieces and the between-group share.
+
+```{r}
+# Categorical ANOVA: variation is measured by one minus the Herfindahl index
+cat_anova <- function(y_hat, g) {
+    # Total variation, from the pooled proportions
+    n <- length(y_hat)
+    p_hat <- table(y_hat) / n
+    TSS <- n / 2 * (1 - sum(p_hat^2))
+    # Within-group variation, from each group's own proportions
+    WSS_g <- tapply(y_hat, g, function(y_g) {
+        p_g_hat <- table(y_g) / length(y_g)
+        return(length(y_g) / 2 * (1 - sum(p_g_hat^2)))
+    })
+    WSS <- sum(WSS_g)
+    # Between-group variation, from the decomposition
+    BSS <- TSS - WSS
+    return(c(BSS=BSS, WSS=WSS, TSS=TSS, share=BSS / TSS))
+}
+cat_anova(urban_band, region)
+```
+
+About $11\%$ of the variation in urban bands lies between regions.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Suppose we record how $n=8$ workers commute, $n_g=4$ from each of two neighborhoods.
+Neighborhood $A$ has car, car, car, bus, and neighborhood $B$ has car, bus, bike, bike.
+
+Pooled, the proportions are $\hat{p}(\text{car})=4/8$, $\hat{p}(\text{bus})=2/8$, and $\hat{p}(\text{bike})=2/8$, so $\hat{H}=1/4+1/16+1/16=3/8$ and $\hat{TSS}=\frac{8}{2}(1-3/8)=5/2$.
+Within $A$, $\hat{H}(A)=(3/4)^2+(1/4)^2=5/8$, and within $B$, $\hat{H}(B)=(1/4)^2+(1/4)^2+(2/4)^2=3/8$.
+So $\hat{WSS}=\frac{4}{2}(1-5/8)+\frac{4}{2}(1-3/8)=3/4+5/4=2$.
+For $\hat{BSS}$, each neighborhood's proportions differ from the pooled ones by $1/4$ in two categories and by $0$ in the third, so $\hat{BSS}=\frac{1}{2}[4(1/16+0+1/16)+4(1/16+0+1/16)]=1/2$.
+The pieces add up, $5/2=1/2+2$, and the between-group share is $\hat{BSS}/\hat{TSS}=1/5$.
+```{r}
+# Commute mode of 8 workers, 4 from each neighborhood
+y0_hat <- factor(c('car', 'car', 'car', 'bus', 'car', 'bus', 'bike', 'bike'))
+g0 <- factor(c('A', 'A', 'A', 'A', 'B', 'B', 'B', 'B'))
+table(g0, y0_hat)
+cat_anova(y0_hat, g0)
+```
+:::
+
+To compute a $p$-value, we use a [permutation test](02_12_TwoGroups.qmd#permutation-tests): shuffle the region labels, which keeps each region's number of states fixed, and recompute the share each time.
+
+```{r}
+# Observed between-group share
+share_obs <- cat_anova(urban_band, region)[['share']]
+
+# Null distribution: shuffle region labels to break the outcome--group pairing
+share_perm <- rep(NA, 999)
+for (b in seq_along(share_perm)) {
+    g_perm <- sample(region, replace=FALSE)
+    share_perm[b] <- cat_anova(urban_band, g_perm)[['share']]
+}
+
+# Permutation p-value
+p_perm <- mean(share_perm >= share_obs)
+p_perm
+
+hist(share_perm, breaks=40,
+    col=grey(0.5, 0.5), border=NA,
+    freq=FALSE, main=NA, xlab='Null Permutation Between-Group Share',
+    xlim=range(c(0, share_perm, share_obs)))
+title('Null Permutation Categorical ANOVA', font.main=1)
+abline(v=share_obs, col=rgb(1, 0, 0, .8), lwd=2)
+legend('topright', legend='Observed share',
+    col=rgb(1, 0, 0, .8), lwd=2, bty='n')
+```
+
+Because the bands are ordered, the Kruskal-Wallis test also applies.
+
+```{r}
+# Kruskal-Wallis ranks the bands, so it uses their order
+kruskal.test(urban_band ~ region)
+```
+
+The Kruskal-Wallis $p$-value is smaller.
+The regions differ mostly along one direction, from rural to urban, and ranks concentrate on that direction.
+The categorical ANOVA spreads its attention over every way the proportions could differ, so a rank test is usually more powerful when the categories are ordered.
+The categorical ANOVA can still detect differences that ranks miss, such as one group concentrated in the middle band and another split between the two extremes.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Make a binary outcome that marks the mostly urban states.
+Check that the categorical ANOVA of this outcome gives the same $\hat{BSS}$ and $\hat{WSS}$ as the ordinary ANOVA of the 0/1 variable.
+```{r}
+# 1 for mostly urban states, 0 otherwise
+d_hat <- as.numeric(urban_band == 'mostly urban')
+cat_anova(factor(d_hat), region)
+summary(aov(d_hat ~ region))
+```
+:::
+
 ## Exercises
 
 1. Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in [Working with AI](04_A_WorkingWithAI.qmd).
@@ -388,6 +541,7 @@ wilcox.test(a0_hat, b0_hat)
 
 #### **Recall** {-}
 
-This chapter first described several groups with boxplots, ECDFs, and a table of group means, then tested whether the description reflected more than chance.
+This chapter first described several groups with ECDFs and a table of group means, compared their medians with bootstrap notches on boxplots, and then tested whether the description reflected more than chance.
 ANOVA's decomposition of variation between and within groups produced an $F$-statistic; the worked three-group example with $A=\{4,5,6\}, B=\{8,7,9\}, C=\{5,6,7\}$ made the arithmetic concrete, giving $\hat{BSS}=14$ and $\hat{WSS}=6$ by hand, which `aov(y0_hat ~ g0)` reproduces exactly.
 The Kruskal-Wallis test replaced outcomes with ranks when the equal-variance normal-error assumptions were doubtful.
+The categorical ANOVA measured the variation of a factor outcome with one minus the Herfindahl index; for the commutes in two neighborhoods it gave $\hat{TSS}=5/2$, $\hat{BSS}=1/2$, and $\hat{WSS}=2$ by hand.

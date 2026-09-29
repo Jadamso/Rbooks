@@ -26,14 +26,6 @@ The most basic way to compute statistics is with `summary`, which reports multip
 # A random sample (real data)
 x_hat <- USArrests[, 'Murder'] # lab data: murder arrests per 100,000
 summary(x_hat)
-
-# A random sample (computer simulation)
-x1_sim <- runif(1000)
-summary(x1_sim)
-
-# Another random sample (computer simulation)
-x2_sim <- rnorm(1000)
-summary(x2_sim)
 ```
 
 Together, the sample mean and variance statistics summarize the central tendency and dispersion of a distribution.
@@ -69,16 +61,27 @@ mean(x0_hat)
 ```
 :::
 
-```{r}
-# compute the mean of a random sample
-m_hat <- mean(x_hat)
-m_hat
 
-# visualize on a histogram
-hist(x_hat, border=NA, main=NA, freq=FALSE)
-abline(v=m_hat, col=rgb(1, 0, 0, .8), lwd=2)
-title(paste0('mean= ', round(m_hat, 2)), font.main=1)
+When data are discrete, we can also compute the mean using "probability weights" $\hat{p}(x)=\sum_{i=1}^{n}\mathbf{1}\left(\hat{x}_{i}=x\right)/n$.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+E.g., the dataset $\{1,2,1,3,1\}$ has $\hat{p}(1)=\frac{3}{5}$, $\hat{p}(2)=\frac{1}{5}$, $\hat{p}(3)=\frac{1}{5}$.
+Then, sorting the dataset as \{1,1,1,2,3\}, we can see that $\hat{m} = [1+1+1+2+3]/5 = [1+1+1]/5 + 2/5 + 3/5 = 1 \frac{3}{5} + 2 \frac{1}{5} + 3 \frac{1}{5} = 1 \hat{p}(1) + 2 \hat{p}(2) + 3 \hat{p}(3)$.
+In either case, we end up with $\frac{3+2+3}{5}=8/5=1.6$
+
+```{r}
+x0_hat <- c(1, 2, 1, 3, 1)
+mean(x0_hat)
+
+proportions <- table(x0_hat)/length(x0_hat)
+proportions
+vals <- sort(unique(x0_hat))
+sum(vals*proportions)
 ```
+:::
+
+
+
 
 #### **Variance**{-}
 
@@ -107,16 +110,24 @@ sqrt(v_hat)
 :::
 
 ```{r}
+# compute the mean and standard deviation of the lab data
+m_hat <- mean(x_hat)
 s1_hat <- sd(x_hat) # sqrt(var(x_hat))
-hist(x_hat, border=NA, main=NA, freq=FALSE)
 m1_sd_bounds <- c(m_hat - s1_hat,  m_hat + s1_hat)
-abline(v=m_hat, col=rgb(1, 0, 0, .8), lwd=2) #mean
-abline(v=m1_sd_bounds, col=rgb(0, 0, 1, .8)) # +- sd
-text(m1_sd_bounds, -.02,
-    c( expression(bar(X)-s[X]), expression(bar(X)+s[X])),
-    col=rgb(0, 0, 1, .8), adj=0)
-title(paste0('mean ± 1 sd= ', round(s1_hat, 2)), font.main=1)
+
+# visualize on a histogram
+hist(x_hat, breaks=15, border=NA, freq=FALSE, main=NA,
+    xlab='Murder arrests (per 100k)')
+abline(v=m_hat, col=rgb(1, 0, 0, .8), lwd=2) # mean
+abline(v=m1_sd_bounds, col=rgb(0, 0, 1, .8)) # mean +- sd
+mtext(c(expression(hat(m)-hat(s)), expression(hat(m)), expression(hat(m)+hat(s))),
+    side=3, at=c(m1_sd_bounds[1], m_hat, m1_sd_bounds[2]),
+    col=c(rgb(0, 0, 1, .8), rgb(1, 0, 0, .8), rgb(0, 0, 1, .8)))
 ```
+
+Note that the mean and standard deviation cannot be read directly from a histogram or an [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function).
+We had to compute them first and then draw them on.
+This is unlike the median and $IQR$ below, which can be read directly from the ECDF.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Note that a "unbiased version" of the empirical variance is used by R and many statisticians: $\hat{v}' =\frac{\sum_{i=1}^{n} [\hat{x}_{i} - \hat{m}]^2}{n-1}$ and $\hat{s}' = \sqrt{\hat{v}'}$.
@@ -191,6 +202,29 @@ IQR(x_hat)
 mad(x_hat)
 ```
 
+Unlike the mean and standard deviation, the median and $IQR$ can be read directly from the [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function).
+The median is the value where $\hat{F}$ crosses $0.5$.
+The $IQR$ is the horizontal distance between where $\hat{F}$ crosses $0.25$ and where it crosses $0.75$.
+
+```{r}
+# median and quartiles
+p <- c(.25, .5, .75)
+q_hat <- quantile(x_hat, probs=p)
+
+# visualize on the ECDF
+F_hat <- ecdf(x_hat)
+plot(F_hat, pch=16, col=grey(0, .5), main=NA,
+    xlab='Murder arrests (per 100k)', ylab='Proportion <= x')
+cols <- c(rgb(0, 0, 1, .8), rgb(1, 0, 0, .8), rgb(0, 0, 1, .8))
+segments(q_hat, p, -10, p, col=cols, lwd=c(1, 2, 1)) # read across from p
+segments(q_hat, p, q_hat, -1, col=cols, lwd=c(1, 2, 1)) # read down to the quantile
+mtext(round(q_hat, 2), side=1, at=q_hat, col=cols)
+
+# IQR is the distance between the quartiles
+arrows(q_hat[1], .9, q_hat[3], .9, code=3, length=.1, col=rgb(0, 0, 1, .8))
+text(mean(q_hat[c(1, 3)]), .9, 'IQR', pos=3, col=rgb(0, 0, 1, .8))
+```
+
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Compute the $IQR$ statistic for the dataset $\{-100,1,4,10,10\}$. 
 
@@ -245,12 +279,11 @@ mean( abs(x_hat - median(x_hat)) )
 #### **Weighted Statistics** {-}
 
 The mean generalizes to a *weighted mean*: an average where different values contribute to the final result with varying levels of importance.
-For each outcome $x$ we have a weight $W_{x}$ and compute
+For each outcome $x$ we have a weight $W(x)$ and compute
 $$\begin{aligned}
-\hat{m} &= \frac{\sum_{x} x W_{x}}{\sum_{x} W_{x}} = \sum_{x} x w_{x},
+\hat{m} &= \frac{\sum_{x} x W(x)}{\sum_{x} W(x)} = \sum_{x} x w(x),
 \end{aligned}$$
-where $w_{x}=\frac{W_{x}}{\sum_{x'} W_{x'}}$ is normalized version of $W_{x}$ that implies $\sum_{x}w_{x}=1$.
-
+where $w(x)=\frac{W(x)}{\sum_{x'} W(x')}$ is normalized version of $W(x)$ that implies all unique values $x'$ sum to unity; $\sum_{x'}w(x')=1$.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 For another example, suppose a student has these scores
@@ -273,25 +306,6 @@ We can compute the final grade as a weighted mean
 Values <- Grades[, 'score'] * Grades[, 'weight']
 FinalGrade <- sum(Values)
 FinalGrade
-```
-:::
-
-
-When data are discrete, we can also compute the mean using "probability weights" $w_{x} = \hat{p}(x)=\sum_{i=1}^{n}\mathbf{1}\left(\hat{x}_{i}=x\right)/n$.
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-E.g., the dataset $\{1,2,1,3,1\}$ has $\hat{p}(1)=\frac{3}{5}$, $\hat{p}(2)=\frac{1}{5}$, $\hat{p}(3)=\frac{1}{5}$.
-Then, sorting the dataset as \{1,1,1,2,3\}, we can see that $\hat{m} = [1+1+1+2+3]/5 = [1+1+1]/5 + 2/5 + 3/5 = 1 \frac{3}{5} + 2 \frac{1}{5} + 3 \frac{1}{5} = 1 \hat{p}(1) + 2 \hat{p}(2) + 3 \hat{p}(3)$.
-In either case, we end up with $\frac{3+2+3}{5}=8/5=1.6$
-
-```{r}
-x0_hat <- c(1, 2, 1, 3, 1)
-mean(x0_hat)
-
-proportions <- table(x0_hat)/length(x0_hat)
-proportions
-vals <- sort(unique(x0_hat))
-sum(vals*proportions)
 ```
 :::
 
@@ -348,6 +362,36 @@ The numerator is therefore close to zero when the data are roughly balanced arou
 Dividing by the cubed standard deviation makes skewness dimensionless, so the values are comparable across datasets measured in different units.
 Skewness is useful for flagging whether the mean and median will agree closely (low skew) or diverge sharply (high skew), and for deciding whether a log or square-root transformation might tame the distribution before further analysis.
 
+The figure below compares two distributions with the same mean and standard deviation.
+One is symmetric, and the other has a long right tail.
+On the histogram, the right-skewed distribution piles up just below the mean and stretches far to the right.
+On the ECDF, it rises steeply at first and then approaches $1$ slowly.
+
+```{r, echo=FALSE, fig.height=4}
+# Two distributions with mean 0 and sd 1: one symmetric, one with a long right tail
+p_grid <- ppoints(5000)
+x_noskew <- qnorm(p_grid)
+x_skew <- (qgamma(p_grid, shape=2) - 2)/sqrt(2)
+cols <- c(rgb(0, 0, 1, .5), rgb(1, 0, 0, .5))
+bks <- seq(-4, 7.5, by=.25)
+par(mfrow=c(1, 2), mar=c(4, 4, 1, 1))
+
+# overlapping histograms
+hist(x_noskew, breaks=bks, col=cols[1], freq=FALSE, border=NA,
+    ylim=c(0, .55), main=NA, xlab='x')
+hist(x_skew, breaks=bks, col=cols[2], freq=FALSE, border=NA, add=TRUE)
+legend('topright', legend=c('No skew', 'Right skew'),
+    col=cols, pch=15, bty='n')
+
+# overlapping ECDFs, drawn as lines through the sorted values
+plot(x_noskew, ecdf(x_noskew)(x_noskew), type='l',
+    col=cols[1], lwd=2, lty=1, xlim=range(bks),
+    main=NA, xlab='x', ylab='Proportion <= x')
+lines(x_skew, ecdf(x_skew)(x_skew), col=cols[2], lwd=2, lty=2)
+legend('bottomright', legend=c('No skew', 'Right skew'), cex=.8,
+    col=cols, lwd=2, lty=c(1, 2), bty='n')
+```
+
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Consider the right-skewed dataset $\{0,1,2,3,9\}$ with mean $\hat{m}=15/5=3$.
 The cubed deviations from the mean are $(-3)^3, (-2)^3, (-1)^3, 0^3, 6^3$, which equal $-27, -8, -1, 0, 216$.
@@ -364,10 +408,6 @@ m3_hat / sd(x_demo_hat)^3 # skewness
 :::
 
 ```{r}
-hist( x_hat^2, border=NA,
-	xlab='[Murder Rate]^2',
-	main=NA, freq=FALSE, breaks=20)
-
 skewness <-  function(x_hat){
  m_hat <- mean(x_hat)
  m3_hat <- mean((x_hat - m_hat)^3)
@@ -376,10 +416,11 @@ skewness <-  function(x_hat){
  return(skew)
 }
 
-skewness( x_hat^2 )
-skewness( x_hat^3 )
+# skewness of murder arrests
+skewness(x_hat)
 ```
 
+Murder arrests have a small positive skew, so their right tail is slightly longer than their left.
 We can automatically compare against the normal distribution, which has a skew of 0.
 
 #### **Kurtosis** {-}
@@ -395,6 +436,37 @@ The Normal distribution has kurtosis $3$, so subtracting $3$ gives a comparison-
 Where skewness uses the cube (and so can be negative), kurtosis uses the fourth power, which forces every term to be positive and disproportionately amplifies the largest deviations.
 A handful of far-from-the-mean values can drive kurtosis up substantially even when the bulk of the distribution looks unremarkable, which is why it is often described as a "tail-heaviness" measure.
 Kurtosis is useful for distinguishing distributions that look similar in their bulk but differ in how often extreme values occur: daily stock returns, for example, have moderate variance but kurtosis well above $3$, reflecting occasional crashes that a Normal model would treat as vanishingly rare.
+
+The figure below compares two symmetric distributions with the same median and $IQR$.
+The high-kurtosis distribution has more observations near the center and in the far tails, and fewer in between.
+On the ECDF, it approaches $0$ and $1$ much more slowly in the tails, and is still well above $0$ and below $1$ at the edges of the plot.
+
+```{r, echo=FALSE, fig.height=4}
+# Two symmetric distributions with median 0 and the same IQR
+p_grid <- ppoints(5000)
+x_lowkurt <- qnorm(p_grid)
+x_highkurt <- qcauchy(p_grid, scale=qnorm(.75))
+cols <- c(rgb(0, 0, 1, .5), rgb(1, 0, 0, .5))
+x_lim <- c(-6.5, 6.5)
+# the two outer bins hold the far tails, beyond the plotted range
+bks <- c(floor(min(x_highkurt)), seq(x_lim[1], x_lim[2], by=.25), ceiling(max(x_highkurt)))
+par(mfrow=c(1, 2), mar=c(4, 4, 1, 1))
+
+# overlapping histograms
+hist(x_lowkurt, breaks=bks, col=cols[1], freq=FALSE, border=NA,
+    xlim=x_lim, ylim=c(0, .55), main=NA, xlab='x')
+hist(x_highkurt, breaks=bks, col=cols[2], freq=FALSE, border=NA, add=TRUE)
+legend('topright', legend=c('Low kurtosis', 'High kurtosis'),
+    col=cols, pch=15, bty='n')
+
+# overlapping ECDFs, drawn as lines through the sorted values
+plot(x_lowkurt, ecdf(x_lowkurt)(x_lowkurt), type='l',
+    col=cols[1], lwd=2, lty=1, xlim=x_lim,
+    main=NA, xlab='x', ylab='Proportion <= x')
+lines(x_highkurt, ecdf(x_highkurt)(x_highkurt), col=cols[2], lwd=2, lty=2)
+legend('bottomright', legend=c('Low kurtosis', 'High kurtosis'), cex=.8,
+    col=cols, lwd=2, lty=c(1, 2), bty='n')
+```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Using the same dataset $\{0,1,2,3,9\}$ with mean $\hat{m}=3$, the *quartic* deviations are $(-3)^4, (-2)^4, (-1)^4, 0^4, 6^4$, which equal $81, 16, 1, 0, 1296$.
@@ -415,15 +487,6 @@ Boxplot whiskers are a great way to examine kurtosis, with more circle "outliers
 You can also see skew in the boxplot when one quartile is much further from the median than the other. 
 
 ```{r}
-x1_hat <- x_hat^1/mean(x_hat^1)
-x2_hat <- x_hat^2/mean(x_hat^2)
-x3_hat <- x_hat^3/mean(x_hat^3)
-x4_hat <- x_hat^4/mean(x_hat^4)
-boxplot(x1_hat, x2_hat, x3_hat, x4_hat,
-	names=c(1, 2, 3, 4), xlab='Data Transformations',
-	main=NA)
-
-
 kurtosis <- function(x_hat){
  m_hat <- mean(x_hat)
  m4_hat <- mean((x_hat - m_hat)^4)
@@ -431,14 +494,14 @@ kurtosis <- function(x_hat){
  kurt <- m4_hat/s4_hat
  return(kurt)
  # use instead to compare against normal
- # excess_kurt <- kurt - 3 
+ # excess_kurt <- kurt - 3
 }
 
-kurtosis( x1_hat )
-kurtosis( x2_hat )
-kurtosis( x3_hat )
-kurtosis( x4_hat )
+# kurtosis of murder arrests
+kurtosis(x_hat)
 ```
+
+Murder arrests have a kurtosis below $3$, so their tails are lighter than those of the Normal.
 
 
 #### **Clusters/Gaps** {-}
@@ -478,6 +541,18 @@ x_sim <- r_ugly1(1000000)
 hist(x_sim, breaks=1000, freq=FALSE, border=NA,
     xlab='x', main=NA)
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+The built-in `LifeCycleSavings` data record the percent of the population under age 15 in fifty countries, averaged over 1960 to 1970.
+Plot a histogram of `pop15` with `breaks=15`.
+How many clusters do you see, and where is the gap?
+Then compute the mean and mark it on the histogram with `abline(v=...)`.
+How many countries have a value close to the mean?
+```{r}
+# percent of the population under age 15, fifty countries
+pop15 <- LifeCycleSavings[, 'pop15']
+```
+:::
 
 ## Factor Data
 

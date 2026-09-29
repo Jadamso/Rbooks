@@ -43,13 +43,12 @@ The same numbers can also be computed directly from the univariate data without 
 
 For example, consider the `Wages1` data on US workers.
 Let $\hat{x}_{i}$ be years of schooling and $\hat{y}_{i}$ be sex.
-We keep only workers with at least $10$ years of schooling, which drops the few workers with less schooling and leaves $n=3001$.
+We use all $n=3294$ workers.
 ```{r}
 library(Ecdat)
 
-# Workers with at least 10 years of schooling: schooling and sex
+# All workers: schooling and sex
 xy2_hat <- Wages1[, c('school', 'sex')]
-xy2_hat <- xy2_hat[xy2_hat[, 'school'] >= 10, ]
 
 # Frequency table and joint distribution
 tab <- table(xy2_hat)    # raw counts: rows=school, cols=sex
@@ -63,13 +62,13 @@ round(prop_m, 3)
 ```
 
 Each cell of the joint table is the share of all workers with that schooling and sex.
-For example, $\hat{p}(x=12, y=\text{female}) \approx 0.198$, so about $20\%$ of workers are women with $12$ years of schooling.
-The row totals are the marginal distribution of schooling: $\hat{p}(x=12) \approx 0.396$.
-The column totals are the marginal distribution of sex: $\hat{p}(y=\text{female}) \approx 0.49$.
+For example, $\hat{p}(x=12, y=\text{female}) \approx 0.180$, so about $18\%$ of workers are women with $12$ years of schooling.
+The row totals are the marginal distribution of schooling: $\hat{p}(x=12) \approx 0.361$.
+The column totals are the marginal distribution of sex: $\hat{p}(y=\text{female}) \approx 0.48$.
 
 Note that you can compute various univariate statistics using the marginal distributions.
 E.g., the mean of $\hat{x}_{i}$ is $\hat{m}_{X}=\sum_{x} x \hat{p}(x)$.
-In the above example, that equals about $12.0$ years of schooling.
+In the above example, that equals about $11.6$ years of schooling.
 Try computing the standard deviation $\hat{s}_{X}$ yourself.
 ```{r}
 # marginals and univariate statistics
@@ -222,7 +221,7 @@ In this case, we rescale the numbers in each *column* of the joint distribution 
 # Conditional distribution of schooling given sex: each column sums to 1
 round(prop.table(tab, 2), 3)
 ```
-For example, among female workers, about $40\%$ have $12$ years of schooling.
+For example, among female workers, about $38\%$ have $12$ years of schooling.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Return to the sample of $n=13$ students and its joint distribution table, @eq-joint-educ-sex.
@@ -504,6 +503,8 @@ hist(y1_hat,
     xlab='Murder Arrests', freq=FALSE,
     border=NA, ylim=ylim)
 title('Urban Pop <= Mean', font.main=1)
+# Raw Observations
+rug(y1_hat, col=grey(0, .5))
 
 hist(y2_hat,
     breaks=xbks, col=cols[2],
@@ -511,6 +512,7 @@ hist(y2_hat,
     xlab='Murder Arrests', freq=FALSE,
     border=NA, ylim=ylim)
 title('Urban Pop > Mean', font.main=1)
+rug(y2_hat, col=grey(0, .5))
 ```
 
 It is sometimes preferable to show the [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function) instead.
@@ -524,6 +526,7 @@ hist(xy_hat[, 'y_hat'],
     xlab='Murder Arrests',
     breaks=xbks, freq=FALSE, border=NA)
 title('Full Sample Density', font.main=1)
+rug(xy_hat[, 'y_hat'], col=grey(0, .5))
 
 # Split Sample Distribution Comparison
 F_lowpop_hat <- ecdf(y1_hat)
@@ -540,8 +543,28 @@ legend('bottomright', col=cols,
     legend=c('Low (<= Mean)', 'High (> Mean)'))
 ```
 
+[Boxplots](01_02_Data.qmd#boxplots) summarize the same two groups side by side.
+
+```{r}
+# Boxplots for the low and high urban population groups
+boxplot(y1_hat, y2_hat,
+    names=c('Low (<= Mean)', 'High (> Mean)'),
+    main=NA, col=cols,
+    whisklty=0, staplelty=0, outline=FALSE,
+    varwidth=TRUE, #show number of obs. per group
+    xlab='% Urban Pop.', ylab='Murder Arrests')
+# Raw Observations, in place of whiskers and outliers
+stripchart(list(y1_hat, y2_hat),
+    pch='-', col=grey(0, .5), cex=2,
+    vert=TRUE, add=TRUE)
+```
+
+Boxplots are better suited for conditioning on multiple levels.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
 You can also split data into more than two groups.
-For more than three groups, boxplots are often more effective than histograms or ECDF's.
+Here we cut urban population into $K=4$ bins and draw one boxplot per bin.
+
 ```{r}
 # K Groups with even spacing (not even counts)
 K <- 4
@@ -555,6 +578,10 @@ boxplot(xy_hat[, 'y_hat'] ~ x_cut_hat,
     whisklty=0, staplelty=0, outline=FALSE,
     varwidth=TRUE, #show number of obs. per group
     xlab='Urban Population', ylab='Murder Arrests')
+# Raw Observations, in place of whiskers and outliers
+stripchart(xy_hat[, 'y_hat'] ~ x_cut_hat,
+    pch='-', col=grey(0, .5), cex=2,
+    vert=TRUE, add=TRUE)
 
 # 4 Groups with equal numbers of observations
 #Qcuts <- c(
@@ -563,6 +590,7 @@ boxplot(xy_hat[, 'y_hat'] ~ x_cut_hat,
 #x_qcut_hat <- cut(xy_hat[, 'x_hat'], Qcuts)
 #boxplot(xy_hat[, 'y_hat'] ~ x_qcut_hat, col=hcl.colors(4, alpha=.5))
 ```
+:::
 
 
 ## Exercises
