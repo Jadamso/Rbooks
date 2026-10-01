@@ -8,13 +8,19 @@ This chapter extends that idea to $G$ groups: how to describe several groups at 
 
 The [census regions](01_03_SummaryStatistics.qmd#unordered-factors) are an unordered factor with $G=4$ levels.
 The built-in `state.region` vector lists them in the same state order as the rows of `USArrests`, so it can be paired directly with the murder rates.
+`USArrests` covers all $50$ states, so it is the whole population of states rather than a sample from it.
+To make the bootstrap intervals below meaningful, pretend we observed only a random sample of $35$ states, as we did with workers in [Sampling](01_05_Sampling.qmd#wages-as-a-population).
 
 ```{r}
-# Outcome: murder arrests per 100K, one value per state
-y_hat <- USArrests[, 'Murder']
-# Group: the four-level region factor, in the same state order as USArrests.
+# Draw one random sample of 35 of the 50 states, and use only it from here on
+set.seed(111)
+state_id <- sample(nrow(USArrests), 35)
+
+# Outcome: murder arrests per 100K, one value per sampled state
+y_hat <- USArrests[state_id, 'Murder']
+# Group: the four-level region factor, for the same sampled states.
 # Its levels are the values the categorical variable can take.
-region <- state.region
+region <- state.region[state_id]
 levels(region)
 table(region)
 ```
@@ -99,7 +105,7 @@ bx[['conf']] <- med_ci
 # One notched box per region, box width scaled to group size
 bxp(bx, notch=TRUE, varwidth=TRUE,
     boxfill=hcl.colors(4, alpha=.45),
-    whisklty=0, staplelty=0,
+    whisklty=0, staplelty=0, outpch=NA,
     ylab='Murder arrests (per 100,000)', xlab='Region', main=NA)
 title('Murder rates by region', font.main=1)
 # Raw Observations, in place of whiskers and outliers
@@ -110,10 +116,11 @@ stripchart(y_hat ~ region,
 
 Each box shows the median and the two quartiles, and each dash is one state's murder rate.
 `varwidth=TRUE` also scales each box's width to $\sqrt{n_g}$, so a region with more states draws a wider box.
-With only $9$ to $16$ states per region, each median's interval is nearly as wide as the box itself.
+With only $5$ to $14$ sampled states per region, three of the four intervals are wider than the box itself.
 When an interval reaches past a quartile, the notch folds back outside the box.
+Only the South, with the most states, has an interval that stays inside its box.
 The South's notch lies above the Northeast's, so the South's median is higher.
-Which other pairs of regions have notches that do not overlap?
+Do any other pairs of regions have notches that do not overlap?
 
 ## Equal Means (ANOVA)
 
@@ -242,7 +249,7 @@ p_boot <- mean(F_nullboot >= F_obs)
 p_boot
 
 hist(F_nullboot, breaks = 40,
-    col = grey(0.5, 0.5), border = NA,
+    border = NA,
     freq = FALSE, main = NA, xlab = 'Null Bootstrap F-statistic',
     xlim = range(c(0, F_nullboot, F_obs)))
 title('Null Bootstrap F-test', font.main = 1)
@@ -407,15 +414,15 @@ For example, the urban population bands from [Ordered Factors](01_03_SummaryStat
 The bands are ordered, but the categorical ANOVA ignores that order, so it treats them as it would any unordered factor.
 
 ```{r, fig.height=5.2}
-# Outcome: urban population in three bands, an ordered factor
-urban_band <- cut(USArrests[, 'UrbanPop'], breaks=c(0, 50, 75, 100),
+# Outcome: urban population in three bands, an ordered factor, for the sampled states
+urban_band <- cut(USArrests[state_id, 'UrbanPop'], breaks=c(0, 50, 75, 100),
     labels=c('mostly rural', 'mixed', 'mostly urban'), ordered_result=TRUE)
 tab <- table(region, urban_band)
 tab
 
 # Proportions within each region: each bar sums to 1
 p_band_region <- prop.table(tab, 1)
-cols <- hcl.colors(3, alpha=.45)
+cols <- c(rgb(.8, 0, 0, .5), rgb(0, .8, 0, .5), rgb(0, 0, .8, .5))
 par(mar=c(4, 4, 3.5, 1))
 barplot(t(p_band_region), col=cols, border=NA,
     xlab='Region', ylab='Proportion of states', main=NA)
@@ -446,7 +453,7 @@ cat_anova <- function(y_hat, g) {
 cat_anova(urban_band, region)
 ```
 
-About $11\%$ of the variation in urban bands lies between regions.
+About $22\%$ of the variation in urban bands lies between regions.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Suppose we record how $n=8$ workers commute, $n_g=4$ from each of two neighborhoods.
@@ -484,7 +491,7 @@ p_perm <- mean(share_perm >= share_obs)
 p_perm
 
 hist(share_perm, breaks=40,
-    col=grey(0.5, 0.5), border=NA,
+    border=NA,
     freq=FALSE, main=NA, xlab='Null Permutation Between-Group Share',
     xlim=range(c(0, share_perm, share_obs)))
 title('Null Permutation Categorical ANOVA', font.main=1)
@@ -500,10 +507,12 @@ Because the bands are ordered, the Kruskal-Wallis test also applies.
 kruskal.test(urban_band ~ region)
 ```
 
-The Kruskal-Wallis $p$-value is smaller.
-The regions differ mostly along one direction, from rural to urban, and ranks concentrate on that direction.
+Here the categorical ANOVA gives the smaller $p$-value.
+The regions differ partly along one direction, from rural to urban, and ranks concentrate on that direction.
 The categorical ANOVA spreads its attention over every way the proportions could differ, so a rank test is usually more powerful when the categories are ordered.
 The categorical ANOVA can still detect differences that ranks miss, such as one group concentrated in the middle band and another split between the two extremes.
+In this sample, $7$ of North Central's $8$ states are in the middle band.
+That pattern contributes more to the categorical ANOVA than any other region does, but the least to the Kruskal-Wallis statistic.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Make a binary outcome that marks the mostly urban states.

@@ -402,7 +402,7 @@ A regression coefficient is a statistic, so it has its own sampling distribution
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *standard error* of an estimator is the standard deviation of its sampling distribution: it captures how much the estimate would vary if we redrew the sample.
-For the slope estimator $B_1$, $SE(B_1)$ is the theoretical standard error, and $\widehat{SE}(B_1)$ is its estimate computed from the observed sample.
+For the slope estimator $B_1$, $SE(B_1)$ is the theoretical standard error, and $\hat{SE}(B_1)$ is its estimate computed from the observed sample.
 :::
 
 The standard error is useful for quantifying sample-to-sample uncertainty in any statistic, including but not limited to a slope coefficient.
@@ -442,7 +442,8 @@ hist(boot_coefs, breaks=25,
     xlab=expression(hat(b)[b]))
 title('Bootstrap Distribution with 95% CIs', font.main=1)
 boot_ci_percentile <- quantile(boot_coefs, probs=c(.025, .975))
-abline(v=boot_ci_percentile, lty=2)
+abline(v=boot_ci_percentile, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=slope, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 
@@ -468,16 +469,17 @@ jack_se <- sqrt((n_jack - 1)/n_jack * sum((jack_coefs - mean(jack_coefs))^2))
 # Grid spans four jackknife SEs on either side of the estimate
 x <- seq(slope - 4*jack_se, slope + 4*jack_se, length.out=500)
 fx <- dnorm(x, mean(jack_coefs), jack_se)
-plot(x, fx, type='l', bty='n')
+plot(x, fx, type='l', bty='n', col=rgb(0, 0, 1, .8))
 title('Normal Approx. with 95% CIs', font.main=1)
+abline(v=slope, col=rgb(1, 0, 0, .8), lwd=2)
 
 # Normal Approx Confidence Interval
 jack_ci_normal <- qnorm(c(.025, .975), slope, jack_se)
-abline(v=jack_ci_normal, lty=3)
+abline(v=jack_ci_normal, col=rgb(0, 0, 0, .8), lwd=2, lty=2)
 
 # Bootstrap Quantiles
-abline(v=boot_ci_percentile, lty=2)
-legend('topright', lty=c(2,3), bty='n', cex=.75,
+abline(v=boot_ci_percentile, col=rgb(0, 0, 0, .8), lwd=2)
+legend('topright', lty=c(1, 2), lwd=2, col=rgb(0, 0, 0, .8), bty='n', cex=.75,
     title='Confidence Interval',
     legend=c('Bootstrap Percentile', 'Normal Approx.'))
 ```
@@ -512,7 +514,7 @@ hist(slopes_sim, breaks=25,
     main=NA, border=NA, freq=FALSE,
     xlab=expression(hat(b)[1]))
 title('Sample Slopes from the Known Population', font.main=1)
-abline(v=population_slope, col=rgb(1, 0, 0, .8), lwd=2)
+abline(v=population_slope, col=rgb(0, 0, 1, .8), lty=2)
 ```
 
 The sample slopes center on the population slope, but any one sample can miss it by a fair amount.
@@ -554,7 +556,7 @@ We are rarely interested in computing standard errors and conducting hypothesis 
 
 One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value.
 Does the slope coefficient equal $0$?
-For reasons we won't go into in this class, we typically normalize the coefficient by its standard error: $\hat{t} = \frac{\hat{b}_1}{\widehat{SE}(B_1)}$, where $\widehat{SE}(B_1)$ is the estimated standard error of the coefficient.
+For reasons we won't go into in this class, we typically normalize the coefficient by its standard error: $\hat{t} = \frac{\hat{b}_1}{\hat{SE}(B_1)}$, where $\hat{SE}(B_1)$ is the estimated standard error of the coefficient.
 ```{r}
 # Create t-stat with jackknife SE
 t_hat <- coef(reg)['x_hat']/jack_se
@@ -587,8 +589,9 @@ hist(boot_t, breaks=25,
     xlab=expression(hat(t)[b]),
     xlim=range(c(0, boot_t)) )
 title('Bootstrap t with Jackknife SE', font.main=1)
-abline(v=quantile(boot_t, probs=c(.025, .975)), lty=2)
-abline(v=0, col=rgb(1, 0, 0, .8), lwd=2)
+abline(v=quantile(boot_t, probs=c(.025, .975)), col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=0, col=rgb(0, 0, 1, .8), lty=2)
+abline(v=t_hat, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 #### **Impose the Null**{-}
@@ -630,7 +633,7 @@ hist(null_t, breaks=25,
 title('Null Distribution', font.main=1)
 # 95% CI
 null_ci <- quantile(null_t, probs=c(.025, .975))
-abline(v=null_ci, lty=2)
+abline(v=null_ci, col=rgb(0, 0, 0, .8), lwd=2)
 # Observed value
 abline(v=t_hat, col=rgb(1, 0, 0, .8), lwd=2)
 ```
@@ -717,7 +720,7 @@ We could also use hard decision rules, such as "$p < 0.05$ is a statistically si
 However, just like confidence intervals, those hard decision rules can be sensitive to somewhat arbitrary choices (Why Jackknife SE's instead of classical ones? Why test at the $95\%$ level rather than $90\%$?)
 
 "No association" is the most common null hypothesis in practice, but we can also use bootstrapping to test against other specific hypothesis: $\beta_1$, the population slope.
-To impose the null in this case, you recenter the sampling distribution around the hypothetical value; $\hat{t} = \frac{\hat{b}_1 - \beta_1}{\widehat{SE}(B_1)}$.^[Under some additional assumptions, the null distribution follows a $t$-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)]
+To impose the null in this case, you recenter the sampling distribution around the hypothetical value; $\hat{t} = \frac{\hat{b}_1 - \beta_1}{\hat{SE}(B_1)}$.^[Under some additional assumptions, the null distribution follows a $t$-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)]
 In the known-population check above, the population slope is `population_slope`, which we could compute only because we pretended `Wages1` was the whole population.
 
 Although two-sided hypothesis tests are most common, you can also test one-sided hypotheses.

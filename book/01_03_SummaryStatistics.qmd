@@ -53,20 +53,20 @@ The mean is useful when totals matter: total income across a population equals t
 Because every observation contributes equally to the sum, a single extreme value can pull the mean substantially in its direction.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-For example, a dataset of $\{1,4,10\}$ has a mean of $[1+4+10]/3=5$.
+For example, a dataset of $\{4,1,10\}$ has a mean of $[4+1+10]/3=5$.
 ```{r}
-x0_hat <- c(1, 4, 10)
+x0_hat <- c(4, 1, 10)
 sum(x0_hat)/length(x0_hat)
 mean(x0_hat)
 ```
 :::
 
 
-When data are discrete, we can also compute the mean using "probability weights" $\hat{p}(x)=\sum_{i=1}^{n}\mathbf{1}\left(\hat{x}_{i}=x\right)/n$.
+When data are discrete, we can also compute the mean using proportions; $\hat{m}=\sum_{x} x \hat{p}(x)$
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 E.g., the dataset $\{1,2,1,3,1\}$ has $\hat{p}(1)=\frac{3}{5}$, $\hat{p}(2)=\frac{1}{5}$, $\hat{p}(3)=\frac{1}{5}$.
-Then, sorting the dataset as \{1,1,1,2,3\}, we can see that $\hat{m} = [1+1+1+2+3]/5 = [1+1+1]/5 + 2/5 + 3/5 = 1 \frac{3}{5} + 2 \frac{1}{5} + 3 \frac{1}{5} = 1 \hat{p}(1) + 2 \hat{p}(2) + 3 \hat{p}(3)$.
+Then, sorting the dataset as $\{1,1,1,2,3\}$, we can see that $\hat{m} = [1+1+1+2+3]/5 = [1+1+1]/5 + 2/5 + 3/5 = 1 \frac{3}{5} + 2 \frac{1}{5} + 3 \frac{1}{5} = 1 \hat{p}(1) + 2 \hat{p}(2) + 3 \hat{p}(3)$.
 In either case, we end up with $\frac{3+2+3}{5}=8/5=1.6$
 
 ```{r}
@@ -99,31 +99,88 @@ The standard deviation in particular is useful because it sits in the original u
 Squaring the deviations also means a few extreme values can dominate the result, which is one reason the median absolute deviation (below) is often preferred for heavy-tailed data.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-For example, a dataset of $\{1,4,10\}$ has a mean of $[1+4+10]/3=5$.
-The variance is $[(1-5)^2+(4-5)^2+(10-5)^2]/3=[16+1+25]/3=42/3=14$ and the standard deviation is $\sqrt{14}$.
+For example, a dataset of $\{4,1,10\}$ has a mean of $[4+1+10]/3=5$.
+The variance is $[(4-5)^2+(1-5)^2+(10-5)^2]/3=[1+16+25]/3=42/3=14$ and the standard deviation is $\sqrt{14}$.
 ```{r}
-x0_hat <- c(1, 4, 10)
+x0_hat <- c(4, 1, 10)
 m_hat <- mean(x0_hat)
 v_hat <- mean( (x0_hat - m_hat)^2 )
 sqrt(v_hat)
 ```
 :::
 
+
+When data are discrete, we can also compute the variance using proportions; $\hat{v}=\sum_{x} (x-\hat{m})^2 \hat{p}(x)$.
+Each distinct value contributes its squared deviation once, weighted by how often that value occurs.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+E.g., the dataset $\{1,2,1,3,1\}$ from above has $\hat{m}=1.6$ and $\hat{p}(1)=\frac{3}{5}$, $\hat{p}(2)=\frac{1}{5}$, $\hat{p}(3)=\frac{1}{5}$.
+The squared deviations of the distinct values are $(1-1.6)^2=0.36$, $(2-1.6)^2=0.16$, and $(3-1.6)^2=1.96$.
+Then, sorting the dataset as $\{1,1,1,2,3\}$, we can see that $\hat{v} = [0.36+0.36+0.36+0.16+1.96]/5 = 0.36 \frac{3}{5} + 0.16 \frac{1}{5} + 1.96 \frac{1}{5}$.
+In either case, we end up with $\frac{1.08+0.16+1.96}{5}=3.2/5=0.64$, so the standard deviation is $\hat{s}=\sqrt{0.64}=0.8$.
+
+```{r}
+x0_hat <- c(1, 2, 1, 3, 1)
+m_hat <- mean(x0_hat)
+mean( (x0_hat - m_hat)^2 )
+
+proportions <- table(x0_hat)/length(x0_hat)
+vals <- sort(unique(x0_hat))
+sum( (vals - m_hat)^2 * proportions )
+```
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+When data are binary, taking only the values $0$ and $1$, both formulas simplify further.
+Because $\hat{p}(0)=1-\hat{p}(1)$, the mean is $\hat{m}=0 \cdot \hat{p}(0) + 1 \cdot \hat{p}(1)=\hat{p}(1)$, the proportion of ones.
+Show that the variance is $\hat{v}=\hat{p}(1)[1-\hat{p}(1)]$.
+
+Substituting $\hat{m}=\hat{p}(1)$ into the variance formula,
+$$\begin{aligned}
+\hat{v} &= [0-\hat{p}(1)]^2 \hat{p}(0) + [1-\hat{p}(1)]^2 \hat{p}(1) \\
+&= \hat{p}(1)^2 [1-\hat{p}(1)] + [1-\hat{p}(1)]^2 \hat{p}(1) \\
+&= \hat{p}(1)[1-\hat{p}(1)] \left( \hat{p}(1) + 1-\hat{p}(1) \right) \\
+&= \hat{p}(1)[1-\hat{p}(1)].
+\end{aligned}$$
+The variance is largest, $1/4$, when half the observations are ones, and is zero when every observation is the same.
+
+Check this on the lab data, where $15$ of the $50$ states have more than $10$ murder arrests per $100,000$.
+```{r}
+# 1 if a state has more than 10 murder arrests per 100,000, 0 otherwise
+x1_hat <- as.numeric(x_hat > 10)
+p1_hat <- mean(x1_hat) # proportion of ones, which is also the mean
+p1_hat*(1 - p1_hat)
+
+# compare to the definition
+mean( (x1_hat - p1_hat)^2 )
+```
+:::
+
 ```{r}
 # compute the mean and standard deviation of the lab data
 m_hat <- mean(x_hat)
-s1_hat <- sd(x_hat) # sqrt(var(x_hat))
+s1_hat <- sqrt(mean((x_hat - m_hat)^2)) # divides by n, as defined above; sd() divides by n-1
 m1_sd_bounds <- c(m_hat - s1_hat,  m_hat + s1_hat)
+m2_sd_bounds <- c(m_hat - 2*s1_hat,  m_hat + 2*s1_hat)
+m2_sd_bounds
+range(x_hat) # smallest and largest observation
 
-# visualize on a histogram
+# visualize on a histogram, widened to include both sets of bounds
 hist(x_hat, breaks=15, border=NA, freq=FALSE, main=NA,
+    xlim=range(c(x_hat, m2_sd_bounds)),
     xlab='Murder arrests (per 100k)')
+rug(x_hat, col=grey(0, .5))
 abline(v=m_hat, col=rgb(1, 0, 0, .8), lwd=2) # mean
 abline(v=m1_sd_bounds, col=rgb(0, 0, 1, .8)) # mean +- sd
-mtext(c(expression(hat(m)-hat(s)), expression(hat(m)), expression(hat(m)+hat(s))),
-    side=3, at=c(m1_sd_bounds[1], m_hat, m1_sd_bounds[2]),
-    col=c(rgb(0, 0, 1, .8), rgb(1, 0, 0, .8), rgb(0, 0, 1, .8)))
+abline(v=m2_sd_bounds, col=rgb(0, 0, 1, .8), lty=2) # mean +- 2 sd
+mtext(expression(hat(m)-2*hat(s), hat(m)-hat(s), hat(m), hat(m)+hat(s), hat(m)+2*hat(s)),
+    side=3, at=c(m2_sd_bounds[1], m1_sd_bounds[1], m_hat, m1_sd_bounds[2], m2_sd_bounds[2]),
+    col=c(rgb(0, 0, 1, .8), rgb(0, 0, 1, .8), rgb(1, 0, 0, .8), rgb(0, 0, 1, .8), rgb(0, 0, 1, .8)))
 ```
+
+The upper bound $\hat{m}+2\hat{s}$ lands inside the data, but the lower bound $\hat{m}-2\hat{s}$ is about $-0.8$.
+That is below the smallest observation, and below zero, which no arrest rate can be.
+The bounds are symmetric around the mean by construction, but murder arrests are not: they stop at zero on the left and stretch further to the right.
 
 Note that the mean and standard deviation cannot be read directly from a histogram or an [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function).
 We had to compute them first and then draw them on.
@@ -134,7 +191,7 @@ Note that a "unbiased version" of the empirical variance is used by R and many s
 In this class, we use the version defined previously because we do not yet know about "bias/unbiased" statistics.
 Do not be concerned, as there is hardly any difference when $n$ is large: e.g., $\frac{1}{n}\approx \frac{1}{n-1}$ for $n=100,000$.
 ```{r}
-x0_hat <- c(1, 4, 10)
+x0_hat <- c(4, 1, 10)
 
 m_hat <- mean(x0_hat)
 v_hat <- mean( (x0_hat - m_hat)^2 )
@@ -149,14 +206,154 @@ var(x0_hat) # R-Version
 ```
 :::
 
+
+#### **Standardized Values** {-}
+
+Whether an observation is unusual depends on the center and spread of the data, not on its raw value alone.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *standardized value* of an observation is its deviation from the mean measured in standard deviations,
+$$\hat{z}_{i} = \frac{\hat{x}_{i} - \hat{m}}{\hat{s}}.$$
+:::
+
+Standardized values are also called *z-scores*.
+A standardized value of $2$ means the observation lies two standard deviations above the mean, and a value of $-1$ means it lies one standard deviation below.
+The units of $\hat{x}_{i}-\hat{m}$ and $\hat{s}$ cancel, so standardized values have no units.
+Standardized values are useful for flagging observations that are far from the center of their own distribution, and for comparing observations across variables measured on different scales, such as a state's murder and assault arrest rates.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+E.g., the dataset $\{1,2,1,3,1\}$ from above has $\hat{m}=1.6$ and $\hat{s}=0.8$.
+The standardized values are $(1-1.6)/0.8=-0.75$ for each $1$, $(2-1.6)/0.8=0.5$, and $(3-1.6)/0.8=1.75$.
+The observation $3$ is the most unusual, lying $1.75$ standard deviations above the mean.
+```{r}
+x0_hat <- c(1, 2, 1, 3, 1)
+m_hat <- mean(x0_hat)
+s_hat <- sqrt(mean((x0_hat - m_hat)^2))
+z0_hat <- (x0_hat - m_hat)/s_hat
+z0_hat
+```
+:::
+
+```{r}
+# standardize the lab data, using the standard deviation that divides by n
+m_hat <- mean(x_hat)
+s_hat <- sqrt(mean((x_hat - m_hat)^2))
+z_hat <- (x_hat - m_hat)/s_hat
+# scale(x_hat) is similar, but divides by sd(), the n-1 version
+
+# mean 0 and standard deviation 1, up to rounding error
+mean(z_hat)
+sqrt(mean((z_hat - mean(z_hat))^2))
+
+# same shape, new units: standardize the bin edges too
+f_hat <- hist(x_hat, breaks=15, plot=FALSE)
+par(mfrow=c(1, 2), mar=c(4, 4, 1, 1))
+hist(x_hat, breaks=f_hat[['breaks']], border=NA, freq=FALSE, main=NA,
+    xlab='Murder arrests (per 100k)')
+hist(z_hat, breaks=(f_hat[['breaks']] - m_hat)/s_hat, border=NA, freq=FALSE, main=NA,
+    xlab='Standardized murder arrests')
+```
+
+Standardizing moves the center to $0$ and changes the units on the horizontal axis, but the two histograms have the same shape.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+*Chebyshev's inequality* says that, for any dataset, the proportion of observations at least $k$ standard deviations from the mean is at most $1/k^2$,
+$$\frac{1}{n}\sum_{i=1}^{n}\mathbf{1}\left(|\hat{z}_{i}| \geq k\right) \leq \frac{1}{k^2}.$$
+For example, at most a quarter of the observations can be two or more standard deviations from the mean, whatever the shape of the distribution.
+To see why, note that the standardized values satisfy $\frac{1}{n}\sum_{i=1}^{n}\hat{z}_{i}^2=1$, and every observation with $|\hat{z}_{i}| \geq k$ adds at least $k^2/n$ to that sum.
+
+Check the bound on the lab data for $k=2$ and $k=3$.
+```{r}
+# proportion of states at least k standard deviations from the mean
+mean(abs(z_hat) >= 2)
+mean(abs(z_hat) >= 3)
+
+# Chebyshev's upper bound
+1/c(2, 3)^2
+```
+Only one state is two or more standard deviations from the mean, far fewer than the bound allows.
+The bound is loose because it must hold for every dataset, including ones with much heavier tails.
+:::
+
+Standardizing also lets us compare variables measured on different scales.
+Georgia has the highest murder arrest rate of any state, and North Carolina has the highest assault arrest rate.
+Both rates are per $100,000$ people, but assaults are far more common, so the raw numbers cannot be compared directly.
+
+```{r}
+# a function that standardizes any variable
+standardize <- function(x_hat){
+    m_hat <- mean(x_hat)
+    s_hat <- sqrt(mean((x_hat - m_hat)^2))
+    z_hat <- (x_hat - m_hat)/s_hat
+    return(z_hat)
+}
+
+# standardize two variables measured on different scales
+z_arrests_hat <- data.frame(
+    Murder=standardize(USArrests[, 'Murder']),
+    Assault=standardize(USArrests[, 'Assault']),
+    row.names=rownames(USArrests))
+
+# raw and standardized values for two states
+states <- c('Georgia', 'North Carolina')
+USArrests[states, c('Murder', 'Assault')]
+round(z_arrests_hat[states, ], 2)
+```
+
+Georgia's murder rate is $2.23$ standard deviations above the mean, but its assault rate is only $0.49$ above.
+North Carolina is the reverse, with an assault rate $2.02$ standard deviations above the mean and a murder rate $1.21$ above.
+
+Standardizing is a special case of a change of units.
+Suppose each observation is transformed to $\hat{y}_{i}=a+b\hat{x}_{i}$ for constants $a$ and $b$, and write $\hat{m}_{X}, \hat{s}_{X}$ and $\hat{m}_{Y}, \hat{s}_{Y}$ for the means and standard deviations before and after.
+Then
+$$\begin{aligned}
+\hat{m}_{Y} &= a + b\hat{m}_{X}, \\
+\hat{s}_{Y} &= |b|\hat{s}_{X}.
+\end{aligned}$$
+Adding $a$ moves every observation, and so the mean, by the same amount, but leaves the distances between observations unchanged.
+Multiplying by $b$ stretches those distances, so it scales both the mean and the standard deviation.
+Standardizing sets $b=1/\hat{s}_{X}$ and $a=-\hat{m}_{X}/\hat{s}_{X}$, so that $\hat{m}_{Z}=-\hat{m}_{X}/\hat{s}_{X}+\hat{m}_{X}/\hat{s}_{X}=0$ and $\hat{s}_{Z}=\hat{s}_{X}/\hat{s}_{X}=1$.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Suppose three workers earn hourly wages of $\{15, 20, 25\}$ dollars, so $\hat{m}_{X}=20$ and $\hat{s}_{X}=\sqrt{[25+0+25]/3}\approx 4.08$.
+Each works $2000$ hours a year and receives a bonus of $1000$ dollars, so annual earnings are $\hat{y}_{i}=1000+2000\hat{x}_{i}$, which are $\{31000, 41000, 51000\}$.
+Then $\hat{m}_{Y}=1000+2000 \times 20 = 41000$ and $\hat{s}_{Y}=2000 \times 4.08 \approx 8165$.
+The bonus raises every worker's earnings by the same amount, so it does not change the spread.
+```{r}
+x0_hat <- c(15, 20, 25) # hourly wages
+y0_hat <- 1000 + 2000*x0_hat # annual earnings with a bonus
+y0_hat
+
+# mean: shifted by the bonus and scaled by the hours
+mean(y0_hat)
+1000 + 2000*mean(x0_hat)
+
+# standard deviation: scaled by the hours only
+sqrt(mean((y0_hat - mean(y0_hat))^2))
+2000*sqrt(mean((x0_hat - mean(x0_hat))^2))
+```
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Show that $\hat{m}_{Y}=a+b\hat{m}_{X}$ and $\hat{s}_{Y}=|b|\hat{s}_{X}$.
+
+Substituting $\hat{y}_{i}=a+b\hat{x}_{i}$ into the definitions of the mean and variance,
+$$\begin{aligned}
+\hat{m}_{Y} &= \frac{1}{n}\sum_{i=1}^{n} (a+b\hat{x}_{i}) = a + b\frac{1}{n}\sum_{i=1}^{n} \hat{x}_{i} = a + b\hat{m}_{X}, \\
+\hat{v}_{Y} &= \frac{1}{n}\sum_{i=1}^{n} (a+b\hat{x}_{i} - a - b\hat{m}_{X})^2 = b^2 \frac{1}{n}\sum_{i=1}^{n} (\hat{x}_{i} - \hat{m}_{X})^2 = b^2\hat{v}_{X}.
+\end{aligned}$$
+Taking square roots gives $\hat{s}_{Y}=|b|\hat{s}_{X}$.
+:::
+
 ## Other Center/Spread Statistics
 
 A general rule of applied statistics is that there are multiple ways to measure something.
 Mean and Variance are measurements of Center and Spread, but there are others that have different theoretical properties and may be better suited for your dataset.
 
-#### **Medians and Absolute Deviations** {-}
+#### **Center/Spread based on Quantiles** {-}
 
 When the data are skewed or contain outliers, statistics built from quantiles often give a more representative summary of center and spread than the mean and variance.
+Every quantile lies between the smallest and largest observation, so a quantile-based range can never produce an impossible value like the negative $\hat{m}-2\hat{s}$ for murder arrests above.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The sample *median* $\tilde{m}$ is the value where one half of the data fall below and one half above; it is the $0.5$ quantile.
@@ -237,9 +434,9 @@ quants <- quantile(x0_hat, probs=c(.25, .75))
 quants[2]-quants[1]
 IQR(x0_hat)
 ```
-Compute the $\text{MAD}$ statistic for the dataset $\{1,4,10\}$.
+Compute the $\text{MAD}$ statistic for the same dataset $\{-100,1,4,10,10\}$.
 First compute the median, $\text{Med}(-100,1,4,10,10)=4$.
-Then compute $\text{Med}(,~ |99-4|, |1-4|,~ |4-4|,~ |10-4|,~ |10-4| )= \text{Med}(95, 3, 0, 6, 6 ) = 6$.
+Then compute $\text{Med}(|-100-4|,~ |1-4|,~ |4-4|,~ |10-4|,~ |10-4|) = \text{Med}(104, 3, 0, 6, 6) = 6$.
 ```{r}
 #Another alternative to sd(x0_hat)
 mad(x0_hat, constant=1)
@@ -265,6 +462,37 @@ mad(x1_extreme_hat, constant=1)
 ```
 :::
 
+Replacing the mean and standard deviation in the [standardized value](#standardized-values) with the median and $\text{MAD}$ gives a *robust z-score*, $(\hat{x}_{i}-\tilde{m})/\text{MAD}$, which a single extreme value cannot distort by inflating the spread.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Georgia has the highest murder arrest rate.
+Compute its standard and robust z-scores, with and without the extreme value in `x1_extreme_hat`.
+Which one still flags Georgia as unusual?
+```{r}
+# robust version of the standardize function above
+standardize_robust <- function(x_hat){
+    med_hat <- median(x_hat)
+    mad_hat <- mad(x_hat, constant=1)
+    z_hat <- (x_hat - med_hat)/mad_hat
+    return(z_hat)
+}
+
+# Georgia, the state with the highest murder rate
+id <- which.max(x_hat)
+
+# standard z-scores, without and with the extreme value
+standardize(x_hat)[id]
+standardize(x1_extreme_hat)[id]
+
+# robust z-scores, without and with the extreme value
+standardize_robust(x_hat)[id]
+standardize_robust(x1_extreme_hat)[id]
+```
+The extreme value inflates the standard deviation from about $4.3$ to about $138$, so Georgia's standard z-score falls from $2.23$ to $-0.07$, and the state with the highest murder rate looks slightly below average.
+Its robust z-score barely moves, from $2.78$ to $2.66$, because the median and $\text{MAD}$ hardly change.
+The robust z-scores are larger than the standard ones here because the $\text{MAD}$ is smaller than the standard deviation; R's default `mad(x_hat)` multiplies by $1.4826$ so that the two are on the same scale for Normal data.
+:::
+
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Note that there other "absolute deviation" statistics
@@ -284,6 +512,7 @@ $$\begin{aligned}
 \hat{m} &= \frac{\sum_{x} x W(x)}{\sum_{x} W(x)} = \sum_{x} x w(x),
 \end{aligned}$$
 where $w(x)=\frac{W(x)}{\sum_{x'} W(x')}$ is normalized version of $W(x)$ that implies all unique values $x'$ sum to unity; $\sum_{x'}w(x')=1$.
+You have already seen the special case of "probability weights" when computing the mean above with; $w(x)=\hat{p}(x)=\sum_{i=1}^{n}\mathbf{1}\left(\hat{x}_{i}=x\right)/n$.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 For another example, suppose a student has these scores
@@ -360,6 +589,7 @@ Positive skew means a long right tail, negative skew a long left tail, and zero 
 Cubing the deviations preserves their sign: positive deviations stay positive and negative deviations stay negative.
 The numerator is therefore close to zero when the data are roughly balanced around the mean, and large in absolute value when one tail is much longer than the other.
 Dividing by the cubed standard deviation makes skewness dimensionless, so the values are comparable across datasets measured in different units.
+Equivalently, skewness is the average cubed [standardized value](#standardized-values), $\sum_{i=1}^{n}\hat{z}_{i}^3/n$.
 Skewness is useful for flagging whether the mean and median will agree closely (low skew) or diverge sharply (high skew), and for deciding whether a log or square-root transformation might tame the distribution before further analysis.
 
 The figure below compares two distributions with the same mean and standard deviation.
@@ -372,7 +602,7 @@ On the ECDF, it rises steeply at first and then approaches $1$ slowly.
 p_grid <- ppoints(5000)
 x_noskew <- qnorm(p_grid)
 x_skew <- (qgamma(p_grid, shape=2) - 2)/sqrt(2)
-cols <- c(rgb(0, 0, 1, .5), rgb(1, 0, 0, .5))
+cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
 bks <- seq(-4, 7.5, by=.25)
 par(mfrow=c(1, 2), mar=c(4, 4, 1, 1))
 
@@ -397,13 +627,14 @@ Consider the right-skewed dataset $\{0,1,2,3,9\}$ with mean $\hat{m}=15/5=3$.
 The cubed deviations from the mean are $(-3)^3, (-2)^3, (-1)^3, 0^3, 6^3$, which equal $-27, -8, -1, 0, 216$.
 A cube keeps the sign of its deviation, so the single large positive deviation outweighs the small negative ones.
 Their average is the numerator: $\sum_{i=1}^{n}[\hat{x}_{i}-\hat{m}]^3/n = 180/5 = 36$.
-Dividing by $\hat{s}^3 \approx 44.2$ gives a skewness of $36/44.2 \approx 0.81$.
+The variance is $[9+4+1+0+36]/5=10$, so $\hat{s}=\sqrt{10}$, and dividing by $\hat{s}^3 \approx 31.6$ gives a skewness of $36/31.6 \approx 1.14$.
 The positive value reflects the long right tail created by the value $9$.
 ```{r}
 x_demo_hat <- c(0, 1, 2, 3, 9)
 m3_hat <- mean( (x_demo_hat - mean(x_demo_hat))^3 ) # numerator
 m3_hat
-m3_hat / sd(x_demo_hat)^3 # skewness
+s_hat <- sqrt(mean( (x_demo_hat - mean(x_demo_hat))^2 )) # divides by n, unlike sd()
+m3_hat / s_hat^3 # skewness
 ```
 :::
 
@@ -411,7 +642,8 @@ m3_hat / sd(x_demo_hat)^3 # skewness
 skewness <-  function(x_hat){
  m_hat <- mean(x_hat)
  m3_hat <- mean((x_hat - m_hat)^3)
- s3_hat <- sd(x_hat)^3
+ s_hat <- sqrt(mean((x_hat - m_hat)^2)) # divides by n, unlike sd()
+ s3_hat <- s_hat^3
  skew <- m3_hat/s3_hat
  return(skew)
 }
@@ -434,6 +666,7 @@ The Normal distribution has kurtosis $3$, so subtracting $3$ gives a comparison-
 :::
 
 Where skewness uses the cube (and so can be negative), kurtosis uses the fourth power, which forces every term to be positive and disproportionately amplifies the largest deviations.
+Equivalently, kurtosis is the average fourth power of the standardized values, $\sum_{i=1}^{n}\hat{z}_{i}^4/n$.
 A handful of far-from-the-mean values can drive kurtosis up substantially even when the bulk of the distribution looks unremarkable, which is why it is often described as a "tail-heaviness" measure.
 Kurtosis is useful for distinguishing distributions that look similar in their bulk but differ in how often extreme values occur: daily stock returns, for example, have moderate variance but kurtosis well above $3$, reflecting occasional crashes that a Normal model would treat as vanishingly rare.
 
@@ -446,7 +679,7 @@ On the ECDF, it approaches $0$ and $1$ much more slowly in the tails, and is sti
 p_grid <- ppoints(5000)
 x_lowkurt <- qnorm(p_grid)
 x_highkurt <- qcauchy(p_grid, scale=qnorm(.75))
-cols <- c(rgb(0, 0, 1, .5), rgb(1, 0, 0, .5))
+cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
 x_lim <- c(-6.5, 6.5)
 # the two outer bins hold the far tails, beyond the plotted range
 bks <- c(floor(min(x_highkurt)), seq(x_lim[1], x_lim[2], by=.25), ceiling(max(x_highkurt)))
@@ -472,12 +705,13 @@ legend('bottomright', legend=c('Low kurtosis', 'High kurtosis'), cex=.8,
 Using the same dataset $\{0,1,2,3,9\}$ with mean $\hat{m}=3$, the *quartic* deviations are $(-3)^4, (-2)^4, (-1)^4, 0^4, 6^4$, which equal $81, 16, 1, 0, 1296$.
 Because the power is even, every term is positive, and the large deviation from the value $9$ dominates the sum.
 Their average is the numerator: $\sum_{i=1}^{n}[\hat{x}_{i}-\hat{m}]^4/n = 1394/5 = 278.8$.
-Dividing by $\hat{s}^4 = 156.25$ gives a kurtosis of $278.8/156.25 \approx 1.78$.
+Dividing by $\hat{s}^4 = 10^2 = 100$ gives a kurtosis of $278.8/100 \approx 2.79$.
 ```{r}
 x_demo_hat <- c(0, 1, 2, 3, 9)
 m4_hat <- mean( (x_demo_hat - mean(x_demo_hat))^4 ) # numerator
 m4_hat
-m4_hat / sd(x_demo_hat)^4 # kurtosis
+s_hat <- sqrt(mean( (x_demo_hat - mean(x_demo_hat))^2 )) # divides by n, unlike sd()
+m4_hat / s_hat^4 # kurtosis
 ```
 :::
 
@@ -490,7 +724,8 @@ You can also see skew in the boxplot when one quartile is much further from the 
 kurtosis <- function(x_hat){
  m_hat <- mean(x_hat)
  m4_hat <- mean((x_hat - m_hat)^4)
- s4_hat <- sd(x_hat)^4
+ s_hat <- sqrt(mean((x_hat - m_hat)^2)) # divides by n, unlike sd()
+ s4_hat <- s_hat^4
  kurt <- m4_hat/s4_hat
  return(kurt)
  # use instead to compare against normal
@@ -508,11 +743,12 @@ Murder arrests have a kurtosis below $3$, so their tails are lighter than those 
 You can also describe distributions in terms of how clustered the values are, including the number of modes (peaks), bunching, and many other statistics.
 A *gap* is a range with few or no observations, and a *cluster* is a group of values bunched together.
 A distribution with one peak is *unimodal*, and one with two peaks is *bimodal*.
-The two histograms below are each bimodal: two clusters of values separated by a gap.
+The two figures below are each bimodal: two clusters of values separated by a gap.
+Each pairs a histogram with the ECDF of the same values, where a cluster shows up as a steep rise and a gap as a flatter stretch.
 The mean and variance alone would miss this structure, since two very different distributions can share the same mean and variance.
 So remember that "a picture is worth a thousand words": plot your data before summarizing it numerically.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.height=4}
 # Complicated Random Variable
 r_ugly0 <- function(n, population_means=c(-2, 3), population_vars=c(1, 4), prob=c(.5, .5)){
   # Which distribution is each observation coming from
@@ -521,14 +757,17 @@ r_ugly0 <- function(n, population_means=c(-2, 3), population_vars=c(1, 4), prob=
 }
 
 x_sim <- r_ugly0(6000)
+par(mfrow=c(1, 2), mar=c(4, 4, 1, 1))
 hist(x_sim, breaks=60,
     freq=FALSE, border=NA,
     xlab='x', main=NA)
+plot(ecdf(x_sim), verticals=TRUE, do.points=FALSE, col.01line=NA, lwd=2,
+    xlim=range(x_sim), main=NA, xlab='x', ylab='Proportion <= x')
 
 #hist( rbeta(1000, .6, .6), border=NA, main=NA, freq=F, breaks=20)
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.height=4}
 # Another Complicated Random Variable
 r_ugly1 <- function(n, theta1=c(-8, -1), theta2=c(-2, 2), rho=.25){
     omega   <- rbinom(n, size=1, rho)
@@ -538,8 +777,11 @@ r_ugly1 <- function(n, theta1=c(-8, -1), theta2=c(-2, 2), rho=.25){
 }
 # Very Large Sample
 x_sim <- r_ugly1(1000000)
+par(mfrow=c(1, 2), mar=c(4, 4, 1, 1))
 hist(x_sim, breaks=1000, freq=FALSE, border=NA,
     xlab='x', main=NA)
+plot(ecdf(x_sim), verticals=TRUE, do.points=FALSE, col.01line=NA, lwd=2,
+    xlim=range(x_sim), main=NA, xlab='x', ylab='Proportion <= x')
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -726,5 +968,5 @@ Note that the mode and Herfindahl index need repeated values, so for continuous 
 
 This chapter compressed a distribution into single numbers: the *mean* and *variance* (and *standard deviation*) for center and spread, the *median*, *IQR*, and *MAD* as robust alternatives, and the *skewness* and *kurtosis* for shape.
 For factor data, where nothing can be added, the *mode* and the *Herfindahl index* $\hat{H}$ took over: the four census regions in `state.region` have mode *South* and $\hat{H}=0.26$, barely above the $0.25$ floor for four equally common categories, and ordered factors such as letter grades also keep the median and quartiles.
-The running five-point dataset $\{0, 1, 2, 3, 9\}$ tied the shape statistics together: its mean is $3$, its cubed deviations average to $36$ giving a skewness of about $0.81$ (long right tail), and its quartic deviations give a kurtosis of about $1.78$ (both driven by the single outlier at $9$).
+The running five-point dataset $\{0, 1, 2, 3, 9\}$ tied the shape statistics together: its mean is $3$, its cubed deviations average to $36$ giving a skewness of about $1.14$ (long right tail), and its quartic deviations give a kurtosis of about $2.79$ (both driven by the single outlier at $9$).
 On real data such as `USArrests[, 'Murder']`, a histogram plus the mean and standard deviation already reveal most of the shape; the median, MAD, skew, and kurtosis fill in what symmetry assumptions hide.

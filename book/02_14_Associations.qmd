@@ -125,10 +125,16 @@ cor(x0_hat, y0_hat)
 You can conduct hypothesis tests for these statistics using the same procedures we learned for univariate data, [Intervals](01_07_Intervals.qmd).
 For example, by inverting a confidence interval.
 Consider the correlation between urban population share and murder arrests across US states.
+`USArrests` covers all $50$ states, so it is the whole population of states rather than a sample from it.
+To make the bootstrap below meaningful, pretend we observed only a random sample of $35$ states, as in [Comparing Multiple Groups](02_13_MultipleGroups.qmd#describing-groups).
 
 ```{r}
-# Load the Data
-xy_hat <- USArrests[, c('UrbanPop', 'Murder')]
+# Draw one random sample of 35 of the 50 states, and use only it from here on
+set.seed(1)
+state_id <- sample(nrow(USArrests), 35)
+
+# Load the Data for the sampled states
+xy_hat <- USArrests[state_id, c('UrbanPop', 'Murder')]
 colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
 xy_cor <- cor(xy_hat[, 'x_hat'], xy_hat[, 'y_hat'])
 xy_cor
@@ -153,8 +159,9 @@ title('Bootstrap Distribution', font.main=1)
 
 ## Test whether correlation is statistically different from 0
 boot_ci <- quantile(bootstrap_cor, probs=c(0.025, 0.975))
-abline(v=boot_ci)
-abline(v=0, col=rgb(1, 0, 0, .8))
+abline(v=boot_ci, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=0, col=rgb(0, 0, 1, .8), lty=2)
+abline(v=xy_cor, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 :::
 
@@ -182,8 +189,8 @@ title('Null Bootstrap Distribution', font.main=1)
 
 ## Test whether correlation is statistically different from 0
 boot_ci <- quantile(null_bootstrap_cor, probs=c(0.025, 0.975))
-abline(v=boot_ci)
-abline(v=xy_cor, col=rgb(0, 0, 1, .8))
+abline(v=boot_ci, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=xy_cor, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 All dependence resides in the pairing, and permuting one margin destroys the pairing completely.
 
@@ -284,8 +291,8 @@ hist(null_permutation_med_cor, breaks=100,
 title('Null Permutation Distribution', font.main=1)
 
 ## Test whether Falk's median correlation is statistically different from 0
-abline(v=quantile(null_permutation_med_cor, probs=c(0.025, 0.975)))
-abline(v=xy_med_cor, col=rgb(0, 0, 1, .8))
+abline(v=quantile(null_permutation_med_cor, probs=c(0.025, 0.975)), col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=xy_med_cor, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 :::
 
@@ -442,13 +449,13 @@ where $\hat{o}_{kj}$ is the observed frequency in cell $(k, j)$, $\hat{e}_{kj} =
 Cramer's V is useful for two unordered categorical variables (occupation, region, brand), because it treats every reordering of rows or columns the same and makes no use of any ordering.
 The chi-squared piece measures how far observed counts are from what we would expect if $\hat{x}$ and $\hat{y}$ were independent, and dividing by $n \cdot \min(J - 1, K - 1)$ rescales it into a bounded score so different tables are comparable: $0$ suggests no association, and a value closer to $1$ suggests a strong association.
 
-For example, consider the census region of each US state and its murder arrest rate grouped into three bands.
+For example, consider the census region of each sampled state and its murder arrest rate grouped into three bands.
 Regions have no natural order, so we treat both variables as unordered categories.
-The `state.region` vector lists states in the same alphabetical order as the rows of `USArrests`.
+The `state.region` vector lists states in the same alphabetical order as the rows of `USArrests`, so `state_id` picks out the same states from both.
 ```{r}
-# Pair each state's region with its murder band (low, middle, high)
-murder_band <- cut(USArrests[, 'Murder'], 3, labels=c('low', 'middle', 'high'))
-xy_cat_hat <- data.frame(x_hat=state.region, y_hat=murder_band) # x_hat=census region, y_hat=murder band
+# Pair each sampled state's region with its murder band (low, middle, high)
+murder_band <- cut(USArrests[state_id, 'Murder'], 3, labels=c('low', 'middle', 'high'))
+xy_cat_hat <- data.frame(x_hat=state.region[state_id], y_hat=murder_band) # x_hat=census region, y_hat=murder band
 table(xy_cat_hat)
 
 CV <- function(xy){
@@ -531,7 +538,7 @@ You construct sampling distributions and conduct hypothesis tests for  Cramer's 
 2. For the dataset $\{(1, 5),\ (2, 3),\ (3, 4),\ (4, 2),\ (5, 1)\}$, compute the Pearson correlation $\hat{r}_{XY}$ by hand.
    Show all five steps: means, deviances, covariance $\hat{c}_{XY}$, standard deviations $\hat{s}_{X}$ and $\hat{s}_{Y}$, and the final correlation.
 
-3. Using the `USArrests` dataset, compute both the Pearson correlation and Kendall's rank correlation between `Murder` and `Assault`.
+3. Using the $35$ sampled states in `state_id`, compute both the Pearson correlation and Kendall's rank correlation between `Murder` and `Assault` in `USArrests`.
    Then write a bootstrap with $B = 9999$ iterations to construct a $95\%$ confidence interval for the Pearson correlation.
    Does the interval contain zero?
 

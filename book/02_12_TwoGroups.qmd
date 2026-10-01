@@ -172,14 +172,16 @@ y2_hat <- y_hat[x2_id]                      # wages of university group
 # Initial summary figure: two overlaid histograms on a common grid
 bks <- seq(0, 34, by=1)             # shared bin edges
 dlim <- c(0, .2)                    # shared y limit
-cols <- c(rgb(1, 0, 0, .5), rgb(0, 0, 1, .5)) # semi-transparent fill
+cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5)) # semi-transparent fill
 
 hist(y1_hat, breaks=bks, ylim=dlim,
      col=cols[1], xlab='Wages',
      freq=FALSE, border=NA, main=NA)
+rug(y1_hat, col=cols[1])
 hist(y2_hat, breaks=bks, ylim=dlim,
      col=cols[2],
      freq=FALSE, border=NA, add=TRUE)
+rug(y2_hat, col=cols[2])
 legend('topright',
        col=cols, pch=15,
        legend=c('12 Years (Highschool)', '16 Years (University)'),
@@ -222,15 +224,16 @@ for(b in seq(bootstrap_diff) ){
     d_b <- m1_b_hat - m2_b_hat
     bootstrap_diff[b] <- d_b
 }
-hist(bootstrap_diff,
+hist(bootstrap_diff, breaks=50,
     border=NA, freq=FALSE,
     main=NA, xlab='Difference in Means')
 title('Bootstrapped Difference in Means', font.main=1)
 
 # 2-Sided Test via Confidence Interval
 boot_ci <- quantile(bootstrap_diff, probs=c(.025, .975))
-abline(v=boot_ci, lwd=2)
-abline(v=0, lwd=2, col=rgb(1, 0, 0, .8))
+abline(v=boot_ci, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=0, col=rgb(0, 0, 1, .8), lty=2)
+abline(v=d, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 
@@ -294,13 +297,14 @@ boot_quant <- function(y1_hat, y2_hat, n_boot=9999, probs=0.5, ...){
 }
 
 # 2-Sided Test for Median Differences
-# d <- quantile(y1_hat, probs=0.5) - quantile(y2_hat, probs=0.5)
+d_med <- quantile(y1_hat, probs=0.5) - quantile(y2_hat, probs=0.5)
 boot_d <- boot_quant(y1_hat, y2_hat, n_boot=9999, probs=0.5)
-hist(boot_d, border=NA, freq=FALSE,
+hist(boot_d, breaks=50, border=NA, freq=FALSE,
     main=NA, xlab='Difference in Medians')
 title('Bootstrap Difference in Medians', font.main=1)
-abline(v=quantile(boot_d, probs=c(.025, .975)), lwd=2)
-abline(v=0, lwd=2, col=rgb(1, 0, 0, .8))
+abline(v=quantile(boot_d, probs=c(.025, .975)), col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=0, col=rgb(0, 0, 1, .8), lty=2)
+abline(v=d_med, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 :::
 
@@ -329,12 +333,14 @@ boot_fun <- function( fun, n_boot=9999, ...){
 }
 
 # 2-Sided Test for SD Differences
-#d <- sd(y1_hat) - sd(y2_hat)
+d_sd <- sd(y1_hat) - sd(y2_hat)
 boot_d <- boot_fun(sd)
-hist(boot_d, border=NA, font.main=1,
-    main='Difference in Standard Deviations')
-abline(v=quantile(boot_d, probs=c(.025, .975)), lwd=2)
-abline(v=0, lwd=2, col=2)
+hist(boot_d, breaks=50, border=NA, freq=FALSE,
+    main=NA, xlab='Difference in Standard Deviations')
+title('Bootstrap Difference in Standard Deviations', font.main=1)
+abline(v=quantile(boot_d, probs=c(.025, .975)), col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=0, col=rgb(0, 0, 1, .8), lty=2)
+abline(v=d_sd, col=rgb(1, 0, 0, .8), lwd=2)
 1 - ecdf(boot_d)(0)
 
 
@@ -347,49 +353,10 @@ abline(v=0, lwd=2, col=2)
 ## Distributional Comparisons
 
 We can also examine whether there are any differences between the entire *distributions*.
-We typically start by plotting the data using ECDF's or a boxplot, and then calculate a statistic for hypothesis testing.
-Which plot and test statistic depends on how many groups there are.
+We typically start by plotting the two ECDF's, and then calculate a statistic for hypothesis testing.
+A quantile-quantile plot is another way to compare the two distributions visually.
 
-#### **Two groups**{-}
-
-One useful visualization for two groups is to plot the quantiles against one another: a *quantile-quantile plot*.
-I.e., the first data point on the bottom left shows the first quantile for both distributions. 
-
-```{r}
-# Wage Data (same as from before)
-#library(Ecdat)
-#y1_hat <- sort( xy2_hat[xy2_hat[, 'x_hat'] == 12,  'y_hat'])
-#y2_hat <- sort( xy2_hat[xy2_hat[, 'x_hat'] == 16,  'y_hat'] )
-
-# Compute Quantiles
-quants <- seq(0, 1, length.out=101)
-Q1 <- quantile(y1_hat, probs=quants)
-Q2 <- quantile(y2_hat, probs=quants)
-
-# Compare Distributions via Quantiles
-#ry <- range(c(y1_hat, y2_hat))
-#plot(ry, c(0, 1), type='n', font.main=1,
-#    main='Distributional Comparison',
-#    xlab='Quantile',
-#    ylab='Probability')
-#lines(Q1, quants, col=2)
-#lines(Q2, quants, col=4)
-#legend('bottomright', col=c(2, 4), lty=1,
-#	legend=c(
-#	    expression(hat(F)[1]),
-#	    expression(hat(F)[2]) 
-#))
-
-# Compare Quantiles
-ry <- range(c(y1_hat, y2_hat))
-plot(Q1, Q2, xlim=ry, ylim=ry,
-    xlab=expression(Q[1]),
-    ylab=expression(Q[2]),
-    main=NA,
-    pch=16, col=grey(0, .25))
-title('Quantile-Quantile Plot', font.main=1)
-abline(a=0, b=1, lty=2)
-```
+#### **KS and CVM Statistics** {-}
 
 To go from a picture of two distributions to a single-number summary of how different they are, we measure the gap between their ECDFs.
 
@@ -436,16 +403,11 @@ title( paste0('CVM: ', CVMqv), adj=1, font.main=1)
 segments(y_values, F1_vals, y_values, F2_vals, lwd=.25, col=grey(0, .2))
 ```
 
-
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Suppose there are two groups of summer workers, with data on the earnings of each individual.
 In thousands of Canadian Dollars, specifically, Group $A$ has earnings $\{18,20,25,30\}$ and group $B$ has earnings $\{19,21,24,35\}$.
 
-A) We can first compare the distributions by drawing a QQ plot.
-We sort both samples and plot Group $A$ quantiles (x-axis) against Group $B$ quantiles (y-axis): $(18,19),\ (20,21),\ (25,24),\ (30,35)$.
-The 45° reference line indicates identical distributions: point 1 lies above the line (18,18) and so do points 2 and 4.
-
-B) We can then compute the CVM statistic for further statistical testing.
+We can compute the CVM statistic for further statistical testing.
 Start by drawing the ECDF's.
 ```{r}
 # Earnings of each group, in thousands of Canadian Dollars
@@ -487,6 +449,64 @@ Then compute $(\hat{F}_A(x) - \hat{F}_B(x))^2$ at each of the 8 pooled sorted va
 
 
 $CVM = 1/16 + 1/16 + 1/16 + 1/16 = 1/4$.
+:::
+
+#### **Quantile-Quantile Plots** {-}
+
+Another useful visualization for two groups is to plot the quantiles against one another: a *quantile-quantile plot*.
+I.e., the first data point on the bottom left shows the first quantile for both distributions. 
+
+```{r}
+# Wage Data (same as from before)
+#library(Ecdat)
+#y1_hat <- sort( xy2_hat[xy2_hat[, 'x_hat'] == 12,  'y_hat'])
+#y2_hat <- sort( xy2_hat[xy2_hat[, 'x_hat'] == 16,  'y_hat'] )
+
+# Compute Quantiles
+quants <- seq(0, 1, length.out=101)
+Q1 <- quantile(y1_hat, probs=quants)
+Q2 <- quantile(y2_hat, probs=quants)
+
+# Compare Distributions via Quantiles
+#ry <- range(c(y1_hat, y2_hat))
+#plot(ry, c(0, 1), type='n', font.main=1,
+#    main='Distributional Comparison',
+#    xlab='Quantile',
+#    ylab='Probability')
+#lines(Q1, quants, col=2)
+#lines(Q2, quants, col=4)
+#legend('bottomright', col=c(2, 4), lty=1,
+#	legend=c(
+#	    expression(hat(F)[1]),
+#	    expression(hat(F)[2]) 
+#))
+
+# Compare Quantiles
+ry <- range(c(y1_hat, y2_hat))
+plot(Q1, Q2, xlim=ry, ylim=ry,
+    xlab=expression(Q[1]),
+    ylab=expression(Q[2]),
+    main=NA,
+    pch=16, col=grey(0, .25))
+title('Quantile-Quantile Plot', font.main=1)
+abline(a=0, b=1, lty=2)
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Return to the summer workers from the Must Know above, with group $A$ earning $\{18,20,25,30\}$ and group $B$ earning $\{19,21,24,35\}$.
+Compare the two distributions by drawing a QQ plot.
+
+We sort both samples and plot Group $A$ quantiles (x-axis) against Group $B$ quantiles (y-axis): $(18,19),\ (20,21),\ (25,24),\ (30,35)$.
+```{r}
+# Sorting pairs the k-th smallest earnings in group A with the k-th smallest in group B
+ry0 <- range(c(yA0_hat, yB0_hat))
+plot(sort(yA0_hat), sort(yB0_hat), xlim=ry0, ylim=ry0,
+    xlab='Group A Earnings', ylab='Group B Earnings',
+    main=NA, pch=16, col=grey(0, .5))
+title('Quantile-Quantile Plot', font.main=1)
+abline(a=0, b=1, lty=2) # 45 degree line: identical distributions
+```
+The 45° reference line indicates identical distributions: point 1 lies above the line (18,18) and so do points 2 and 4.
 :::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -541,9 +561,9 @@ id_A <- combn(8, 4)
 d0_perm <- apply(id_A, 2, function(id){
     mean(y0_hat[id]) - mean(y0_hat[-id])
 })
-hist(d0_perm, breaks=20, border=NA, freq=FALSE,
+hist(d0_perm, breaks=25, border=NA, freq=FALSE,
     main=NA, xlab='Difference in Means')
-abline(v=d0_hat, col=rgb(1, 0, 0, .8))
+abline(v=d0_hat, col=rgb(1, 0, 0, .8), lwd=2)
 
 # Two-sided p-value: share of relabelings at least as extreme as observed
 mean(abs(d0_perm) >= abs(d0_hat))
@@ -569,11 +589,11 @@ for(b in seq(permute_diff) ){
     d_b <- m1_perm_hat - m2_perm_hat
     permute_diff[b] <- d_b
 }
-hist(permute_diff,
+hist(permute_diff, breaks=50,
     border=NA, freq=FALSE,
     main=NA, xlab='Difference in Means')
 title('Permuted Difference in Means', font.main=1)
-abline(v=d, col=rgb(1, 0, 0, .8))
+abline(v=d, col=rgb(1, 0, 0, .8), lwd=2)
 
 F_hat <- ecdf(abs(permute_diff))
 p <- 1 - F_hat( abs(d) )
@@ -595,11 +615,11 @@ for(b in seq(permute_med_diff) ){
     id1 <- sample(length(y_pooled), n1, replace=FALSE)
     permute_med_diff[b] <- median(y_pooled[id1]) - median(y_pooled[-id1])
 }
-hist(permute_med_diff,
+hist(permute_med_diff, breaks=50,
     border=NA, freq=FALSE,
     main=NA, xlab='Difference in Medians')
 title('Permuted Difference in Medians', font.main=1)
-abline(v=d_med, col=rgb(1, 0, 0, .8))
+abline(v=d_med, col=rgb(1, 0, 0, .8), lwd=2)
 
 # Two-sided p-value: share of permutations at least as extreme as observed
 p_med <- mean(abs(permute_med_diff) >= abs(d_med))
