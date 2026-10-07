@@ -3,7 +3,7 @@
 
 Suppose we have some bivariate data: $\hat{x}_{i}, \hat{y}_{i}$.
 In the previous chapter, we summarized the strength of association between two variables using correlation.
-Correlation tells us *how strongly* $X$ and $Y$ move together, but not *by how much* $Y$ changes per unit change in $X$.
+Correlation tells us *how strongly* $\hat{x}$ and $\hat{y}$ move together, but not *by how much* $\hat{y}$ changes per unit change in $\hat{x}$.
 Regression answers that question by fitting a line through the data.
 
 ```{r}
@@ -31,11 +31,15 @@ abline(reg, lty=2)
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 
-A *fitted value* $\hat{y}_{i}^{\mathrm{fit}}$ is the regression line evaluated at the $i$-th observation's $\hat{x}_{i}$.
+A *fitted value* $\hat{y}_{i}^{\mathrm{fit}}$ is the model's prediction for observation $i$.
 The superscript $\mathrm{fit}$ marks a prediction, while $\hat{y}_i$ is an observed outcome.
 
 The *sample residual* is the gap between actual and fitted, $\hat{e}_{i} = \hat{y}_{i} - \hat{y}_{i}^{\mathrm{fit}}$.
+
+*Ordinary least squares* (OLS) fits a model by minimizing the sum of squared residuals, $\sum_{i=1}^{n} \hat{e}_{i}^{2}$.
 :::
+
+We square the residuals so that positive and negative errors do not cancel, and so that big misses are penalized more than small ones.
 
 ## Simple Linear Regression
 
@@ -52,28 +56,22 @@ Our *simple linear model* is
 $$
 \hat{y}_{i}=b_{0}+b_{1} \hat{x}_{i}+\hat{e}_{i},
 $$
-where $b_{0}$ and $b_{1}$ are parameters (the *coefficients*), and $\hat{x}_{i}, \hat{y}_{i}$ are the data for observation $i$.
+where $b_{0}$ and $b_{1}$ are the coefficients, and $\hat{x}_{i}, \hat{y}_{i}$ are the data for observation $i$.
 :::
 
 The residual $\hat{e}_{i}$ is the vertical gap between observation $i$'s actual value of $\hat{y}_{i}$ and the model's prediction for that observation:
 $$\hat{e}_{i}=\hat{y}_{i}-(b_{0}+b_{1}\hat{x}_{i}).$$
 During minimization, $\hat{e}_{i}$ depends on the trial coefficients $b_{0}, b_{1}$; the final residuals use their fitted values $\hat{b}_{0}, \hat{b}_{1}$.
-We find the parameters which best-fit the data, by minimizing the sum of squared residuals.
-We used squared residuals to prevent positive and negative errors from cancelling and penalizes big misses more than small ones.
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *ordinary least-squares* (OLS) coefficients minimize the sum of squared residuals.
+For the linear model, the OLS problem is
 $$\begin{aligned}
 \min_{b_{0}, b_{1}} \sum_{i=1}^{n} \left( \hat{e}_{i} \right)^2 &= \min_{b_{0}, b_{1}} \sum_{i=1}^{n} \left( \hat{y}_{i} - [b_{0}+b_{1} \hat{x}_{i}] \right)^2.
 \end{aligned}$$
-:::
-
-The OLS problem has a closed-form solution.
+This problem has a closed-form solution.
 The optimal OLS slope and intercept are
 $$\hat{b}_{1} = \frac{\hat{c}_{XY}}{\hat{v}_{X}}, \qquad \hat{b}_{0} = \hat{m}_{Y} - \hat{b}_{1} \hat{m}_{X}.$$
 
 
-The *least-squares slope* $\hat{b}_{1}$ is useful as the canonical "how much does fitted $\hat{y}^{\mathrm{fit}}$ change per one-unit change in $\hat{x}$" summary, and the formula shows it is just the covariance divided by the variance of $X$.
+The *least-squares slope* $\hat{b}_{1}$ is useful as the canonical "how much does fitted $\hat{y}^{\mathrm{fit}}$ change per one-unit change in $\hat{x}$" summary, and the formula shows it is just the covariance divided by the variance of $\hat{x}$.
 Equivalently, $\hat{b}_{1} = \hat{r}_{XY} \cdot \hat{s}_{Y}/\hat{s}_{X}$, so the slope is the Pearson correlation rescaled by the ratio of standard deviations.
 The intercept formula then guarantees the fitted line passes through the point of means $(\hat{m}_{X}, \hat{m}_{Y})$.
 
@@ -88,7 +86,7 @@ $$\begin{aligned}
 0 &= \sum_{i=1}^{n} 2\left( \hat{y}_{i} - [b_{0}+b_{1} \hat{x}_{i}] \right) \\
 \Rightarrow \hat{b}_{0} &= \hat{m}_{Y}-\hat{b}_{1}\hat{m}_{X} .
 \end{aligned}$$
-We could alternatively find the best-fitting parameters numerically, by trying out different combinations of $(b_{0}, b_{1})$.
+We could alternatively find the best-fitting coefficients numerically, by trying out different combinations of $(b_{0}, b_{1})$.
 You can do that in this [example](https://myshiny.duckdns.org/least-squares/), which can help you understand what is happening.
 The computer uses math to compute the answer directly, which is much faster.
 
@@ -256,11 +254,11 @@ After fitting the line, the next question is how much of the variation in $\hat{
 The *R-squared* (or *coefficient of determination*) $\hat{R}_{yY}^{2}$ is the share of total variation in $\hat{y}_{i}$ that the model explains.
 Using the Total, Explained, and Residual sums of squares,
 $$\underbrace{\sum_{i}(\hat{y}_{i}-\hat{m}_{Y})^2}_\text{TSS} = \underbrace{\sum_{i}(\hat{y}_i^{\mathrm{fit}}-\hat{m}_{Y})^2}_\text{ESS}+\underbrace{\sum_{i}\hat{e}_{i}^2}_\text{RSS},$$
-$$\hat{R}_{yY}^{2} = \frac{\hat{ESS}}{\hat{TSS}}=1-\frac{\hat{RSS}}{\hat{TSS}}.$$
+$$\hat{R}_{yY}^{2} = \frac{\hat{\text{ESS}}}{\hat{\text{TSS}}}=1-\frac{\hat{\text{RSS}}}{\hat{\text{TSS}}}.$$
 :::
 
 $R^{2}$ is useful as a single-number summary of how much of the variation in $\hat{y}$ the linear model accounts for: $\hat{R}^{2}=1$ means perfect in-sample fit, $\hat{R}^{2}=0$ means the model does no better than predicting the mean.
-Because the bounds are universal, $R^{2}$ values are comparable across studies in the way raw $\hat{RSS}$ values are not.
+Because the bounds are universal, $R^{2}$ values are comparable across studies in the way raw $\hat{\text{RSS}}$ values are not.
 Equivalently, $\hat{R}_{yY}^{2}$ equals the squared linear correlation between the fitted values $\hat{y}_{i}^{\mathrm{fit}}$ and the actuals $\hat{y}_{i}$.
 The first qualitative check should still be a plot of the line over the data, since $R^{2}$ is only a summary.
 An Anscombe-style outlier can give a moderate $R^{2}$ even when the linear model is plainly wrong.
@@ -307,7 +305,7 @@ $$\begin{aligned}
 \end{aligned}$$
 
 $$\begin{aligned}
-\hat{TSS} &= \sum_{i} (\hat{y}_i - \hat{m}_Y)^2 \\
+\hat{\text{TSS}} &= \sum_{i} (\hat{y}_i - \hat{m}_Y)^2 \\
 &= \left(-\frac{5}{6}\right)^2
 + \left(-\frac{1}{3}\right)^2
 + \left(\frac{7}{6}\right)^2 \\
@@ -325,7 +323,7 @@ $$
 $$
 
 $$
-\hat{ESS}
+\hat{\text{ESS}}
 = \sum_i (\hat{y}_i^{\mathrm{fit}} - \hat{m}_Y)^2
 = (-1)^2 + 0^2 + 1^2 = 2.
 $$
@@ -333,7 +331,7 @@ $$
 Step 3. Residual Sum of Squares (RSS)
 
 $$
-\hat{RSS} 
+\hat{\text{RSS}} 
 = \sum_{i} \hat{e}_i^2
 = \left(\frac{1}{6}\right)^2
 + \left(-\frac{1}{3}\right)^2
@@ -341,7 +339,7 @@ $$
 $$
 
 $$
-\hat{RSS}
+\hat{\text{RSS}}
 = \frac{1}{36} + \frac{1}{9} + \frac{1}{36}
 = \frac{1}{36} + \frac{4}{36} + \frac{1}{36}
 = \frac{6}{36}
@@ -352,18 +350,18 @@ $$
 Step 4. Check the Decomposition
 
 $$
-\hat{ESS} + \hat{RSS}
+\hat{\text{ESS}} + \hat{\text{RSS}}
 = 2 + \frac{1}{6}
 = \frac{12}{6} + \frac{1}{6}
 = \frac{13}{6}
-= \hat{TSS}.
+= \hat{\text{TSS}}.
 $$
 
 Step 5. Coefficient of Determination
 
 $$
 \hat{R}_{yY}^2
-= \frac{\hat{ESS}}{\hat{TSS}}
+= \frac{\hat{\text{ESS}}}{\hat{\text{TSS}}}
 = \frac{2}{13/6}
 = \frac{12}{13}
 \approx 0.92
@@ -371,7 +369,7 @@ $$
 
 (Verification)
 $$
-1 - \frac{\hat{RSS}}{\hat{TSS}}
+1 - \frac{\hat{\text{RSS}}}{\hat{\text{TSS}}}
 = 1 - \frac{1/6}{13/6}
 = 1 - \frac{1}{13}
 = \frac{12}{13}.
@@ -396,20 +394,141 @@ cor(y0_hat, predict(reg0))^2
 :::
 
 
+## Special Cases
+
+Sometimes we restrict one coefficient of the simple linear model to zero.
+Each restriction gives a simpler model with its own OLS solution.
+
+#### **Simple Constant Regression** {-}
+
+Setting $b_{1}=0$ removes $\hat{x}_{i}$ from the model, so every observation gets the same fitted value.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+Our *simple constant model* is
+$$
+\hat{y}_{i}=b_{0}+\hat{e}_{i},
+$$
+where the *coefficient* $b_{0}$ is a single number shared by every observation, and $\hat{y}_{i}$ is the data for observation $i$.
+:::
+
+The constant model is useful as a baseline: it is our best prediction of $\hat{y}_{i}$ when we ignore $\hat{x}_{i}$, and other regressions can be judged by how much they improve on it.
+For the constant model, the OLS problem is
+$$
+\min_{b_{0}} \sum_{i=1}^{n} \left( \hat{y}_{i} - b_{0} \right)^2.
+$$
+Setting the derivative to zero shows that the least-squares constant is the sample mean:
+$$\begin{aligned}
+0 &= -2 \sum_{i=1}^{n} \left( \hat{y}_{i} - b_{0} \right) \\
+\Rightarrow \hat{b}_{0} &= \frac{\sum_{i=1}^{n} \hat{y}_{i}}{n} = \hat{m}_{Y}.
+\end{aligned}$$
+So every fitted value is the same, $\hat{y}_{i}^{\mathrm{fit}} = \hat{m}_{Y}$.
+Every term of $\hat{\text{ESS}}$ is then zero, so $\hat{R}^{2}=0$, which is the "no better than predicting the mean" benchmark from [Goodness of Fit](#goodness-of-fit).
+
+```{r}
+# Regress on a constant only: '~ 1' means an intercept and no slope
+reg_const <- lm(y_hat ~ 1, data=xy_hat)
+coef(reg_const)
+
+# Same as the sample mean
+mean(xy_hat[, 'y_hat'])
+
+# No improvement over the mean
+summary(reg_const)$r.squared
+```
+
+#### **Regression Through the Origin** {-}
+
+Setting $b_{0}=0$ instead forces the fitted line through the point $(0, 0)$.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+Our *simple model through the origin* is
+$$
+\hat{y}_{i}=b_{1}\hat{x}_{i}+\hat{e}_{i},
+$$
+where the *coefficient* $b_{1}$ is a slope with no intercept, and $\hat{x}_{i}, \hat{y}_{i}$ are the data for observation $i$.
+:::
+
+Regression through the origin is useful when theory says $\hat{y}$ must be zero whenever $\hat{x}$ is zero, such as a firm's total cost when it has no fixed costs.
+For this model, the OLS problem is
+$$
+\min_{b_{1}} \sum_{i=1}^{n} \left( \hat{y}_{i} - b_{1}\hat{x}_{i} \right)^2.
+$$
+Setting the derivative to zero gives
+$$\begin{aligned}
+0 &= -2 \sum_{i=1}^{n} \left( \hat{y}_{i} - b_{1}\hat{x}_{i} \right) \hat{x}_{i} \\
+\Rightarrow \hat{b}_{1} &= \frac{\sum_{i=1}^{n} \hat{x}_{i}\hat{y}_{i}}{\sum_{i=1}^{n} \hat{x}_{i}^{2}}.
+\end{aligned}$$
+Unlike $\hat{c}_{XY}/\hat{v}_{X}$, this slope does not subtract the means $\hat{m}_{X}$ and $\hat{m}_{Y}$.
+If the unrestricted line already passes through the origin, the restriction changes nothing.
+Otherwise, the slope tilts so that the line can reach $(0, 0)$.
+
+```{r}
+# Regress without an intercept: '0 +' drops b0 from the model
+reg_origin <- lm(y_hat ~ 0 + x_hat, data=xy_hat)
+coef(reg_origin)
+
+# Manual verification
+sum(x_hat*y_hat)/sum(x_hat^2)
+
+# Compare with the unrestricted slope
+coef(reg)['x_hat']
+```
+
+```{r}
+# Evaluate all three fitted lines from x=0 to x=100
+x_grid <- c(0, 100)
+y_fit_grid <- predict(reg, newdata=data.frame(x_hat=x_grid))
+y_fit_origin_grid <- predict(reg_origin, newdata=data.frame(x_hat=x_grid))
+y_fit_const_grid <- predict(reg_const, newdata=data.frame(x_hat=x_grid))
+
+# Scatter with the axes extended to the origin
+plot(y_hat ~ x_hat, xy_hat, col=grey(0, .5), pch=16,
+	xlim=c(0, 100), ylim=c(0, max(xy_hat$y_hat)),
+	main=NA,
+	xlab='Population Share in Urban Area',
+	ylab='Murder Arrests per 100K')
+lines(x_grid, y_fit_grid, col=rgb(1, 0, 0, .8), lwd=2)
+lines(x_grid, y_fit_origin_grid, col=rgb(0, 0, 1, .8), lwd=1, lty=2)
+lines(x_grid, y_fit_const_grid, col=rgb(0, 0, 0, .8), lwd=1, lty=2)
+legend('topleft', legend=c('Unrestricted', 'Through origin', 'Constant'),
+	col=c(rgb(1, 0, 0, .8), rgb(0, 0, 1, .8), rgb(0, 0, 0, .8)),
+	lwd=c(2, 1, 1), lty=c(1, 2, 2), bty='n')
+```
+
+In the murder data, no state has fewer than 32 percent of its people in urban areas, so the restriction pins the line to a point far from the data.
+The slope rises from about 0.02 to about 0.11 to make up for the missing intercept.
+
+Dropping the intercept also changes how $R^{2}$ behaves.
+The residuals no longer sum to zero, so the decomposition $\hat{\text{TSS}}=\hat{\text{ESS}}+\hat{\text{RSS}}$ no longer holds.
+In the murder data, $\hat{\text{RSS}}$ is larger than $\hat{\text{TSS}}$, so the line through the origin fits worse than the simple constant regression and $1-\hat{\text{RSS}}/\hat{\text{TSS}}$ is negative.
+Even so, `summary()` reports a large $R^{2}$, because for a model without an intercept R measures variation around zero instead of around $\hat{m}_{Y}$.
+So a no-intercept $R^{2}$ cannot be compared with the $R^{2}$ of a model that has an intercept.
+
+```{r}
+# RSS exceeds TSS (computed in Goodness of Fit), so 1-RSS/TSS is negative
+RSS_origin <- sum(resid(reg_origin)^2)
+1 - RSS_origin/TSS
+
+# R instead reports 1-RSS/sum(y^2), which measures variation around zero
+summary(reg_origin)$r.squared
+1 - RSS_origin/sum(y_hat^2)
+```
+
+
 ## Variability Estimates
 
 A regression coefficient is a statistic, so it has its own sampling distribution that we want to summarize.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *standard error* of an estimator is the standard deviation of its sampling distribution: it captures how much the estimate would vary if we redrew the sample.
-For the slope estimator $B_1$, $SE(B_1)$ is the theoretical standard error, and $\hat{SE}(B_1)$ is its estimate computed from the observed sample.
+For the slope estimator $B_1$, $\text{SE}(B_1)$ is the theoretical standard error, and $\hat{\text{SE}}(B_1)$ is its estimate computed from the observed sample.
 :::
 
 The standard error is useful for quantifying sample-to-sample uncertainty in any statistic, including but not limited to a slope coefficient.
 It is distinct from the *standard deviation*, which measures variability of observations *within* a single sample.
 From a standard error, we can build a *confidence interval*: a range of values consistent with our data at a chosen level.
 Note that values reported by your computer do not necessarily satisfy this definition.
-To estimate variability, we will use the data-driven methods from <01_07_Intervals.qmd>.
+To estimate variability, we will use the data-driven methods from [Resampling Intervals](01_07_Intervals.qmd#resampling-intervals).
 (For some theoretical background, see also <https://www.sagepub.com/sites/default/files/upm-binaries/21122_Chapter_21.pdf>.)
 
 
@@ -556,7 +675,7 @@ We are rarely interested in computing standard errors and conducting hypothesis 
 
 One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value.
 Does the slope coefficient equal $0$?
-For reasons we won't go into in this class, we typically normalize the coefficient by its standard error: $\hat{t} = \frac{\hat{b}_1}{\hat{SE}(B_1)}$, where $\hat{SE}(B_1)$ is the estimated standard error of the coefficient.
+For reasons we won't go into in this class, we typically normalize the coefficient by its standard error: $\hat{t} = \frac{\hat{b}_1}{\hat{\text{SE}}(B_1)}$, where $\hat{\text{SE}}(B_1)$ is the estimated standard error of the coefficient.
 ```{r}
 # Create t-stat with jackknife SE
 t_hat <- coef(reg)['x_hat']/jack_se
@@ -639,7 +758,7 @@ abline(v=t_hat, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 Permutations are common when testing against "no association".
-From permuted data, we can calculate a *$p$-value*: the probability you would see something as at least as extreme as your statistic under the null (assuming your null hypothesis was true, see <01_08_HypothesisTests.qmd>).
+From permuted data, we can calculate a *$p$-value*: the probability you would see something as at least as extreme as your statistic under the null (assuming your null hypothesis was true, see [$p$-values](01_08_HypothesisTests.qmd#p-values)).
 We calculate the $p$-value directly from the null distribution.
 Smaller $p$-values suggest more evidence against the null.
 ```{r}
@@ -720,7 +839,7 @@ We could also use hard decision rules, such as "$p < 0.05$ is a statistically si
 However, just like confidence intervals, those hard decision rules can be sensitive to somewhat arbitrary choices (Why Jackknife SE's instead of classical ones? Why test at the $95\%$ level rather than $90\%$?)
 
 "No association" is the most common null hypothesis in practice, but we can also use bootstrapping to test against other specific hypothesis: $\beta_1$, the population slope.
-To impose the null in this case, you recenter the sampling distribution around the hypothetical value; $\hat{t} = \frac{\hat{b}_1 - \beta_1}{\hat{SE}(B_1)}$.^[Under some additional assumptions, the null distribution follows a $t$-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)]
+To impose the null in this case, you recenter the sampling distribution around the hypothetical value; $\hat{t} = \frac{\hat{b}_1 - \beta_1}{\hat{\text{SE}}(B_1)}$.^[Under some additional assumptions, the null distribution follows a $t$-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)]
 In the known-population check above, the population slope is `population_slope`, which we could compute only because we pretended `Wages1` was the whole population.
 
 Although two-sided hypothesis tests are most common, you can also test one-sided hypotheses.
@@ -780,7 +899,7 @@ Before trying to find a regression specification that makes sense for the entire
 
 2. Explain in words what the $R^2$ statistic measures.
    A researcher runs a regression and finds $\hat{R}^2 = 0.95$.
-   Does this mean the model is correctly specified or that $X$ causes $Y$?
+   Does this mean the model is correctly specified or that $X_{i}$ causes $Y_{i}$?
    Why or why not?
 
 3. Suppose you have $n=4$ observations: $\{(1, 3),\ (2, 5),\ (3, 6),\ (4, 10)\}$.
@@ -800,4 +919,4 @@ Before trying to find a regression specification that makes sense for the entire
 #### **Recall** {-}
 
 This chapter fit a single line to bivariate data: it derived the OLS slope $\hat{b}_{1}=\hat{c}_{XY}/\hat{v}_{X}$ and intercept $\hat{b}_{0}=\hat{m}_{Y}-\hat{b}_{1}\hat{m}_{X}$, measured goodness of fit with $\hat{R}^{2}$, and built confidence intervals and $p$-values via the bootstrap, jackknife, and permutation.
-The three-observation worked example $\{(1,2),(2,2.5),(3,4)\}$ traced through every step by hand and produced slope $\hat{b}_{1}=1$, intercept $\hat{b}_{0}=5/6$, $\hat{TSS}=13/6$, $\hat{RSS}=1/6$, and $\hat{R}^{2}=12/13\approx 0.92$.
+The three-observation worked example $\{(1,2),(2,2.5),(3,4)\}$ traced through every step by hand and produced slope $\hat{b}_{1}=1$, intercept $\hat{b}_{0}=5/6$, $\hat{\text{TSS}}=13/6$, $\hat{\text{RSS}}=1/6$, and $\hat{R}^{2}=12/13\approx 0.92$.

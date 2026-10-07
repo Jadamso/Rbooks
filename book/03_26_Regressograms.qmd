@@ -11,7 +11,7 @@ It then shows how to summarize the gradients these models produce.
 
 #### **Setup** {-}
 
-We want a flexible estimate of $\mathbb{E}[Y \mid X_1, X_2]$ that does not commit to any functional form for either explanatory variable.
+We want a flexible estimate of $\mathbb{E}[Y_{i} \mid X_{i1}, X_{i2}]$ that does not commit to any functional form for either explanatory variable.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 A *multivariate regressogram* cuts each explanatory variable into exclusive bins (each encoded as a dummy variable), then predicts $\mathbb{E}[\hat{y}]$ within each bin combination using OLS on the full set of dummies.
@@ -211,7 +211,7 @@ Refit the piecewise model with finer bins (`bks1 <- seq(0, 20, length.out=21)`) 
 
 
 #### **Break Points** {-}
-Kinks and discontinuities in the relationship between $Y$ and $X$ can be modeled with factor variables, just like any other transformation.
+Kinks and discontinuities in the relationship between $\hat{y}$ and $\hat{x}_{k}$ can be modeled with factor variables, just like any other transformation.
 We can then use $F$-tests to examine whether a break is statistically significant.
 Both the interaction-model $F$-test (`anova`) and the *Chow test* below test the same null of "no break", and give the same answer.
 ```{r}
@@ -263,9 +263,9 @@ A flexible model can fit the training data perfectly while predicting new observ
 *Cross-validation (CV)* picks a model by minimizing out-of-sample prediction error.
 *Leave-one-out CV* drops one observation at a time, refits, and averages the squared prediction errors:
 $$
-\min_{\mathbf{H}} \quad \frac{1}{n} \sum_{i=1}^{n} \left[ \hat{y}_{i} - \hat{y}_i^{\mathrm{fit}(-i)}(\mathbf{X},\mathbf{H}) \right]^2,
+\min_{\mathbf{H}} \quad \frac{1}{n} \sum_{i=1}^{n} \left[ \hat{y}_{i} - \hat{y}_i^{\mathrm{fit}(-i)}(\hat{\mathbf{x}}_{i},\mathbf{H}) \right]^2,
 $$
-where $\hat{y}_i^{\mathrm{fit}(-i)}(\mathbf{X},\mathbf{H})$ is the model's prediction at $\mathbf{X}_{i}$ from a fit that excluded $\mathbf{X}_{i}$, and $\mathbf{H}$ is the bandwidth matrix.
+where $\hat{\mathbf{x}}_{i}=[\hat{x}_{i1}, \ldots, \hat{x}_{iK}]$ collects the explanatory variables of observation $i$, $\hat{y}_i^{\mathrm{fit}(-i)}(\hat{\mathbf{x}}_{i},\mathbf{H})$ is the model's prediction at $\hat{\mathbf{x}}_{i}$ from a fit that excluded observation $i$, and $\mathbf{H}$ is the bandwidth matrix.
 *$k$-fold CV* drops one of $k$ random groups at a time instead of one observation.
 :::
 
@@ -278,7 +278,7 @@ h_{1} & 0 & 0  \\
  0    & 0 & h_{3} \\
 \end{pmatrix},
 $$
-where each $h_{k}$ is the bandwidth for variable $X_{k}$.
+where each $h_{k}$ is the bandwidth for variable $\hat{x}_{k}$.
 In the discrete-bin setting below, the role of the bandwidth is played by the *number of bins $L$*: more bins means finer resolution (a smaller effective bandwidth) and fewer observations per bin.
 
 There are many types of cross-validation [@ArlotCelisse2010; @BatesEtAl2023]. *Generalized cross-validation* adjusts for the degrees of freedom, whereas the `npreg` function in R uses *least-squares cross-validation* [@racine2019, p. 74] by default.
@@ -353,19 +353,19 @@ while a piecewise or local linear regression has within-bin slopes that are them
 :::
 
 The gradient is useful because, unlike the single OLS coefficient, it varies with $\mathbf{x}$.
-This lets us see whether the marginal effect of $X_k$ is the same at small, medium, and large values of the other regressors.
+This lets us see whether the marginal effect of $\hat{x}_{k}$ is the same at small, medium, and large values of the other regressors.
 We can compute it two ways:
 
 1. For regressograms, approximate the gradient with a small finite difference between adjacent bins (formula above).
 
 2. For split-sample regressions or local linear regressions, read the within-bin slope coefficients $\hat{b}_{k}(\mathbf{x})$ directly as gradient estimates.
 
-After computing gradients, you can summarize them in various plots: a histogram of $\hat{b}_{k}(\mathbf{x})$, a scatterplot of $\hat{b}_{k}(\mathbf{x})$ against $X_{k}$, or the sorted gradients shown with their confidence intervals [@Chaudhuri1999; @HendersonEtAl2012].
+After computing gradients, you can summarize them in various plots: a histogram of $\hat{b}_{k}(\mathbf{x})$, a scatterplot of $\hat{b}_{k}(\mathbf{x})$ against $x_{k}$, or the sorted gradients shown with their confidence intervals [@Chaudhuri1999; @HendersonEtAl2012].
 
 
 You may also be interested in a particular gradient or a single summary statistic.
-For example, a bivariate regressogram can estimate the marginal effect of $X_{1}$ at the means; $\hat{b}_{1}(\bar{\mathbf{x}}=[\bar{x_{1}}, \bar{x_{2}}])$.
-You may also be interested in the mean of the marginal effects (sometimes said simply as "average effect"), which averages the marginal effect over all datapoints in the dataset: $1/n \sum_{i}^{n} \hat{b}_{1}(\mathbf{X}_{i})$, or the median marginal effect.
+For example, a bivariate regressogram can estimate the marginal effect of $\hat{x}_{1}$ at the means, $\hat{b}_{1}(\mathbf{x}=[\hat{m}_{X_{1}}, \hat{m}_{X_{2}}])$, where $\hat{m}_{X_{k}}$ is the mean of $\hat{x}_{k}$.
+You may also be interested in the mean of the marginal effects (sometimes said simply as "average effect"), which averages the marginal effect over all datapoints in the dataset: $1/n \sum_{i=1}^{n} \hat{b}_{1}(\mathbf{x}=\hat{\mathbf{x}}_{i})$, or the median marginal effect.
 Such statistics are single numbers that can be presented similar to an OLS regression table, where each row corresponds to a variable and each cell has two elements: "mean gradient (sd gradient)".
 
 We illustrate both methods on the models fit earlier in this chapter.

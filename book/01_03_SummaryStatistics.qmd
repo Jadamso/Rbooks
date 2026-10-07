@@ -46,6 +46,8 @@ The first step in describing a sample is to reduce its center to a single number
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The sample *mean* is the sum of the observations divided by the number of observations,
 $$\hat{m} = \frac{1}{n} \sum_{i=1}^{n} \hat{x}_{i}.$$
+When data are discrete, we can also compute the mean using proportions,
+$$\hat{m}=\sum_{x} x \hat{p}(x).$$
 :::
 
 The mean (also called the *sample mean* or *empirical mean*) is the simplest and most commonly reported single-number summary of a sample, and the natural measure of central tendency when the data are roughly symmetric.
@@ -60,9 +62,6 @@ sum(x0_hat)/length(x0_hat)
 mean(x0_hat)
 ```
 :::
-
-
-When data are discrete, we can also compute the mean using proportions; $\hat{m}=\sum_{x} x \hat{p}(x)$
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 E.g., the dataset $\{1,2,1,3,1\}$ has $\hat{p}(1)=\frac{3}{5}$, $\hat{p}(2)=\frac{1}{5}$, $\hat{p}(3)=\frac{1}{5}$.
@@ -90,6 +89,8 @@ Once we know where the data are centered, the next question is how widely they v
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The sample *variance* is the average squared deviation from the mean,
 $$\hat{v} = \frac{1}{n} \sum_{i=1}^{n} (\hat{x}_{i} - \hat{m})^2.$$
+When data are discrete, we can also compute the variance using proportions,
+$$\hat{v}=\sum_{x} (x-\hat{m})^2 \hat{p}(x).$$
 The sample *standard deviation* is its square root, $\hat{s} = \sqrt{\hat{v}}$, and is in the same units as the data.
 :::
 
@@ -108,10 +109,6 @@ v_hat <- mean( (x0_hat - m_hat)^2 )
 sqrt(v_hat)
 ```
 :::
-
-
-When data are discrete, we can also compute the variance using proportions; $\hat{v}=\sum_{x} (x-\hat{m})^2 \hat{p}(x)$.
-Each distinct value contributes its squared deviation once, weighted by how often that value occurs.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 E.g., the dataset $\{1,2,1,3,1\}$ from above has $\hat{m}=1.6$ and $\hat{p}(1)=\frac{3}{5}$, $\hat{p}(2)=\frac{1}{5}$, $\hat{p}(3)=\frac{1}{5}$.
@@ -182,9 +179,6 @@ The upper bound $\hat{m}+2\hat{s}$ lands inside the data, but the lower bound $\
 That is below the smallest observation, and below zero, which no arrest rate can be.
 The bounds are symmetric around the mean by construction, but murder arrests are not: they stop at zero on the left and stretch further to the right.
 
-Note that the mean and standard deviation cannot be read directly from a histogram or an [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function).
-We had to compute them first and then draw them on.
-This is unlike the median and $IQR$ below, which can be read directly from the ECDF.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Note that a "unbiased version" of the empirical variance is used by R and many statisticians: $\hat{v}' =\frac{\sum_{i=1}^{n} [\hat{x}_{i} - \hat{m}]^2}{n-1}$ and $\hat{s}' = \sqrt{\hat{v}'}$.
@@ -207,22 +201,290 @@ var(x0_hat) # R-Version
 :::
 
 
+We can see how changing the mean or the variance alters a distribution.
+The figure below compares two normal distributions with the same standard deviation, $1$, but different means, $0$ and $2$.
+Increasing the mean slides the whole distribution to the right without changing its shape.
+On the histogram, the bars keep the same heights and move over by $2$.
+On the ECDF, the curve shifts right by $2$ at every height.
+
+```{r, echo=FALSE, fig.height=4}
+# Two normal distributions with sd 1: one with mean 0, one with mean 2
+p_grid <- ppoints(5000)
+x_mean0 <- qnorm(p_grid)
+x_mean2 <- qnorm(p_grid, mean=2)
+cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
+bks <- seq(-4, 6, by=.25)
+par(mfrow=c(1, 2), mar=c(4, 4, 1, 1))
+
+# overlapping histograms
+hist(x_mean0, breaks=bks, col=cols[1], freq=FALSE, border=NA,
+    ylim=c(0, .55), main=NA, xlab='x')
+hist(x_mean2, breaks=bks, col=cols[2], freq=FALSE, border=NA, add=TRUE)
+legend('topright', legend=c('Mean 0', 'Mean 2'),
+    col=cols, pch=15, bty='n')
+
+# overlapping ECDFs, drawn as lines through the sorted values
+plot(x_mean0, ecdf(x_mean0)(x_mean0), type='l',
+    col=cols[1], lwd=2, lty=1, xlim=range(bks),
+    main=NA, xlab='x', ylab='Proportion <= x')
+lines(x_mean2, ecdf(x_mean2)(x_mean2), col=cols[2], lwd=2, lty=2)
+legend('bottomright', legend=c('Mean 0', 'Mean 2'), cex=.8,
+    col=cols, lwd=2, lty=c(1, 2), bty='n')
+```
+
+The next figure compares two normal distributions with the same mean, $0$, but different standard deviations, $1$ and $2$ (variances $1$ and $4$).
+Increasing the variance spreads the distribution out on both sides of the mean.
+On the histogram, the distribution becomes wider and flatter, since the same total area covers a wider range.
+On the ECDF, the curve rises more slowly, but both curves still cross $0.5$ at the mean.
+
+```{r, echo=FALSE, fig.height=4}
+# Two normal distributions with mean 0: one with sd 1 (variance 1), one with sd 2 (variance 4)
+p_grid <- ppoints(5000)
+x_var1 <- qnorm(p_grid)
+x_var4 <- qnorm(p_grid, sd=2)
+cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
+bks <- seq(-8, 8, by=.25)
+par(mfrow=c(1, 2), mar=c(4, 4, 1, 1))
+
+# overlapping histograms
+hist(x_var1, breaks=bks, col=cols[1], freq=FALSE, border=NA,
+    ylim=c(0, .55), main=NA, xlab='x')
+hist(x_var4, breaks=bks, col=cols[2], freq=FALSE, border=NA, add=TRUE)
+legend('topright', legend=c('Variance 1', 'Variance 4'),
+    col=cols, pch=15, bty='n')
+
+# overlapping ECDFs, drawn as lines through the sorted values
+plot(x_var1, ecdf(x_var1)(x_var1), type='l',
+    col=cols[1], lwd=2, lty=1, xlim=range(bks),
+    main=NA, xlab='x', ylab='Proportion <= x')
+lines(x_var4, ecdf(x_var4)(x_var4), col=cols[2], lwd=2, lty=2)
+legend('bottomright', legend=c('Variance 1', 'Variance 4'), cex=.8,
+    col=cols, lwd=2, lty=c(1, 2), bty='n')
+```
+
+Note that the mean and standard deviation affect a histogram or an [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function), but cannot be read directly from them.
+We have to compute them separately.
+This is unlike the median and $\hat{\text{IQR}}$ below, which can be read directly from the ECDF.
+
+
+## Other Center/Spread Statistics
+
+A general rule of applied statistics is that there are multiple ways to measure something.
+Mean and Variance are measurements of Center and Spread, but there are others that have different theoretical properties and may be better suited for your dataset.
+
+#### **Center/Spread based on Quantiles** {-}
+
+When the data are skewed or contain outliers, statistics built from quantiles often give a more representative summary of center and spread than the mean and variance.
+Every quantile lies between the smallest and largest observation, so a quantile-based range can never produce an impossible value like the negative $\hat{m}-2\hat{s}$ for murder arrests above.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The sample *median* $\tilde{m}$ is the value where one half of the data fall below and one half above; it is the $0.5$ quantile.
+
+The *interquartile range* ($\hat{\text{IQR}}$) is the upper quartile minus the lower quartile, the spread of the middle half of the data.
+
+The *median absolute deviation* ($\hat{\text{MAD}}$) is the median of the absolute deviations from the median, $\text{Med}(|\hat{x}_{i} - \tilde{m}|)$.
+:::
+
+These three statistics share a common rationale: by using ranks rather than arithmetic averages, they resist the influence of extreme values.
+A single outlier can pull the *mean* by an arbitrary amount, but moves the median by at most one position; the $\hat{\text{IQR}}$ and $\hat{\text{MAD}}$ inherit the same protection because they are built from medians and quantiles (recall the [$p$-th quantile](01_02_Data.qmd#quantiles) from the previous chapter).
+Reach for these robust summaries when the distribution is skewed or contains values you cannot trust to be typical: income, house prices, response times, and similar heavy-tailed quantities where a small fraction of large values would swamp the mean.
+
+```{r}
+median(x_hat)
+quantile(x_hat, prob=0.5)
+```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Examine robustness to an extreme value
+```{r}
+x1_extreme_hat <- c(x_hat, 1000) # add one extreme value
+#par(mfrow=c(1, 2)) # visualize side-by-side
+#hist(x_hat)
+#hist(x1_extreme_hat)
+
+# Which measures of central tendency are robust
+# to a single extreme value?
+mean( x_hat)
+mean( x1_extreme_hat )
+
+quantile(x_hat, prob=0.5)
+quantile(x1_extreme_hat, prob=0.5)
+```
+:::
+
+
+
+The $\hat{\text{IQR}}$ corresponds to the box in the boxplot, and the $\hat{\text{MAD}}$ uses the same robust idea but measures distances from the median directly rather than reading off quartile cut-offs.
+
+```{r}
+IQR(x_hat)
+mad(x_hat)
+```
+
+Unlike the mean and standard deviation, the median and $\hat{\text{IQR}}$ can be read directly from the [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function).
+The median is the value where $\hat{F}$ crosses $0.5$.
+The $\hat{\text{IQR}}$ is the horizontal distance between where $\hat{F}$ crosses $0.25$ and where it crosses $0.75$.
+
+```{r}
+# median and quartiles
+p <- c(.25, .5, .75)
+q_hat <- quantile(x_hat, probs=p)
+
+# visualize on the ECDF
+F_hat <- ecdf(x_hat)
+plot(F_hat, pch=16, col=grey(0, .5), main=NA,
+    xlab='Murder arrests (per 100k)', ylab='Proportion <= x')
+cols <- c(rgb(0, 0, 1, .8), rgb(1, 0, 0, .8), rgb(0, 0, 1, .8))
+segments(q_hat, p, -10, p, col=cols, lwd=c(1, 2, 1)) # read across from p
+segments(q_hat, p, q_hat, -1, col=cols, lwd=c(1, 2, 1)) # read down to the quantile
+mtext(round(q_hat, 2), side=1, at=q_hat, col=cols)
+
+# IQR is the distance between the quartiles
+arrows(q_hat[1], .9, q_hat[3], .9, code=3, length=.1, col=rgb(0, 0, 1, .8))
+text(mean(q_hat[c(1, 3)]), .9, 'IQR', pos=3, col=rgb(0, 0, 1, .8))
+```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Compute the $\hat{\text{IQR}}$ statistic for the dataset $\{-100,1,4,10,10\}$. 
+
+$\hat{\text{IQR}} =$ Upper quartile $-$ Lower quartile $= 10 - 1 = 9$. 
+
+```{r}
+x0_hat <- c(-100, 1, 4, 10, 10)
+# An intuitive alternative to sd(x0_hat), used in the boxplot
+quants <- quantile(x0_hat, probs=c(.25, .75))
+quants[2]-quants[1]
+IQR(x0_hat)
+```
+Compute the $\hat{\text{MAD}}$ statistic for the same dataset $\{-100,1,4,10,10\}$.
+First compute the median, $\text{Med}(-100,1,4,10,10)=4$.
+Then compute $\text{Med}(|-100-4|,~ |1-4|,~ |4-4|,~ |10-4|,~ |10-4|) = \text{Med}(104, 3, 0, 6, 6) = 6$.
+```{r}
+#Another alternative to sd(x0_hat)
+mad(x0_hat, constant=1)
+
+# Computationally equivalent
+# med_hat <- quantile(x0_hat, probs=.5)
+# absdev_hat <- abs(x0_hat -med_hat)
+# quantile(absdev_hat, probs=.5)
+```
+:::
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Compare the robustness of various "spread" metrics to an extreme value
+```{r}
+sd(x_hat)
+sd(x1_extreme_hat)
+
+IQR(x_hat)
+IQR(x1_extreme_hat)
+
+mad(x_hat, constant=1)
+mad(x1_extreme_hat, constant=1)
+```
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Note that there are other "absolute deviation" statistics
+```{r, eval=FALSE}
+# sometimes seen elsewhere
+mean( abs(x_hat - mean(x_hat)) )
+mean( abs(x_hat - median(x_hat)) )
+```
+:::
+
+
+#### **Weighted Statistics** {-}
+
+The mean generalizes to a *weighted mean*: an average where different values contribute to the final result with varying levels of importance.
+For each outcome $x$ we have a weight $W(x)$ and compute
+$$\begin{aligned}
+\hat{m} &= \frac{\sum_{x} x W(x)}{\sum_{x} W(x)} = \sum_{x} x w(x),
+\end{aligned}$$
+where $w(x)=\frac{W(x)}{\sum_{x'} W(x')}$ is the normalized version of $W(x)$, so that the weights of all unique values $x'$ sum to unity, $\sum_{x'}w(x')=1$.
+You have already seen the special case of "probability weights" when computing the mean above, with $w(x)=\hat{p}(x)=\sum_{i=1}^{n}\mathbf{1}\left(\hat{x}_{i}=x\right)/n$.
+
+Weights can also be given to individual observations rather than to unique values.
+For each observation $i$ we have a weight $W_{i}$ and compute
+$$\begin{aligned}
+\hat{m} &= \frac{\sum_{i=1}^{n} \hat{x}_{i} W_{i}}{\sum_{i=1}^{n} W_{i}} = \sum_{i=1}^{n} \hat{x}_{i} w_{i},
+\end{aligned}$$
+where $w_{i}=\frac{W_{i}}{\sum_{i'=1}^{n} W_{i'}}$ is the normalized weight, so that $\sum_{i=1}^{n} w_{i}=1$.
+Equal weights, $w_{i}=1/n$, give the ordinary mean.
+Adding up the weights of all observations with the same value gives the weight for that value, $w(x)=\sum_{i=1}^{n} w_{i}\mathbf{1}\left(\hat{x}_{i}=x\right)$.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+For another example, suppose a student has these scores
+```{r}
+Homework1 <- c(score=88, weight=0.25)
+Homework2 <- c(score=92, weight=0.25)
+Exam1 <- c(score=67, weight=0.2)
+Exam2 <- c(score=90, weight=0.3)
+
+Grades <- rbind(Homework1, Homework2, Exam1, Exam2)
+Grades
+```
+
+Each assessment is an observation $i$ with its own weight $w_{i}$, and the weights already sum to $1$.
+We can compute the final grade as a weighted mean
+```{r}
+# Manual Way
+88*0.25 + 92*0.25 + 67*0.2 + 90*0.3
+
+# Computerized Way
+Values <- Grades[, 'score'] * Grades[, 'weight']
+FinalGrade <- sum(Values)
+FinalGrade
+
+# Built-in function, which also normalizes the weights
+weighted.mean(Grades[, 'score'], w=Grades[, 'weight'])
+```
+:::
+
+
+In principle, we can also compute other weighted statistics such as a weighted median.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+See that we can also compute weighted quantiles
+```{r}
+weighted.quantile <- function(x_hat, w, probs){
+    #See spatstat.univar::weighted.quantile
+    oo <- order(x_hat)
+    x_hat <- x_hat[oo]
+    w <- w[oo]
+    F_hat <- cumsum(w)/sum(w)
+    quantile_id <- max(which(F_hat <= probs))+1
+    q_hat <- x_hat[quantile_id]
+    return(q_hat)
+}
+
+## Unweighted
+quantile(x0_hat, probs=.5)
+weights <- rep(1, length(x0_hat))
+weighted.quantile(x_hat=x0_hat, w=weights, probs=.5)
+
+## Weighted
+weights <- seq(x0_hat)
+weights <- weights/sum(weights) # normalize
+weighted.quantile(x_hat=x0_hat, w=weights, probs=.5)
+```
+:::
+
 #### **Standardized Values** {-}
 
 Whether an observation is unusual depends on the center and spread of the data, not on its raw value alone.
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *standardized value* of an observation is its deviation from the mean measured in standard deviations,
 $$\hat{z}_{i} = \frac{\hat{x}_{i} - \hat{m}}{\hat{s}}.$$
-:::
 
 Standardized values are also called *z-scores*.
 A standardized value of $2$ means the observation lies two standard deviations above the mean, and a value of $-1$ means it lies one standard deviation below.
 The units of $\hat{x}_{i}-\hat{m}$ and $\hat{s}$ cancel, so standardized values have no units.
 Standardized values are useful for flagging observations that are far from the center of their own distribution, and for comparing observations across variables measured on different scales, such as a state's murder and assault arrest rates.
 
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-E.g., the dataset $\{1,2,1,3,1\}$ from above has $\hat{m}=1.6$ and $\hat{s}=0.8$.
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Compute the standardized values of the dataset $\{1,2,1,3,1\}$ from above.
+
+The dataset has $\hat{m}=1.6$ and $\hat{s}=0.8$.
 The standardized values are $(1-1.6)/0.8=-0.75$ for each $1$, $(2-1.6)/0.8=0.5$, and $(3-1.6)/0.8=1.75$.
 The observation $3$ is the most unusual, lying $1.75$ standard deviations above the mean.
 ```{r}
@@ -303,166 +565,9 @@ round(z_arrests_hat[states, ], 2)
 Georgia's murder rate is $2.23$ standard deviations above the mean, but its assault rate is only $0.49$ above.
 North Carolina is the reverse, with an assault rate $2.02$ standard deviations above the mean and a murder rate $1.21$ above.
 
-Standardizing is a special case of a change of units.
-Suppose each observation is transformed to $\hat{y}_{i}=a+b\hat{x}_{i}$ for constants $a$ and $b$, and write $\hat{m}_{X}, \hat{s}_{X}$ and $\hat{m}_{Y}, \hat{s}_{Y}$ for the means and standard deviations before and after.
-Then
-$$\begin{aligned}
-\hat{m}_{Y} &= a + b\hat{m}_{X}, \\
-\hat{s}_{Y} &= |b|\hat{s}_{X}.
-\end{aligned}$$
-Adding $a$ moves every observation, and so the mean, by the same amount, but leaves the distances between observations unchanged.
-Multiplying by $b$ stretches those distances, so it scales both the mean and the standard deviation.
-Standardizing sets $b=1/\hat{s}_{X}$ and $a=-\hat{m}_{X}/\hat{s}_{X}$, so that $\hat{m}_{Z}=-\hat{m}_{X}/\hat{s}_{X}+\hat{m}_{X}/\hat{s}_{X}=0$ and $\hat{s}_{Z}=\hat{s}_{X}/\hat{s}_{X}=1$.
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-Suppose three workers earn hourly wages of $\{15, 20, 25\}$ dollars, so $\hat{m}_{X}=20$ and $\hat{s}_{X}=\sqrt{[25+0+25]/3}\approx 4.08$.
-Each works $2000$ hours a year and receives a bonus of $1000$ dollars, so annual earnings are $\hat{y}_{i}=1000+2000\hat{x}_{i}$, which are $\{31000, 41000, 51000\}$.
-Then $\hat{m}_{Y}=1000+2000 \times 20 = 41000$ and $\hat{s}_{Y}=2000 \times 4.08 \approx 8165$.
-The bonus raises every worker's earnings by the same amount, so it does not change the spread.
-```{r}
-x0_hat <- c(15, 20, 25) # hourly wages
-y0_hat <- 1000 + 2000*x0_hat # annual earnings with a bonus
-y0_hat
-
-# mean: shifted by the bonus and scaled by the hours
-mean(y0_hat)
-1000 + 2000*mean(x0_hat)
-
-# standard deviation: scaled by the hours only
-sqrt(mean((y0_hat - mean(y0_hat))^2))
-2000*sqrt(mean((x0_hat - mean(x0_hat))^2))
-```
-:::
-
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Show that $\hat{m}_{Y}=a+b\hat{m}_{X}$ and $\hat{s}_{Y}=|b|\hat{s}_{X}$.
-
-Substituting $\hat{y}_{i}=a+b\hat{x}_{i}$ into the definitions of the mean and variance,
-$$\begin{aligned}
-\hat{m}_{Y} &= \frac{1}{n}\sum_{i=1}^{n} (a+b\hat{x}_{i}) = a + b\frac{1}{n}\sum_{i=1}^{n} \hat{x}_{i} = a + b\hat{m}_{X}, \\
-\hat{v}_{Y} &= \frac{1}{n}\sum_{i=1}^{n} (a+b\hat{x}_{i} - a - b\hat{m}_{X})^2 = b^2 \frac{1}{n}\sum_{i=1}^{n} (\hat{x}_{i} - \hat{m}_{X})^2 = b^2\hat{v}_{X}.
-\end{aligned}$$
-Taking square roots gives $\hat{s}_{Y}=|b|\hat{s}_{X}$.
-:::
-
-## Other Center/Spread Statistics
-
-A general rule of applied statistics is that there are multiple ways to measure something.
-Mean and Variance are measurements of Center and Spread, but there are others that have different theoretical properties and may be better suited for your dataset.
-
-#### **Center/Spread based on Quantiles** {-}
-
-When the data are skewed or contain outliers, statistics built from quantiles often give a more representative summary of center and spread than the mean and variance.
-Every quantile lies between the smallest and largest observation, so a quantile-based range can never produce an impossible value like the negative $\hat{m}-2\hat{s}$ for murder arrests above.
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
-The sample *median* $\tilde{m}$ is the value where one half of the data fall below and one half above; it is the $0.5$ quantile.
-
-The *interquartile range* ($IQR$) is the upper quartile minus the lower quartile, the spread of the middle half of the data.
-
-The *median absolute deviation* ($\text{MAD}$) is the median of the absolute deviations from the median, $\text{Med}(|\hat{x}_{i} - \tilde{m}|)$.
-:::
-
-These three statistics share a common rationale: by using ranks rather than arithmetic averages, they resist the influence of extreme values.
-A single outlier can pull the *mean* by an arbitrary amount, but moves the median by at most one position; the $IQR$ and $\text{MAD}$ inherit the same protection because they are built from medians and quantiles (recall the [$p$-th quantile](01_02_Data.qmd#quantiles) from the previous chapter).
-Reach for these robust summaries when the distribution is skewed or contains values you cannot trust to be typical: income, house prices, response times, and similar heavy-tailed quantities where a small fraction of large values would swamp the mean.
-
-```{r}
-median(x_hat)
-quantile(x_hat, prob=0.5)
-```
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-Examine robustness to an extreme value
-```{r}
-x1_extreme_hat <- c(x_hat, 1000) # add one extreme value
-#par(mfrow=c(1, 2)) # visualize side-by-side
-#hist(x_hat)
-#hist(x1_extreme_hat)
-
-# Which measures of central tendency are robust
-# to a single extreme value?
-mean( x_hat)
-mean( x1_extreme_hat )
-
-quantile(x_hat, prob=0.5)
-quantile(x1_extreme_hat, prob=0.5)
-```
-:::
-
-
-
-The $IQR$ corresponds to the box in the boxplot, and the $\text{MAD}$ uses the same robust idea but measures distances from the median directly rather than reading off quartile cut-offs.
-
-```{r}
-IQR(x_hat)
-mad(x_hat)
-```
-
-Unlike the mean and standard deviation, the median and $IQR$ can be read directly from the [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function).
-The median is the value where $\hat{F}$ crosses $0.5$.
-The $IQR$ is the horizontal distance between where $\hat{F}$ crosses $0.25$ and where it crosses $0.75$.
-
-```{r}
-# median and quartiles
-p <- c(.25, .5, .75)
-q_hat <- quantile(x_hat, probs=p)
-
-# visualize on the ECDF
-F_hat <- ecdf(x_hat)
-plot(F_hat, pch=16, col=grey(0, .5), main=NA,
-    xlab='Murder arrests (per 100k)', ylab='Proportion <= x')
-cols <- c(rgb(0, 0, 1, .8), rgb(1, 0, 0, .8), rgb(0, 0, 1, .8))
-segments(q_hat, p, -10, p, col=cols, lwd=c(1, 2, 1)) # read across from p
-segments(q_hat, p, q_hat, -1, col=cols, lwd=c(1, 2, 1)) # read down to the quantile
-mtext(round(q_hat, 2), side=1, at=q_hat, col=cols)
-
-# IQR is the distance between the quartiles
-arrows(q_hat[1], .9, q_hat[3], .9, code=3, length=.1, col=rgb(0, 0, 1, .8))
-text(mean(q_hat[c(1, 3)]), .9, 'IQR', pos=3, col=rgb(0, 0, 1, .8))
-```
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-Compute the $IQR$ statistic for the dataset $\{-100,1,4,10,10\}$. 
-
-$IQR =$ Upper quartile $-$ Lower quartile $= 10 - 1 = 9$. 
-
-```{r}
-x0_hat <- c(-100, 1, 4, 10, 10)
-# An intuitive alternative to sd(x0_hat), used in the boxplot
-quants <- quantile(x0_hat, probs=c(.25, .75))
-quants[2]-quants[1]
-IQR(x0_hat)
-```
-Compute the $\text{MAD}$ statistic for the same dataset $\{-100,1,4,10,10\}$.
-First compute the median, $\text{Med}(-100,1,4,10,10)=4$.
-Then compute $\text{Med}(|-100-4|,~ |1-4|,~ |4-4|,~ |10-4|,~ |10-4|) = \text{Med}(104, 3, 0, 6, 6) = 6$.
-```{r}
-#Another alternative to sd(x0_hat)
-mad(x0_hat, constant=1)
-
-# Computationally equivalent
-# med_hat <- quantile(x0_hat, probs=.5)
-# absdev_hat <- abs(x0_hat -med_hat)
-# quantile(absdev_hat, probs=.5)
-```
-:::
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-Compare the robustness of various "spread" metrics to an extreme value
-```{r}
-sd(x_hat)
-sd(x1_extreme_hat)
-
-IQR(x_hat)
-IQR(x1_extreme_hat)
-
-mad(x_hat, constant=1)
-mad(x1_extreme_hat, constant=1)
-```
-:::
-
-Replacing the mean and standard deviation in the [standardized value](#standardized-values) with the median and $\text{MAD}$ gives a *robust z-score*, $(\hat{x}_{i}-\tilde{m})/\text{MAD}$, which a single extreme value cannot distort by inflating the spread.
+Replacing the mean and standard deviation in the standardized value with the median and $\hat{\text{MAD}}$ gives a *robust z-score*,
+$$\tilde{z}_{i} = \frac{\hat{x}_{i} - \tilde{m}}{\hat{\text{MAD}}},$$
+which a single extreme value cannot distort by inflating the spread.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Georgia has the highest murder arrest rate.
@@ -489,82 +594,8 @@ standardize_robust(x_hat)[id]
 standardize_robust(x1_extreme_hat)[id]
 ```
 The extreme value inflates the standard deviation from about $4.3$ to about $138$, so Georgia's standard z-score falls from $2.23$ to $-0.07$, and the state with the highest murder rate looks slightly below average.
-Its robust z-score barely moves, from $2.78$ to $2.66$, because the median and $\text{MAD}$ hardly change.
-The robust z-scores are larger than the standard ones here because the $\text{MAD}$ is smaller than the standard deviation; R's default `mad(x_hat)` multiplies by $1.4826$ so that the two are on the same scale for Normal data.
-:::
-
-
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Note that there other "absolute deviation" statistics
-```{r, eval=FALSE}
-# sometimes seen elsewhere
-mean( abs(x_hat - mean(x_hat)) )
-mean( abs(x_hat - median(x_hat)) )
-```
-:::
-
-
-#### **Weighted Statistics** {-}
-
-The mean generalizes to a *weighted mean*: an average where different values contribute to the final result with varying levels of importance.
-For each outcome $x$ we have a weight $W(x)$ and compute
-$$\begin{aligned}
-\hat{m} &= \frac{\sum_{x} x W(x)}{\sum_{x} W(x)} = \sum_{x} x w(x),
-\end{aligned}$$
-where $w(x)=\frac{W(x)}{\sum_{x'} W(x')}$ is normalized version of $W(x)$ that implies all unique values $x'$ sum to unity; $\sum_{x'}w(x')=1$.
-You have already seen the special case of "probability weights" when computing the mean above with; $w(x)=\hat{p}(x)=\sum_{i=1}^{n}\mathbf{1}\left(\hat{x}_{i}=x\right)/n$.
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-For another example, suppose a student has these scores
-```{r}
-Homework1 <- c(score=88, weight=0.25)
-Homework2 <- c(score=92, weight=0.25)
-Exam1 <- c(score=67, weight=0.2)
-Exam2 <- c(score=90, weight=0.3)
-
-Grades <- rbind(Homework1, Homework2, Exam1, Exam2)
-Grades
-```
-
-We can compute the final grade as a weighted mean
-```{r}
-# Manual Way
-88*0.25 + 92*0.25 + 67*0.2 + 90*0.3
-
-# Computerized Way
-Values <- Grades[, 'score'] * Grades[, 'weight']
-FinalGrade <- sum(Values)
-FinalGrade
-```
-:::
-
-
-In principle, we can also compute other weighted statistics such as a weighted median.
-
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-See that we can also compute weighted quantiles
-```{r}
-weighted.quantile <- function(x_hat, w, probs){
-    #See spatstat.univar::weighted.quantile
-    oo <- order(x_hat)
-    x_hat <- x_hat[oo]
-    w <- w[oo]
-    F_hat <- cumsum(w)/sum(w)
-    quantile_id <- max(which(F_hat <= probs))+1
-    q_hat <- x_hat[quantile_id]
-    return(q_hat)
-}
-
-## Unweighted
-quantile(x0_hat, probs=.5)
-weights <- rep(1, length(x0_hat))
-weighted.quantile(x_hat=x0_hat, w=weights, probs=.5)
-
-## Weighted
-weights <- seq(x0_hat)
-weights <- weights/sum(weights) # normalize
-weighted.quantile(x_hat=x0_hat, w=weights, probs=.5)
-```
+Its robust z-score barely moves, from $2.78$ to $2.66$, because the median and $\hat{\text{MAD}}$ hardly change.
+The robust z-scores are larger than the standard ones here because the $\hat{\text{MAD}}$ is smaller than the standard deviation; R's default `mad(x_hat)` multiplies by $1.4826$ so that the two are on the same scale for Normal data.
 :::
 
 ## Shape Statistics
@@ -582,14 +613,14 @@ Center and spread alone leave open whether the distribution is symmetric; the fi
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The sample *skewness* measures asymmetry: the average cubed deviation from the mean, scaled by the cube of the standard deviation,
-$$\text{skew} = \frac{\sum_{i=1}^{n}(\hat{x}_{i}-\hat{m})^3 / n}{\hat{s}^3}.$$
-Positive skew means a long right tail, negative skew a long left tail, and zero skew (e.g., the Normal) is symmetric.
+$$\hat{\text{skew}} = \frac{\sum_{i=1}^{n}(\hat{x}_{i}-\hat{m})^3 / n}{\hat{s}^3} = \sum_{i=1}^{n}\hat{z}_{i}^3 / n,$$
+where $\hat{z}_{i}$ is the [standardized value](#standardized-values) of observation $i$.
+Zero skew is symmetric and non-zero skew is asymmetric (positive skew means a long right tail, negative skew a long left tail).
 :::
 
 Cubing the deviations preserves their sign: positive deviations stay positive and negative deviations stay negative.
 The numerator is therefore close to zero when the data are roughly balanced around the mean, and large in absolute value when one tail is much longer than the other.
 Dividing by the cubed standard deviation makes skewness dimensionless, so the values are comparable across datasets measured in different units.
-Equivalently, skewness is the average cubed [standardized value](#standardized-values), $\sum_{i=1}^{n}\hat{z}_{i}^3/n$.
 Skewness is useful for flagging whether the mean and median will agree closely (low skew) or diverge sharply (high skew), and for deciding whether a log or square-root transformation might tame the distribution before further analysis.
 
 The figure below compares two distributions with the same mean and standard deviation.
@@ -639,13 +670,10 @@ m3_hat / s_hat^3 # skewness
 :::
 
 ```{r}
-skewness <-  function(x_hat){
- m_hat <- mean(x_hat)
- m3_hat <- mean((x_hat - m_hat)^3)
- s_hat <- sqrt(mean((x_hat - m_hat)^2)) # divides by n, unlike sd()
- s3_hat <- s_hat^3
- skew <- m3_hat/s3_hat
- return(skew)
+skewness <- function(x_hat){
+    z_hat <- standardize(x_hat)
+    skew <- mean(z_hat^3) # average cubed standardized value
+    return(skew)
 }
 
 # skewness of murder arrests
@@ -653,24 +681,21 @@ skewness(x_hat)
 ```
 
 Murder arrests have a small positive skew, so their right tail is slightly longer than their left.
-We can automatically compare against the normal distribution, which has a skew of 0.
 
 #### **Kurtosis** {-}
 
 A second shape question, independent of asymmetry, asks how much of the variability comes from a few far-from-center observations rather than from the typical bulk.
 
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
 The sample *kurtosis* measures how heavy the tails are: the average fourth power of deviations from the mean, scaled by $\hat{s}^4$,
-$$\text{kurt} = \frac{\sum_{i=1}^{n}(\hat{x}_{i}-\hat{m})^4 / n}{\hat{s}^4}.$$
+$$\hat{\text{kurt}} = \frac{\sum_{i=1}^{n}(\hat{x}_{i}-\hat{m})^4 / n}{\hat{s}^4}.$$
 The Normal distribution has kurtosis $3$, so subtracting $3$ gives a comparison-to-Normal version (excess kurtosis).
-:::
 
 Where skewness uses the cube (and so can be negative), kurtosis uses the fourth power, which forces every term to be positive and disproportionately amplifies the largest deviations.
 Equivalently, kurtosis is the average fourth power of the standardized values, $\sum_{i=1}^{n}\hat{z}_{i}^4/n$.
 A handful of far-from-the-mean values can drive kurtosis up substantially even when the bulk of the distribution looks unremarkable, which is why it is often described as a "tail-heaviness" measure.
 Kurtosis is useful for distinguishing distributions that look similar in their bulk but differ in how often extreme values occur: daily stock returns, for example, have moderate variance but kurtosis well above $3$, reflecting occasional crashes that a Normal model would treat as vanishingly rare.
 
-The figure below compares two symmetric distributions with the same median and $IQR$.
+The figure below compares two symmetric distributions with the same median and $\hat{\text{IQR}}$.
 The high-kurtosis distribution has more observations near the center and in the far tails, and fewer in between.
 On the ECDF, it approaches $0$ and $1$ much more slowly in the tails, and is still well above $0$ and below $1$ at the edges of the plot.
 
@@ -722,21 +747,18 @@ You can also see skew in the boxplot when one quartile is much further from the 
 
 ```{r}
 kurtosis <- function(x_hat){
- m_hat <- mean(x_hat)
- m4_hat <- mean((x_hat - m_hat)^4)
- s_hat <- sqrt(mean((x_hat - m_hat)^2)) # divides by n, unlike sd()
- s4_hat <- s_hat^4
- kurt <- m4_hat/s4_hat
- return(kurt)
- # use instead to compare against normal
- # excess_kurt <- kurt - 3
+    z_hat <- standardize(x_hat)
+    kurt <- mean(z_hat^4) # average fourth power of standardized values
+    return(kurt)
+    # use instead to compare against normal
+    # excess_kurt <- kurt - 3
 }
 
 # kurtosis of murder arrests
 kurtosis(x_hat)
 ```
 
-Murder arrests have a kurtosis below $3$, so their tails are lighter than those of the Normal.
+Murder arrests have a kurtosis below $3$, so their tails are lighter than normal.
 
 
 #### **Clusters/Gaps** {-}
@@ -931,7 +953,7 @@ Note that the mode and Herfindahl index need repeated values, so for continuous 
 | Statistic | Factor | Cardinal |
 |-----------|------------------|----------------|----------|
 | Mean, variance, skewness, kurtosis | No | Yes |
-| Median, quantiles, $IQR$ | Ordered only (not Unordered) | Yes |
+| Median, quantiles, $\hat{\text{IQR}}$ | Ordered only (not Unordered) | Yes |
 | Mode, Herfindahl index| Yes | Discrete only (not Continuous)* |
 
 
@@ -946,7 +968,7 @@ Note that the mode and Herfindahl index need repeated values, so for continuous 
 2. Explain in your own words why the median is more robust to extreme values than the mean.
    Give a concrete example with a small dataset where adding one outlier changes the mean substantially but barely moves the median.
 
-3. Using the dataset $\{2, 5, 5, 8, 12\}$, compute by hand: (a) the sample mean $\hat{m}$, (b) the sample variance $\hat{v}$, (c) the sample standard deviation $\hat{s}$, and (d) the $IQR$.
+3. Using the dataset $\{2, 5, 5, 8, 12\}$, compute by hand: (a) the sample mean $\hat{m}$, (b) the sample variance $\hat{v}$, (c) the sample standard deviation $\hat{s}$, and (d) the $\hat{\text{IQR}}$.
    Show your work for each step.
 
 4. Load `USArrests` in R.
@@ -954,7 +976,7 @@ Note that the mode and Herfindahl index need repeated values, so for continuous 
    Then apply a log transformation with `log(USArrests[,'Assault'])` and compute the skewness of both the original and transformed data using the `skewness` function defined in the chapter.
    Which version is less skewed?
 
-5. A survey asks $12$ customers to rate a product on a five-level scale from *poor* to *excellent*, with responses $\{good, fair, excellent, good, poor, good, fair, excellent, good, very~good, fair, good\}$.
+5. A survey asks $12$ customers to rate a product on a five-level scale from *poor* to *excellent*, with responses $\{\text{good}, \text{fair}, \text{excellent}, \text{good}, \text{poor}, \text{good}, \text{fair}, \text{excellent}, \text{good}, \text{very good}, \text{fair}, \text{good}\}$.
    Store the responses as an ordered factor in R, then report the proportions, the mode, the median, and the Herfindahl index.
    Explain why the median is a meaningful summary here but the mean of the numeric codes $1$ to $5$ requires an extra assumption.
 

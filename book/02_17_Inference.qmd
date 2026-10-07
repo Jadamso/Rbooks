@@ -2,7 +2,7 @@
 # Inference
 ***
 
-Often, we are interested in *gradients*: how $Y$ changes with $X$.
+Often, we are interested in *gradients*: how $\hat{y}$ changes with $\hat{x}$.
 The linear model from [Simple Regression](02_15_SimpleRegression.qmd) depicts this as a single constant, $\hat{b}_{1}$, but the local-regression models from [Local Regression](02_16_LocalRegression.qmd) do not.
 A great first step to assess gradients is to plot the predicted values over the explanatory values.
 A great second step is to compute gradients and summarize them.
@@ -19,7 +19,7 @@ When $\hat{x}_{i}$ is unevenly distributed across its range, a fixed bandwidth $
 *LOESS* (locally estimated scatterplot smoothing) fits a local linear (or quadratic) regression at each design point using an *adaptive bandwidth*: instead of fixing $h$, it includes a fixed *share* of the data at each $x$, set by the parameter `span`.
 :::
 
-LOESS is useful for smoothing data with uneven $X$: because the *share* of points in each neighborhood is fixed, the local fit has roughly the same effective sample size everywhere, even where the data are sparse.
+LOESS is useful for smoothing data with uneven $\hat{x}$: because the *share* of points in each neighborhood is fixed, the local fit has roughly the same effective sample size everywhere, even where the data are sparse.
 The `span` parameter plays the role $h$ does for fixed-bandwidth methods, so smaller spans mean narrower neighborhoods, more flexibility, and noisier curves, while larger spans pool more data and smooth more aggressively.
 
 ```{r}
@@ -52,7 +52,7 @@ A bootstrap confidence band collects the predictions from many resamples and rea
 :::
 
 Confidence bands are useful for showing where a fitted curve is well-supported by the data and where another sample could move it.
-The width is typically wider at the edges of $X$ (few neighbors) and narrower in the dense middle, which is itself a quick visual diagnostic.
+The width is typically wider at the edges of $\hat{x}$ (few neighbors) and narrower in the dense middle, which is itself a quick visual diagnostic.
 The same bootstrap that produces the band also produces standard errors for any single design point and for the gradient summaries below.
 
 ```{r}
@@ -109,13 +109,13 @@ To compare models, we often summarize the residuals with a single number.
 
 The *mean squared error* averages the squared residuals,
 $$\begin{aligned}
-\hat{MSE} &= \frac{1}{n}\sum_{i=1}^{n} \hat{e}_{i}^2 = \frac{1}{n}\sum_{i=1}^{n} \left(\hat{y}_{i} - \hat{y}_{i}^{\mathrm{fit}}\right)^2.
+\hat{\text{MSE}} &= \frac{1}{n}\sum_{i=1}^{n} \hat{e}_{i}^2 = \frac{1}{n}\sum_{i=1}^{n} \left(\hat{y}_{i} - \hat{y}_{i}^{\mathrm{fit}}\right)^2.
 \end{aligned}$$
 Squaring penalizes large misses heavily, and the units are the square of $\hat{y}_{i}$ (squared dollars for wages).
 
 The *mean absolute percentage error* instead averages each residual relative to its observed value,
 $$\begin{aligned}
-\hat{MAPE} &= \frac{100}{n}\sum_{i=1}^{n} \left| \frac{\hat{e}_{i}}{\hat{y}_{i}} \right|.
+\hat{\text{MAPE}} &= \frac{100}{n}\sum_{i=1}^{n} \left| \frac{\hat{e}_{i}}{\hat{y}_{i}} \right|.
 \end{aligned}$$
 MAPE is unit-free, which makes it easy to communicate, but it is undefined when $\hat{y}_{i}=0$ and over-weights observations with small $\hat{y}_{i}$.
 MSE is easier to analyze theoretically (formally deriving the bias-variance tradeoff)
@@ -124,8 +124,8 @@ MSE is easier to analyze theoretically (formally deriving the bias-variance trad
 Suppose three workers have wages $\hat{y}=(8, 10, 15)$ and a model predicts $\hat{y}^{\mathrm{fit}}=(9, 9, 14)$.
 The residuals are $\hat{e}=(-1, 1, 1)$, so
 $$\begin{aligned}
-\hat{MSE} &= \frac{(-1)^2 + 1^2 + 1^2}{3} = \frac{3}{3} = 1, \\
-\hat{MAPE} &= \frac{100}{3}\left( \frac{1}{8} + \frac{1}{10} + \frac{1}{15} \right) \approx \frac{100}{3}(0.292) \approx 9.7.
+\hat{\text{MSE}} &= \frac{(-1)^2 + 1^2 + 1^2}{3} = \frac{3}{3} = 1, \\
+\hat{\text{MAPE}} &= \frac{100}{3}\left( \frac{1}{8} + \frac{1}{10} + \frac{1}{15} \right) \approx \frac{100}{3}(0.292) \approx 9.7.
 \end{aligned}$$
 The model misses by $1$ squared-dollar on average, or about $10\%$ of each wage.
 ```{r}
@@ -169,7 +169,7 @@ Once the fitted curve can bend, "the slope" is no longer a single number; we wan
 A *gradient* $\hat{b}_{1}(x)$ at the design point $x$ is the rate of change of the fitted value $\hat{y}^{\mathrm{fit}}(x)$ with respect to $\hat{x}_{i}$ in a neighborhood of $x$.
 :::
 
-The gradient is useful as the local analog of the simple-regression slope: for a globally linear model it equals the single coefficient $\hat{b}_{1}$ everywhere; for a local model it varies with $x$ and traces out how the marginal relationship changes across the range of $X$.
+The gradient is useful as the local analog of the simple-regression slope: for a globally linear model it equals the single coefficient $\hat{b}_{1}$ everywhere; for a local model it varies with $x$ and traces out how the marginal relationship changes across the range of $\hat{x}$.
 Three common ways to summarize gradients are:
 
 1. For all methods, including regressograms, you can approximate gradients with small finite differences.
@@ -178,7 +178,16 @@ $$\begin{aligned}
 \hat{b}_{1}(x) &= \frac{ \hat{y}^{\mathrm{fit}}(x+\frac{d}{2}) - \hat{y}^{\mathrm{fit}}(x-\frac{d}{2})}{d},
 \end{aligned}$$
 
-2. When using split-sample regressions or local linear regressions, you can use the estimated slope coefficients $\hat{b}_{1}(x)$ as a gradient estimate.^[One benefit of LLLS is that it is theoretically motivated: assuming that $Y_{i}=M_{Y}(X_{i}) + \epsilon_{i}$, we can then take a Taylor approximation: $M_{Y}(X_{i}) + \epsilon_{i} \approx M_{Y}(x) + M_{Y}'(x)[X_{i}-x] + \epsilon_{i} = [M_{Y}(x) - M_{Y}'(x)x ] + M_{Y}'(x)X_{i} + \epsilon_{i} = b_{0}(x,h) + b_{1}(x,h) X_{i}$.]
+2. When using split-sample regressions or local linear regressions, you can use the estimated slope coefficients $\hat{b}_{1}(x)$ as a gradient estimate.
+   One benefit of local linear regression is that it is theoretically motivated.
+   Suppose that $Y_{i}=m_{Y}(X_{i}) + \epsilon_{i}$, where $m_{Y}(x)$ is the population average of $Y_{i}$ among observations with $X_{i}=x$, and $\epsilon_{i}$ is an unobserved random error that averages zero at each value of $X_{i}$.
+   For $X_{i}$ near $x$, a Taylor approximation gives
+$$\begin{aligned}
+m_{Y}(X_{i}) + \epsilon_{i} &\approx m_{Y}(x) + m_{Y}'(x)[X_{i}-x] + \epsilon_{i} \\
+&= [m_{Y}(x) - m_{Y}'(x)x ] + m_{Y}'(x)X_{i} + \epsilon_{i} \\
+&= b_{0}(x,h) + b_{1}(x,h) X_{i} + \epsilon_{i}.
+\end{aligned}$$
+   So near $x$, the population relationship is approximately a line with slope $b_{1}(x,h)=m_{Y}'(x)$, which is what a local linear regression fits.
 
 3. More sophisticated methods that are beyond the scope of this class.
 
@@ -233,7 +242,7 @@ The *mean of the gradients* (sometimes called the *average effect* or *mean marg
 $$\frac{1}{n}\sum_{i=1}^{n} \hat{b}_{1}(x=\hat{x}_{i}).$$
 :::
 
-These two summaries are useful for different questions: the *gradient at the mean* answers "what is the slope at a typical $X$?", while the *mean of the gradients* answers "what is the average slope across the sample?".
+These two summaries are useful for different questions: the *gradient at the mean* answers "what is the slope at a typical $\hat{x}_{i}$?", while the *mean of the gradients* answers "what is the average slope across the sample?".
 The two coincide for a globally linear model but can differ for any other, sometimes substantially when the relationship bends.
 You may also be interested in the *median* of the gradients, or in measures of *effect heterogeneity* like the interquartile range or standard deviation of the gradients.
 Such statistics can be presented in tabular form: "mean gradient (sd gradient)" or "mean gradient (estimated SE), sd gradient (estimated SE)".
@@ -385,7 +394,7 @@ The *bias-variance tradeoff* describes two sources of model error: *bias* (syste
 
 The bias-variance tradeoff is useful for thinking about *why* a tuning parameter matters and how to set it.
 For local regressions, the bandwidth $h$ (equivalently, the LOESS *span*) is the lever that governs the tradeoff: large $h$ trades variance down for bias up, small $h$ does the opposite.
-A loess fit narrow enough to interpolate every point has $\hat{MSE}=0$ on the fit data but generalizes poorly because it has just copied the noise.
+A loess fit narrow enough to interpolate every point has $\hat{\text{MSE}}=0$ on the fit data but generalizes poorly because it has just copied the noise.
 
 * *Wide window (large span, large $h$)*: each local fit uses many observations, so the fitted curve barely changes from sample to sample (low variance).
   But a nearly flat fit over a wide region cannot follow a relationship that bends, so it is systematically off (high bias).
@@ -432,7 +441,7 @@ With span $4.0$ the fitted curve is nearly a straight line and very stable, and 
 With span $0.4$ the curve tracks more local variation, and the bootstrap band fans wider, directly displaying the variance penalty for chasing local detail.
 (Schooling `x_hat` is integer-valued and about a third of workers have exactly $12$ years, so spans below about $0.4$ leave no other schooling level near $12$ and `loess()` breaks down there.)
 
-With local linear fits, a very wide span gives every observation nearly the same weight, so the fit approaches the simple linear regression as $span \to \infty$.
+With local linear fits, a very wide span gives every observation nearly the same weight, so the fit approaches the simple linear regression as $h \to \infty$.
 A wide window and a narrow window can therefore also be read as a linear model and a flexible LOESS fit.
 
 The bootstrap bands show variance, but not bias, because we never see the true curve in one sample.
@@ -585,6 +594,57 @@ legend('topleft', lty=1, lwd=2, bty='n',
 The linear bias does not go away with more data.
 Fit to the whole population, the line predicts a mean wage of $5.96$ at $12$ years of schooling, while the population mean is $5.67$.
 
+#### **Boundary Bias** {-}
+
+The local regressions from [Local Regression](02_16_LocalRegression.qmd) have their own source of bias near the edges of the data.
+The regressogram has a bias at the edges of the bins, which is addressed by the [locally constant regression](02_16_LocalRegression.qmd#sliding-the-window).
+Still, the local constant regression has a bias near the edges of the dataset.
+At $x=15$, near the top of the data, the window $[11.5, 18.5]$ runs past the most schooling anyone has, 16 years.
+So most of the observations in it, about 92 percent, have less schooling than the design point.
+The window average then describes a group whose average schooling is about 12.7 years, not 15.
+Because wages rise with schooling, that average understates the population mean wage at $x=15$.
+```{r}
+# Locally constant fit near the top edge of the data
+x <- 15 # design point
+h <- 3.5 # window [11.5, 18.5] holds schooling levels 12 to 16
+k_weights <- dunif( abs(xy2_hat[, 'x_hat']-x)/h, -1, 1) # the uniform kernel k_U
+xy2_window <- xy2_hat[k_weights > 0, ]
+m_x <- mean(xy2_window[, 'x_hat']) # average schooling in the window
+m_y <- mean(xy2_window[, 'y_hat']) # locally constant fit at x=15
+c(m_x=m_x, m_y=m_y)
+
+# A line fit to the same window, evaluated at the design point
+reg_window <- lm(y_hat ~ x_hat, data=xy2_window)
+y_fit_line <- predict(reg_window, newdata=data.frame(x_hat=x))
+y_fit_line
+
+# Population mean wage at the design point
+y_pop <- population_curve[as.character(x)]
+y_pop
+
+# Plot the window
+plot(y_hat ~ x_hat, data=xy2_window, pch=16, col=grey(0, .1),
+    ylim=c(0, 15), # zoom in on the fits
+    main=NA, xlab='School', ylab='Wage')
+abline(h=m_y, col=rgb(0, 0, 1, .8), lwd=2) # window mean
+lines(c(12, 16), predict(reg_window, newdata=data.frame(x_hat=c(12, 16))),
+    col=rgb(1, 0, 0, .8), lwd=2) # window line
+points(m_x, m_y, pch=16, col=rgb(0, 0, 0, .8), cex=1.5) # window center
+points(c(x, x), c(m_y, y_fit_line), pch=16, cex=1.5,
+    col=c(rgb(0, 0, 1, .8), rgb(1, 0, 0, .8))) # the two fits at x=15
+abline(h=y_pop, col=rgb(0, 0, 0, .8), lty=2) # population mean at x=15
+abline(v=x, col=grey(.5), lty=3)
+legend('topleft',
+    legend=c('Window mean', 'Window line', 'Window center', 'Population mean at 15'),
+    col=c(rgb(0, 0, 1, .8), rgb(1, 0, 0, .8), rgb(0, 0, 0, .8), rgb(0, 0, 0, .8)),
+    lty=c(1, 1, NA, 2), pch=c(NA, NA, 16, NA), lwd=2, cex=.8, bg='white')
+```
+
+The window mean, about $6.29$, sits far below the population mean of $8.38$.
+A line fit to the same window passes through the window center $(\hat{m}_{X}(x,h), \hat{m}_{Y}(x,h))$, just as the simple regression line passes through the point of means in [Simple Linear Regression](02_15_SimpleRegression.qmd#model-and-objective).
+Unlike the window mean, the line follows the trend out to the design point, where it predicts about $8.24$.
+So a [local linear regression](02_16_LocalRegression.qmd#local-linear-regression) has less bias near the edges of the data.
+
 #### **Variance**{-}
 
 The model estimates also vary from sample to sample.
@@ -715,7 +775,7 @@ plot(n_grid, avg_abs_err, type='b', pch=16,
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-With a continuous $X$, the span can follow the rule $h_{n}=n^{-1/5}$ directly, without the factor $2$.
+With a continuous $\hat{x}$, the span can follow the rule $h_{n}=n^{-1/5}$ directly, without the factor $2$.
 Here yearly productivity depends on age through a smooth true mean, and we check the error at age $40$.
 ```{r}
 # True mean productivity at each age
@@ -781,6 +841,6 @@ Even with unlimited data, however, a misspecified model cannot recover the true 
 
 #### **Recall** {-}
 
-This chapter put inference around the local fits from the previous chapter on the `Wages1` data: bootstrap confidence bands for a LOESS fit, model-fit metrics ($\hat{MSE}$ and $\hat{MAPE}$), gradient summaries (marginal effect at the mean vs mean of the gradients), hypothesis tests, and the bias-variance tradeoff.
+This chapter put inference around the local fits from the previous chapter on the `Wages1` data: bootstrap confidence bands for a LOESS fit, model-fit metrics ($\hat{\text{MSE}}$ and $\hat{\text{MAPE}}$), gradient summaries (marginal effect at the mean vs mean of the gradients), hypothesis tests, and the bias-variance tradeoff.
 The small worked example with $\hat{y}^{\mathrm{fit}}(11.5)=9.2$ and $\hat{y}^{\mathrm{fit}}(12.5)=10.4$ gave a finite-difference gradient $\hat{b}_{1}(12)=1.2$ dollars per year of schooling, and the gradient-vector example $(0.4, 0.8, 1.2, 0.9, 0.3)$ at $x=(8, 10, 12, 14, 16)$ showed the marginal-effect-at-the-mean ($1.2$) and the mean-of-the-gradients ($0.72$) diverging when the relationship bends.
 Treating `Wages1` as a known population, the linear fit predicted a mean wage of $5.96$ at $12$ years of schooling against a population mean of $5.67$, a bias that more data does not remove, while the LOESS error was mostly variance that shrank as $n$ grew.

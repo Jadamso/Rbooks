@@ -38,7 +38,7 @@ In Cook's distance, the subscript $j$ identifies the prediction target and the s
 :::
 
 These three statistics are useful for triage: *leverage* flags points whose $\hat{x}_i$ is unusual, the *standardized residual* flags points whose $\hat{y}_i$ is far from prediction, and *Cook's Distance* combines both into one number that says how much the overall fit depends on each observation.
-The first diagnostic plot (residuals vs fitted) is the picture for outliers in the outcome, and the fourth (residuals vs leverage with Cook's contours) is the picture for outliers in $X$-space; both can but do not have to be problematic.
+The first diagnostic plot (residuals vs fitted) is the picture for outliers in the outcome, and the fourth (residuals vs leverage with Cook's contours) is the picture for outliers in $\hat{x}_{i}$; both can but do not have to be problematic.
 
 ```{r}
 N <- 40
@@ -98,11 +98,11 @@ When two regressors carry nearly the same information, OLS cannot tell their sep
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 *Collinearity* is when one explanatory variable can be closely predicted by a linear combination of the others.
 The *Variance Inflation Factor* for variable $k$,
-$$\hat{VIF}_{k}=\frac{1}{1-\hat{R}^2_{k}},$$
+$$\hat{\text{VIF}}_{k}=\frac{1}{1-\hat{R}^2_{k}},$$
 quantifies how much collinearity inflates the variance of $\hat{b}_{k}$ compared to the no-collinearity case, where $\hat{R}^2_{k}$ comes from regressing $\hat{x}_{k}$ on the other covariates $\hat{x}_{-k}$ (a regression that does not involve the response variable $\hat{y}$).
 :::
 
-The *Variance Inflation Factor* is useful as a quick diagnostic for overlapping information between regressors: a $\hat{VIF}_{k}$ near $1$ means $\hat{x}_{k}$ is uncorrelated with the others, and a common rule of thumb flags $\sqrt{\hat{VIF}_{k}} > 2$.
+The *Variance Inflation Factor* is useful as a quick diagnostic for overlapping information between regressors: a $\hat{\text{VIF}}_{k}$ near $1$ means $\hat{x}_{k}$ is uncorrelated with the others, and a common rule of thumb flags $\sqrt{\hat{\text{VIF}}_{k}} > 2$.
 Collinearity does not bias the coefficients, it only widens their standard errors so that coefficient estimates may change erratically in response to small changes in the model or the data; in the extreme case with more variables than observations ($K>n$), the linear model has infinitely many solutions.
 ```{r}
 # Variance Inflation Factor from its definition: VIF_k = 1/(1 - R^2_k),
@@ -118,8 +118,8 @@ sqrt(vif) > 2
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-A $\hat{VIF}_k$ of $1$ means covariate $k$ is uncorrelated with the others.
-A $\hat{VIF}_k$ of $4$ means the variance of $\hat{b}_k$ is $4$ times larger than it would be with no collinearity, so its standard error is $\sqrt{4}=2$ times larger.
+A $\hat{\text{VIF}}_k$ of $1$ means covariate $k$ is uncorrelated with the others.
+A $\hat{\text{VIF}}_k$ of $4$ means the variance of $\hat{b}_k$ is $4$ times larger than it would be with no collinearity, so its standard error is $\sqrt{4}=2$ times larger.
 With only two covariates, $\hat{R}^2_1 = \hat{R}^2_2$ (it is just their squared correlation), so the two VIFs are equal.
 Collinearity does not bias the coefficients; it only makes them less precise.
 :::
@@ -174,7 +174,7 @@ c(statistic=BP, p.value=1-pchisq(BP, df=K))
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 The Breusch-Pagan test asks whether the residual variance depends on the regressors.
-A small $p$-value is evidence of *heteroskedasticity*: the spread of the residuals changes with $X$.
+A small $p$-value is evidence of *heteroskedasticity*: the spread of the residuals changes with the regressors $\hat{x}_{k}$.
 Why does heteroskedasticity leave the OLS coefficients unbiased, but make the usual standard errors unreliable?
 :::
 
@@ -183,23 +183,23 @@ Why does heteroskedasticity leave the OLS coefficients unbiased, but make the us
 Transforming variables can often improve your model fit while still estimating it via OLS.
 This is because OLS only requires the model to be "linear in the parameters".
 Under the assumptions of the model is correctly specified, the following table is how we can interpret the coefficients of the transformed data.
-(Note for small changes, $\Delta ln(x) \approx \Delta x / x = \Delta x \% \cdot 100$.)
+(Note for small changes, $\Delta \log(x) \approx \Delta x / x = \Delta x \% \cdot 100$.)
 
 | *Specification* | *Regressand* | *Regressor* | *Derivative* | *Interpretation (If True)* |
 | --- | --- | --- | --- | --- |
 | linear--linear | $y$          | $x$   | $\Delta y = \beta_1\cdot\Delta x$ | Change $x$ by one unit $\rightarrow$ change $y$ by $\beta_1$ units.|
-| log--linear | $ln(y)$ | $x$ | $\Delta y \% \cdot 100 \approx \beta_1 \cdot \Delta x$ | Change $x$ by one unit $\rightarrow$ change $y$ by $100 \cdot \beta_1$ percent. |
-| linear--log | $y$ | $ln(x)$ | $\Delta y \approx  \frac{\beta_1}{100}\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\frac{\beta_1}{100}$ units |
-| log--log | $ln(y)$ | $ln(x)$ | $\Delta y \% \approx \beta_1\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\beta_1$ percent|
+| log--linear | $\log(y)$ | $x$ | $\Delta y \% \cdot 100 \approx \beta_1 \cdot \Delta x$ | Change $x$ by one unit $\rightarrow$ change $y$ by $100 \cdot \beta_1$ percent. |
+| linear--log | $y$ | $\log(x)$ | $\Delta y \approx  \frac{\beta_1}{100}\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\frac{\beta_1}{100}$ units |
+| log--log | $\log(y)$ | $\log(x)$ | $\Delta y \% \approx \beta_1\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\beta_1$ percent|
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Suppose you estimate $\ln(y) = 2.1 + 0.08 \cdot x$.
+Suppose you estimate $\log(y) = 2.1 + 0.08 \cdot x$.
 The coefficient $0.08$ means that a one-unit increase in $x$ is associated with an approximate $100 \times 0.08 = 8\%$ increase in $y$.
-If instead you estimate $\ln(y) = 1.5 + 0.6 \cdot \ln(x)$, the coefficient $0.6$ is an *elasticity*: a $1\%$ increase in $x$ is associated with a $0.6\%$ increase in $y$.
+If instead you estimate $\log(y) = 1.5 + 0.6 \cdot \log(x)$, the coefficient $0.6$ is an *elasticity*: a $1\%$ increase in $x$ is associated with a $0.6\%$ increase in $y$.
 :::
 
 Now recall from micro theory that an additively separable and linear production function is referred to as "perfect substitutes".
-With a linear model and untransformed data, you have implicitly modelled the different regressors $X$ as perfect substitutes.
+With a linear model and untransformed data, you have implicitly modelled the different regressors $X_{ik}$ as perfect substitutes.
 Further recall that the "perfect substitutes" model is a special case of the constant elasticity of substitution production function.
 
 #### **Box-Cox Transformation** {-}
@@ -232,8 +232,8 @@ $$
 
 
 It is easiest to optimize parameters in a 2-step procedure called  *concentrated optimization*.
-We first solve for $\hat{\mathbf{b}}(\rho,\lambda)$ and compute the mean squared error $MSE(\rho,\lambda)$.
-We then find the $(\rho,\lambda)$ which minimizes $MSE$.
+We first solve for $\hat{\mathbf{b}}(\rho,\lambda)$ and compute the mean squared error $\text{MSE}(\rho,\lambda)$.
+We then find the $(\rho,\lambda)$ which minimizes $\text{MSE}$.
 ```{r, fig.height=10, fig.width=10, fig.align="center"}
 # Box-Cox Transformation Function
 bxcx <- function( xy, rho){
@@ -337,7 +337,7 @@ When explicitly transforming data according to $\lambda$ and $\rho$, these param
 The default hypothesis testing procedures do not account for you trying out different transformations, and should be adjusted by the increased degrees of freedom.
 *Specification searches* deflate standard errors and are a major source for false discoveries.
 
-Note that if you are ultimately interested in the outcome $Y$, then transforming/untransforming $Y$ can introduce a bias.
+Note that if you are ultimately interested in the outcome $Y_{i}$, then transforming/untransforming $Y_{i}$ can introduce a bias.
 To understand when you might be better off sticking with an untransformed outcome variable, see the literature on "smearing".
 
 

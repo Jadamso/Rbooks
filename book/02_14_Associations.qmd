@@ -204,10 +204,10 @@ Altogether, we have
 
 | Distribution| Sample Size per Iteration | Number of Iterations | Mechanism | Typical Purpose |
 | -------- | ------- | ------- | ------- |----------------|
-Jackknife       | $n-1$ | $n$  | $X,Y$: Deterministically leave-one-out observation | Variance estimate (after rescaling) and Normal CI estimate |
-Bootstrap       | $n$   | $B$  | $X,Y$: Random resample with replacement | Percentile CI estimate |
-Null Bootstrap  | $n$   | $B$  | $X,Y$: Random resample with replacement and shifted | Percentile CI under imposed null, $p$-values |
-Permutation     | $n$   | $B$  | $X$: Random resample without replacement | Percentile CI under imposed null of no association, $p$-values |
+Jackknife       | $n-1$ | $n$  | $\hat{x},\hat{y}$: Deterministically leave-one-out observation | Variance estimate (after rescaling) and Normal CI estimate |
+Bootstrap       | $n$   | $B$  | $\hat{x},\hat{y}$: Random resample with replacement | Percentile CI estimate |
+Null Bootstrap  | $n$   | $B$  | $\hat{x},\hat{y}$: Random resample with replacement and shifted | Percentile CI under imposed null, $p$-values |
+Permutation     | $n$   | $B$  | $\hat{x}$: Random resample without replacement | Percentile CI under imposed null of no association, $p$-values |
 : Types of resampling
 
 
@@ -223,7 +223,7 @@ $$\tilde{c}_{XY} = \text{Med}\left\{ (\hat{x}_{i} - \tilde{m}_{X})(\hat{y}_i - \
 *Falk's median correlation* $\tilde{r}_{XY}$ rescales the codeviance by the product of the two median absolute deviations:
 $$\tilde{r}_{XY} = \frac{ \tilde{c}_{XY} }{ \hat{\text{MAD}}_{X} \hat{\text{MAD}}_{Y}}.$$
 
-The Falk codeviance is useful for cardinal data with outliers or heavy tails (income, prices, response times), where one extreme observation can move $\hat{c}_{XY}$ by a lot but $\tilde{c}_{XY}$ by very little (the same robustness rationale as for the median, $IQR$, and $\text{MAD}$ from Part 1).^[See [Medians and Absolute Deviations](01_03_SummaryStatistics.qmd#medians-and-absolute-deviations). See also the *Theil-Sen Estimator*, which may be seen as a precursor.]
+The Falk codeviance is useful for cardinal data with outliers or heavy tails (income, prices, response times), where one extreme observation can move $\hat{c}_{XY}$ by a lot but $\tilde{c}_{XY}$ by very little (the same robustness rationale as for the median, $\hat{\text{IQR}}$, and $\hat{\text{MAD}}$ from Part 1).^[See [Center/Spread based on Quantiles](01_03_SummaryStatistics.qmd#centerspread-based-on-quantiles). See also the *Theil-Sen Estimator*, which may be seen as a precursor.]
 Unlike the Pearson correlation, Falk's median correlation $\tilde{r}_{XY}$ typically lies in $[-1,1]$ but not always.
 ```{r}
 codev <- function(xy) {
@@ -304,13 +304,13 @@ abline(v=xy_med_cor, col=rgb(1, 0, 0, .8), lwd=2)
 When the data are ordered (rankings or ordered categories), we can summarize association by counting which pairs of observations agree in direction.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-*Kendall's rank correlation* $\hat{KT}$ is the share of variable-pairs that agree in direction (concordant) minus the share that disagree (discordant):
-$$\hat{KT} = \frac{2}{n(n-1)} \sum_{i} \sum_{j > i} \text{sgn} \Bigl( (\hat{x}_{i} - \hat{x}_{j})(\hat{y}_i - \hat{y}_j) \Bigr),$$
+*Kendall's rank correlation* $\hat{\text{KT}}$ is the share of variable-pairs that agree in direction (concordant) minus the share that disagree (discordant):
+$$\hat{\text{KT}} = \frac{2}{n(n-1)} \sum_{i} \sum_{j > i} \text{sgn} \Bigl( (\hat{x}_{i} - \hat{x}_{j})(\hat{y}_i - \hat{y}_j) \Bigr),$$
 where the sign function is
 $$\text{sgn}(z) = \begin{cases} +1 & \text{if } z > 0\\ 0  & \text{if } z = 0 \\ -1 & \text{if } z < 0 \end{cases}.$$
 :::
 
-Kendall's $\hat{KT}$ is useful for any *monotone* relationship: the values do not have to fall on a straight line, only have consistent ordering.
+Kendall's $\hat{\text{KT}}$ is useful for any *monotone* relationship: the values do not have to fall on a straight line, only have consistent ordering.
 Because it only uses signs, it works for any ordinal data (rankings, ordered categories) where arithmetic averages are not meaningful.
 The bounds $[-1, 1]$ make it directly comparable to the Pearson correlation: a value closer to $+1$ suggests positive association in rankings, $-1$ negative, and $0$ no association in the ordering.
 For example, consider years of schooling and wage brackets for the $3294$ workers in `Wages1`.
@@ -330,7 +330,7 @@ round(KT, 3)
 The value is positive, which suggests that workers with more schooling tend to be in higher wage brackets.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Kendall's $\hat{KT}$ also applies to cardinal data, because it only uses the ordering of the values.
+Kendall's $\hat{\text{KT}}$ also applies to cardinal data, because it only uses the ordering of the values.
 Converting each variable to ranks first does not change the statistic.
 ```{r}
 # xy_hat defined above
@@ -347,12 +347,12 @@ round(cor(xy_hat[, 'x_hat'], xy_hat[, 'y_hat'], method='kendall'), 3)
 :::
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Compute Kendall's $\hat{KT}$ for the dataset $\{(1,1),(2,3),(3,2),(4,4)\}$.
+Compute Kendall's $\hat{\text{KT}}$ for the dataset $\{(1,1),(2,3),(3,2),(4,4)\}$.
 
 With $n=4$ there are $n(n-1)/2=6$ pairs.
 For each pair we take the sign of $(\hat{x}_{i}-\hat{x}_{j})(\hat{y}_{i}-\hat{y}_{j})$: a pair is *concordant* ($+1$) if both variables move the same way, *discordant* ($-1$) if they move oppositely.
 
-| Pair | $X$ moves | $Y$ moves | sign |
+| Pair | $\hat{x}$ moves | $\hat{y}$ moves | sign |
 |:---:|:---:|:---:|:---:|
 | (1,1),(2,3) | up | up   | $+1$ |
 | (1,1),(3,2) | up | up   | $+1$ |
@@ -363,7 +363,7 @@ For each pair we take the sign of $(\hat{x}_{i}-\hat{x}_{j})(\hat{y}_{i}-\hat{y}
 
 There are $5$ concordant and $1$ discordant pair, so
 $$
-\hat{KT} = \frac{2}{n(n-1)}\sum_{i}\sum_{j>i}\text{sgn}(\cdots) = \frac{2}{4\cdot3}(5-1) = \frac{8}{12} = \frac{2}{3} \approx 0.67.
+\hat{\text{KT}} = \frac{2}{n(n-1)}\sum_{i}\sum_{j>i}\text{sgn}(\cdots) = \frac{2}{4\cdot3}(5-1) = \frac{8}{12} = \frac{2}{3} \approx 0.67.
 $$
 ```{r}
 cor(c(1,2,3,4), c(1,3,2,4), method='kendall')
@@ -441,9 +441,9 @@ output()
 When neither variable has a meaningful order, we organize the data as a contingency table and summarize the strength of association with a single bounded score.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-*Cramer's V* $\hat{CV}$ rescales the *chi-squared statistic* $\hat{\chi}^{2}$ into a $[0, 1]$ score for the strength of association between two categorical variables in a $K\times J$ contingency table:
-$$\hat{\chi}^2 = \sum_{k=1}^{K} \sum_{j=1}^{J} \frac{(\hat{o}_{kj} - \hat{e}_{kj})^2}{\hat{e}_{kj}}, \qquad \hat{CV} = \sqrt{\frac{\hat{\chi}^2 / n}{\min(J - 1, \, K - 1)}},$$
-where $\hat{o}_{kj}$ is the observed frequency in cell $(k, j)$, $\hat{e}_{kj} = \hat{RF}_{k} \cdot \hat{CF}_{j} / n$ is the expected frequency under independence, and $\hat{RF}_{k}=\sum_{j} \hat{o}_{kj}$, $\hat{CF}_{j}=\sum_{k} \hat{o}_{kj}$ are the row and column totals.
+*Cramer's V* $\hat{\text{CV}}$ rescales the *chi-squared statistic* $\hat{\chi}^{2}$ into a $[0, 1]$ score for the strength of association between two categorical variables in a $K\times J$ contingency table:
+$$\hat{\chi}^2 = \sum_{k=1}^{K} \sum_{j=1}^{J} \frac{(\hat{o}_{kj} - \hat{e}_{kj})^2}{\hat{e}_{kj}}, \qquad \hat{\text{CV}} = \sqrt{\frac{\hat{\chi}^2 / n}{\min(J - 1, \, K - 1)}},$$
+where $\hat{o}_{kj}$ is the observed frequency in cell $(k, j)$, $\hat{e}_{kj} = \hat{\text{RF}}_{k} \cdot \hat{\text{CF}}_{j} / n$ is the expected frequency under independence, and $\hat{\text{RF}}_{k}=\sum_{j} \hat{o}_{kj}$, $\hat{\text{CF}}_{j}=\sum_{k} \hat{o}_{kj}$ are the row and column totals.
 :::
 
 Cramer's V is useful for two unordered categorical variables (occupation, region, brand), because it treats every reordering of rows or columns the same and makes no use of any ordering.
@@ -478,7 +478,7 @@ CV(xy_cat_hat)
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 You can also apply Cramer's V to cardinal data after cutting each variable into bins.
-This throws away the ordering of the bins, so Kendall's $\hat{KT}$ or Pearson's $\hat{r}_{XY}$ usually make better use of the data.
+This throws away the ordering of the bins, so Kendall's $\hat{\text{KT}}$ or Pearson's $\hat{r}_{XY}$ usually make better use of the data.
 ```{r}
 # xy_hat and CV defined above
 # Cut each variable into bins: UrbanPop into 4, Murder into 3
@@ -502,14 +502,14 @@ Compute Cramer's V for this $2\times2$ table of $100$ workers, cross-classifying
 \text{Column total} & 50 & 50 & 100
 \end{array}
 
-If degree and employment were independent, the expected count in each cell is $\hat{e}_{kj}=\hat{RF}_{k}\hat{CF}_{j}/n$.
+If degree and employment were independent, the expected count in each cell is $\hat{e}_{kj}=\hat{\text{RF}}_{k}\hat{\text{CF}}_{j}/n$.
 For the top-left cell, $\hat{e}_{11}=40\cdot50/100=20$; all four expected counts are $(20,20,30,30)$.
 $$\begin{aligned}
 \hat{\chi}^2 &= \frac{(30-20)^2}{20}+\frac{(10-20)^2}{20}+\frac{(20-30)^2}{30}+\frac{(40-30)^2}{30} = 5+5+3.33+3.33 = 16.67.
 \end{aligned}$$
 With $K=2$ rows and $J=2$ columns, $\min(J-1,K-1)=1$, so
 $$
-\hat{CV} = \sqrt{\frac{\hat{\chi}^2/n}{\min(J-1,K-1)}} = \sqrt{\frac{16.67/100}{1}} \approx 0.41.
+\hat{\text{CV}} = \sqrt{\frac{\hat{\chi}^2/n}{\min(J-1,K-1)}} = \sqrt{\frac{16.67/100}{1}} \approx 0.41.
 $$
 ```{r}
 # Observed 2x2 table
@@ -549,5 +549,5 @@ You construct sampling distributions and conduct hypothesis tests for  Cramer's 
 
 #### **Recall** {-}
 
-This chapter summarized two-variable association with a small toolbox matched to data type: Pearson correlation $\hat{r}_{XY}$ for cardinal data (worked out by hand on $\{(0, 0.1), (1, 0.3), (2, 0.2)\}$, yielding $\hat{r}_{XY}=1/2$), Falk codeviance $\tilde{c}_{XY}$ as the robust cousin for outlier-prone data, Kendall's $\hat{KT}$ for ordered factors (walked through the six pairs of $\{(1, 1), (2, 3), (3, 2), (4, 4)\}$ to get $\hat{KT}=2/3$), and Cramer's V $\hat{CV}$ for unordered factors (the $2\times 2$ degree-vs-employment table giving $\hat{CV}\approx 0.41$).
+This chapter summarized two-variable association with a small toolbox matched to data type: Pearson correlation $\hat{r}_{XY}$ for cardinal data (worked out by hand on $\{(0, 0.1), (1, 0.3), (2, 0.2)\}$, yielding $\hat{r}_{XY}=1/2$), Falk codeviance $\tilde{c}_{XY}$ as the robust cousin for outlier-prone data, Kendall's $\hat{\text{KT}}$ for ordered factors (walked through the six pairs of $\{(1, 1), (2, 3), (3, 2), (4, 4)\}$ to get $\hat{\text{KT}}=2/3$), and Cramer's V $\hat{\text{CV}}$ for unordered factors (the $2\times 2$ degree-vs-employment table giving $\hat{\text{CV}}\approx 0.41$).
 These statistics describe association rather than causation.
