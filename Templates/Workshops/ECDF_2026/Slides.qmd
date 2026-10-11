@@ -1,0 +1,632 @@
+---
+title: "Modern Statistics with the ECDF"
+author: "Jordan Adamson, Thompson Rivers University"
+date: today
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    embed-resources: true
+    code-line-numbers: false
+    fig-width: 9
+    fig-height: 4
+    fig-align: center
+execute:
+  echo: false
+  warning: false
+---
+
+```{r}
+#| echo: false
+set.seed(1)
+```
+
+## Overview
+
+Slides 
+
+* Summarize data with the ECDF.
+* Show ECDF converges to the CDF.                                                                                                           
+* Draw bootstrap samples from ECDF.   
+* Foreshadow downstream teaching benefits.
+
+Lab 
+
+* RStudio: plot ECDF with real data
+* RStudio: bootstrap CI for the median
+* Claude: polish the script, Q \& A
+
+# ECDF
+
+## What: a step function of the sorted data
+
+For a sample $\hat{X}_1, \ldots, \hat{X}_n$, the ECDF is the share of observations at or below $x$:
+$$\hat{F}(x) = \frac{1}{n} \sum_{i=1}^{n}\mathbf{1}(\hat{X}_{i} \leq x).$$
+
+* Packages the sorted data as a function for visualization and resampling
+* Jumps of $1/n$ at each observation
+
+## Example: monthly earnings of 935 US workers, 1980.
+
+```{r}
+#| fig-height: 5
+X <- wooldridge::wage2[, 'wage']   # monthly earnings of US workers, 1980 dollars
+F_hat <- ecdf(X)
+plot(F_hat, main=NA, pch=16, col=grey(0, .5),
+  xlab='Monthly earnings (1980 dollars)',
+  ylab='Proportion of workers at or below x')
+rug(X)
+```
+
+## Why (1/2): Complementary empirics
+
+Complements the histogram for data viz.
+
+* Histograms better for shape: skewness, number and location of modes
+* ECDFs better for precision: easily get quantiles, always the same for each student
+* $\hat{F}$ is well suited for both discrete and continuous data
+
+## How: monthly earnings of 935 workers {.smaller}
+
+```{r}
+#| output: false
+n <- length(X)
+mean(X <= 1000)                 # share of workers at or below 1000, by hand
+F_hat(1000)                     # 1000 is the 0.62 quantile
+quantile(X, probs=.62, type=1)  # inverting the ECDF gives 1000 back
+```
+
+```{r}
+#| fig-height: 4
+plot(F_hat, main=NA, pch=16, col=grey(0, .5),
+    xlab='Monthly earnings (1980 dollars)',
+    ylab='Proportion of workers at or below x')
+rug(X)
+segments(-500, 0.62, 1000, 0.62, col=rgb(0, 0, 1, .8))
+segments(1000, 0, 1000, 0.62, col=rgb(0, 0, 1, .8))
+```
+
+$1000$ dollars is the $0.62$ quantile
+
+* $\hat{F}(1000) \approx 0.62~~$,&nbsp;&nbsp; share of workers earning $1000$ dollars or less is about $0.62$.
+* $\hat{F}^{-1}(0.62) = 1000~~$,&nbsp;&nbsp; about $62\%$ of observations have a value of $1000$ or less.
+
+## Why (2/2): Easier theory
+
+ECDFs make theory easier
+
+* Students can see both $\hat{f}$, $\hat{F}$ before $f, F$
+* No histogram/KDE bandwidth issues as $n \to \infty$.
+* Inference via bootstrap for any statistic students use.
+
+## Histogram Density and ECDF
+
+```{r}
+#| fig-height: 4.2
+breaks <- seq(0, 3200, by=100)   # bin width 2h=100
+f_hat <- hist(X, breaks=breaks, plot=FALSE)
+x0 <- 750                    # value to compare across both views
+below <- f_hat[['mids']] < x0
+col_x <- rgb(0, 0, 1, .5)
+par(mfrow=c(1, 2), mar=c(4, 4.5, 2, 1))
+
+hist(X, breaks=breaks, freq=FALSE, border=NA,
+    col=ifelse(below, col_x, grey(.8)),
+    main=NA, xlab='Monthly earnings', ylab='')
+title(ylab=expression(hat(f)), line=3)
+
+plot(F_hat, xlim=range(breaks), pch=16, col=grey(0, .5),
+    main=NA, xlab='Monthly earnings', ylab='')
+title(ylab=expression(hat(F)), line=3)
+segments(x0, F_hat(x0), -2, F_hat(x0), col=col_x)
+segments(x0, F_hat(x0), x0, -1, col=col_x)
+points(x0, F_hat(x0), pch=16, col=rgb(0, 0, 1, .8), cex=1.5)
+```
+
+# The Fundamental Theorem of Statistics
+
+## What: the ECDF converges to the CDF
+
+Population CDF: $F(x) = \text{Prob}(X \leq x)$.
+
+
+As $n$ grows, the largest gap between $\hat{F}$ and $F$ shrinks to zero:
+$$\sup_x \left| \hat{F}(x) - F(x) \right| \rightarrow 0.$$
+
+
+## Example: Log-normal household incomes
+
+```{r}
+#| output: false
+income_meanlog <- log(50000)
+income_sdlog <- 0.6
+F_pop <- function(x) plnorm(x, meanlog=income_meanlog, sdlog=income_sdlog) # CDF
+r_pop <- function(n) rlnorm(n, meanlog=income_meanlog, sdlog=income_sdlog) # draws
+pop_median <- qlnorm(.5, meanlog=income_meanlog, sdlog=income_sdlog)
+pop_median
+```
+
+```{r}
+#| fig-height: 3.4
+x_grid <- seq(0, 200000, length.out=500)
+par(mfrow=c(1, 3))
+for (n_sim in c(10, 100, 1000)) {
+    X_sim <- r_pop(n_sim)
+    plot(ecdf(X_sim), main=NA, pch=16, col=grey(0, .5), xlim=c(0, 200000),
+        xlab='Income', ylab='Proportion at or below x')
+    lines(x_grid, F_pop(x_grid), col=rgb(0, 1, 0, .8), lwd=1)
+    title(paste0('n = ', n_sim), font.main=1)
+}
+```
+
+## What the theorem says
+The estimator $F_{n}$ is a random function.
+$$\sup_x \left| F_{n}(x) - F(x) \right| \rightarrow 0.$$
+The spread around $F$ (green) shrinks as $n$ grows.
+
+```{r}
+#| fig-height: 3.4
+# Draw many independent samples for each n and overlay their ECDFs.
+n_rep <- 50
+par(mfrow=c(1, 3))
+for (n_sim in c(10, 100, 1000)) {
+    plot(NULL, xlim=c(0, 200000), ylim=c(0, 1), main=NA,
+        xlab='Income', ylab='Proportion at or below x')
+    for (r in seq(n_rep)) {
+        X_rep <- r_pop(n_sim)
+        plot(ecdf(X_rep), add=TRUE, col=grey(0, .15),
+            verticals=TRUE, do.points=FALSE, col.01line=NA)
+    }
+    lines(x_grid, F_pop(x_grid), col=rgb(0, 1, 0, .8), lwd=2)
+    title(paste0('n = ', n_sim), font.main=1)
+}
+```
+
+## Why: the sample can stand in
+
+* $\hat{F}(1000)$ is a fact, and also an estimate of $F(1000)$.
+* Resampling from $\hat{F}$ is nearly the same as sampling from $F$
+
+# Bootstrap
+
+## What: resampling from the ECDF
+
+* Draw $n$ observations from the data, with replacement. 
+ Each observation is a draw from $\hat{F} \approx F$.
+* Compute the statistic on the bootstrap sample.
+* Repeat $B$ times.
+
+This gives the *bootstrap distribution*, which is an estimate of the sampling distribution.
+
+## Why (1/2): internalize sampling variability
+
+Every step is visible and the distribution is more concrete.
+
+```{r}
+#| output: false
+X <- wooldridge::wage2[, 'wage']
+n <- length(X)
+X_median <- median(X)
+X_median
+# Breaks with a common bin width, so the bootstrap histograms on both Why slides are comparable.
+boot_breaks <- function(x, width=5) {
+    seq(floor(min(x) / width) * width, ceiling(max(x) / width) * width, by=width)
+}
+```
+
+```{r}
+#| fig-height: 4.2
+local({
+    divideX <- c(.6, .65)
+    divideY <- c(0, .32, .33, .65, .70, 1)
+    useFraction <- .9
+    Fraction2 <- 0:1 + c(1, -1) * (1 - useFraction) / 2
+    rescaleY <- function(x) (x - .33) / .67
+    divideY3 <- (c(NA, NA, .33, .65, .70, 1) - .33) / .67
+    leftPad <- .05
+
+    set.seed(2)
+    boot_list <- lapply(1:3, function(b) sample(X, replace=TRUE))
+
+    PlotSample <- function(data, star=FALSE, lineM=NULL, ylabels=TRUE) {
+        plot(ecdf(data), xlim=c(0, 3100), ylim=c(0, 1), axes=FALSE,
+            xlab='', ylab='', main=NA, do.points=FALSE, verticals=TRUE,
+            col='gray30', lwd=2, xaxs='i', yaxs='i')
+        axis(side=1, at=c(0, 2000))
+        axis(side=2, labels=ylabels)
+        if (length(lineM)) {
+            segments(x0=c(0, lineM), y0=c(.5, .5), x1=c(lineM, lineM), y1=c(.5, 0),
+                col=rgb(1, 0, 0, .8), lty=2)
+            axis(side=1, at=lineM, if (star) expression(tilde(m)^r) else expression(tilde(m)),
+                col=rgb(1, 0, 0, .8), col.axis=rgb(1, 0, 0, .8))
+        }
+        invisible(NULL)
+    }
+
+    ### Sample: the one dataset we actually have
+    par(fig=c(divideX[1] * (1/3 + 1/3 * Fraction2), divideY3[5:6]),
+        mar=.1 + c(2, 0, 0, 0), mex=.8)
+    PlotSample(X, lineM=X_median)
+
+    ### Resamples, drawn from the sample with replacement
+    ### Only the leftmost panel carries y-axis labels; the row shares one scale
+    par(fig=c(divideX[1] * (0/3 + 1/3 * Fraction2) + c(leftPad, 0), divideY3[3:4]), new=TRUE)
+    PlotSample(boot_list[[1]], star=TRUE, lineM=median(boot_list[[1]]), ylabels=TRUE)
+    par(fig=c(divideX[1] * (1/3 + 1/3 * Fraction2), divideY3[3:4]), new=TRUE)
+    PlotSample(boot_list[[2]], star=TRUE, lineM=median(boot_list[[2]]), ylabels=FALSE)
+    par(fig=c(divideX[1] * (2/3 + 1/3 * Fraction2), divideY3[3:4]), new=TRUE)
+    PlotSample(boot_list[[3]], star=TRUE, lineM=median(boot_list[[3]]), ylabels=FALSE)
+
+    ### Resampling distribution of the median, centered at m-tilde, not at an unknown truth
+    par(fig=c(divideX[2], 1, 0, .5), new=TRUE)
+    par(mar=c(4.1, 0, 0, 1))
+    set.seed(2)
+    boot_meds <- sapply(1:999, function(b) median(sample(X, replace=TRUE)))
+    hist(boot_meds, xlim=range(boot_meds), breaks=boot_breaks(boot_meds), border=NA,
+        axes=FALSE, col=rgb(.8, 0, 0, .5), freq=FALSE, main=NA, yaxs='i', xlab='', ylab='')
+    abline(v=X_median, col=rgb(1, 0, 0, .8), lty=2)
+    axis(1, round(range(boot_meds), 1))
+    axis(1, at=X_median, expression(tilde(m)), col=rgb(1, 0, 0, .8), col.axis=rgb(1, 0, 0, .8))
+
+    ### Arrows
+    par(mar=c(2.1, 0, 0, 0))
+    par(fig=c(0, 1, 0, 1), usr=c(0, 1, 0, 1))
+    arrows(lwd=1.5, length=.125,
+        x0=divideX[1] * (.29 + .42 * ppoints(5)[c(1, 3, 5)]),
+        x1=divideX[1] * seq(.3, .7, length=3),
+        y0=rescaleY(divideY[4:5] %*% c(.2, .77)) - .05,
+        y1=rescaleY(divideY[4] - c(.6, 1, .6) * (divideY[5] - divideY[4])) - .05)
+    arrows(divideX[1], c(.1, .2, .3), length=.125, divideX[2], lwd=1.5)
+
+    ### Text
+    text(.4, .8, adj=0, 'Sample')
+    text((divideX[2] + 1) / 2, .55, adj=.5, 'Resampling Distribution')
+    text(0.01, divideY3[4] + .03, adj=0, 'Resamples (r)')
+})
+```
+
+
+## Why (2/2): Inference without formulas or distributional assumptions {.smaller}
+
+```{r}
+#| output: false
+B <- 9999
+boot_medians <- rep(NA, B)
+for (b in seq_along(boot_medians)) {
+    X_b <- sample(X, replace=TRUE)   # some workers repeated, some left out
+    boot_medians[b] <- median(X_b)
+}
+```
+
+```{r}
+#| fig-height: 4
+par(mfrow=c(1, 2))
+
+hist(boot_medians, breaks=boot_breaks(boot_medians), border=NA, freq=FALSE, main=NA,
+    col=rgb(.8, 0, 0, .5),
+    xlab='Bootstrap Median')
+#abline(v=X_median, col=rgb(1, 0, 0, .8), lwd=2)
+abline(v=quantile(boot_medians, probs=c(0.025, 0.975)), col=rgb(0, 0, 1, .8), lwd=2)
+xticks <- axTicks(1)
+
+### Same 95% interval, read off the ECDF of the resampling distribution
+ci <- quantile(boot_medians, probs=c(0.025, 0.975))
+xr <- range(boot_medians)
+plot(ecdf(boot_medians), do.points=FALSE, verticals=TRUE, col=rgb(.8, 0, 0, 1), lwd=2,
+    xlim=xr, ylim=c(0, 1), xaxs='i', yaxs='i', xaxt='n',
+    main=NA, xlab='Bootstrap Median', ylab=expression(hat(F)))
+axis(1, at=xticks)
+segments(x0=c(xr[1], ci[1], xr[1], ci[2]), y0=c(.025, .025, .975, .975),
+    x1=c(ci[1], ci[1], ci[2], ci[2]), y1=c(.025, 0, .975, 0),
+    col=rgb(0, 0, 1, .8), lwd=2)
+```
+
+* Middle $95\%$ = the *percentile* confidence interval
+* P-values: shift histogram to impose the null, see where the actual statistic falls
+* Swap `median` for almost any other statistic: `mean`, `var`, `IQR`
+
+
+# How to teach this?
+
+## Ways to incorporate
+
+1 Day Theory + 1 Day Lab.
+
+If using a standard business textbook (e.g., Camm et al.),
+
+Replace one week's worth of $t$-distributions and $z$-tables with these slides+lab
+
+* *"complex formulas and distribution tables should be de-emphasized or eliminated."* ([GAISE](https://asacollegegaise.org/recommendations))
+
+
+## Students will gain a modern foundation ([GAISE](https://asacollegegaise.org/recommendations))
+
+Better descriptions as good practice
+
+* *"Real data"* 
+* *"Identify and interpret appropriate graphs"* 
+* Create graphs *"beyond just simple boxplots"*
+
+Intuitive and general understanding of inference
+
+* *"Concepts over formulas"*
+* *"Software to explore concepts"*
+* *"Active learning"*
+
+## Can eventually teach modern statistics deeply
+
+* ECDFs early + histogram density
+* CLT (less emphasis) $\to$ LLN $\to$ FTS $\to$ Bootstrap
+* Bootstrap CI for means, medians, proportions, ...
+* Simulations show how things work theoretically 
+* Agentic coding for reproducible reports
+
+You can cut many weeks of material that many students either hate or struggle with or never use.
+
+## Even the 1-Day lab helps enormously 
+*"professional software"* recommended by the [ASA (2014)](https://www.amstat.org/docs/default-source/amstat-documents/guidelines2014-11-15.pdf)
+
+  * Excel: *"**we do not recommend it**"*, *"not ideal as a **programming** or **reproducible analysis** environment."*
+  * RStudio: already modern, real data via `library(Ecdat)`
+  * Claude/ChatGPT Desktop: new possibility (fully agentic) 
+
+A conservative step forward: RStudio + Claude Browser
+
+  * Students write and run an `R` script.
+  * Upload to Claude for review
+    * *What is going on?*
+    * *Add comments.*
+
+
+## Integrating AI {.smaller}
+The conservative step is not clearly the best, but it's progress. 
+
+No guarantee AI is always right. 
+No guarantee the instructor is always right. (Who here has made no mistakes?)
+In my experience, Claude/ChatGPT is excellent at statistics, especially Stats I.
+
+Today, I think *costs to students* are not even close:
+
+* a rare bad comment/explanation $<$ not exploiting agentic coding
+* many ways to add AI safeguards 
+
+A future progressive could have students work with `R` scripts only using AI (not RStudio) 
+
+
+# Building on this downstream (Stats II)
+
+```{r}
+#| include: false
+# Monthly earnings, split by whether the worker lives in an SMSA.
+x_hat <- wooldridge::wage2[, 'wage']
+urban <- wooldridge::wage2[, 'urban']
+x_rural <- x_hat[urban == 0]
+x_urban <- x_hat[urban == 1]
+# Welch t-test of the urban minus rural mean.
+t_res <- t.test(x_urban, x_rural)
+# Group medians, and the urban ECDF to evaluate at the rural median.
+med_rural <- median(x_rural)
+med_urban <- median(x_urban)
+F_urban <- ecdf(x_urban)
+```
+
+## Example: Are wages higher in the city?
+
+One student: *yes, obviously*.
+
+Another: *obviously not; my uncle owns a farm and he's rich*.
+
+Let's look at real data
+
+* Monthly earnings of $935$ US workers in 1980, rural vs urban (lives in an SMSA).
+* a $t$-test finds urban workers earn $`r round(t_res$estimate[1] - t_res$estimate[2])`$ dollars more per month on average ($95\%$ CI $[`r round(t_res$conf.int[1])`, `r round(t_res$conf.int[2])`]$).
+
+
+## Alternative (1/2) {.smaller}
+
+* Medians: urban $`r med_urban`$ vs rural $`r med_rural`$, a $`r med_urban - med_rural`$ dollar gap.
+* Overlap: $\hat{F}_{urban}(`r med_rural`) \approx `r round(F_urban(med_rural), 2)`$, so $`r round(100 * F_urban(med_rural))`\%$ of urban workers earn at most the rural median.
+* Think distributionally, don't automatically test
+
+```{r}
+two_cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
+n_2 <- c(length(x_rural), length(x_urban))
+# Line width proportional to sqrt(n), the same scaling varwidth uses for the boxes.
+lwd_2 <- 3 * sqrt(n_2 / max(n_2))
+two_par <- par(mar=c(4.5, 4.2, 1, 1))
+
+### One ECDF per group on the same axes, line width scaled to group size
+plot(ecdf(x_rural), col=two_cols[1], lwd=lwd_2[1], main=NA,
+    verticals=TRUE, do.points=FALSE, col.01line=NA, xlim=range(x_hat),
+    xlab='Monthly earnings (1980 dollars)', ylab='Proportion of workers')
+plot(ecdf(x_urban), col=two_cols[2], lwd=lwd_2[2], add=TRUE,
+    verticals=TRUE, do.points=FALSE, col.01line=NA)
+# Mark the urban ECDF at the rural median.
+segments(med_rural, 0, med_rural, F_urban(med_rural), col=grey(0, .6), lty=2)
+segments(-500, F_urban(med_rural), med_rural, F_urban(med_rural), col=grey(0, .6), lty=2)
+legend('bottomright', legend=paste0(c('Rural', 'Urban'), ' (n=', n_2, ')'),
+    col=two_cols, lty=1, lwd=lwd_2, bty='n', cex=.8)
+par(two_par)
+```
+
+## Alternative (2/2) {.smaller}
+
+* Wider boxes mean more workers in that group.
+* Boxplot notches are bootstrap $95\%$ intervals for the median.
+* CI can be in/out of IQR. No overlap $\Rightarrow$ medians differ.
+
+```{r}
+#| output: false
+# Bootstrap the median within each group, keeping each group's size.
+n_boot <- 999
+boot_med_rural <- rep(NA, n_boot)
+boot_med_urban <- rep(NA, n_boot)
+for (b in seq(n_boot)) {
+    boot_med_rural[b] <- median(sample(x_rural, replace=TRUE))
+    boot_med_urban[b] <- median(sample(x_urban, replace=TRUE))
+}
+# 95% bootstrap percentile intervals: one column per group.
+med_ci_2 <- cbind(
+    Rural=quantile(boot_med_rural, probs=c(.025, .975)),
+    Urban=quantile(boot_med_urban, probs=c(.025, .975)))
+med_ci_2
+```
+
+```{r}
+# Larger axis text, since the bullets above leave less room for the figure.
+box_par <- par(mar=c(4.5, 4.8, 1, 1), cex.axis=1.4, cex.lab=1.4)
+
+### Boxplots with the bootstrap intervals as notches, box width scaled to group size
+bx_2 <- boxplot(list(Rural=x_rural, Urban=x_urban), plot=FALSE)
+bx_2[['conf']] <- med_ci_2
+bxp(bx_2, notch=TRUE, varwidth=TRUE, boxfill=two_cols,
+    whisklty=0, staplelty=0, outpch=NA, main=NA,
+    xlab='', ylab='Monthly earnings (1980 dollars)')
+# Raw observations, in place of whiskers and outliers
+stripchart(list(x_rural, x_urban), pch='-', col=grey(0, .2), cex=2, vert=TRUE, add=TRUE)
+par(box_par)
+```
+
+
+## Many Groups Example: Education
+
+* An alternative or complement to ANOVA
+
+```{r}
+#| output: false
+x_hat <- wooldridge::wage2[, 'wage']
+educ <- wooldridge::wage2[, 'educ']
+# Group years of schooling: dropout, high school, some college, BA, graduate.
+educ_g <- cut(educ, breaks=c(0, 11, 12, 15, 16, 18),
+    labels=c('<12', '12', '13-15', '16', '17-18'))
+n_g <- table(educ_g)
+n_g
+
+# Bootstrap the median within each education group, keeping each group's size.
+n_boot <- 999
+boot_med_g <- matrix(NA, n_boot, nlevels(educ_g))
+colnames(boot_med_g) <- levels(educ_g)
+for (b in seq(n_boot)) {
+    for (g in levels(educ_g)) {
+        x_b <- sample(x_hat[educ_g == g], replace=TRUE)
+        boot_med_g[b, g] <- median(x_b)
+    }
+}
+# 95% bootstrap percentile intervals: one column per education group.
+med_ci <- apply(boot_med_g, 2, quantile, probs=c(.025, .975))
+round(med_ci)
+```
+
+```{r}
+#| fig-height: 4
+educ_cols <- hcl.colors(nlevels(educ_g))
+lwd_g <- 1.5 + 2.5 * (n_g - min(n_g)) / (max(n_g) - min(n_g))
+educ_par <- par(mfrow=c(1, 2), mar=c(4.5, 4.2, 1, 1))
+
+### One ECDF per education group on the same axes, line width scaled to group size
+plot(NULL, xlim=range(x_hat), ylim=c(0, 1), main=NA,
+    xlab='Monthly earnings (1980 dollars)', ylab='Proportion of workers')
+for (g in seq_along(levels(educ_g))) {
+    plot(ecdf(x_hat[educ_g == levels(educ_g)[g]]), add=TRUE,
+        col=educ_cols[g], lwd=lwd_g[g],
+        verticals=TRUE, do.points=FALSE, col.01line=NA)
+}
+legend('bottomright', legend=paste0(levels(educ_g), ' years (n=', n_g, ')'),
+    col=educ_cols, lty=1, lwd=lwd_g, bty='n', cex=.8)
+
+### Boxplots with the bootstrap intervals as notches, box width scaled to group size
+bx <- boxplot(x_hat ~ educ_g, plot=FALSE)
+bx[['conf']] <- med_ci
+bxp(bx, notch=TRUE, varwidth=TRUE, boxfill=hcl.colors(nlevels(educ_g), alpha=.45),
+    whisklty=0, staplelty=0, outpch=NA, main=NA,
+    xlab='Years of education', ylab='Monthly earnings (1980 dollars)')
+# Raw observations, in place of whiskers and outliers
+stripchart(x_hat ~ educ_g, pch='-', col=grey(0, .2), cex=1, vert=TRUE, add=TRUE)
+par(educ_par)
+```
+
+## Pre vs. Post Example: Canada-USA Incomes {.smaller}
+
+Comparable income definitions for Canada and the USA, 2020.
+
+* [Luxembourg Income Study, June 2026 release](https://www.lisdatacenter.org/data-access/lis-in-our-world-in-data-owid/), processed by [Our World in Data](https://ourworldindata.org/explorers/incomes-across-distribution-lis).
+
+```{r}
+#| output: false
+# LIS June 2026 release, processed by Our World in Data and downloaded 15 September 2026.
+# Published thresholds describe people assigned household income divided by sqrt(household size).
+# Both income concepts use annual 2021 international dollars, adjusted for inflation and PPP.
+income <- read.csv('income_lis_2020.csv')
+income_countries <- c('United States', 'Canada')
+income_concepts <- c('market', 'disposable')
+income_titles <- c('Market income', 'Disposable income')
+income_lty <- c(1, 1)
+income_cols <- c(rgb(0, 0, .8, .7), rgb(.8, 0, 0, .7))
+```
+
+```{r}
+#| fig-width: 9
+#| fig-height: 4
+income_par <- par(mfrow=c(1, 2), mar=c(4.5, 4.2, 2.2, 1))
+for (j in seq_along(income_concepts)) {
+    plot(NA, xlim=c(0, max(income$threshold_2021_ppp) / 1000), ylim=c(0, 1),
+        main=income_titles[j], xlab='Annual income (thousands of 2021 PPP dollars)',
+        ylab='Cumulative share of people')
+    for (i in seq_along(income_countries)) {
+        rows <- income[income$country == income_countries[i] &
+            income$concept == income_concepts[j], ]
+        rows <- rows[order(rows$percentile), ]
+        lines(rows$threshold_2021_ppp / 1000, rows$percentile / 100,
+            type='o', pch=16, cex=.6, col=income_cols[i], lwd=1, lty=income_lty[j])
+    }
+    legend('bottomright', legend=c('USA', 'Canada'), col=income_cols,
+        lwd=2, lty=income_lty[j], cex=.85)
+}
+par(income_par)
+```
+
+Same figure for causal inference diagnostics (effect of min. wage on New Jersey vs. Pennsylvania)
+
+
+## Whole Curriculum (Stats II) closer to [ASA](https://www.amstat.org/docs/default-source/amstat-documents/guidelines2014-11-15.pdf) {.smaller}
+
+**Directly**
+
+* *"A modern statistical theory course might, for example, include work on computer-intensive methods and non-parametric modeling"*
+* *"Resampling methods (including bootstrapping and permutation tests)"*
+* *"A smaller set of methods, rather than a comprehensive laundry list"*: one resampling loop that works for means, medians, correlations, regression slopes, ...
+
+**Indirectly**
+
+* *"Effective visual displays and compelling written summaries"*: `quarto` reports
+* *"Nonparametric regression"*, *"smoothing/kernel estimation"*
+* *"model assessment"*: bias-variance tradeoff, cross-validation, p-hacking
+
+## Useful material {.smaller}
+
+Additional material from my textbook <https://jadamso.github.io/Rbooks/>
+
+* Data Visualization (Ch. 2)
+* Confidence Intervals (Ch. 7)
+* Comparing Two Groups (Ch. 12)
+* Comparing Multiple Groups (Ch. 13)
+* Interactive Data Analysis and Reporting (Ch. 21)
+* Working with AI (Appendix A)
+
+```{r}
+#| echo: false
+#| output: asis
+# Embed this file's own source as a downloadable data URI.
+src_file <- knitr::current_input()
+# Quarto executes a temporary .rmarkdown copy, so restore the .qmd download extension.
+qmd_name <- sub('\\.rmarkdown$', '.qmd', basename(src_file))
+qmd_uri <- xfun::base64_uri(src_file)
+cat(sprintf(
+    '<p><a href="%s" download="%s">Download slide source (Slides.qmd)</a></p>',
+    qmd_uri, qmd_name
+))
+```
+
+See also the lab handout ...
+
+

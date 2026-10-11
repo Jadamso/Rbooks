@@ -1,0 +1,394 @@
+---
+title: "Lab Handout: the ECDF, the Bootstrap, and an AI Reviewer"
+author: "Jordan Adamson, Thompson Rivers University"
+date: today
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-depth: 2
+    code-tools: true
+execute:
+  eval: false
+  echo: true
+---
+
+```{r}
+#| eval: true
+#| echo: false
+# Same seed as ECDF_Bootstrap.R, so the handout and the lab script print the same bootstrap results
+set.seed(1)
+```
+
+# Overview
+
+This lab takes about an hour after a short lecture.
+The first two parts use RStudio and the third uses Claude.
+Each part introduces the idea, its teaching uses, and the R code.
+
+| Minutes | What | Where | Why | How |
+|---|---|---|---|---|
+| 0--10 | Lecture   | Slides | | |
+| 10--25 | Lab Part 1: make an ECDF | RStudio |  Describe a sample precisely | `ecdf()` on monthly earnings |
+| 25--45 | Lab Part 2: bootstrap a CI for the median | RStudio | Make an interval for many statistics without formulas | A loop around `median()` |
+| 45--60 | Lab Part 3: have Claude review the script | claude.ai | Use AI for checks and extensions | Upload the script and give prompts |
+
+
+# ECDF
+
+### What {-}
+
+The empirical cumulative distribution function (ECDF) gives the proportion of observations at or below $x$.
+$$\hat{F}(x) = \frac{1}{n}\sum_{i=1}^{n}\mathbf{1}(\hat{X}_{i} \leq x).$$
+It is a step function: each observation contributes a jump of $1/n$.
+
+Consider the sample $\hat{X}_{i} \in \{2, 3.1, 0.01\}$.
+The ECDF at $0.5$ and $3.5$ is:
+\begin{eqnarray*}
+x = 0.5 & ~\text{~only $0.01$ is at or below~}~ & \hat{F}(0.5) = 1/3 \\
+x = 3.5 & ~\text{~everything is below~}~        & \hat{F}(3.5) = 1
+\end{eqnarray*}
+
+```{r}
+#| eval: true
+#| echo: false
+# Tiny sample to read by hand
+X_tiny <- c(2, 3.1, 0.01)
+# ECDF of the tiny sample
+plot(ecdf(X_tiny), main=NA, pch=16, col=grey(0, .5),
+    xlab='x', ylab='Proportion at or below x')
+# Tick marks at each observation
+rug(X_tiny)
+```
+
+### Why {-}
+
+Histograms show skewness and the number and location of modes more clearly.
+But they don't make precise comparisons easy and also need a bandwidth.
+The ECDF also has the same definition for discrete and continuous data.
+
+
+
+### How {-}
+
+The data are monthly earnings, in 1980 dollars, of 935 US workers from Blackburn and Neumark (1992).
+They come from the `wooldridge` package, which you install once with `install.packages('wooldridge')`.
+
+```{r}
+#| eval: true
+# Data
+X <- wooldridge::wage2[, 'wage']
+# Data summary
+F_hat <- ecdf(X)
+plot(F_hat, main=NA, pch=16, col=grey(0, .5),
+    xlab='Monthly earnings (1980 dollars)',
+    ylab='Proportion of workers at or below x')
+```
+
+Each observation contributes a jump of $1/935$.
+Where several workers earn the same amount, such as exactly $1000$ dollars, the jump is larger.
+The value $\hat{F}(1000) \approx 0.62$ means that about $62\%$ of workers earn at most $1000$ dollars per month.
+Inverting the ECDF gives $1000$ as the $0.62$ quantile.^[
+The option `type=1` directly inverts the ECDF, whereas R's default interpolates between observations.
+Newcomers may find the command `quantile(X, probs=.62, type=1)` easier to learn, and it gives the same answer as `quantile(F_hat, probs=.62, type=1)` since `F_hat` is built from the sorted data.]
+
+```{r}
+#| eval: true
+# Proportion of Data <= 1000
+mean(X <= 1000) # Direct calculation
+F_hat(1000)     # using the ECDF
+# Value of x at which 62% of data are <= x
+quantile(F_hat, probs=.62, type=1)  # Invert the ECDF
+```
+
+The plot gives approximate readings of these values.
+The blue line runs from $0.62$ on the vertical axis to the ECDF.
+It then drops to $1000$ on the horizontal axis.
+Following the line from $1000$ gives $0.62$.
+
+```{r}
+#| eval: true
+#| echo: false
+# ECDF of monthly earnings
+plot(F_hat, main=NA, pch=16, col=grey(0, .5),
+    xlab='Monthly earnings (1980 dollars)',
+    ylab='Proportion of workers at or below x')
+# Blue line from 0.62 across to the ECDF, then down to 1000
+segments(-500, 0.62, 1000, 0.62, col=rgb(0, 0, 1, .8))
+segments(1000, 0, 1000, 0.62, col=rgb(0, 0, 1, .8))
+```
+
+
+**Things to try.**
+
+* Estimate the median from the figure and check it numerically.
+* Evaluate `F_hat` below the smallest observation and above the largest.
+* Move the vertical line to the upper quartile with `quantile(F_hat, probs=.75, type=1)`.
+* Repeat the code for `X <- c(2, 3.1, 0.01)` and check each result by hand.
+
+# Bootstrap
+
+### What {-}
+
+A bootstrap sample draws $n$ observations from the data with replacement.
+Each observation has probability $1/n$ of being selected on each draw.
+These draws come from $\hat{F}$.^[
+Part 1 inverted $\hat{F}$ at $p=0.62$ to get $1000$.
+Inverting $\hat{F}$ at a random $p$ also gives a random draw from $\hat{F}$.
+The command `quantile(F_hat, probs=runif(1), type=1)` does this, and has the same distribution as `sample(X, 1)`.
+]
+```{r}
+#| eval: true
+# single random draw from F_hat
+sample(X, 1) 
+```
+A statistic is computed for each of $B$ bootstrap samples.
+These values form the bootstrap distribution.
+```{r}
+#| eval: true
+# Bootstrap sample
+X_1 <- sample(X, replace=TRUE)
+median(X_1)
+# Another Bootstrap sample
+X_2 <- sample(X, replace=TRUE)
+median(X_2)
+```
+
+
+
+### Why {-}
+
+The standard error formula for a median is beyond an introductory course, but the bootstrap loop does not need a formula.
+The bootstrap distribution approximates the statistic's sampling distribution because $\hat{F} \approx F$.
+Its middle $95\%$ gives the percentile confidence interval.
+
+The same approach works for the `mean`, and is often more intuitive.
+Students can inspect each step in the loop with real data.
+The same intuition they build generalizes to other statistics.
+
+### How {-}
+
+The sample median is $905$ dollars per month.
+The bootstrap estimates how much this median would vary across samples of 935 workers.
+
+```{r}
+#| eval: true
+#| output: false
+# Number of bootstrap samples
+B <- 9999
+# Empty vector to hold the bootstrap medians
+boot_medians <- rep(NA, B)
+# Fill the vector in a loop
+for (b in 1:B) {
+    # Resample the data with replacement, then store the median
+    X_b <- sample(X, replace=TRUE)
+    boot_medians[b] <- median(X_b)
+}
+```
+
+```{r}
+#| eval: true
+# Percentile confidence interval: the middle 95% of bootstrap medians
+boot_ci <- quantile(boot_medians, probs=c(.025, .975))
+boot_ci
+
+# Histogram of bootstrap medians, with the interval in blue
+hist(boot_medians, main=NA, xlab='Bootstrap median')
+abline(v=boot_ci, col='blue', lwd=2)
+```
+
+Each pass through the loop draws 935 rows *with replacement*.
+Some workers appear more than once.
+Others do not appear.
+The loop stores the median of each resample.
+The middle $95\%$ of these medians gives the confidence interval.
+
+**Things to try.**
+
+* Test two hypothesized values inside the interval and two outside it.
+* Change `median(X_b)` to `mean(X_b)` in the loop and re-run.
+* Change `probs=c(.025, .975)` to `probs=c(.05, .95)` and confirm that the interval narrows.
+* Compare the percentile interval with the normal-approximation interval printed next in the script.
+* Repeat the ECDF and bootstrap exercises with `ceosal1[, 'salary']` from the `wooldridge` package.^[
+Like `wage2`, these data are a sample of individuals.
+Many economists compute standard errors with population level datasets, but this is not a habit I would want to encourage.
+Set `X <- wooldridge::ceosal1[, 'salary']`.
+]
+
+# Scripting and AI
+
+Save your work as `ECDF_Bootstrap.R`.
+If you did not follow along, use the version I created.
+
+Close RStudio and open the saved script.
+The script records the steps in the analysis.
+
+It also gives an AI assistant something to review.
+The `wage2` data are public and contain no names or other identifying information.
+The script is safe to upload.
+
+### Step 1: write comments {-}
+
+Write three sentences at the top of the script.
+Summarize the main statistical ideas.
+
+Change one comment to misdescribe its code.
+For example, change "middle 95%" to "middle 90%", or "with replacement" to "without replacement".
+Write down the line number.
+
+### Step 2: upload and ask about the comments {-}
+
+Open a new chat at [claude.ai](https://claude.ai).
+Attach `ECDF_Bootstrap.R` with the attach button in the message box.
+Then send this prompt.
+
+> This R script is from an introductory statistics course.
+> I wrote the comments.
+> Check whether they describe the code correctly.
+
+Then send this prompt.
+
+> Identify any bugs in the code.
+> Check the accuracy of my summary.
+
+Check whether Claude found the incorrect comment.
+Check whether it flagged any correct code or comments as errors.
+
+### Step 3: ask your own questions {-}
+
+Ask about an unclear part of the lab in your own words.
+Then ask Claude to complete an exercise.
+For example:
+
+> Update the script to bootstrap the mean.
+> Construct a 90% confidence interval and check it against the formula.
+
+Save the new script as `ECDF_Bootstrap_ClaudeV1.R`.
+Open it in RStudio and check that it works.
+
+### Step 4: convert it to Quarto {-}
+
+> Convert this R script to a Quarto document that renders to HTML.
+> Name the file `ECDF_Bootstrap_ClaudeV1.qmd`.
+> Keep the content unchanged.
+
+In RStudio, open the file and click *Render*.
+
+# Extensions
+
+## The Fundamental Theorem of Statistics
+
+### What {-}
+
+The population CDF is $F(x) = \text{Prob}(X \leq x)$.
+The book introduces it as the ECDF of an infinite dataset.
+The Glivenko-Cantelli theorem is also called the Fundamental Theorem of Statistics.
+As $n$ grows, the largest vertical gap between $\hat{F}$ and $F$ shrinks to zero.
+$$\sup_x \left| \hat{F}(x) - F(x) \right| \rightarrow 0.$$
+
+### Why {-}
+
+The share of workers earning at most $1000$ dollars in Part 1 is $\hat{F}(1000)$.
+The theorem supports using it to estimate $F(1000)$.
+It also explains the use of $\hat{F}$ in the bootstrap.
+A draw from $\hat{F}$ approximates a draw from $F$.
+The next two plots illustrate convergence.
+
+### How {-}
+
+The simulation uses a known population CDF.
+The code below uses log-normal household incomes with a median of exactly $50{,}000$.
+
+```{r}
+#| eval: true
+# Log-normal incomes with a median of 50,000
+income_meanlog <- log(50000)
+income_sdlog <- 0.6
+# Population CDF, F(x)
+F_pop <- function(x) plnorm(x, meanlog=income_meanlog, sdlog=income_sdlog)
+# Random sample of n incomes from the population
+r_pop <- function(n) rlnorm(n, meanlog=income_meanlog, sdlog=income_sdlog)
+```
+
+The function `F_pop` gives the population CDF $F$.
+The function `r_pop` draws random samples from this population.
+
+The three panels use samples of 10, 100, and 1000 observations.
+Grey steps show each sample's ECDF.
+The red curve shows the population CDF.
+Larger samples produce smaller steps and closer agreement with the population CDF.
+
+```{r}
+#| eval: true
+#| fig-width: 9
+#| fig-height: 3.5
+# Draw the population CDF over many specific x
+x_grid <- seq(0, 200000, length.out=500)
+F_grid <- F_pop(x_grid)
+# Three panels side by side, one per sample size
+par(mfrow=c(1, 3))
+for (n_sim in c(10, 100, 1000)) {
+    # Draw one sample and plot its ECDF
+    X_sim <- r_pop(n_sim)
+    F_hat <- ecdf(X_sim)
+    plot(F_hat, main=NA, xlim=c(0, 200000),
+        xlab='Income', ylab='Proportion at or below x')
+    # Add the population CDF in red
+    lines(x_grid, F_grid, col="red", lwd=2)
+    title(paste0('n = ', n_sim), font.main=1)
+}
+```
+
+The second figure shows 30 sample ECDFs in each panel.
+Each grey curve comes from a separate sample.
+The population CDF is omitted.
+The spread of the curves shows variation across samples.
+
+```{r}
+#| eval: true
+#| fig-width: 9
+#| fig-height: 3.5
+# Number of samples in each panel
+n_spaghetti <- 30
+# Three panels side by side, one per sample size
+par(mfrow=c(1, 3))
+for (n_sim in c(10, 100, 1000)) {
+    # Empty plot to draw the ECDFs on
+    plot(NA, xlim=c(0, 200000), ylim=c(0, 1),
+        xlab='Income', ylab='Proportion at or below x')
+    for (i in seq_len(n_spaghetti)) {
+        # Draw a new sample and add its ECDF
+        X_sim <- r_pop(n_sim)
+        F_hat <- ecdf(X_sim)
+        lines(F_hat, col=grey(0, .15), do.points=FALSE)
+    }
+    title(paste0('n = ', n_sim), font.main=1)
+}
+```
+
+At $n = 10$, the ECDFs differ substantially.
+At $n = 1000$, they lie close together and close to $F$.
+The plot illustrates the convergence described by the Glivenko-Cantelli theorem.
+
+**Things to try.**
+
+* Re-run the three-panel loop a few times.
+  The $n = 10$ panel changes substantially.
+  The $n = 1000$ panel changes little.
+* Replace the log-normal draws with `runif()` or `rexp()`.
+  Update `F_pop` to match.
+  The ECDF still converges to the population CDF.
+* Raise `n_spaghetti` to 100 and make the curves more transparent with `grey(0, .05)`.
+  More curves make the variation across samples easier to see.
+
+## More extensions
+
+You can adapt this document for your courses.
+Additional material is openly available online.
+
+* [Data (Ch. 2)](https://jadamso.github.io/Rbooks/01_02_Data.html), Exercises: the ECDF of `Assault` and the share of states at or below 200.
+* [Intervals (Ch. 7)](https://jadamso.github.io/Rbooks/01_07_Intervals.html), Exercise 4: a bootstrap $95\%$ interval for the median of `UrbanPop`.
+* [Two Groups (Ch. 12)](https://jadamso.github.io/Rbooks/02_12_TwoGroups.html): ECDFs by group and the Kolmogorov-Smirnov statistic.
+* [Data Analysis (Ch. 21)](https://jadamso.github.io/Rbooks/02_21_DataAnalysis.html): reproducible reporting with Quarto.
+* [Working with AI (Appendix A)](https://jadamso.github.io/Rbooks/04_A_WorkingWithAI.html): the full eight-step review.
+  This lab uses four of those steps.
