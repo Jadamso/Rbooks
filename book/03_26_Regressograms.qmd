@@ -1,6 +1,11 @@
 # Local Relationships
 ***
 
+```{r seed, include=FALSE}
+# Hidden seed so every render draws the same random numbers
+set.seed(1)
+```
+
 In [Local Regression](02_16_LocalRegression.qmd), we estimated nonparametric models with a single explanatory variable.
 We now extend those tools to multiple explanatory variables.
 The ideas carry over directly: instead of binning one variable, we bin each variable, and instead of fitting a line in pieces, we fit a plane in pieces.
@@ -292,6 +297,7 @@ The bandwidth $\mathbf{H}$ that minimizes cross-validation error balances flexib
 
 To make this concrete, we use cross-validation to choose the number of `x1_sim` bins for the piecewise regression above.
 We split the data into 5 folds, fit the model on 4 of them, and measure the squared prediction error on the held-out fold.
+The noise in `y_sim` is tiny compared to its curvature, so we first add more noise (standard deviation $2500$); otherwise the error would keep falling across all the bin counts we try.
 
 ```{r}
 ## 5-fold cross-validation for the number of x1_sim bins
@@ -300,11 +306,15 @@ n_folds <- 5
 fold_id <- sample(rep(1:n_folds, length.out=nrow(xy_sim)))
 bin_counts <- c(2, 6, 10, 14, 18, 22)
 
+## Noisier copy of the data, so that too many bins overfit
+xy_cv_sim <- xy_sim
+xy_cv_sim$y_sim <- xy_sim$y_sim + rnorm(nrow(xy_sim), sd=2500)
+
 cv_mse <- sapply(bin_counts, function(L){
     bks <- seq(0, 20, length.out=L+1)
     fold_mse <- sapply(1:n_folds, function(k){
-        xy_train_sim <- xy_sim[fold_id != k, ]
-        xy_test_sim  <- xy_sim[fold_id == k, ]
+        xy_train_sim <- xy_cv_sim[fold_id != k, ]
+        xy_test_sim  <- xy_cv_sim[fold_id == k, ]
         xy_train_sim$x1c_sim <- cut(xy_train_sim$x1_sim, bks)
         xy_test_sim$x1c_sim  <- cut(xy_test_sim$x1_sim, bks)
         reg_k <- lm(y_sim ~ x1c_sim/(x1_sim + x2_sim), data=xy_train_sim)

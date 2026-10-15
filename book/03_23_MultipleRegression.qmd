@@ -1,6 +1,11 @@
 # Multiple Linear Regression
 ***
 
+```{r seed, include=FALSE}
+# Hidden seed so every render draws the same random numbers
+set.seed(1)
+```
+
 We often want to know the relationship between one outcome variable $\hat{y}_{i}$ and multiple explanatory variables.
 This builds on [Simple Regression](02_15_SimpleRegression.qmd), which related $\hat{y}_{i}$ to a single $\hat{x}_{i}$.
 *Multiple linear regression* fits a single linear model to several explanatory variables at once, and asks how each one moves the outcome while holding the others fixed.
@@ -58,20 +63,20 @@ The ordinary *coefficient of determination* is the share of variance the model e
 Adding extra regressors can mechanically raise the ordinary $\hat{R}^2$ even when the new variables are pure noise, so we need a fit measure that does not reward including junk.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *adjusted $\hat{R}^2$* multiplies the unexplained share by a factor that grows with the number of parameters $K$,
-$$\hat{R}^2_{\text{adj}} = 1-\frac{n-1}{n-K}(1-\hat{R}_{yY}^2),$$
-where $K$ counts all estimated coefficients including the intercept (so $K=3$ for a model with two explanatory variables).
+The *adjusted $\hat{R}^2$* multiplies the unexplained share by a factor that grows with the number of explanatory variables $K$,
+$$\hat{R}^2_{\text{adj}} = 1-\frac{n-1}{n-K-1}(1-\hat{R}_{yY}^2),$$
+where $K+1$ counts all estimated coefficients including the intercept (so $K+1=3$ for a model with two explanatory variables).
 :::
 
 The *adjusted $\hat{R}^2$* is useful for comparing models with different numbers of regressors on the same dataset: it rises when an added variable improves fit by more than random noise would.
-The penalty $(n-1)/(n-K)$ is the only thing distinguishing it from the unadjusted version, and it can in fact go negative if the model fits worse than a constant.
+The penalty $(n-1)/(n-K-1)$ is the only thing distinguishing it from the unadjusted version, and it can in fact go negative if the model fits worse than a constant.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Suppose $n=50$, $K=3$, and $\hat{R}^2=0.70$.
+Suppose $n=50$, $K=2$, and $\hat{R}^2=0.70$.
 Then
 $$\hat{R}^2_{\text{adj}} = 1 - \frac{49}{47}(1-0.70) = 1 - 1.043 \times 0.30 \approx 0.687.$$
 The adjustment reduces $\hat{R}^2$ slightly.
-With more covariates the penalty grows: if instead $K=10$, then $\hat{R}^2_{\text{adj}} = 1 - \frac{49}{40}(0.30) = 1 - 0.3675 = 0.6325$.
+With more covariates the penalty grows: if instead $K=9$, then $\hat{R}^2_{\text{adj}} = 1 - \frac{49}{40}(0.30) = 1 - 0.3675 = 0.6325$.
 :::
 
 ```{r}
@@ -182,19 +187,19 @@ The $F$-statistic is useful for testing whether several restrictions on a regres
 The most common such test asks whether $K$ coefficients are all zero.
 A large $\hat{F}$ means the unrestricted model fits much better than the restricted one, beyond what would be expected by chance.
 
-If you test whether all $K$ variables are jointly significant, the restricted model is a simple intercept and $\hat{\text{RSS}}_{r}=\hat{\text{TSS}}$, and $\hat{F}_{q}$ can be written in terms of $\hat{R}^2$: $\hat{F}_{K} = \frac{\hat{R}^2}{1-\hat{R}^2} \frac{n-K}{K-1}$.
+If you test whether all $K$ variables are jointly significant, the restricted model is a simple intercept and $\hat{\text{RSS}}_{r}=\hat{\text{TSS}}$, and $\hat{F}_{q}$ can be written in terms of $\hat{R}^2$: $\hat{F}_{K} = \frac{\hat{R}^2}{1-\hat{R}^2} \frac{n-K-1}{K}$.
 The first fraction is the relative goodness of fit, and the second fraction is an adjustment for degrees of freedom (similar to how we adjusted the $\hat{R}^2$ term before).
 We can also write this test statistic for whether all variables are statistically significant in terms of the adjusted $\hat{R}^2$:
 $$
-\hat{F}_{K} = \frac{(K-1) + (n-K)\hat{R}^2_{\text{adj}}}{(K-1)(1 - \hat{R}^2_{\text{adj}})}
+\hat{F}_{K} = \frac{K + (n-K-1)\hat{R}^2_{\text{adj}}}{K(1 - \hat{R}^2_{\text{adj}})}
 $$
 Notice that $\hat{F}_{K}=1$ when $\hat{R}^2_{\text{adj}}=0$, meaning the model does not improve fit beyond what random covariates would achieve.
 The F-statistic exceeds $1$ when $\hat{R}^2_{\text{adj}}>0$ and falls below $1$ when $\hat{R}^2_{\text{adj}}<0$.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Suppose $\hat{R}^2_{\text{adj}}=0.50$, $K=3$, $n=50$.
+Suppose $\hat{R}^2_{\text{adj}}=0.50$, $K=2$, $n=50$.
 Then
-$$\hat{F}_K = \frac{(K-1) + (n-K)\hat{R}^2_{\text{adj}}}{(K-1)(1 - \hat{R}^2_{\text{adj}})} = \frac{(3-1) + (50-3)(0.50)}{(3-1)(1-0.50)} = \frac{2+23.5}{2 \times 0.5} = \frac{25.5}{1} = 25.5.$$
+$$\hat{F}_K = \frac{K + (n-K-1)\hat{R}^2_{\text{adj}}}{K(1 - \hat{R}^2_{\text{adj}})} = \frac{2 + (50-2-1)(0.50)}{2(1-0.50)} = \frac{2+23.5}{2 \times 0.5} = \frac{25.5}{1} = 25.5.$$
 This is well above $1$, indicating that the model explains substantially more variation than random covariates.
 You can verify: `qf(0.95, 2, 47)` $\approx 3.20$, so $\hat{F}_K = 25.5$ is highly significant.
 :::
@@ -374,4 +379,4 @@ In this case, you are not actually estimating a theoretical parameter.^[Even if 
 #### **Recall** {-}
 
 This chapter extended simple regression to multiple explanatory variables, introducing OLS, the adjusted $\hat{R}^2$, the $F$-statistic for joint tests, and bootstrap standard errors.
-The R² vs. adjusted R² simulation made the difference concrete: we added 30 random covariates to `Murder ~ Assault + UrbanPop`, watched the unadjusted $\hat{R}^2$ creep upward, and saw the adjusted version stay flat.
+The R² vs. adjusted R² simulation made the difference concrete: we added 30 random covariates to `Murder ~ Assault + UrbanPop`, watched the unadjusted $\hat{R}^2$ creep upward, and saw the adjusted version stay nearly flat.

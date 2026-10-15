@@ -9,7 +9,7 @@ This chapter extends that idea to $G$ groups: how to describe several groups at 
 The [census regions](01_03_SummaryStatistics.qmd#unordered-factors) are an unordered factor with $G=4$ levels.
 The built-in `state.region` vector lists them in the same state order as the rows of `USArrests`, so it can be paired directly with the murder rates.
 `USArrests` covers all $50$ states, so it is the whole population of states rather than a sample from it.
-To make the bootstrap intervals below meaningful, pretend we observed only a random sample of $35$ states, as we did with workers in [Sampling](01_05_Sampling.qmd#wages-as-a-population).
+To make the bootstrap intervals below meaningful, pretend we observed only a random sample of $35$ states, as we did with workers in [Sampling](01_05_Sampling.qmd#population-theory).
 
 ```{r}
 # Draw one random sample of 35 of the 50 states, and use only it from here on
@@ -75,10 +75,14 @@ Whether such differences are larger than chance alone would produce is the quest
 
 In [Comparing Two Groups](02_12_TwoGroups.qmd#quantile-differences), we bootstrapped a confidence interval for the difference between two medians; with $G$ groups, we can instead bootstrap one interval per group and compare them all on one figure.
 
-A *notched boxplot* cuts a notch into the side of each group's box, showing a confidence interval for that group's median.
-These are useful for comparing medians across many groups at a glance: if two notches do not overlap, that is strong evidence the two medians differ.
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *notched boxplot* draws one box per group $g=1,\dots,G$ from the group's lower to upper quartile, with a line at the group median $\tilde{m}_{Y}(g)$ and a notch cut into each side of the box that spans a confidence interval for that median.
+With a $95\%$ bootstrap percentile interval, the notch for group $g$ spans the $2.5$th to $97.5$th percentiles of the $B$ bootstrap medians $\tilde{m}_{Y}^{(b)}(g)$, each the median of a resample of the $n_g$ observations in group $g$.
+:::
+
+Notched boxplots are useful for comparing medians across many groups at a glance: if two notches do not overlap, that is strong evidence the two medians differ.
 Overlapping notches do not show that the medians are equal, because comparing two separate $95\%$ intervals is stricter than a $95\%$ test of their difference.
-Here we use a bootstrap percentile interval for the median in each region, which needs no such formula.^[
+Unlike R's built-in notches, the bootstrap interval needs no normal-theory formula.^[
 R's built-in `notch=TRUE` draws $\pm 1.58 \hat{\text{IQR}}/\sqrt{n_g}$ around each median, a rule of thumb from normal theory (see `?boxplot.stats`).]
 
 
@@ -121,6 +125,63 @@ When an interval reaches past a quartile, the notch folds back outside the box.
 Only the South, with the most states, has an interval that stays inside its box.
 The South's notch lies above the Northeast's, so the South's median is higher.
 Do any other pairs of regions have notches that do not overlap?
+
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Here is another example of monthly earnings of $935$ US working men in 1980, by years of education.
+
+```{r}
+wage_hat <- wooldridge::wage2[, 'wage']
+educ <- wooldridge::wage2[, 'educ']
+# Group years of schooling: dropout, high school, some college, BA, graduate.
+educ_g <- cut(educ, breaks=c(0, 11, 12, 15, 16, 18),
+    labels=c('<12', '12', '13-15', '16', '17-18'))
+n_g <- table(educ_g)
+n_g
+
+# Bootstrap the median within each education group, keeping each group's size.
+n_boot <- 999
+boot_med_g <- matrix(NA, n_boot, nlevels(educ_g))
+colnames(boot_med_g) <- levels(educ_g)
+for (b in seq(n_boot)) {
+    for (g in levels(educ_g)) {
+        wage_boot <- sample(wage_hat[educ_g == g], replace=TRUE)
+        boot_med_g[b, g] <- median(wage_boot)
+    }
+}
+# 95% bootstrap percentile intervals: one column per education group.
+med_ci <- apply(boot_med_g, 2, quantile, probs=c(.025, .975))
+round(med_ci)
+```
+
+```{r}
+#| fig-height: 4
+educ_cols <- hcl.colors(nlevels(educ_g))
+lwd_g <- 1.5 + 2.5 * (n_g - min(n_g)) / (max(n_g) - min(n_g))
+educ_par <- par(mfrow=c(1, 2), mar=c(4.5, 4.2, 1, 1))
+
+### One ECDF per education group on the same axes, line width scaled to group size
+plot(NULL, xlim=range(wage_hat), ylim=c(0, 1), main=NA,
+    xlab='Monthly earnings (1980 dollars)', ylab='Proportion of workers')
+for (g in seq_along(levels(educ_g))) {
+    plot(ecdf(wage_hat[educ_g == levels(educ_g)[g]]), add=TRUE,
+        col=educ_cols[g], lwd=lwd_g[g],
+        verticals=TRUE, do.points=FALSE, col.01line=NA)
+}
+legend('bottomright', legend=paste0(levels(educ_g), ' years (n=', n_g, ')'),
+    col=educ_cols, lty=1, lwd=lwd_g, bty='n', cex=.8)
+
+### Boxplots with the bootstrap intervals as notches, box width scaled to group size
+bx <- boxplot(wage_hat ~ educ_g, plot=FALSE)
+bx[['conf']] <- med_ci
+bxp(bx, notch=TRUE, varwidth=TRUE, boxfill=hcl.colors(nlevels(educ_g), alpha=.45),
+    whisklty=0, staplelty=0, outpch=NA, main=NA,
+    xlab='Years of education', ylab='Monthly earnings (1980 dollars)')
+# Raw observations, in place of whiskers and outliers
+stripchart(wage_hat ~ educ_g, pch='-', col=grey(0, .2), cex=1, vert=TRUE, add=TRUE)
+```
+:::
+
 
 ## Equal Means (ANOVA)
 
@@ -205,11 +266,12 @@ We have the decomposition; now we need a single number that tells us when the be
 The *ANOVA $F$-statistic* is the ratio of average between-group variation to average within-group variation:
 $$\hat{F} = \frac{\hat{\text{BSS}}/(G-1)}{\hat{\text{WSS}}/(n-G)}.$$
 Writing $Y_{ig}$ for the random outcome of individual $i$ in group $g$, the null is $H_0: \mathbb{E}[Y_{i1}]=\mathbb{E}[Y_{i2}]=\dots=\mathbb{E}[Y_{iG}]$.
-Under the null (with the usual parametric assumptions) it follows an $F_{G-1, n-G}$ distribution; we can also get a $p$-value nonparametrically by bootstrapping the labels.
+Under the null and the usual parametric assumptions, $\hat{F}$ follows an $F_{G-1,\;n-G}$ distribution.
+We can also get a $p$-value nonparametrically by permuting the group labels.
 :::
 
 The ANOVA F-statistic is useful as the global "do any means differ?" test: one number and one $p$-value, regardless of how many groups you have.
-The numerator is the average between-group variation per degree of freedom, the denominator is the average within-group variation, and a large $\hat{F}$ means group means are more spread out than individual-level noise would predict.
+A large $\hat{F}$ means the group means are more spread out than individual-level noise would predict.
 
 ```{r}
 F_fun <- function(y_hat,g){
@@ -230,56 +292,74 @@ F_obs
 ```
 
 
-To compute a $p$-value, we can use permutation or bootstrap methods to build a null distribution, just as in previous chapters.
+To compute a $p$-value, we use a [permutation test](02_12_TwoGroups.qmd#permutation-tests): shuffle the region labels, which keeps each region's number of states fixed, and recompute $\hat{F}$ each time.
+Only large values of $\hat{F}$ count against the null.
+As with KS and CVM in [Comparing Two Groups](02_12_TwoGroups.qmd#permuting-distributions), we reject at the $5\%$ level when $\hat{F}$ exceeds the $95$th percentile of the permutation distribution.
 
 ```{r}
-# Pairs bootstrap: resample group labels to break the Y--group pairing
-n <- length(y_hat)
-
-F_nullboot <- vector(length=999)
-for( b in seq_along(F_nullboot)){
-    idx <- sample(n, replace = TRUE)
-    g_boot <- region[idx]
-    F_b <- F_fun(y_hat=y_hat, g=g_boot)
-    F_nullboot[b] <- F_b
+# Null distribution: shuffle region labels to break the Y--group pairing
+F_perm <- vector(length=999)
+for( b in seq_along(F_perm)){
+    g_perm <- sample(region, replace=FALSE)
+    F_perm[b] <- F_fun(y_hat=y_hat, g=g_perm)
 }
 
-# Bootstrap p-value
-p_boot <- mean(F_nullboot >= F_obs)
-p_boot
+# Permutation p-value
+p_perm <- mean(F_perm >= F_obs)
+p_perm
 
-hist(F_nullboot, breaks = 40,
+# One-sided critical value: 95th percentile of the permutation distribution
+F_crit <- quantile(F_perm, probs=.95)
+
+hist(F_perm, breaks = 40,
     border = NA,
-    freq = FALSE, main = NA, xlab = 'Null Bootstrap F-statistic',
-    xlim = range(c(0, F_nullboot, F_obs)))
-title('Null Bootstrap F-test', font.main = 1)
+    freq = FALSE, main = NA, xlab = 'Null Permutation F-statistic',
+    xlim = range(c(0, F_perm, F_obs)))
+title('Null Permutation F-test', font.main = 1)
+abline(v = F_crit, col = rgb(0, 0, 0, .8), lwd = 2)
 abline(v = F_obs, col = rgb(1, 0, 0, .8), lwd = 2)
-legend('topright', legend = 'Observed F',
-    col = rgb(1, 0, 0, .8), lwd = 2, bty='n')
+legend('top', legend = c('Observed F', '95th percentile'),
+    col = c(rgb(1, 0, 0, .8), rgb(0, 0, 0, .8)), lwd = 2, bty='n')
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Pairing the observed murder rates `y_hat` with a *resampled* `region` vector breaks the link between outcome and group: under the null, group labels are exchangeable, so this approximates the distribution of $\hat{F}$ when no group effect exists.
+Pairing the observed murder rates `y_hat` with a *shuffled* `region` vector breaks the link between outcome and group: under the null, group labels are exchangeable, so this approximates the distribution of $\hat{F}$ when no group effect exists.
 :::
 
-Under additional parametric assumptions (independent observations, equal variances, normal errors), $\hat{F}$ (under the null) follows an $F_{G-1,\;n-G}$ distribution.
-From that theoretical null distribution, we can then compute p-values (which is the default report method in R).
+The parametric $F_{G-1,\;n-G}$ null distribution requires three assumptions: independent observations, normal errors within each group, and equal variances across groups (*homoscedasticity*).
+R reports $p$-values from this theoretical distribution by default.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+The figure below draws the theoretical $F_{G-1,\;n-G}$ density over the permutation distribution from above.
 ```{r}
 # Degrees of freedom for the regional data
 n <- length(y_hat)
 G <- nlevels(region)
 p_param <- 1 - pf(F_obs, G-1, n-G)
 
- # Compare parametric and bootstrap p-values
-cbind(F_obs, p_param, p_boot)
+# Compare parametric and permutation p-values
+cbind(F_obs, p_param, p_perm)
+
+# Overlay: permutation histogram vs. theoretical F density
+hist(F_perm, breaks = 40,
+    border = NA,
+    freq = FALSE, main = NA, xlab = 'Null F-statistic',
+    xlim = range(c(0, F_perm, F_obs)))
+title('Permutation vs. Theoretical Null Distribution', font.main = 1)
+F_grid <- seq(0, max(c(F_perm, F_obs)), length = 200)
+lines(F_grid, df(F_grid, G-1, n-G), col = rgb(0, 0, 1, .8), lwd = 1, lty = 2)
+abline(v = F_obs, col = rgb(1, 0, 0, .8), lwd = 2)
+legend('top', legend = c('Null permutation', paste0('F(', G-1, ', ', n-G, ')'), 'Observed F'),
+    fill = c(grey(.83), NA, NA), border = NA, # grey(.83) matches the default histogram fill
+    lwd = c(NA, 1, 2), lty = c(NA, 2, 1), col = c(NA, rgb(0, 0, 1, .8), rgb(1, 0, 0, .8)), bty = 'n')
 ```
 
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-The parametric F-test assumes (i) independent observations, (ii) normal errors within each group, and (iii) equal variances across groups (*homoscedasticity*).
-If these assumptions are doubtful, then the nonparametric Kruskal-Wallis test (below) is a safer alternative.
-As a quick diagnostic, visually compare side-by-side boxplots: if the spread differs across groups or the distribution has excessive skew/kurtosis, be cautious with the parametric test.
 
-With $G-1=2$ and $n-G=6$ degrees of freedom, we compare to an $F_{2,6}$ distribution: $p = 1 - F_{2,6}(7) \approx 0.027$.
+If these assumptions are doubtful, the Kruskal-Wallis test below is a safer alternative.
+As a quick check, compare side-by-side boxplots: if the spread differs across groups or the distributions show strong skewness or kurtosis, be cautious with the parametric test.
+
+For the three-group example above, $\hat{F}=(14/2)/(6/6)=7$.
+With $G-1=2$ and $n-G=6$ degrees of freedom, we compare it to an $F_{2,6}$ distribution: $p = 1 - F_{2,6}(7) \approx 0.027$.
 ```{r}
 # Data (the three-group example from the decomposition above)
 y0_hat <- c(4, 5, 6, 8, 7, 9, 5, 6, 7)
@@ -388,8 +468,6 @@ wilcox.test(a0_hat, b0_hat)
 #### **Categorical ANOVA** {-}
 
 When the outcome is a factor, we can still ask whether the groups spread their observations across the categories in the same proportions.
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
 Let $\hat{p}(y)$ be the proportion of all $n$ observations in category $y$, and $\hat{p}(y \mid g)$ the proportion of the $n_g$ observations in group $g$.
 The *categorical ANOVA* measures variation with one minus the [Herfindahl index](01_03_SummaryStatistics.qmd#unordered-factors), and splits it into between-group and within-group pieces:
 $$\begin{aligned}
@@ -400,7 +478,6 @@ $$\begin{aligned}
 \underbrace{\sum_{g=1}^{G} \frac{n_g}{2}\left(1-\hat{H}(g)\right)}_{\hat{\text{WSS}}},
 \end{aligned}$$
 where $\hat{H}=\sum_{y}\hat{p}(y)^2$ is the Herfindahl index of the pooled data and $\hat{H}(g)=\sum_{y}\hat{p}(y \mid g)^2$ is the Herfindahl index within group $g$.
-:::
 
 The categorical ANOVA is useful when the outcome is an unordered factor, such as occupation, brand, or vote choice, where there are no means to compare and no ranks to sort.
 Recall that $1-\hat{H}$ is zero when every observation falls in one category and grows as the categories become equally common, so it plays the role of the variance.
@@ -455,7 +532,7 @@ cat_anova(urban_band, region)
 
 About $22\%$ of the variation in urban bands lies between regions.
 
-:::{.callout-note icon=false collapse="true" title="Must Know"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Suppose we record how $n=8$ workers commute, $n_g=4$ from each of two neighborhoods.
 Neighborhood $A$ has car, car, car, bus, and neighborhood $B$ has car, bus, bike, bike.
 
@@ -473,7 +550,7 @@ cat_anova(y0_hat, g0)
 ```
 :::
 
-To compute a $p$-value, we use a [permutation test](02_12_TwoGroups.qmd#permutation-tests): shuffle the region labels, which keeps each region's number of states fixed, and recompute the share each time.
+As with the [ANOVA $F$-statistic](#the-f-statistic), we get a $p$-value by shuffling the region labels and recomputing the share each time.
 
 ```{r}
 # Observed between-group share
@@ -490,14 +567,18 @@ for (b in seq_along(share_perm)) {
 p_perm <- mean(share_perm >= share_obs)
 p_perm
 
+# One-sided critical value: 95th percentile of the permutation distribution
+share_crit <- quantile(share_perm, probs=.95)
+
 hist(share_perm, breaks=40,
     border=NA,
     freq=FALSE, main=NA, xlab='Null Permutation Between-Group Share',
     xlim=range(c(0, share_perm, share_obs)))
 title('Null Permutation Categorical ANOVA', font.main=1)
+abline(v=share_crit, col=rgb(0, 0, 0, .8), lwd=2)
 abline(v=share_obs, col=rgb(1, 0, 0, .8), lwd=2)
-legend('topright', legend='Observed share',
-    col=rgb(1, 0, 0, .8), lwd=2, bty='n')
+legend('topright', legend=c('Observed share', '95th percentile'),
+    col=c(rgb(1, 0, 0, .8), rgb(0, 0, 0, .8)), lwd=2, bty='n')
 ```
 
 Because the bands are ordered, the Kruskal-Wallis test also applies.

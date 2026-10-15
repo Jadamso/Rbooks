@@ -1,6 +1,11 @@
 # Sampling & Resampling
 ***
 
+```{r seed, include=FALSE}
+# Hidden seed so every render draws the same random numbers
+set.seed(1)
+```
+
 We rarely observe an entire population; instead we work with a sample and ask what its statistics tell us about the population that produced it.
 This chapter introduces sampling distributions (how a statistic varies from sample to sample), the two profound results that govern them (the Law of Large Numbers and the Central Limit Theorem), and the resampling tools (jackknife, bootstrap) that approximate sampling variability from a single dataset.
 
@@ -96,7 +101,7 @@ We can actually guarantee the names are iid by putting any names drawn back into
 Sampling with replacement from the small population $\{1, 2, 3, 4\}$ allows duplicates, so every draw has the same four possible values.
 ```{r}
 #All possible samples of two from a bag of numbers {1, 2, 3, 4} with replacement
-#{1, 1} {1, 2} {1, 3}, {3, 4}
+#{1, 1} {1, 2} {1, 3} {1, 4}
 #{2, 2} {2, 3} {2, 4}
 #{3, 3} {3, 4}
 #{4, 4}
@@ -107,7 +112,7 @@ sample(population_values, 2, replace=TRUE)
 ```
 :::
 
-#### **Wages as a Population** {-}
+#### **Population Theory** {-}
 
 In practice, we never see the whole population, so we cannot check how close a sample statistic is to the truth.
 To make such checks possible, this chapter pretends that the $3294$ workers in the `Wages1` dataset are the entire population.
@@ -427,8 +432,6 @@ hist(sample_means, breaks=100,
 
 #### **Law of Large Numbers (LLN)** {-}
 
-
-
 The CLT tells us the sample mean is Normally distributed around the true mean.
 Another profound result is that the sampling distribution tightens with more observations.
 
@@ -557,42 +560,44 @@ sort(means_3)
 
 #### **The Fundamental Theorem of Statistics** {-}
 
-The Law of Large Numbers generalizes to many other statistics, like the `median` or `sd` from [Summary Statistics](01_03_SummaryStatistics.qmd).^[When a statistic converges in probability to the quantity they are meant to estimate, they are called *consistent*.] 
+The Law of Large Numbers generalizes to many other statistics, like the `median` or `sd` from [Summary Statistics](01_03_SummaryStatistics.qmd).^[When a statistic converges in probability to the quantity they are meant to estimate, they are called *consistent*.]
+Intuitively, recall that the proportion of a sample smaller than some value $x$ can be computed as a type of mean: $\hat{F}(x)=\frac{1}{n}\sum_{i} \mathbf{1}(\hat{x}_{i} \leq x)$, and so the LLN applies here too.
+As such, the LLN also applies to the associated quantile $\hat{F}^{-1}$.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Here is a sampling distribution for a quantile, for three different sample sizes
-```{r}
-par(mfrow=c(1, 3))
-for(n in c(5, 50, 500)){
-    sample_quants_n <- rep(NA, 299)
-    for(i in seq_along(sample_quants_n)){
-        x_sim <- runif(n)
-        q_hat <- quantile(x_sim, probs=0.75) #upper quartile
-        sample_quants_n[i] <- q_hat
-    }
-    hist(sample_quants_n,
-        breaks=seq(0, 1, by=.01),
-        border=NA, freq=FALSE,
-        xlab='Sample Quantile',
-        main=NA)
-    title(paste0('n=', n), font.main=1)
-}
-```
-
-Here is a sampling distribution for a proportion, for three different sample sizes
+Consider a standard uniform random variable.
+Here is a sampling distribution for the proportion $\leq 3/4$, for three different sample sizes.
 ```{r}
 par(mfrow=c(1, 3))
 for(n in c(5, 50, 500)){
     sample_props_n <- rep(NA, 299)
     for(i in seq_along(sample_props_n)){
-        x_sim <- sample(1:5, size=n, prob=c(1:5)/15, replace=TRUE)
-        p3_hat <- mean(x_sim==3)
+        x_sim <- runif(n)
+        p3_hat <- mean(x_sim<=0.75)
         sample_props_n[i] <- p3_hat
     }
     hist(sample_props_n,
         breaks=seq(0, 1, by=.01),
         border=NA, freq=FALSE,
         xlab='Sample Proportion',
+        main=NA)
+    title(paste0('n=', n), font.main=1)
+}
+```
+Here is a sampling distribution for the upper quartile, for three different sample sizes
+```{r}
+par(mfrow=c(1, 3))
+for(n in c(5, 50, 500)){
+    sample_quants_n <- rep(NA, 299)
+    for(i in seq_along(sample_quants_n)){
+        x_sim <- runif(n)
+        q_hat <- quantile(x_sim, probs=0.75)
+        sample_quants_n[i] <- q_hat
+    }
+    hist(sample_quants_n,
+        breaks=seq(0, 1, by=.01),
+        border=NA, freq=FALSE,
+        xlab='Sample Quantile',
         main=NA)
     title(paste0('n=', n), font.main=1)
 }
@@ -770,49 +775,6 @@ This means that we do not use resampling to improve on $\hat{m}$.
 We use resampling to estimate sampling variability.
 
 
-#### **Jackknife Distribution** {-}
-Here, we compute all "leave-one-out" estimates.
-Specifically, for a dataset with $n$ observations, the jackknife uses $n-1$ observations other than $i$ for each unique subsample. 
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-Given the sample $\{1,6,7,22\}$, compute the jackknife estimate of the median.
-Leave out each observation in turn and take the median of the remaining three.
-
-* Leave out $1$: median of $\{6,7,22\}$ is $7$.
-* Leave out $6$: median of $\{1,7,22\}$ is $7$.
-* Leave out $7$: median of $\{1,6,22\}$ is $6$.
-* Leave out $22$: median of $\{1,6,7\}$ is $6$.
-
-The jackknife distribution of the median is $\{7,7,6,6\}$, centered at $(7+7+6+6)/4 = 6.5$.
-```{r}
-x0_hat <- c(1, 6, 7, 22)
-jackknife_meds <- rep(NA, length(x0_hat))
-for(i in seq_along(jackknife_meds)){
-    jackknife_meds[i] <- median(x0_hat[-i])
-}
-jackknife_meds
-mean(jackknife_meds)
-```
-:::
-
-
-```{r}
-m_hat <- mean(x_hat)
-
-# Jackknife Estimates
-n <- length(x_hat)
-jack_means <- rep(NA, n)
-for(i in seq_along(jack_means)){
-    x_jack <- x_hat[-i]
-    m_i_hat <- mean(x_jack)
-    jack_means[i] <- m_i_hat
-}
-hist(jack_means, breaks=25,
-    border=NA, freq=FALSE,
-    main=NA, xlab=expression(hat(m)^group('(', -i, ')')))
-abline(v=m_hat, col=rgb(1, 0, 0, .8), lwd=2)
-```
-
 #### **Bootstrap Distribution** {-}
 
 The jackknife uses only $n$ leave-one-out subsamples, which tends to underestimate variability; a more flexible approach builds many resamples of full size $n$ by allowing duplicates.
@@ -882,7 +844,50 @@ coin_boot <- sample(x, prob=x_probs_boot, 999, replace=TRUE)
 :::
 
 
-#### **Comparison** {-}
+
+
+#### **Jackknife Distribution** {-}
+Here, we compute all "leave-one-out" estimates.
+Specifically, for a dataset with $n$ observations, the jackknife uses $n-1$ observations other than $i$ for each unique subsample. 
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Given the sample $\{1,6,7,22\}$, compute the jackknife estimate of the median.
+Leave out each observation in turn and take the median of the remaining three.
+
+* Leave out $1$: median of $\{6,7,22\}$ is $7$.
+* Leave out $6$: median of $\{1,7,22\}$ is $7$.
+* Leave out $7$: median of $\{1,6,22\}$ is $6$.
+* Leave out $22$: median of $\{1,6,7\}$ is $6$.
+
+The jackknife distribution of the median is $\{7,7,6,6\}$, centered at $(7+7+6+6)/4 = 6.5$.
+```{r}
+x0_hat <- c(1, 6, 7, 22)
+jackknife_meds <- rep(NA, length(x0_hat))
+for(i in seq_along(jackknife_meds)){
+    jackknife_meds[i] <- median(x0_hat[-i])
+}
+jackknife_meds
+mean(jackknife_meds)
+```
+:::
+
+
+```{r}
+m_hat <- mean(x_hat)
+
+# Jackknife Estimates
+n <- length(x_hat)
+jack_means <- rep(NA, n)
+for(i in seq_along(jack_means)){
+    x_jack <- x_hat[-i]
+    m_i_hat <- mean(x_jack)
+    jack_means[i] <- m_i_hat
+}
+hist(jack_means, breaks=25,
+    border=NA, freq=FALSE,
+    main=NA, xlab=expression(hat(m)^group('(', -i, ')')))
+abline(v=m_hat, col=rgb(1, 0, 0, .8), lwd=2)
+```
 
 Note that both Jackknife and Bootstrap resampling methods provide imperfect estimates, and can give different numbers.
 
@@ -896,15 +901,9 @@ Having an entire sampling distribution is conceptually clear but unwieldy in pra
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *standard error* of a statistic is the standard deviation of its sampling distribution.
-For the sample mean, denote it $\text{SE}(M)$.
-The standard error is distinct from the *sample standard deviation* $\hat{s}$, which measures spread of observations *within* one sample.
 :::
 
-The standard error is useful for reporting how precise an estimate is in a single number: a small $\text{SE}$ means the statistic would change little across samples, a large $\text{SE}$ means it could swing widely.
-The two "standard" quantities are easy to confuse but answer different questions:
-
-* sample standard deviation $\hat{s}$: variability of individual observations *within* a single sample.
-* *standard error*: variability of a statistic *across* repeated samples.
+The standard error is useful for reporting how precise an estimate is in a single number: a small standard error means the statistic would change little across samples, a large standard error means it could swing widely.
 
 For a bootstrap example
 
@@ -977,33 +976,6 @@ With skewed data like wages, one sample may include a few very high earners or n
 Run the chunk again to see how much the bootstrap estimate itself changes from one sample to the next.
 
 
-Also note that each additional data point you have provides more information, which ultimately decreases the standard error of your estimates.
-This is why statisticians will often recommend that you to get more data.
-However, the improvement in the standard error increases at a diminishing rate.
-In economics, this is known as diminishing returns and why economists may recommend you do not get more data. 
-
-```{r}
-n_boot <- 999 # number of bootstrap samples
-sample_sizes <- seq(1, length(x_hat), by=1) # different resample sizes
-
-## For each sample size, compute the bootstrap SE
-se_by_n <- rep(NA, length(sample_sizes))
-for(n in seq_along(sample_sizes)){
-    boot_means_n <- rep(NA, n_boot)
-    for(b in seq(1, n_boot)){
-        x_boot <- sample(x_hat, size=n, replace=TRUE)
-        m_b_hat <- mean(x_boot) # statistic of interest
-        boot_means_n[b] <- m_b_hat
-    }
-    se_n <- sd(boot_means_n) # How much the statistic varies across samples
-    se_by_n[n] <- se_n
-}
-
-plot(sample_sizes, se_by_n, pch=16, col=grey(0, 0.5),
-    ylab='standard error', xlab='sample size', main=NA)
-```
-
-
 
 #### **Generalization** {-}
 
@@ -1018,11 +990,13 @@ for(b in seq_along(boot_medians)){
     med_b_hat <- quantile(x_boot, prob=0.5)
     boot_medians[b] <- med_b_hat
 }
+SE_med <- sd(boot_medians)
 
 hist(boot_medians, breaks=25,
     border=NA, freq=FALSE,
-    main=NA, xlab=expression(Med[b]))
-abline(v=med_hat, col=rgb(1, 0, 0, .8), lwd=2)
+    main=paste0('SE=', round(SE_med,2)),
+    font.main=1,
+    xlab=expression(Med[b]))
 ```
 
 This means we can compute bootstrap SEs for other statistics, too.

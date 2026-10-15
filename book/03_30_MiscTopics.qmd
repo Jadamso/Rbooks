@@ -1,6 +1,11 @@
 # Misc. Multivariate Topics
 ***
 
+```{r seed, include=FALSE}
+# Hidden seed so every render draws the same random numbers
+set.seed(1)
+```
+
 This chapter collects the remaining multivariate topics that did not fit cleanly into the preceding chapters.
 We cover prediction (including prediction intervals and cross-validation), time-series filtering, arrays and the matrix-form OLS theory and the bias of $\hat{\mathbf{b}}$, and finally multiple testing corrections, the formal remedy for the kind of search-induced false positives raised in [Data Scientism](03_29_DataScientism.qmd).
 
@@ -60,8 +65,8 @@ See Davison and Hinkley, chapters 5 and 6 (also Efron and Tibshirani, or Wehrens
 
 ## Data
 library('wooldridge')
-xy2_hat <- wage1[, c('educ', 'wage')]
-colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
+xy2_hat <- wage2[, c('educ', 'wage')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=monthly earnings
 xy2_hat <- xy2_hat[order(xy2_hat[, 'x_hat']), ]
 
 
@@ -91,7 +96,7 @@ res_fun <- function(x0, h){
     res_i <- quantile(e_local_hat, probs=c(.025, .975), na.rm=TRUE)
     res_i
 }
-res_ci <- sapply(x_values, res_fun, h=5)
+res_ci <- sapply(x_values, res_fun, h=2)
 
 ## Prediction Interval
 pi_lo1 <- preds_lo + res_ci[1, ]
@@ -100,7 +105,7 @@ pi_lo2 <- preds_lo + res_ci[2, ]
 #Plot
 col <- hcl.colors(3, alpha=.5)[2]
 plot(y_hat ~ x_hat, pch=16, col=grey(0, .25),
-    data=xy2_hat, ylim=c(0, 20), main=NA, xlab='educ', ylab='wage')
+    data=xy2_hat, ylim=c(0, 3100), main=NA, xlab='educ', ylab='wage')
 lines(x_values, preds_lo,
     col=col, type='o', pch=2)
 polygon( c(x_values, rev(x_values)),
@@ -136,7 +141,7 @@ boot_pi <- cbind(y_fit + q_e_hat[1], y_fit + q_e_hat[2])
 
 # Plot Bootstrap PI
 plot(y_hat ~ x_hat, data=xy2_hat, pch=16, col=grey(0, .25), main=NA,
-    ylim=c(-5, 20), xlab='educ', ylab='wage')
+    ylim=c(0, 3100), xlab='educ', ylab='wage')
 title('Prediction Intervals', font.main=1)
 x_hat <- xy2_hat[, 'x_hat']
 lines(x_hat, y_fit, type='o', pch=2)
@@ -171,11 +176,11 @@ The same idea selects bin counts and bandwidths in [Local Relationships](03_26_R
 ```{r}
 library(wooldridge)
 # Crossvalidated bandwidth for regression
-xy2_hat <- wage1[, c('educ', 'wage')]
-colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
+xy2_hat <- wage2[, c('educ', 'wage')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=monthly earnings
 
 ## Grid Search
-BWS <- c(0.5, 0.6, 0.7, 0.8)
+BWS <- c(0.5, 0.75, 1, 1.5, 2, 3)
 BWS_CV <- sapply(BWS, function(h){
     e_bw_hat <- sapply(1:nrow(xy2_hat), function(i){
         llls <- loess(y_hat ~ x_hat, data=xy2_hat[-i, ], span=h,
@@ -203,6 +208,7 @@ pred_id <- order(xy2_hat[, 'x_hat'])
 lines(xy2_hat[pred_id, 'x_hat'], predict(llls)[pred_id],
     col=rgb(1, 0, 0, .8), lwd=2)
 ```
+Here the cross-validation error falls as the bandwidth grows and flattens toward that of a linear regression, so more flexibility does not improve predictions of monthly earnings.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Leave-one-out cross-validation is just an average of out-of-sample errors.
@@ -569,7 +575,7 @@ The uncorrected version flags more differences; explain why, and state which ver
    Compute $\hat{\mathbf{b}}$ both with `lm()` and manually via $(\hat{\mathbf{X}}'\hat{\mathbf{X}})^{-1}\hat{\mathbf{X}}'\hat{y}$ using matrix operations in R.
    Verify that the two approaches give the same coefficients.
 
-4. Using the `wage1` dataset from the `wooldridge` package, fit a `loess` regression of `wage` on `educ` for three different span values (e.g., 0.4, 0.6, 0.8).
+4. Using the `wage2` dataset from the `wooldridge` package, fit a `loess` regression of `wage` on `educ` for three different span values (e.g., 0.4, 0.6, 0.8).
    Use leave-one-out cross-validation to compute the mean squared prediction error for each span.
    Which span minimizes prediction error, and does a more flexible fit always predict better?
 

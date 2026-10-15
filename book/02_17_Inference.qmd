@@ -2,6 +2,11 @@
 # Inference
 ***
 
+```{r seed, include=FALSE}
+# Hidden seed so every render draws the same random numbers
+set.seed(1)
+```
+
 Often, we are interested in *gradients*: how $\hat{y}$ changes with $\hat{x}$.
 The linear model from [Simple Regression](02_15_SimpleRegression.qmd) depicts this as a single constant, $\hat{b}_{1}$, but the local-regression models from [Local Regression](02_16_LocalRegression.qmd) do not.
 A great first step to assess gradients is to plot the predicted values over the explanatory values.
@@ -263,22 +268,33 @@ mean(grads)   # mean of the gradients
 :::
 
 ```{r}
+## Gradient at each observation, as in the Key Definition
+## Many workers share a schooling level, so each one gets the slope from their level to the next level up
+grad_by_obs <- function(xy, reg) {
+    x_levels <- sort(unique(xy[, 'x_hat']))
+    y_fit_levels <- predict(reg, newdata=data.frame(x_hat=x_levels))
+    grad_levels <- diff(y_fit_levels)/diff(x_levels)
+    # The top level has no level above it, so it reuses the last slope
+    grad_levels <- c(grad_levels, grad_levels[length(grad_levels)])
+    grad_obs <- grad_levels[match(xy[, 'x_hat'], x_levels)]
+    return(grad_obs)
+}
+
 ## Tabular Summary
+grad_obs <- grad_by_obs(xy2_hat, reg_lo)
 tab_stats <- c(
-    Mean=mean(grad_lo, na.rm=TRUE),
-    SD=sd(grad_lo, na.rm=TRUE))
+    Mean=mean(grad_obs),
+    SD=sd(grad_obs))
 
 ## Use bootstrap to approximate sampling dist
 boot_stats <- matrix(NA, nrow=299, ncol=2)
 colnames(boot_stats) <- c('Mean', 'SD')
 for(b in 1:nrow(boot_stats)){
     xy2_boot <- xy2_hat[sample(1:nrow(xy2_hat), replace=TRUE), ]
-    xy2_boot <- xy2_boot[order(xy2_boot[, 'x_hat']), ] # sort so diff() runs along x
     reg_lo_b <- loess(y_hat ~ x_hat, data=xy2_boot)
-    y_fit_b <- predict(reg_lo_b)
-    grad_lo_b <- diff(y_fit_b)/diff(xy2_boot[, 'x_hat'])
-    m_grad_b_hat <- mean(grad_lo_b, na.rm=TRUE)
-    s_grad_b_hat <- sd(grad_lo_b, na.rm=TRUE)
+    grad_obs_b <- grad_by_obs(xy2_boot, reg_lo_b)
+    m_grad_b_hat <- mean(grad_obs_b)
+    s_grad_b_hat <- sd(grad_obs_b)
     boot_stats[b, 1] <- m_grad_b_hat
     boot_stats[b, 2] <- s_grad_b_hat
 }
@@ -366,9 +382,8 @@ jack_means <- numeric(n)
 for (i in 1:n) {
     xy2_i  <- xy2_hat[-i, ]
     reg_i  <- loess(y_hat ~ x_hat, data=xy2_i)
-    y_fit_i <- predict(reg_i)
-    grad_i <- diff(y_fit_i) / diff(xy2_i[, 'x_hat'])
-    jack_means[i] <- mean(grad_i, na.rm=TRUE)
+    grad_i <- grad_by_obs(xy2_i, reg_i)
+    jack_means[i] <- mean(grad_i)
 }
 
 ## Jackknife SE
@@ -445,7 +460,7 @@ With local linear fits, a very wide span gives every observation nearly the same
 A wide window and a narrow window can therefore also be read as a linear model and a flexible LOESS fit.
 
 The bootstrap bands show variance, but not bias, because we never see the true curve in one sample.
-As in [Sampling](01_05_Sampling.qmd#wages-as-a-population), pretend the $3294$ workers in `Wages1` are the whole population, so the true curve is known.
+As in [Sampling](01_05_Sampling.qmd#population-theory), pretend the $3294$ workers in `Wages1` are the whole population, so the true curve is known.
 The population curve is the mean wage at each schooling level over all $3294$ workers.
 We evaluate it at $8$ to $15$ years of schooling, where there are many workers.
 The rest of this section compares the linear model, which acts as the widest possible window, with LOESS at span $0.6$.
@@ -495,8 +510,8 @@ pred_design <- data.frame(x_hat=x_levels)
 boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
 for (b in 1:399) {
     xy_boot <- xy_sim[sample(nrow(xy_sim), replace=TRUE), ]
-    reg_i <- loess(y_hat ~ x_hat, data=xy_boot, span=span_wage, degree=1)
-    boot_lo[, b] <- predict(reg_i, newdata=pred_design)
+    reg_b <- loess(y_hat ~ x_hat, data=xy_boot, span=span_wage, degree=1)
+    boot_lo[, b] <- predict(reg_b, newdata=pred_design)
 }
 boot_cb <- apply(boot_lo, 1, quantile,
     probs=c(.025, .975), na.rm=TRUE)
