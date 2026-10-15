@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.18">
+<meta name="generator" content="quarto-1.10.19">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -99,7 +99,7 @@ div.csl-indent {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-bf27225e3a48a9273f3daa8f8e829971.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap-22bdab0665289b518e2c55fbb859ed62.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
@@ -908,7 +908,7 @@ h_{1} &amp; 0 &amp; 0  \\
 </div>
 </div>
 </div>
-<p>To make this concrete, we use cross-validation to choose the number of <code>x1_sim</code> bins for the piecewise regression above. We split the data into 5 folds, fit the model on 4 of them, and measure the squared prediction error on the held-out fold.</p>
+<p>To make this concrete, we use cross-validation to choose the number of <code>x1_sim</code> bins for the piecewise regression above. We split the data into 5 folds, fit the model on 4 of them, and measure the squared prediction error on the held-out fold. The noise in <code>y_sim</code> is tiny compared to its curvature, so we first add more noise (standard deviation <span class="math inline">\(2500\)</span>); otherwise the error would keep falling across all the bin counts we try.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -918,27 +918,31 @@ h_{1} &amp; 0 &amp; 0  \\
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>fold_id <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>n_folds, <span class="at">length.out=</span><span class="fu">nrow</span>(xy_sim)))</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>bin_counts <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">6</span>, <span class="dv">10</span>, <span class="dv">14</span>, <span class="dv">18</span>, <span class="dv">22</span>)</span>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>cv_mse <span class="ot">&lt;-</span> <span class="fu">sapply</span>(bin_counts, <span class="cf">function</span>(L){</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    bks <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">20</span>, <span class="at">length.out=</span>L<span class="sc">+</span><span class="dv">1</span>)</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    fold_mse <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>n_folds, <span class="cf">function</span>(k){</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        xy_train_sim <span class="ot">&lt;-</span> xy_sim[fold_id <span class="sc">!=</span> k, ]</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        xy_test_sim  <span class="ot">&lt;-</span> xy_sim[fold_id <span class="sc">==</span> k, ]</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>        xy_train_sim<span class="sc">$</span>x1c_sim <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_train_sim<span class="sc">$</span>x1_sim, bks)</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>        xy_test_sim<span class="sc">$</span>x1c_sim  <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_test_sim<span class="sc">$</span>x1_sim, bks)</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        reg_k <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> x1c_sim<span class="sc">/</span>(x1_sim <span class="sc">+</span> x2_sim), <span class="at">data=</span>xy_train_sim)</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        pred_k <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg_k, <span class="at">newdata=</span>xy_test_sim)</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mean</span>((xy_test_sim<span class="sc">$</span>y_sim <span class="sc">-</span> pred_k)<span class="sc">^</span><span class="dv">2</span>, <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mean</span>(fold_mse)</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot CV error against model complexity</span></span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bin_counts, cv_mse, <span class="at">type=</span><span class="st">'o'</span>, <span class="at">pch=</span><span class="dv">16</span>,</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Number of x1 bins'</span>, <span class="at">ylab=</span><span class="st">'5-fold CV mean squared error'</span>,</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>L_star <span class="ot">&lt;-</span> bin_counts[<span class="fu">which.min</span>(cv_mse)]</span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>L_star, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'CV-optimal: '</span>, L_star, <span class="st">' bins'</span>), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Noisier copy of the data, so that too many bins overfit</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>xy_cv_sim <span class="ot">&lt;-</span> xy_sim</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>xy_cv_sim<span class="sc">$</span>y_sim <span class="ot">&lt;-</span> xy_sim<span class="sc">$</span>y_sim <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="fu">nrow</span>(xy_sim), <span class="at">sd=</span><span class="dv">2500</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>cv_mse <span class="ot">&lt;-</span> <span class="fu">sapply</span>(bin_counts, <span class="cf">function</span>(L){</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    bks <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">20</span>, <span class="at">length.out=</span>L<span class="sc">+</span><span class="dv">1</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    fold_mse <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>n_folds, <span class="cf">function</span>(k){</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        xy_train_sim <span class="ot">&lt;-</span> xy_cv_sim[fold_id <span class="sc">!=</span> k, ]</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        xy_test_sim  <span class="ot">&lt;-</span> xy_cv_sim[fold_id <span class="sc">==</span> k, ]</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        xy_train_sim<span class="sc">$</span>x1c_sim <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_train_sim<span class="sc">$</span>x1_sim, bks)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        xy_test_sim<span class="sc">$</span>x1c_sim  <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_test_sim<span class="sc">$</span>x1_sim, bks)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        reg_k <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> x1c_sim<span class="sc">/</span>(x1_sim <span class="sc">+</span> x2_sim), <span class="at">data=</span>xy_train_sim)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>        pred_k <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg_k, <span class="at">newdata=</span>xy_test_sim)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mean</span>((xy_test_sim<span class="sc">$</span>y_sim <span class="sc">-</span> pred_k)<span class="sc">^</span><span class="dv">2</span>, <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mean</span>(fold_mse)</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot CV error against model complexity</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bin_counts, cv_mse, <span class="at">type=</span><span class="st">'o'</span>, <span class="at">pch=</span><span class="dv">16</span>,</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Number of x1 bins'</span>, <span class="at">ylab=</span><span class="st">'5-fold CV mean squared error'</span>,</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>L_star <span class="ot">&lt;-</span> bin_counts[<span class="fu">which.min</span>(cv_mse)]</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>L_star, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'CV-optimal: '</span>, L_star, <span class="st">' bins'</span>), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1048,8 +1052,8 @@ h_{1} &amp; 0 &amp; 0  \\
 <span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="do">## Mean and standard deviation of the x1_sim-gradient</span></span>
 <span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">mean=</span><span class="fu">mean</span>(slope_x1, <span class="at">na.rm=</span><span class="cn">TRUE</span>), <span class="at">sd=</span><span class="fu">sd</span>(slope_x1, <span class="at">na.rm=</span><span class="cn">TRUE</span>))</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="do">##       mean         sd </span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="do">##   4.037284 413.124979</span></span></code></pre></div>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="do">##        mean          sd </span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="do">##   0.8222098 422.1854069</span></span></code></pre></div>
 </details>
 </div>
 <p>The mean gradient is a single-number summary, much like an OLS slope. The standard deviation across bins measures how much the gradient changes over the data, which a single OLS coefficient cannot show. To test whether a mean gradient differs from zero, bootstrap it exactly as in <a href="./02_17_Inference.html#hypothesis-testing">Inference</a>.</p>
