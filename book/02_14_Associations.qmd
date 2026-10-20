@@ -169,6 +169,44 @@ abline(v=xy_cor, col=rgb(1, 0, 0, .8), lwd=2)
 Importantly, we can also impose the null hypothesis of no association by reshuffling the data.
 If we resample without replacement, this is known as a *permutation test*.
 
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+```{r}
+# xy_hat and xy_cor defined above
+# Null Permutation Distribution of Correlation
+n <- nrow(xy_hat)
+null_permutation_cor <- rep(NA, 9999)
+for(b in seq(null_permutation_cor) ){
+    xy_perm <- xy_hat
+    xy_perm[, 'x_hat'] <- xy_hat[sample(n, replace=FALSE), 'x_hat'] ## Reshuffle X
+    xy_cor_b <- cor(xy_perm[, 'x_hat'], xy_perm[, 'y_hat'])
+    null_permutation_cor[b] <- xy_cor_b
+}
+hist(null_permutation_cor, breaks=100,
+    border=NA, freq=FALSE,
+    xlab='Correlation',
+    main=NA)
+title('Null Permutation Distribution', font.main=1)
+
+## Test whether correlation is statistically different from 0
+perm_ci <- quantile(null_permutation_cor, probs=c(0.025, 0.975))
+abline(v=perm_ci, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=xy_cor, col=rgb(1, 0, 0, .8), lwd=2)
+```
+All dependence resides in the pairing, and permuting one margin destroys the pairing completely.
+:::
+
+So the bootstrap evaluates sampling variability in the world that generated your data.
+A permutation test constructs the distribution of the statistic in a world where the null is true.
+Altogether, we have
+
+| Distribution| Sample Size per Iteration | Number of Iterations | Mechanism | Typical Purpose |
+| -------- | ------- | ------- | ------- |----------------|
+Jackknife       | $n-1$ | $n$  | $\hat{x},\hat{y}$: Deterministically leave-one-out observation | Variance estimate (after rescaling) and Normal CI estimate |
+Bootstrap       | $n$   | $B$  | $\hat{x},\hat{y}$: Random resample with replacement | Percentile CI estimate |
+Null Bootstrap  | $n$   | $B$  | $\hat{x},\hat{y}$: Random resample with replacement and shifted | Percentile CI under imposed null, $p$-values |
+Permutation     | $n$   | $B$  | $\hat{x}$: Random resample without replacement | Percentile CI under imposed null of no association, $p$-values |
+: Types of resampling
+
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 ```{r}
 # xy_hat and xy_cor defined above
@@ -192,23 +230,9 @@ boot_ci <- quantile(null_bootstrap_cor, probs=c(0.025, 0.975))
 abline(v=boot_ci, col=rgb(0, 0, 0, .8), lwd=2)
 abline(v=xy_cor, col=rgb(1, 0, 0, .8), lwd=2)
 ```
-All dependence resides in the pairing, and permuting one margin destroys the pairing completely.
-
-To construct a permutation test, we need to use `replace=FALSE`.
-Rework the above code to make a Permutation Null Distribution and conduct a permutation test.
+Drawing $\hat{x}$ with replacement also breaks the pairing, which gives the Null Bootstrap row of the table.
+Compare this distribution to the permutation distribution above.
 :::
-
-So the bootstrap evaluates sampling variability in the world that generated your data.
-A permutation test constructs the distribution of the statistic in a world where the null is true.
-Altogether, we have
-
-| Distribution| Sample Size per Iteration | Number of Iterations | Mechanism | Typical Purpose |
-| -------- | ------- | ------- | ------- |----------------|
-Jackknife       | $n-1$ | $n$  | $\hat{x},\hat{y}$: Deterministically leave-one-out observation | Variance estimate (after rescaling) and Normal CI estimate |
-Bootstrap       | $n$   | $B$  | $\hat{x},\hat{y}$: Random resample with replacement | Percentile CI estimate |
-Null Bootstrap  | $n$   | $B$  | $\hat{x},\hat{y}$: Random resample with replacement and shifted | Percentile CI under imposed null, $p$-values |
-Permutation     | $n$   | $B$  | $\hat{x}$: Random resample without replacement | Percentile CI under imposed null of no association, $p$-values |
-: Types of resampling
 
 
 #### **Robust Correlation** {-}
@@ -246,7 +270,7 @@ xy_med_cor <- med_cor(xy_hat)
 xy_med_cor
 ```
 
-:::{.callout-note icon=false collapse="true" title="Must Know"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Compute the Codeviance for the dataset $\{(1,2),(2,1),(3,4),(4,3),(5,6)\}$.
 
 The medians are $\tilde{m}_{X}=3$ and $\tilde{m}_{Y}=3$, giving signed deviations and products
@@ -470,7 +494,7 @@ CV(xy_cat_hat)
 # DescTools::CramerV( table(xy_cat_hat) )
 ```
 
-:::{.callout-note icon=false collapse="true" title="Must Know"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 You can also apply Cramer's V to cardinal data after cutting each variable into bins.
 This throws away the ordering of the bins, so Kendall's $\hat{\text{KT}}$ or Pearson's $\hat{r}_{XY}$ usually make better use of the data.
 ```{r}
@@ -484,7 +508,7 @@ CV(xy_bin_hat)
 ```
 :::
 
-:::{.callout-note icon=false collapse="true" title="Must Know"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Compute Cramer's V for this $2\times2$ table of $100$ workers, cross-classifying a college degree against employment.
 
 \begin{array}{c|cc|c}

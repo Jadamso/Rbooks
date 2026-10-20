@@ -24,45 +24,131 @@ A *simple random sample* is a sample where every subset of size $n$ has the same
 The simple random sample is useful as the default baseline: every other sampling scheme is described by how it departs from it, and the mathematical results in the rest of the chapter assume a simple random sample.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
+List the samples of size two from the small population $\{1, 2, 3, 4\}$.
 ```{r}
-# Simple random sample (no duplicates, equal probability)
+#All possible samples of two from a bag of numbers {1, 2, 3, 4} without replacement
+# {1, 2} {1, 3} {1, 4}
+#        {2, 3} {2, 4}
+#               {3, 4}
+
+#combn() lists every possible sample, one sample per column
 population_values <- c(1, 2, 3, 4) # population
+combn(population_values, 2)   
+
+# Simple random sample (no duplicates, equal probability)
 sample(population_values, 2, replace=FALSE) #sample
 ```
-How many possible samples of two are there from a population with this data: ${7,10,122,55}$?
+:::
+
+Often, we think of the population as being infinitely large.
+This is an approximation that makes mathematical and computational work much simpler.
+
+Intuition for infinite populations: imagine drawing names from a giant urn.
+If the urn has only $10$ names, then removing one name slightly changes the composition of the urn, and the probabilities shift for the next name you draw.
+Now imagine the urn has $100$ billion names, so that removing one makes no noticeable difference.
+We can pretend the composition never changes: each draw is essentially identical and independent (iid).
+We can actually guarantee the names are iid by putting any names drawn back into the urn (sampling with replacement).
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Sampling with replacement from the small population $\{1, 2, 3, 4\}$ allows duplicates, so every draw has the same four possible values.
+```{r}
+#All possible samples of two from a bag of numbers {1, 2, 3, 4} with replacement
+#{1, 1} {1, 2} {1, 3} {1, 4}
+#       {2, 2} {2, 3} {2, 4}
+#              {3, 3} {3, 4}
+#                     {4, 4}
+
+# Simple random sample (duplicates, equal probability)
+population_values <- c(1, 2, 3, 4) # population
+sample(population_values, 2, replace=TRUE)
+```
 :::
 
 
+#### **Population Theory** {-}
 
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Factorials are used for counting *permutations*: different ways of rearranging $n$ distinct objects into a sequence.
-The factorial is denoted as $n!=1\times2\times3 ... (n-2)\times(n-1)\times n$.
-
-E.g., how many ways are there to order the numbers $\{1, 2, 3\}$?
+In practice, we never see the whole population, so we cannot check how close a sample statistic is to the truth.
+To make such checks possible, this chapter pretends that the $3294$ workers in the `Wages1` dataset are the entire population.
+They are really a sample themselves, but pretending lets us compute the true population mean and compare it with what one sample of workers tells us.
+The data come from the `Ecdat` package, which you need to install once.
 ```{r}
-#{1, 2, 3} {1, 3, 2}
-#{2, 1, 3} {2, 3, 1}  
-#{3, 2, 1} {3, 1, 2}
+# install.packages('Ecdat') # only once
+data(Wages1, package='Ecdat')
+
+# Pretend these 3294 hourly wages are the whole population
+population_wages <- Wages1[, 'wage']
+
+# One simple random sample of 50 workers
+# Each time you run, you get a different sample of workers.
+x_sim <- sample(population_wages, 50, replace=FALSE)
+```
+
+
+#### **Permutations and Combinations** {-}
+
+For small populations, it can be useful to count how many samples there are.
+Factorials are used for counting *permutations*: different ways of rearranging $N$ distinct objects into a sequence.
+There are $N! = N \times (N-1) \times \cdots \times 2 \times 1$ orderings, read "$N$ factorial".
+When we select $n$ items from $N$ and the order matters, there are $N \times (N-1) \times \cdots \times (N-n+1) = \frac{N!}{(N-n)!}$ permutations.
+
+When the order does not matter, we divide out the $n!$ rearrangements and count *combinations*.
+The *binomial coefficient* counts these subsets of $n$ elements from a set with $N$ elements, and is mathematically defined as $\tbinom{N}{n}=\frac{N!}{n!(N-n)!}$.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+How many ways are there to order the numbers $\{1, 2, 3\}$?
+```{r}
+# All Permutations
+#(1, 2, 3) (1, 3, 2)
+#(2, 1, 3) (2, 3, 1)
+#(3, 2, 1) (3, 1, 2)
 factorial(3)
 ```
 
-The *binomial coefficient* counts the subsets of $k$ elements from a set with $n$ elements, and is mathematically defined as $\tbinom{n}{k}=\frac{n!}{k!(n-k)!}$.
-
-For example, how many subsets with $k=2$ are there for the set $\{1,2,3,4\}$?
+How many possible samples of two are there from a population with this data: $\{7, 10, 122, 55\}$?
 ```{r}
-#Ways to draw k=2 from a set with n=4
-#{1, 2} {1, 3} {1, 4}  
-#      {2, 3} {2, 4}  
-#            {3, 4} 
+#Ways to draw n=2 from a set with N=4
+#{7, 10}  {7, 122}   {7, 55}
+#        {10, 122}  {10, 55}
+#                  {122, 55}
 
+#combn() lists every possible sample, one sample per column
+combn(c(7, 10, 122, 55), 2)   
+
+# choose() counts them
+choose(4, 2)
+```
+The answer depends only on $N=4$ and $n=2$, not on the values themselves.
+:::
+
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+A small firm has four workers, labeled $\{1, 2, 3, 4\}$, and must name one manager and one assistant manager.
+We write an ordered pair in parentheses, $(\text{manager}, \text{assistant})$, and an unordered set in braces.
+Order matters here: $(1, 2)$ makes worker $1$ the manager, while $(2, 1)$ makes worker $2$ the manager.
+There are $4$ choices for manager and then $3$ for assistant, so there are $4 \times 3 = 12$ permutations.
+```{r}
+#All (manager, assistant) pairs from {1, 2, 3, 4}
+#(1, 2) (1, 3) (1, 4)
+#(2, 1) (2, 3) (2, 4)
+#(3, 1) (3, 2) (3, 4)
+#(4, 1) (4, 2) (4, 3)
+
+# N x (N-1) x ... x (N-n+1) with N=4 and n=2
+4 * 3
+
+# Same count written with factorials: N!/(N-n)!
+factorial(4) / factorial(4 - 2)
+```
+Now suppose the firm instead picks two workers for a committee with no roles, so order does not matter.
+Each committee appears twice in the list above: $(1, 2)$ and $(2, 1)$ are both the committee $\{1, 2\}$.
+Dividing the $12$ permutations by the $2! = 2$ orderings of each pair leaves $\binom{4}{2} = 6$ combinations.
+```{r}
+# Permutations divided by the orderings within each pair
+(4 * 3) / factorial(2)
 choose(4, 2)
 ```
 :::
 
-More generally, counting outcomes relies on a few rules.
-The *multiplication rule* says that if one choice has $a$ options and an independent second choice has $b$ options, then together they have $a \times b$ options.
-When we select $k$ items from $n$ and the order matters, there are $n \times (n-1) \times \cdots \times (n-k+1)$ *permutations*.
-When the order does not matter, we divide out the $k!$ rearrangements and count $\binom{n}{k}$ *combinations*.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 **License plates.** A plate has the format `AB1 23C`: three letter slots and three number slots, with no letter and no number repeated.
@@ -85,53 +171,6 @@ choose(20, 3)
 (25 * 24) * choose(23, 5)
 ```
 :::
-
-
-
-Often, we think of the population as being infinitely large.
-This is an approximation that makes mathematical and computational work much simpler.
-
-Intuition for infinite populations: imagine drawing names from a giant urn.
-If the urn has only $10$ names, then removing one name slightly changes the composition of the urn, and the probabilities shift for the next name you draw.
-Now imagine the urn has $100$ billion names, so that removing one makes no noticeable difference.
-We can pretend the composition never changes: each draw is essentially identical and independent (iid).
-We can actually guarantee the names are iid by putting any names drawn back into the urn (sampling with replacement).
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-Sampling with replacement from the small population $\{1, 2, 3, 4\}$ allows duplicates, so every draw has the same four possible values.
-```{r}
-#All possible samples of two from a bag of numbers {1, 2, 3, 4} with replacement
-#{1, 1} {1, 2} {1, 3} {1, 4}
-#{2, 2} {2, 3} {2, 4}
-#{3, 3} {3, 4}
-#{4, 4}
-
-# Simple random sample (duplicates, equal probability)
-population_values <- c(1, 2, 3, 4) # population
-sample(population_values, 2, replace=TRUE)
-```
-:::
-
-#### **Population Theory** {-}
-
-In practice, we never see the whole population, so we cannot check how close a sample statistic is to the truth.
-To make such checks possible, this chapter pretends that the $3294$ workers in the `Wages1` dataset are the entire population.
-They are really a sample themselves, but pretending lets us compute the true population mean and compare it with what one sample of workers tells us.
-The data come from the `Ecdat` package, which you need to install once.
-```{r}
-# install.packages('Ecdat') # only once
-data(Wages1, package='Ecdat')
-
-# Pretend these 3294 hourly wages are the whole population
-population_wages <- Wages1[, 'wage']
-population_wage_mean <- mean(population_wages)
-population_wage_mean
-
-# One simple random sample of 50 workers
-x_sim <- sample(population_wages, 50, replace=FALSE)
-mean(x_sim)
-```
-Each time you run the last two lines, you get a different sample of workers and a different sample mean.
 
 
 
@@ -241,6 +280,9 @@ title('Sampling Distribution of the mean', font.main=1)
 Now draw three samples of $50$ workers from the wage population.
 Each sample mean (red) lands near, but not on, the population mean (blue dashed).
 ```{r}
+# Population mean
+population_wage_mean <- mean(population_wages)
+
 # Three samples of workers, each with its own mean
 par(mfrow=c(1, 3))
 for(b in 1:3){
@@ -638,8 +680,43 @@ for(n in c(5, 50, 500)){
 }
 ```
 
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Show the ECDF converging to the CDF for a small discrete population of five student ages $\{18, 20, 22, 24, 26\}$.
+List all $\binom{5}{n}$ possible samples of size $n=2, 3, 4, 5$, and compare each sample's $\hat{F}$ (red) to the population $F$ (black).
+```{r}
+population_values <- c(18, 20, 22, 24, 26) #student ages (population values)
+F_population <- ecdf(population_values)
+F_population(population_values) # each age adds 1/5
 
-## Resampling Distributions 
+# All possible samples of each size, one sample per column
+for(n in 2:5){
+    print( combn(population_values, n) )
+}
+
+# Population CDF nudged up by 0.01, so it stays visible above the red lines
+F_population_up <- stepfun(population_values, c(0, F_population(population_values)) + 0.01)
+
+par(mfrow=c(1, 4))
+for(n in 2:5){
+    samples_n <- combn(population_values, n)
+    plot(F_population_up, do.points=FALSE, verticals=FALSE,
+        xlim=c(16, 28), xlab='age', ylab='Fn(x)', main=NA)
+    max_gaps <- rep(NA, ncol(samples_n))
+    for(s in seq(ncol(samples_n))){
+        F_hat <- ecdf(samples_n[, s])
+        plot(F_hat, do.points=FALSE, add=TRUE, col=rgb(1, 0, 0, .3), lwd=4)
+        # Both curves only jump at the five ages, so the largest gap is at one of them
+        max_gaps[s] <- max(abs(F_hat(population_values) - F_population(population_values)))
+    }
+    # Largest gap over all possible samples of size n
+    title(paste0('n=', n, ', largest gap=', round(max(max_gaps), 2)), font.main=1)
+}
+```
+With $n=5$ the only possible sample is the whole population, so $\hat{F}=F$ exactly.
+:::
+
+
+## Resampling Distributions
 
 With the wage population, we could draw as many samples as we liked.
 Often, we only have one sample, and no population to draw more samples from.

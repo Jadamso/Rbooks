@@ -541,10 +541,13 @@ We can then just take the percentiles of the bootstrap distribution.
 # Original OLS coefficient
 slope <-  coef(reg)[2]
 
+# Number of observations
+n <- nrow(xy_hat)
+
 # Bootstrap Sampling Distribution
 boot_coefs <- rep(NA, 399)
 for(i in seq_along(boot_coefs)){
-    b_id <- sample( nrow(xy_hat), replace=TRUE)
+    b_id <- sample(n, replace=TRUE)
     xy_boot <- xy_hat[b_id, ]
     reg_b <- lm(y_hat ~ x_hat, data=xy_boot)
     slope_b <- coef(reg_b)[2]
@@ -572,15 +575,14 @@ We then calculate the standard deviation of the statistic across all subsamples 
 
 ```{r}
 # Jackknife Sampling Distribution for OLS Coefficient
-jack_coefs <- rep(NA, nrow(xy_hat))
+jack_coefs <- rep(NA, n)
 for(i in seq_along(jack_coefs)){
     xy_i <- xy_hat[-i, ]
     reg_i <- lm(y_hat ~ x_hat, data=xy_i)
     slope_i <- coef(reg_i)[2]
     jack_coefs[i] <- slope_i
 }
-n_jack <- length(jack_coefs)
-jack_se <- sqrt((n_jack - 1)/n_jack * sum((jack_coefs - mean(jack_coefs))^2))
+jack_se <- sqrt((n - 1)/n * sum((jack_coefs - mean(jack_coefs))^2))
 
 # Plot Estimated Sampling Distribution
 # Grid spans four jackknife SEs on either side of the estimate
@@ -592,16 +594,20 @@ abline(v=slope, col=rgb(1, 0, 0, .8), lwd=2)
 
 # Normal Approx Confidence Interval
 jack_ci_normal <- qnorm(c(.025, .975), slope, jack_se)
-abline(v=jack_ci_normal, col=rgb(0, 0, 0, .8), lwd=2, lty=2)
+abline(v=jack_ci_normal, col=rgb(0, 0, 1, .8), lwd=2)
 
 # Bootstrap Quantiles
 abline(v=boot_ci_percentile, col=rgb(0, 0, 0, .8), lwd=2)
-legend('topright', lty=c(1, 2), lwd=2, col=rgb(0, 0, 0, .8), bty='n', cex=.75,
+legend('topright', lty=1, lwd=2, col=c(rgb(0, 0, 0, .8), rgb(0, 0, 1, .8)), bty='n', cex=.75,
     title='Confidence Interval',
     legend=c('Bootstrap Percentile', 'Normal Approx.'))
 ```
 
-#### **Checking with a Known Population** {-}
+In any case, a $95\%$ confidence interval should contain the population slope in about $95\%$ of samples.
+Any one sample can miss it by a fair amount.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+**Checking with a Known Population**
 
 With real data, we never see the population slope, so we cannot check whether our intervals work.
 As in [Sampling](01_05_Sampling.qmd#population-theory), pretend the $3294$ workers in `Wages1` are the whole population, so we know the population slope of wages on schooling.
@@ -634,20 +640,20 @@ title('Sample Slopes from the Known Population', font.main=1)
 abline(v=population_slope, col=rgb(0, 0, 1, .8), lty=2)
 ```
 
-The sample slopes center on the population slope, but any one sample can miss it by a fair amount.
-A $95\%$ confidence interval should contain the population slope in about $95\%$ of samples.
-We check that for the jackknife Normal interval from above.
-Inside the jackknife loop, we compute each slope as $\hat{c}_{XY}/\hat{v}_{X}$, which gives the same number as `lm` but runs faster.
+We check the CI for both intervals from above: the jackknife Normal interval and the bootstrap percentile interval.
+Inside the resampling loops, we compute each slope as $\hat{c}_{XY}/\hat{v}_{X}$, which gives the same number as `lm` but runs faster.
 
 ```{r}
-# Jackknife Normal CI for each sample, and whether it covers the population slope
-covered <- rep(NA, 300)
-for(s in seq_along(covered)){
+# Jackknife Normal CI and bootstrap percentile CI for each sample
+n_samples <- 300
+jack_cis <- matrix(NA, nrow=n_samples, ncol=2)
+boot_cis <- matrix(NA, nrow=n_samples, ncol=2)
+for(s in seq(n_samples)){
     s_id <- sample(nrow(population_xy), n, replace=FALSE)
     x_sim <- population_xy[s_id, 'x']
     y_sim <- population_xy[s_id, 'y']
     slope_s <- cov(x_sim, y_sim)/var(x_sim)
-    # Jackknife SE
+    # Jackknife SE and Normal CI
     jack_coefs_s <- rep(NA, n)
     for(i in seq_along(jack_coefs_s)){
         x_sim_i <- x_sim[-i]
@@ -655,16 +661,44 @@ for(s in seq_along(covered)){
         jack_coefs_s[i] <- cov(x_sim_i, y_sim_i)/var(x_sim_i)
     }
     jack_se_s <- sqrt((n - 1)/n * sum((jack_coefs_s - mean(jack_coefs_s))^2))
-    ci_s <- qnorm(c(.025, .975), slope_s, jack_se_s)
-    covered[s] <- population_slope >= ci_s[1] & population_slope <= ci_s[2]
+    jack_cis[s, ] <- qnorm(c(.025, .975), slope_s, jack_se_s)
+    # Bootstrap percentile CI
+    boot_coefs_s <- rep(NA, 399)
+    for(b in seq_along(boot_coefs_s)){
+        b_id <- sample(n, replace=TRUE)
+        x_sim_boot <- x_sim[b_id]
+        y_sim_boot <- y_sim[b_id]
+        boot_coefs_s[b] <- cov(x_sim_boot, y_sim_boot)/var(x_sim_boot)
+    }
+    boot_cis[s, ] <- quantile(boot_coefs_s, probs=c(.025, .975))
 }
 
 # Percent of intervals that contain the population slope
-mean(covered)*100
+jack_covered <- population_slope >= jack_cis[, 1] & population_slope <= jack_cis[, 2]
+boot_covered <- population_slope >= boot_cis[, 1] & population_slope <= boot_cis[, 2]
+c(jackknife_normal=mean(jack_covered), bootstrap_percentile=mean(boot_covered))*100
+
+# Plot the first 100 intervals from each method (Red = Missed)
+cis_list <- list('Jackknife Normal'=jack_cis[1:100, ], 'Bootstrap Percentile'=boot_cis[1:100, ])
+ci_xlim <- range(jack_cis[1:100, ], boot_cis[1:100, ])
+par(mfrow=c(1, 2), mar=c(4, 4, 2, 1))
+for(method in names(cis_list)){
+    cis <- cis_list[[method]]
+    covered <- population_slope >= cis[, 1] & population_slope <= cis[, 2]
+    plot.new()
+    plot.window(xlim=ci_xlim, ylim=c(0, 100))
+    segments(cis[, 1], 1:100, cis[, 2], 1:100, lwd=2,
+        col=ifelse(covered, rgb(0, 0, 0, .3), rgb(1, 0, 0, .5)))
+    abline(v=population_slope, col=rgb(0, 0, 1, .8), lty=2)
+    axis(1)
+    title(method, font.main=1)
+}
 ```
 
-The percent printed above is typically in the low to mid $90$s.
-Wages are right-skewed, so with $n=100$ the Normal approximation is not exact, and coverage can fall a little short of $95\%$.
+Both percents printed above are typically within a couple of points of $95\%$.
+Some of that gap is simulation noise from using only $300$ samples.
+The rest is because neither interval is exact: wages are right-skewed, so with $n=100$ the sampling distribution of the slope is not exactly Normal, and the bootstrap distribution only approximates it.
+:::
 
 ## Hypothesis Tests
 
@@ -833,7 +867,7 @@ F2_hat <- ecdf(abs(null_coefs2))
 Each extra year of schooling goes with a higher hourly wage, on average.
 The $\hat{R}^{2}$ is small, so schooling alone leaves most of the variation in wages unexplained.
 The bootstrap interval is far from zero.
-The observed slope of about $0.56$ is also far outside the middle $95\%$ of permuted slopes, from about $-0.07$ to $0.07$, so the $p$-value is essentially zero.
+The observed slope of about $0.56$ is also far outside the middle $95\%$ of permuted slopes, from about $-0.07$ to $0.06$, so the $p$-value is essentially zero.
 :::
 
 
@@ -842,7 +876,7 @@ The observed slope of about $0.56$ is also far outside the middle $95\%$ of perm
 We could also use hard decision rules, such as "$p < 0.05$ is a statistically significant finding".
 However, just like confidence intervals, those hard decision rules can be sensitive to somewhat arbitrary choices (Why Jackknife SE's instead of classical ones? Why test at the $95\%$ level rather than $90\%$?)
 
-"No association" is the most common null hypothesis in practice, but we can also use bootstrapping to test against other specific hypothesis: $\beta_1$, the population slope.
+"No association" is the [most common null hypothesis](01_08_HypothesisTests.qmd#choosing-a-null) in practice, but we can also use bootstrapping to test against other specific hypotheses: $\beta_1$, the population slope.
 To impose the null in this case, you recenter the sampling distribution around the hypothetical value; $\hat{t} = \frac{\hat{b}_1 - \beta_1}{\hat{\text{SE}}(B_1)}$.^[Under some additional assumptions, the null distribution follows a $t$-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)]
 In the known-population check above, the population slope is `population_slope`, which we could compute only because we pretended `Wages1` was the whole population.
 

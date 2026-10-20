@@ -6,7 +6,7 @@
 set.seed(1)
 ```
 
-This chapter rounds out the probability toolbox with distributions that use factorials (!): the Binomial and Poisson (discrete), and the Irwin–Hall and Beta (continuous).
+This chapter rounds out the probability toolbox with distributions that use [factorials](01_05_Sampling.qmd#permutations-and-combinations) (!): the Binomial and Poisson (discrete), and the Irwin–Hall, Beta, and F (continuous).
 It then formalizes basic set theory, Bayes' theorem, and the Law of Total Probability so that conditional reasoning has a clear language.
 
 
@@ -49,16 +49,21 @@ Assuming the coin is unfair, with probability of heads equal to $0.25$, compute 
 :::
 
 In general, we use the *Binomial distribution*.
-The $\binom{n}{x}$ term is called the [binomial coefficient](01_05_Sampling.qmd#sampling-distributions) and it counts all the different groups that lead to the same sum.
+The $\binom{n}{x}$ term is called the [binomial coefficient](01_05_Sampling.qmd#permutations-and-combinations) and it counts all the different groups that lead to the same sum.
 The other terms intuitively reflect the probabilities of getting $x$ successes and $n-x$ failures.
 
 For example, suppose $n=15$ people walk past a store each hour and each has a $\theta=30\%$ chance of entering.
 The number of customers who enter is $X_{i} \sim \text{Binom}(15, 0.3)$.
 
 ```{r}
+#| fig-width: 8
+#| fig-height: 4
 ## Store: 15 passers-by, 30% chance each enters
 n <- 15
 theta <- 0.3
+
+# PMF and CDF side by side
+par(mfrow=c(1, 2))
 
 # PMF plot
 x <- seq(0, n)
@@ -132,6 +137,29 @@ c(empirical  = var(x_sim),  theoretical  = n*theta*(1-theta))
 ```
 :::
 
+The shape of the Binomial changes with both $n$ and $\theta$.
+For the store, compare a quiet hour with $n=15$ passers-by to a busy hour with $n=100$, and a $10\%$ chance of entering to a $50\%$ chance.
+With $\theta=0.5$ the PMF is symmetric around $n/2$, while a small $\theta$ piles the probability near $0$ and gives a long right tail.
+As $n$ grows, the PMF spreads out and becomes more bell-shaped, even when $\theta$ is small.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+# Shape varies with both n and theta
+# Columns vary the success probability theta, rows vary the number of trials n
+par(mfrow=c(2, 2))
+for(n in c(15, 100)) {
+    for(theta in c(0.1, 0.5)) {
+        x <- seq(0, n)
+        f_x <- dbinom(x, n, theta)
+        plot(x, f_x, type='h', col=rgb(0, 0, 1, .8),
+            xlab='Customers entering', ylab='Prob(X = x)', main=NA)
+        points(x, f_x, pch=16, col=rgb(0, 0, 1, .8))
+        title(bquote(paste('Binom(', .(n), ', ', .(theta), ')')), font.main=1)
+    }
+}
+```
+
 
 #### **Poisson** {-}
 
@@ -171,8 +199,13 @@ $$\begin{aligned}
 
 
 ```{r}
+#| fig-width: 8
+#| fig-height: 4
 ## Store: lambda = 3.5 customers per hour
 lambda <- 3.5
+
+# PMF and CDF side by side
+par(mfrow=c(1, 2))
 
 # PMF plot
 x <- seq(0, 15)
@@ -341,18 +374,24 @@ Suppose the store has a tip jar and each customer drops in a random amount betwe
 If $n=2$ customers visit, the total tips are the sum of two independent $\text{Uniform}(0,1)$ random variables.
 The [Irwin-Hall distribution](https://en.wikipedia.org/wiki/Irwin%E2%80%93Hall_distribution) describes this sum for any $n$.
 
-The support is continuous on $[0,n]$ and the probability density function is
-$$f(x) = \dfrac{1}{(n-1)!} \displaystyle\sum_{k=0}^{\lfloor x \rfloor} (-1)^k \binom{n}{k} (x - k)^{n-1}$$
-for $x~\text{in}~[0,n]$, and $0$ otherwise.
+The support is continuous on $[0,n]$ and the probability density function and CDF are
+$$\begin{aligned}
+f(x) &= \dfrac{1}{(n-1)!} \displaystyle\sum_{k=0}^{\lfloor x \rfloor} (-1)^k \binom{n}{k} (x - k)^{n-1} \\
+F(x) &= \dfrac{1}{n!} \displaystyle\sum_{k=0}^{\lfloor x \rfloor} (-1)^k \binom{n}{k} (x - k)^{n}
+\end{aligned}$$
+for $x~\text{in}~[0,n]$.
+Outside that interval $f(x)=0$, while $F(x)=0$ below $0$ and $F(x)=1$ above $n$.
 The parameter $n$ is the number of independent uniform contributions.
 When $n=1$ this is just the Uniform density; when $n=2$ it is a triangle peaking at $1$.
 
 ```{r}
+#| fig-width: 8
+#| fig-height: 4
 ## Tip jar: total tips from n customers, each Uniform(0, 1)
 # Irwin-Hall PDF function
 dirwinhall <- function(x, n) {
     f_x <- rep(NA, length(x))
-    for(i in seq(x)) {
+    for(i in seq_along(x)) {
         xx <- x[i]
         if(xx < 0 | xx > n){
             f_x[i] <- 0
@@ -365,15 +404,56 @@ dirwinhall <- function(x, n) {
     return(f_x)
 }
 
+# Irwin-Hall CDF function
+pirwinhall <- function(x, n) {
+    F_x <- rep(NA, length(x))
+    for(i in seq_along(x)) {
+        xx <- x[i]
+        if(xx < 0){
+            F_x[i] <- 0
+        } else if(xx > n){
+            F_x[i] <- 1
+        } else {
+            k <- seq(0, floor(xx))
+            F_x[i] <- sum((-1)^k*choose(n, k)*(xx-k)^n)/factorial(n)
+        }
+    }
+    return(F_x)
+}
+
 # Two customers
 n <- 2
 x <- seq(0, n, length.out = 500)
+
+# PDF and CDF side by side
+par(mfrow=c(1, 2))
 
 # Compute and plot PDF
 f_x <- dirwinhall(x, n)
 plot(x, f_x, type='l', col=rgb(0, 0, 1, .8),
     main=NA, xlab = 'Total tips ($)', ylab = 'f(x)')
 title(bquote(paste('IrwinHall(', .(n), ')')), font.main=1)
+
+# Compute and plot CDF
+F_x <- pirwinhall(x, n)
+plot(x, F_x, type='l', col=rgb(0, 0, 1, .8),
+    main=NA, xlab = 'Total tips ($)', ylab = 'F(x)')
+title(bquote(paste('IrwinHall(', .(n), ') CDF')), font.main=1)
+```
+
+The shape of the Irwin–Hall also changes with $n$.
+One customer's tip is flat on $[0,1]$, three customers' total is already a smooth hump, and ten customers' total is bell-shaped around $5$.
+
+```{r}
+# Shape varies with n
+par(mfrow=c(1, 3))
+for(n in c(1, 3, 10)) {
+    x <- seq(-0.1, n, length.out=500)
+    f_x <- dirwinhall(x, n)
+    plot(x, f_x, type='l', col=rgb(0, 0, 1, .8),
+        xlab='Total tips ($)', ylab='f(x)', main=NA)
+    title(bquote(paste('IrwinHall(', .(n), ')')), font.main=1)
+}
 ```
 
 See also the [Bates](https://en.wikipedia.org/wiki/Bates_distribution) distribution, which is for the mean of $n$ i.i.d. $\text{Uniform}(0,1)$ random variables.
@@ -383,23 +463,44 @@ It essentially rescales the Irwin-Hall distribution to range between $0$ and $1$
 #### **Beta** {-}
 
 When the variable of interest is itself a proportion that can vary from one occasion to the next, we need a distribution supported on the unit interval $[0,1]$ rather than the whole real line.
-A *Beta* random variable lives on the unit interval $[0,1]$ and has two shape parameters $a, b > 0$ that control the location and skewness of the density.
+A *Beta* random variable lives on the unit interval $[0,1]$ and has two shape parameters $\alpha, \beta > 0$ that control the location and skewness of the density.
 It is the natural distribution for a proportion (e.g., a daily purchase rate).
 
 
 The *Beta distribution* is useful whenever the quantity of interest is bounded between $0$ and $1$: a fraction of customers who buy, a click-through rate, a survival probability.
 When both shape parameters equal $2$, the distribution is symmetric and bell-shaped on $[0,1]$, centering around $50\%$; varying the shape parameters allows everything from sharply right-skewed to U-shaped.
-The density formula is mathematically involved, so we omit it and work graphically instead.
+The full specification is
+$$\begin{aligned}
+X_{i} &~\text{in}~[0,1] \\
+f(x) &= \frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha)\Gamma(\beta)} x^{\alpha-1}(1-x)^{\beta-1}
+\end{aligned}$$
+where $\Gamma(\cdot)$ is the *gamma function*, a smooth version of the factorial with $\Gamma(k)=(k-1)!$ for whole numbers $k$.
+The fraction in front is a constant that makes the total area under the density equal to $1$.
+For the daily purchase rate with $\alpha=\beta=2$, the constant is $3!/(1! \cdot 1!) = 6$, so $f(x) = 6x(1-x)$.
 
 ```{r}
+#| fig-width: 8
+#| fig-height: 4
 ## Daily purchase rate: Beta(2, 2)
-x4_hat <- rbeta(2000, 2, 2)
-hist(x4_hat, breaks=20, border=NA, main=NA, freq=FALSE,
-    xlab='Purchase rate')
-
 x <- seq(0, 1, by=.01)
-fx <- dbeta(x, 2, 2)
-lines(x, fx, col=rgb(0, 0, 1, .8))
+
+# PDF and CDF side by side
+par(mfrow=c(1, 2))
+
+# PDF
+f_x <- dbeta(x, 2, 2)
+plot(x, f_x, type='l', col=rgb(0, 0, 1, .8),
+    xlab='Purchase rate', ylab='f(x)', main=NA)
+title('Beta(2, 2)', font.main=1)
+
+# CDF
+F_x <- pbeta(x, 2, 2)
+plot(x, F_x, type='l', col=rgb(0, 0, 1, .8),
+    xlab='Purchase rate', ylab='F(x)', main=NA)
+title('Beta(2, 2) CDF', font.main=1)
+
+# Check against the formula 6x(1-x)
+all.equal(f_x, 6*x*(1-x))
 ```
 
 We can find probabilities using either the density (area under the curve) or the CDF.
@@ -409,6 +510,7 @@ What is the probability that the daily purchase rate falls between $20\%$ and $8
 Intuitively depict this as the area under the density.
 Then compute it numerically using the CDF.
 ```{r}
+x4_hat <- rbeta(2000, 2, 2) # Simulated purchase rates
 plot(ecdf(x4_hat), main=NA,
     xlab='Purchase rate') # Empirical
 
@@ -430,25 +532,155 @@ segments(0.8, F8, -1, F8, col=rgb(1, 0, 0, .8))
 :::
 
 The two shape parameters allow the Beta to take many different shapes, making it useful whenever the quantity of interest is a proportion.
-
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Different shape parameters represent different beliefs about the store's purchase rate.
-For each density below, intuitively depict $\text{Prob}(X_{i} \leq 0.5)$ using the PDF.
-Repeat the exercise using a CDF instead of a PDF to calculate a numerical value.
-```{r, results='hide'}
+Equal parameters give a density symmetric around $0.5$, both below $1$ give a U-shape, and $\beta > \alpha$ shifts the density toward $0$.
+
+```{r}
 #| fig-width: 8
 #| fig-height: 6
-op <- par(no.readonly = TRUE); on.exit(par(op), add = TRUE)
-x <- seq(0, 1, by=.01)
-pars <- expand.grid(c(.5, 1, 2), c(.5, 1, 2))
+# Shape varies with both shape parameters
+# Columns vary alpha (shape1), rows vary beta (shape2)
 par(mfrow=c(3, 3))
-apply(pars, 1, function(p){
-    fx <- dbeta(x, p[1], p[2])
-    plot(x, fx, type='l', xlim=c(0, 1), ylim=c(0, 4), lwd=2, col=rgb(0, 0, 1, .8),
-        xlab='Purchase rate', ylab='f(x)', main=NA)
-})
-title('Beta densities', outer=TRUE, line=-1, font.main=1)
+x <- seq(0, 1, by=.01)
+for(shape2 in c(.5, 1, 2)) {
+    for(shape1 in c(.5, 1, 2)) {
+        f_x <- dbeta(x, shape1, shape2)
+        plot(x, f_x, type='l', xlim=c(0, 1), ylim=c(0, 4), lwd=1, col=rgb(0, 0, 1, .8),
+            xlab='Purchase rate', ylab='f(x)', main=NA)
+        title(bquote(list(alpha == .(shape1), beta == .(shape2))), font.main=1)
+    }
+}
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+For each density above, intuitively depict $\text{Prob}(X_{i} \leq 0.5)$ using the PDF.
+Repeat the exercise using a CDF instead of a PDF to calculate a numerical value.
+:::
+
+
+#### **F** {-}
+
+Some comparisons divide one measure of spread by another, such as how volatile sales are at one store relative to another.
+Suppose each store's daily forecast error, actual minus forecast sales, is a standard Normal random variable with $\mu=0$ and $\sigma=1$.
+A manager measures volatility as the average squared forecast error, using $d_{1}=5$ days at the first store and $d_{2}=20$ days at the second.
+When both stores are equally volatile, the ratio of these two averages follows an [F distribution](https://en.wikipedia.org/wiki/F-distribution).
+
+Write $Z_{1},\ldots,Z_{d_{1}}$ for the first store's errors and $W_{1},\ldots,W_{d_{2}}$ for the second store's, all independent standard Normals.
+The F random variable divides the two averages, $X_{i} = \frac{(Z_{1}^{2} + \cdots + Z_{d_{1}}^{2})/d_{1}}{(W_{1}^{2} + \cdots + W_{d_{2}}^{2})/d_{2}}$
+
+Its density uses the gamma function from the Beta:
+$$\begin{aligned}
+X_{i} &~\text{in}~[0,\infty) \\
+f(x) &= \frac{\Gamma\left(\frac{d_{1}+d_{2}}{2}\right)}{\Gamma\left(\frac{d_{1}}{2}\right)\Gamma\left(\frac{d_{2}}{2}\right)} \left(\frac{d_{1}}{d_{2}}\right)^{d_{1}/2} x^{d_{1}/2-1} \left(1+\frac{d_{1}}{d_{2}}x\right)^{-(d_{1}+d_{2})/2}
+\end{aligned}$$
+and we write $X_{i} \sim F_{d_{1},d_{2}}$.
+The parameters $d_{1}$ and $d_{2}$ are the numerator and denominator *degrees of freedom*, the number of squared Normals averaged on the top and on the bottom.
+A sum of $d$ independent squared standard Normals is called a *chi-squared* random variable with $d$ degrees of freedom, so an F random variable is a ratio of two independent chi-squareds, each divided by its degrees of freedom.
+As with the Beta, the terms that do not involve $x$ form a constant that makes the total area under the density equal to $1$.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4
+## Sales volatility: 5 days at store 1, 20 days at store 2
+d1 <- 5
+d2 <- 20
+x <- seq(0, 6, by=.01)
+
+# PDF and CDF side by side
+par(mfrow=c(1, 2))
+
+# PDF
+f_x <- df(x, d1, d2)
+plot(x, f_x, type='l', col=rgb(0, 0, 1, .8),
+    xlab='Volatility ratio', ylab='f(x)', main=NA)
+title(bquote(paste('F(', .(d1), ', ', .(d2), ')')), font.main=1)
+
+# CDF
+F_x <- pf(x, d1, d2)
+plot(x, F_x, type='l', col=rgb(0, 0, 1, .8),
+    xlab='Volatility ratio', ylab='F(x)', main=NA)
+title(bquote(paste('F(', .(d1), ', ', .(d2), ') CDF')), font.main=1)
+```
+
+We can find probabilities using the CDF, which R computes with `pf`, and quantiles with `qf`.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Even when both stores are equally volatile, the first store can look more volatile by chance.
+What is the probability that the volatility ratio exceeds $2$?
+How large must the ratio be before only $5\%$ of equally volatile pairs of stores exceed it?
+Simulate the volatility ratio from its definition and compare it to the density.
+Compute both probabilities from the simulation and with the computer.
+```{r}
+# Each draw divides the average squared forecast error at store 1 by that at store 2
+x_sim <- vector(length=2000)
+for(i in seq_along(x_sim)){
+    z_sim <- rnorm(d1)
+    w_sim <- rnorm(d2)
+    x_sim[i] <- mean(z_sim^2)/mean(w_sim^2)
+}
+hist(x_sim, breaks=50, border=NA, main=NA, freq=FALSE,
+    xlim=c(0, 6), xlab='Volatility ratio')
+title(bquote(paste('F(', .(d1), ', ', .(d2), ')')), font.main=1)
+lines(x, f_x, col=rgb(0, 0, 1, .8))
+
+# Prob(X > 2)
+c(empirical = mean(x_sim > 2), theoretical = 1 - pf(2, d1, d2))
+
+# 95th percentile
+c(empirical = quantile(x_sim, probs=0.95, names=FALSE), theoretical = qf(0.95, d1, d2))
+```
+With only $5$ days of data at the first store, a ratio above $2$ happens about $12\%$ of the time by chance, and the $95$th percentile is about $2.71$.
+:::
+
+The shape of the F depends on both degrees of freedom.
+A short average on the top puts more probability near $0$, because a few small squared errors can make the numerator tiny.
+A short average on the bottom gives a long right tail, because a few small squared errors can make the denominator tiny and the ratio very large.
+Each squared standard Normal has mean $\mathbb{E}[Z_{k}^{2}] = \mathbb{V}[Z_{k}] = 1$, so as $d_{1}$ and $d_{2}$ both grow, both averages settle near $1$ and the ratio concentrates around $1$.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+# Shape varies with both degrees of freedom
+# Columns vary the numerator d1, rows vary the denominator d2
+par(mfrow=c(2, 2))
+x <- seq(0, 4, by=.01)
+for(d_den in c(5, 50)) {
+    for(d_num in c(5, 50)) {
+        f_x <- df(x, d_num, d_den)
+        plot(x, f_x, type='l', col=rgb(0, 0, 1, .8), ylim=c(0, 1.5),
+            xlab='Volatility ratio', ylab='f(x)', main=NA)
+        title(bquote(paste('F(', .(d_num), ', ', .(d_den), ')')), font.main=1)
+    }
+}
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Forecast errors are not always available, so a manager may compare the [sample variances](01_03_SummaryStatistics.qmd#variance) of daily sales instead.
+Suppose daily sales, in thousands of dollars, are Normal with $\mu=10$ at the first store and $\mu=15$ at the second, and $\sigma=2$ at both.
+With $n_{1}=6$ days at the first store and $n_{2}=21$ days at the second, simulate the ratio of the two sample variances and compare it to the $F_{5,20}$ density.
+```{r}
+## Daily sales ($1000s): same sigma, different means
+n1 <- 6
+n2 <- 21
+
+# Each draw divides the sample variance at store 1 by that at store 2
+v_ratio_sim <- vector(length=2000)
+for(i in seq_along(v_ratio_sim)){
+    x1_sim <- rnorm(n1, mean=10, sd=2)
+    x2_sim <- rnorm(n2, mean=15, sd=2)
+    v_ratio_sim[i] <- var(x1_sim)/var(x2_sim)
+}
+hist(v_ratio_sim, breaks=50, border=NA, main=NA, freq=FALSE,
+    xlim=c(0, 6), xlab='Ratio of sample variances')
+title(bquote(paste('F(', .(n1-1), ', ', .(n2-1), ')')), font.main=1)
+
+# Theoretical density
+x <- seq(0, 6, by=.01)
+f_x <- df(x, n1-1, n2-1)
+lines(x, f_x, col=rgb(0, 0, 1, .8))
+```
+Each sample variance measures deviations from its own sample mean rather than from $\mu$, which costs one degree of freedom.
+So when both stores have the same $\sigma$, the ratio of the two `var()` sample variances follows $F_{n_{1}-1,\,n_{2}-1}$, whatever the two means are.
 :::
 
 
@@ -647,5 +879,5 @@ mean(supplier[defective] == 'A')
 
 #### **Recall** {-}
 
-This chapter rounded out univariate probability with the *Binomial* and *Poisson* (discrete counts), the *Irwin–Hall* and *Beta* (continuous random variables built from Uniforms), and the set-theoretic machinery of *independence*, *conditional probability*, *Bayes' theorem*, and the *Law of Total Probability*.
+This chapter rounded out univariate probability with the *Binomial* and *Poisson* (discrete counts), the *Irwin–Hall* and *Beta* (continuous random variables built from Uniforms), the *F* (a ratio of averages of squared Normals), and the set-theoretic machinery of *independence*, *conditional probability*, *Bayes' theorem*, and the *Law of Total Probability*.
 The defective-parts example wired these ideas together: with $\text{Prob}(A)=0.6$, $\text{Prob}(D \mid A)=0.03$, and $\text{Prob}(D \mid \lnot A)=0.05$, the Law of Total Probability gives $\text{Prob}(D)= 0.03 \times 0.6 + 0.05 \times 0.4 = 0.038$, and Bayes' theorem then reverses the conditioning: $\text{Prob}(A \mid D) = (0.03 \times 0.6)/0.038 \approx 0.474$.
