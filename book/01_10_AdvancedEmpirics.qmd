@@ -17,12 +17,16 @@ Each section stands on its own, so you can read them in any order.
 
 When we want a smoother picture than the jagged steps of a [histogram](01_02_Data.qmd#histogram-density), we replace fixed bins with a moving window centered on each value of $x$ we want to evaluate.
 
-A *kernel density* estimates the density at $x$ by averaging a smooth weight function (the *kernel*) centered on each data point, with a bandwidth $h$ that controls how wide the weight spreads.
+A *kernel density* estimates the density at $x$ by averaging a smooth weight function (the *kernel*) centered on each data point, with a bandwidth $h$ that controls how wide the weight spreads [@Rosenblatt1956; @Parzen1962; @Silverman1986].
 The bandwidth is a half-width, exactly as in the histogram: each kernel below weights observations within $h$ of $x$ and gives zero weight beyond.
 Unlike the histogram, the bins around each $x$ can overlap, which is why the result is smooth instead of stepped.
 
-Kernel densities are useful when we want a continuous picture of shape: easier to read than a histogram and better suited to overlaying two or three distributions on the same axes, where stacked or overlapping bars become visually muddled.
-Different kernels weight nearby points in different ways, producing curves with visually distinct (but qualitatively similar) shapes.
+Kernel densities are useful for showing the shape of a distribution as a smooth curve.
+A curve can be easier to read than a histogram, especially when we overlay two or three distributions on the same axes.
+Stacked or overlapping bars quickly become hard to tell apart.
+Kernel densities also extend to two dimensions, where they show how points spread across a map [@Scott2015].
+Different kernels weight nearby points in different ways.
+The resulting curves look slightly different, but their overall shapes are similar.
 The simplest *kernel function* is the "uniform" (or "rectangular") kernel, which places a weight of $1/2$ on every point inside the interval $\left[ x-h, x + h\right]$ and zero outside:
 $$\begin{aligned}
 k_{U}\left( \hat{x}_{i}, x, h \right)
@@ -35,11 +39,11 @@ For example, take the dataset $\{3, 3.1, 0.02\}$ with bandwidth $h=1/2$ and eval
 The interval $[x-h, x+h]=[2.5, 3.5]$ contains the two points $3$ and $3.1$, so $\sum_{i}\mathbf{1}\left(\hat{x}_{i}~\text{in}~[2.5,3.5]\right)=2$ and $\hat{f}_{U}(3)=\frac{2}{n 2h}=\frac{2}{3\times 1}=2/3$.
 
 Notice that the uniform kernel is essentially the histogram but without the restriction that $x$ must be a midpoint of *exclusive* bins.
-Typically, the points $x$ are chosen to be either the unique observations or some equidistant set of "design points" (e.g., at $512$ evenly spaced values of $x$ the dataset, not just the midpoints of exclusive bins).^[
+Typically, the points $x$ are chosen to be either the unique observations or some equidistant set of "design points" (e.g., at $512$ evenly spaced values of $x$ spanning the dataset, not just the midpoints of exclusive bins).^[
 One detail matters when moving from the formula to R.
 The `density` function scales its `bw` argument to be the *standard deviation* of the kernel rather than the half-width, so `bw` and $h$ are different numbers.
 Setting `bw` from $h$, rather than reading $h$ off `bw`, keeps the code matching the math.
-The conversion is a constant that depends on the kernel: the half-width is $\sqrt{3}$ times `bw` for the rectangular kernel and $\sqrt{5}$ times `bw` for the Epanechnikov kernel.
+The conversion is a constant that depends on the kernel: the half-width is $\sqrt{3}$ times `bw` for the rectangular kernel and $\sqrt{5}$ times `bw` for the Epanechnikov kernel [@Epanechnikov1969].
 ]
 
 ```{r}
@@ -195,6 +199,9 @@ Taking square roots gives $\hat{s}_{Y}=|b|\hat{s}_{X}$.
 Perhaps the most common examples are *power transformations*: $y= x^\lambda$, which includes $\sqrt{x}$ and $x^2$.
 
 Other examples include the *exponential transformation*: $y=\exp(x)$ for any $x~\text{in}~(-\infty, \infty)$ and *logarithmic transformation*: $y=\log(x)$ for any $x>0$.
+The log is undefined at zero, which is a problem for counts.
+A common fix is to add one before taking logs, so that zero counts get a value of zero [@Bartlett1947].
+The added one is arbitrary, and results based on the transformed values can change with the units of the count [@BellemareWichman2020; @ChenRoth2024].
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 The exponential function is $e^{x}=1+x/1+x^2/2+x^3/6....=\sum_{k=0}^{\infty} x^k/k!$ and the $\log$ function is its inverse.
@@ -210,7 +217,7 @@ z_hat
 :::
 
 
-The *Box–Cox Transform* nests many cases used by statisticians.
+The *Box–Cox Transform* [@BoxCox1964] nests many cases used by statisticians.
 For $x>0$ and parameter $\lambda$,
 $$
 y=\begin{cases}
@@ -258,7 +265,7 @@ To do that, we define two types of functions:
 
 Let $\hat{y}_{i}=g( \hat{x}_{i})$, and denote the mean as $\hat{m}_{Y}$.
 
-If $g$ is a *concave* function, then $g( \hat{m}_{X} ) \geq \hat{m}_{Y}$.
+If $g$ is a *concave* function, then $g( \hat{m}_{X} ) \geq \hat{m}_{Y}$ [@Jensen1906].
 The square root and the log are both concave.
 Every murder rate is positive, so we can take logs of them all.
 ```{r}
@@ -369,7 +376,7 @@ rnorm(4)
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Here is an in-depth example of the [Dagum distribution](https://en.wikipedia.org/wiki/Dagum_distribution).
+Here is an in-depth example of the [Dagum distribution](https://en.wikipedia.org/wiki/Dagum_distribution) [@Dagum1977].
 The distribution function is $F(x)=(1+(x/b)^{-a})^{-c}$.
 For a given probability $p$, we can then solve for the quantile as 
 $$F^{-1}(p)=\frac{ b p^{\frac{1}{ac}} }{(1-p^{1/c})^{1/a}}$$
@@ -434,6 +441,10 @@ x_sim[c(1, 2, 3)]
 
 #### **Recall** {-}
 
-This chapter collected three tools that extend the univariate toolkit: the *kernel density*, which smooths a histogram by averaging a weight function centered on each observation with half-width $h$; *data transformations* such as the log and the *Box–Cox* family, together with *Jensen's inequality* on how the mean of transformed data compares to the transformed mean; and *inverse sampling*, which generates random draws by feeding uniform probabilities through a quantile function.
-The running three-point dataset $\{3, 3.1, 0.02\}$ pins the first of these down: the uniform kernel density at $x=3$ with half-width $h=1/2$ equals $2/3$, because two points fall inside the interval $[2.5, 3.5]$ and $2/(3 \times 1)=2/3$.
+This chapter covered three more univariate tools.
+The *kernel density* smooths a histogram by averaging a weight function centered on each observation with half-width $h$.
+*Data transformations* include the log and the *Box–Cox* family, and *Jensen's inequality* compares the mean of transformed data to the transformed mean.
+*Inverse sampling* generates random draws by feeding uniform probabilities through a quantile function.
+For the first, take the three-point dataset $\{3, 3.1, 0.02\}$ with half-width $h=1/2$.
+Two points fall inside the interval $[2.5, 3.5]$ around $x=3$, so the uniform kernel density there is $2/(3 \times 1)=2/3$.
 For the second, `mean(sqrt(x_hat))` is never larger than `sqrt(mean(x_hat))` because the square root is concave, and the inequality flips for a convex function like the exponential.

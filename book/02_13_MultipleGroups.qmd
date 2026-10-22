@@ -2,7 +2,9 @@
 ***
 
 [Comparing Two Groups](02_12_TwoGroups.qmd) split a cardinal outcome by a two-level factor and tested whether the two groups differed.
-This chapter extends that idea to $G$ groups: how to describe several groups at once, how to compare their medians with bootstrap intervals, and then three ways to test whether they differ, one built on means, one built on ranks, and one built on category proportions.
+This chapter extends that idea to $G$ groups.
+We first describe several groups at once and compare their medians with bootstrap intervals.
+We then test whether the groups differ in three ways, using means, ranks, and category proportions.
 
 ## Describing Groups
 
@@ -69,15 +71,18 @@ aggregate(y_hat ~ region, FUN=summary_fun)
 ```
 
 The South has the highest center and the Northeast the lowest.
-Whether such differences are larger than chance alone would produce is the question the rest of this chapter takes up.
+Are these differences larger than we would expect by chance?
 
 ## Equal Medians
 
 In [Comparing Two Groups](02_12_TwoGroups.qmd#quantile-differences), we bootstrapped a confidence interval for the difference between two medians; with $G$ groups, we can instead bootstrap one interval per group and compare them all on one figure.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-A *notched boxplot* draws one box per group $g=1,\dots,G$ from the group's lower to upper quartile, with a line at the group median $\tilde{m}_{Y}(g)$ and a notch cut into each side of the box that spans a confidence interval for that median.
-With a $95\%$ bootstrap percentile interval, the notch for group $g$ spans the $2.5$th to $97.5$th percentiles of the $B$ bootstrap medians $\tilde{m}_{Y}^{(b)}(g)$, each the median of a resample of the $n_g$ observations in group $g$.
+A *notched boxplot* draws one box per group $g=1,\dots,G$ from the group's lower to upper quartile.
+Each box has a line at the group median $\tilde{m}_{Y}(g)$.
+A notch cut into each side of the box spans a confidence interval for that median [@mcgill1978].
+With a $95\%$ bootstrap percentile interval, the notch for group $g$ spans the $2.5$th to $97.5$th percentiles of the $B$ bootstrap medians $\tilde{m}_{Y}^{(b)}(g)$.
+Each bootstrap median is the median of a resample of the $n_g$ observations in group $g$.
 :::
 
 Notched boxplots are useful for comparing medians across many groups at a glance: if two notches do not overlap, that is strong evidence the two medians differ.
@@ -126,13 +131,15 @@ Only the South, with the most states, has an interval that stays inside its box.
 The South's notch lies above the Northeast's, so the South's median is higher.
 Do any other pairs of regions have notches that do not overlap?
 
+Researchers use the same displays [@Tukey1977] to compare treatments in experiments.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Here is another example of monthly earnings of $935$ US working men in 1980, by years of education.
 
 ```{r}
-wage_hat <- wooldridge::wage2[, 'wage']
-educ <- wooldridge::wage2[, 'educ']
+data(wage2, package='wooldridge')
+wage_hat <- wage2[, 'wage']
+educ <- wage2[, 'educ']
 # Group years of schooling: dropout, high school, some college, BA, graduate.
 educ_g <- cut(educ, breaks=c(0, 11, 12, 15, 16, 18),
     labels=c('<12', '12', '13-15', '16', '17-18'))
@@ -207,11 +214,12 @@ $$\begin{aligned}
 where $\hat{\text{BSS}}$ measures variation in group means around the grand mean and $\hat{\text{WSS}}$ measures variation of observations around their own group mean.
 :::
 
-The decomposition is useful as the foundation for any test of "do group means differ?": if they do not, $\hat{\text{BSS}}$ should be small relative to $\hat{\text{WSS}}$.
+The decomposition is useful for testing whether group means differ.
+If they do not, $\hat{\text{BSS}}$ should be small relative to $\hat{\text{WSS}}$.
 The equality holds exactly because the cross-term $\sum_{g,i}(\hat{y}_{ig}-\hat{m}_{Y}(g))(\hat{m}_{Y}(g)-\hat{m}_{Y})$ vanishes, since the within-group deviations sum to zero around their own group mean.
 
 In R, `aov()` fits the ANOVA model and `summary()` returns the standard ANOVA table.
-The ANOVA table reports $\hat{\text{BSS}}$ ("Sum Sq" for `region`), $\hat{\text{WSS}}$ ("Sum Sq" for `Residuals`).
+The ANOVA table reports $\hat{\text{BSS}}$ ("Sum Sq" for `region`) and $\hat{\text{WSS}}$ ("Sum Sq" for `Residuals`).
 ```{r}
 # Fit ANOVA
 fit_aov <- aov(y_hat ~ region)
@@ -226,6 +234,7 @@ For example, suppose we have $G=3$ groups with the following data:
 | 4 | 8 | 5 |
 | 5 | 7 | 6 |
 | 6 | 9 | 7 |
+: Data for Three Groups
 
 Group means: $\hat{m}_{Y}(A) = 5$, $\hat{m}_{Y}(B) = 8$, $\hat{m}_{Y}(C) = 6$.
 Grand mean: $\hat{m}_Y = (5+8+6)/3 = 19/3 \approx 6.33$.
@@ -390,9 +399,9 @@ ANOVA tests whether group *means* differ; sometimes the entire *distributions* d
 When data are skewed, heavy-tailed, or only ordinal, a test built on means may overlook differences that show up in the rank order.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *Kruskal-Wallis test* is a nonparametric test for equal distributions across $G$ groups, testing $H_0: F_1 = F_2 = \dots = F_G$ against $H_A:$ at least one $F_g$ differs (where $F_g$ is the continuous distribution of group $g=1,...G$).
+The *Kruskal-Wallis test* [@KruskalWallis1952] is a nonparametric test for equal distributions across $G$ groups, testing $H_0: F_1 = F_2 = \dots = F_G$ against $H_A:$ at least one $F_g$ differs (where $F_g$ is the continuous distribution of group $g=1,...G$).
 It uses the average ranks within each group rather than the raw observations, so it only requires the data to be ordinal.
-With two groups it reduces to the *Mann-Whitney U* (equivalently *Wilcoxon rank-sum*) test.
+With two groups it reduces to the *Mann-Whitney U* (equivalently *Wilcoxon rank-sum*) test [@Wilcoxon1945; @MannWhitney1947].
 :::
 
 The Kruskal-Wallis test is useful when the equal-variance normal-error assumption is implausible, as with income, response times, or other heavy-tailed outcomes.
@@ -408,7 +417,7 @@ $$\begin{aligned}
 where  $\bar{r} = \frac{n+1}{2}$ is the grand mean rank.
 
 In the special case with only two groups, the Kruskal Wallis test reduces to the *Mann–Whitney U* test (also known as the *Wilcoxon rank-sum* test).
-In this case, we can write the hypotheses in terms of individual outcomes in each group, $Y_i$ in one group $Y_j$ in the other; $H_0: \text{Prob}(Y_i > Y_j)=\text{Prob}(Y_j > Y_i)$  versus $H_A: \text{Prob}(Y_i > Y_j) \neq \text{Prob}(Y_j > Y_i)$.
+In this case, we can write the hypotheses in terms of individual outcomes in each group, $Y_i$ in one group and $Y_j$ in the other: $H_0: \text{Prob}(Y_i > Y_j)=\text{Prob}(Y_j > Y_i)$  versus $H_A: \text{Prob}(Y_i > Y_j) \neq \text{Prob}(Y_j > Y_i)$.
 The corresponding test statistic is
 $$\begin{aligned}
 \hat{U}   &= \min(\hat{U}_1, \hat{U}_2) \\
@@ -427,9 +436,9 @@ kw <- kruskal.test(y_hat ~ region)
 kw
 ```
 
-A significant Kruskal-Wallis result tells us *that* some group differs, not *which*.
+The test above does not tell us *which* regions differ.
 To answer *which*, use a post-hoc pairwise test together with a multiple-comparisons correction.
-Here, `pairwise.wilcox.test()` runs a Mann-Whitney test on each pair of regions, and the Holm correction adjusts the $p$-values for the number of pairs tested.
+Here, `pairwise.wilcox.test()` runs a Mann-Whitney test on each pair of regions, and the Holm correction [@Holm1979] adjusts the $p$-values for the number of pairs tested.
 
 ```{r}
 pairwise.wilcox.test(y_hat, region, p.adjust.method='holm')
@@ -630,7 +639,11 @@ summary(aov(d_hat ~ region))
 
 #### **Recall** {-}
 
-This chapter first described several groups with ECDFs and a table of group means, compared their medians with bootstrap notches on boxplots, and then tested whether the description reflected more than chance.
-ANOVA's decomposition of variation between and within groups produced an $F$-statistic; the worked three-group example with $A=\{4,5,6\}, B=\{8,7,9\}, C=\{5,6,7\}$ made the arithmetic concrete, giving $\hat{\text{BSS}}=14$ and $\hat{\text{WSS}}=6$ by hand, which `aov(y0_hat ~ g0)` reproduces exactly.
+This chapter described several groups with ECDFs and a table of group means.
+We compared their medians with bootstrap notches on boxplots.
+We then tested whether the differences reflected more than chance.
+ANOVA splits variation into between-group and within-group pieces and combines them into an $F$-statistic.
+In the three-group example with $A=\{4,5,6\}, B=\{8,7,9\}, C=\{5,6,7\}$, we found $\hat{\text{BSS}}=14$ and $\hat{\text{WSS}}=6$ by hand.
+The function `aov(y0_hat ~ g0)` gives the same numbers.
 The Kruskal-Wallis test replaced outcomes with ranks when the equal-variance normal-error assumptions were doubtful.
 The categorical ANOVA measured the variation of a factor outcome with one minus the Herfindahl index; for the commutes in two neighborhoods it gave $\hat{\text{TSS}}=5/2$, $\hat{\text{BSS}}=1/2$, and $\hat{\text{WSS}}=2$ by hand.

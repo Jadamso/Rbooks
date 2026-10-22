@@ -7,7 +7,8 @@ set.seed(1)
 ```
 
 This chapter compares two groups: how the distribution of one variable changes across the categories of another.
-We begin with a discrete data and then turn to continuous data where, in both cases, a cardinal outcome $\hat{y}_{i}$ is split into groups by a factor $\hat{x}_{i}$.
+We begin with discrete data and then turn to continuous data.
+In both cases, a cardinal outcome $\hat{y}_{i}$ is split into groups by a factor $\hat{x}_{i}$.
 In each case we summarize the groups, compute a statistic for the difference between them, and test that difference using the resampling methods from [Hypothesis Testing](01_08_HypothesisTests.qmd).
 
 ## Discrete Data
@@ -20,14 +21,15 @@ The *conditional mean* $\hat{m}_{Y}(x)$ is the average value of $\hat{y}_{i}$ in
 $$\hat{m}_{Y}(x)=\sum_{y} y\,\hat{p}(y\mid x).$$
 :::
 
-Comparing $\hat{m}_{Y}(x)$ across values of $x$ is useful as the simplest summary of association between a cardinal outcome and a factor: a single number per subgroup shows whether $\hat{y}$ tends to be higher in one category.
+Comparing $\hat{m}_{Y}(x)$ across values of $x$ is useful as the simplest summary of association between a cardinal outcome and a factor.
+One number per subgroup shows whether $\hat{y}$ tends to be higher in one category.
 The calculation breaks into two steps: row-by-row, compute the conditional distribution $\hat{p}(y\mid x)$, then take its weighted average using the values of $y$.
 
 For example, consider years of schooling (treated as cardinal) across sex in the `Wages1` data from the `Ecdat` package.
 We first split schooling into one group per sex, and then average within each group.
 
 ```{r}
-library('Ecdat')
+data(Wages1, package='Ecdat')
 # Years of schooling within each sex
 D_female <- Wages1[, 'sex'] == 'female'
 y1_hat <- Wages1[D_female, 'school']
@@ -74,6 +76,7 @@ Suppose our data is given in the table shown below.
 | $y=1$ | $12$ | $8$ |
 | $y=2$ | $18$ | $6$ |
 | $y=3$ | $10$ | $16$ |
+: Counts of $y$ by $x$
 
 
 First, we compute conditional probabilities to examine how the distribution changes.
@@ -84,6 +87,7 @@ First, we compute conditional probabilities to examine how the distribution chan
 | $y=2$ | $18/40$ | $6/30$  |
 | $y=3$ | $10/40$ | $16/30$ |
 |       | $40/40$ | $30/30$ |
+: Conditional Proportions of $y$ Given $x$
 
 Second, we apply the conditional-mean formula row by row:
 $$\begin{aligned}
@@ -113,6 +117,7 @@ We then sum up proportions along each row and column to compute the marginals.
 | $y=2$ | $18/70$ | $6/70$  | $24/70$ |
 | $y=3$ | $10/70$ | $16/70$ | $26/70$ |
 | **Marginal *x* **| $40/70$ | $30/70$ | $70/70$|
+: Joint and Marginal Proportions
 
 Second, we compute the overall mean using the marginals
 $$
@@ -135,7 +140,7 @@ The conditional mean summarizes each subgroup with one number, but we can also a
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *conditional quantile* is the [$p$th quantile](01_02_Data.qmd#quantiles) of $\hat{y}_{i}$ inside the subgroup where $\hat{x}_{i}=x$.
-It inverts the conditional ECDF; $\hat{F}_{Y}^{-1}(p \mid x)$.
+It inverts the conditional ECDF and is written $\hat{F}_{Y}^{-1}(p \mid x)$.
 For discrete $\hat{y}$, $\hat{F}_{Y}^{-1}(p \mid x)$ is the smallest $y$ where $\hat{F}_{Y}(y \mid x) \geq p$.
 :::
 
@@ -181,7 +186,7 @@ The basic idea is best seen in a comparison of two samples, which corresponds to
 For example, we might compare the heights of men and women in Canada or the homicide rates in two different American states.
 
 
-We will consider the wages for people with and without completing a degree, again from `Wages1`.
+We will consider the wages for people who did and did not complete a degree, again from `Wages1`.
 To compare the two groups, we start by making a [histogram](01_02_Data.qmd#histogram-density) for each.
 
 ```{r}
@@ -226,9 +231,13 @@ A positive value says the statistic is higher in group 1, zero means no differen
 
 #### **Mean Differences** {-}
 
-The *mean difference* is useful as the workhorse single-number summary of "how different are these two groups, on average", because it is on the same scale as the outcome itself and the natural [null hypothesis](01_08_HypothesisTests.qmd#choosing-a-null) $\hat{d}=0$ corresponds to "no difference in population means".
+The *mean difference* is useful for summarizing how different two groups are on average.
+It is on the same scale as the outcome.
+Its [null hypothesis](01_08_HypothesisTests.qmd#choosing-a-null) is no difference in population means, $H_0: \mathbb{E}[Y_{i1}]=\mathbb{E}[Y_{i2}]$.
 We can test that hypothesis by inverting a confidence interval.
-The code below computes $\hat{m}_1$ and $\hat{m}_2$ from the wage data and reports $\hat{d}$: the university group has the higher mean wage, so $\hat{d}<0$ here, and the next step is asking whether the gap is bigger than sampling noise alone would produce.
+The code below computes $\hat{m}_1$ and $\hat{m}_2$ from the wage data and reports $\hat{d}$.
+The university group has the higher mean wage, so $\hat{d}<0$ here.
+Is the gap bigger than we would expect from sampling noise?
 To answer that, we resample each group separately and recompute $\hat{d}$ each time.
 
 ```{r}
@@ -262,7 +271,7 @@ abline(v=d_hat, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 
-Such tests make purely statistical statements that only speak to how frequent differences are generated by random chance.
+Such tests make purely statistical statements that only speak to how frequently differences are generated by random chance.
 They do not say why there are any differences or how large they are.
 Even on purely statistical grounds, however, we would want to be cautious about making data-driven decisions when
 
@@ -384,17 +393,17 @@ A quantile-quantile plot is another way to compare the two distributions visuall
 To go from a picture of two distributions to a single-number summary of how different they are, we measure the gap between their ECDFs.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *Kolmogorov-Smirnov statistic* $\hat{\text{KS}}$ summarizes the difference between two ECDFs by their single biggest vertical gap, evaluated over the pooled sample $y~\text{in}~\{\hat{y}_{i1}\} \cup \{\hat{y}_{i2}\}$:
+The *Kolmogorov-Smirnov statistic* $\hat{\text{KS}}$ [@Kolmogorov1933; @Smirnov1948] summarizes the difference between two ECDFs by their single biggest vertical gap, evaluated over the pooled sample $y~\text{in}~\{\hat{y}_{i1}\} \cup \{\hat{y}_{i2}\}$:
 $$\hat{\text{KS}} = \max_{y} |\hat{F}_{1}(y)- \hat{F}_{2}(y)|^{p}.$$
 
-The *Cramer-von Mises statistic* $\hat{\text{CVM}}$ instead sums the vertical gaps at every pooled sample point:
+The *Cramer-von Mises statistic* $\hat{\text{CVM}}$ [@Cramer1928; @vonMises1928; @Anderson1962] instead sums the vertical gaps at every pooled sample point:
 $$\hat{\text{CVM}} = \sum_{y} | \hat{F}_{1}(y)- \hat{F}_{2}(y)|^{p}.$$
 
 The integer $p$ is typically $1$ for $\hat{\text{KS}}$ and $2$ for $\hat{\text{CVM}}$.
 :::
 
 $\hat{\text{KS}}$ is useful when we expect distributions to differ by a shift: the gap piles up at one location and the max catches it.
-The cost is that $\hat{\text{KS}}$ can miss differences where small positive and small negative gaps cancel along the support.
+The cost is that $\hat{\text{KS}}$ uses only the single largest gap, so it can miss many small differences spread across the support.
 $\hat{\text{CVM}}$ is useful for accumulated small differences spread across the support, since every pooled sample point contributes to the sum.
 
 ```{r}
@@ -476,6 +485,7 @@ Then compute $\hat{F}_A(x) - \hat{F}_B(x)$ and its square at each of the 8 poole
 | 25 | 3/4 | 3/4 | 0    | 0 |
 | 30 | 4/4 | 3/4 | 1/4  | 1/16 |
 | 35 | 4/4 | 4/4 | 0    | 0 |
+: ECDF Gaps at Each Pooled Value
 
 
 $\text{CVM} = 1/16 + 1/16 + 1/16 + 1/16 = 1/4$.
@@ -520,14 +530,15 @@ plot(sort(yA0_hat), sort(yB0_hat), xlim=ry0, ylim=ry0,
 title('Quantile-Quantile Plot', font.main=1)
 abline(a=0, b=1, lty=2) # 45 degree line: identical distributions
 ```
-The 45° reference line indicates identical distributions: point 1 lies above the line (18,18) and so do points 2 and 4.
+The 45° reference line indicates identical distributions.
+Point 1, $(18,19)$, lies above the line, and so do points 2 and 4.
 :::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Compare the distribution of arrests for two different counties, each with data over time.
 
 ```{r, eval=FALSE}
-library(wooldridge)
+data(countymurders, package='wooldridge')
 countymurders
 ```
 
@@ -544,7 +555,8 @@ A *permutation test* of "no difference between groups" recomputes the test stati
 Because each reshuffle keeps the pooled data but breaks the link between label and outcome, the resulting distribution shows what differences look like under the null of no association.
 :::
 
-The *permutation test* (also called a *randomization test*) is useful whenever the null hypothesis is "no association", because reshuffling labels imposes that null exactly by construction, without needing to assume a distributional form.
+The *permutation test* (also called a *randomization test*) is useful when the null hypothesis is "no association".
+Reshuffling the labels imposes that null, and we do not need to assume a distributional form.
 Every reshuffle uses the same pooled data, so the only variability comes from re-splitting the labels.
 If using a hard decision rule, it is most common to reject the null at the $5\%$ level when $p<0.05$ and fail to reject when $p>0.05$.
 Alternatively, we can reject when the observed statistic falls outside the middle $95\%$ of the permutation distribution, as with the null bootstrap in [Hypothesis Testing](01_08_HypothesisTests.qmd#impose-the-null).
@@ -682,9 +694,13 @@ A permutation test only looks for differences in the statistic it recomputes, so
 
 The same reshuffling tests whether the $\hat{\text{KS}}$ and $\hat{\text{CVM}}$ statistics from [Distributional Comparisons](#distributional-comparisons) are bigger than chance alone would produce.
 To impose the null hypothesis of identical distributions, we permute the group labels: each resample keeps the pooled data but randomly re-splits it into two groups of the original sizes.
-Each permutation that produces a statistic at least as large as the observed one is a case where random label-shuffling alone created a gap this big, so the $p$-value is the fraction of such permutations.
+Some permutations produce a statistic at least as large as the observed one.
+In those cases, random label-shuffling alone created a gap this big.
+The $p$-value is the fraction of such permutations.
 A small $p$-value means the observed gap is hard to explain by chance.
-Both statistics are never negative, and only large values count against the null, so we use a one-sided interval: we reject at the $5\%$ level when the observed statistic exceeds the $95$th percentile of its permutation distribution.
+Both statistics are never negative, and only large values count against the null.
+So we use a one-sided interval.
+We reject at the $5\%$ level when the observed statistic exceeds the $95$th percentile of its permutation distribution.
 
 ```{r}
 # ks_cvm() and the observed statistics stat_obs come from Distributional Comparisons
@@ -734,5 +750,7 @@ round(c(KS_stat=stat_obs[['KS']], KS_crit=perm_crit[['KS']], KS_pval=p_ks,
 
 #### **Recall** {-}
 
-This chapter compared two groups in three ways: mean differences, quantile differences, and distributional comparisons via $\hat{\text{KS}}$ and $\hat{\text{CVM}}$.
-The worked example throughout used wages from the `Wages1` dataset split by schooling (12 vs 16 years), with permutation tests for $p$-values; the small worked example of summer earnings $A=\{18,20,25,30\}$ and $B=\{19,21,24,35\}$ walked through a hand permutation of the mean difference ($\hat{d}=-1.5$, $p\approx 0.77$) and the cell-by-cell $\hat{\text{CVM}}=1/4$ calculation.
+This chapter compared two groups by their means, their quantiles, and their whole distributions using $\hat{\text{KS}}$ and $\hat{\text{CVM}}$.
+The main example compared wages in `Wages1` for workers with 12 and 16 years of schooling, with permutation tests for $p$-values.
+A small example used summer earnings $A=\{18,20,25,30\}$ and $B=\{19,21,24,35\}$.
+By hand, we found $\hat{d}=-1.5$ with a permutation $p$-value of about $0.77$, and computed $\hat{\text{CVM}}=1/4$ cell by cell.

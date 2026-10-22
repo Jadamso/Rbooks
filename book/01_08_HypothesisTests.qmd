@@ -12,7 +12,7 @@ There are two main ways to conduct a *hypothesis test*: inverting a confidence i
 The first treats the distribution of estimates directly; the second explicitly enforces the null hypothesis to evaluate how unusual the observed statistic is.
 Both approaches rely on the bootstrap to approximate sampling variability.
 
-Before either test can run, we have to name the claim being tested and the alternative we would accept if the data spoke against it.
+Before either test can run, we have to name the claim being tested and the alternative we would favor if the data spoke against it [@NeymanPearson1933].
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *null hypothesis* $H_{0}$ is the specific claim about the parameter that we will test.
@@ -22,7 +22,9 @@ The *alternative hypothesis* $H_{A}$ is the competing claim.
 A *two-sided hypothesis test* covers deviations from the null in either direction (alternative values are higher or lower than the null). 
 :::
 
-This setup is useful because it forces a single direction of inference: the data either contradict $H_{0}$ enough to reject it, or they do not, but in no case do they "prove" $H_{A}$.
+This setup is useful because the test only ever asks about $H_{0}$.
+Either the data contradict $H_{0}$ enough to reject it, or they do not.
+The data never "prove" $H_{A}$.
 The most common test concerns the mean, $H_{0}: \mathbb{E}[X_i] = m_0$, where $m_0$ is a hypothesized value.
 The two-sided alternative is $H_A: \mathbb{E}[X_i] \neq m_0$.
 E.g., you hypothesize your stock returns have earnings $m_0=0$ and consider that the returns could truly be either positive or negative.
@@ -39,10 +41,12 @@ Common sources include
 * an earlier value, such as last year's average wage
 * "no effect" or "no change", such as a mean change in store sales of zero after a new layout, which is the most common null in practice
 
+For example, @AdamsonKimbrough2023 and @AdamsonWilson2024 test whether the estimates from their laboratory experiments equal the values an economic model predicts, rather than zero [@LehmannRomano2005].
+
 A null chosen after seeing the data is circular: you could always pick a value that the data already contradict and then reject it.
 
 Whatever its source, the null makes a specific claim, such as a single value for the mean.
-That is what lets us compute how the statistic would vary if the null were true.
+Because the claim is specific, we can compute how the statistic would vary if the null were true.
 The alternative covers a whole range of values, so there is no single sampling distribution to compute under it.
 This is also why the claim you hope to support usually goes in $H_{A}$: the only strong conclusion a test can deliver is to reject $H_{0}$.
 
@@ -61,7 +65,9 @@ The rejection region is useful as a decision rule that mirrors how we read a con
 * reject $H_{0}$ if the hypothesized value falls outside the interval (it is in the rejection region)
 * fail to reject $H_{0}$ if it falls inside
 
-A $95\%$ confidence interval corresponds to a $5\%$ rejection region split between the two tails, which links the test level directly to the coverage of the interval (see the previous [Confidence Intervals chapter](01_07_Intervals.qmd) for how the interval is computed).
+A $95\%$ confidence interval corresponds to a $5\%$ rejection region split between the two tails.
+So a test at level $\alpha$ uses an interval with coverage $1-\alpha$.
+See the previous [Confidence Intervals chapter](01_07_Intervals.qmd) for how the interval is computed.
 
 For example, suppose you hypothesize the mean murder arrest rate is $9$ per $100{,}000$.
 You then construct a bootstrap distribution with $95\%$ confidence interval, and find your hypothesized value falls outside of the confidence interval.
@@ -162,7 +168,8 @@ The interval comfortably contains both $70\%$ and $85\%$, so the student can rej
 
 The deeper issue is what the bootstrap resample actually represents.
 Resampling only reshuffles the same $44$ questions, so it approximates how the score would vary if the student retook that exact exam.
-It says nothing about how the student would do on a genuinely different exam with different questions, which is the sampling distribution the student actually needs to make their case.
+It says nothing about how the student would do on a different exam with different questions.
+The student needs that sampling distribution to make their case.
 Estimating that sampling distribution properly needs new, independent samples: more exams, not more resamples of one exam, and that is a cost the student is unlikely to accept for the rest of the semester.
 :::
 
@@ -176,7 +183,8 @@ We then calculate the range of the statistic across all resamples and compare ho
 
 For example, suppose you again hypothesize the mean murder arrest rate is $9$.
 You then construct a $95\%$ confidence interval around the *null* bootstrap distribution (resamples centered around $9$).
-If your sample mean falls outside of that interval, then even after accounting for sampling variability (which you estimate), it seems extremely unlikely that the theoretical mean actually equals $9$, so you reject that hypothesis.
+Suppose your sample mean falls outside of that interval.
+Then even after accounting for sampling variability (which you estimate), it seems extremely unlikely that the theoretical mean actually equals $9$, so you reject that hypothesis.
 (If the sample mean landed in the interval, you would "fail to reject" the theoretical mean equals $9$.)
 
 ```{r}
@@ -323,7 +331,7 @@ Testing $H_{0}: p=0.70$ the same way would also fail to reject: the $p$-value is
 :::
 
 
-You can conduct hypothesis test using $p$-values instead of confidence intervals.
+You can conduct a hypothesis test using $p$-values instead of confidence intervals.
 It is common to use this decision rule:
 
 * reject the null at the $5\%$ level if $p \leq 0.05$
@@ -335,20 +343,24 @@ Beware of a common misreading of the $p$-value as "the probability the null is t
 That is false.
 A $p$-value is the frequency you see something at least as extreme as your statistic under the null hypothesis.
 
-Failing to reject $H_{0}$ does not show that $H_{0}$ is true.
+Failing to reject $H_{0}$ does not show that $H_{0}$ is true [@AltmanBland1995; @Abadie2020].
 In the exam example, the data rejected neither $70\%$ nor $85\%$, yet the student's true score cannot be both.
 A large $p$-value can simply mean that the sample is too small to tell nearby values apart.
 This is one reason why we say "fail to reject" rather than "accept".
 Another reason is that we can "fail to reject" multiple different hypotheses, and "accepting" them all would be nonsense.
 E.g., we cannot accept the mean is both $4$ and $2$ even if both fall inside of a confidence interval.
+@Adamson2025_Greece makes this point about earlier work that "ruled out" trade because a proxy for trade was statistically insignificant.
+As the paper puts it, "the absence of evidence is not evidence of absence."
 
 Often, one may also see or hear "$p<.05$: statistically significant" and "$p>.05$: not statistically significant".
 That is decision making on purely statistical grounds, and it may or may not be suitable for your context.
 You simply need to know that whoever says those things is using $5\%$ as a critical value to reject a null hypothesis.
 
+A rejection also does not mean the null is far from the truth [@McCloskeyZiliak1996; @WassersteinEtAl2016; @Imbens2021].
+
 Running many hypothesis tests inflates the chance of a false rejection.
 At the $5\%$ level, you expect roughly $1$ in $20$ true nulls to be rejected by chance alone, so if you test $20$ independent nulls and find $1$ "significant" result, that result is what you would expect even when every null is true.
-The fix is to correct the level (e.g., Bonferroni: use $0.05/k$ when running $k$ tests) or to pre-specify a small set of hypotheses before looking at the data.
+The fix is to correct the level (e.g., @Bonferroni1936: use $0.05/k$ when running $k$ tests) or to pre-specify a small set of hypotheses before looking at the data.
 
 ```{r}
 # Purely-Statistical Decision Making
@@ -432,7 +444,9 @@ $$t = \frac{M - m_0}{\text{SE}(M)}.$$
 Using a standardized statistic makes results comparable across studies and connects to a well-studied reference distribution (Normal in large samples, Student's $t$ in small).
 :::
 
-The $t$-value is useful as a portable *test statistic*: a $t$ of $2.05$ has roughly the same evidentiary weight whether the underlying data are measured in dollars, hours, or grams, because the units cancel between numerator and denominator.
+The $t$-value is useful as a *test statistic* that does not depend on units.
+The units cancel between the numerator and the denominator.
+So a $t$ of $2.05$ means roughly the same thing whether the data are measured in dollars or hours.
 For any specific sample we must approximate the standard error.
 Using the theory-driven approach, we compute $\hat{t}=(\hat{m}-m_0)/(\hat{s}/\sqrt{n})$.
 Using the data-driven approach, we compute $\hat{t}=(\hat{m}-m_0)/(\hat{\text{SE}}^{\text{jack}})$ or $\hat{t}=(\hat{m}-m_0)/(\hat{\text{SE}}^{\text{boot}})$.
@@ -514,6 +528,63 @@ There are several benefits to this statistic:
 * makes the null distribution theoretically known asymptotically (approximately)
 
 The last point implies we are typically dealing with a normal distribution that is well-studied, or another well-studied distribution derived from it.
+Because $\hat{t}$ is comparable across tests, many null distributions can share one figure.
+For example, @Adamson2022_EAUP summarizes many simulated null distributions of $t$-values [@Hope1968; @BesagDiggle1977; @baddeley2015] with "spreadplots".
+Each spreadplot draws the range as a black line, the middle $95\%$ between the $0.025$ and $0.975$ quantiles as a thick grey bar, and the median as a white line.
+The observed $t$-values appear as points, with reference lines at $0$ and $\pm 1.96$.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Make a spreadplot for three tests at once.
+In `USArrests`, test the nulls $\mathbb{E}[X_i]=9$ for `Murder`, $\mathbb{E}[X_i]=150$ for `Assault`, and $\mathbb{E}[X_i]=70$ for `UrbanPop`.
+The three means are on very different scales, but their $\hat{t}$ values are not.
+For each variable, compute $\hat{t}$ and bootstrap its null distribution as above.
+Then draw one spreadplot per variable and add each observed $\hat{t}$ as a point.
+Which nulls would you reject at the $5\%$ level?
+Does the answer change if you use $\pm 1.96$ instead of the bootstrap bands?
+```{r}
+# t-statistic with a jackknife standard error, as above
+t_jack <- function(x_hat, null_mean) {
+    jack_means <- rep(NA, length(x_hat))
+    for (i in seq_along(jack_means)) {
+        jack_means[i] <- mean(x_hat[-i])
+    }
+    jackknife_se <- sd(jack_means) * sqrt(length(x_hat))
+    t_hat <- (mean(x_hat) - null_mean) / jackknife_se
+    return(t_hat)
+}
+
+# One null for each variable, on very different scales
+null_means <- c(Murder=9, Assault=150, UrbanPop=70)
+
+# Observed t and its bootstrap null distribution for each variable
+n_boot <- 999
+t_hats <- rep(NA, length(null_means))
+boot_t_nulls <- matrix(NA, nrow=n_boot, ncol=length(null_means))
+for (k in seq_along(null_means)) {
+    x_k_hat <- USArrests[, names(null_means)[k]]
+    t_hats[k] <- t_jack(x_k_hat, null_means[k])
+    for (b in seq(n_boot)) {
+        x_boot <- sample(x_k_hat, replace=TRUE)
+        x_boot <- x_boot + (null_means[k] - mean(x_k_hat)) # impose the null by recentering
+        boot_t_nulls[b, k] <- t_jack(x_boot, null_means[k])
+    }
+}
+
+# Spreadplot: range as a black line, middle 95% as a grey bar, median as a white line
+plot(NA, xlim=c(0.5, length(null_means) + 0.5), ylim=range(boot_t_nulls, t_hats),
+    xaxt='n', xlab=NA, ylab=expression(hat(t)), main=NA)
+axis(1, at=seq_along(null_means), labels=names(null_means))
+abline(h=0, col=rgb(0, 0, 0, .8), lty=2)           # zero line
+abline(h=c(-1.96, 1.96), col=grey(0.5), lty=3)     # Normal critical values
+for (k in seq_along(null_means)) {
+    t_q <- quantile(boot_t_nulls[, k], probs=c(0, 0.025, 0.5, 0.975, 1))
+    segments(k, t_q[1], k, t_q[5], col=rgb(0, 0, 0, .8))
+    rect(k - 0.1, t_q[2], k + 0.1, t_q[4], col=grey(0.6), border=NA)
+    segments(k - 0.1, t_q[3], k + 0.1, t_q[3], col='white', lwd=2)
+}
+points(seq_along(null_means), t_hats, pch=16, col=rgb(1, 0, 0, .8)) # observed t
+```
+:::
 
 #### **Quantiles and Shape Statistics** {-}
 
@@ -688,5 +759,7 @@ ecdf( boot_means_null )( m_hat)
 
 #### **Recall** {-}
 
-This chapter built *hypothesis tests* two ways (*invert a CI* and *impose the null*), introduced the *$p$-value* and the *$t$-value*, and flagged the multiple-comparisons pitfall.
+We built *hypothesis tests* in two ways, *invert a CI* and *impose the null*.
+We also summarized the evidence with the *$p$-value* and the *$t$-value*.
+Running many tests inflates the chance of a false rejection.
 The fitness-tracker example tied these ideas together: with $\hat{m}=8492$, $\hat{s}=1200$, and $n=25$, the standard error is $\text{SE} = 1200/\sqrt{25} = 240$ and the $t$-value for $H_{0}: \mathbb{E}[X_i] = 8000$ is $(8492 - 8000)/240 \approx 2.05$, which exceeds the right-tail critical value $1.645$ at the $5\%$ level and so rejects the null.

@@ -8,7 +8,9 @@ set.seed(1)
 
 A fitted regression should be audited before its coefficients are reported.
 This chapter walks through that audit in two stages: the four standard diagnostic plots for outliers, collinearity, and residual structure, and then data transformations that can sometimes rescue a misspecified model.
-Before either stage, look at the raw data with the scatterplot matrices and conditioning plots from [Multivariate Distributions](03_22_MultivariateDistributions.qmd#scatterplot-matrices): nonlinear patterns, outliers, and explanatory variables that carry almost the same information are often visible before any model is fit.
+Before either stage, look at the raw data with the scatterplot matrices and conditioning plots from [Multivariate Distributions](03_22_MultivariateDistributions.qmd#scatterplot-matrices).
+Nonlinear patterns and outliers are often visible before any model is fit.
+So are explanatory variables that carry almost the same information.
 
 ## Model Diagnostics
 
@@ -32,18 +34,24 @@ Eyeballing the plot will not tell us which ones actually move the fit, so we nee
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 For a regression with $n$ observations and $K$ explanatory variables (so $K+1$ coefficients):
 
-The *leverage* $h_i~\text{in}~[0, 1]$ of observation $i$ measures how unusual its predictor values $\hat{x}_i$ are relative to the rest of the sample: small $h_i$ when $\hat{x}_i$ sits near the centre of the predictor cloud, large $h_i$ when it sits at the edges.
-Equivalently, $h_i$ is the share of the fitted value $\hat{y}_i^{\mathrm{fit}}$ that is determined by $\hat{y}_i$ itself rather than by the other observations, and the $h_i$ across the sample sum to the number of coefficients $K+1$.
+The *leverage* $h_i~\text{in}~[0, 1]$ of observation $i$ measures how unusual its predictor values $\hat{x}_i$ are relative to the rest of the sample.
+It is small when $\hat{x}_i$ sits near the centre of the predictor cloud and large when $\hat{x}_i$ sits at the edges.
+Equivalently, $h_i$ is the share of the fitted value $\hat{y}_i^{\mathrm{fit}}$ that is determined by $\hat{y}_i$ itself rather than by the other observations.
+Across the sample, the $h_i$ sum to the number of coefficients $K+1$.
 
 The *standardized residual* $r_i = \hat{e}_i / (s^{(-i)}\sqrt{1-h_i})$ rescales the raw residual by an estimate of its standard deviation, where $s^{(-i)}$ is the root mean squared error of a regression with observation $i$ removed.
 
-*Cook's Distance* sums all prediction changes when observation $i$ is removed, scaled by the mean square error:
+*Cook's Distance* [@Cook1977] sums all prediction changes when observation $i$ is removed, scaled by the mean square error:
 $$D_{i} = \frac{\sum_{j} \left( \hat{y}_j^{\mathrm{fit}} - \hat{y}_j^{\mathrm{fit}(-i)} \right)^2 }{ (K+1) \hat{s}^2 } = \frac{\hat{e}_{i}^2}{(K+1) \hat{s}^2 } \frac{h_i}{(1-h_i)^2}, \quad \hat{s}^2 = \frac{\sum_{i} \hat{e}_{i}^2}{n-K-1}.$$
 In Cook's distance, the subscript $j$ identifies the prediction target and the superscript $(-i)$ identifies the observation omitted from the fit.
 :::
 
-These three statistics are useful for triage: *leverage* flags points whose $\hat{x}_i$ is unusual, the *standardized residual* flags points whose $\hat{y}_i$ is far from prediction, and *Cook's Distance* combines both into one number that says how much the overall fit depends on each observation.
-The first diagnostic plot (residuals vs fitted) is the picture for outliers in the outcome, and the fourth (residuals vs leverage with Cook's contours) is the picture for outliers in $\hat{x}_{i}$; both can but do not have to be problematic.
+These three statistics are useful for finding observations that deserve a closer look.
+*Leverage* flags points whose $\hat{x}_i$ is unusual, and the *standardized residual* flags points whose $\hat{y}_i$ is far from its prediction.
+*Cook's Distance* combines both into one number that says how much the overall fit depends on each observation.
+The first diagnostic plot (residuals vs fitted) shows outliers in the outcome.
+The fourth (residuals vs leverage with Cook's contours) shows outliers in $\hat{x}_{i}$.
+Both kinds of outliers can be problematic, but they do not have to be.
 
 ```{r}
 N <- 40
@@ -104,11 +112,13 @@ When two regressors carry nearly the same information, OLS cannot tell their sep
 *Collinearity* is when one explanatory variable can be closely predicted by a linear combination of the others.
 The *Variance Inflation Factor* for variable $k$,
 $$\hat{\text{VIF}}_{k}=\frac{1}{1-\hat{R}^2_{k}},$$
-quantifies how much collinearity inflates the variance of $\hat{b}_{k}$ compared to the no-collinearity case, where $\hat{R}^2_{k}$ comes from regressing $\hat{x}_{k}$ on the other covariates $\hat{x}_{-k}$ (a regression that does not involve the response variable $\hat{y}$).
+quantifies how much collinearity inflates the variance of $\hat{b}_{k}$ compared to the no-collinearity case.
+Here $\hat{R}^2_{k}$ comes from regressing $\hat{x}_{k}$ on the other covariates $\hat{x}_{-k}$, a regression that does not involve the response variable $\hat{y}$.
 :::
 
 The *Variance Inflation Factor* is useful as a quick diagnostic for overlapping information between regressors: a $\hat{\text{VIF}}_{k}$ near $1$ means $\hat{x}_{k}$ is uncorrelated with the others, and a common rule of thumb flags $\sqrt{\hat{\text{VIF}}_{k}} > 2$.
-Collinearity does not bias the coefficients, it only widens their standard errors so that coefficient estimates may change erratically in response to small changes in the model or the data; in the extreme case with more variables than observations ($K>n$), the linear model has infinitely many solutions.
+Collinearity does not bias the coefficients; it only widens their standard errors so that coefficient estimates may change erratically in response to small changes in the model or the data.
+In the extreme case with more coefficients than observations ($K+1>n$), the linear model has infinitely many solutions.
 ```{r}
 # Variance Inflation Factor from its definition: VIF_k = 1/(1 - R^2_k),
 # where R^2_k comes from regressing covariate k on the other covariates.
@@ -161,7 +171,7 @@ OLS treats the error variance as constant across observations, and when that ass
 
 Detecting heteroskedasticity is useful because the standard errors that R reports by default rely on a homoskedasticity assumption.
 If that assumption fails, every $p$-value and confidence interval based on those standard errors is wrong too, and typically too narrow.
-The third diagnostic plot (scale-location) is the visual check; the *Breusch-Pagan test* below is a numerical alternative, whose $p$-value comes from a [chi-squared](01_09_AdvancedProbability.qmd#f) distribution.
+The third diagnostic plot (scale-location) is the visual check; the *Breusch-Pagan test* [@BreuschPagan1979] below is a numerical alternative, whose $p$-value comes from a [chi-squared](01_09_AdvancedProbability.qmd#f) distribution.
 ```{r}
 # Breusch-Pagan test for heteroskedasticity, by hand.
 # Regress the squared residuals on the original regressors:
@@ -187,21 +197,22 @@ Why does heteroskedasticity leave the OLS coefficients unbiased, but make the us
 
 Transforming variables can often improve your model fit while still estimating it via OLS.
 This is because OLS only requires the model to be "linear in the parameters".
-Under the assumptions of the model is correctly specified, the following table is how we can interpret the coefficients of the transformed data.
+Under the assumption that the model is correctly specified, the following table is how we can interpret the coefficients of the transformed data.
 (Note for small changes, $\Delta \log(x) \approx \Delta x / x = \Delta x \% \cdot 100$.)
-
 | *Specification* | *Regressand* | *Regressor* | *Derivative* | *Interpretation (If True)* |
 | --- | --- | --- | --- | --- |
 | linear--linear | $y$          | $x$   | $\Delta y = \beta_1\cdot\Delta x$ | Change $x$ by one unit $\rightarrow$ change $y$ by $\beta_1$ units.|
 | log--linear | $\log(y)$ | $x$ | $\Delta y \% \cdot 100 \approx \beta_1 \cdot \Delta x$ | Change $x$ by one unit $\rightarrow$ change $y$ by $100 \cdot \beta_1$ percent. |
 | linear--log | $y$ | $\log(x)$ | $\Delta y \approx  \frac{\beta_1}{100}\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\frac{\beta_1}{100}$ units |
 | log--log | $\log(y)$ | $\log(x)$ | $\Delta y \% \approx \beta_1\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\beta_1$ percent|
+: Interpreting Coefficients in Log Specifications
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Suppose you estimate $\log(y) = 2.1 + 0.08 \cdot x$.
 The coefficient $0.08$ means that a one-unit increase in $x$ is associated with an approximate $100 \times 0.08 = 8\%$ increase in $y$.
 If instead you estimate $\log(y) = 1.5 + 0.6 \cdot \log(x)$, the coefficient $0.6$ is an *elasticity*: a $1\%$ increase in $x$ is associated with a $0.6\%$ increase in $y$.
 :::
+
 
 Now recall from micro theory that an additively separable and linear production function is referred to as "perfect substitutes".
 With a linear model and untransformed data, you have implicitly modelled the different regressors $X_{ik}$ as perfect substitutes.
@@ -212,26 +223,41 @@ Further recall that the "perfect substitutes" model is a special case of the con
 When linear-linear, log-log, and other named specifications are all plausible, we want one estimation procedure that searches across them rather than committing to one ex ante.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *Box-Cox transformation* is a family of power transformations of the outcome (indexed by $\lambda$) and the regressors (indexed by $\rho$), fit to the regression $Y^{(\lambda)}_{i} = \sum_{k=1}^{K} \beta_{k} X^{(\rho)}_{ik} + \epsilon_{i}$ where
-$$Y^{(\lambda)}_{i} = \begin{cases} \lambda^{-1}\left[ (Y_i+1)^{\lambda}- 1\right] & \lambda \neq 0 \\ \log(Y_i+1) & \lambda=0 \end{cases}, \quad X^{(\rho)}_{i} = \begin{cases} \rho^{-1}\left[ (X_i)^{\rho}- 1\right] & \rho \neq 0 \\ \log(X_{i}+1) & \rho=0 \end{cases}.$$
-It nests the linear ($\rho=\lambda=1$) and log ($\rho=\lambda=0$) specifications as special cases.
+The *Box-Cox transformation* [@BoxCox1964] is a family of power transformations of the outcome (indexed by $\lambda$) and the regressors (indexed by $\rho$), fit to the regression $Y^{(\lambda)}_{i} = \sum_{k=1}^{K} \beta_{k} X^{(\rho)}_{ik} + \epsilon_{i}$ where
+$$\begin{aligned}
+Y^{(\lambda)}_{i} &= \begin{cases}
+  \lambda^{-1}\left[ Y_i^{\lambda}- 1\right] & \lambda \neq 0 \\
+  \log(Y_i) & \lambda=0 \end{cases}\\
+X^{(\rho)}_{i} &= \begin{cases}
+  \rho^{-1}\left[ X_i^{\rho}- 1\right] & \rho \neq 0 \\
+  \log(X_{i}) & \rho=0 \end{cases}.
+\end{aligned}$$
 :::
 
-The Box-Cox family is useful when no single named specification is obviously right and we want the data to choose between linear, log, and intermediate fits by minimizing prediction error on the original scale (see <http://dx.doi.org/10.2139/ssrn.3917397>).
-The family also nests:
+The Box-Cox family is useful when no single named specification is obviously right.
+It nests the above specifications as special cases.
 
- * linear-log $(\rho=1, \lambda=0)$.
- * log-linear $(\rho=0, \lambda=1)$.
+ * linear-linear ($\rho=\lambda=1$)
+ * linear-log $(\lambda=1, \rho=0)$.
+ * log-linear $(\lambda=0, \rho=1)$.
+ * log-log ($\rho=\lambda=0$)
 
+We let the data choose between linear, log, and intermediate fits by minimizing prediction error on the original scale [@BoxCox1964; @Wooldridge1992; @Adamson2025_Greece].
 When $\rho=\lambda$ we get the CES production function, which spans the "perfect substitutes" linear-linear model and the "cobb-douglas" log-log model among others.
-In this CES case, $\rho~\text{in}~(-\infty,1]$ controls the *substitutability* of explanatory variables ($\rho<0$ is "complementary") and $\lambda$ governs the *returns to scale* ($\lambda<1$ is "decreasing returns").
+In this CES case, $\rho~\text{in}~(-\infty,1]$ controls the *substitutability* of explanatory variables ($\rho<0$ is "complementary").
+The *returns to scale* depend on the coefficients as well as on $\rho$ and $\lambda$, so $\lambda$ alone does not set them.
+In the log-log case, the returns to scale equal $\sum_{k} \beta_{k}$, and $\sum_{k} \beta_{k}<1$ is "decreasing returns".^[
+One can also use the "shifted" family of Box and Cox. 
+Coefficients from such a regression depend on the units of the outcome, so they should not be read as percentage changes [@BellemareWichman2020; @ChenRoth2024].
+]
+
 
 We compute the mean squared error in the original scale by inverting the predictions;
 $$
 \hat{y}_{i}^{\mathrm{fit}} =
 \begin{cases}
-\left[ \hat{y}_{i}^{\mathrm{fit},(\lambda)} \cdot \lambda \right]^{1/\lambda} -1 & \lambda  \neq 0 \\
-\exp\left( \hat{y}_{i}^{\mathrm{fit},(\lambda)} \right) -1 &  \lambda=0
+\left[ \lambda \cdot \hat{y}_{i}^{\mathrm{fit},(\lambda)} + 1 \right]^{1/\lambda} & \lambda  \neq 0 \\
+\exp\left( \hat{y}_{i}^{\mathrm{fit},(\lambda)} \right) &  \lambda=0
 \end{cases}.
 $$
 
@@ -243,20 +269,20 @@ We then find the $(\rho,\lambda)$ which minimizes $\text{MSE}$.
 # Box-Cox Transformation Function
 bxcx <- function( xy, rho){
     if (rho == 0L) {
-      log(xy+1)
+      log(xy)
     } else if(rho == 1L){
       xy
     } else {
-      ((xy+1)^rho - 1)/rho
+      (xy^rho - 1)/rho
     }
 }
 bxcx_inv <- function( xy, rho){
     if (rho == 0L) {
-      exp(xy) - 1
+      exp(xy)
     } else if(rho == 1L){
       xy
     } else {
-     (xy * rho + 1)^(1/rho) - 1
+     (xy * rho + 1)^(1/rho)
     }
 }
 
@@ -302,13 +328,13 @@ text(x=1.5, y=seq(1, 0, l=10), cex=.5,
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 The grid search finds the $(\rho, \lambda)$ that minimizes MSE.
-But the task notes that simple values like $-1, 0, 1, 2$ are easier to interpret.
+But simple values like $-1, 0, 1, 2$ are easier to interpret.
 When might you choose an interpretable transformation over the MSE-minimizing one?
 What is the trade-off?
 :::
 
 The parameters $-1,0,1,2$ are easy to interpret and might be selected instead if there is only a small loss in fit.
-(In the above example, we might choose $\lambda=0$ instead of the $\lambda$ which minimized the mean square error).
+(In the above example, the log-log model $(\rho=\lambda=0)$ fits worse than the linear model $(\rho=\lambda=1)$, so the loss in fit is too large to choose it.)
 You can also plot the specific predictions to better understand the effect of data  transformation beyond mean squared error.
 
 ```{r}
@@ -333,14 +359,16 @@ We can compare the fit on the original scale: the grid-search optimum versus the
 ```{r}
 # Compare prediction MSE on the original Murder scale
 mse_linear <- mean(resid(reg)^2)
-mse_boxcox <- min(rl_df$mse)
-c(rl0, mse_linear=round(mse_linear, 3), mse_boxcox=round(mse_boxcox, 3))
+mse_boxcox <- min(rl_df$mse, na.rm=TRUE)
+mse_loglog <- rl_df$mse[rl_df$rho == 0 & rl_df$lambda == 0]
+c(rl0, mse_linear=round(mse_linear, 3), mse_boxcox=round(mse_boxcox, 3),
+    mse_loglog=round(mse_loglog, 3))
 ```
 The Box-Cox grid lowers the prediction MSE relative to the linear baseline, at the cost of two extra parameters and a less direct interpretation of the coefficients.
 
 When explicitly transforming data according to $\lambda$ and $\rho$, these parameters increase the degrees of freedom by two.
 The default hypothesis testing procedures do not account for you trying out different transformations, and should be adjusted by the increased degrees of freedom.
-*Specification searches* deflate standard errors and are a major source for false discoveries.
+*Specification searches* deflate standard errors and are a major source for [false discoveries](02_19_BivariateProbability.qmd#type-i-and-type-ii-errors).
 
 Note that if you are ultimately interested in the outcome $Y_{i}$, then transforming/untransforming $Y_{i}$ can introduce a bias.
 To understand when you might be better off sticking with an untransformed outcome variable, see the literature on "smearing".
@@ -362,7 +390,7 @@ To understand when you might be better off sticking with an untransformed outcom
    Identify the state with the highest leverage (using `hatvalues()`) and the state with the largest standardized residual (using `rstandard()`).
    Are they the same state?
 
-4. Fit the model `lm(Murder ~ Assault + UrbanPop, data=xy_hat)` and then fit a log-linear version `lm(log(Murder + 1) ~ Assault + UrbanPop, data=xy_hat)`.
+4. Fit the model `lm(Murder ~ Assault + UrbanPop, data=xy_hat)` and then fit a log-linear version `lm(log(Murder) ~ Assault + UrbanPop, data=xy_hat)`.
    Compare the two models by computing the mean squared prediction error in the original (untransformed) scale for each.
    Which specification fits better?
 
@@ -375,5 +403,7 @@ To understand when you might be better off sticking with an untransformed outcom
 
 #### **Recall** {-}
 
-This chapter audited a fitted regression with four diagnostic plots (outliers, leverage, normality, scale) and three numerical companions: the Variance Inflation Factor for collinearity, the Breusch-Pagan test for heteroskedasticity, and Box-Cox transformations as a way to rescue a misspecified linear model.
+This chapter checked a fitted regression with four diagnostic plots for outliers, leverage, normality, and scale.
+It measured collinearity with the Variance Inflation Factor and tested for heteroskedasticity with the Breusch-Pagan test.
+It then used Box-Cox transformations to try to rescue a misspecified linear model.
 The Box-Cox grid-search on `Murder ~ Assault + UrbanPop` made the trade-off concrete: searching over $(\rho, \lambda)$ on $\{-2, -1.5, \ldots, 2\}^2$ found a fit with lower MSE on the original Murder scale than the untransformed baseline.

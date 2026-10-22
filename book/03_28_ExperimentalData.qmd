@@ -7,7 +7,9 @@ set.seed(1)
 ```
 
 The previous chapter showed how observational data complicate causal inference.
-This chapter introduces the standard remedies: experimental designs that combine *control* (the researcher fixes other factors) and *randomization* (the researcher manipulates one factor independently of the others), together with the quasi-experimental cousins (RDD, DID, 2SLS) that recover causal estimates when full experimental control is unavailable.
+This chapter introduces the standard remedies.
+Experiments combine *control*, where the researcher fixes other factors, and *randomization*, where the researcher manipulates one factor independently of the others.
+Quasi-experimental methods such as RDD, DID, and 2SLS can recover causal estimates when full experimental control is unavailable.
 
 ## Design Basics
 
@@ -22,7 +24,7 @@ What separates an experiment from an observation is the researcher's ability to 
 
 Together control and randomization are useful because they break the correlation between a regressor and the error term that produces endogeneity in observational data.
 They are the only fully reliable way to estimate causal effects.
-You manipulate one explanatory variable while ensuring no other factors change with it, so the manipulated variable is not systematically associated with anything else.
+You manipulate one explanatory variable while ensuring no other factors change with it, so the manipulated variable is not systematically associated with anything else [@Fisher1935].
 
 To be concrete, we will continue with our supply and demand example from the last chapter, and this time introduce a cost shock.
 
@@ -71,11 +73,12 @@ If you have exogenous variation on one side of the market, you can get informati
 For example, lower costs shift out supply (more is produced at given price), allowing you to trace out part of a demand curve. 
 
 To see this, consider an experiment where student subjects are recruited to a classroom and randomly assigned to be either buyers or sellers in a market for little red balls.
-In this case, the classroom environment allows the experimenter to control for various factors (e.g., the temperature of the room is constant for all subjects) and the explicit randomization of subjects means that there are not typically systematic differences in different groups of students.
+In this case, the classroom environment allows the experimenter to control for various factors (e.g., the temperature of the room is constant for all subjects).
+The explicit randomization of subjects means that there are not typically systematic differences in different groups of students.
 
 In the experiment, sellers are given linear "cost functions" that theoretically yield individual supplies like the supply equation from the previous chapter and are paid "price - cost".
 Buyers are given linear "benefit functions" that theoretically yield individual demands like the demand equation from the previous chapter, and are paid "benefit - price".
-The theoretical predictions are therefore given by the supply equation.
+The theoretical predictions are therefore given by the equilibrium of the supply and demand equations from the previous chapter.
 Moreover, experimental manipulation of $\alpha_{S}$ leads to
 $$\begin{aligned}
 \frac{d P^{*}}{d \alpha_{S}} &= \frac{-1}{\beta_{D}+\beta_{S}}, \\
@@ -168,7 +171,7 @@ stargazer::stargazer(regP, regQ,
     header=FALSE)
 ```
 
-Remember that this is effect is *local*: different magnitudes of the cost shock or different demand curves generally yield different estimates.
+Remember that this effect is *local*: different magnitudes of the cost shock or different demand curves generally yield different estimates.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 The RDD estimate measures the effect *at the discontinuity*.
@@ -176,9 +179,11 @@ Why might the effect differ for observations far from the cutoff?
 Give an economic example where a treatment effect varies with distance from the threshold.
 :::
 
-Moreover, note that more than just costs have changed over time: subjects in the later periods have history experience behind them while they do not in earlier periods.
+Moreover, note that more than just costs have changed over time: subjects in the later periods have experience behind them while they do not in earlier periods.
 So hidden variables like "beliefs" are implicitly treated as well.
 This is one concrete reason to have an explicit control group.
+Another remedy is a *crossover* design, where some sessions switch from one treatment to another halfway through and other sessions switch in the opposite order.
+This allows comparisons across sessions as well as within them [@JonesKenward2014].
 
 #### **Difference in Differences** {-}
 
@@ -287,7 +292,9 @@ When experimental units differ on a variable that also predicts the outcome, a f
 *Blocking* partitions experimental units into homogeneous groups before randomly assigning treatment within each group.
 :::
 
-Blocking is useful when the blocking variable predicts the outcome: it buys precision because it removes one source of between-arm variation by construction, ensuring the treatment-control comparison is balanced on the blocking variable.
+Blocking is useful when the blocking variable predicts the outcome.
+Treatment and control groups then always have the same mix of the blocking variable.
+This removes one source of variation between the two groups, so the estimated treatment effect is more precise.
 A fully random ("completely randomized") design works when units are homogeneous but does not protect against accidental imbalance otherwise.
 
 Continuing with supply and demand example, we might manipulate costs (randomize high or low treatments) for companies in different industries (computer services, lumber harvesting).
@@ -313,11 +320,13 @@ table(industry, blocked)
 ```
 
 Notice that the blocked design always returns 10-10 in each industry, whereas the completely randomized design can drift away from that balance from one realization to the next.
-Blocking buys precision when the blocking variable predicts the outcome.
+
+A within-subject design takes blocking to its limit, with each subject as its own block [@Fisher1935].
+Standard errors can then be clustered by session or by matched pair, using a cluster bootstrap or jackknife [@CameronEtAl2008; @CameronMiller2015; @MacKinnonEtAl2023; @MacKinnonEtAl2023_Jackknife; @Hansen2026].
 
 ## Quasi Experiments
 
-*Quasi* or *natural experiments* are historical case studies have the second distinguishing feature of experiments: randomization, but not the first: control.
+*Quasi* or *natural experiments* are historical case studies that have the second distinguishing feature of experiments (randomization) but not the first (control).
 This helps remedy the endogeneity issues in observational data.
 "Instrumental Variables", "RDD", "DID" methods discussed above are used in historical event studies.
 The elementary versions use linear regression, so I can cover them here using our competitive equilibrium example from before.
@@ -348,7 +357,7 @@ For details, see
 You can experiment with the effect of different variances on both OLS and IV in the code below.
 And note that if we had multiple supply shifts and recorded their magnitudes, then we could recover more information about demand, perhaps tracing it out entirely.
 ```{r}
-library(fixest)
+library('fixest')
 
 # Examine
 Egrid <- expand.grid(Ed_sigma=c(.001, .25, 1), Es_sigma=c(.001, .25, 1))
@@ -410,15 +419,15 @@ $$\begin{aligned}
 \hat{q} &= b_{0q} + b_{1q} \hat{p}^{\mathrm{fit}}  + \hat{e}_{q}.
 \end{aligned}$$
 where $\hat{p}^{\mathrm{fit}}$, the predicted value of $\hat{p}$ from the first equation, is used to explain quantity in the second equation.
-In the first regression, we estimate how the cost shock affects prices: $\hat{b}_{1p}$ and then predict prices $\hat{p}^{\mathrm{fit}}$.
-In the second equation, we estimate how the average effect of predicted prices (which are exogenous to demand) affect quantity demanded.
+In the first regression, we estimate how the cost shock affects prices, $\hat{b}_{1p}$, and then predict prices $\hat{p}^{\mathrm{fit}}$.
+In the second equation, we estimate the average effect of predicted prices (which are exogenous to demand) on quantity demanded.
 
-To understand this theoretically, first substitute the equilibrium condition into the supply equation: $Q_{D}=Q_{S}=\alpha_{S}+ \beta_{S} P + E_{S}$, lets us rewrite $P$ as a function of $Q_{D}$.
+To understand this theoretically, first substitute the equilibrium condition into the supply equation, $Q_{D}=Q_{S}=\alpha_{S}+ \beta_{S} P + E_{S}$, which lets us rewrite $P$ as a function of $Q_{D}$.
 This yields two theoretical equations.
 We are using the cost shock to understand the theoretical demand curve.
 $$\begin{aligned}
 P &= -\frac{\alpha_{S}}{{\beta_{S}}} + \frac{Q_{D}}{\beta_{S}} - \frac{E_{S}}{\beta_{S}} \\
-Q_{D} &= \alpha_{D} + \beta_{D} P  + E_{D}.
+Q_{D} &= \alpha_{D} - \beta_{D} P + E_{D}.
 \end{aligned}$$
 ```{r}
 # Two Stage Least Squares Estimate
@@ -428,17 +437,18 @@ reg_2sls <- lm(Q ~ p_fit, data=xy2_new_sim)
 summary(reg_2sls)
 
 # One Stage Instrumental Variables Estimate
-library(fixest)
+library('fixest')
 reg2_iv <- feols(Q ~ 1|P ~ cost, data=xy2_sim)
 summary(reg2_iv)
 ```
 
-The Wald, Heckman, and 2SLS slopes are algebraically identical in this just-identified linear model: each one recovers $-\beta_{D}$ by using the cost shock as the source of exogenous variation in price.
+The Wald [@Wald1940], Heckman [@heckman2000, p. 58], and 2SLS slopes are algebraically identical in this just-identified linear model: each one recovers $-\beta_{D}$ by using the cost shock as the source of exogenous variation in price.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 The 2SLS procedure works in two steps.
 First, regress the endogenous variable (price) on the instrument (cost): this isolates the part of price variation driven by supply shifts.
-Second, regress quantity on the predicted prices from step 1. Because predicted prices reflect only supply-side variation, the second-stage coefficient estimates the demand slope.
+Second, regress quantity on the predicted prices from step 1.
+Because predicted prices reflect only supply-side variation, the second-stage coefficient estimates the demand slope.
 The key requirement is that cost shifts affect quantity *only* through price (the exclusion restriction).
 :::
 
@@ -446,7 +456,7 @@ The key requirement is that cost shifts affect quantity *only* through price (th
 #### **Caveats** {-}
 
 2SLS regression analysis can be very insightful, but I also want to stress some caveats about their practical application.
-Most of which stem directly from the absence of control that true experiments have.
+Most of these stem directly from the absence of control that true experiments have.
 
 * *Instrument exogeneity (Exclusion Restriction):* The instrument must affect outcomes only through the treatment variable (e.g., only supply is affected directly, not demand).
 * *Instrument relevance:* The instrument must be strongly correlated with the endogenous regressor, implying the shock creates meaningful variation.
@@ -456,6 +466,7 @@ Most of which stem directly from the absence of control that true experiments ha
 * *Weak instruments:* Spatial clustering, serial correlation, or network interdependencies can reduce instrument variation, causing weak instruments.
 * *Inference and standard errors:* Spatial or temporal interdependence reduces the effective sample size, making conventional standard errors misleadingly small.
 
+For example, @AdamsonStephenson2026 note that geographic instruments for war plausibly affect productivity directly, which would violate the exclusion restriction [@AngristEtAl1996; @deaton2010; @ConleyEtAl2012; @Mellon2022].
 
 We always get coefficients back when running `feols`, and sometimes the computed p-values are very small.
 The interpretation of those numbers rests on many assumptions, and we are rarely sure that all of these assumptions hold.
@@ -493,4 +504,6 @@ The following resources discuss causal inference methods (IV, RDD, DID) in more 
 #### **Recall** {-}
 
 This chapter introduced the experimental and quasi-experimental tools for recovering causal effects from data with limited control: RDD, DID, blocking, and 2SLS.
-The cost-shock experiment threaded through the chapter made the trade-off explicit: with $\alpha_S = -8$ vs $-6.5$ in `qs_fun`, the Wald, Heckman, and 2SLS estimates of $-\beta_D$ from `feols(Q ~ 1 | P ~ cost, data=xy2_sim)` are algebraically identical and recover the demand slope that pooled OLS confused.
+The cost-shock experiment shifted $\alpha_S$ from $-8$ to $-6.5$ in `qs_fun`.
+The Wald, Heckman, and 2SLS (`feols(Q ~ 1 | P ~ cost, data=xy2_sim)`) estimates of $-\beta_D$ are algebraically identical.
+They recover the demand slope that pooled OLS confused.

@@ -80,17 +80,43 @@ The *least-squares slope* $\hat{b}_{1}$ is useful as the canonical "how much doe
 Equivalently, $\hat{b}_{1} = \hat{r}_{XY} \cdot \hat{s}_{Y}/\hat{s}_{X}$, so the slope is the Pearson correlation rescaled by the ratio of standard deviations.
 The intercept formula then guarantees the fitted line passes through the point of means $(\hat{m}_{X}, \hat{m}_{Y})$.
 
-To derive these, take partial derivatives of the objective with respect to each coefficient and set to zero.
-For the slope:
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Derive the OLS intercept and slope by taking the partial derivative of the objective with respect to each coefficient and setting it to zero.
+
+Start with the intercept.
+By the chain rule, the derivative of each squared term with respect to $b_{0}$ is $-2$ times the residual:
 $$\begin{aligned}
-0 &= \sum_{i=1}^{n} 2\left( \hat{y}_{i} - [b_{0}+b_{1} \hat{x}_{i}] \right) \hat{x}_{i} \\
-\Rightarrow \hat{b}_{1} &= \frac{\sum_{i=1}^{n}(\hat{x}_{i}-\hat{m}_{X})(\hat{y}_{i}-\hat{m}_{Y})}{\sum_{i=1}^{n}(\hat{x}_{i}-\hat{m}_{X})^2} = \frac{\hat{c}_{XY}}{\hat{v}_{X}}.
+0 &= \frac{\partial}{\partial b_{0}} \sum_{i=1}^{n} \left( \hat{y}_{i} - [b_{0}+b_{1} \hat{x}_{i}] \right)^2 \\
+&= \sum_{i=1}^{n} -2\left( \hat{y}_{i} - [b_{0}+b_{1} \hat{x}_{i}] \right).
 \end{aligned}$$
-For the intercept:
+Divide both sides by $-2n$, and use the means $\hat{m}_{X} = \sum_{i=1}^{n}\hat{x}_{i}/n$ and $\hat{m}_{Y} = \sum_{i=1}^{n}\hat{y}_{i}/n$:
 $$\begin{aligned}
-0 &= \sum_{i=1}^{n} 2\left( \hat{y}_{i} - [b_{0}+b_{1} \hat{x}_{i}] \right) \\
-\Rightarrow \hat{b}_{0} &= \hat{m}_{Y}-\hat{b}_{1}\hat{m}_{X} .
+0 &= \frac{1}{n}\sum_{i=1}^{n} \hat{y}_{i} - b_{0} - b_{1} \frac{1}{n}\sum_{i=1}^{n} \hat{x}_{i} \\
+&= \hat{m}_{Y} - b_{0} - b_{1} \hat{m}_{X} \\
+\Rightarrow \hat{b}_{0} &= \hat{m}_{Y} - \hat{b}_{1}\hat{m}_{X}.
 \end{aligned}$$
+
+Now the slope.
+The derivative of each squared term with respect to $b_{1}$ is $-2 \hat{x}_{i}$ times the residual:
+$$\begin{aligned}
+0 &= \frac{\partial}{\partial b_{1}} \sum_{i=1}^{n} \left( \hat{y}_{i} - [b_{0}+b_{1} \hat{x}_{i}] \right)^2 \\
+&= \sum_{i=1}^{n} -2\left( \hat{y}_{i} - [b_{0}+b_{1} \hat{x}_{i}] \right) \hat{x}_{i}.
+\end{aligned}$$
+Divide both sides by $-2$, substitute the intercept $b_{0} = \hat{m}_{Y} - b_{1}\hat{m}_{X}$, and split the sum in two:
+$$\begin{aligned}
+0 &= \sum_{i=1}^{n} \left( [\hat{y}_{i} - \hat{m}_{Y}] - b_{1} [\hat{x}_{i} - \hat{m}_{X}] \right) \hat{x}_{i} \\
+&= \sum_{i=1}^{n} (\hat{y}_{i} - \hat{m}_{Y}) \hat{x}_{i} - b_{1} \sum_{i=1}^{n} (\hat{x}_{i} - \hat{m}_{X}) \hat{x}_{i}.
+\end{aligned}$$
+Deviations from the mean sum to zero, so $\sum_{i=1}^{n} (\hat{y}_{i} - \hat{m}_{Y}) \hat{m}_{X} = 0$ and $\sum_{i=1}^{n} (\hat{x}_{i} - \hat{m}_{X}) \hat{m}_{X} = 0$.
+Subtracting these from the two sums replaces each trailing $\hat{x}_{i}$ with $\hat{x}_{i} - \hat{m}_{X}$:
+$$\begin{aligned}
+0 &= \sum_{i=1}^{n} (\hat{x}_{i} - \hat{m}_{X})(\hat{y}_{i} - \hat{m}_{Y}) - b_{1} \sum_{i=1}^{n} (\hat{x}_{i} - \hat{m}_{X})^2 \\
+\Rightarrow \hat{b}_{1} &= \frac{\sum_{i=1}^{n}(\hat{x}_{i}-\hat{m}_{X})(\hat{y}_{i}-\hat{m}_{Y})}{\sum_{i=1}^{n}(\hat{x}_{i}-\hat{m}_{X})^2}.
+\end{aligned}$$
+Dividing the top and bottom by $n$ gives $\hat{b}_{1} = \hat{c}_{XY}/\hat{v}_{X}$.
+This point is a minimum and not a maximum because each squared residual is U-shaped in the coefficients, so their sum is bowl-shaped in $(b_{0}, b_{1})$ and the only point where both derivatives are zero is the bottom of the bowl.
+:::
+
 We could alternatively find the best-fitting coefficients numerically, by trying out different combinations of $(b_{0}, b_{1})$.
 You can do that in this [example](https://myshiny.duckdns.org/least-squares/), which can help you understand what is happening.
 The computer uses math to compute the answer directly, which is much faster.
@@ -217,7 +243,7 @@ predict(reg0, newdata=data.frame(x_hat=c(2.5)))
 
 ```{r, echo=FALSE}
 # Plot Data and Predictions
-library(plotly)
+library('plotly')
 # Copy the data and attach state names, fitted values, and residuals for hover text
 xy_plot_hat <- xy_hat
 xy_plot_hat[, 'ID'] <- rownames(USArrests)
@@ -263,7 +289,8 @@ $$\hat{R}_{yY}^{2} = \frac{\hat{\text{ESS}}}{\hat{\text{TSS}}}=1-\frac{\hat{\tex
 Equivalently, $\hat{R}_{yY}^{2}$ equals the squared linear correlation between the fitted values $\hat{y}_{i}^{\mathrm{fit}}$ and the actual $\hat{y}_{i}$.
 :::
 
-$R^{2}$ is useful as a single-number summary of how much of the variation in $\hat{y}$ the linear model accounts for: $\hat{R}^{2}=1$ means perfect in-sample fit, $\hat{R}^{2}=0$ means the model does no better than predicting the mean.
+$R^{2}$ is useful as a single-number summary of how much of the variation in $\hat{y}$ the linear model accounts for.
+A value of $\hat{R}^{2}=1$ means perfect in-sample fit, and $\hat{R}^{2}=0$ means the model does no better than predicting the mean.
 Because the bounds are universal, $R^{2}$ values are comparable across studies in the way raw $\hat{\text{RSS}}$ values are not.
 The first qualitative check should still be a plot of the line over the data, since $R^{2}$ is only a summary.
 
@@ -419,8 +446,7 @@ $$
 $$
 Setting the derivative to zero shows that the least-squares constant is the sample mean:
 $$\begin{aligned}
-0 &= -2 \sum_{i=1}^{n} \left( \hat{y}_{i} - b_{0} \right) \\
-\Rightarrow \hat{b}_{0} &= \frac{\sum_{i=1}^{n} \hat{y}_{i}}{n} = \hat{m}_{Y}.
+\hat{b}_{0} &= \frac{\sum_{i=1}^{n} \hat{y}_{i}}{n} = \hat{m}_{Y}.
 \end{aligned}$$
 So every fitted value is the same, $\hat{y}_{i}^{\mathrm{fit}} = \hat{m}_{Y}$.
 Every term of $\hat{\text{ESS}}$ is then zero, so $\hat{R}^{2}=0$, which is the "no better than predicting the mean" benchmark from [Goodness of Fit](#goodness-of-fit).
@@ -444,21 +470,13 @@ Our *simple model through the origin* is
 $$
 \hat{y}_{i}=b_{1}\hat{x}_{i}+\hat{e}_{i},
 $$
-where the *coefficient* $b_{1}$ is a slope with no intercept, and $\hat{x}_{i}, \hat{y}_{i}$ are the data for observation $i$.
-
-Regression through the origin is useful when theory says $\hat{y}$ must be zero whenever $\hat{x}$ is zero, such as a firm's total cost when it has no fixed costs.
-For this model, the OLS problem is
-$$
-\min_{b_{1}} \sum_{i=1}^{n} \left( \hat{y}_{i} - b_{1}\hat{x}_{i} \right)^2.
-$$
-Setting the derivative to zero gives
+where the *coefficient* $b_{1}$ is a slope with no intercept.
+This model is useful when theory says $\hat{y}$ must be zero whenever $\hat{x}$ is zero, such as a firm's total cost when it has no fixed costs.
+Minimizing $\sum_{i=1}^{n} ( \hat{y}_{i} - b_{1}\hat{x}_{i} )^2$ gives
 $$\begin{aligned}
-0 &= -2 \sum_{i=1}^{n} \left( \hat{y}_{i} - b_{1}\hat{x}_{i} \right) \hat{x}_{i} \\
-\Rightarrow \hat{b}_{1} &= \frac{\sum_{i=1}^{n} \hat{x}_{i}\hat{y}_{i}}{\sum_{i=1}^{n} \hat{x}_{i}^{2}}.
+\hat{b}_{1} &= \frac{\sum_{i=1}^{n} \hat{x}_{i}\hat{y}_{i}}{\sum_{i=1}^{n} \hat{x}_{i}^{2}}.
 \end{aligned}$$
 Unlike $\hat{c}_{XY}/\hat{v}_{X}$, this slope does not subtract the means $\hat{m}_{X}$ and $\hat{m}_{Y}$.
-If the unrestricted line already passes through the origin, the restriction changes nothing.
-Otherwise, the slope tilts so that the line can reach $(0, 0)$.
 
 ```{r}
 # Regress without an intercept: '0 +' drops b0 from the model
@@ -468,39 +486,25 @@ coef(reg_origin)
 # Manual verification
 sum(x_hat*y_hat)/sum(x_hat^2)
 
-# Compare with the unrestricted slope
-coef(reg)['x_hat']
-```
-
-```{r}
-# Evaluate all three fitted lines from x=0 to x=100
-x_grid <- c(0, 100)
-y_fit_grid <- predict(reg, newdata=data.frame(x_hat=x_grid))
-y_fit_origin_grid <- predict(reg_origin, newdata=data.frame(x_hat=x_grid))
-y_fit_const_grid <- predict(reg_const, newdata=data.frame(x_hat=x_grid))
-
-# Scatter with the axes extended to the origin
+# Scatter with the axes extended to the origin, then add all three fitted lines
 plot(y_hat ~ x_hat, xy_hat, col=grey(0, .5), pch=16,
-    xlim=c(0, 100), ylim=c(0, max(xy_hat$y_hat)),
+    xlim=c(0, 100), ylim=c(0, max(y_hat)),
     main=NA,
     xlab='Population Share in Urban Area',
     ylab='Murder Arrests per 100K')
-lines(x_grid, y_fit_grid, col=rgb(1, 0, 0, .8), lwd=2)
-lines(x_grid, y_fit_origin_grid, col=rgb(0, 0, 1, .8), lwd=1, lty=2)
-lines(x_grid, y_fit_const_grid, col=rgb(0, 0, 0, .8), lwd=1, lty=2)
+abline(reg, col=rgb(1, 0, 0, .8), lwd=2)
+abline(reg_origin, col=rgb(0, 0, 1, .8), lty=2)
+abline(h=coef(reg_const), col=rgb(0, 0, 0, .8), lty=2)
 legend('topleft', legend=c('Unrestricted', 'Through origin', 'Constant'),
     col=c(rgb(1, 0, 0, .8), rgb(0, 0, 1, .8), rgb(0, 0, 0, .8)),
     lwd=c(2, 1, 1), lty=c(1, 2, 2), bty='n')
 ```
 
-In the murder data, no state has fewer than 32 percent of its people in urban areas, so the restriction pins the line to a point far from the data.
-The slope rises from about 0.02 to about 0.11 to make up for the missing intercept.
+No state is less than 32 percent urban, so the line is pinned to a point far from the data and its slope rises from about 0.02 to about 0.11.
 
-Dropping the intercept also changes how $R^{2}$ behaves.
-The residuals no longer sum to zero, so the decomposition $\hat{\text{TSS}}=\hat{\text{ESS}}+\hat{\text{RSS}}$ no longer holds.
-In the murder data, $\hat{\text{RSS}}$ is larger than $\hat{\text{TSS}}$, so the line through the origin fits worse than the simple constant regression and $1-\hat{\text{RSS}}/\hat{\text{TSS}}$ is negative.
-Even so, `summary()` reports a large $R^{2}$, because for a model without an intercept R measures variation around zero instead of around $\hat{m}_{Y}$.
-So a no-intercept $R^{2}$ cannot be compared with the $R^{2}$ of a model that has an intercept.
+Dropping the intercept also breaks $\hat{\text{TSS}}=\hat{\text{ESS}}+\hat{\text{RSS}}$, because the residuals no longer sum to zero.
+Here the line fits worse than the constant, so $1-\hat{\text{RSS}}/\hat{\text{TSS}}$ is negative.
+`summary()` instead reports a large $R^{2}$ that measures variation around zero instead of around $\hat{m}_{Y}$, so it cannot be compared with the $R^{2}$ of a model that has an intercept.
 
 ```{r}
 # RSS exceeds TSS (computed in Goodness of Fit), so 1-RSS/TSS is negative
@@ -509,7 +513,6 @@ RSS_origin <- sum(resid(reg_origin)^2)
 
 # R instead reports 1-RSS/sum(y^2), which measures variation around zero
 summary(reg_origin)$r.squared
-1 - RSS_origin/sum(y_hat^2)
 ```
 
 
@@ -640,7 +643,7 @@ title('Sample Slopes from the Known Population', font.main=1)
 abline(v=population_slope, col=rgb(0, 0, 1, .8), lty=2)
 ```
 
-We check the CI for both intervals from above: the jackknife Normal interval and the bootstrap percentile interval.
+We check the coverage of both intervals from above: the jackknife Normal interval and the bootstrap percentile interval.
 Inside the resampling loops, we compute each slope as $\hat{c}_{XY}/\hat{v}_{X}$, which gives the same number as `lm` but runs faster.
 
 ```{r}
@@ -792,7 +795,7 @@ abline(v=t_hat, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 Permutations are common when testing against "no association".
-From permuted data, we can calculate a *$p$-value*: the probability you would see something as at least as extreme as your statistic under the null (assuming your null hypothesis was true, see [$p$-values](01_08_HypothesisTests.qmd#p-values)).
+From permuted data, we can calculate a *$p$-value*: the probability you would see something at least as extreme as your statistic under the null (assuming your null hypothesis was true, see [$p$-values](01_08_HypothesisTests.qmd#p-values)).
 We calculate the $p$-value directly from the null distribution.
 Smaller $p$-values suggest more evidence against the null.
 ```{r}
@@ -876,8 +879,8 @@ The observed slope of about $0.56$ is also far outside the middle $95\%$ of perm
 We could also use hard decision rules, such as "$p < 0.05$ is a statistically significant finding".
 However, just like confidence intervals, those hard decision rules can be sensitive to somewhat arbitrary choices (Why Jackknife SE's instead of classical ones? Why test at the $95\%$ level rather than $90\%$?)
 
-"No association" is the [most common null hypothesis](01_08_HypothesisTests.qmd#choosing-a-null) in practice, but we can also use bootstrapping to test against other specific hypotheses: $\beta_1$, the population slope.
-To impose the null in this case, you recenter the sampling distribution around the hypothetical value; $\hat{t} = \frac{\hat{b}_1 - \beta_1}{\hat{\text{SE}}(B_1)}$.^[Under some additional assumptions, the null distribution follows a $t$-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)]
+"No association" is the [most common null hypothesis](01_08_HypothesisTests.qmd#choosing-a-null) in practice, but we can also use bootstrapping to test against other specific hypothesized values of $\beta_1$, the population slope.
+To impose the null in this case, you recenter the sampling distribution around the hypothetical value; $\hat{t} = \frac{\hat{b}_1 - \beta_1}{\hat{\text{SE}}(B_1)}$ [@LehmannRomano2005].^[Under some additional assumptions, the null distribution follows a $t$-distribution. (For more on parametric t-testing based on statistical theory, see <https://www.econometrics-with-r.org/4-lrwor.html>.)]
 In the known-population check above, the population slope is `population_slope`, which we could compute only because we pretended `Wages1` was the whole population.
 
 Although two-sided hypothesis tests are most common, you can also test one-sided hypotheses.
@@ -887,8 +890,8 @@ Although two-sided hypothesis tests are most common, you can also test one-sided
 The same caveats about "correlation is not causation" extend to regression.
 You may be tempted to use the term "the effect", but that interpretation of a regression coefficient assumes the linear model is true.
 If you fit a line to a non-linear relationship, then you will still get back a coefficient even though there is no singular *the* effect: the true relationship is non-linear!
-Also consider a classic example, *Anscombe's Quartet*, which shows four very different datasets that give the same linear regression coefficient.
-Notice that you understand the problem because we used scatterplots to visual the data.^[The same principles holds when comparing two groups: <http://www.stat.columbia.edu/~gelman/research/published/causal_quartet_second_revision.pdf>]
+Also consider a classic example, *Anscombe's Quartet* [@Anscombe1973], which shows four very different datasets that give the same linear regression coefficient.
+Notice that you understand the problem because we used scatterplots to visualize the data.^[The same principle holds when comparing two groups: <http://www.stat.columbia.edu/~gelman/research/published/causal_quartet_second_revision.pdf>]
 
 ```{r}
 # Anscombe's Quartet 
@@ -917,15 +920,15 @@ It is true that linear regression "is the best linear predictor of the nonlinear
 But this is not a carte-blanche justification for OLS, as the best of the bad predictors is still a bad predictor.
 For many economic applications, it is more helpful to think and speak of "dose response curves" instead of "the effect".
 
-While adding interaction terms or squared terms allows one incorporate heterogeneity and non-linearity, they change several features of the model (most of which are not intended).
+While adding interaction terms or squared terms allows one to incorporate heterogeneity and non-linearity, they change several features of the model (most of which are not intended).
 Often, there are nonsensical predicted values.
-For example, if the most of your age data are between $[23,65]$, a quadratic term can imply silly things for people aged $10$ or $90$. 
+For example, if most of your age data are between $[23,65]$, a quadratic term can imply silly things for people aged $10$ or $90$. 
 
 Nonetheless, linear regression provides an important piece of quantitative information that is understood by many.
 All models are an approximation, and sometimes only unimportant nuances are missing from a vanilla linear model.
 Other times, that model can be seriously misleading.
-(This is especially true if your making policy recommendations based on a universal "the effect".)
-As an exploratory tool, linear regession is a good guess but one whose point estimates should not be taken too seriously (in which case, the standard errors are also much less important).
+(This is especially true if you are making policy recommendations based on a universal "the effect".)
+As an exploratory tool, linear regression is a good guess but one whose point estimates should not be taken too seriously (in which case, the standard errors are also much less important).
 Before trying to find a regression specification that makes sense for the entire dataset, explore local relationships.
 
 
@@ -956,5 +959,7 @@ Before trying to find a regression specification that makes sense for the entire
 
 #### **Recall** {-}
 
-This chapter fit a single line to bivariate data: it derived the OLS slope $\hat{b}_{1}=\hat{c}_{XY}/\hat{v}_{X}$ and intercept $\hat{b}_{0}=\hat{m}_{Y}-\hat{b}_{1}\hat{m}_{X}$, measured goodness of fit with $\hat{R}^{2}$, and built confidence intervals and $p$-values via the bootstrap, jackknife, and permutation.
+The OLS line for bivariate data has slope $\hat{b}_{1}=\hat{c}_{XY}/\hat{v}_{X}$ and intercept $\hat{b}_{0}=\hat{m}_{Y}-\hat{b}_{1}\hat{m}_{X}$.
+We measured its goodness of fit with $\hat{R}^{2}$.
+We built confidence intervals and $p$-values by resampling the data with the bootstrap, the jackknife, and permutations.
 The three-observation worked example $\{(1,2),(2,2.5),(3,4)\}$ traced through every step by hand and produced slope $\hat{b}_{1}=1$, intercept $\hat{b}_{0}=5/6$, $\hat{\text{TSS}}=13/6$, $\hat{\text{RSS}}=1/6$, and $\hat{R}^{2}=12/13\approx 0.92$.

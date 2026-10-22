@@ -7,14 +7,16 @@ set.seed(1)
 ```
 
 This chapter collects the remaining multivariate topics that did not fit cleanly into the preceding chapters.
-We cover prediction (including prediction intervals and cross-validation), time-series filtering, arrays and the matrix-form OLS theory and the bias of $\hat{\mathbf{b}}$, and finally multiple testing corrections, the formal remedy for the kind of search-induced false positives raised in [Data Scientism](03_29_DataScientism.qmd).
+We cover prediction, including prediction intervals and [cross-validation](02_18_Gradients.qmd#cross-validation), and time-series filtering.
+We then turn to arrays, the matrix form of OLS, and the bias of $\hat{\mathbf{b}}$.
+Finally, multiple testing corrections address the false positives from searching that [Data Scientism](03_29_DataScientism.qmd) raised.
 
 ## Prediction
 
 #### **Describe vs. Explain vs. Predict**{-}
 
 Understanding whether we aim to *describe*, *explain*, or *predict* is central to empirical analysis.
-The three distinct purposes are to accurately describe empirical patterns, explain why the empirical patterns exist, predict what empirical patterns will exist.
+The three distinct purposes are to accurately describe empirical patterns, explain why the empirical patterns exist, and predict what empirical patterns will exist.
 
 
 | Objective | Core Question | Goal | Methods |
@@ -22,17 +24,20 @@ The three distinct purposes are to accurately describe empirical patterns, expla
 | Describe | What is happening? | Characterize patterns & facts | Summary stats, visualizations, correlations |
 | Explain | Why is it happening? | Establish causal relationships & mechanisms | Theoretical models; experimentation; counterfactual reasoning |
 | Predict | What will happen? | Anticipate outcomes; support decisions that affect the future | Machine learning, treatment effect forecasting, policy simulations
+: Three Objectives of Empirical Analysis
 
 
 
 Here is an example for minimum wages.
 
-* Describe: Studies document that following minimum-wage increases, overall low-wage employment may look roughly stable in the short run, but disaggregated data often show larger employment declines over longer horizons, especially among youths and racial minorities.
-* Explain: Studies investigate economic mechanisms such as (i) whether lower productivity populations are more vulnerable and employers adjust along hiring margins (fewer openings, higher required skills), and (ii) whether effects are larger in sectors like retail/food service where minimum wages bite hardest.
+* Describe: Studies document that following minimum-wage increases, overall low-wage employment may look roughly stable in the short run.
+  But disaggregated data often show larger employment declines over longer horizons, especially among youths and racial minorities.
+* Explain: Studies investigate economic mechanisms.
+  One question is whether lower productivity populations are more vulnerable and employers adjust along hiring margins (fewer openings, higher required skills).
+  Another is whether effects are larger in sectors like retail/food service, where minimum wages bite hardest.
 * Predict: A policy simulation that raises the wage floor incorporates subgroup-specific elasticities to forecast different employment losses  (e.g., unemployment for teenage or black workers and income gains for stayers)
 
-
-The distinctions matter, as they help you recognize that predictive accuracy or good data visualization does not equal causal insight.
+The distinctions matter, as they help you recognize that predictive accuracy or good data visualization does not equal causal insight [@shmueli2010explain].
 You can then better align statistical tools with questions.
 Try remembering this: Describe reality, Explain causes, Predict futures
 
@@ -45,7 +50,7 @@ Which of the three requires the strongest assumptions?
 
 #### **Prediction Intervals** {-}
 
-A confidence interval for the mean [$m_{Y}(x)$](02_18_Inference.qmd#gradients) does not by itself tell us how far a *new* observation at $x$ might land.
+A confidence interval for the mean [$m_{Y}(x)$](02_18_Gradients.qmd#gradients) does not by itself tell us how far a *new* observation at $x$ might land.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 A *prediction interval* for $Y_i$ at $X_i = x$ is a range that captures a stated probability (e.g., 95%) of new observations at that $x$.
@@ -64,7 +69,7 @@ See Davison and Hinkley, chapters 5 and 6 (also Efron and Tibshirani, or Wehrens
 ```{r}
 
 ## Data
-library('wooldridge')
+data(wage2, package='wooldridge')
 xy2_hat <- wage2[, c('educ', 'wage')]
 colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=monthly earnings
 xy2_hat <- xy2_hat[order(xy2_hat[, 'x_hat']), ]
@@ -167,14 +172,16 @@ where $\hat{y}_i^{\mathrm{fit}(-i)}(\hat{x}_{i},h)$ is the model's predicted val
 :::
 
 *Leave-one-out cross-validation* is useful as the simplest computational way to choose bandwidths, and it directly addresses an issue that plagues observational studies in the social sciences: your model explains everything and predicts nothing.
-The score it minimizes is an out-of-sample average, so a too-flexible model that fits in-sample noise will be penalized; minimizing prediction error is not objectively "best" but it is a defensible default when no other criterion is obviously stronger.
+The score it minimizes is an out-of-sample average, so a too-flexible model that fits in-sample noise will be penalized.
+Minimizing prediction error is not objectively "best", but it is a sensible choice when you have no better criterion.
 
 In practice, compare models with cross-validation (below).
-The preferred model is the one with best out-of-sample performance, not the one with the most flexible in-sample fit.
+The preferred model is the one with best out-of-sample performance, not the one with the most flexible in-sample fit [@Stone1974; @HastieEtAl2009; @MullainathanSpiess2017].
+For example, @Adamson2025_Greece compares a local constant regression with a linear model using both in-sample and out-of-sample error.
 The same idea selects bin counts and bandwidths in [Local Relationships](03_26_Regressograms.qmd#model-selection).
 
 ```{r}
-library(wooldridge)
+data(wage2, package='wooldridge')
 # Crossvalidated bandwidth for regression
 xy2_hat <- wage2[, c('educ', 'wage')]
 colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=monthly earnings
@@ -220,6 +227,7 @@ Suppose $n=4$ and, for one bandwidth $h$, leaving out each point in turn gives t
 | 2 | 12 | 14 | -2 |
 | 3 | 15 | 14 | 1 |
 | 4 | 11 | 11 | 0 |
+: Leave-One-Out Prediction Errors
 
 The cross-validation score is the mean squared error: $(1^2 + (-2)^2 + 1^2 + 0^2)/4 = 6/4 = 1.5$.
 Repeating this for several bandwidths, the one with the smallest score is preferred.
@@ -235,7 +243,8 @@ In some cases we want to estimate the level of a time series at $t$ rather than 
 *Filtering* estimates the value of a time series at $t$ using only past observations, $\mathbb{E}[Y_{t} \mid X_{t-1}, X_{t-2}]$; *smoothing* uses both past and future, $\mathbb{E}[Y_{t} \mid X_{t-1}, X_{t+1}]$.
 :::
 
-*Filtering* is useful for forecasting and any online use where the future is genuinely unknown at time $t$, while *smoothing* produces lower-variance estimates and is the right choice for retrospective analysis where the full series is in hand.
+*Filtering* is useful for forecasting, or any time the future is unknown at time $t$.
+*Smoothing* gives lower-variance estimates, so use it to analyze the past when you have the full series.
 The two are otherwise built from the same kernel weights, so the only practical difference is which observations the weights are allowed to touch.
 
 One example of *filtering* is *Exponential Filtering* (sometimes confusingly referred to as "Exponential Smoothing") which weights only previous observations using an exponential kernel.
@@ -305,7 +314,7 @@ title(paste0('One-sided MA, h = ', h_star), font.main=1)
 
 #### **Arrays** {-}
 
-Arrays are generalization of matrices to multiple dimensions.
+Arrays are a generalization of matrices to multiple dimensions.
 They are a very efficient way to store well-formatted numeric data, and are often used in spatial econometrics and time series (often in the form of "data cubes").
 
 ```{r}
@@ -434,7 +443,7 @@ coef(lm(Murder ~ Assault + UrbanPop, data=xy_hat))
 
 #### **Bias** {-}
 
-With matrix notation, we can established that OLS is an unbiased estimator for additively separable and linear relationships.
+With matrix notation, we can establish that OLS is an unbiased estimator for additively separable and linear relationships.
 Assume
 $$\begin{aligned}
 Y_{i} = X_{i} \beta + \epsilon_{i} &\quad \mathbb{E}[\epsilon_{i} | X_{i} ]=0,
@@ -445,7 +454,8 @@ $$\begin{aligned}
 \mathbb{E}\left[ \mathbf{B} \right] &= \mathbb{E}\left[ (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{Y} \right] = \beta + (\mathbf{X}'\mathbf{X})^{-1}\mathbb{E}\left[ \mathbf{X}'\epsilon \right] = \beta
 \end{aligned}$$
 
-If we do not know that the data generating process is additively separable and linear, then we do not know how to interpret $\hat{\mathbf{b}}$ (outside of a very mathematical expression, which I do not cover here).
+If we do not know that the data generating process is additively separable and linear, then we do not know how to interpret $\hat{\mathbf{b}}$.
+There is a very mathematical expression for it, which I do not cover here.
 If we run a local linear regression analysis, on the other hand, we get the estimator
 $$\begin{aligned}
 \beta(\mathbf{x}) &= [\mathbf{X}'\mathbf{K}(\mathbf{x})\mathbf{X}]^{-1} \mathbf{X}'\mathbf{K}(\mathbf{x})\mathbf{Y} \\
@@ -468,7 +478,7 @@ So observation $i$ gets a large weight only when it is close to $\mathbf{x}$ in 
 
 ## Multiple Testing
 
-When you test one hypothesis at the $5\%$ level, there is a $5\%$ chance of a false positive.
+When you test one hypothesis at the $5\%$ level, there is a $5\%$ chance of a [false positive](02_19_BivariateProbability.qmd#type-i-and-type-ii-errors).
 When you test many hypotheses, those chances accumulate.
 This is the statistical engine behind much of [Data Scientism](03_29_DataScientism.qmd): search long enough and something will look significant.
 
@@ -483,7 +493,8 @@ If the tests are independent and each has false-positive rate $\alpha$,
 $$\text{FWER} = 1-(1-\alpha)^{K}.$$
 :::
 
-The FWER is useful as the headline number for any procedure that runs many hypothesis tests: it tells you how likely you are to declare *something* "significant" by chance even when every null is true.
+The FWER is useful for any procedure that runs many hypothesis tests.
+It tells you how likely you are to declare *something* "significant" by chance even when every null is true.
 With $\alpha=0.05$, one test has FWER $0.05$, but $K=10$ tests give $1-0.95^{10}\approx 0.40$ and $K=100$ tests give $1-0.95^{100}\approx 0.99$.
 Almost any dataset will yield a "significant" result if you test it enough ways.
 
@@ -501,13 +512,13 @@ To hold the family-wise error rate down to $\alpha$, we have to make each indivi
 Exactly how strict matters for whether real effects survive.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *Bonferroni correction* multiplies each $p$-value by the number of tests $K$ (equivalently, lowers the threshold to $\alpha/K$).
+The *Bonferroni correction* [@Bonferroni1936; @Dunn1961] multiplies each $p$-value by the number of tests $K$ (equivalently, lowers the threshold to $\alpha/K$).
 The *Holm correction* applies the same idea stepwise: sort the $p$-values from smallest to largest and compare the $j$th smallest to $\alpha/(K-j+1)$.
 :::
 
 The *Bonferroni correction* is useful as the simplest valid adjustment, since it guarantees $\text{FWER} \leq \alpha$ under any dependence structure between tests.
 It is conservative, though, and with many tests it can miss real effects.
-The *Holm correction* is uniformly more powerful than Bonferroni while still controlling the FWER, so it is generally preferred when only family-wise control is wanted.
+The *Holm correction* [@Holm1979] is uniformly more [powerful](02_19_BivariateProbability.qmd#statistical-power) than Bonferroni while still controlling the FWER, so it is generally preferred when only family-wise control is wanted.
 
 ```{r}
 # Five p-values from five separate tests
@@ -534,10 +545,11 @@ Asking each pair separately reintroduces the multiple-testing problem we just co
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 A *post-hoc test* is a follow-up comparison conducted after a significant global test (like ANOVA).
-Because there are $G(G-1)/2$ pairs to test, the per-pair significance threshold must be tightened to control the family-wise error rate; *Tukey's HSD* and Holm-adjusted pairwise $t$-tests are common choices.
+Because there are $G(G-1)/2$ pairs to test, the per-pair significance threshold must be tightened to control the family-wise error rate; *Tukey's HSD* [@Tukey1953] and Holm-adjusted pairwise $t$-tests are common choices.
 :::
 
-*Post-hoc tests* are useful as the standard follow-up to a significant ANOVA $F$-test (see [Comparing More Than Two Groups](02_13_MultipleGroups.qmd)): they pinpoint the group or groups responsible for the global rejection without inflating the false-positive rate.
+*Post-hoc tests* are useful after a significant ANOVA $F$-test (see [Comparing More Than Two Groups](02_13_MultipleGroups.qmd)).
+They find which group or groups differ without inflating the false-positive rate.
 The number of comparisons grows quadratically in $G$, so the per-pair threshold gets noticeably stricter as soon as there are more than a handful of groups.
 
 ```{r}
@@ -595,5 +607,6 @@ The uncorrected version flags more differences; explain why, and state which ver
 
 This chapter wrapped up the multivariate part with the describe/explain/predict taxonomy, prediction intervals and cross-validation, time-series filtering, the matrix form of OLS, and multiple-testing corrections.
 The matrix-OLS sense-check on `USArrests` made the algebra concrete: computing $\hat{\mathbf{b}}=(\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\hat{y}$ step by step with `XtX <- t(X) %*% X`, `XtXi <- solve(XtX)`, and `b_hat <- XtXi %*% XtY` recovers exactly the coefficient vector that `lm(Murder ~ Assault + UrbanPop, data=xy_hat)` returns.
-These tools close the loop with earlier chapters: cross-validation chooses models, multiple-testing corrections discipline the search problem flagged in [Data Scientism](03_29_DataScientism.qmd), and the matrix form makes the OLS algebra of [Multiple Regression](03_23_MultipleRegression.qmd) explicit.
-The appendices that follow revisit reproducible workflows and probability theory in greater depth.
+These tools connect back to earlier chapters.
+Cross-validation chooses models, and multiple-testing corrections address the search problem from [Data Scientism](03_29_DataScientism.qmd).
+The matrix form writes out the OLS algebra of [Multiple Regression](03_23_MultipleRegression.qmd).

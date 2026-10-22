@@ -1,4 +1,4 @@
-# Testing Theory
+# Classical Tests and Bias-Variance
 ***
 
 ```{r seed, include=FALSE}
@@ -7,10 +7,10 @@ set.seed(1)
 ```
 
 Earlier chapters tested hypotheses with resampling.
-This chapter develops the theoretical counterpart: when the data are well-behaved, the sampling distribution of a $t$-statistic is known in advance, so we can test means, medians, and regression slopes with formulas.
-We then cover the two kinds of testing error and how Bayes' theorem turns a test result into an updated belief.
+This chapter develops the theoretical counterpart: when the data are well-behaved, the sampling distribution of a $t$- or $z$-statistic is known in advance, so we can test means, medians, and regression slopes with formulas.
+With the [conditional expectation](02_19_BivariateProbability.qmd#conditional-expectation) as the target, the bias-variance tradeoff then describes how regression estimates miss it.
 
-## Theoretical Distributions
+## Classical Tests
 
 Just as with one sample tests, we can compute standardized differences.
 The observed difference is converted into a $t$-statistic by dividing by an estimated standard error.
@@ -27,13 +27,28 @@ The *two-sample t-statistic* divides the observed mean difference by its estimat
 $$\hat{t} = \frac{\hat{m}_1 - \hat{m}_2}{\sqrt{\hat{s}^2_1/n_1+\hat{s}^2_2/n_2}},$$
 where $\hat{s}^2_g$ is the sample variance and $n_g$ is the sample size for group $g$.
 
-*Welch's t-test* modifies the two-sample $\hat{t}$ above to account for unequal variances or unequal sample sizes.
+*Welch's t-test* [@Welch1947] modifies the two-sample $\hat{t}$ above to account for unequal variances or unequal sample sizes.
 The modifications use the [Welch-Satterthwaite approximation](https://en.wikipedia.org/wiki/Welch%E2%80%93Satterthwaite_equation).
 :::
 
-The two-sample $\hat{t}$ is useful as the workhorse standardized test statistic for "two means": dividing by the standard error puts the gap in standard-deviation units, so the same numerator can be large or small in $\hat{t}$ units depending on $n_{1}, n_{2}$ and the within-group variances.
-With normally distributed group means, this statistic follows Student's [t-distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution), so we can read a $p$-value from a formula rather than from resampling.
+The two-sample $\hat{t}$ is useful as a standardized test statistic for comparing two means.
+Dividing by the standard error puts the gap in standard-error units.
+So the same numerator can be large or small in $\hat{t}$ units, depending on $n_{1}, n_{2}$ and the within-group variances.
+With normally distributed group means, this statistic follows Student's [t-distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution) [@Student1908], so we can read a $p$-value from a formula rather than from resampling.
 When the two groups have unequal variances or sample sizes, a small adjustment to the degrees of freedom keeps the $t$-distribution approximation accurate.
+
+The $t$-distribution result needs normal data, but in large samples the [central limit theorem](01_05_Sampling.qmd#central-limit-theorem-clt) makes the difference in means approximately normal whatever the shape of the data.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *$z$-statistic* standardizes an estimate by its estimated standard error, as $\hat{t}$ does, but compares the result to the standard normal rather than to a $t$-distribution.
+For the [difference statistic](02_12_TwoGroups.qmd#continuous-data) $\hat{d}$ and the null of no difference,
+$$\hat{z} = \frac{\hat{d}}{\hat{\text{SE}}(D)}.$$
+:::
+
+The $z$-statistic is useful because it only needs the estimate to be approximately normal, which holds in large samples for many statistics besides the mean.
+For means, $\hat{d}=\hat{m}_1-\hat{m}_2$ and $\hat{\text{SE}}(D)=\sqrt{\hat{s}^2_1/n_1+\hat{s}^2_2/n_2}$, so $\hat{z}$ is the same number as the two-sample $\hat{t}$; only the reference distribution changes.
+The two-sided $p$-value is the probability that a standard normal draw lands at least $|\hat{z}|$ from zero, which R computes as `2 * pnorm(-abs(z_hat))`.
+The standard normal has thinner tails than any $t$-distribution, so the $z$ $p$-value is smaller, but the gap shrinks as the groups grow.
 
 
 For example, we can compare the mean hourly wage of women and men in the `Wages1` data.
@@ -45,6 +60,9 @@ levels(Wages1[, 'sex'])
 # Welch's t-test (the default for t.test)
 t.test(wage ~ sex, data=Wages1)
 ```
+
+The reported statistic is also $\hat{z}\approx -10.5$.
+With more than $1500$ workers per group, the $t$ and $z$ $p$-values are both essentially zero.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 The same test works on simulated data, where we choose the group means ourselves.
@@ -64,12 +82,13 @@ t.test(y1_sim, y2_sim, var.equal=FALSE)
 ```
 :::
 
-Welch's $t$-test is useful as the standard default when comparing two means without assuming equal variances, which is the realistic setting in most applied work (two job markets, two policy regimes, two countries).
+Welch's $t$-test is useful as the default for comparing two means without assuming equal variances.
+Unequal variances are common in applied work, for example when comparing two job markets or two countries.
 With the variance-and-normality assumptions in place, the test can be conducted entirely with formulas (no bootstrap resampling required).
 Compare the bootstrap test of a mean difference in [Two Groups](02_12_TwoGroups.qmd#mean-differences), which needed neither assumption.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-The *Welch-Satterthwaite equation* approximates the degrees of freedom when the two groups have unequal variances:
+The *Welch-Satterthwaite equation* [@Satterthwaite1946; @Welch1947] approximates the degrees of freedom when the two groups have unequal variances:
 $$
 \text{df} = \frac{\left(\hat{s}^2_1/n_1 + \hat{s}^2_2/n_2\right)^2}{\frac{(\hat{s}^2_1/n_1)^2}{n_1-1} + \frac{(\hat{s}^2_2/n_2)^2}{n_2-1}}.
 $$
@@ -87,9 +106,27 @@ v02_hat <- 1/n02
 ```
 :::
 
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Continue the Welch-Satterthwaite example, with $n_1=n_2=10$, $\hat{s}^2_1=4$, and $\hat{s}^2_2=1$, and suppose $\hat{d}=\hat{m}_1-\hat{m}_2=1.5$.
+Then $\hat{\text{SE}}(D)=\sqrt{0.4+0.1}=\sqrt{0.5}\approx 0.71$, so $\hat{z}=\hat{t}=1.5/\sqrt{0.5}\approx 2.12$.
+The standard normal gives a $p$-value of about $0.034$, while the $t$-distribution with $13.2$ degrees of freedom gives about $0.053$.
+With only $10$ observations per group, the two reference distributions disagree about rejecting at the $5\%$ level.
+```{r}
+# The two groups from the Welch-Satterthwaite example, with a mean difference of 1.5
+d0_hat <- 1.5
+se0_hat <- sqrt(v01_hat + v02_hat)
+z0_hat <- d0_hat / se0_hat # the same number as the two-sample t-statistic
+df0 <- (v01_hat + v02_hat)^2 / (v01_hat^2/(n01 - 1) + v02_hat^2/(n02 - 1))
+
+# Same statistic, two reference distributions
+c(z=z0_hat,
+    p_normal=2 * pnorm(-abs(z0_hat)),
+    p_t=2 * pt(-abs(z0_hat), df=df0))
+```
+:::
 
 
-We can visualize this by simulating many samples *under the null* ($\mathbb{E}[Y_{i1}]=\mathbb{E}[Y_{i2}]$) and comparing the distribution of $\hat{t}$ with the theoretical $t$-distribution.
+We can visualize this by simulating many samples *under the null* ($\mathbb{E}[Y_{i1}]=\mathbb{E}[Y_{i2}]$) and comparing the distribution of $\hat{t}$ with the theoretical $t$-distribution (solid curve) and the standard normal used for $\hat{z}$ (dashed curve).
 As in [Sampling](01_05_Sampling.qmd#population-theory), pretend the $3294$ workers in `Wages1` are the whole population.
 If we draw both groups from the same population of wages, then the null of equal means holds exactly.
 
@@ -98,7 +135,6 @@ If we draw both groups from the same population of wages, then the null of equal
 data(Wages1, package='Ecdat')
 population_xy <- Wages1[, c('school', 'wage')]
 colnames(population_xy) <- c('x', 'y') # x=years of schooling, y=hourly wage
-population_slope <- coef(lm(y ~ x, data=population_xy))[2]
 population_wages <- population_xy[, 'y']
 
 # Simulate the t-statistic under the null (both groups from the same population)
@@ -124,17 +160,19 @@ hist(t_sim, breaks = 30, freq = FALSE, border = NA,
     xlim = t_range,
     xlab = expression(hat(t)),
     main = NA)
-title('Simulated vs. Theoretical Distribution', font.main = 1)
+title('Simulated vs. Theoretical Distributions', font.main = 1)
 t_grid <- seq(t_range[1], t_range[2], length = 200)
 lines(t_grid, dt(t_grid, df = df_ws), col = rgb(0, 0, 1, .8))
-legend('topright', legend = c('Simulated', paste0('t(', round(df_ws), ')')),
-    fill = c(grey(.83), NA), border = NA, # grey(.83) matches the default histogram fill
-    lwd = c(NA, 1), lty = c(NA, 1), col = c(NA, rgb(0, 0, 1, .8)), bty = 'n')
+lines(t_grid, dnorm(t_grid), col = rgb(0, 0, 0, .8), lty = 2) # standard normal, for z
+legend('topright', legend = c('Simulated', paste0('t(', round(df_ws), ')'), 'Standard normal'),
+    fill = c(grey(.83), NA, NA), border = NA, # grey(.83) matches the default histogram fill
+    lwd = c(NA, 1, 1), lty = c(NA, 1, 2), col = c(NA, rgb(0, 0, 1, .8), rgb(0, 0, 0, .8)), bty = 'n')
 ```
 
 Wages are right-skewed, so the group means are not exactly normal and the $t$-distribution is only an approximation.
-With groups of $100$ and $80$ workers, the histogram is typically close to the curve.
-With much smaller groups, the approximation can be noticeably worse.
+With groups of $100$ and $80$ workers, the histogram is typically close to both curves.
+The two curves nearly coincide because the $t$-distribution has about $170$ degrees of freedom here, so $\hat{z}$ gives almost the same $p$-value as $\hat{t}$.
+With much smaller groups, the approximation can be noticeably worse, and the fatter tails of the $t$-distribution pull away from the standard normal.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 We can also simulate under the null with normally distributed data, where the $t$-distribution result applies more directly.
@@ -161,31 +199,15 @@ hist(t_sim_norm, breaks = 30, freq = FALSE, border = NA,
     xlim = t_range,
     xlab = expression(hat(t)),
     main = NA)
-title('Simulated vs. Theoretical Distribution', font.main = 1)
+title('Simulated vs. Theoretical Distributions', font.main = 1)
 t_grid <- seq(t_range[1], t_range[2], length = 200)
 lines(t_grid, dt(t_grid, df = df_ws_norm), col = rgb(0, 0, 1, .8))
-legend('topright', legend = c('Simulated', paste0('t(', round(df_ws_norm), ')')),
-    fill = c(grey(.83), NA), border = NA, # grey(.83) matches the default histogram fill
-    lwd = c(NA, 1), lty = c(NA, 1), col = c(NA, rgb(0, 0, 1, .8)), bty = 'n')
+lines(t_grid, dnorm(t_grid), col = rgb(0, 0, 0, .8), lty = 2) # standard normal, for z
+legend('topright', legend = c('Simulated', paste0('t(', round(df_ws_norm), ')'), 'Standard normal'),
+    fill = c(grey(.83), NA, NA), border = NA, # grey(.83) matches the default histogram fill
+    lwd = c(NA, 1, 1), lty = c(NA, 1, 2), col = c(NA, rgb(0, 0, 1, .8), rgb(0, 0, 0, .8)), bty = 'n')
 ```
 :::
-
-#### **Differences in Medians** {-}
-
-If we want to test for the differences in medians across groups with independent observations, we can also use notches in the boxplot, as in [Multiple Groups](02_13_MultipleGroups.qmd#equal-medians).
-If the notches of two boxes do not overlap, then there is rough evidence that the difference in medians is statistically significant.
-R's default notches (`notch=TRUE`) come from a normal-theory approximation.
-Let each group $g$ have median $\tilde{m}_{Y}(g)$, interquartile range $\hat{\text{IQR}}_{Y}(g)$, observations $n_{g}$.
-We can compute standard deviation of the median as $\tilde{S}_{Y}(g)= \frac{1.25 \hat{\text{IQR}}_{Y}(g)}{1.35 \sqrt{n_{g}}}$.
-As a rough guess, the interval $\tilde{m}_{Y}(g) \pm 1.7 \tilde{S}_{Y}(g)$ is the historical default and displayed as a *notch* in the boxplot [@mcgill1978].
-
-There are also non-parametric alternatives for distributional comparisons.
-The [*Mann-Whitney U test*](https://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test) compares distributions using ranks rather than assuming normality.
-In R, it is computed with `wilcox.test`.
-```{r}
-# Mann-Whitney U test of hourly wages, female versus male
-wilcox.test(wage ~ sex, data=Wages1)
-```
 
 #### **Regression Slope** {-}
 
@@ -198,6 +220,7 @@ $$
 $$
 follows a $t$-distribution with $n-2$ degrees of freedom, where $\hat{\text{SE}}(B_1)$ is the classical estimated standard error of the slope.
 This allows us to test $H_0: \beta_1 = 0$ using math alone.
+In large samples, the OLS slope is approximately normal even when the errors are not, so the same ratio can also be read as a $z$-statistic, $\hat{z}=\hat{b}_1/\hat{\text{SE}}(B_1)$, and compared to the standard normal.
 
 ```{r}
 # USArrests data (same as Simple Regression chapter)
@@ -224,8 +247,9 @@ c(manual = t_stat, summary = summary(reg)$coefficients[2, 3])
 ```
 :::
 
-We can compare the bootstrap sampling distribution of $\hat{t}$ (histogram) with the theoretical $t_{n-2}$ distribution (curve).
-Each bootstrap $\hat{t}$ is centered at the original slope estimate, which plays the role of the true slope in the bootstrap world, so the histogram approximates the distribution of $\hat{t}$ when the null is true.
+We can compare the bootstrap sampling distribution of $\hat{t}$ (histogram) with the theoretical $t_{n-2}$ distribution (solid curve) and the standard normal (dashed curve).
+Each bootstrap $\hat{t}$ is centered at the original slope estimate, which plays the role of the true slope in the bootstrap world.
+So the histogram approximates the distribution of $\hat{t}$ when the null is true.
 They should be similar, but are not identical because the theoretical result assumes normally distributed errors.
 
 ```{r}
@@ -249,17 +273,18 @@ hist(boot_t, breaks = 30, freq = FALSE, border = NA,
     xlim = t_range,
     xlab = expression(hat(t)),
     main = NA)
-title('Bootstrap vs. Theoretical Distribution', font.main = 1)
-# Theoretical t(n-2) density
+title('Bootstrap vs. Theoretical Distributions', font.main = 1)
+# Theoretical t(n-2) density, and the standard normal for z
 t_grid <- seq(t_range[1], t_range[2], length = 200)
 lines(t_grid, dt(t_grid, df = n - 2), col = rgb(0, 0, 1, .8))
-legend('topright', legend = c('Bootstrap', 't(n-2)'),
-    fill = c(grey(.83), NA), border = NA, # grey(.83) matches the default histogram fill
-    lwd = c(NA, 1), lty = c(NA, 1), col = c(NA, rgb(0, 0, 1, .8)), bty = 'n')
+lines(t_grid, dnorm(t_grid), col = rgb(0, 0, 0, .8), lty = 2)
+legend('topright', legend = c('Bootstrap', 't(n-2)', 'Standard normal'),
+    fill = c(grey(.83), NA, NA), border = NA, # grey(.83) matches the default histogram fill
+    lwd = c(NA, 1, 1), lty = c(NA, 1, 2), col = c(NA, rgb(0, 0, 1, .8), rgb(0, 0, 0, .8)), bty = 'n')
 ```
 
-We can compute the $p$-value for $H_0: \beta_1 = 0$ two ways: from the theoretical $t$-distribution and from the bootstrap distribution.
-Both ask how extreme the observed $\hat{t}$ is under the null.
+We can compute the $p$-value for $H_0: \beta_1 = 0$ three ways: from the theoretical $t$-distribution, from the standard normal, and from the bootstrap distribution.
+All three ask how extreme the observed $\hat{t}$ is under the null.
 
 ```{r}
 t_obs <- summary(reg)$coefficients[2, 3]
@@ -267,178 +292,23 @@ t_obs <- summary(reg)$coefficients[2, 3]
 # Theoretical p-value: Prob(|t| >= |t_obs|) under t(n-2)
 p_theory <- 2 * pt(-abs(t_obs), df = n - 2)
 
+# Normal p-value: the same ratio read as a z-statistic
+p_normal <- 2 * pnorm(-abs(t_obs))
+
 # Bootstrap p-value: fraction of bootstrap |t|'s >= |t_obs|
 p_boot <- mean(abs(boot_t) >= abs(t_obs))
 
-c(theoretical = p_theory, bootstrap = p_boot)
+c(t=p_theory, z=p_normal, bootstrap=p_boot)
 ```
 
-## Type I and Type II Errors
-
-A hypothesis test starts with a null $H_0$ and an alternative $H_A$, and produces a decision (reject or fail-to-reject) from finite sample data.
-Because the data have variability, the decision can be wrong in two ways.
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
-A *Type I error* is rejecting $H_{0}$ when $H_{0}$ is true (a false positive).
-A *Type II error* is failing to reject $H_{0}$ when $H_{0}$ is false (a false negative).
-:::
-
-This distinction is useful because the two error types are managed by different levers: we control Type I error by setting the *significance level* $\alpha=\text{Prob}(\text{Type I})$ before looking at the data, while Type II error is harder to control directly and depends on the sample size and the true effect size.
-Reducing one error rate usually raises the other for a fixed sample.
-
-| True Situation | Decision: Fail to Reject $H_0$ | Decision: Reject $H_0$ |
-|---|---|---|
-| $H_0$ is True  |  Correct (no detection)  |  Type I Error (False Positive) |
-| $H_0$ is False |  Type II Error (False Negative; missed detection) | Correct (effect detected) |
-
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Here is a Courtroom example: Someone suspected of committing a crime is at trial, and they are either guilty or not (a Bernoulli random variable).
-You hypothesize that the suspect is innocent, and a jury can either convict them (decide guilty) or free them (decide not-guilty).
-Recall that [fail-to-reject a hypothesis does not mean accepting it](01_08_HypothesisTests.qmd#caveats), so deciding not-guilty does not necessarily mean innocent.
-
-| True Situation | Decision: Free | Decision: Convict |
-|---|---|---|
-| Suspect Innocent |  Correctly Freed  | Falsely Convicted |
-| Suspect Guilty   |  Falsely Freed    | Correctly Convicted |
-:::
-
-#### **Statistical Power** {-}
-
-The complement of Type II error has its own name because it is what we actually want from the test.
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
-*Statistical power* $1-\beta$ is the probability of correctly rejecting $H_{0}$ when $H_{0}$ is false:
-$$\text{Power} = 1 - \beta = 1 - \text{Prob}(\text{Type II Error}).$$
-(Here $\beta$ is the Type II error probability, not the regression coefficient $\beta_{1}$ from [Bivariate Probability](02_19_BivariateProbability.qmd).)
-:::
-
-Power is useful as the probability that a true effect of a given size will actually show up as a rejection in our data: it rises with the sample size $n$, the true effect size, and the significance level $\alpha$.
-The complementary error rate, the significance level $\alpha = \text{Prob}(\text{Type I Error})$, is something we choose in advance (commonly $\alpha=0.05$).
-Power is less often chosen directly; it follows from the chosen sample size and the assumed effect size, and lets us judge whether a study is well-powered to detect what we care about.
-
-
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-The code below runs a small simulation using a shifted, nonparametric bootstrap.
-It uses a two-sided test with a studentized statistic for $H_0: \mathbb{E}[X_i] = 0$.
-
-```{r power-sim, eval=FALSE}
-# Power for Two-sided test;
-# nonparametric bootstrap, studentized statistic
-n <- 25
-null_mean <- 0
-alpha <- 0.05
-n_boot <- 299
-
-sim_reps <- 100
-
-p_values <- rep(NA, sim_reps)
-for (i in seq(p_values)) {
-    # Generate data
-    x_sim <- rnorm(n, mean=0.2, sd=1)
-    # Observed statistic
-    m_hat <- mean(x_sim)
-    T_obs <-  (m_hat - null_mean) / (sd(x_sim)/ sqrt(n)) ##studentized
-    # Bootstrap null distribution of the statistic
-    T_boot <- rep(NA, n_boot)
-    x_null_sim <- x_sim - m_hat + null_mean # Impose the null by recentering
-    for (b in seq(T_boot)) {
-      x_boot <- sample(x_null_sim, size = n, replace = TRUE)
-      T_b <- (mean(x_boot) - null_mean) / (sd(x_boot)/sqrt(n))
-      T_boot[b] <- T_b
-    }
-    # Two-sided bootstrap p-value
-    pval <- mean(abs(T_boot) >= abs(T_obs))
-    p_values[i] <- pval
-    }
-power <- mean(p_values < alpha)
-power
-```
-:::
-
-There is an important Trade-off for fixed sample sizes: Increasing significance (fewer false positive) often lowers power (more false negatives).
-Generally, power depends on the effect size and sample size: bigger true effects and larger $n$ make it easier to detect real differences (higher power, lower $\beta$).
-
-#### **Regression Slope Example** {-}
-
-Consider testing $H_0: \beta_1 = 0$ for the regression of hourly wage on years of schooling.
-With the pretend population of `Wages1` workers, we know the true slope, so we know whether the null is true.
-When the true slope is nonzero (null is false), failing to reject is a Type II Error, and the share of samples that reject estimates the power.
-The population slope is `population_slope`, about $0.557$, so the null is false.
-
-```{r}
-# Function: draw one sample of n workers, return the theoretical p-value for the slope
-sample_pval <- function(n, population) {
-    s_id <- sample(nrow(population), n, replace=FALSE)
-    xy_sim <- population[s_id, ]
-    colnames(xy_sim) <- c('x_hat', 'y_hat')
-    reg_s <- lm(y_hat ~ x_hat, data=xy_sim)
-    summary(reg_s)$coefficients[2, 4]
-}
-
-sim_reps <- 300
-alpha <- 0.05
-n_grid <- c(10, 20, 50, 100, 200)
-
-# Power: share of samples that reject, for each sample size
-power_by_n <- rep(NA, length(n_grid))
-for (k in seq_along(n_grid)) {
-    p_values <- replicate(sim_reps, sample_pval(n_grid[k], population_xy))
-    power_by_n[k] <- mean(p_values < alpha)
-}
-names(power_by_n) <- n_grid
-power_by_n
-
-# Power with samples of 50 workers
-power_est <- power_by_n['50']
-```
-
-To study Type I errors, we need a population where the null is true.
-Shuffling the wages once breaks the link between schooling and wages.
-By chance, the shuffled population still has a small slope, so we subtract it to make the population slope exactly $0$.
-When the true slope is $0$ (null is true), rejecting is a Type I Error.
-The share of samples that reject should be near $\alpha=0.05$ for every sample size.
-
-```{r}
-# A population where schooling and wages are unrelated
-population_null <- population_xy
-population_null[, 'y'] <- sample(population_xy[, 'y'])
-
-# Remove the small slope left over by chance
-slope_left <- coef(lm(y ~ x, data=population_null))[2]
-x_centered <- population_null[, 'x'] - mean(population_null[, 'x'])
-population_null[, 'y'] <- population_null[, 'y'] - slope_left * x_centered
-coef(lm(y ~ x, data=population_null))[2] # zero, up to rounding
-
-# Type I Error rate: share of samples that reject, for each sample size
-type1_by_n <- rep(NA, length(n_grid))
-for (k in seq_along(n_grid)) {
-    p_values_null <- replicate(sim_reps, sample_pval(n_grid[k], population_null))
-    type1_by_n[k] <- mean(p_values_null < alpha)
-}
-names(type1_by_n) <- n_grid
-type1_by_n
-```
-
-Power rises with the sample size, while the Type I Error rate stays near $\alpha$.
-
-```{r}
-# Rejection rates by sample size
-plot(n_grid, power_by_n, type = 'b', pch = 16,
-    xlab = 'Sample size (n)', ylab = 'Share of samples that reject',
-    ylim = c(0, 1),
-    main = NA)
-lines(n_grid, type1_by_n, type = 'b', pch = 16, col = grey(0.5, 0.8))
-title('Rejection Rates for Regression Slope', font.main = 1)
-abline(h = alpha, lty = 2, col = rgb(1, 0, 0, .8))
-legend('right', legend = c('Power (true slope 0.557)', 'Type I Error (true slope 0)', expression(alpha)),
-    col = c(1, grey(0.5, 0.8), rgb(1, 0, 0, .8)),
-    lty = c(1, 1, 2), pch = c(16, 16, NA), bty = 'n')
-```
+With $n=50$ states, the $t_{48}$ distribution is already close to the standard normal, so the $t$ and $z$ $p$-values agree to two decimal places.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-We can also compute error rates from a simulated data generating process, where we set the true slope ourselves.
+We can also compute the [Type I Error rate and power](02_19_BivariateProbability.qmd#type-i-and-type-ii-errors) of the theoretical test from a simulated data generating process, where we set the true slope ourselves.
 The process below is calibrated to the USArrests regression, with normally distributed $X_i$ and errors.
 ```{r}
+alpha <- 0.05
+
 # DGP calibrated to USArrests regression
 beta0 <- coef(reg)[1]
 beta1_true <- coef(reg)[2]
@@ -483,105 +353,552 @@ abline(h = alpha, lty = 2, col = rgb(1, 0, 0, .8))
 ```
 :::
 
-## Bayesian Updating
 
-[Bivariate Probability](02_19_BivariateProbability.qmd#bayes-theorem) used Bayes' theorem to update a prior belief about one coin after seeing the other.
-The same formula turns a test result into an updated belief about whether a hypothesis is true.
+#### **Differences in Medians** {-}
 
-#### **Bayesian Screening** {-}
+If we want to test for the differences in medians across groups with independent observations, we can also use notches in the boxplot, as in [Multiple Groups](02_13_MultipleGroups.qmd#equal-medians).
+R's default notches (`notch=TRUE`) come from a normal-theory approximation.
+Let each group $g$ have median $\tilde{m}_{Y}(g)$, interquartile range $\hat{\text{IQR}}_{Y}(g)$, observations $n_{g}$.
+We can compute standard deviation of the median as $\tilde{S}_{Y}(g)= \frac{1.25 \hat{\text{IQR}}_{Y}(g)}{1.35 \sqrt{n_{g}}}$.
+As a rough guess, the interval $\tilde{m}_{Y}(g) \pm 1.7 \tilde{S}_{Y}(g)$ is the historical default and displayed as a *notch* in the boxplot [@mcgill1978].
 
-A common application of Bayes' theorem is interpreting a positive result from a diagnostic test.
+The same standard errors give a $z$-statistic for the difference in medians,
+$$\hat{z} = \frac{\tilde{m}_{Y}(1)-\tilde{m}_{Y}(2)}{\sqrt{\tilde{S}_{Y}(1)^2+\tilde{S}_{Y}(2)^2}}.$$
+Unlike $\hat{t}$ for means, this ratio has no $t$-distribution result, even when the data are normal, so we compare it to the standard normal, which is accurate only in large samples.
+The standard error of a median depends on how dense the data are near the median, and $\tilde{S}_{Y}(g)$ fills that in by assuming normality.
+Specifically, $\hat{\text{IQR}}_{Y}(g)/1.35$ estimates the standard deviation of normal data, and $1.25\approx\sqrt{\pi/2}$ is how much more variable a sample median is than a sample mean when the data are normal.
+Two notches do not overlap when $|\tilde{m}_{Y}(1)-\tilde{m}_{Y}(2)| > 1.7[\tilde{S}_{Y}(1)+\tilde{S}_{Y}(2)]$.
+With equal standard errors, that is the same as $|\hat{z}| > 1.7\sqrt{2} \approx 2.4$, a stricter cutoff than $1.96$, which is why [overlapping notches do not show that the medians are equal](02_13_MultipleGroups.qmd#equal-medians).
 
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
-For a binary screening test where $X_{i}=1$ means "condition present" and $Y_{i}=1$ means "test positive":
-
-*Prevalence* $\text{Prob}(X_{i}=1)$ is the base rate of the condition in the population.
-
-*Sensitivity* $\text{Prob}(Y_{i}=1\mid X_{i}=1)$ is the probability of a positive result when the condition is present.
-
-*False positive rate* $\text{Prob}(Y_{i}=1\mid X_{i}=0)$ is the probability of a positive result when it is absent.
-
-:::
-
-Screening is useful for converting test accuracy and base rates into the quantity an individual actually cares about: the posterior $\text{Prob}(X_{i}=1\mid Y_{i}=1)$, the probability of having the condition given a positive result.
-The three inputs play different roles: sensitivity and the false positive rate describe the test, while prevalence describes the population.
-Suppose a screening test has sensitivity $0.90$, false positive rate $0.08$, and prevalence $0.12$.
-Applying Bayes' theorem,
-$$\begin{aligned}
-\text{Prob}(X_i=1|Y_i=1)
-&=
-\frac{0.90\times0.12}{0.90\times0.12 + 0.08\times0.88}
-\approx 0.605.
-\end{aligned}$$
-Even with a good test, the posterior depends strongly on prevalence: rare conditions produce many false alarms even when the test is accurate.
-The fraud-detection example in [Bivariate Distributions](02_11_BivariateDistributions.qmd#conditional-distributions) showed the same pattern with counts: the same flag meant fraud was unlikely when fraud was rare and likely when it was common.
-
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Suppose two groups of $n_1=n_2=100$ workers have median wages $\tilde{m}_{Y}(1)=17$ and $\tilde{m}_{Y}(2)=15$, and both have an interquartile range of $7$.
+Each standard error is $\tilde{S}_{Y}(g)=1.25\times 7/(1.35\times 10)\approx 0.648$, so
+$$\hat{z} = \frac{17-15}{\sqrt{0.648^2+0.648^2}} \approx \frac{2}{0.917} \approx 2.18,$$
+with a $p$-value of about $0.029$.
+Each notch extends $1.7\times 0.648\approx 1.10$ from its median, so the notches $[15.90, 18.10]$ and $[13.90, 16.10]$ overlap.
+So the $z$-statistic rejects at the $5\%$ level even though the notches overlap.
 ```{r}
-# States: X in {0, 1}, signal Y in {0, 1}
-# Prior Prob(X_i=1)
-p_x1 <- 0.12
+# Two groups of 100 workers with the same interquartile range
+n0 <- 100
+med01_hat <- 17
+med02_hat <- 15
+iqr0_hat <- 7
 
-# Test characteristics
-p_y1_x1 <- 0.90
-p_y1_x0 <- 0.08
+# Normal-theory standard error of each median
+se0_hat <- 1.25 * iqr0_hat / (1.35 * sqrt(n0))
 
-# Law of total probability for Prob(Y_i=1)
-p_y1 <- p_y1_x1 * p_x1 + p_y1_x0 * (1 - p_x1)
+# z-statistic and its two-sided p-value
+z0_hat <- (med01_hat - med02_hat) / sqrt(se0_hat^2 + se0_hat^2)
+c(se=se0_hat, z=z0_hat, p_value=2 * pnorm(-abs(z0_hat)))
 
-# Bayes posterior Prob(X_i=1 | Y_i=1)
-p_x1_y1 <- (p_y1_x1 * p_x1) / p_y1
-p_x1_y1
-
-# Also compute Prob(X_i=1 | Y_i=0)
-p_y0_x1 <- 1 - p_y1_x1
-p_y0_x0 <- 1 - p_y1_x0
-p_y0 <- p_y0_x1 * p_x1 + p_y0_x0 * (1 - p_x1)
-p_x1_y0 <- (p_y0_x1 * p_x1) / p_y0
-p_x1_y0
+# Notches: each median plus or minus 1.7 standard errors
+rbind(group1=med01_hat + c(-1.7, 1.7) * se0_hat,
+    group2=med02_hat + c(-1.7, 1.7) * se0_hat)
 ```
+:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Notice that a positive test result raises the probability of having the condition from $12\%$ (prior) to about $60\%$ (posterior).
-A negative test result lowers it from $12\%$ to about $1.4\%$.
-If prevalence were higher, say $50\%$, the posterior after a positive test would be $\frac{0.90 \times 0.50}{0.90 \times 0.50 + 0.08 \times 0.50} = \frac{0.45}{0.49} \approx 0.92$.
-The same test is far more informative when prevalence is higher.
+Check how well the standard normal describes $\hat{z}$ when the null is true.
+As in the simulation for means above, draw both groups from the pretend population of `Wages1` workers, so the two population medians are equal.
+With $50$ workers per group, about $5\%$ of the samples should have $|\hat{z}|>1.96$.
+Change `n_g` to $10$ and the share rises, because the standard normal is only a large-sample approximation.
+```{r}
+# Draw both groups from the same pretend population, so the medians are equal
+n_g <- 50
+n_sim <- 999
+z_sim <- rep(NA, n_sim)
+for (b in seq(n_sim)) {
+    y1_sim_b <- sample(population_wages, n_g)
+    y2_sim_b <- sample(population_wages, n_g)
+    se1_b <- 1.25 * IQR(y1_sim_b) / (1.35 * sqrt(n_g)) # normal-theory SE of each median
+    se2_b <- 1.25 * IQR(y2_sim_b) / (1.35 * sqrt(n_g))
+    z_sim[b] <- (median(y1_sim_b) - median(y2_sim_b)) / sqrt(se1_b^2 + se2_b^2)
+}
+
+# Share of samples with |z| > 1.96, near 5% if the standard normal fits
+mean(abs(z_sim) > 1.96)
+
+# Overlay: simulated histogram vs. standard normal
+z_range <- range(c(z_sim, -4, 4))
+hist(z_sim, breaks=30, freq=FALSE, border=NA,
+    xlim=z_range, xlab=expression(hat(z)), main=NA)
+title('Simulated vs. Standard Normal', font.main=1)
+z_grid <- seq(z_range[1], z_range[2], length=200)
+lines(z_grid, dnorm(z_grid), col=rgb(0, 0, 0, .8), lty=2)
+legend('topright', legend=c('Simulated', 'Standard normal'),
+    fill=c(grey(.83), NA), border=NA, # grey(.83) matches the default histogram fill
+    lwd=c(NA, 1), lty=c(NA, 2), col=c(NA, rgb(0, 0, 0, .8)), bty='n')
+```
 :::
 
-#### **Posterior for a Regression Slope** {-}
+With two groups, the rank-based [Kruskal-Wallis test](02_13_MultipleGroups.qmd#kruskal-wallis-test) from that chapter reduces to the Mann-Whitney test, which R computes with `wilcox.test`.
+The Mann-Whitney test compares medians when the two groups have the same shape, so that one distribution is a shifted copy of the other.
+Otherwise, it tests whether a draw from one group is as likely to exceed a draw from the other as the reverse, and it can reject even when the two medians are equal.
 
-The screening test has the same structure as testing a regression slope.
-Let $X_i=1$ mean "slope is truly nonzero" and $Y_i=1$ mean "the test rejects $H_0$."
-Then sensitivity equals power, the false positive rate equals $\alpha$, and prevalence is your prior belief that the slope is nonzero.
-Using the simulation results from the previous section:
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+**Same shape.** Suppose hourly wages in two labor markets have the same right-skewed shape, but every wage in the second market is $2$ dollars higher.
+The population medians are $15$ and $17$.
+A worker drawn from the second market earns more than a worker drawn from the first about $74\%$ of the time.
+Its sample analog is the share of pairs that the second group wins, $\hat{U}_{2}/(n_{1}n_{2})$ in the notation of [Multiple Groups](02_13_MultipleGroups.qmd#kruskal-wallis-test).
+With `conf.int=TRUE`, `wilcox.test` also reports a shift estimate, the median of all differences $\hat{y}_{i}-\hat{y}_{j}$ between a worker $i$ in the second group and a worker $j$ in the first.
+Because the shapes match, the shift estimate and the difference in sample medians both estimate the $2$ dollar gap.
+So here, a Mann-Whitney rejection is evidence that the medians differ.
+```{r}
+# Same right-skewed shape, with every wage in market 2 shifted up by 2 dollars
+n_g <- 2000
+y1_sim <- 15 + 3 * (rexp(n_g) - log(2)) # population median 15
+y2_sim <- 17 + 3 * (rexp(n_g) - log(2)) # population median 17
+
+# Difference in sample medians
+median(y2_sim) - median(y1_sim)
+
+# Share of pairs that market 2 wins
+mean(outer(y2_sim, y1_sim, '>'))
+
+# Mann-Whitney test and its shift estimate
+mw <- wilcox.test(y2_sim, y1_sim, conf.int=TRUE)
+c(shift=unname(mw[['estimate']]), p_value=mw[['p.value']])
+
+# The market 2 ECDF is the market 1 ECDF moved right by 2
+cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
+F1_hat <- ecdf(y1_sim)
+F2_hat <- ecdf(y2_sim)
+plot(F1_hat, col=cols[1], lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA,
+    xlim=c(5, 35), main=NA,
+    xlab='Hourly wage', ylab='Proportion of workers')
+plot(F2_hat, add=TRUE, col=cols[2], lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA)
+abline(h=.5, col=grey(.5), lty=3) # each curve crosses this line at its median
+legend('bottomright', legend=c('Market 1', 'Market 2'),
+    lty=1, lwd=2, col=cols, bty='n')
+```
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+**Different shapes.** Now suppose wages in the first market are symmetric around $15$, while the second market keeps the right-skewed shape from above, also with median $15$.
+The medians are equal, but the second market has no wages below about $12.92$, while the first market has a long left tail.
+When both workers earn less than $15$, the worker from the second market earns more about $70\%$ of the time.
+Overall, the second market wins about $56\%$ of pairs.
+So the Mann-Whitney test rejects, and its shift estimate stays well above zero (about $0.55$ in the population), even though the medians are equal.
+```{r}
+# Same population median of 15, different shapes
+y1_sim <- 15 + 3 * rnorm(n_g)             # symmetric
+y2_sim <- 15 + 3 * (rexp(n_g) - log(2))   # right-skewed, no wages below 12.92
+
+# Difference in sample medians is close to zero
+median(y2_sim) - median(y1_sim)
+
+# Yet market 2 wins more than half of the pairs
+mean(outer(y2_sim, y1_sim, '>'))
+
+# So the Mann-Whitney test rejects
+mw <- wilcox.test(y2_sim, y1_sim, conf.int=TRUE)
+c(shift=unname(mw[['estimate']]), p_value=mw[['p.value']])
+
+# The ECDFs cross at the median but differ below it
+F1_hat <- ecdf(y1_sim)
+F2_hat <- ecdf(y2_sim)
+plot(F1_hat, col=cols[1], lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA,
+    xlim=c(5, 35), main=NA,
+    xlab='Hourly wage', ylab='Proportion of workers')
+plot(F2_hat, add=TRUE, col=cols[2], lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA)
+abline(h=.5, col=grey(.5), lty=3) # both curves cross this line at 15
+legend('bottomright', legend=c('Market 1', 'Market 2'),
+    lty=1, lwd=2, col=cols, bty='n')
+```
+:::
+
+
+## Bias-Variance Tradeoff
+
+A better fit on the data you have is not automatically better, because a model can hit every point in the sample and still predict new observations poorly.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+Let $Y^{\mathrm{fit}}(x)$ be a model's prediction at $x$ before the sample is drawn, and let $m_{Y}(x)=\mathbb{E}[Y_{i}\mid X_{i}=x]$ be the conditional expectation it estimates.
+The *mean squared error* of the prediction decomposes into two pieces:
+$$\mathbb{E}\left[\left(Y^{\mathrm{fit}}(x)-m_{Y}(x)\right)^2\right] = \left(\mathbb{E}\left[Y^{\mathrm{fit}}(x)\right]-m_{Y}(x)\right)^2 + \mathbb{V}\left[Y^{\mathrm{fit}}(x)\right].$$
+Squared *bias*, the first piece, is how far the average prediction sits from the truth.
+*Variance*, the second piece, is how much the predictions wobble around their own average.
+The *bias-variance tradeoff* is that cutting one piece usually raises the other.
+:::
+
+The bias-variance tradeoff is useful for thinking about *why* a tuning parameter matters and how to set it.
+For local regressions, the bandwidth $h$ (for LOESS, the *span*) controls the tradeoff.
+A large $h$ lowers variance but raises bias, and a small $h$ does the opposite.
+A loess fit narrow enough to interpolate every point has $\hat{\text{MSE}}=0$ on the fit data, as defined in [Model Fit](02_18_Gradients.qmd#model-fit), but generalizes poorly because it has just copied the noise.
+
+* *Wide window (large span, large $h$)*: each local fit uses many observations, so the fitted curve barely changes from sample to sample (low variance).
+  But a nearly flat fit over a wide region cannot follow a relationship that bends, so it is systematically off (high bias).
+* *Narrow window (small span, small $h$)*: each local fit uses [few observations](02_18_Gradients.qmd#small-samples), so the fitted curve chases noise and swings from sample to sample (high variance).
+  But a narrow window can track curvature closely (low bias).
+
+Schooling takes only a few distinct values, so this section fits local linear LOESS (`degree=1`), which is more stable than the default local quadratic in small samples.
 
 ```{r}
-# Prior: 50-50 chance the slope is nonzero
-prior_nonzero <- 0.5
+# Wages and schooling for 3294 workers, as in Gradients
+data(Wages1, package='Ecdat')
+xy2_hat <- Wages1[order(Wages1[, 'school']), c('school', 'wage')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
 
-# 'Sensitivity' = power, 'False positive rate' = alpha
-p_reject <- power_est * prior_nonzero + alpha * (1 - prior_nonzero)
+# Two-span local linear loess with bootstrap confidence bands on one scatterplot
+pred_design <- data.frame(x_hat=sort(unique(xy2_hat[, 'x_hat'])))
+spans <- c(4.0, 0.4)
+n_boot <- 399
+span_col <- hcl.colors(3, alpha=.9)[c(1, 3)]
 
-# Posterior: Prob(slope nonzero | test rejects)
-post_nonzero <- (power_est * prior_nonzero) / p_reject
-post_nonzero
+plot(y_hat ~ x_hat, data=xy2_hat, pch=16, col=grey(0, .1),
+    main=NA, xlab='School', ylab='Wage')
+
+for (s in seq_along(spans)) {
+    sp <- spans[s]
+    reg_s <- loess(y_hat ~ x_hat, data=xy2_hat, span=sp, degree=1)
+    boot_preds <- matrix(NA, nrow=nrow(pred_design), ncol=n_boot)
+    for (b in 1:n_boot) {
+        xy2_boot <- xy2_hat[sample(nrow(xy2_hat), replace=TRUE), ]
+        reg_s_b <- loess(y_hat ~ x_hat, data=xy2_boot, span=sp, degree=1)
+        boot_preds[, b] <- predict(reg_s_b, newdata=pred_design)
+    }
+    boot_cb <- apply(boot_preds, 1, quantile,
+        probs=c(.025, .975), na.rm=TRUE)
+
+    polygon(c(pred_design[, 'x_hat'], rev(pred_design[, 'x_hat'])),
+        c(boot_cb[1, ], rev(boot_cb[2, ])),
+        col=adjustcolor(span_col[s], alpha.f=0.3), border=NA)
+    lines(pred_design[, 'x_hat'], predict(reg_s, newdata=pred_design),
+        col=span_col[s], lwd=2)
+}
+
+legend('topleft', title='LOESS span',
+    legend=paste0(spans),
+    col=span_col, lty=1, lwd=2, cex=.8)
 ```
 
-Even with moderate power, a rejection substantially updates the posterior probability that the slope is nonzero.
-A weaker prior (e.g., $\text{Prob}(\beta_1 \neq 0) = 0.1$) would require stronger evidence to reach the same posterior.
+With span $4.0$ the fitted curve is nearly a straight line and very stable, and the [bootstrap band](02_18_Gradients.qmd#confidence-bands) sits tightly around it.
+With span $0.4$ the curve tracks more local variation, and the bootstrap band fans wider.
+Following local detail raises the variance.
+(Schooling `x_hat` is integer-valued and about a third of workers have exactly $12$ years, so spans below about $0.4$ leave no other schooling level near $12$ and `loess()` breaks down there.)
+
+With local linear fits, a very wide span gives every observation nearly the same weight, so the fit approaches the simple linear regression as $h \to \infty$.
+A wide window and a narrow window can therefore also be read as a linear model and a flexible LOESS fit.
+
+The bootstrap bands show variance, but not bias, because we never see the true curve in one sample.
+As in [Sampling](01_05_Sampling.qmd#population-theory), pretend the $3294$ workers in `Wages1` are the whole population, so the true curve is known.
+The population curve is the mean wage at each schooling level over all $3294$ workers.
+We evaluate it at $8$ to $15$ years of schooling, where there are many workers.
+The rest of this section compares the linear model, which acts as the widest possible window, with LOESS at span $0.6$.
 
 ```{r}
-# How the posterior changes with different priors
-prior_grid <- seq(0.01, 0.99, by = 0.01)
-post_grid <- (power_est * prior_grid) /
-    (power_est * prior_grid + alpha * (1 - prior_grid))
+#| warning: false
+# Wages1 defined above
+# Pretend these 3294 workers are the whole population
+population_xy <- Wages1[, c('school', 'wage')]
+colnames(population_xy) <- c('x', 'y') # x=years of schooling, y=hourly wage
 
-plot(prior_grid, post_grid, type = 'l', lwd = 2,
-    xlab = 'Prior Prob(slope nonzero)',
-    ylab = 'Posterior Prob(slope nonzero | reject)',
-    main = NA)
-title('Bayesian Interpretation of Rejection', font.main = 1)
-abline(0, 1, lty = 2, col = grey(0.5))
+# Population curve: mean wage at each schooling level
+population_curve <- tapply(population_xy[, 'y'], population_xy[, 'x'], mean)
+
+# Evaluate at schooling levels with many workers (8 to 15 years)
+# Rare levels are often missing from a sample, and loess does not extrapolate
+x_levels <- 8:15
+population_levels <- population_curve[as.character(x_levels)]
+
+# Draw a simple random sample of n workers from the population
+draw_xy <- function(n=300){
+    s_id <- sample(nrow(population_xy), n, replace=FALSE)
+    xy_sim <- population_xy[s_id, ]
+    colnames(xy_sim) <- c('x_hat', 'y_hat')
+    return(xy_sim)
+}
+
+# Span for all local linear fits in the main text
+span_wage <- 0.6
 ```
+
+#### **Bias** {-}
+
+The plot below shows the average prediction across many samples of $200$ workers against the population mean wage at each schooling level.
+Notice that LOESS tracks the population curve closely.^[One benefit of local linear regression is that it is theoretically motivated.
+Suppose that $Y_{i}=m_{Y}(X_{i}) + \epsilon_{i}$, where $m_{Y}(x)$ is the population average of $Y_{i}$ among observations with $X_{i}=x$, and $\epsilon_{i}$ is an unobserved random error that averages zero at each value of $X_{i}$.
+For $X_{i}$ near $x$, a Taylor approximation gives
+$$\begin{aligned}
+m_{Y}(X_{i}) + \epsilon_{i} &\approx m_{Y}(x) + m_{Y}'(x)[X_{i}-x] + \epsilon_{i} \\
+&= [m_{Y}(x) - m_{Y}'(x)x ] + m_{Y}'(x)X_{i} + \epsilon_{i} \\
+&= b_{0}(x,h) + b_{1}(x,h) X_{i} + \epsilon_{i}.
+\end{aligned}$$
+So near $x$, the population relationship is approximately a line with slope $b_{1}(x,h)=m_{Y}'(x)$, which is what a local linear regression fits.]
+Notice that a linear model does not: it is too high at $12$ years of schooling and too low at $13$ to $15$ years.
+
+```{r}
+#| warning: false
+## Shared settings used by Bias, Variance, and the Decomposition
+n_rep <- 300
+n_seq <- c(50, 100, 200, 400, 800)
+n_bias <- 200
+x_target <- 12 # high school graduates
+
+## Predictions at x_target: one row per sample, one column per sample size
+target_lm_sim <- matrix(NA, nrow=n_rep, ncol=length(n_seq))
+target_lo_sim <- matrix(NA, nrow=n_rep, ncol=length(n_seq))
+
+## Predictions at every schooling level when n == n_bias
+curves_lm_sim <- matrix(NA, nrow=length(x_levels), ncol=n_rep)
+curves_lo_sim <- matrix(NA, nrow=length(x_levels), ncol=n_rep)
+
+## One sweep over sample sizes
+for (ni in seq_along(n_seq)) {
+    n <- n_seq[ni]
+    for (r in 1:n_rep) {
+        xy_sim <- draw_xy(n)
+        fit_lm <- lm(y_hat ~ x_hat, data=xy_sim)
+        fit_lo <- loess(y_hat ~ x_hat, data=xy_sim, span=span_wage, degree=1)
+        pred_lm <- predict(fit_lm, newdata=data.frame(x_hat=x_levels))
+        pred_lo <- predict(fit_lo, newdata=data.frame(x_hat=x_levels))
+        target_lm_sim[r, ni] <- pred_lm[x_levels == x_target]
+        target_lo_sim[r, ni] <- pred_lo[x_levels == x_target]
+        if (n == n_bias) {
+            curves_lm_sim[, r] <- pred_lm
+            curves_lo_sim[, r] <- pred_lo
+        }
+    }
+}
+```
+
+```{r}
+m_lm_hat <- rowMeans(curves_lm_sim, na.rm=TRUE)
+m_lo_hat <- rowMeans(curves_lo_sim, na.rm=TRUE)
+
+y_rng <- range(c(population_levels, m_lm_hat, m_lo_hat), na.rm=TRUE)
+plot(x_levels, population_levels, type='b', pch=16, lwd=2,
+    col=rgb(0, 0, 0, .8), ylim=y_rng,
+    xlab='Years of Schooling', ylab='Mean Hourly Wage', main=NA)
+lines(x_levels, m_lm_hat, type='b', pch=16, lwd=2, col=rgb(1, 0, 0, .8))
+lines(x_levels, m_lo_hat, type='b', pch=16, lwd=2, col=rgb(0, 0, 1, .8))
+legend('topleft', lty=1, lwd=2, bty='n',
+    col=c(rgb(0, 0, 0, .8), rgb(1, 0, 0, .8), rgb(0, 0, 1, .8)),
+    legend=c('Population mean',
+        'Linear',
+        paste0('Loess(', span_wage, ')')
+))
+```
+
+The linear bias does not go away with more data.
+Fit to the whole population, the line predicts a mean wage of $5.96$ at $12$ years of schooling, while the population mean is $5.67$.
+That line is the best linear approximation to the conditional expectation, so, as in the $3\times3$ example of [Bivariate Probability](02_19_BivariateProbability.qmd#regression-coefficient), it misses wherever the conditional expectation bends.
+
+#### **Variance** {-}
+
+The model estimates also vary from sample to sample.
+The plot below shows the standard error of each model's predicted mean wage at $12$ years of schooling, computed across the repeated samples.
+Notice that the linear prediction generally varies less than the LOESS prediction, even though it is biased.
+
+Also notice that there are diminishing returns to larger sample sizes.
+Both predictions vary less from sample to sample as $n$ grows, making confidence intervals narrower and hypothesis tests more accurate.
+
+```{r}
+se_sim <- rbind(
+    apply(target_lm_sim, 2, sd, na.rm=TRUE),
+    apply(target_lo_sim, 2, sd, na.rm=TRUE))
+cols <- c(rgb(1, 0, 0, .8), rgb(0, 0, 1, .8))
+matplot(n_seq, t(se_sim), type='b', pch=16,
+    lty=1, lwd=2, col=cols,
+    ylab='standard error', xlab='sample size',
+    main=NA)
+legend('topright',
+    lty=1, lwd=2, col=cols,
+    legend=c('Linear', paste0('Loess(', span_wage, ')')))
+```
+
+Bootstrap confidence bands are approximations: they estimate how much predicted values vary from sample to sample.
+The simulation below compares a bootstrap CI constructed from one sample of $300$ workers to the true sampling variation observed across many independent samples from the population.
+
+```{r}
+#| warning: false
+## Data from one sample
+xy_sim <- draw_xy(300)
+plot(y_hat ~ x_hat, data=xy_sim, pch=16, col=grey(0, .1),
+    ylim=c(0, 15), # zoom in on the fitted curves
+    main=NA, ylab='Hourly Wage', xlab='Years of Schooling')
+
+## Plot Bootstrap CI for Single Sample
+pred_design <- data.frame(x_hat=x_levels)
+boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
+for (b in 1:399) {
+    xy_boot <- xy_sim[sample(nrow(xy_sim), replace=TRUE), ]
+    reg_b <- loess(y_hat ~ x_hat, data=xy_boot, span=span_wage, degree=1)
+    boot_lo[, b] <- predict(reg_b, newdata=pred_design)
+}
+boot_cb <- apply(boot_lo, 1, quantile,
+    probs=c(.025, .975), na.rm=TRUE)
+polygon(
+    c(pred_design[[1]], rev(pred_design[[1]])),
+    c(boot_cb[1, ], rev(boot_cb[2, ])),
+    col=hcl.colors(3, alpha=.25)[2],
+    border=NA)
+
+# Construct CI across Multiple Samples from the population
+sample_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
+for (b in 1:399) {
+    xy_sim_b <- draw_xy(300) # Entirely new sample
+    reg_b <- loess(y_hat ~ x_hat, data=xy_sim_b, span=span_wage, degree=1)
+    sample_lo[, b] <- predict(reg_b, newdata=pred_design)
+}
+ci_lo <- apply(sample_lo, 1, quantile,
+    probs=c(.025, .975), na.rm=TRUE)
+polygon(
+    c(pred_design[[1]], rev(pred_design[[1]])),
+    c(ci_lo[1, ], rev(ci_lo[2, ])),
+    col=grey(0, alpha=.25),
+    border=NA)
+
+# Population curve, in black as in the Bias plot
+points(x_levels, population_levels, pch=16, col=rgb(0, 0, 0, .8))
+legend('topleft', bty='n', cex=.8,
+    legend=c('Bootstrap CI (one sample)', 'CI across samples', 'Population mean'),
+    pch=c(15, 15, 16),
+    col=c(hcl.colors(3, alpha=.5)[2], grey(0, .5), rgb(0, 0, 0, .8)))
+```
+
+The two bands typically have a similar width, so the bootstrap from one sample gives a reasonable idea of the variation across samples.
+The bootstrap band is centered on the one sample we happen to have, however, so it can sit a little above or below the population curve.
+
+#### **Bias-Variance Decomposition** {-}
+
+The code below computes the squared bias, the variance, and the mean squared error (MSE) from the definition above, for each model's prediction at $12$ years of schooling and each sample size.
+
+```{r}
+# Squared bias, variance, and MSE for each column (sample size)
+truth_target <- population_curve[as.character(x_target)]
+mse_parts <- function(P, truth){
+    bias2 <- (colMeans(P, na.rm=TRUE) - truth)^2
+    variance <- apply(P, 2, var, na.rm=TRUE)
+    mse <- colMeans((P - truth)^2, na.rm=TRUE)
+    return(cbind(bias2, variance, mse))
+}
+parts_lm <- mse_parts(target_lm_sim, truth_target)
+parts_lo <- mse_parts(target_lo_sim, truth_target)
+rownames(parts_lm) <- rownames(parts_lo) <- paste0('n=', n_seq)
+round(parts_lm, 3) # Linear
+round(parts_lo, 3) # Loess
+
+# MSE across sample sizes
+cols <- c(rgb(1, 0, 0, .8), rgb(0, 0, 1, .8))
+matplot(n_seq, cbind(parts_lm[, 'mse'], parts_lo[, 'mse']),
+    type='b', pch=16, lty=1, lwd=2, col=cols,
+    ylab='mean squared error', xlab='sample size',
+    main=NA)
+legend('topright',
+    lty=1, lwd=2, col=cols,
+    legend=c('Linear', paste0('Loess(', span_wage, ')')))
+```
+
+For the linear model, the squared bias stays roughly the same as $n$ grows, while the variance shrinks.
+For LOESS, the squared bias is typically close to zero, and the MSE is mostly variance.
+With small samples, the stable linear model typically has the lower MSE.
+With large samples, the flexible LOESS model typically has the lower MSE.
+
+#### **Consistency** {-}
+
+The bias-variance tradeoff raises a question: can both be reduced simultaneously as $n$ grows?
+For local regression, the answer is yes, provided we shrink the bandwidth as $n$ grows.
+The neighborhood shrinks (reducing bias) while the local sample size still grows (reducing variance).
+This is often written as bandwidth conditions:
+$$
+h_n \to 0
+\quad\text{and}\quad
+n h_n \to \infty.
+$$
+In LOESS language, this corresponds to the span shrinking with $n$, but not too fast.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+A common bandwidth rule shrinks $h$ with the sample size, for example $h_{n}=n^{-1/5}$.
+Check the two conditions:
+
+* $h_{n}=n^{-1/5}\to 0$: at $n=100$ it is about $0.40$; at $n=10{,}000$ it is about $0.16$.
+  The neighborhood shrinks.
+* $n h_{n}=n^{4/5}\to\infty$: at $n=100$ it is about $40$; at $n=10{,}000$ it is about $1585$.
+  The local sample size still grows.
+
+So bias falls (the window narrows) while variance falls (each local fit uses more data).
+```{r}
+n <- c(100, 10000)
+h_n <- n^(-1/5)
+rbind(h_n=round(h_n, 3), n_times_h=round(n*h_n, 1))
+```
+:::
+
+The simulation below illustrates this at one target point, $12$ years of schooling.
+The span is $2n^{-1/5}$, which satisfies the same two conditions as $n^{-1/5}$.
+The factor $2$ keeps the span above $0.5$ for these sample sizes, since about a third of workers have exactly $12$ years of schooling and narrower spans can leave no other schooling levels in the neighborhood, where `loess()` breaks down.
+The mean absolute error in estimating the population mean wage tends to decrease with larger $n$.
+
+```{r}
+#| warning: false
+x_target <- 12 # high school graduates
+n_grid <- c(50, 100, 200, 400, 800)
+n_rep <- 200
+
+avg_abs_err <- numeric(length(n_grid))
+for (ni in seq_along(n_grid)) {
+    n <- n_grid[ni]
+    span_n <- min(0.9, 2*n^(-1/5)) # shrinks with n
+    errs <- replicate(n_rep, {
+        xy_sim <- draw_xy(n)
+        fit <- loess(y_hat ~ x_hat, data=xy_sim, span=span_n, degree=1)
+        y_fit <- predict(fit, newdata=data.frame(x_hat=x_target))
+        abs(y_fit - population_curve[as.character(x_target)])
+    })
+    avg_abs_err[ni] <- mean(errs, na.rm=TRUE)
+}
+
+plot(n_grid, avg_abs_err, type='b', pch=16,
+     xlab='Sample size (n)',
+     ylab='Mean Absolute Error',
+     main=NA)
+```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+With a continuous $\hat{x}$, the span can follow the rule $h_{n}=n^{-1/5}$ directly, without the factor $2$.
+Here yearly productivity depends on age through a smooth true mean, and we check the error at age $40$.
+```{r}
+# True mean productivity at each age
+true_m <- function(x){
+    m_x <- (1E-10*exp(1.4*x - .015*x^2)*x + 5E5) / 10
+    return(m_x)
+}
+
+# Simulate n workers with ages evenly spaced from 15 to 70
+sim_xy <- function(n){
+    x_sim <- seq(15, 70, length.out=n)
+    y_sim <- true_m(x_sim) + runif(n, -5E4, 5E4) # true mean plus noise
+    return(data.frame(y_sim, x_sim))
+}
+
+x_target <- 40  # mid-career age
+n_grid <- c(60, 120, 240, 480)
+n_rep <- 120
+
+avg_abs_err <- numeric(length(n_grid))
+for (ni in seq_along(n_grid)) {
+    n <- n_grid[ni]
+    span_n <- min(0.9, n^(-1/5)) # shrinks with n
+    errs <- replicate(n_rep, {
+        xy_sim <- sim_xy(n)
+        fit <- loess(y_sim ~ x_sim, data=xy_sim, span=span_n, degree=1)
+        y_fit <- predict(fit, newdata=data.frame(x_sim=x_target))
+        abs(y_fit - true_m(x_target))
+    })
+    avg_abs_err[ni] <- mean(errs, na.rm=TRUE)
+}
+
+plot(n_grid, avg_abs_err, type='b', pch=16,
+    xlab='Sample size (n)',
+    ylab='Mean Absolute Error',
+    main=NA)
+```
+:::
+
+A similar result holds for OLS when the data come from a [linear data generating process](02_19_BivariateProbability.qmd#regression-coefficient).
+Even with unlimited data, however, a misspecified model cannot recover the conditional expectation, as the linear fit to the wage population shows.
+
 
 ## Exercises
 
@@ -589,16 +906,13 @@ abline(0, 1, lty = 2, col = grey(0.5))
    Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing.
    Finish with your own questions about whatever you found hardest.
 
-2. Explain the difference between a Type I Error and a Type II Error in the context of testing $H_0: \beta_1 = 0$ for a regression slope.
-   Why does increasing the sample size $n$ improve power without changing the significance level $\alpha$?
-
-3. A screening test has sensitivity $\text{Prob}(Y_i=1|X_i=1) = 0.95$, false positive rate $\text{Prob}(Y_i=1|X_i=0) = 0.10$, and prevalence $\text{Prob}(X_i=1) = 0.05$.
-   Use Bayes' theorem to compute the posterior probability $\text{Prob}(X_i=1|Y_i=1)$.
-   Explain why the posterior is much lower than the sensitivity.
-
-4. Using the `USArrests` dataset, regress `Murder` on `UrbanPop` with `lm`.
+2. Using the `USArrests` dataset, regress `Murder` on `UrbanPop` with `lm`.
    Extract the theoretical $t$-statistic and $p$-value for the slope from `summary()`.
    Then write a bootstrap loop with $B = 399$ replicates to compute a bootstrap $p$-value and compare it to the theoretical one.
+
+3. A linear regression has low variance but can have high bias when the true relationship is nonlinear.
+   A loess regression with a small span has low bias but high variance.
+   Explain why increasing the sample size $n$ helps reduce the standard error for both models, but only helps reduce bias for loess (with an appropriate bandwidth rule).
 
 #### **Further Reading** {-}
 
@@ -606,11 +920,14 @@ Many introductory econometrics textbooks have a good appendix on probability and
 See also the further reading in [Bivariate Probability](02_19_BivariateProbability.qmd).
 
 * <https://www.econometrics-with-r.org/5-htaciam.html> -- hypothesis testing, Type I and Type II errors, and power in a regression context.
-* <https://learningstatisticswithr.com/book/hypothesisTesting.html> -- accessible treatment of null distributions, significance levels, and Bayesian interpretation.
+* <https://learningstatisticswithr.com/book/regression.html#hypothesistestsforregressionmodels> -- testing regression slopes, interpreting p-values, and understanding standard errors.
 * <https://www.khanacademy.org/math/statistics-probability/significance-tests-one-sample/idea-of-significance-tests/v/simple-hypothesis-testing> -- video walkthrough of the logic behind hypothesis tests and p-values.
+* <https://www.khanacademy.org/computing/computer-science/informationtheory/moderninfotheory/v/bias-variance> -- visual introduction to the bias-variance tradeoff that drives bandwidth choice.
 
 #### **Recall** {-}
 
-This chapter built theoretical tests on top of the population objects from the previous chapter: Welch's $t$-test for two means, the theoretical $t_{n-2}$ distribution for a regression slope, the Type I / Type II error distinction with statistical power, and Bayes' theorem for converting a test rejection into a posterior.
+This chapter tested two means with Welch's $t$-test and a regression slope with the theoretical $t_{n-2}$ distribution.
+It also used the large-sample $z$-statistic, which covers a difference in medians as well.
+It then decomposed prediction error into squared bias and variance.
 The `USArrests` bootstrap showed that the histogram of $\hat{t}$ roughly matched the theoretical $t_{n-2}$ density.
-Treating the `Wages1` workers as a population showed the error rates concretely: samples from the real population estimated power across sample sizes $n~\text{in}~\{10, 20, 50, 100, 200\}$, and samples from the shuffled population rejected at a rate near $\alpha$.
+Treating `Wages1` as a known population, the linear fit predicted a mean wage of $5.96$ at $12$ years of schooling against a population mean of $5.67$, a bias that more data does not remove, while the LOESS error was mostly variance that shrank as $n$ grew.

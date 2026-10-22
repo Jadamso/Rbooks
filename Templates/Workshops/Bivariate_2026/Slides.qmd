@@ -1,0 +1,571 @@
+---
+title: "Modern regression methods for economists"
+author: "Jordan Adamson, Thompson Rivers University"
+date: today
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    embed-resources: true
+    code-line-numbers: false
+    fig-width: 9
+    fig-height: 4
+    fig-align: center
+execute:
+  echo: false
+  warning: false
+---
+
+```{r}
+#| include: false
+# Same seed and the same computations, in the same order, as Correlation_Loess.R.
+# The slides then print the same numbers as the lab script.
+set.seed(1)
+
+# Data: 526 US workers from the 1976 Current Population Survey
+xy_hat <- wooldridge::wage1[, c('exper', 'wage')]
+colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=years of potential experience, y_hat=hourly wage (1976 dollars)
+n <- nrow(xy_hat)
+B <- 999
+r_squared <- function(y, y_fit) {
+    cor(y, y_fit)^2
+}
+# One color per model in every figure: correlation and linear regression (red), regressogram (green), loess (blue)
+# Fitted values use the full color, and confidence intervals use a lighter shade of it
+fit_cols <- c(linear=rgb(.8, 0, 0, .8), rgram=rgb(0, .6, 0, .8), loess=rgb(0, 0, .8, .8))
+ci_cols <- c(linear=rgb(.8, 0, 0, .3), rgram=rgb(0, .6, 0, .3), loess=rgb(0, 0, .8, .3))
+
+### Part 1: Correlation
+reg <- lm(y_hat ~ x_hat, data=xy_hat)
+xy_cor <- cor(xy_hat[, 'x_hat'], xy_hat[, 'y_hat'])
+boot_cor <- rep(NA, B)
+boot_slope <- rep(NA, B)
+for (b in 1:B) {
+    xy_b <- xy_hat[sample(n, replace=TRUE), ]
+    boot_cor[b] <- cor(xy_b[, 'x_hat'], xy_b[, 'y_hat'])
+    boot_slope[b] <- coef(lm(y_hat ~ x_hat, data=xy_b))[2]
+}
+boot_ci <- quantile(boot_cor, probs=c(.025, .975))
+slope_ci <- quantile(boot_slope, probs=c(.025, .975))
+perm_cor <- rep(NA, B)
+for (b in 1:B) {
+    xy_p <- xy_hat
+    xy_p[, 'x_hat'] <- sample(xy_hat[, 'x_hat'], replace=FALSE)
+    perm_cor[b] <- cor(xy_p[, 'x_hat'], xy_p[, 'y_hat'])
+}
+p_cor <- mean(abs(perm_cor) >= abs(xy_cor))
+
+### Part 2: A regressogram
+bin_breaks <- c(0, 10, 20, 30, 40, 51)
+xy_hat[, 'bin'] <- cut(xy_hat[, 'x_hat'], breaks=bin_breaks)
+bin_means <- tapply(xy_hat[, 'y_hat'], xy_hat[, 'bin'], mean)
+rgram <- lm(y_hat ~ 0 + bin, data=xy_hat)
+rgram_r2 <- r_squared(xy_hat[, 'y_hat'], predict(rgram))
+boot_bins <- matrix(NA, nrow=B, ncol=length(bin_means))
+colnames(boot_bins) <- names(bin_means)
+for (b in 1:B) {
+    xy_b <- xy_hat[sample(n, replace=TRUE), ]
+    boot_bins[b, ] <- tapply(xy_b[, 'y_hat'], xy_b[, 'bin'], mean)
+}
+bin_ci <- apply(boot_bins, 2, quantile, probs=c(.025, .975))
+perm_rgram_r2 <- rep(NA, B)
+for (b in 1:B) {
+    xy_p <- xy_hat
+    xy_p[, 'x_hat'] <- sample(xy_hat[, 'x_hat'], replace=FALSE)
+    xy_p[, 'bin'] <- cut(xy_p[, 'x_hat'], breaks=bin_breaks)
+    rgram_p <- lm(y_hat ~ 0 + bin, data=xy_p)
+    perm_rgram_r2[b] <- r_squared(xy_p[, 'y_hat'], predict(rgram_p))
+}
+p_rgram <- mean(perm_rgram_r2 >= rgram_r2)
+
+### Part 3: Loess
+reg_lo <- loess(y_hat ~ x_hat, data=xy_hat, degree=1)
+lo_r2 <- r_squared(xy_hat[, 'y_hat'], predict(reg_lo))
+pred_design <- data.frame(x_hat=seq(min(xy_hat[, 'x_hat']), max(xy_hat[, 'x_hat'])))
+y_fit_lo <- predict(reg_lo, newdata=pred_design)
+lo_peak <- pred_design[which.max(y_fit_lo), 'x_hat']
+boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=B)
+for (b in 1:B) {
+    xy_b <- xy_hat[sample(n, replace=TRUE), ]
+    reg_lo_b <- loess(y_hat ~ x_hat, data=xy_b, degree=1)
+    boot_lo[, b] <- predict(reg_lo_b, newdata=pred_design)
+}
+lo_cb <- apply(boot_lo, 1, quantile, probs=c(.025, .975), na.rm=TRUE)
+boot_peak <- apply(boot_lo, 2, function(y_fit) pred_design[which.max(y_fit), 'x_hat'])
+peak_ci <- quantile(boot_peak, probs=c(.025, .975))
+perm_lo_r2 <- rep(NA, B)
+for (b in 1:B) {
+    xy_p <- xy_hat
+    xy_p[, 'x_hat'] <- sample(xy_hat[, 'x_hat'], replace=FALSE)
+    reg_lo_p <- loess(y_hat ~ x_hat, data=xy_p, degree=1)
+    perm_lo_r2[b] <- r_squared(xy_p[, 'y_hat'], predict(reg_lo_p))
+}
+p_lo <- mean(perm_lo_r2 >= lo_r2)
+
+### Extension: marginal effects
+# Slope of a loess curve at x, from a small step on each side of x
+# At the edges of the data the curve was fit to, the step uses only the side inside the data
+lo_slope <- function(lo_fit, x, eps=.01) {
+    x_range <- range(lo_fit[['x']])
+    x_lo <- pmax(x - eps, x_range[1])
+    x_hi <- pmin(x + eps, x_range[2])
+    y_lo <- predict(lo_fit, newdata=data.frame(x_hat=x_lo))
+    y_hi <- predict(lo_fit, newdata=data.frame(x_hat=x_hi))
+    (y_hi - y_lo) / (x_hi - x_lo)
+}
+# Mean marginal effect: the slope at each worker's experience, averaged over workers
+me_mean <- mean(lo_slope(reg_lo, xy_hat[, 'x_hat']))
+# Marginal effect at the mean: the slope at the mean experience
+me_at_mean <- lo_slope(reg_lo, mean(xy_hat[, 'x_hat']))
+
+# Bootstrap both marginal effects: resample workers, refit loess, and recompute each one
+boot_me <- matrix(NA, nrow=B, ncol=2)
+for (b in 1:B) {
+    xy_b <- xy_hat[sample(n, replace=TRUE), ]
+    reg_lo_b <- loess(y_hat ~ x_hat, data=xy_b, degree=1)
+    boot_me[b, 1] <- mean(lo_slope(reg_lo_b, xy_b[, 'x_hat']))
+    boot_me[b, 2] <- lo_slope(reg_lo_b, mean(xy_b[, 'x_hat']))
+}
+# Percentile confidence interval for each, one column per marginal effect
+me_ci <- apply(boot_me, 2, quantile, probs=c(.025, .975))
+
+### Helpers for the slides only
+# Print a permutation p-value, writing 0 as "< 1/B"
+p_fmt <- function(p) {
+    if (p == 0) paste0('< ', round(1 / B, 3)) else paste0('= ', round(p, 3))
+}
+# Labels shared by every scatterplot
+x_lab <- 'Years of potential experience'
+y_lab <- 'Hourly wage (1976 dollars)'
+# Shorter labels for multi-panel figures
+x_lab_short <- 'Experience (years)'
+y_lab_short <- 'Hourly wage'
+bin_lower <- bin_breaks[-length(bin_breaks)]
+bin_upper <- bin_breaks[-1]
+# Loess bandwidth at a design point: the distance from x to its q-th nearest worker
+lo_q <- floor(reg_lo[['pars']][['span']] * n)
+lo_h <- function(x) sort(abs(xy_hat[, 'x_hat'] - x))[lo_q]
+```
+
+## Overview {.smaller}
+
+Slides
+
+* Bootstrap and permutation for correlation and simple regression
+* Regressograms and loess
+* How and why to teach this
+
+Lab
+
+* RStudio: bootstrap CI and permutation $p$-value for correlation
+* RStudio: regressogram and loess with same two loops
+* Claude: review and extend the script
+
+# Correlation and simple linear regression
+
+## What: correlation and regression {.smaller}
+Data on two variables: $\hat{x}, \hat{y}$ have means: $\hat{m}_{Y} = \sum_{i} \hat{y}_{i}/n,~ \hat{m}_{X}=\sum_{i}\hat{x}_{i}/n$.
+
+Pearson correlation:
+$$\begin{aligned}
+\hat{r}_{XY} &= \frac{\hat{c}_{XY}}{\hat{s}_{X} \hat{s}_{Y}} \\
+\hat{c}_{XY} &= \sum_{i=1}^{n} [\hat{x}_{i} - \hat{m}_{X}] [\hat{y}_{i} - \hat{m}_{Y}] / n \quad \quad \hat{s}_{X}=\sqrt{ \hat{c}_{XX} }
+\end{aligned}$$
+
+Simple linear regression: fit a line to data by minimizing squared errors
+$$\begin{aligned}
+\hat{y}_{i} &= b_{0} + b_{1} \hat{x}_{i} + \hat{e}_{i} \\
+\hat{b}_{1} &= \frac{\hat{c}_{XY}}{\hat{s}_{X}^2} \quad \quad \hat{b}_{0} = \hat{m}_{Y} - \hat{b}_{1} \hat{m}_{X} \\
+\hat{y}_{i}^{\mathrm{fit}} &= \hat{b}_{0} + \hat{b}_{1} \hat{x}_{i} \quad \quad \hat{R}^{2} = \hat{r}_{Y Y^{\mathrm{fit}}}^{2}
+\end{aligned}$$
+
+
+## Example: wages and experience, 1976
+
+```{r}
+#| fig-height: 4.6
+par(mar=c(4.5, 4.5, 1, 1), cex.axis=1.2, cex.lab=1.3)
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .25), main=NA,
+    xlab=x_lab, ylab=y_lab)
+abline(reg, col=fit_cols['linear'], lwd=2)
+```
+
+Correlation $\hat{r}_{XY} = `r round(xy_cor, 3)`$ and slope $\hat{b}_{1} = `r round(coef(reg)[2], 3)`$, from `wooldridge::wage1` (1976 Current Population Survey).
+
+# Resampling pairs
+
+## What: two ways to resample pairs
+
+Bootstrap
+
+* Draw $n$ workers with replacement
+* Each worker keeps their own experience and wage
+* Estimates sampling variability $\to$ confidence interval
+
+Permutation
+
+* Shuffle experience without replacement
+* Breaks the pairing, which imposes no association
+* Builds a null distribution $\to$ $p$-value
+
+## Example: one resample of each kind
+
+```{r}
+#| fig-height: 3.2
+# One example resample of each kind, drawn after the lab computations above
+xy_b1 <- xy_hat[sample(n, replace=TRUE), ]
+xy_p1 <- xy_hat
+xy_p1[, 'x_hat'] <- sample(xy_hat[, 'x_hat'], replace=FALSE)
+xy_list <- list(Data=xy_hat, Bootstrap=xy_b1, Permuted=xy_p1)
+
+par(mfrow=c(1, 3))
+# Undo the smaller text that mfrow sets for three panels
+par(mar=c(4.5, 4.5, 2, 1), cex=1.1)
+for (k in seq_along(xy_list)) {
+    xy_k <- xy_list[[k]]
+    plot(y_hat ~ x_hat, data=xy_k, pch=16, col=grey(0, .25), main=NA,
+        xlab=x_lab_short, ylab=y_lab_short)
+    abline(lm(y_hat ~ x_hat, data=xy_k), col=fit_cols['linear'], lwd=2)
+    r_k <- cor(xy_k[, 'x_hat'], xy_k[, 'y_hat'])
+    title(paste0(names(xy_list)[k], ': r = ', round(r_k, 3)), font.main=1)
+}
+```
+
+* Bootstrap: repeated workers look darker, others drop out
+* Permutation: the same wages and experience, paired at random
+
+## How: two loops
+
+```{r}
+#| echo: true
+#| eval: false
+# Data
+xy_hat # matrix with two columns
+
+# Bootstrap: resample workers with replacement, keeping each pair together
+for (b in 1:B) {
+    xy_b <- xy_hat[sample(n, replace=TRUE), ]
+    boot_cor[b] <- cor(xy_b)
+}
+boot_ci <- quantile(boot_cor, probs=c(.025, .975))
+
+# Permutation: shuffle experience without replacement, breaking the pairs
+for (b in 1:B) {
+    xy_p <- xy_hat
+    xy_p[,1] <- sample(xy_hat[,1], replace=FALSE)
+    perm_cor[b] <- cor(xy_p)
+}
+p_cor <- mean(abs(perm_cor) >= abs(xy_cor))
+```
+
+
+## Results: `r B` resamples of each kind
+
+```{r}
+#| fig-height: 3.4
+par(mfrow=c(1, 2))
+# Undo the smaller text that mfrow sets for two panels
+par(mar=c(4.5, 4.5, 2, 1), cex=1.1)
+
+hist(boot_cor, breaks=50, border=NA, freq=FALSE, main=NA,
+    xlab='Bootstrap correlation')
+abline(v=boot_ci, col=ci_cols['linear'], lwd=2)
+abline(v=xy_cor, col=fit_cols['linear'], lwd=2)
+title('Bootstrap', font.main=1)
+
+hist(perm_cor, breaks=50, border=NA, freq=FALSE, main=NA,
+    xlim=range(c(perm_cor, xy_cor)), xlab='Permuted correlation')
+abline(v=xy_cor, col=fit_cols['linear'], lwd=2)
+title('Permutation', font.main=1)
+```
+
+* $95\%$ bootstrap CI: $[`r round(boot_ci[1], 3)`, `r round(boot_ci[2], 3)`]$
+* Permutation $p `r p_fmt(p_cor)`$: the share of shuffles with $|\hat{r}_{XY}| \geq `r round(xy_cor, 3)`$
+
+## Why: inference without formulas
+
+* One loop for any statistic: swap `cor` for a slope, a median correlation, or $\hat{R}^{2}$
+* The null becomes concrete: what would $\hat{r}_{XY}$ look like if experience and wages were unrelated?
+* No Fisher $z$ transform or $t$ tables
+* Students already know the bootstrap loop from Stats I
+
+## Significant, but weak?
+
+* $\hat{r}_{XY} = `r round(xy_cor, 3)`$ with $p `r p_fmt(p_cor)`$
+* The line explains $`r round(100 * xy_cor^2, 1)`\%$ of the variation in wages
+
+One student: *wages clearly rise with experience*.
+
+Another: *no way, my grandfather earned less near retirement*.
+
+Is the relationship between wages and experience weak?
+
+# Regressogram
+
+## What: the mean of $\hat{y}$ within bins of $\hat{x}$ {.smaller}
+
+For the bin with midpoint $x$ and half-width $h$, the dummy $\hat{d}_{i}(x,h)$ marks the workers in that bin:
+$$\hat{d}_{i}(x,h) = \mathbf{1}\left(\hat{x}_{i}~\text{in}~(x-h, x+h]\right)$$
+
+The regressogram reports the mean of the $n(x,h)$ workers in that bin:
+$$\hat{m}_{Y}(x,h) = \frac{\sum_{i=1}^{n} \hat{y}_{i} \hat{d}_{i}(x,h)}{n(x,h)}.$$
+
+* Histograms count observations in bins of $\hat{x}$
+* Regressograms average $\hat{y}$ in bins of $\hat{x}$
+
+## How: OLS on bin dummies
+
+Regress $\hat{y}_{i}$ on one dummy per bin, with no intercept:
+$$\hat{y}_{i} = \sum_{x} b_{0}(x,h) \hat{d}_{i}(x,h) + \hat{e}_{i}$$
+
+* Each worker is in exactly one bin, so the sum of squared errors splits into one sum per bin
+* Within a bin, the least squares constant is the mean: $\hat{b}_{0}(x,h) = \hat{m}_{Y}(x,h)$
+
+## Example: mean wage by decade
+
+```{r}
+#| fig-height: 4.4
+par(mar=c(4.5, 4.5, 1, 1), cex.axis=1.2, cex.lab=1.3)
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .25), main=NA,
+    xlab=x_lab, ylab=y_lab)
+rect(bin_lower, bin_ci[1, ], bin_upper, bin_ci[2, ], col=ci_cols['rgram'], border=NA)
+segments(bin_lower, bin_means, bin_upper, bin_means, col=fit_cols['rgram'], lwd=2)
+```
+
+* Mean wage rises from $`r sprintf('%.2f', bin_means[1])`$ to $`r sprintf('%.2f', bin_means[3])`$, then falls to $`r sprintf('%.2f', bin_means[5])`$
+* Light green: bootstrap $95\%$ CI for each bin mean
+
+A weak correlation does not mean a weak relationship.
+
+## Permutation: is the hump noise?
+
+```{r}
+#| fig-height: 3.6
+par(mar=c(4.5, 4.5, 1, 1), cex.axis=1.2, cex.lab=1.3)
+hist(perm_rgram_r2, breaks=50, border=NA, freq=FALSE, main=NA,
+    xlim=range(c(perm_rgram_r2, rgram_r2)),
+    xlab='Permuted regressogram R-squared')
+abline(v=rgram_r2, col=fit_cols['rgram'], lwd=2)
+```
+
+* Shuffle experience, recompute the bins, and refit
+* Pure noise still gives $\hat{R}^{2} > 0$, about $`r round(mean(perm_rgram_r2), 3)`$ on average
+* No shuffle reaches $`r round(rgram_r2, 3)`$, so $p `r p_fmt(p_rgram)`$
+
+## Why: flexible fits find patterns in noise
+
+* More bins always raise $\hat{R}^{2}$, even with no relationship
+* The permutation distribution shows how much $\hat{R}^{2}$ noise alone produces
+* So the same shuffle calibrates any fit, however flexible
+
+# Loess
+
+## What: a local regression at each $x$ {.smaller}
+
+* At each design point $x$, fit a weighted regression to nearby workers
+* "Nearby" is a share of the data, set by `span` (default $`r reg_lo[['pars']][['span']]`$)
+* `degree=0` is locally-weighted average, `degree=1` is locally-weighted line 
+* Fitted mean at $x$: 
+
+
+$$\begin{aligned}
+\hat{m}_{Y}(x,h) &= \hat{b}_{0}(x,h) + \hat{b}_{1}(x,h) x \\
+\hat{b}_{0} &= \sum_{i} \hat{y}_{i} k\left(\hat{x}_{i}, x, h\right)
+\end{aligned}$$
+
+## How: weighted least squares at each $x$ {.smaller}
+
+At each design point $x$, loess fits a local line by weighted least squares:
+$$\min_{b_{0}(x,h), b_{1}(x,h)}~ \sum_{i=1}^{n}\left[\hat{y}_{i} - b_{0}(x,h) - b_{1}(x,h) \hat{x}_{i} \right]^{2} k\left(\hat{x}_{i}, x, h\right)$$
+
+The tricube weights fall smoothly from $1$ at $x$ to $0$ at distance $h$:
+$$k\left(\hat{x}_{i}, x, h\right) = \left(1 - \left|\frac{\hat{x}_{i} - x}{h}\right|^{3}\right)^{3} \mathbf{1}\left(|\hat{x}_{i} - x| \leq h\right)$$
+
+* Adaptive bandwidth: $h$ is the distance from $x$ to its $q$-th nearest $\hat{x}_{i}$, with $q = \lfloor \text{span} \times n \rfloor.$
+
+## Example: the hump in wages
+
+```{r}
+#| fig-height: 4.4
+par(mar=c(4.5, 4.5, 1, 1), cex.axis=1.2, cex.lab=1.3)
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .25), main=NA,
+    xlab=x_lab, ylab=y_lab)
+polygon(c(pred_design[, 'x_hat'], rev(pred_design[, 'x_hat'])),
+    c(lo_cb[1, ], rev(lo_cb[2, ])), col=ci_cols['loess'], border=NA)
+lines(pred_design[, 'x_hat'], y_fit_lo, col=fit_cols['loess'], lwd=2)
+```
+
+* Fitted wages peak at $`r lo_peak`$ years of experience
+* Bootstrap $95\%$ CI for the peak: $[`r peak_ci[1]`, `r peak_ci[2]`]$ years
+
+## How: a band from bootstrap curves
+
+```{r}
+#| fig-height: 3.4
+par(mfrow=c(1, 2))
+# Undo the smaller text that mfrow sets for two panels
+par(mar=c(4.5, 4.5, 2, 1), cex=1.1)
+y_lim <- range(lo_cb, na.rm=TRUE)
+
+# A few bootstrap curves, each from one resample of workers
+matplot(pred_design[, 'x_hat'], boot_lo[, 1:50], type='l', lty=1,
+    col=ci_cols['loess'], ylim=y_lim, main=NA, xlab=x_lab_short, ylab=y_lab_short)
+lines(pred_design[, 'x_hat'], y_fit_lo, col=fit_cols['loess'], lwd=2)
+title('50 bootstrap curves', font.main=1)
+
+# Middle 95% of all bootstrap curves at each x
+plot(NA, xlim=range(pred_design[, 'x_hat']), ylim=y_lim, main=NA,
+    xlab=x_lab_short, ylab=y_lab_short)
+polygon(c(pred_design[, 'x_hat'], rev(pred_design[, 'x_hat'])),
+    c(lo_cb[1, ], rev(lo_cb[2, ])), col=ci_cols['loess'], border=NA)
+lines(pred_design[, 'x_hat'], y_fit_lo, col=fit_cols['loess'], lwd=2)
+title(paste0('95% band from ', B, ' curves'), font.main=1)
+```
+
+* Same loop, now storing a whole curve per resample
+* Wider at the edges, where workers are scarce
+
+## Permutation: the same test for loess
+
+```{r}
+#| fig-height: 3.6
+par(mar=c(4.5, 4.5, 1, 1), cex.axis=1.2, cex.lab=1.3)
+hist(perm_lo_r2, breaks=50, border=NA, freq=FALSE, main=NA,
+    xlim=range(c(perm_lo_r2, lo_r2)),
+    xlab='Permuted loess R-squared')
+abline(v=lo_r2, col=fit_cols['loess'], lwd=2)
+```
+
+* Noise alone gives loess an $\hat{R}^{2}$ of about $`r round(mean(perm_lo_r2), 3)`$ on average
+* No shuffle reaches $`r round(lo_r2, 3)`$, so $p `r p_fmt(p_lo)`$
+
+## Three descriptions, two loops {.smaller}
+
+| Description | $\hat{R}^{2}$ | Bootstrap | Permutation $p$-value |
+|---|---|---|---|
+| Linear | $`r round(xy_cor^2, 3)`$ | CI for $\hat{b}_{1}$ | $p `r p_fmt(p_cor)`$ |
+| Regressogram | $`r round(rgram_r2, 3)`$ | CI for each bin mean | $p `r p_fmt(p_rgram)`$ |
+| Loess | $`r round(lo_r2, 3)`$ | CI band for the curve | $p `r p_fmt(p_lo)`$ |
+
+
+## Gradients {.smaller}
+
+Loess is consistent ($n\to\infty, h\to 0$), simple linear regression is not.
+
+The linear regression coefficient estimates neither the mean marginal effect (gradient) nor the marginal effect at the mean:
+
+* slope of the loess curve at $x$ is $\hat{m}_{Y}(x) \to \mathbb{E}[Y_{i} | X_{i}=x]$ .
+* $\hat{b}_{1} \neq \sum_{i} [d \hat{m}_{Y}(\hat{x}_{i}) / dx] / n~$ or $~d \hat{m}_{Y}(\hat{m}_{X}) / dx$.
+
+| Slope | Hourly wage gain per year (1976 dollars) | Bootstrap $95\%$ CI |
+|--------|------|-----|
+| Linear regression coefficient | $`r round(coef(reg)[2], 3)`$ | $[`r round(slope_ci[1], 3)`, `r round(slope_ci[2], 3)`]$ |
+| Mean marginal effect | $`r round(me_mean, 3)`$ | $[`r round(me_ci[1, 1], 3)`, `r round(me_ci[2, 1], 3)`]$ |
+| Marginal effect at the mean | $`r round(me_at_mean, 3)`$ | $[`r round(me_ci[1, 2], 3)`, `r round(me_ci[2, 2], 3)`]$ |
+
+
+## Visual Model Comparison
+```{r}
+#| fig-height: 6
+# Two panels on top, with one shared legend below them
+layout(matrix(c(1, 2, 3, 3), nrow=2, byrow=TRUE), heights=c(1, .12))
+# Undo the smaller text that layout sets for several panels
+par(mar=c(4.5, 4.5, 2, 1), cex=1.1)
+# Wages on a log scale, so the low wages are easier to see
+y_lim <- range(xy_hat[, 'y_hat'])
+
+# Left: the three fits by experience
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .25), main=NA,
+    xlab=x_lab_short, ylab='Hourly wage, log scale', log='y', ylim=y_lim)
+lines(pred_design[, 'x_hat'], predict(reg, newdata=pred_design), col=fit_cols['linear'], lwd=3)
+segments(bin_lower, bin_means, bin_upper, bin_means, col=fit_cols['rgram'], lwd=3)
+lines(pred_design[, 'x_hat'], y_fit_lo, col=fit_cols['loess'], lwd=3)
+title('Fits by experience', font.main=1)
+
+# Right: each worker's fitted wage from each model against their actual wage
+# The vertical axis covers only the fitted wages
+# Small, more transparent points, since the three models overlap
+y_fit <- cbind(predict(reg), predict(rgram), predict(reg_lo))
+matplot(xy_hat[, 'y_hat'], y_fit, pch=16, cex=.5, col=adjustcolor(fit_cols, alpha.f=.3),
+    main=NA, xlab='Hourly wage', ylab='Fitted wage')
+# The fit equals the data on the 45-degree line
+abline(0, 1, lty=2)
+title('Fits vs data', font.main=1)
+
+# Shared legend, outside both panels
+par(mar=c(0, 0, 0, 0))
+plot.new()
+fit_labs <- c('Linear', 'Regressogram', 'Loess')
+# Give each entry its own width plus a gap, so the entries do not run together
+legend('center', legend=fit_labs, col=fit_cols, lty=1, lwd=3, pch=16, bty='n', horiz=TRUE,
+    text.width=strwidth(fit_labs) + strwidth('    '))
+```
+
+
+# How to teach this?
+
+## Ways to incorporate
+
+1 Day Theory + 1 Day Lab.
+
+* Follows the ECDF and bootstrap workshop: the same loop, now resampling pairs
+* Two loops times any statistic: a correlation, bin means, a whole curve, $\hat{R}^{2}$
+* The shuffle could stand in for the $t$-test of a correlation and the $F$-test of ANOVA
+
+Students see the data before the summary statistic.
+
+## Caveats worth teaching
+
+* Bands are pointwise: $95\%$ at each $x$, not for the whole curve
+* Permutation tests for any association, not for a hump
+* Bin width and span are choices (bias-variance tradeoff)
+* Association is not causation
+* A cross-section mixes experience with cohort differences
+
+## Why economists should care
+
+* Marginal vs. average stressed in theory now possible empirically:
+    * e.g., Diminishing marginal returns is also sometimes a fact, not just an assumption
+* Tradeoffs to different types of models:
+    * Loess fits better than OLS in many econometrics textbook examples
+    * Simple Linear is good for prediction ([Friedman, 1953](https://press.uchicago.edu/ucp/books/book/chicago/E/bo25773835.html); [Hastie, Tibshirani, and Friedman, 2009](https://hastie.su.domains/ElemStatLearn/))
+
+## Whole Curriculum closer to [ASA](https://www.amstat.org/docs/default-source/amstat-documents/guidelines2014-11-15.pdf) {.smaller}
+
+**Directly**
+
+* *"Resampling methods (including bootstrapping and permutation tests)"*
+* *"A smaller set of methods, rather than a comprehensive laundry list"*: one resampling loop for correlations, bin means, and curves
+* *"Nonparametric regression"*, *"smoothing/kernel estimation"*: regressograms and loess
+
+**Indirectly**
+
+* *"A modern statistical theory course might, for example, include work on computer-intensive methods and non-parametric modeling"*
+* *"model assessment"*: bias-variance tradeoff, cross-validation, p-hacking
+* *"Effective visual displays and compelling written summaries"*: `quarto` reports
+
+Also [GAISE](https://asacollegegaise.org/recommendations): *"Real data"*, *"Concepts over formulas"*, *"Software to explore concepts"*.
+
+## Useful material {.smaller}
+
+Additional material from my textbook <https://jadamso.github.io/Rbooks/>
+
+* [Statistics of Association (Ch. 14)](https://jadamso.github.io/Rbooks/02_14_Associations.html)
+* [Simple Regression (Ch. 15)](https://jadamso.github.io/Rbooks/02_15_SimpleRegression.html)
+* [Local Regression (Ch. 17)](https://jadamso.github.io/Rbooks/02_17_LocalRegression.html)
+* [Gradients (Ch. 18)](https://jadamso.github.io/Rbooks/02_18_Gradients.html)
+* [Working with AI (Appendix A)](https://jadamso.github.io/Rbooks/04_A_WorkingWithAI.html)
+
+```{r}
+#| echo: false
+#| output: asis
+# Embed this file's own source as a downloadable data URI, using base R only
+src_text <- paste(readLines('Slides.qmd', warn=FALSE), collapse='\n')
+src_uri <- paste0('data:text/plain;charset=utf-8,', URLencode(src_text, reserved=TRUE))
+cat(sprintf(
+    '<p><a href="%s" download="Slides.qmd">Download slide source (Slides.qmd)</a></p>',
+    src_uri
+))
+```
+
+See also the lab handout and `Correlation_Loess.R`.

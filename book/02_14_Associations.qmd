@@ -17,20 +17,22 @@ The *covariance* $\hat{c}_{XY}$ is the average product of paired deviations from
 $$\hat{c}_{XY} =  \sum_{i=1}^{n} [\hat{x}_{i} - \hat{m}_{X}] [\hat{y}_i - \hat{m}_{Y}] / n.$$
 :::
 
-The *covariance* is useful as the building block for every other linear two-variable statistic: it is positive when $\hat{x}_{i}$ and $\hat{y}_{i}$ tend to be above or below their means together, negative when they tend to move apart, and zero when there is no linear co-movement.
+The *covariance* is useful as a building block for other linear two-variable statistics.
+It is positive when $\hat{x}_{i}$ and $\hat{y}_{i}$ tend to be above or below their means together.
+It is negative when they tend to move apart, and zero when there is no linear co-movement.
 Its units are the units of $\hat{x}_{i}$ times the units of $\hat{y}_{i}$, which makes raw values hard to compare across datasets.
 Note that the covariance of $\hat{x}$ with itself is just its variance, $\hat{c}_{XX}=\hat{v}_{X}$, and the standard deviation is $\hat{s}_{X}=\sqrt{\hat{v}_{X}}$.
 
 For an interpretable, unit-free measure that is comparable across datasets, we rescale the covariance.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *Pearson correlation* $\hat{r}_{XY}$ rescales the covariance by the product of the two standard deviations:
+The *Pearson correlation* $\hat{r}_{XY}$ [@Pearson1896] rescales the covariance by the product of the two standard deviations:
 $$\hat{r}_{XY} = \frac{ \hat{c}_{XY} }{ \hat{s}_{X} \hat{s}_{Y}}.$$
 :::
 
-The *Pearson correlation* is useful as the workhorse unit-free summary of *linear* association: it is constrained to $[-1, 1]$, with $+1$ for a perfect rising line, $-1$ for a perfect falling line, and $0$ for no linear association.
+The *Pearson correlation* is useful as the standard unit-free summary of *linear* association.
+It is constrained to $[-1, 1]$, with $+1$ for a perfect rising line, $-1$ for a perfect falling line, and $0$ for no linear association.
 Because the bounds are the same in every dataset, it lets us compare the strength of two-variable associations across studies.
-A value close to $-1$ suggests negative association, a value close to $0$ suggests no linear association, and a value close to $+1$ suggests positive association.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 What is the correlation for the dataset $\{ (0,0.1) , (1, 0.3), (2, 0.2) \}$?
@@ -120,10 +122,32 @@ cor(x0_hat, y0_hat)
 ```
 :::
 
+For example, consider years of schooling and hourly wages for the $3294$ workers in `Wages1`.
+```{r}
+# Load the Data
+data(Wages1, package='Ecdat')
+xy2_hat <- Wages1[, c('school', 'wage')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
+
+# Scatterplot
+plot(y_hat ~ x_hat, data=xy2_hat, pch=16, col=grey(0, .1),
+    main=NA, xlab='Years of schooling', ylab='Hourly wage (1980 dollars)')
+
+# Covariance: cov() divides by n-1 rather than n, which barely matters with n=3294
+cov(xy2_hat[, 'x_hat'], xy2_hat[, 'y_hat'])
+
+# Correlation
+xy2_cor <- cor(xy2_hat[, 'x_hat'], xy2_hat[, 'y_hat'])
+xy2_cor
+```
+The covariance is positive, but its units (years times dollars per hour) are hard to judge.
+The correlation of about $0.28$ suggests a positive but weak linear association.
+Workers with more schooling tend to earn more, but wages vary a lot at every level of schooling.
+
 #### **Hypothesis Testing** {-}
 
 You can conduct hypothesis tests for these statistics using the same procedures we learned for univariate data, [Intervals](01_07_Intervals.qmd).
-For example, by inverting a confidence interval.
+For example, you can do so by inverting a confidence interval.
 Consider the correlation between urban population share and murder arrests across US states.
 `USArrests` covers all $50$ states, so it is the whole population of states rather than a sample from it.
 To make the bootstrap below meaningful, pretend we observed only a random sample of $35$ states, as in [Comparing Multiple Groups](02_13_MultipleGroups.qmd#describing-groups).
@@ -192,7 +216,38 @@ perm_ci <- quantile(null_permutation_cor, probs=c(0.025, 0.975))
 abline(v=perm_ci, col=rgb(0, 0, 0, .8), lwd=2)
 abline(v=xy_cor, col=rgb(1, 0, 0, .8), lwd=2)
 ```
-All dependence resides in the pairing, and permuting one margin destroys the pairing completely.
+Any association between $\hat{x}$ and $\hat{y}$ comes from how their values are paired.
+Shuffling $\hat{x}$ keeps its values but breaks the pairing.
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Here is the same permutation test for the correlation between schooling and wages in `Wages1`.
+```{r}
+# xy2_hat and xy2_cor defined above
+# Null Permutation Distribution of Correlation
+n2 <- nrow(xy2_hat)
+null_permutation_cor2 <- rep(NA, 9999)
+for(b in seq(null_permutation_cor2) ){
+    xy2_perm <- xy2_hat
+    xy2_perm[, 'x_hat'] <- xy2_hat[sample(n2, replace=FALSE), 'x_hat'] ## Reshuffle X
+    xy2_cor_b <- cor(xy2_perm[, 'x_hat'], xy2_perm[, 'y_hat'])
+    null_permutation_cor2[b] <- xy2_cor_b
+}
+hist(null_permutation_cor2, breaks=100,
+    border=NA, freq=FALSE,
+    xlim=range(c(null_permutation_cor2, xy2_cor)),
+    xlab='Correlation',
+    main=NA)
+title('Null Permutation Distribution', font.main=1)
+
+## Test whether correlation is statistically different from 0
+perm_ci2 <- quantile(null_permutation_cor2, probs=c(0.025, 0.975))
+abline(v=perm_ci2, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=xy2_cor, col=rgb(1, 0, 0, .8), lwd=2)
+```
+With $3294$ workers, the shuffled correlations stay within a few hundredths of $0$, so the observed correlation of about $0.28$ is far outside them.
+Edit the code to use years of experience (`exper`) in place of schooling.
+That correlation is much smaller; is it still statistically different from $0$?
 :::
 
 So the bootstrap evaluates sampling variability in the world that generated your data.
@@ -238,14 +293,16 @@ Compare this distribution to the permutation distribution above.
 #### **Robust Correlation** {-}
 
 When the data contain outliers, the mean-based covariance can be misleading and a robust alternative is needed.
-The *Falk codeviance* $\tilde{c}_{XY}$ replaces the mean-based average in the covariance with the median of paired deviations from each variable's median (where $\tilde{m}_{X}$ and $\tilde{m}_{Y}$ are the sample medians):
+The *Falk codeviance* $\tilde{c}_{XY}$ [@Falk1997] replaces the mean-based average in the covariance with the median of paired deviations from each variable's median (where $\tilde{m}_{X}$ and $\tilde{m}_{Y}$ are the sample medians):
 $$\tilde{c}_{XY} = \text{Med}\left\{ (\hat{x}_{i} - \tilde{m}_{X})(\hat{y}_i - \tilde{m}_{Y}) \right\}.$$
 
 *Falk's median correlation* $\tilde{r}_{XY}$ rescales the codeviance by the product of the two median absolute deviations:
 $$\tilde{r}_{XY} = \frac{ \tilde{c}_{XY} }{ \hat{\text{MAD}}_{X} \hat{\text{MAD}}_{Y}}.$$
 
-The Falk codeviance is useful for cardinal data with outliers or heavy tails (income, prices, response times), where one extreme observation can move $\hat{c}_{XY}$ by a lot but $\tilde{c}_{XY}$ by very little (the same robustness rationale as for the median, $\hat{\text{IQR}}$, and $\hat{\text{MAD}}$ from Part 1).^[See [Center/Spread based on Quantiles](01_03_SummaryStatistics.qmd#centerspread-based-on-quantiles). See also the *Theil-Sen Estimator*, which may be seen as a precursor.]
-Unlike the Pearson correlation, Falk's median correlation $\tilde{r}_{XY}$ typically lies in $[-1,1]$ but not always.
+The Falk codeviance is useful for cardinal data with outliers or heavy tails, such as income and prices.
+One extreme observation can move $\hat{c}_{XY}$ by a lot but $\tilde{c}_{XY}$ by very little.
+The median, $\hat{\text{IQR}}$, and $\hat{\text{MAD}}$ from Part 1 are robust for the same reason.^[See [Center/Spread based on Quantiles](01_03_SummaryStatistics.qmd#centerspread-based-on-quantiles). See also the *Theil-Sen Estimator* [@Theil1950; @Sen1968], which may be seen as a precursor.]
+Falk's median correlation $\tilde{r}_{XY}$ typically lies in $[-1,1]$ but, unlike the Pearson correlation, not always.
 ```{r}
 codev <- function(xy) {
   # Compute medians for each column
@@ -325,7 +382,7 @@ abline(v=xy_med_cor, col=rgb(1, 0, 0, .8), lwd=2)
 When the data are ordered (rankings or ordered categories), we can summarize association by counting which pairs of observations agree in direction.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-*Kendall's rank correlation* $\hat{\text{KT}}$ is the share of variable-pairs that agree in direction (concordant) minus the share that disagree (discordant):
+*Kendall's rank correlation* $\hat{\text{KT}}$ [@Kendall1938] is the share of variable-pairs that agree in direction (concordant) minus the share that disagree (discordant):
 $$\hat{\text{KT}} = \frac{2}{n(n-1)} \sum_{i} \sum_{j > i} \text{sgn} \Bigl( (\hat{x}_{i} - \hat{x}_{j})(\hat{y}_i - \hat{y}_j) \Bigr),$$
 where the sign function is
 $$\text{sgn}(z) = \begin{cases} +1 & \text{if } z > 0\\ 0  & \text{if } z = 0 \\ -1 & \text{if } z < 0 \end{cases}.$$
@@ -381,6 +438,7 @@ For each pair we take the sign of $(\hat{x}_{i}-\hat{x}_{j})(\hat{y}_{i}-\hat{y}
 | (2,3),(3,2) | up | down | $-1$ |
 | (2,3),(4,4) | up | up   | $+1$ |
 | (3,2),(4,4) | up | up   | $+1$ |
+: Concordant and Discordant Pairs
 
 There are $5$ concordant and $1$ discordant pair, so
 $$
@@ -391,7 +449,7 @@ cor(c(1,2,3,4), c(1,3,2,4), method='kendall')
 ```
 :::
 
-You construct sampling distributions and conduct hypothesis tests for Kendall's rank correlation statistic in the same way you do as for Pearson's Correlation statistic and Falk's Codeviance statistic.
+You construct sampling distributions and conduct hypothesis tests for Kendall's rank correlation statistic in the same way you do for Pearson's Correlation statistic and Falk's Codeviance statistic.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Test whether Kendall's correlation statistic is statistically different from $0$.
@@ -460,12 +518,15 @@ output()
 #### **Two Unordered Factors** {-}
 
 When neither variable has a meaningful order, we organize the data as a contingency table and summarize the strength of association with a single bounded score.
-*Cramer's V* $\hat{\text{CV}}$ rescales the *chi-squared statistic* $\hat{\chi}^{2}$ into a $[0, 1]$ score for the strength of association between two categorical variables in a $K\times J$ contingency table:
+*Cramer's V* $\hat{\text{CV}}$ [@Cramer1946] rescales the *chi-squared statistic* $\hat{\chi}^{2}$ into a $[0, 1]$ score for the strength of association between two categorical variables in a $K\times J$ contingency table:
 $$\hat{\chi}^2 = \sum_{k=1}^{K} \sum_{j=1}^{J} \frac{(\hat{o}_{kj} - \hat{e}_{kj})^2}{\hat{e}_{kj}}, \qquad \hat{\text{CV}} = \sqrt{\frac{\hat{\chi}^2 / n}{\min(J - 1, \, K - 1)}},$$
 where $\hat{o}_{kj}$ is the observed frequency in cell $(k, j)$, $\hat{e}_{kj} = \hat{\text{RF}}_{k} \cdot \hat{\text{CF}}_{j} / n$ is the expected frequency under independence, and $\hat{\text{RF}}_{k}=\sum_{j} \hat{o}_{kj}$, $\hat{\text{CF}}_{j}=\sum_{k} \hat{o}_{kj}$ are the row and column totals.
 
-Cramer's V is useful for two unordered categorical variables (occupation, region, brand), because it treats every reordering of rows or columns the same and makes no use of any ordering.
-The chi-squared piece measures how far observed counts are from what we would expect if $\hat{x}$ and $\hat{y}$ were independent, and dividing by $n \cdot \min(J - 1, K - 1)$ rescales it into a bounded score so different tables are comparable: $0$ suggests no association, and a value closer to $1$ suggests a strong association.
+Cramer's V is useful for two unordered categorical variables, such as occupation and region.
+Reordering the rows or columns of the table does not change it.
+The chi-squared piece measures how far observed counts are from what we would expect if $\hat{x}$ and $\hat{y}$ were independent.
+Dividing by $n \cdot \min(J - 1, K - 1)$ rescales it into a bounded score, so different tables are comparable.
+A value of $0$ suggests no association, and a value closer to $1$ suggests a strong association.
 
 For example, consider the census region of each sampled state and its murder arrest rate grouped into three bands.
 Regions have no natural order, so we treat both variables as unordered categories.
@@ -493,6 +554,23 @@ CV(xy_cat_hat)
 
 # DescTools::CramerV( table(xy_cat_hat) )
 ```
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Here is the same calculation for $4526$ applications to six graduate departments at Berkeley in 1973, from the built-in `UCBAdmissions` table.
+Department and admission outcome are both unordered.
+```{r}
+# CV defined above
+# One row per (Admit, Gender, Dept) cell, with the number of applicants in Freq
+ucb_cells <- as.data.frame(UCBAdmissions)
+# Repeat each row Freq times, so there is one row per applicant
+ucb_hat <- ucb_cells[rep(seq_len(nrow(ucb_cells)), ucb_cells[, 'Freq']), ]
+xy_cat2_hat <- data.frame(x_hat=ucb_hat[, 'Dept'], y_hat=ucb_hat[, 'Admit']) # x_hat=department, y_hat=admission outcome
+table(xy_cat2_hat)
+CV(xy_cat2_hat)
+```
+Department A admits about $64\%$ of its applicants and department F about $6\%$.
+Cramer's V of about $0.41$ reflects this strong association between department and admission.
+:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 You can also apply Cramer's V to cardinal data after cutting each variable into bins.
@@ -545,7 +623,7 @@ c(chi2=chi2, CramerV=sqrt((chi2/n0)/df_min))
 ```
 :::
 
-You construct sampling distributions and conduct hypothesis tests for  Cramer's V statistic in the same way you do as the other statistics.
+You construct sampling distributions and conduct hypothesis tests for Cramer's V statistic in the same way you do for the other statistics.
 
 ## Exercises
 
@@ -567,5 +645,9 @@ You construct sampling distributions and conduct hypothesis tests for  Cramer's 
 
 #### **Recall** {-}
 
-This chapter summarized two-variable association with a small toolbox matched to data type: Pearson correlation $\hat{r}_{XY}$ for cardinal data (worked out by hand on $\{(0, 0.1), (1, 0.3), (2, 0.2)\}$, yielding $\hat{r}_{XY}=1/2$), Falk codeviance $\tilde{c}_{XY}$ as the robust cousin for outlier-prone data, Kendall's $\hat{\text{KT}}$ for ordered factors (walked through the six pairs of $\{(1, 1), (2, 3), (3, 2), (4, 4)\}$ to get $\hat{\text{KT}}=2/3$), and Cramer's V $\hat{\text{CV}}$ for unordered factors (the $2\times 2$ degree-vs-employment table giving $\hat{\text{CV}}\approx 0.41$).
+The right statistic of association depends on the type of data.
+For cardinal data, we computed the Pearson correlation by hand for $\{(0, 0.1), (1, 0.3), (2, 0.2)\}$ and found $\hat{r}_{XY}=1/2$.
+For cardinal data with outliers, the Falk codeviance $\tilde{c}_{XY}$ is a robust alternative.
+For ordered factors, the six pairs of $\{(1, 1), (2, 3), (3, 2), (4, 4)\}$ gave Kendall's $\hat{\text{KT}}=2/3$.
+For unordered factors, the $2\times 2$ table of degree and employment gave Cramer's V $\hat{\text{CV}}\approx 0.41$.
 These statistics describe association rather than causation.

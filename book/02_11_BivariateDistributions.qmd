@@ -4,7 +4,9 @@
 
 Earlier chapters summarized one variable at a time.
 We now study two variables together.
-This chapter builds the two basic ways to summarize them: the *joint* distribution, which records how often each combination of values occurs, and the *conditional* distribution, which records the distribution of one variable within fixed values of the other.
+This chapter covers two basic ways to summarize them.
+The *joint* distribution records how often each combination of values occurs.
+The *conditional* distribution records the distribution of one variable within fixed values of the other.
 We do each for discrete data and then for continuous data.
 Throughout, the data for each observation are grouped together as a vector $(\hat{x}_{i}, \hat{y}_{i})$.
 As in [Summary Statistics](01_03_SummaryStatistics.qmd#mean-and-variance), $\hat{x}$ and $\hat{y}$ without a subscript denote all $n$ observed values of each variable.
@@ -28,7 +30,8 @@ $$\hat{p}(x,y) = \sum_{i=1}^{n}\mathbf{1}\left( \hat{x}_{i}=x, \hat{y}_{i}=y \ri
 where $\mathbf{1}(\cdot)$ is an *indicator function* that equals $1$ if the expression inside is TRUE and $0$ otherwise.
 :::
 
-The joint distribution is also called a *frequency table* (or *cross-tabulation*) and is useful for summarizing how two categorical variables co-occur: it is the starting point for every other two-variable statistic in this chapter.
+The joint distribution is also called a *frequency table* (or *cross-tabulation*).
+It is useful for summarizing how two categorical variables co-occur, and the other distributions in this chapter are computed from it.
 Dividing the count by $n$ puts the cells on a probability scale, so each cell reports a proportion of the sample and the whole table sums to one.
 
 Sometimes we only need to summarize one of the two variables and ignore the other.
@@ -39,14 +42,16 @@ The marginal distribution of $\hat{y}_{i}$ is obtained by summing the joint dist
 $$\hat{p}(x) = \sum_{y} \hat{p}(x,y) \quad \quad \hat{p}(y) = \sum_{x} \hat{p}(x,y).$$
 :::
 
-The *marginal* (so called because it lives in the row and column margins of the joint table) is useful for recovering the univariate picture once the joint table is built, and for supplying the base rates ($\hat{p}(x)$, $\hat{p}(y)$) that conditional distributions divide by.
+The *marginal* gets its name from the row and column margins of the joint table, where it is usually written.
+It is useful for recovering each variable's own distribution from the joint table.
+It also supplies the base rates $\hat{p}(x)$ and $\hat{p}(y)$, which conditional distributions divide by.
 The same numbers can also be computed directly from the univariate data without ever forming the joint table (see [here](01_06_EstimationTheory.qmd#estimates)).
 
 For example, consider the `Wages1` data on US workers.
 Let $\hat{x}_{i}$ be years of schooling and $\hat{y}_{i}$ be sex.
 We use all $n=3294$ workers.
 ```{r}
-library(Ecdat)
+data(Wages1, package='Ecdat')
 
 # All workers: schooling and sex
 xy2_hat <- Wages1[, c('school', 'sex')]
@@ -189,6 +194,8 @@ f_y_hat <- hist(xy_hat[, 'y_hat'], plot=FALSE)
 barplot(f_y_hat[['counts']], axes=FALSE, space=0, horiz=TRUE, border=NA)
 ```
 
+A two-dimensional histogram summarizes the joint distribution by counting the observations in each rectangle of a grid [@Scott2015].
+
 ## Conditional Distributions
 
 #### **Discrete Data**{-}
@@ -198,11 +205,13 @@ Often we want to know how the distribution of one variable changes when we restr
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *conditional distribution* of $\hat{y}_{i}$ given $\hat{x}_{i}=x$ is the joint share renormalized so the row at $\hat{x}_{i}=x$ sums to one:
 $$\hat{p}(y \mid x) = \frac{\hat{p}(x,y)}{\hat{p}(x)}, \quad \quad \hat{p}(x|y) = \frac{\hat{p}(x,y)}{\hat{p}(y)},$$
-where $\hat{p}(x)$ is the marginal of $\hat{x}_{i}$ and where $\hat{p}(y)$ is the marginal of $\hat{y}_{i}$..
+where $\hat{p}(x)$ is the marginal of $\hat{x}_{i}$ and where $\hat{p}(y)$ is the marginal of $\hat{y}_{i}$.
 :::
 
 Conditional distributions are useful when one variable splits the data into meaningful subgroups (sex, education level, treatment status) and we want to compare the outcome distribution across those subgroups.
-The renormalization is what changes the unit of analysis: row sums equal to one means each row is itself a probability distribution over $y$ for the given $x$, rather than a share of the whole sample.
+Dividing by $\hat{p}(x)$ changes the unit of analysis.
+Each row now sums to one, so each row is a probability distribution over $y$ for the given $x$.
+A cell no longer reports a share of the whole sample.
 
 For example, return to the `Wages1` workers and their joint distribution table.
 To compute the conditional distribution of $\hat{y}_{i}$ given $\hat{x}_{i}=x$, we rescale the numbers in each row so that each row sums to 1.
@@ -458,7 +467,8 @@ The same flag from the same model means fraud is unlikely in one setting and lik
 The only thing that changed is the base rate.
 
 The base-rate fallacy is to judge the flag by the model's accuracy alone, as if $\hat{p}(y\mid x)$ did not depend on $\hat{p}(y)$.
-Whenever the outcome is rare, even an accurate screen produces mostly false positives: medical tests for rare diseases, polygraph screening of employees, and airport security checks all share this arithmetic.
+When the outcome is rare, even an accurate screen produces mostly false positives.
+The same arithmetic applies to medical tests for rare diseases, polygraph screening of employees, and airport security checks.
 
 ```{r}
 # Rare fraud: rows = model output, columns = transaction type
@@ -479,9 +489,8 @@ round(prop.table(counts_common, 1), 3)
 
 #### **Continuous Data**{-}
 
-These describe the relationship between $\hat{y}_{i}$ and $\hat{x}_{i}$.
-We show how $\hat{y}$ changes according to $\hat{x}$ using a 
-[histogram](01_02_Data.qmd#histogram-density) or bar plot.
+Conditional distributions describe the relationship between $\hat{y}_{i}$ and $\hat{x}_{i}$.
+We show how $\hat{y}$ changes according to $\hat{x}$ using a [histogram](01_02_Data.qmd#histogram-density) or bar plot.
 When $\hat{x}$ is continuous, as it often is, we split it into distinct bins and convert it to a factor variable.
 E.g.,
 
@@ -619,5 +628,6 @@ stripchart(xy_hat[, 'y_hat'] ~ x_cut_hat,
 
 #### **Recall** {-}
 
-This chapter built up two-variable summaries from joint to marginal to conditional distributions, illustrated with the `Wages1` schooling-and-sex table where $\hat{p}(y=\text{female}\mid x=13)\approx 0.56$ is the share of female workers *within* the 13-years-of-school subgroup.
-We then saw how confusing the direction of conditioning produces the base-rate fallacy (the "most-stolen car" calculation, where Civics are the most-stolen model but the *least* likely to be stolen per car).
+We summarized two variables with joint, marginal, and conditional distributions.
+In the `Wages1` schooling-and-sex table, $\hat{p}(y=\text{female}\mid x=13)\approx 0.56$ is the share of female workers *within* the 13-years-of-school subgroup.
+We then saw how the base-rate fallacy reads a large count as a high rate (the "most-stolen car" calculation, where Civics are the most-stolen model but the *least* likely to be stolen per car).

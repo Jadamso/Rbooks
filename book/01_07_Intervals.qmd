@@ -10,7 +10,9 @@ A *confidence interval* is a range of values, computed from the sample, intended
 The *coverage* level $1-\alpha$ is the long-run proportion of intervals (constructed from repeated samples by the same procedure) that contain the true parameter.
 :::
 
-Confidence intervals are useful for *reporting uncertainty* alongside an estimate: instead of saying only "the mean is $\hat{m}$", we report a range and a coverage level, communicating both the best guess and how much sampling noise could plausibly move it.
+Confidence intervals are useful for *reporting uncertainty* alongside an estimate.
+Along with the estimate $\hat{m}$, we report a range and a coverage level.
+The range shows how much sampling noise could plausibly move the estimate.
 The width depends on the sample size, the spread of the data, and the coverage level $1-\alpha$ that the user chooses.
 
 
@@ -70,8 +72,41 @@ quantile(boot_means, probs=c(.005, .995), na.rm=TRUE)
 The $99\%$ interval is wider than the $90\%$ interval: demanding higher coverage forces a longer interval.
 :::
 
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Here is the same bootstrap $95\%$ confidence interval for the mean hourly wage of the $1569$ women in `Wages1`.
+```{r}
+# Hourly wages of the women in Wages1 (1980 dollars)
+data(Wages1, package='Ecdat')
+x2_hat <- Wages1[Wages1[, 'sex']=='female', 'wage']
+m2_hat <- mean(x2_hat)
+m2_hat
+
+# Bootstrap Distribution
+boot_means2 <- rep(NA, 9999)
+for(b in seq_along(boot_means2)){
+    x_boot <- sample(x2_hat, replace=TRUE)
+    m_b_hat <- mean(x_boot)
+    boot_means2[b] <- m_b_hat
+}
+
+# 95% CI
+boot_ci2 <- quantile(boot_means2, probs=c(.025, .975))
+boot_ci2
+
+# Visualize
+hist(boot_means2, freq=FALSE,
+    main=NA,
+    border=NA, breaks=50,
+    xlab='Bootstrap means of hourly wages (1980 dollars)')
+title('Bootstrap CI', font.main=1)
+abline(v=boot_ci2, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=m2_hat, col=rgb(1, 0, 0, .8), lwd=2)
+```
+We are $95\%$ confident that the population mean hourly wage for women is between about $\$5.01$ and $\$5.29$.
+:::
+
 This approach can be easily extended to other statistics.
-For example, a $Z\%$ confidence interval for the median is an interval where $Z\%$ of those generated will contain the population median. 
+For example, a $Z\%$ confidence interval for the median is an interval where $Z\%$ of those generated will contain the population median.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 The following code creates a bootstrap CI for the median. 
@@ -118,10 +153,11 @@ The Normal-approximation interval is useful because it requires only an estimate
 The $95\%$ interval is the most common and uses critical value $q=1.96$ (the $97.5$th percentile of the standard Normal); the $90\%$ interval uses $q=1.645$.
 $\text{SE}(M)$ can come from the classical formula $\hat{s}/\sqrt{n}$, the bootstrap, or the jackknife.
 
-A *coverage* level of $1-\alpha$ means that if the same sampling procedure were repeated $100$ times from the same population, approximately $1-\alpha$ percent of the intervals are expected to contain the true population mean.
+A *coverage* level of $1-\alpha$ means that if the same sampling procedure were repeated $100$ times from the same population, approximately $100(1-\alpha)$ percent of the intervals are expected to contain the true population mean.
 ^[Generally, a coverage level of $1-\alpha$ means $\text{Prob}( M - E < \mathbb{E}[X_i] < M + E)=1-\alpha$.
 Notice that $\text{Prob}( M - E < \mathbb{E}[X_i] < M + E) = \text{Prob}( - E < \mathbb{E}[X_i] - M < + E) = \text{Prob}( \mathbb{E}[X_i] + E > M > \mathbb{E}[X_i] - E)$.
-So if the interval $[\mathbb{E}[X_i] - 10, \mathbb{E}[X_i] + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mathbb{E}[X_i]$ in $95\%$ of the samples because whenever $M$ is within $10$ of $\mathbb{E}[X_i]$, the value $\mathbb{E}[X_i]$ is also within $10$ of $M$.
+So if the interval $[\mathbb{E}[X_i] - 10, \mathbb{E}[X_i] + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mathbb{E}[X_i]$ in $95\%$ of the samples.
+This is because whenever $M$ is within $10$ of $\mathbb{E}[X_i]$, the value $\mathbb{E}[X_i]$ is also within $10$ of $M$.
 But for any particular sample, the interval $[\hat{m}-10, \hat{m}+10]$ either does or does not contain $\mathbb{E}[X_i]$.
 Similarly, if you compute $\hat{m}=9$ for your particular sample, a coverage level of $1-\alpha=95\%$ does not mean $\text{Prob}(9 - E < \mathbb{E}[X_i] < 9 + E)=95\%$.]
 
@@ -156,7 +192,7 @@ qnorm( c(0.025, 0.975), m_bill_hat, SE)
 
 
 
-The main advantages of the Normal approximation is that
+The main advantages of the Normal approximation are that it
 
 * can be computed formulaically as above
 * works well for estimating extreme probabilities, where resampling methods tend to be worse.
@@ -165,9 +201,9 @@ The main disadvantage is that
 
 * the sampling distribution might be far from normal.
 
-In the example below, they are all quite similar, but that does not always need to be the case.
 The Normal approximation is least reliable when the sample is small or the data are strongly skewed: the sampling distribution is then asymmetric, and a symmetric $\hat{m}\pm E$ interval cannot capture that.
 The percentile bootstrap interval reads quantiles directly off the resampling distribution, so it can be lopsided when the data call for it.
+In the example below, the percentile and Normal intervals are quite similar, but that does not always need to be the case.
 
 
 ```{r}
@@ -193,9 +229,42 @@ legend('topright', legend=c('Percentile', 'Normal'),
     lty=c(1, 2), lwd=2, col=rgb(0, 0, 0, .8), bty='n')
 ```
 
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Hourly wages are strongly right-skewed: the median wage of the women in `x2_hat` is well below their mean.
+Even so, with $1569$ women the bootstrap distribution of the mean is close to Normal, and the two intervals nearly coincide.
+```{r}
+# x2_hat, m2_hat, and boot_means2 defined above
+c(mean=m2_hat, median=median(x2_hat))
+
+# Bootstrap Distribution with Percentile CI
+hist(boot_means2, breaks=25,
+    main=NA, border=NA,
+    freq=FALSE, ylim=c(0, 5.5),
+    xlab=expression(hat(m)^group('(', b, ')')))
+title('Percentile vs Normal 95% CIs', font.main=1)
+boot_ci2_percentile <- quantile(boot_means2, probs=c(.025, .975))
+abline(v=boot_ci2_percentile, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=m2_hat, col=rgb(1, 0, 0, .8), lwd=2)
+
+# Normal Approximation with IID Theory SEs
+classic_se2 <- sd(x2_hat)/sqrt(length(x2_hat))
+x <- seq(4.5, 5.8, by=0.005)
+fx <- dnorm(x, m2_hat, classic_se2)
+lines(x, fx, col=rgb(0, 0, 1, .8))
+ci2_normal <- qnorm(c(.025, .975), m2_hat, classic_se2)
+abline(v=ci2_normal, col=rgb(0, 0, 0, .8), lwd=2, lty=2)
+legend('topright', legend=c('Percentile', 'Normal'),
+    lty=c(1, 2), lwd=2, col=rgb(0, 0, 0, .8), bty='n')
+
+# Compare the two intervals
+rbind(percentile=boot_ci2_percentile, normal=ci2_normal)
+```
+The Normal approximation needs the sampling distribution of the mean to be close to Normal, not the data themselves.
+Skewed data are mainly a problem when the sample is also small.
+:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Note that you can also plug in Bootstrap or Jacknife SEs to the Normal Approximation.
+Note that you can also plug in Bootstrap or Jackknife SEs to the Normal Approximation.
 ```{r}
 ## Bootstrap Distribution
 hist(boot_means, breaks=25,
@@ -483,6 +552,94 @@ cat(sprintf('Estimated coverage probability: %.2f%%\n', 100 * coverage_rate))
 
 ## Misc. Topics
 
+#### **Prediction Intervals** {-}
+
+Sometimes we want to know what range a single new observation will likely fall in.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+A *prediction interval* is a range that aims to contain a future single observation, not a statistic.
+We compute it from the lower and upper quantiles of the data themselves, so its width reflects the spread of individual observations rather than the spread of a sampling distribution.
+:::
+
+Prediction intervals are useful when a decision depends on individual outcomes.
+For example, a firm may want to forecast whether a single warranty claim will fall in a tolerable range.
+Note that $Z\%$ confidence intervals do not generally cover $Z\%$ of the data.
+For the murder rates, compare the $90\%$ bootstrap confidence interval for the mean with the middle $90\%$ of the states themselves.
+```{r}
+# 90% CI for the mean, from the bootstrap distribution above
+boot_ci_90 <- quantile(boot_means, probs=c(.05, .95))
+boot_ci_90
+# Share of states with a murder rate inside the CI for the mean
+mean(x_hat >= boot_ci_90[1] & x_hat <= boot_ci_90[2])
+
+# Middle 90% of values: prediction interval
+xq0 <- quantile(x_hat, probs=c(.05, .95))
+paste0('we are 90% confident that a new observation will be between ', 
+    round(xq0[1], 2), ' and ', round(xq0[2], 2) )
+
+hist(x_hat,
+    breaks=seq(0, 20, by=1), border=NA,
+    freq=FALSE, main=NA,
+    xlab='Murder arrests per 100,000')
+rug(x_hat, col=grey(0, .5))
+title('Prediction Interval vs CI for the Mean', font.main=1)
+abline(v=xq0, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=boot_ci_90, col=rgb(0, 0, 0, .8), lwd=2, lty=2)
+legend('topright', legend=c('Prediction interval', 'CI for the mean'),
+    lty=c(1, 2), lwd=2, col=rgb(0, 0, 0, .8), bty='n')
+```
+Only $14\%$ of states have a murder rate inside the $90\%$ confidence interval for the mean, roughly $[6.8, 8.8]$.
+The prediction interval, roughly $[2.1, 15.4]$, is much wider because it reflects the spread of individual states rather than the spread of the sample mean.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Here is the same comparison for the hourly wages of the $1569$ women in `x2_hat`.
+```{r}
+# x2_hat, m2_hat, and boot_means2 defined above
+# 90% CI for the mean
+boot_ci2_90 <- quantile(boot_means2, probs=c(.05, .95))
+boot_ci2_90
+# Share of women with a wage inside the CI for the mean
+mean(x2_hat >= boot_ci2_90[1] & x2_hat <= boot_ci2_90[2])
+
+# Middle 90% of values: prediction interval
+xq2 <- quantile(x2_hat, probs=c(.05, .95))
+xq2
+# Distance from the mean to each end of the prediction interval
+c(below=m2_hat - xq2[[1]], above=xq2[[2]] - m2_hat)
+
+hist(x2_hat,
+    breaks=seq(0, 40, by=.5), border=NA,
+    freq=FALSE, main=NA,
+    xlab='Hourly wage (1980 dollars)')
+title('Prediction Interval vs CI for the Mean', font.main=1)
+abline(v=xq2, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=boot_ci2_90, col=rgb(0, 0, 0, .8), lwd=2, lty=2)
+legend('topright', legend=c('Prediction interval', 'CI for the mean'),
+    lty=c(1, 2), lwd=2, col=rgb(0, 0, 0, .8), bty='n')
+```
+Only about $4\%$ of women earn a wage inside the $90\%$ confidence interval for the mean, roughly $[5.03, 5.26]$.
+The prediction interval, roughly $[1.51, 10.11]$, is also not centered on the mean.
+It reaches about $\$3.64$ below the mean but $\$4.96$ above it, because wages are right-skewed.
+:::
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+For uniform random data, the $90\%$ confidence interval for the mean from the quantile example above is roughly $[0.48, 0.52]$, which theoretically covers only a $0.04$ proportion of the data, far less than $0.9$.
+```{r}
+x_future_hat <- runif(1000)
+# Middle 90% of values
+xq0 <- quantile(x_future_hat, probs=c(.05, .95))
+paste0('we are 90% confident that a future data point will be between ', 
+    round(xq0[1], 2), ' and ', round(xq0[2], 2) )
+
+hist(x_future_hat,
+    breaks=seq(0, 1, by=.05), border=NA,
+    freq=FALSE, main=NA)
+rug(x_future_hat, col=grey(0, .5))
+title('Prediction Interval', font.main=1)
+abline(v=xq0, col=rgb(0, 0, 0, .8), lwd=2)
+```
+:::
+
 #### **One-Sided Intervals** {-}
 
 Above, our confidence intervals were two-sided: they contained the middle $Z\%$ of the sampling distribution.
@@ -492,7 +649,7 @@ A one-sided interval is shifted to one side, containing one tail rather than the
 For example, an upper-bounded interval uses $(-\infty, q_{0.95}]$, where $q_{0.95}$ is the $95^{\text{th}}$ percentile of the bootstrap distribution: we are $95\%$ confident the true value is at most $q_{0.95}$.
 A lower-bounded interval uses $[q_{0.05}, \infty)$, where $q_{0.05}$ is the $5^{\text{th}}$ percentile of the bootstrap distribution: we are $95\%$ confident the true value is at least $q_{0.05}$.
 
-:::{.callout-note icon=false collapse="true" title="Must Know"}
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 For the electricity bill example above with $\hat{m}=142$ and $\text{SE}=5$, a one-sided $95\%$ upper-bounded confidence interval is
 $$(-\infty,~ \hat{m} + 1.645 \times \text{SE}] = (-\infty,~ 142 + 1.645 \times 5] = (-\infty,~ 150.2].$$
 We are $95\%$ confident the population mean bill is at most $\$150.20$.
@@ -528,62 +685,6 @@ abline(v=ci_95, col=rgb(0, 0, 0, .8), lwd=2)
 :::
 
 
-#### **Prediction Intervals** {-}
-
-Sometimes the question is not "what is the population mean?" but "what range should I expect a single new observation to fall in?".
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
-A *prediction interval* is a range that aims to contain a future single observation, not a statistic.
-We compute it from the lower and upper quantiles of the data themselves, so its width reflects the spread of individual observations rather than the spread of a sampling distribution.
-:::
-
-Prediction intervals are useful when the decision depends on individual outcomes rather than averages: forecasting whether a single warranty claim, a single weather day, or a single test score will fall in a tolerable range.
-Note that $Z\%$ confidence intervals do not generally cover $Z\%$ of the data.
-For the murder rates, compare the $90\%$ bootstrap confidence interval for the mean with the middle $90\%$ of the states themselves.
-```{r}
-# 90% CI for the mean, from the bootstrap distribution above
-boot_ci_90 <- quantile(boot_means, probs=c(.05, .95))
-boot_ci_90
-# Share of states with a murder rate inside the CI for the mean
-mean(x_hat >= boot_ci_90[1] & x_hat <= boot_ci_90[2])
-
-# Middle 90% of values: prediction interval
-xq0 <- quantile(x_hat, probs=c(.05, .95))
-paste0('we are 90% confident that a new observation will be between ', 
-    round(xq0[1], 2), ' and ', round(xq0[2], 2) )
-
-hist(x_hat,
-    breaks=seq(0, 20, by=1), border=NA,
-    freq=FALSE, main=NA,
-    xlab='Murder arrests per 100,000')
-rug(x_hat, col=grey(0, .5))
-title('Prediction Interval vs CI for the Mean', font.main=1)
-abline(v=xq0, col=rgb(0, 0, 0, .8), lwd=2)
-abline(v=boot_ci_90, col=rgb(0, 0, 0, .8), lwd=2, lty=2)
-legend('topright', legend=c('Prediction interval', 'CI for the mean'),
-    lty=c(1, 2), lwd=2, col=rgb(0, 0, 0, .8), bty='n')
-```
-Only $14\%$ of states have a murder rate inside the $90\%$ confidence interval for the mean, roughly $[6.8, 8.8]$.
-The prediction interval, roughly $[2.1, 15.4]$, is much wider because it reflects the spread of individual states rather than the spread of the sample mean.
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-For uniform random data, the $90\%$ confidence interval for the mean from the quantile example above is roughly $[0.48, 0.52]$, which theoretically covers only a $0.04$ proportion of the data, far less than $0.9$.
-```{r}
-x_future_hat <- runif(1000)
-# Middle 90% of values
-xq0 <- quantile(x_future_hat, probs=c(.05, .95))
-paste0('we are 90% confident that a future data point will be between ', 
-    round(xq0[1], 2), ' and ', round(xq0[2], 2) )
-
-hist(x_future_hat,
-    breaks=seq(0, 1, by=.05), border=NA,
-    freq=FALSE, main=NA)
-rug(x_future_hat, col=grey(0, .5))
-title('Prediction Interval', font.main=1)
-abline(v=xq0, col=rgb(0, 0, 0, .8), lwd=2)
-```
-:::
-
 
 ## Exercises
 
@@ -609,5 +710,9 @@ abline(v=xq0, col=rgb(0, 0, 0, .8), lwd=2)
 
 #### **Recall** {-}
 
-This chapter built *confidence intervals* two ways (the *bootstrap percentile* method and the *Normal approximation*), explained what "$Z\%$ confident" means in repeated sampling, and showed the precision–accuracy trade-off.
-The electricity-bill example tied the Normal formula to numbers: with $\hat{m}=142$, $\hat{s}=30$, and $n=36$, the classical standard error is $\text{SE}(M) = 30/\sqrt{36} = 5$, and the $95\%$ margin of error is $E = 1.96 \times 5 = 9.8$, giving a confidence interval of $[\$132.20, \$151.80]$.
+We built *confidence intervals* in two ways, with the *bootstrap percentile* method and the *Normal approximation*.
+Being "$Z\%$ confident" means that $Z\%$ of intervals built on different samples will contain the true value.
+For a fixed sample size, there is a trade-off between precision and accuracy.
+In the electricity-bill example, $\hat{m}=142$, $\hat{s}=30$, and $n=36$.
+The classical standard error is $\text{SE}(M) = 30/\sqrt{36} = 5$.
+The $95\%$ margin of error is $E = 1.96 \times 5 = 9.8$, giving a confidence interval of $[\$132.20, \$151.80]$.

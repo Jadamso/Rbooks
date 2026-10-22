@@ -5,8 +5,10 @@
 
 [Comparing More Than Two Groups](02_13_MultipleGroups.qmd) compared means and distributions across several groups with ANOVA and Kruskal-Wallis.
 This chapter rewrites those group comparisons as regressions, first with treatment coding and then with effect coding.
-It then develops two resampling methods with different purposes: permutation tests impose a null relationship by shuffling a factor variable, while subsampling keeps each observation intact and checks how estimates vary when some observations are omitted.
-These methods sharpen what a regression can establish, but none turns an observational relationship into a causal effect.
+It then develops two resampling methods with different purposes.
+Permutation tests impose a null relationship by shuffling a factor variable.
+Subsampling keeps each observation intact and checks how estimates vary when some observations are omitted.
+None of these methods turns an observational relationship into a causal effect.
 The word *effect* in *effect coding* names a parameterization, not a causal claim.
 
 We continue with `USArrests` and the four-level `state.region` factor from [Comparing More Than Two Groups](02_13_MultipleGroups.qmd).
@@ -143,7 +145,9 @@ It does not by itself remove confounding, reverse causation, measurement error, 
 The dummy-variable model treats each group as having its own intercept.
 This framing is useful when group identity captures features we cannot otherwise measure.
 
-One common case is if you have observations of individuals over time periods, then you may have two factor variables: an unordered factor that indicates who an individual is, and an ordered factor that indicates the time period.
+One common case is observations of individuals over several time periods.
+Then you may have two factor variables.
+An unordered factor indicates who an individual is, and an ordered factor indicates the time period [@Mundlak1978; @Wooldridge2010].
 There are many other cases you see factor variables, including spatial ID's in purely cross sectional data.
 
 Be careful not to handle categorical data as if they were cardinal.
@@ -161,7 +165,6 @@ Including the dummy variables directly in OLS or using a dedicated routine such 
 
 Fixed effects are useful when a factor predicts the outcome but the coefficients on its individual levels are not the main object of interest.
 The coefficient on another predictor then describes its partial relationship with the outcome after removing level differences across the factor.
-The dummy-variable approach and a dedicated fixed-effects estimator are algebraically equal, giving the same coefficient and residuals.
 
 ```{r}
 # Estimate the Assault coefficient with explicit region indicators.
@@ -183,7 +186,7 @@ Absorbing fixed group differences does not remove confounders that vary within a
 The [ANOVA $F$-statistic](02_13_MultipleGroups.qmd#the-f-statistic) also compares nested regression models.
 Under additional parametric assumptions, the statistic follows an [$F$ distribution](01_09_AdvancedProbability.qmd#f) under the null.
 We can build a sequence of nested models, each adding one layer of complexity, to see which predictors contribute.
-The first asks whether group means differ, the second whether a continuous predictor adds explanatory power, and the third whether that predictor's slope varies across groups.
+The first asks whether group means differ, the second whether a continuous predictor adds explanatory power, and the third whether that predictor's slope varies across groups [@BramborEtAl2006; @BalliSorensen2013].
 
 ```{r}
 # Order the nested models from simplest to most complex.
@@ -280,7 +283,7 @@ The simple shuffle above is appropriate for the factor-only model because the nu
 In a regression with controls, naively shuffling `Region` would also break its relationship with those controls.
 Adjusted permutation tests therefore require a design-specific restricted permutation or a method that permutes residuals under a reduced model.
 
-Exchangeability is also a substantive assumption rather than a computational fact.
+Exchangeability is also an assumption about the data, which the shuffle itself cannot check.
 States may be spatially related, and region was not randomly assigned.
 The small permutation $p$-value does not estimate the effect of moving a state to another region.
 
@@ -309,6 +312,7 @@ The table compares it with the [bootstrap](01_05_Sampling.qmd#bootstrap-distribu
 | Bootstrap | $n$ | $B$ | With replacement |
 | Jackknife | $n-1$ | $n$ | Without replacement |
 | Random delete-$d$ subsample | $m=n-d$ | $B$ | Without replacement |
+: Bootstrap, Jackknife, and Subsampling
 
 #### **Random Delete-$d$ Samples** {-}
 
@@ -363,6 +367,95 @@ Increasing $d$ makes individual subsets less similar to the full dataset, while 
 Neither change creates new information beyond the original 50 states.
 :::
 
+Subsampling also extends to dependent data.
+For example, @Adamson2025_Greece follows @PolitisEtAl1999 and @ChoiChue2007 with a spatial subsampling procedure [@PolitisRomano1994; @Sherman1996] for strongly dependent data on ancient Greek city-states.
+@Adamson2020_Rome uses a related m-out-of-n bootstrap [@Fukuchi1994; @BickelEtAl1997; @BickelSakov2008], drawing 300 resamples smaller than the full dataset, to build a confidence interval for an interaction coefficient.
+
+#### **Jackknife Percentile Intervals** {-}
+
+Can we rescale the subsample estimates themselves and then take their percentiles, as in [Confidence Intervals](01_07_Intervals.qmd#resampling-intervals)?
+@Wu1986 [pp. 1270--1271] develops a *jackknife percentile method* that does this with delete-$d$ samples.
+For the sample mean, let $\hat{m}$ be the full-sample mean and $\hat{m}^{\text{sub}}_b$ the mean of subsample $b$, which retains $m=n-d$ observations.
+The rescaled value is
+$$
+\hat{m}^{\text{scaled}}_b = \hat{m} + \sqrt{\frac{m}{d}}\left(\hat{m}^{\text{sub}}_b - \hat{m}\right).
+$$
+We can take the $2.5$th and $97.5$th percentiles of these values to construct an approximate $95\%$ interval for the population mean.
+For independent observations from the same nonnormal distribution with finite, positive variance, both the number retained and the number deleted must grow with $n$ for the rescaled mean histogram to approach a Normal distribution.
+Keeping $d=1$, or any other fixed number, does not generally satisfy this condition.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Retain half of the 50 states in each subsample and estimate the mean murder arrest rate.
+Here $m=d=25$, so the rescaling factor is $\sqrt{m/d}=1$.
+Sampling without replacement reduces the variation across these overlapping half-samples enough that their spread already estimates the uncertainty in the full-sample mean.
+
+```{r}
+# Use half-samples to construct a percentile interval for the mean.
+x_hat <- xy_hat[, 'Murder']
+m_hat <- mean(x_hat)
+n <- length(x_hat)
+n_keep <- floor(n / 2)
+n_delete <- n - n_keep
+n_sub <- 9999
+sub_means <- rep(NA, n_sub)
+
+for (b in seq(n_sub)) {
+    x_sub <- sample(x_hat, n_keep, replace=FALSE)
+    sub_means[b] <- mean(x_sub)
+}
+
+# Put the subsample deviations on the full-sample scale.
+scaled_means <- m_hat + sqrt(n_keep / n_delete) * (sub_means - m_hat)
+ci_percentile <- quantile(scaled_means, probs=c(.025, .975))
+ci_normal <- m_hat + qnorm(c(.025, .975)) * sd(x_hat) / sqrt(n)
+round(rbind(percentile=ci_percentile, normal=ci_normal), 3)
+```
+
+The confidence-interval interpretation treats the state rates as independent observations from a common population distribution.
+The interval has a large-sample justification, not a guarantee of exactly $95\%$ coverage with 50 observations.
+Wu also reports undercoverage in some finite-sample examples.
+:::
+
+For regression coefficients, Wu's method also uses weights based on the subset design matrices and a scale factor that accounts for the number of coefficients.
+The mean example above is the simpler special case, so its formula alone does not reproduce Wu's regression percentile method.
+
+#### **Why Leave-One-Out Percentiles Can Fail** {-}
+
+Rescaling the ordinary leave-one-out estimates can match the variance without matching the shape of the sampling distribution.
+@EfronTibshirani1993 [pp. 143--144] illustrate an inflated jackknife histogram by multiplying deviations from the average jackknife estimate by $\sqrt{n-1}$.
+Their example compares its spread with a bootstrap histogram; it does not establish that its percentiles give valid confidence limits.
+For the sample mean, their transformation is
+$$
+\hat{m}^{\text{scaled}(-i)} = \hat{m}^{\text{jack}} + \sqrt{n-1}\left(\hat{m}^{(-i)} - \hat{m}^{\text{jack}}\right),
+$$
+where $\hat{m}^{\text{jack}}$ is the average of the leave-one-out means.
+The variance of these rescaled values, computed with divisor $n$, equals the usual jackknife variance estimate.
+However, since $\hat{m}^{\text{jack}}=\hat{m}$, we can rewrite the transformation as
+$$\begin{aligned}
+\hat{m}^{(-i)} &= \frac{n\hat{m} - \hat{x}_i}{n-1} \\
+\hat{m}^{\text{scaled}(-i)} &= \hat{m} + \frac{\hat{m} - \hat{x}_i}{\sqrt{n-1}}.
+\end{aligned}$$
+These rescaled values retain the reflected shape of the individual observations, while the sampling distribution of the sample mean approaches a Normal distribution under the assumptions above.
+Matching the variance therefore does not generally match the percentiles.
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Suppose customer waiting times are independent Exponential random variables with rate $1$, so their population mean and variance both equal $1$.
+For the inflated leave-one-out interval above, the limiting coverage is the Normal probability between the Exponential population quantiles minus $1$.
+
+```{r}
+# Compute limiting coverage rather than simulate repeated samples.
+exp_quantiles <- qexp(c(.025, .975), rate=1)
+coverage_limit <- diff(pnorm(exp_quantiles - 1))
+coverage_limit # about 0.832, despite a nominal coverage of 0.95
+```
+
+Increasing the sample size does not repair this mismatch: the nominal $95\%$ interval approaches about $83.2\%$ coverage.
+:::
+
+Medians and other sample quantiles have an additional difficulty: the ordinary delete-one jackknife can give inconsistent variance estimates [@Martin1990].
+For smooth statistics, the ordinary jackknife remains useful for estimating standard errors to use in a Normal approximation.
+Percentile intervals instead require a suitable bootstrap or a justified delete-$d$ procedure; simply stretching the leave-one-out values is not enough.
+
 #### **Permutation Versus Subsampling** {-}
 
 A permutation iteration keeps all $n$ observations but changes which outcome is paired with each factor label.
@@ -373,10 +466,10 @@ The subsampling distribution describes sensitivity to omitting observations and 
 ## What the Results Establish
 
 Treatment coding and effect coding are two coordinate systems for the same fitted group means.
-The word *effect* does not change the statistical model or supply a causal interpretation.
 
 The permutation test provides evidence against a no-association null under exchangeability.
-It identifies a surprising arrangement of outcomes and labels, not what would happen under an intervention.
+It shows that the observed pairing of outcomes and labels is unusual.
+It does not show what would happen under an intervention.
 
 The subsampling result shows how a coefficient responds to deleting observations.
 A stable coefficient can still be confounded, and an unstable coefficient is not necessarily biased.
@@ -410,10 +503,12 @@ These limits extend the distinction introduced in [Association and Prediction Ar
 * <https://online.stat.psu.edu/stat462/node/137/> -- ANOVA as a special case of regression, with examples of multiple-group comparisons.
 * @PolitisEtAl1999 -- a systematic treatment of subsampling methods and their statistical foundations.
 * @BinEtAl2015 -- a comparison of subsampling and bootstrapping for the stability of multivariable regression models.
+* @Wu1986 -- jackknife percentile intervals from rescaled delete-$d$ estimates, including a weighted regression method.
+* @EfronTibshirani1993 -- inflated jackknife histograms and their relationship to bootstrap variability.
+* @Martin1990 -- why the ordinary jackknife can fail for sample quantiles.
 
 #### **Recall** {-}
 
 This chapter rewrote ANOVA as a regression with a factor variable and showed that treatment and effect coding change coefficient meanings without changing the fitted model.
 The regional example gave an effect-coded intercept of about $7.28$, the unweighted mean of the four regional means, while its global $F$-statistic was identical under both codings.
 The permutation test shuffled the factor labels to test a no-association null, whereas random delete-$d$ subsampling preserved each row and measured sensitivity to omitted observations.
-None of these operations made the regional regression causal.

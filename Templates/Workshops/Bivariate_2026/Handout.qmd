@@ -1,0 +1,821 @@
+---
+title: "Lab handout: Modern regression methods for economists"
+author: "Jordan Adamson, Thompson Rivers University"
+date: today
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-depth: 2
+    code-tools: true
+execute:
+  eval: false
+  echo: true
+---
+
+```{r}
+#| eval: true
+#| echo: false
+# Same seed as Correlation_Loess.R, so the handout and the lab script print the same resampling results
+set.seed(1)
+# Print a permutation p-value, writing p < 1/B when no permutation reached the observed value
+p_text <- function(p, B) {
+    if (p == 0) paste0('p < ', round(1 / B, 3)) else paste0('p = ', round(p, 3))
+}
+```
+
+# Overview
+
+This lab takes about an hour after a short lecture.
+The first three parts use RStudio and the fourth uses Claude.
+Each part introduces the idea, its teaching uses, and the R code.
+
+| Minutes | What | Where | Why | How |
+|---|---|---|---|---|
+| 0--10 | Lecture | Slides | | |
+| 10--25 | Lab Part 1: correlation and simple linear regression, with a bootstrap CI and a permutation p-value | RStudio | Measure linear association and its uncertainty | `cor()` and `lm()`, then two loops around `cor()` |
+| 25--40 | Lab Part 2: make a regressogram | RStudio | Let the mean wage change freely across bins | `cut()` and `tapply()` inside the same two loops |
+| 40--50 | Lab Part 3: fit a loess curve | RStudio | Draw a smooth curve with a confidence band | `loess()` inside the same two loops |
+| 50--65 | Lab Part 4: have Claude review the script | claude.ai | Use AI for checks and extensions | Upload the script and give prompts |
+
+Every part uses the same two loops.
+The bootstrap resamples workers to give confidence intervals.
+The permutation shuffles one variable to give p-values.
+Only the statistic inside the loops changes.
+
+# Correlation and simple linear regression
+
+### What {-}
+
+The covariance is the average product of paired deviations from each variable's mean.
+$$\hat{c}_{XY} = \sum_{i=1}^{n} [\hat{x}_{i} - \hat{m}_{X}] [\hat{y}_{i} - \hat{m}_{Y}] / n.$$
+The Pearson correlation rescales the covariance by the two standard deviations.
+$$\hat{r}_{XY} = \frac{\hat{c}_{XY}}{\hat{s}_{X} \hat{s}_{Y}}.$$
+It has no units and always lies between $-1$ and $1$.
+It equals $1$ for a perfect rising line, $-1$ for a perfect falling line, and $0$ when there is no linear association.
+
+Consider the three pairs $(\hat{x}_{i}, \hat{y}_{i})$ in $\{(0, 0.1), (1, 0.3), (2, 0.2)\}$.
+The means are $\hat{m}_{X}=1$ and $\hat{m}_{Y}=0.2$.
+The correlation is then
+$$\begin{aligned}
+\hat{c}_{XY} &= \left[(-1)(-0.1) + (0)(0.1) + (1)(0)\right] / 3 = 1/30 \\
+\hat{s}_{X} \hat{s}_{Y} &= \sqrt{2/3} \sqrt{2/300} = 2/30 \\
+\hat{r}_{XY} &= (1/30) / (2/30) = 1/2.
+\end{aligned}$$
+
+```{r}
+#| eval: true
+# Tiny sample to check by hand
+x0_hat <- c(0, 1, 2)
+y0_hat <- c(0.1, 0.3, 0.2)
+cor(x0_hat, y0_hat)
+```
+
+Simple linear regression fits the least squares line
+$$\hat{y}_{i} = b_{0} + b_{1} \hat{x}_{i} + \hat{e}_{i}.$$
+Its coefficients come from the correlation, the means, and the standard deviations:
+$$\hat{b}_{1} = \hat{r}_{XY} \frac{\hat{s}_{Y}}{\hat{s}_{X}}, \qquad \hat{b}_{0} = \hat{m}_{Y} - \hat{b}_{1} \hat{m}_{X}.$$
+Its $\hat{R}^{2}$ is the squared correlation between $\hat{y}_{i}$ and the fitted values $\hat{y}_{i}^{\mathrm{fit}} = \hat{b}_{0} + \hat{b}_{1} \hat{x}_{i}$, written $\hat{R}^{2} = \hat{r}_{Y Y^{\mathrm{fit}}}^{2}$.
+For a line, this equals $\hat{r}_{XY}^{2}$.
+For the three pairs above, $\hat{b}_{1} = (1/2) \sqrt{2/300} / \sqrt{2/3} = 0.05$ and $\hat{b}_{0} = 0.2 - 0.05 = 0.15$.
+
+```{r}
+#| eval: true
+# Least squares line for the tiny sample
+coef(lm(y0_hat ~ x0_hat))
+```
+
+### Why {-}
+
+Correlation is the most familiar summary of how two variables move together.
+Students meet it early, and it appears in almost every field.
+It is also a good first statistic for resampling with two variables.
+A textbook interval for a correlation uses the Fisher transformation and normal tables.
+The bootstrap loop needs neither.
+Simple linear regression turns the correlation into a slope with units, here dollars per hour for each year of experience.
+
+Correlation only measures *linear* association.
+The wage data below show why this matters.
+
+### How {-}
+
+The data are 526 US workers from the 1976 Current Population Survey.
+For each worker, `exper` is years of potential experience and `wage` is average hourly earnings in 1976 dollars.
+They come from the `wooldridge` package, which you install once with `install.packages('wooldridge')`.
+
+```{r}
+#| eval: true
+# Data: 526 US workers from the 1976 Current Population Survey
+xy_hat <- wooldridge::wage1[, c('exper', 'wage')]
+colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=years of potential experience, y_hat=hourly wage (1976 dollars)
+n <- nrow(xy_hat)
+
+# Number of resamples, used in every loop below
+B <- 999
+
+# R-squared: the squared correlation between wages and fitted wages
+r_squared <- function(y, y_fit) {
+    cor(y, y_fit)^2
+}
+
+# One color per model in every figure: correlation and linear regression (red), regressogram (green), loess (blue)
+# Fitted values use the full color, and confidence intervals use a lighter shade of it
+fit_cols <- c(linear=rgb(.8, 0, 0, .8), rgram=rgb(0, .6, 0, .8), loess=rgb(0, 0, .8, .8))
+ci_cols <- c(linear=rgb(.8, 0, 0, .3), rgram=rgb(0, .6, 0, .3), loess=rgb(0, 0, .8, .3))
+```
+
+The data frame `xy_hat` keeps each worker's experience and wage on the same row.
+The number `B` sets how many resamples every loop draws.
+The function `r_squared()` computes
+$$\hat{R}^{2} = \hat{r}_{Y Y^{\mathrm{fit}}}^{2},$$
+the squared correlation between wages and the fitted values from any curve.
+For a least squares fit, it is also the share of the variation in wages that the fit explains.
+All three parts of the lab use it.
+
+```{r}
+#| eval: true
+# Scatterplot, with the least squares line in red
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .25), main=NA,
+    xlab='Years of potential experience', ylab='Hourly wage (1976 dollars)')
+# Simple linear regression: the least squares line
+reg <- lm(y_hat ~ x_hat, data=xy_hat)
+abline(reg, col=fit_cols['linear'], lwd=2)
+coef(reg)
+```
+
+The line rises slowly.
+Many workers with little experience earn low wages, and the spread of wages is wide at every level of experience.
+
+```{r}
+#| eval: true
+# Pearson correlation
+xy_cor <- cor(xy_hat[, 'x_hat'], xy_hat[, 'y_hat'])
+xy_cor
+# The slope is the correlation times the ratio of standard deviations
+xy_cor * sd(xy_hat[, 'y_hat']) / sd(xy_hat[, 'x_hat'])
+# The squared correlation is the R-squared of the line
+xy_cor^2
+r_squared(xy_hat[, 'y_hat'], predict(reg))
+```
+
+The correlation is $`r round(xy_cor, 3)`$, a weak positive association.
+The slope is $`r round(coef(reg)[2], 3)`$, so hourly wages are about $`r round(100 * coef(reg)[2], 1)`$ cents higher for each extra year of experience.
+The squared correlation, $`r round(xy_cor^2, 3)`$, is the $\hat{R}^{2}$ of the line.
+The line explains about $`r round(100 * xy_cor^2, 1)`\%$ of the variation in wages.
+
+A bootstrap sample for two variables resamples workers, which are the rows of `xy_hat`, with replacement.
+Each worker keeps their own experience and wage.
+Some workers appear more than once and others do not appear.
+
+```{r}
+#| eval: true
+# Bootstrap distribution of the correlation and the slope
+boot_cor <- rep(NA, B)
+boot_slope <- rep(NA, B)
+for (b in 1:B) {
+    # Resample workers with replacement, keeping each worker's experience and wage together
+    xy_b <- xy_hat[sample(n, replace=TRUE), ]
+    boot_cor[b] <- cor(xy_b[, 'x_hat'], xy_b[, 'y_hat'])
+    boot_slope[b] <- coef(lm(y_hat ~ x_hat, data=xy_b))[2]
+}
+```
+
+```{r}
+#| eval: true
+# Percentile confidence interval: the middle 95% of bootstrap correlations
+boot_ci <- quantile(boot_cor, probs=c(.025, .975))
+boot_ci
+# The same for the slope, in dollars per hour for each year of experience
+slope_ci <- quantile(boot_slope, probs=c(.025, .975))
+slope_ci
+
+# Histogram of bootstrap correlations, with the observed value in red and the interval in light red
+hist(boot_cor, breaks=50, border=NA, freq=FALSE, main=NA,
+    xlab='Bootstrap correlation')
+abline(v=boot_ci, col=ci_cols['linear'], lwd=2)
+abline(v=xy_cor, col=fit_cols['linear'], lwd=2)
+```
+
+The $95\%$ interval runs from $`r round(boot_ci[1], 3)`$ to $`r round(boot_ci[2], 3)`$.
+It excludes $0$, but the whole interval is small.
+The interval for the slope runs from $`r round(100 * slope_ci[1], 1)`$ to $`r round(100 * slope_ci[2], 1)`$ cents per year of experience.
+
+A permutation test imposes the null hypothesis of no association.
+It shuffles experience across workers without replacement.
+Each wage is then paired with another worker's experience, so any association left is due to chance.
+
+```{r}
+#| eval: true
+# Permutation distribution of the correlation, imposing no association
+perm_cor <- rep(NA, B)
+for (b in 1:B) {
+    # Shuffle experience without replacement, which breaks the pairing with wages
+    xy_p <- xy_hat
+    xy_p[, 'x_hat'] <- sample(xy_hat[, 'x_hat'], replace=FALSE)
+    perm_cor[b] <- cor(xy_p[, 'x_hat'], xy_p[, 'y_hat'])
+}
+```
+
+```{r}
+#| eval: true
+# Two-sided p-value: share of permutations at least as extreme as observed
+p_cor <- mean(abs(perm_cor) >= abs(xy_cor))
+p_cor
+
+# Histogram of permuted correlations, with the observed value in red
+hist(perm_cor, breaks=50, border=NA, freq=FALSE, main=NA,
+    xlab='Permuted correlation')
+abline(v=xy_cor, col=fit_cols['linear'], lwd=2)
+```
+
+The permuted correlations center on zero.
+The p-value is the share of them at least as far from zero as the observed correlation, $`r p_text(p_cor, B)`$.
+So the correlation is statistically different from zero, even though it is small.
+
+The two loops differ in one line.
+
+| Loop | What `sample()` draws | What it keeps | What it gives |
+|---|---|---|---|
+| Bootstrap | Rows, with replacement | Each worker's pair | A confidence interval |
+| Permutation | Experience only, without replacement | Each variable's values, but not the pairs | A p-value under no association |
+
+The bootstrap asks how much the correlation varies across samples.
+The permutation asks how large a correlation chance alone produces.
+
+**Things to try.**
+
+* Change `probs=c(.025, .975)` to `probs=c(.05, .95)` and confirm that the interval narrows.
+* Change `replace=FALSE` to `replace=TRUE` in the permutation loop.
+  This gives the null bootstrap from the table of resampling types in the book.
+  Compare the two p-values.
+* Compare the permutation p-value with `cor.test(xy_hat[, 'x_hat'], xy_hat[, 'y_hat'])`.
+* Add `method='spearman'` to each `cor()` call to use the rank correlation, and check whether the conclusion changes.
+
+# Regressogram
+
+### What {-}
+
+A regressogram splits $\hat{x}$ into bins and reports the mean of $\hat{y}_{i}$ within each bin.
+A bin with midpoint $x$ and half-width $h$ holds the observations with $\hat{x}_{i}$ in $(x-h, x+h]$.
+With the dummy variable $\hat{d}_{i}(x,h) = \mathbf{1}(\hat{x}_{i}~\text{in}~(x-h, x+h])$ and the bin count $n(x,h) = \sum_{i} \hat{d}_{i}(x,h)$, the bin mean is
+$$\hat{m}_{Y}(x,h) = \frac{\sum_{i} \hat{y}_{i} \hat{d}_{i}(x,h)}{n(x,h)}.$$
+Each worker's fitted value $\hat{y}_{i}^{\mathrm{fit}}$ is the mean of their bin.
+
+The same bin means come from OLS.
+Regress $\hat{y}_{i}$ on one dummy per bin, with no intercept:
+$$\hat{y}_{i} = \sum_{x} b_{0}(x,h) \hat{d}_{i}(x,h) + \hat{e}_{i}.$$
+Each worker is in exactly one bin, so the sum of squared errors splits into one sum per bin.
+Within a bin, the least squares constant is the mean, so $\hat{b}_{0}(x,h) = \hat{m}_{Y}(x,h)$.
+
+A regressogram is the conditional-mean analog of a histogram.
+A histogram counts the observations in each bin of $\hat{x}$.
+A regressogram averages $\hat{y}_{i}$ in each bin of $\hat{x}$.
+
+### Why {-}
+
+The regressogram assumes no shape for the relationship.
+The bin means can rise, fall, or stay flat from one bin to the next.
+Each bin is a group, so it extends the group means that students already compare with two-sample tests and ANOVA.
+The bins also make the bandwidth $h$ concrete, which prepares students for loess.
+
+Here, the regressogram finds a hump that the correlation misses.
+
+### How {-}
+
+```{r}
+#| eval: true
+# Ten-year experience bins, so the half-width is h=5
+# The last bin is one year wider, so it also holds the one worker with 51 years
+bin_breaks <- c(0, 10, 20, 30, 40, 51)
+xy_hat[, 'bin'] <- cut(xy_hat[, 'x_hat'], breaks=bin_breaks)
+table(xy_hat[, 'bin'])
+```
+
+The bins are ten years wide, so $h=5$.
+The first bin holds $`r sum(xy_hat[, 'bin'] == levels(xy_hat[, 'bin'])[1])`$ workers and the last holds $`r sum(xy_hat[, 'bin'] == levels(xy_hat[, 'bin'])[5])`$.
+
+```{r}
+#| eval: true
+# Regressogram: the mean wage in each bin
+bin_means <- tapply(xy_hat[, 'y_hat'], xy_hat[, 'bin'], mean)
+bin_means
+# The same means are the coefficients from OLS on one dummy per bin, with no intercept
+rgram <- lm(y_hat ~ 0 + bin, data=xy_hat)
+coef(rgram)
+rgram_r2 <- r_squared(xy_hat[, 'y_hat'], predict(rgram))
+rgram_r2
+```
+
+The coefficients of `rgram` match `bin_means`.
+The correlation in `r_squared()` measures variation around the mean wage, so it gives the usual $\hat{R}^{2}$ for the regressogram.
+Avoid `summary(rgram)$r.squared` here.
+Without an intercept, it measures variation around zero instead, which inflates $\hat{R}^{2}$ to $`r round(summary(rgram)$r.squared, 3)`$.
+
+The mean wage rises from $`r round(bin_means[1], 2)`$ dollars in the first bin to $`r round(bin_means[3], 2)`$ in the middle bin.
+It then falls to $`r round(bin_means[5], 2)`$ in the last bin.
+The regressogram explains $`r round(100 * rgram_r2, 1)`\%$ of the variation in wages, about $`r round(rgram_r2 / xy_cor^2)`$ times as much as the linear regression.
+
+The bootstrap loop is the same as in Part 1.
+It now stores the five bin means from each resample instead of one correlation.
+
+```{r}
+#| eval: true
+# Bootstrap distribution of each bin mean, one row per resample
+boot_bins <- matrix(NA, nrow=B, ncol=length(bin_means))
+colnames(boot_bins) <- names(bin_means)
+for (b in 1:B) {
+    # Resample workers with replacement, then recompute the mean in each bin
+    xy_b <- xy_hat[sample(n, replace=TRUE), ]
+    boot_bins[b, ] <- tapply(xy_b[, 'y_hat'], xy_b[, 'bin'], mean)
+}
+```
+
+```{r}
+#| eval: true
+# Percentile confidence interval for each bin mean, one column per bin
+bin_ci <- apply(boot_bins, 2, quantile, probs=c(.025, .975))
+round(bin_ci, 2)
+```
+
+```{r}
+#| eval: true
+# Scatterplot with the bin means in green and their intervals in light green
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .25), main=NA,
+    xlab='Years of potential experience', ylab='Hourly wage (1976 dollars)')
+bin_lower <- bin_breaks[-length(bin_breaks)]
+bin_upper <- bin_breaks[-1]
+rect(bin_lower, bin_ci[1, ], bin_upper, bin_ci[2, ], col=ci_cols['rgram'], border=NA)
+segments(bin_lower, bin_means, bin_upper, bin_means, col=fit_cols['rgram'], lwd=2)
+```
+
+The light green boxes are the $95\%$ intervals for each bin mean.
+The interval for the middle bin does not overlap the intervals for the first and last bins.
+
+The permutation loop shuffles experience as in Part 1.
+Each worker's bin then has to be recomputed from the shuffled experience.
+The statistic is the regressogram $\hat{R}^{2}$.
+
+```{r}
+#| eval: true
+# Permutation distribution of the regressogram R-squared, imposing no association
+perm_rgram_r2 <- rep(NA, B)
+for (b in 1:B) {
+    # Shuffle experience, then recompute each worker's bin from the shuffled value
+    xy_p <- xy_hat
+    xy_p[, 'x_hat'] <- sample(xy_hat[, 'x_hat'], replace=FALSE)
+    xy_p[, 'bin'] <- cut(xy_p[, 'x_hat'], breaks=bin_breaks)
+    rgram_p <- lm(y_hat ~ 0 + bin, data=xy_p)
+    perm_rgram_r2[b] <- r_squared(xy_p[, 'y_hat'], predict(rgram_p))
+}
+```
+
+```{r}
+#| eval: true
+# One-sided p-value, since R-squared is never negative
+# A value of 0 means no permutation reached the observed value, so p < 1/B
+p_rgram <- mean(perm_rgram_r2 >= rgram_r2)
+p_rgram
+
+# Histogram of permuted R-squared values, with the observed value in green
+hist(perm_rgram_r2, breaks=50, border=NA, freq=FALSE, main=NA,
+    xlim=range(c(perm_rgram_r2, rgram_r2)),
+    xlab='Permuted regressogram R-squared')
+abline(v=rgram_r2, col=fit_cols['rgram'], lwd=2)
+```
+
+$\hat{R}^{2}$ is never negative, and only large values are evidence against no association.
+So the p-value counts the permutations at or above the observed value, and is one-sided.
+
+Even with no association, the bin means differ a little by chance.
+So the permuted $\hat{R}^{2}$ values sit above zero, with an average of $`r round(mean(perm_rgram_r2), 3)`$.
+The permutation distribution shows how much pattern the bins find in pure noise.
+Here $`r sum(perm_rgram_r2 >= rgram_r2)`$ of the $`r B`$ permuted values reach the observed $`r round(rgram_r2, 3)`$, so $`r p_text(p_rgram, B)`$.
+
+**Things to try.**
+
+* Use five-year bins, so $h=2.5$, with `bin_breaks <- c(seq(0, 45, by=5), 51)`.
+  Check `table()` for small bins and rerun the bootstrap.
+  Bins with few workers tend to get wider intervals.
+* With the five-year bins, rerun the permutation loop.
+  Compare the average permuted $\hat{R}^{2}$ with the one for ten-year bins.
+  More bins find more pattern in pure noise.
+* Shuffle wages instead of experience with `xy_p[, 'y_hat'] <- sample(xy_hat[, 'y_hat'], replace=FALSE)`.
+  Then the bins need no recomputing.
+  Confirm the p-value is similar.
+* Replace `mean` with `median` in both `tapply()` calls to get binned medians.
+
+# Loess
+
+### What {-}
+
+Loess (locally estimated scatterplot smoothing) fits a weighted regression at each design point $x$.
+Nearby workers get more weight and distant workers get less or none.
+The lab sets `degree=1`, so `loess()` fits a local line within each window, by weighted least squares:
+$$\min_{b_{0}(x,h), b_{1}(x,h)}~ \sum_{i=1}^{n}\left[\hat{y}_{i} - b_{0}(x,h) - b_{1}(x,h) \hat{x}_{i} \right]^{2} k_{T}\left(\hat{x}_{i}, x, h\right).$$
+The fitted value at $x$ is the local mean
+$$\hat{m}_{Y}(x,h) = \hat{b}_{0}(x,h) + \hat{b}_{1}(x,h) x.$$
+As with the regressogram, $\hat{m}_{Y}(x,h)$ estimates the mean wage near experience $x$.
+This is the local linear regression from the book, with tricube weights and an adaptive bandwidth.
+R's default, `degree=2`, adds a quadratic term $b_{2}(x,h) \hat{x}_{i}^{2}$.
+
+The weights come from the tricube kernel,
+$$k_{T}\left(\hat{x}_{i}, x, h\right) = \left(1 - \left|\frac{\hat{x}_{i} - x}{h}\right|^{3}\right)^{3} \mathbf{1}\left(|\hat{x}_{i} - x| \leq h\right).$$
+A worker at $x$ gets weight $1$.
+The weight falls smoothly to $0$ at distance $h$, and workers farther away get none.
+
+A regressogram uses fixed bins with the same half-width $h$ everywhere.
+Loess slides the window along $x$ and sets its width so that it always holds the same share of the data.
+This share is the `span`.
+Formally, $h$ is the distance from $x$ to its $q$-th nearest $\hat{x}_{i}$, where $q = \lfloor \text{span} \times n \rfloor$.
+With the default `span=0.75`, each local fit uses the nearest $q = `r floor(.75 * n)`$ of the $`r n`$ workers.
+Where data are sparse, the window widens.
+
+The code below computes the loess fit by hand at $x = 21$, which Part 3 finds is the peak of the curve.
+
+```{r}
+#| eval: true
+# Loess by hand at one design point
+x0 <- 21
+d <- abs(xy_hat[, 'x_hat'] - x0)
+# Bandwidth: the distance to the q-th nearest worker, with q = floor(span * n)
+h <- sort(d)[floor(.75 * n)]
+h
+# Tricube weights
+k_t <- ifelse(d <= h, (1 - (d / h)^3)^3, 0)
+# Weighted least squares with a line in experience
+reg_x0 <- lm(y_hat ~ x_hat, data=xy_hat, weights=k_t)
+predict(reg_x0, newdata=data.frame(x_hat=x0))
+```
+
+The window around $x = `r x0`$ reaches $h = `r h`$ years.
+The window around $x = 45$, where workers are scarcer, reaches $h = `r sort(abs(xy_hat[, 'x_hat'] - 45))[floor(.75 * n)]`$ years.
+
+### Why {-}
+
+Loess draws a smooth curve without choosing a functional form in advance.
+Students can build the band around the curve with the same bootstrap loop, so they can also explain it.
+The span plays the role of $h$, so loess also shows the bias-variance tradeoff (see Extensions).
+The permutation test with $\hat{R}^{2}$ works unchanged.
+
+### How {-}
+
+```{r}
+#| eval: true
+# Local linear loess with the default span, which uses the nearest 75% of workers at each x
+reg_lo <- loess(y_hat ~ x_hat, data=xy_hat, degree=1)
+lo_r2 <- r_squared(xy_hat[, 'y_hat'], predict(reg_lo))
+lo_r2
+```
+
+The squared correlation between wages and the loess fit is $`r round(lo_r2, 3)`$.
+
+```{r}
+#| eval: true
+# Predict at every year of experience in the data
+pred_design <- data.frame(x_hat=seq(min(xy_hat[, 'x_hat']), max(xy_hat[, 'x_hat'])))
+y_fit_lo <- predict(reg_lo, newdata=pred_design)
+# Experience at the peak of the fitted curve
+pred_design[which.max(y_fit_lo), 'x_hat']
+```
+
+The fitted curve peaks at $`r pred_design[which.max(y_fit_lo), 'x_hat']`$ years of experience.
+There, `loess()` gives $`r round(max(y_fit_lo), 3)`$ dollars, close to the hand computation above.
+By default, `loess()` computes the fit exactly at a few design points and interpolates between them, so the two differ slightly.
+
+The bootstrap loop refits loess on each resample.
+It stores the predictions at every design point, so each column of `boot_lo` is one bootstrap curve.
+
+```{r}
+#| eval: true
+# Bootstrap distribution of the loess curve, one column per resample
+boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=B)
+for (b in 1:B) {
+    # Resample workers with replacement, refit loess, and predict at every design point
+    xy_b <- xy_hat[sample(n, replace=TRUE), ]
+    reg_lo_b <- loess(y_hat ~ x_hat, data=xy_b, degree=1)
+    boot_lo[, b] <- predict(reg_lo_b, newdata=pred_design)
+}
+```
+
+```{r}
+#| eval: true
+# Pointwise 95% confidence band
+# Loess does not extrapolate, so a resample that misses the most experienced workers gives NA there
+lo_cb <- apply(boot_lo, 1, quantile, probs=c(.025, .975), na.rm=TRUE)
+
+# Scatterplot with the loess curve in blue and its band in light blue
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .25), main=NA,
+    xlab='Years of potential experience', ylab='Hourly wage (1976 dollars)')
+polygon(c(pred_design[, 'x_hat'], rev(pred_design[, 'x_hat'])),
+    c(lo_cb[1, ], rev(lo_cb[2, ])), col=ci_cols['loess'], border=NA)
+lines(pred_design[, 'x_hat'], y_fit_lo, col=fit_cols['loess'], lwd=2)
+```
+
+The band is the middle $95\%$ of the bootstrap curves at each design point.
+It is narrow where there are many workers and wider at the edges.
+
+Loess does not extrapolate beyond the data it was fit on.
+A resample that misses the one worker with the most experience cannot predict there, so `predict()` returns `NA`.
+This happens in $`r round(100 * mean(is.na(boot_lo[nrow(boot_lo), ])))`\%$ of resamples at $`r max(pred_design[, 'x_hat'])`$ years.
+The option `na.rm=TRUE` drops those resamples, so the band at the edge uses fewer curves.
+
+```{r}
+#| eval: true
+# Permutation distribution of the loess R-squared, imposing no association
+perm_lo_r2 <- rep(NA, B)
+for (b in 1:B) {
+    # Shuffle experience without replacement, then refit loess
+    xy_p <- xy_hat
+    xy_p[, 'x_hat'] <- sample(xy_hat[, 'x_hat'], replace=FALSE)
+    reg_lo_p <- loess(y_hat ~ x_hat, data=xy_p, degree=1)
+    perm_lo_r2[b] <- r_squared(xy_p[, 'y_hat'], predict(reg_lo_p))
+}
+```
+
+```{r}
+#| eval: true
+# One-sided p-value, as for the regressogram
+p_lo <- mean(perm_lo_r2 >= lo_r2)
+p_lo
+
+# Histogram of permuted R-squared values, with the observed value in blue
+hist(perm_lo_r2, breaks=50, border=NA, freq=FALSE, main=NA,
+    xlim=range(c(perm_lo_r2, lo_r2)),
+    xlab='Permuted loess R-squared')
+abline(v=lo_r2, col=fit_cols['loess'], lwd=2)
+```
+
+A flexible curve also finds some pattern in pure noise, so the permuted values average $`r round(mean(perm_lo_r2), 3)`$.
+Here $`r sum(perm_lo_r2 >= lo_r2)`$ of the $`r B`$ permuted values reach the observed $`r round(lo_r2, 3)`$, so $`r p_text(p_lo, B)`$.
+
+```{r}
+#| eval: true
+# Summary: the same two loops for three descriptions of the data
+round(cbind(
+    R_squared=c(Linear=xy_cor^2, Regressogram=rgram_r2, Loess=lo_r2),
+    p_value=c(p_cor, p_rgram, p_lo)), 3)
+```
+
+All three p-values are small.
+But the linear regression explains far less of the variation than the regressogram or loess.
+The correlation is weak because the relationship is a hump, not a line.
+A weak correlation does not mean a weak relationship.
+
+**Things to try.**
+
+* Refit loess with `span=0.3` and with `span=2`, in both `loess()` calls of the fit and the bootstrap.
+  A smaller span gives a wigglier curve and a wider band.
+* Change `degree=1` to `degree=2` in each `loess()` call to fit local quadratics instead of local lines.
+* Add `control=loess.control(surface='direct')` to the first `loess()` call, so it computes the fit exactly at every design point.
+  The value at the peak then matches the hand computation in What.
+* Rerun the permutation loop with `span=0.3` and compare the average permuted $\hat{R}^{2}$ with the default span.
+* Add the regressogram to the loess figure with `segments(bin_lower, bin_means, bin_upper, bin_means, col=fit_cols['rgram'], lwd=2)`.
+
+# Scripting and AI
+
+Save your work as `Correlation_Loess.R`.
+If you did not follow along, use the version I created.
+
+Close RStudio and open the saved script.
+The script records the steps in the analysis.
+
+It also gives an AI assistant something to review.
+The `wage1` data are public and contain no names or other identifying information.
+The script is safe to upload.
+
+### Step 1: write comments {-}
+
+Write three sentences at the top of the script.
+Summarize the main statistical ideas.
+
+Change one comment to misdescribe its code.
+For example, change "without replacement" to "with replacement" in a permutation loop, or "middle 95%" to "middle 90%".
+Write down the line number.
+
+### Step 2: upload and ask about the comments {-}
+
+Open a new chat at [claude.ai](https://claude.ai).
+Attach `Correlation_Loess.R` with the attach button in the message box.
+Then send this prompt.
+
+> This R script is from an introductory statistics course.
+> I wrote the comments.
+> Check whether they describe the code correctly.
+
+Then send this prompt.
+
+> Identify any bugs in the code.
+> Check the accuracy of my summary.
+
+Check whether Claude found the incorrect comment.
+Check whether it flagged any correct code or comments as errors.
+
+### Step 3: ask your own questions {-}
+
+Ask about an unclear part of the lab in your own words.
+Then ask Claude to extend the analysis.
+For example:
+
+> Add a bootstrap 95% confidence interval for the years of experience at which the loess curve peaks.
+
+Save the new script as `Correlation_Loess_ClaudeV1.R`.
+Open it in RStudio and check that it works.
+You can compare its answer with the third extension below.
+
+### Step 4: convert it to Quarto {-}
+
+> Convert this R script to a Quarto document that renders to HTML.
+> Name the file `Correlation_Loess_ClaudeV1.qmd`.
+> Keep the content unchanged.
+
+In RStudio, open the file and click *Render*.
+
+# Extensions
+
+## Marginal effects
+
+### What {-}
+
+Write the loess curve from Part 3 as $\hat{m}_{Y}(x)$, dropping $h$ for short.
+The marginal effect of experience at $x$ is the slope of this curve, $d \hat{m}_{Y}(x) / dx$.
+The mean marginal effect averages this slope over workers, $\sum_{i} [d \hat{m}_{Y}(\hat{x}_{i}) / dx] / n$.
+The marginal effect at the mean is the slope at the mean experience, $d \hat{m}_{Y}(\hat{m}_{X}) / dx$.
+When the curve is not a line, the linear regression coefficient $\hat{b}_{1}$ is generally neither one.
+
+### Why {-}
+
+Economic theory stresses marginal effects, such as diminishing returns.
+Loess is consistent: with more data and a smaller span, its slope approaches the true marginal effect.
+Simple linear regression is not, unless the true curve is a line.
+The bootstrap gives an interval for each marginal effect with the same loop as before.
+
+### How {-}
+
+The code below finds the slope with a small step of $0.01$ years on each side of $x$.
+
+```{r}
+#| eval: true
+# Slope of a loess curve at x, from a small step on each side of x
+# At the edges of the data the curve was fit to, the step uses only the side inside the data
+lo_slope <- function(lo_fit, x, eps=.01) {
+    x_range <- range(lo_fit[['x']])
+    x_lo <- pmax(x - eps, x_range[1])
+    x_hi <- pmin(x + eps, x_range[2])
+    y_lo <- predict(lo_fit, newdata=data.frame(x_hat=x_lo))
+    y_hi <- predict(lo_fit, newdata=data.frame(x_hat=x_hi))
+    (y_hi - y_lo) / (x_hi - x_lo)
+}
+
+# Mean marginal effect: the slope at each worker's experience, averaged over workers
+me_mean <- mean(lo_slope(reg_lo, xy_hat[, 'x_hat']))
+me_mean
+# Marginal effect at the mean: the slope at the mean experience
+me_at_mean <- lo_slope(reg_lo, mean(xy_hat[, 'x_hat']))
+me_at_mean
+# Compare with the linear regression coefficient from Part 1
+coef(reg)[2]
+```
+
+The linear regression coefficient is $`r round(coef(reg)[2], 3)`$ dollars per hour for each year of experience.
+The mean marginal effect is $`r round(me_mean, 3)`$, and the marginal effect at the mean is $`r round(me_at_mean, 3)`$.
+
+```{r}
+#| eval: true
+# Bootstrap both marginal effects: resample workers, refit loess, and recompute each one
+boot_me <- matrix(NA, nrow=B, ncol=2)
+for (b in 1:B) {
+    xy_b <- xy_hat[sample(n, replace=TRUE), ]
+    reg_lo_b <- loess(y_hat ~ x_hat, data=xy_b, degree=1)
+    boot_me[b, 1] <- mean(lo_slope(reg_lo_b, xy_b[, 'x_hat']))
+    boot_me[b, 2] <- lo_slope(reg_lo_b, mean(xy_b[, 'x_hat']))
+}
+
+# Percentile confidence interval for each, one column per marginal effect
+me_ci <- apply(boot_me, 2, quantile, probs=c(.025, .975))
+colnames(me_ci) <- c('Mean marginal effect', 'Marginal effect at the mean')
+round(me_ci, 3)
+# The same interval for the linear regression coefficient, from Part 1
+round(slope_ci, 3)
+```
+
+The $95\%$ interval for the mean marginal effect runs from $`r round(me_ci[1, 1], 3)`$ to $`r round(me_ci[2, 1], 3)`$.
+It excludes the linear regression coefficient.
+The interval for the marginal effect at the mean is much wider, from $`r round(me_ci[1, 2], 3)`$ to $`r round(me_ci[2, 2], 3)`$, and it includes the linear regression coefficient.
+A slope at one point varies more from sample to sample than an average of slopes over all workers.
+
+## Bandwidth and the bias-variance tradeoff
+
+### What {-}
+
+The span decides how many workers each local fit uses.
+A wide span uses many workers, so the curve changes little from sample to sample (low variance).
+But a wide span can smooth over real bends (high bias).
+A narrow span follows bends closely (low bias), but it also chases noise (high variance).
+
+### Why {-}
+
+Students can see both sides of the tradeoff in one figure.
+The bootstrap band shows the variance directly.
+
+### How {-}
+
+The code below fits a wide span and a narrow span, each with its own bootstrap band.
+
+```{r}
+#| eval: true
+#| warning: false
+# A wide and a narrow span, each its own model with a color not used above
+spans <- c(2, 0.3)
+span_cols <- c(rgb(.6, 0, .6, .8), rgb(.9, .5, 0, .8))
+band_cols <- c(rgb(.6, 0, .6, .3), rgb(.9, .5, 0, .3))
+
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .25), main=NA,
+    xlab='Years of potential experience', ylab='Hourly wage (1976 dollars)')
+for (s in seq_along(spans)) {
+    # Loess fit with this span
+    reg_s <- loess(y_hat ~ x_hat, data=xy_hat, span=spans[s], degree=1)
+    # Bootstrap curves with the same span, one column per resample
+    boot_s <- matrix(NA, nrow=nrow(pred_design), ncol=B)
+    for (b in 1:B) {
+        xy_b <- xy_hat[sample(n, replace=TRUE), ]
+        reg_s_b <- loess(y_hat ~ x_hat, data=xy_b, span=spans[s], degree=1)
+        boot_s[, b] <- predict(reg_s_b, newdata=pred_design)
+    }
+    # Pointwise 95% band, then the fitted curve on top
+    cb_s <- apply(boot_s, 1, quantile, probs=c(.025, .975), na.rm=TRUE)
+    polygon(c(pred_design[, 'x_hat'], rev(pred_design[, 'x_hat'])),
+        c(cb_s[1, ], rev(cb_s[2, ])), col=band_cols[s], border=NA)
+    lines(pred_design[, 'x_hat'], predict(reg_s, newdata=pred_design),
+        col=span_cols[s], lwd=2)
+}
+legend('topright', title='Span', legend=spans,
+    col=span_cols, lwd=2, bty='n')
+```
+
+With span $2$, every local fit uses all the workers.
+The curve smooths over the hump, and its band is narrow.
+As the span grows further, the curve approaches the least squares line from Part 1.
+With span $0.3$, the curve picks up more local wiggles and its band is much wider.
+
+The bands show variance, but not bias, because the true curve is unknown.
+The book separates the two by treating a large dataset as a known population.
+
+## A confidence interval for the peak
+
+### What {-}
+
+The peak is the years of experience at which the loess curve is highest.
+It depends on the whole curve, and no simple formula gives its standard error.
+
+### Why {-}
+
+The bootstrap needs no formula, only a new statistic.
+The curves in `boot_lo` from Part 3 already contain everything needed.
+
+### How {-}
+
+```{r}
+#| eval: true
+# Experience at the peak of each bootstrap curve
+boot_peak <- apply(boot_lo, 2, function(y_fit) pred_design[which.max(y_fit), 'x_hat'])
+peak_hat <- pred_design[which.max(y_fit_lo), 'x_hat']
+
+# Percentile confidence interval for the peak
+peak_ci <- quantile(boot_peak, probs=c(.025, .975))
+peak_ci
+
+# Histogram of bootstrap peaks, one bar per year of experience
+hist(boot_peak, breaks=seq(min(boot_peak) - .5, max(boot_peak) + .5, by=1),
+    border=NA, freq=FALSE, main=NA, xlab='Bootstrap peak (years of experience)')
+abline(v=peak_ci, col=ci_cols['loess'], lwd=2)
+abline(v=peak_hat, col=fit_cols['loess'], lwd=2)
+```
+
+The $95\%$ interval for the peak runs from $`r peak_ci[1]`$ to $`r peak_ci[2]`$ years.
+That is wide, because the curve is nearly flat over much of the middle of the experience range.
+Small changes in the sample can then move the peak a long way.
+Most bootstrap peaks fall between $19$ and $23$ years, with a smaller group between $25$ and $28$ years.
+A formula-based interval would hide this shape.
+
+## Association is not causation
+
+The hump describes different workers at one point in time.
+It does not show that a given worker's wage first rises and then falls with experience.
+In a single cross-section, workers with more experience also belong to earlier cohorts.
+In 1976, workers with $40$ years of potential experience started their careers around the 1930s.
+They differ from younger workers in schooling and in other ways that also affect wages.
+Potential experience is also not the same as years actually worked.
+Following the same workers over time would help separate these explanations.
+
+## More extensions
+
+You can adapt this document for your courses.
+Additional material is openly available online.
+
+* [Statistics of Association (Ch. 14)](https://jadamso.github.io/Rbooks/02_14_Associations.html#hypothesis-testing): bootstrap and permutation distributions of the correlation, and Falk's median correlation for data with outliers.
+* [Simple Regression (Ch. 15)](https://jadamso.github.io/Rbooks/02_15_SimpleRegression.html): the least squares line, $\hat{R}^{2}$, and bootstrap and permutation tests for the slope.
+* [Association is not Causation (Ch. 16)](https://jadamso.github.io/Rbooks/02_16_NotCausation.html): correlation without causation, and causation without correlation.
+* [Local Regression (Ch. 17)](https://jadamso.github.io/Rbooks/02_17_LocalRegression.html#regressograms): regressograms, piecewise regression, and sliding windows.
+* [Gradients (Ch. 18)](https://jadamso.github.io/Rbooks/02_18_Gradients.html#confidence-bands): loess confidence bands, gradients, and tests that the gradients are zero.
+* [Working with AI (Appendix A)](https://jadamso.github.io/Rbooks/04_A_WorkingWithAI.html): the full eight-step review.
+  This lab uses four of those steps.

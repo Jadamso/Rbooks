@@ -11,12 +11,12 @@ We build up from regressograms (bin averages) to piecewise and local linear regr
 
 ## Local Relationships
 
-Scatterplots are a great and simplest plot for bivariate data that simply plots each observation.
+Scatterplots are a great and simple plot for bivariate data that simply plots each observation.
 There are many extensions and similar tools.
 The example below helps understand how both the central tendency and dispersion change.
 ```{r}
 # Running example for the whole chapter: wages and years of schooling
-library(Ecdat)                              # provides Wages1
+data(Wages1, package='Ecdat')
 xy2_hat <- Wages1[order(Wages1[, 'school']), c('school', 'wage')]
 colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
 
@@ -68,6 +68,7 @@ The methods differ in two choices: whether the windows are fixed bins or slide a
 |---|---|---|
 | **Fixed bins** | Regressogram | Piecewise regression |
 | **Window slides with $x$** | Locally constant regression | Locally linear regression |
+: Local Regression Methods
 
 Each window also needs a width, which controls how "local" a local estimate actually is.
 
@@ -75,8 +76,11 @@ Each window also needs a width, which controls how "local" a local estimate actu
 The *bandwidth* $h$ is the half-width of a local bin around the design point $x$: an observation is "local" to $x$ when $|\hat{x}_{i}-x|\leq h$.
 :::
 
-The bandwidth is useful as the central tuning knob for every local method in this chapter: regressograms, piecewise regression, locally constant kernel regression, and locally linear regression.
-It is the same $h$ that set the bin half-width of a [histogram](01_02_Data.qmd#histogram-density) and the spread of a [kernel density](01_10_AdvancedEmpirics.qmd#kernel-density), except that there it controlled how much data went into a density estimate at $x$, and here it controls how much data goes into a conditional-mean estimate at $x$.
+The bandwidth is useful for controlling how smooth a local estimate is.
+All four methods in the table above use it.
+It is the same $h$ that set the bin half-width of a [histogram](01_02_Data.qmd#histogram-density) and the spread of a [kernel density](01_10_AdvancedEmpirics.qmd#kernel-density).
+There, it controlled how much data went into a density estimate at $x$.
+Here, it controls how much data goes into a conditional-mean estimate at $x$.
 Larger $h$ pools more observations into each estimate but smooths over real variation; smaller $h$ tracks the data more closely but uses fewer points per estimate, so the fitted curve becomes noisier.
 
 This chapter writes the grouped means $\hat{m}_{Y}(g)$ as $\hat{m}_{Y}(x,h)$, because each group is the set of observations with $\hat{x}_{i}~\text{in}~[x-h,x+h]$.
@@ -139,10 +143,16 @@ Each step fixes one problem with the step before it.
 Adding a slope captures the trend within a bin.
 Sliding the window replaces the jump at the bin edge with smaller steps.
 Adding a slope to the sliding window reduces bias near the edges of the data.
-Near the top of the schooling range, for example, the locally constant fit falls below the grouped means, because each window still includes many people with 12 years of schooling, while the locally linear fit follows the trend.
+Near the top of the schooling range, for example, the locally constant fit falls below the grouped means.
+Each window there still includes many people with 12 years of schooling, which pulls the window average down.
+The locally linear fit follows the trend.
 
 
-## Regressograms
+## Fixed Bins
+
+The methods in the first row of the table split $\hat{x}$ into fixed bins and fit a separate model within each bin.
+
+#### **Regressograms** {-}
 
 Just as a histogram summarizes how observations are distributed across bins of $\hat{x}$, a *regressogram* summarizes how the conditional mean of $\hat{y}_{i}$ changes across bins of $\hat{x}$.
 
@@ -153,10 +163,10 @@ $$\begin{aligned}
 \hat{y}_{i} &= \sum_{x~\text{in}~\{x_{1}, ..., x_{L} \}} b_{0}(x,h) \hat{d}_{i}(x,h)  + \hat{e}_{i},
 \end{aligned}$$
 where $\hat{d}_{i}(x,h) = \mathbf{1}\left(\hat{x}_{i}~\text{in}~\left(x-h,x+h\right] \right)$ is a dummy variable for the bin with midpoint $x$, and each bin has a coefficient $b_{0}(x,h)$.
+The model is fit using [ordinary least squares](02_15_SimpleRegression.qmd) (OLS).
 :::
 
 The regressogram is useful when we expect the relationship between $\hat{x}$ and $\hat{y}$ to bend in ways a single line cannot capture, because the bin averages can rise, fall, or stay flat from one bin to the next without imposing any global shape.
-It is the conditional-mean analog of a histogram: histograms count observations within bins of $\hat{x}$; regressograms average $\hat{y}$ within bins of $\hat{x}$.
 ```{r}
 # Data
 plot(y_hat ~ x_hat, data=xy2_hat, pch=16, col=grey(0, .1),
@@ -206,7 +216,7 @@ $$\begin{aligned}
 \hat{b}_{0}(x,h) &= \frac{\sum_{i}^{n(x,h)} \hat{y}_{i}}{ n(x,h) } = \hat{m}_{Y}(x,h).
 \end{aligned}$$
 As such, the OLS regression yields coefficients that are interpreted as the conditional mean: $\hat{m}_{Y}(x,h)$.
-We can directly compute the same statistic directly by simply taking the average value of $\hat{y}_{i}$ for all $i$ observations in a particular bin.
+We can directly compute the same statistic by simply taking the average value of $\hat{y}_{i}$ for all $i$ observations in a particular bin.
 
 In any case, the values predicted by the model are found as 
 $$
@@ -220,7 +230,7 @@ $$\begin{aligned}
 \text{Wage}_{i} &= b_{0}(x=6, h=7/2) \mathbf{1}\left(\text{School}_{i}~\text{in}~(2.5,9.5]\right) + b_{0}(x=13, h=7/2) \mathbf{1}\left(\text{School}_{i}~\text{in}~(9.5,16.5] \right) + \hat{e}_{i}.
 \end{aligned}$$
 
-Here is a simple example with three data points $(\hat{x}_{i}, \hat{y}_{i})~\text{in}~\{ (3,2), (4,4), (12,3) \}$, we can easily compute
+Here is a simple example with three data points $(\hat{x}_{i}, \hat{y}_{i})~\text{in}~\{ (3,2), (4,4), (12,3) \}$, for which we can easily compute
 $$\begin{aligned}
 n(x=6,h=7/2) &= 2 \\
 \hat{b}_{0}(x=6, h=7/2) &= [2 + 4] / 2 \\
@@ -239,8 +249,7 @@ aggregate(y_hat ~ xcc, data=xy2_hat, mean)
 ```
 :::
 
-
-## Piecewise Regression
+#### **Piecewise Regression** {-}
 
 To let the slope vary across the range of $\hat{x}$ instead of just the level, we add a slope term within each bin.
 
@@ -251,12 +260,15 @@ $$\begin{aligned}
 \hat{y}_{i} &= \sum_{x} \left[b_{0}(x,h) + b_{1}(x,h)\hat{x}_{i} \right] \hat{d}_{i}(x,h) + \hat{e}_{i},
 \end{aligned}$$
 where $\hat{d}_{i}(x,h)$ is the dummy variable for the bin with midpoint $x$, and each bin has its own intercept $b_{0}(x,h)$ and slope $b_{1}(x,h)$.
+The model is fit using [OLS](02_15_SimpleRegression.qmd).
 Within a bin the relationship is a straight line; across bins the slope and intercept can change.
 :::
 
 Piecewise regression is useful when the relationship is approximately linear in pieces but the slope itself changes.
 Returns to schooling might flatten after a degree, for example, or marginal cost curves might kink at capacity.
-Compared to the regressogram, it captures within-bin trends instead of just within-bin averages; compared to a single line, it lets the slope bend at bin boundaries.
+A regressogram only captures the average within each bin, and a single line has the same slope everywhere.
+Piecewise regression captures the trend within each bin and lets the slope change at bin boundaries.
+A bin boundary can also mark a real change in the data, such as a new political regime.
 
 ```{r}
 # Data
@@ -386,69 +398,20 @@ Regressograms and piecewise regressions are intuitive ways to capture nonlinear 
 Sometimes we want smoother predictions or to estimate derivatives (gradients).
 
 
-## Locally Constant Regression
+## Sliding Windows
 
 To avoid the jumps at bin edges, we let the window slide along with $x$.
 We first write a bin as a set of regression weights, using the uniform kernel from [kernel density estimation](01_10_AdvancedEmpirics.qmd#kernel-density), and then move those weights from one design point to the next.
 
-#### **Weighted Regression**{-}
-Interestingly, we can obtain the piecewise regression estimates from weighted least squares regression.
-For some specific design point, $x$, we can find $\hat{b}_{0}(x,h)$ and $\hat{b}_{1}(x,h)$ by minimizing
-$$\begin{aligned}
-\sum_{i}^{n}\left[ \hat{e}_{i} \right]^2  \hat{d}_{i}(x,h) &= \sum_{i}^{n}\left[ \hat{y}_{i}- b_{0}(x,h) - b_{1}(x,h) \hat{x}_{i} \right]^2  \hat{d}_{i}(x,h) \\
-&= \sum_{i}^{n(x_{1},h)}\left[ \hat{y}_{i}- b_{0}(x_{1},h) - b_{1}(x_{1},h) \hat{x}_{i}  \right]^2  \hat{d}_{i}(x_{1},h) + ... \sum_{i}^{n(x_{L},h)}\left[ \hat{y}_{i}- b_{0}(x_{L},h) - b_{1}(x_{L},h) \hat{x}_{i}  \right]^2  \hat{d}_{i}(x_{L},h) \\
-&= \sum_{i}^{n(x,h)}\left[\hat{y}_{i}- b_{0}\left(x,h\right) - b_{1}(x,h) \hat{x}_{i}  \right]^2
-\end{aligned}$$
+#### **Locally Constant Regression** {-}
 
-
-We get nearly identical results if we instead use "uniform weights" with half-width $h$,
+For a bin of half-width $h$ around the design point $x$, the "uniform weights" are
 $$\begin{aligned}
 k_{U}\left( \hat{x}_{i}, x, h \right)
 &= \frac{\mathbf{1}\left(\frac{|\hat{x}_{i}-x|}{h} \leq 1\right)}{2}
 = \frac{\mathbf{1}\left( \hat{x}_{i}~\text{in}~\left[ x-h, x + h\right] \right) }{2}
 \end{aligned}$$
 which is nearly identical to $\hat{d}_{i}(x,h)/ 2$, but uses intervals $[]$ instead of $(]$.
-As such we can see that
-$$\begin{aligned}
-\sum_{i}^{n}\left[ \hat{e}_{i} \right]^2 k_{U}\left( \hat{x}_{i}, x, h \right)
-&\approx \sum_{i}^{n}\left[ \hat{e}_{i} \right]^2 \hat{d}_{i}(x,h) / 2 \\
-&= \sum_{i}^{n(x,h)}\left[\hat{y}_{i}- b_{0}\left(x,h\right) - b_{1}(x,h) \hat{x}_{i} \right]^2 / 2,
-\end{aligned}$$
-The constant term $1/2$ is irrelevant to finding the optimal solution (you can check the math yourself).
-
-Here is the weighted regression on the wage data, at the midpoint of the first bin of the two-bin piecewise regression.
-Both predictions are the same, about $4.378$.
-```{r}
-# xy2_hat and preg_c defined above
-
-## Weighted Regression
-x <- 6 # midpoint of the first schooling bin
-h <- 3.5 # window [2.5, 9.5] covers schooling levels 3 to 9
-k <- abs(xy2_hat[, 'x_hat']-x) /h
-k_weights <- dunif(k, -1, 1) # the uniform kernel k_U
-preg_k  <- lm(y_hat ~ x_hat, data=xy2_hat, weights=k_weights)
-predict(preg_k, newdata=data.frame(x_hat=x))
-
-# Compare to Piecewise
-predict(preg_c, newdata=data.frame(x_hat=x, xcc='(2.5,9.5]'))
-```
-
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Check the same result at a different design point.
-Use the second bin, `(9.5,16.5]`, which holds schooling levels $10$ to $16$.
-```{r}
-x <- 13 # midpoint of the second schooling bin
-h <- 3.5 # window [9.5, 16.5] covers schooling levels 10 to 16
-
-## Weighted Regression
-k_weights <- dunif( abs(xy2_hat[, 'x_hat']-x)/h, -1, 1)
-preg_k  <- lm(y_hat ~ x_hat, data=xy2_hat, weights=k_weights)
-predict(preg_k, newdata=data.frame(x_hat=x))
-
-# Compare to Piecewise
-predict(preg_c, newdata=data.frame(x_hat=x, xcc='(9.5,16.5]'))
-```
-:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Here is an example going into the details of the weights.
@@ -474,12 +437,15 @@ mean( y0_hat[ abs(x0_hat-3) <= h ] )
 ```
 :::
 
-#### **Sliding the Window** {-}
-
 Once a bin is written as weights around a design point $x$, nothing requires $x$ to be a bin midpoint, so we can slide the window and fit a local average at every design point.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-A *locally constant (kernel) regression* fits a single constant at each design point $x$ by minimizing a kernel-weighted sum of squared residuals:
+A *locally constant (kernel) regression* fits a single constant at each design point $x$.
+For data near $x$, the model is
+$$\begin{aligned}
+\hat{y}_{i} &= b_{0}(x,h) + \hat{e}_{i},
+\end{aligned}$$
+and the coefficient minimizes a kernel-weighted sum of squared residuals:
 $$\min_{b_{0}(x, h)} \sum_{i=1}^{n}\left[\hat{y}_{i} - b_{0}(x, h) \right]^{2} k\left(\hat{x}_{i}, x, h\right),$$
 where $k(\hat{x}_{i}, x, h)$ is a kernel weight that down-weights observations far from $x$.
 :::
@@ -487,7 +453,7 @@ where $k(\hat{x}_{i}, x, h)$ is a kernel weight that down-weights observations f
 The locally constant regression is useful as the simplest smoother that produces a continuous fitted curve: at each $x$ it returns a kernel-weighted average of nearby $\hat{y}_{i}$.
 With a uniform kernel and exclusive bins it reduces to a regressogram, so the regressogram is just its simplest special case.
 
-For some intuition, consider a point $x$ and the model $\hat{y}_{i} = b_{0}(x, h) + \hat{e}_{i}$, a weighted version of the [simple constant regression](02_15_SimpleRegression.qmd#simple-constant-regression).
+For some intuition, note that this model is a weighted version of the [simple constant regression](02_15_SimpleRegression.qmd#simple-constant-regression).
 The weighted OLS estimator with uniform kernel weights $k_{U}$ yields
 $$\begin{aligned}
 &  \min_{b_{0}(x,h)}~ \sum_{i}^{n}\left[\hat{e}_{i} \right]^2 k_{U}\left( \hat{x}_{i}, x, h \right) \\
@@ -541,7 +507,7 @@ If $\hat{x}_{i}$ represents time, then the local constant regression is also cal
 We can create a *weighted* moving average by using a different distribution.
 I.e. using the Normal `dnorm` instead of the Uniform `dunif`.
 
-The basic idea also generalizes other kernels. 
+The basic idea also generalizes to other kernels. 
 As such, a kernel regression using uniform weights is often called a "naive kernel regression". 
 Typically, kernel regressions use kernels that weight nearby observations more heavily. 
 
@@ -571,14 +537,71 @@ y_fit_5_ec
 ```
 :::
 
+#### **Weighted Regression**{-}
+Interestingly, we can also obtain the piecewise regression estimates from weighted least squares regression.
+For some specific design point, $x$, we can find $\hat{b}_{0}(x,h)$ and $\hat{b}_{1}(x,h)$ by minimizing
+$$\begin{aligned}
+\sum_{i}^{n}\left[ \hat{e}_{i} \right]^2  \hat{d}_{i}(x,h) &= \sum_{i}^{n}\left[ \hat{y}_{i}- b_{0}(x,h) - b_{1}(x,h) \hat{x}_{i} \right]^2  \hat{d}_{i}(x,h) \\
+&= \sum_{i}^{n(x_{1},h)}\left[ \hat{y}_{i}- b_{0}(x_{1},h) - b_{1}(x_{1},h) \hat{x}_{i}  \right]^2  \hat{d}_{i}(x_{1},h) + ... \sum_{i}^{n(x_{L},h)}\left[ \hat{y}_{i}- b_{0}(x_{L},h) - b_{1}(x_{L},h) \hat{x}_{i}  \right]^2  \hat{d}_{i}(x_{L},h) \\
+&= \sum_{i}^{n(x,h)}\left[\hat{y}_{i}- b_{0}\left(x,h\right) - b_{1}(x,h) \hat{x}_{i}  \right]^2
+\end{aligned}$$
 
-## Local Linear Regression
+
+We get nearly identical results if we instead use the uniform weights $k_{U}\left( \hat{x}_{i}, x, h \right)$ from locally constant regression.
+As such we can see that
+$$\begin{aligned}
+\sum_{i}^{n}\left[ \hat{e}_{i} \right]^2 k_{U}\left( \hat{x}_{i}, x, h \right)
+&\approx \sum_{i}^{n}\left[ \hat{e}_{i} \right]^2 \hat{d}_{i}(x,h) / 2 \\
+&= \sum_{i}^{n(x,h)}\left[\hat{y}_{i}- b_{0}\left(x,h\right) - b_{1}(x,h) \hat{x}_{i} \right]^2 / 2,
+\end{aligned}$$
+The constant term $1/2$ is irrelevant to finding the optimal solution (you can check the math yourself).
+
+Here is the weighted regression on the wage data, at the midpoint of the first bin of the two-bin piecewise regression.
+Both predictions are the same, about $4.378$.
+```{r}
+# xy2_hat and preg_c defined above
+
+## Weighted Regression
+x <- 6 # midpoint of the first schooling bin
+h <- 3.5 # window [2.5, 9.5] covers schooling levels 3 to 9
+k <- abs(xy2_hat[, 'x_hat']-x) /h
+k_weights <- dunif(k, -1, 1) # the uniform kernel k_U
+preg_k  <- lm(y_hat ~ x_hat, data=xy2_hat, weights=k_weights)
+predict(preg_k, newdata=data.frame(x_hat=x))
+
+# Compare to Piecewise
+predict(preg_c, newdata=data.frame(x_hat=x, xcc='(2.5,9.5]'))
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Check the same result at a different design point.
+Use the second bin, `(9.5,16.5]`, which holds schooling levels $10$ to $16$.
+```{r}
+x <- 13 # midpoint of the second schooling bin
+h <- 3.5 # window [9.5, 16.5] covers schooling levels 10 to 16
+
+## Weighted Regression
+k_weights <- dunif( abs(xy2_hat[, 'x_hat']-x)/h, -1, 1)
+preg_k  <- lm(y_hat ~ x_hat, data=xy2_hat, weights=k_weights)
+predict(preg_k, newdata=data.frame(x_hat=x))
+
+# Compare to Piecewise
+predict(preg_c, newdata=data.frame(x_hat=x, xcc='(9.5,16.5]'))
+```
+:::
+
+
+#### **Local Linear Regression** {-}
 
 We can also add a slope term to the sliding window, so that each local fit can follow the trend within its window.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-A *local linear regression* conducts a linear regression for each design point $x$ using a subsample of data around it.
-The model is $\hat{y}_{i} = b_{0}(x,h) + b_{1}(x,h) \hat{x}_{i} + \hat{e}_{i}$ for data near $x$, and the coefficients minimize a kernel-weighted sum of squared residuals:
+A *local linear regression* conducts a linear regression for each design point $x$ using a subsample of data around it [@FanGijbels1996].
+For data near $x$, the model is
+$$\begin{aligned}
+\hat{y}_{i} &= b_{0}(x,h) + b_{1}(x,h) \hat{x}_{i} + \hat{e}_{i},
+\end{aligned}$$
+and the coefficients minimize a kernel-weighted sum of squared residuals:
 $$\begin{aligned}
 \min_{b_{0}(x, h),b_{1}(x, h)}~ \sum_{i}^{n}\left[\hat{y}_{i}- b_{0}(x, h) - b_{1}(x,h) \hat{x}_{i} \right]^2  k\left( \hat{x}_{i}, x, h\right),
 \end{aligned}$$
@@ -691,10 +714,11 @@ legend('topleft', title='Locally Linear',
 #### **Further Reading** {-}
 
 * <https://www.econometrics-with-r.org/11-1-heteroskedasticity-and-homoskedasticity.html> -- motivates nonparametric methods by showing where linear models break down.
-* <https://cran.r-project.org/doc/manuals/R-intro.html#LOESS> -- R's built-in documentation on `loess()`, including span selection and fitting options.
 
 #### **Recall** {-}
 
-This chapter let the wage-schooling relationship bend by fitting local models on the `Wages1` data: regressograms (bin means), piecewise regression (bin lines), locally constant kernel regression, and locally linear regression.
+We let the relationship between wages and schooling in `Wages1` bend by fitting local models.
+Regressograms fit a mean in each bin, and piecewise regressions fit a line in each bin.
+Locally constant and locally linear regressions do the same within a sliding window.
 The three-observation worked example $\{(3, 2), (4, 4), (12, 3)\}$ split into two bins at $h=7/2$ gave regressogram coefficients $\hat{b}_{0}(x=6, h=7/2)=(2+4)/2=3$ and $\hat{b}_{0}(x=13, h=7/2)=3$.
 

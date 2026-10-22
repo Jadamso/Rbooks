@@ -9,7 +9,7 @@ set.seed(1)
 In [Local Regression](02_17_LocalRegression.qmd), we estimated nonparametric models with a single explanatory variable.
 We now extend those tools to multiple explanatory variables.
 The ideas carry over directly: instead of binning one variable, we bin each variable, and instead of fitting a line in pieces, we fit a plane in pieces.
-This chapter covers three nonparametric tools for multivariate data: regressograms, piecewise regressions, and cross-validated model selection.
+This chapter covers three nonparametric tools for multivariate data: regressograms, piecewise regressions, and [cross-validated](02_18_Gradients.qmd#cross-validation) model selection.
 It then shows how to summarize the gradients these models produce.
 
 ## Regressograms
@@ -24,7 +24,9 @@ It is the multivariate generalization of the univariate regressogram from [Local
 :::
 
 The multivariate regressogram is useful for estimating a conditional mean without committing to linearity or any particular interaction structure, because every cell gets its own prediction.
-This flexibility is also its main drawback: as the number of explanatory variables grows, the cells empty out and predictions in sparse regions become noisy; the simulated data below uses two predictors to keep things visible.
+This flexibility is also its main drawback.
+As the number of explanatory variables grows, the cells empty out and predictions in [sparse regions](02_18_Gradients.qmd#small-samples) become noisy.
+The simulated data below uses two predictors so we can plot it.
 
 ```{r}
 ## Simulate data: y_sim is a nonlinear function of x1_sim and x2_sim plus noise.
@@ -174,7 +176,8 @@ We sometimes want slopes within each bin instead of a flat shelf.
 A multivariate *piecewise regression* bins one explanatory variable and fits a separate OLS line on the others within each bin.
 :::
 
-A *piecewise regression* is useful as a middle ground between the flat regressogram and the global OLS plane: it tracks gradients within each bin so predictions vary smoothly, and jumps only at the bin edges.
+A *piecewise regression* is useful when you want something between the flat regressogram and the global OLS plane.
+It tracks gradients within each bin, so predictions vary smoothly within a bin and jump only at the bin edges.
 We bin one variable, then fit a full linear model of $\hat{y}$ on the explanatory variables within each bin.
 
 ```{r}
@@ -218,9 +221,9 @@ Refit the piecewise model with finer bins (`bks1 <- seq(0, 20, length.out=21)`) 
 #### **Break Points** {-}
 Kinks and discontinuities in the relationship between $\hat{y}$ and $\hat{x}_{k}$ can be modeled with factor variables, just like any other transformation.
 We can then use $F$-tests to examine whether a break is statistically significant.
-Both the interaction-model $F$-test (`anova`) and the *Chow test* below test the same null of "no break", and give the same answer.
+Both the interaction-model $F$-test (`anova`) and the *Chow test* [@Chow1960] below test the same null of "no break", and give the same answer.
 ```{r}
-library(Ecdat)
+data(Wages1, package='Ecdat')
 xy2_hat <- Wages1[, c('school', 'wage')]
 colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
 reg <- lm(y_hat ~ x_hat, data=xy2_hat)
@@ -248,6 +251,8 @@ pf(Ft, reg$rank, sum(Ns)-2*reg$rank, lower.tail=FALSE)
 # segmented::segmented(reg)
 ```
 A small $p$-value is evidence that the wage-schooling slope changes at 12 years (the end of secondary school).
+The ratio `Rt` in the Chow test is the drop in the residual sum of squares, divided by the unrestricted residual sum of squares.
+@Adamson2025_Greece uses the same loss-in-fit ratio as a nonparametric analog of an $F$-test [@HardleMammen1993; @hendersonparmeter2015], computing its $p$-value by bootstrap.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 The Chow test checks whether a structural break exists at a specified point.
@@ -286,8 +291,11 @@ $$
 where each $h_{k}$ is the bandwidth for variable $\hat{x}_{k}$.
 In the discrete-bin setting below, the role of the bandwidth is played by the *number of bins $L$*: more bins means finer resolution (a smaller effective bandwidth) and fewer observations per bin.
 
-There are many types of cross-validation [@ArlotCelisse2010; @BatesEtAl2023]. *Generalized cross-validation* adjusts for the degrees of freedom, whereas the `npreg` function in R uses *least-squares cross-validation* [@racine2019, p. 74] by default.
+There are many types of cross-validation [@ArlotCelisse2010; @BatesEtAl2023].
+*Generalized cross-validation* adjusts for the degrees of freedom, whereas the `npreg` function in R uses *least-squares cross-validation* [@racine2019, p. 74] by default.
 You can refer to extensions on a case by case basis.
+In applied work, @Adamson2025_Greece uses leave-one-out cross-validation [@Allen1974; @Stone1974; @HallRacine2015] to choose the bandwidth of geographically weighted regressions on ancient Greek city-states.
+These are local regressions whose kernel weights depend on the distance between locations [@BrunsdonEtAl1996; @fotheringham2003].
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Cross-validation works by repeatedly holding out one observation, fitting the model on the rest, and measuring how well the model predicts the held-out point.
@@ -357,9 +365,9 @@ We first summarize gradients, then test them.
 A *gradient* of a fitted multivariate model is the partial derivative $\partial \hat{y}^{\mathrm{fit}}/\partial x_k$ evaluated at a point.
 For a regressogram with no slope coefficients, it must be approximated by a finite difference between adjacent bins,
 $$\begin{aligned}
-\hat{b}_{k}(\mathbf{x}) &= \frac{ \hat{y}^{\mathrm{fit}}(x_{1},...,x_{k}+ \frac{h_{k}}{2}...,x_{K})-\hat{y}^{\mathrm{fit}}(x_{1},...,x_{k}-\frac{h_{k}}{2}...,x_{K})}{h_{k}},
+\hat{b}_{k}(\mathbf{x}) &= \frac{ \hat{y}^{\mathrm{fit}}(x_{1},...,x_{k}+ \frac{d}{2}...,x_{K})-\hat{y}^{\mathrm{fit}}(x_{1},...,x_{k}-\frac{d}{2}...,x_{K})}{d},
 \end{aligned}$$
-while a piecewise or local linear regression has within-bin slopes that are themselves gradient estimates.
+where the step $d$ is the bin width and $x_{k}$ is the edge between two bins, while a piecewise or local linear regression has within-bin slopes that are themselves gradient estimates.
 :::
 
 The gradient is useful because, unlike the single OLS coefficient, it varies with $\mathbf{x}$.
@@ -377,6 +385,9 @@ You may also be interested in a particular gradient or a single summary statisti
 For example, a bivariate regressogram can estimate the marginal effect of $\hat{x}_{1}$ at the means, $\hat{b}_{1}(\mathbf{x}=[\hat{m}_{X_{1}}, \hat{m}_{X_{2}}])$, where $\hat{m}_{X_{k}}$ is the mean of $\hat{x}_{k}$.
 You may also be interested in the mean of the marginal effects (sometimes said simply as "average effect"), which averages the marginal effect over all datapoints in the dataset: $1/n \sum_{i=1}^{n} \hat{b}_{1}(\mathbf{x}=\hat{\mathbf{x}}_{i})$, or the median marginal effect.
 Such statistics are single numbers that can be presented similar to an OLS regression table, where each row corresponds to a variable and each cell has two elements: "mean gradient (sd gradient)".
+A single average can hide gradients that change sign [@HendersonEtAl2012].
+For example, @Adamson2021_Africa finds that violence first falls and then rises as state sizes in an area become more concentrated.
+That paper stresses the difference between the observed average effect of concentration and the marginal effects of further concentration.
 
 We illustrate both methods on the models fit earlier in this chapter.
 Method 1 differences the regressogram predictions; method 2 reads the slopes directly off the piecewise regression.
@@ -390,16 +401,18 @@ Method 1 differences the regressogram predictions; method 2 reads the slopes dir
 grid_y_fit <- matrix(pred_df_rgrm$y_fit,
     nrow=length(mids1), ncol=length(mids2))
 
-## Approximate the x1_sim-gradient by differencing adjacent x1_sim bins
-bin_width1 <- diff(bks1)[1]
-grad_x1 <- apply(grid_y_fit, 2, diff)/bin_width1
+## Centered finite difference at each interior x1_sim bin edge, with d equal to the bin width
+## The points x1 - d/2 and x1 + d/2 are the midpoints of the two adjacent bins
+d1 <- diff(bks1)[1]
+grad_x1 <- apply(grid_y_fit, 2, diff)/d1
+x1_edges <- mids1[-1] - d1/2
 
 ## Summarize the gradient distribution
 par(mfrow=c(1, 2))
 hist(grad_x1, breaks=20, border=NA, freq=FALSE,
     main=NA, xlab=expression(hat(b)[1](x)))
 title('Distribution of x1-gradients', font.main=1)
-plot(rep(mids1[-1], ncol(grad_x1)), grad_x1,
+plot(rep(x1_edges, ncol(grad_x1)), grad_x1,
     pch=16, col=grey(0, .5),
     xlab=expression(x[1]), ylab=expression(hat(b)[1](x)),
     main=NA)
@@ -423,13 +436,12 @@ c(mean=mean(slope_x1, na.rm=TRUE), sd=sd(slope_x1, na.rm=TRUE))
 
 The mean gradient is a single-number summary, much like an OLS slope.
 The standard deviation across bins measures how much the gradient changes over the data, which a single OLS coefficient cannot show.
-To test whether a mean gradient differs from zero, bootstrap it exactly as in [Inference](02_18_Inference.qmd#hypothesis-testing).
+To test whether a mean gradient differs from zero, bootstrap it exactly as in [Gradients](02_18_Gradients.qmd#hypothesis-testing).
+To test whether all gradients equal zero, use [Racine's statistic](02_18_Gradients.qmd#all-gradients) instead.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-A regressogram has no slope coefficients, so its gradient must be approximated by finite differences: the change in the predicted value between two adjacent bins, divided by the distance between them.
 Suppose the regressogram predicts $\hat{y}^{\mathrm{fit}} = 8$ in one $x_1$-bin and $\hat{y}^{\mathrm{fit}} = 14$ in the next, and the bin midpoints are $2$ units apart.
-The estimated $x_1$-gradient is $(14 - 8)/2 = 3$: moving one unit in $x_1$ raises the prediction by about $3$.
-A piecewise or local linear regression avoids this approximation, because its within-bin slope coefficient *is* the gradient estimate.
+The estimated $x_1$-gradient at the edge between the two bins is $(14 - 8)/2 = 3$: moving one unit in $x_1$ raises the prediction by about $3$.
 :::
 
 ## Exercises
@@ -459,4 +471,6 @@ A piecewise or local linear regression avoids this approximation, because its wi
 #### **Recall** {-}
 
 This chapter generalized regressograms, piecewise regression, and cross-validation to the multivariate setting, and showed two ways to summarize gradients: finite differences from the regressogram, and within-bin slopes from the piecewise model.
-The 5-fold CV exercise on `y_sim ~ x1c_sim/(x1_sim + x2_sim)` made the bias-variance trade-off concrete: we swept the number of `x1_sim` bins through $\{2, 6, 10, 14, 18, 22\}$, watched the cross-validated MSE bottom out at the CV-optimal $L^{*}$, and saw it rise again as we kept adding bins.
+The 5-fold CV exercise on `y_sim ~ x1c_sim/(x1_sim + x2_sim)` illustrated the [bias-variance trade-off](02_20_TestingTheory.qmd#bias-variance-tradeoff).
+We tried $\{2, 6, 10, 14, 18, 22\}$ bins for `x1_sim`.
+The cross-validated MSE fell to its minimum at the CV-optimal $L^{*}$ and rose again as we kept adding bins.
