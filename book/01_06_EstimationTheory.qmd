@@ -9,8 +9,10 @@ set.seed(1)
 We will now dig a little deeper theoretically into the statistics we compute.
 When we know how the data are generated theoretically, we can often compute the theoretical value of the two most basic and often-used statistics: the mean and variance.
 This chapter distinguishes between an *estimate*, an *estimator*, and a *parameter*.
-It then explains the law of large numbers and the central limit theorem from the previous chapter.
-Both follow from linearity of expectation and the fact that the variance of the sample mean shrinks like $1/n$.
+It then derives the mean and variance of the sample mean, using linearity of expectation, and shows that the variance shrinks like $1/n$.
+These two results set the center and spread of the Normal curve in the central limit theorem from the previous chapter, but they do not explain why the curve is Normal.
+Finally, it defines two properties for judging estimators, bias and consistency.
+The shrinking variance explains why the sample mean is consistent, which is the law of large numbers from the previous chapter.
 
 ## Statistical Theory
 
@@ -33,10 +35,44 @@ An *estimate* is the specific number you get by applying the estimator to your p
 The distinction is useful for being precise about uncertainty.
 A *parameter* is just an unknown number, so it has no sampling variability.
 An *estimator* has a full sampling distribution, and an *estimate* is one realization from that distribution.
-For example, consider flipping a coin three times.
-The estimator $M = (X_{1}+X_{2}+X_{3})/3$ is computed on coins before they are flipped.
-The estimate $\hat{m}$ is the specific value after you flip them.
+For example, consider flipping a fair coin twice.
+The estimator $M = (X_{1}+X_{2})/2$ is computed on coins before they are flipped.
+There are four possible samples, HH, HT, TH, and TT, each with probability $1/4$.
+Computing $M$ in each sample gives
+$$\begin{aligned}
+\text{HH}: \quad M &= (1+1)/2 = 1 \\
+\text{HT}: \quad M &= (1+0)/2 = 1/2 \\
+\text{TH}: \quad M &= (0+1)/2 = 1/2 \\
+\text{TT}: \quad M &= (0+0)/2 = 0.
+\end{aligned}$$
+So the PMF of $M$ is $\text{Prob}(M=0)=1/4$, $\text{Prob}(M=1/2)=1/4+1/4=1/2$, and $\text{Prob}(M=1)=1/4$.
+This PMF is the sampling distribution of $M$.
+```{r}
+#| fig-width: 6
+#| fig-height: 4
+# M in each of the four samples HH, HT, TH, TT
+x1 <- c(1, 1, 0, 0) # first flip
+x2 <- c(1, 0, 1, 0) # second flip
+m_samples <- (x1 + x2)/2
+m_samples
+
+# PMF of M, since each sample has probability 1/4
+m_probs <- c(table(m_samples))/4
+m_values <- as.numeric(names(m_probs))
+m_probs
+
+plot(m_values, m_probs, type='h', col=rgb(0, 0, 1, .8),
+    xlim=c(-0.25, 1.25), ylim=c(0, 0.6),
+    main=NA, xlab='Sample mean of two flips', ylab='Prob(M = m)')
+points(m_values, m_probs, pch=16, col=rgb(0, 0, 1, .8))
+title('PMF of M for Two Fair Coin Flips', font.main=1)
+```
+The estimate $\hat{m}$ is the specific value after you flip them, such as $\hat{m}=1$ if both land heads.
 The parameter $\mathbb{E}[X_{i}]$ is the theoretical value $\frac{1}{2}0 + \frac{1}{2}1=1/2$.
+
+[Random Variables](01_04_RandomVariables.qmd) used *parameter* for the numbers that pin down a distribution, such as the Bernoulli success probability $\theta$ or the Exponential rate $\lambda$.
+Numbers computed from these distribution parameters are also parameters, such as the Exponential mean $\mathbb{E}[X_{i}]=1/\lambda$.
+For the fair coin, the two coincide: $\theta=\mathbb{E}[X_{i}]=1/2$.
 
 | Concept      | Examples              | What it is | Terminology                              | Alternative Terminology |
 | ------------ | --------------------- | ---------- |----------------------| ---------------------------------------- |----------- |
@@ -61,8 +97,6 @@ When we know the theoretical probabilities, the two most basic summaries (center
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *expected value* (or population mean) of a random variable $X_{i}$, written $\mathbb{E}[X_{i}]$, is the probability-weighted average of its values.
-For a discrete sample space, $\mathbb{E}[X_{i}] = \sum_{x} x \cdot \text{Prob}(X_{i}=x)$; for continuous, it is the integral $\int x f(x) dx$.
-
 The *population variance*, written $\mathbb{V}[X_{i}]$, is the expected squared deviation from $\mathbb{E}[X_{i}]$.
 :::
 
@@ -135,7 +169,7 @@ population_wage_mean <- sum(population_wages * wage_probs)
 population_wage_mean
 population_wage_var <- sum((population_wages - population_wage_mean)^2 * wage_probs)
 population_wage_var
-sqrt(population_wage_var)
+sqrt(population_wage_var) ##sd
 ```
 With equal probabilities, $\mathbb{E}[X_{i}]$ is just the average wage over the whole population, `mean(population_wages)`.
 Note that `var(population_wages)` would divide by $N-1$ instead of $N$, and so differs slightly from $\mathbb{V}[X_{i}]$.
@@ -194,18 +228,18 @@ round(var(x_sim), 2)
 
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Consider an unfair coin with a $p$ probability of heads ($x=1$) and a $1-p$ probability of tails ($x=0$), where $p$ is a parameter between $0$ and $1$.
+Consider an unfair coin with a $\theta$ probability of heads ($x=1$) and a $1-\theta$ probability of tails ($x=0$), where $\theta$ is a distribution parameter between $0$ and $1$.
 The theoretical mean is
 $$
-\mathbb{E}[X_{i}] = 1[p] + 0[1-p] = p
+\mathbb{E}[X_{i}] = 1[\theta] + 0[1-\theta] = \theta
 $$
 and the theoretical variance is 
 $$
 \mathbb{V}[X_{i}] 
-= [1 - p]^2 p + [0 - p]^2 [1-p] = [1 - p]^2 p + p^2 [1-p] 
-= [1-p]p\left( [1-p] + p\right) = [1-p] p.
+= [1 - \theta]^2 \theta + [0 - \theta]^2 [1-\theta] = [1 - \theta]^2 \theta + \theta^2 [1-\theta] 
+= [1-\theta]\theta\left( [1-\theta] + \theta\right) = [1-\theta] \theta.
 $$
-So the theoretical standard deviation is $\sqrt{\mathbb{V}[X_{i}]}=\sqrt{[1-p] p}$.
+So the theoretical standard deviation is $\sqrt{\mathbb{V}[X_{i}]}=\sqrt{[1-\theta] \theta}$.
 :::
 
 
@@ -220,7 +254,7 @@ X_{i} &= \begin{cases}
 +1 & \text{ with probability } \frac{1}{2\lambda^2} 
 \end{cases},
 \end{aligned}$$
-where $\lambda \geq 1$ is a parameter.
+where $\lambda \geq 1$ is a distribution parameter.
 What is the theoretical standard deviation?
 :::
 
@@ -252,7 +286,7 @@ Then $g(1)=1^2+1=2$, $g(2)=2^2+1=5$, $g(3)=3^2+1=10$.
 
 Then, by LOTUS,
 $$\begin{aligned}
-\mathbb E[g(X_{i})]=\sum_x g(x)\text{Prob}(X_{i}=x)
+\mathbb E[g(X_{i})]=\sum_{x} g(x)\text{Prob}(X_{i}=x)
 &= g(1)\cdot 0.2 + g(2)\cdot 0.5 + g(3)\cdot 0.3 \\
 &= 2 \cdot 0.2 + 5 \cdot 0.5 + 10 \cdot 0.3 \\
 &= 0.4 + 2.5 + 3 = 5.9.
@@ -305,7 +339,7 @@ sqrt(pi) / 2                       # Exact via LOTUS integral
 
 #### **Continuous Random Variables** {-}
 
-The parameters of a continuous distribution determine its mean and variance.
+The distribution parameters of a continuous random variable determine its mean and variance.
 For example, an exponential random variable with rate parameter $\lambda$ has theoretical mean $\mathbb{E}[X_{i}]=1/\lambda$ and variance $\mathbb{V}[X_{i}]=1/\lambda^2$.
 For a normal random variable, we can specify its theoretical mean $\mathbb{E}[X_{i}]=\mu$ and variance $\mathbb{V}[X_{i}]=\sigma^2$ directly.
 
@@ -374,114 +408,55 @@ round( mean((x_sim - mean(x_sim))^2), 2)
 
 ## Estimates
 
-You can estimate probabilities with data.
-With discrete data there are a limited number of unique outcomes, and we can estimate the probability of each outcome as 
-$$
-\hat{p}(x)=\sum_{i=1}^{n}\mathbf{1}\left( \hat{x}_{i}=x\right)/n,
-$$
-where $x$ is one particular value of interest.
-We often estimate the probabilities for each unique outcome.
-
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-Suppose there is an experiment with three possible outcomes, $\{A, B, C\}$.
-It was repeated $50$ times, and we discovered that $A$ occurred $10$ times, $B$ occurred $13$ times, and $C$ occurred $27$ times.
-The estimated probability of each outcome is found via the bar plot $\hat{p}(A) = 10/50$, $\hat{p}(B) = 13/50$, $\hat{p}(C) = 27/50$.
-We can also estimate the "in" probabilities as $\hat{\text{Prob}}(A \text{ or } B)=10/50+13/50=23/50$ and $\hat{\text{Prob}}(B \text{ or } C)=13/50+27/50=40/50$, as well as the "out" probability as $\hat{\text{Prob}}(A \text{ or } C)=10/50+27/50=37/50$.
-
-The same calculations with the computer:
-```{r}
-counts <- c(A=10, B=13, C=27)
-p_hat <- counts/sum(counts)
-p_hat
-p_hat['A'] + p_hat['B'] # A or B
-p_hat['B'] + p_hat['C'] # B or C
-p_hat['A'] + p_hat['C'] # A or C
-```
-:::
-
-
-Sometimes, you may have a dataset of values and probability weights.
-In any case, we can then estimate the population mean via
+Each population formula above has a sample counterpart.
+Replace $\text{Prob}(X_{i}=x)$ with the sample proportion $\hat{p}(x)$ from the [empirical mass function](01_02_Data.qmd#empirical-mass-function).
+The expected value and variance then become the sample mean and the divide-by-$n$ sample variance from [Summary Statistics](01_03_SummaryStatistics.qmd#mean-and-variance),
 $$\begin{aligned}
-\hat{m} &= \sum_{x} x \hat{p}(x),
+\hat{m} &= \sum_{x} x \hat{p}(x) \\
+\hat{v} &= \sum_{x} \left(x - \hat{m}\right)^2 \hat{p}(x).
 \end{aligned}$$
-which is equivalent to the sample mean.
-
+Building an estimate this way, by putting sample proportions into a population formula, is called the *plug-in* principle.
+The same substitution works for other parameters.
+For example, putting $\hat{p}(x)$ into LOTUS estimates $\mathbb{E}[g(X_{i})]$ with $\sum_{x} g(x)\hat{p}(x)$, which is the sample mean of the $g(\hat{x}_{i})$.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Suppose we flipped a coin $100$ times and found that $75$ were heads and $25$ were tails.
-The estimated probabilities are $75/100$ for the outcome $\hat{x}_{i}=1$ and $25/100$ for the outcome $\hat{x}_{i}=0$.
-We compute the mean as $\hat{m}=1\times 0.75 + 0 \times 0.25 = 0.75$.
-
-Note that we get the same number if we instead computed $\sum_{i} \hat{x}_{i}/100 = \sum_{i=1}^{25} 0/100 + \sum_{i=26}^{100} 1/100 = [100-25]/100 = 0.75.$
-
+The estimated probabilities are $\hat{p}(1)=75/100=3/4$ and $\hat{p}(0)=25/100=1/4$, so
+$$\begin{aligned}
+\hat{m} &= 1 \times \frac{3}{4} + 0 \times \frac{1}{4} = \frac{3}{4} \\
+\hat{v} &= \left(1-\frac{3}{4}\right)^2 \times \frac{3}{4} + \left(0-\frac{3}{4}\right)^2 \times \frac{1}{4} = \frac{3}{64} + \frac{9}{64} = \frac{12}{64} = \frac{3}{16}.
+\end{aligned}$$
+These are the plug-in versions of the theoretical coin mean $\theta$ and variance $[1-\theta]\theta$, with $\hat{m}$ in place of $\theta$: $\hat{m}(1-\hat{m}) = 3/4 \times 1/4 = 3/16$.
 ```{r}
-# Simulate the coin flips
-x_sim <- sample(c(0, 1), 100, prob=c(0.24, 0.76), replace=TRUE)
-
-# Compute a sample estimate using probability weights
-P  <- table(x_sim) #table of counts
-p <- c(P)/length(x_sim) #frequencies (must sum to 1)
-x <- as.numeric(names(p)) #unique values
-cbind(x, p)
-
-# Sample Mean Estimate
-m_hat <- sum(x*p)
-m_hat
-
-mean(x_sim)
+x0_hat <- c(rep(1, 75), rep(0, 25)) # 75 heads and 25 tails
+p_hat <- table(x0_hat)/length(x0_hat)
+x <- as.numeric(names(p_hat))
+m_hat <- sum(x * p_hat)
+v_hat <- sum((x - m_hat)^2 * p_hat)
+c(m_hat, v_hat)
 ```
 :::
 
-The lab data on murder arrests have many unique values, but the same two routes give the same mean.
+The lab data on murder arrests have many unique values, but the plug-in mean and variance still match the averages over the observations.
 ```{r}
 x_hat <- USArrests[, 'Murder'] # lab data: murder arrests per 100,000
-round( mean(x_hat), 4)
-round( var(x_hat), 4)
 
-# Same mean, from the estimated probability of each unique value
+# Plug-in mean and variance, from the estimated probability of each unique value
 p_hat <- table(x_hat)/length(x_hat)
 x <- as.numeric(names(p_hat))
-round( sum(x * p_hat), 4)
+m_hat <- sum(x * p_hat)
+v_hat <- sum((x - m_hat)^2 * p_hat)
+round(c(m_hat, v_hat), 4)
+
+# Same numbers, from the observations directly
+round(c(mean(x_hat), mean((x_hat - mean(x_hat))^2)), 4)
 ```
-
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Try estimating the sample mean the two different ways for another random sample
-```{r}
-x <- c(0, 1, 2)
-x_probs <- c(1/3, 1/3, 1/3)
-x_sim  <-  sample(x, prob=x_probs, 1000, replace=TRUE)
-
-# First Way (Computerized)
-mean(x_sim)
-
-# Second Way (Explicit Calculations)
-# start with a table of counts like the previous example
-```
-:::
-
-
-The weighting idea generalizes to other statistics.
-E.g., we can also estimate variance with probability weights
-
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Here is a concrete example of a weighted variance, for a random variable with values $\{1,2,3\}$ and probability weights $\{0.2, 0.5, 0.3\}$.
-```{r}
-x <- c(1, 2, 3)
-x_probs <- c(0.2, 0.5, 0.3)
-
-population_mean <- sum(x * x_probs)         # weighted mean
-x_diff <- (x - population_mean)^2           # squared deviations
-population_var <- sum(x_probs * x_diff) # weighted variance
-population_var
-```
-Try it yourself with different values and weights.
-:::
-
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 You can estimate means and variances for continuous random variables with weights, but here we have an additional approximation error due to binning by the histogram.
 ```{r}
+x_sim <- rnorm(5000, 1, 2) # continuous draws, as in Continuous Random Variables
+
 # values and probabilities
 f_hat  <- hist(x_sim, plot=FALSE)
 wt <- f_hat[['counts']]/length(x_sim)
@@ -493,19 +468,19 @@ m_hat
 # Compare to 'mean(x_sim)'
 ```
 
-Try it yourself with 
+Try it yourself with
 ```{r}
 x_sim <- runif(2000, -1, 1)
 ```
 :::
 
 
-
 ## Estimators
 
 #### **Means** {-}
 
-The LLN says the sample mean concentrates on the population mean as $n$ grows; we can derive this from a more basic rule about how expectations distribute over sums.
+The LLN says the sample mean concentrates on the population mean as $n$ grows.
+To explain it, we first find where the sampling distribution of $M$ is centered, using a basic rule about how expectations distribute over sums.
 *Linearity of expectation* states that for any random variables $X_{1}, X_{2}$ and constants $a, b$,
 $$\mathbb{E}[a X_{1} + b X_{2}] = a \mathbb{E}[X_{1}] + b \mathbb{E}[X_{2}].$$
 This is useful because it lets us reason about the mean of any *linear combination* of random variables without computing a joint distribution.
@@ -516,6 +491,32 @@ $$
 $$
 Assuming each observation has the same finite expected value, the expected value of the sample average equals this common population mean: $\mathbb{E}\left[M\right] = \mathbb{E}[X_{i}]$ for every $i$.
 For a detailed treatment, see [here](https://dlsun.github.io/probability/linearity.html).
+
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Return to the two fair coin flips in [Statistical Theory](#statistical-theory), where $\mathbb{E}[X_{1}]=\mathbb{E}[X_{2}]=1/2$ and each of the four samples HH, HT, TH, and TT has probability $1/4$.
+Weighting the sum $X_{1}+X_{2}$ and the sample mean $M$ of each sample by $1/4$ gives
+$$\begin{aligned}
+\mathbb{E}[X_{1}+X_{2}] &= 2 \times \frac{1}{4} + 1 \times \frac{1}{4} + 1 \times \frac{1}{4} + 0 \times \frac{1}{4} = 1 = \mathbb{E}[X_{1}] + \mathbb{E}[X_{2}] \\
+\mathbb{E}[M] &= 1 \times \frac{1}{4} + \frac{1}{2} \times \frac{1}{4} + \frac{1}{2} \times \frac{1}{4} + 0 \times \frac{1}{4} = \frac{1}{2} = \mathbb{E}[X_{i}].
+\end{aligned}$$
+```{r}
+# The four samples HH, HT, TH, TT, each with probability 1/4
+x1 <- c(1, 1, 0, 0) # first flip
+x2 <- c(1, 0, 1, 0) # second flip
+x_probs <- c(1/4, 1/4, 1/4, 1/4)
+sum((x1 + x2) * x_probs) # E[X1 + X2]
+sum((x1 + x2)/2 * x_probs) # E[M]
+
+# Verify by simulation
+coin_means <- rep(NA, 10000)
+for(i in seq_along(coin_means)){
+    x_sim <- sample(c(0, 1), size=2, replace=TRUE)
+    m_hat <- mean(x_sim)
+    coin_means[i] <- m_hat
+}
+round(mean(coin_means), 2)
+```
+:::
 
 The wage population lets us check this: the average of many sample means is close to the population mean.
 ```{r}
@@ -530,24 +531,20 @@ round(mean(wage_means), 3) # average estimate across samples
 round(population_wage_mean, 3) # population mean
 ```
 
-Researchers check more complicated estimators the same way, by simulating many datasets where the truth is known [@Hendry1984; @MorrisEtAl2019].
-For example, @AdamsonStephenson2026 simulate data from an economic model in which war is unambiguously harmful.
-Standard regressions applied to those datasets routinely estimate a positive effect of past conflict on output.
-
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-For example, consider a coin flip with Heads $X_{i}=1$ having probability $p$ and Tails $X_{i}=0$ having probability $1-p$.
-First notice that $\mathbb{E}[X_{i}]=p$.
+Now consider an unfair coin with Heads $X_{i}=1$ having probability $\theta$ and Tails $X_{i}=0$ having probability $1-\theta$.
+First notice that $\mathbb{E}[X_{i}]=\theta$.
 Then notice we can first 
 $$\begin{aligned}
 \mathbb{E}[X_{1}+X_{2}]
-&= [1+1][p \times p] + [1+0][p \times (1-p)] + [0+1][(1-p) \times p] + [0+0][(1-p) \times (1-p)] \quad \text{"HH + HT + TH + TT"} \\
-&= [1][p \times p] + [1][p \times (1-p)] + [0][(1-p) \times p] + [0][(1-p) \times (1-p)] \quad \text{first outcomes times prob.} \\
-&+ [1][p \times p] + [0][p \times (1-p)] + [1][(1-p) \times p] + [0][(1-p) \times (1-p)] \quad \text{+second outcomes times prob.} \\
-&= [1][p \times p] + [1][p \times (1-p)] + [1][p \times p] + [1][(1-p) \times p] \quad \text{drop zeros} \\
-&= 1p (p + [1-p]) +  1p (p + [1-p]) = p+p \quad \text{algebra} \\
+&= [1+1][\theta \times \theta] + [1+0][\theta \times (1-\theta)] + [0+1][(1-\theta) \times \theta] + [0+0][(1-\theta) \times (1-\theta)] \quad \text{"HH + HT + TH + TT"} \\
+&= [1][\theta \times \theta] + [1][\theta \times (1-\theta)] + [0][(1-\theta) \times \theta] + [0][(1-\theta) \times (1-\theta)] \quad \text{first outcomes times prob.} \\
+&+ [1][\theta \times \theta] + [0][\theta \times (1-\theta)] + [1][(1-\theta) \times \theta] + [0][(1-\theta) \times (1-\theta)] \quad \text{+second outcomes times prob.} \\
+&= [1][\theta \times \theta] + [1][\theta \times (1-\theta)] + [1][\theta \times \theta] + [1][(1-\theta) \times \theta] \quad \text{drop zeros} \\
+&= 1\theta (\theta + [1-\theta]) +  1\theta (\theta + [1-\theta]) = \theta+\theta \quad \text{algebra} \\
 &= \mathbb{E}[X_{1}] +  \mathbb{E}[X_{2}].
 \end{aligned}$$
-The theoretical mean is $\mathbb{E}[\frac{X_{1}+X_{2}}{2}]=\frac{p+p}{2}=p$.
+The theoretical mean is $\mathbb{E}[\frac{X_{1}+X_{2}}{2}]=\frac{\theta+\theta}{2}=\theta$.
 :::
 
 
@@ -615,7 +612,166 @@ paste0('Bootstrap SE = ', round(boot_se, 3))
 paste0('Class SE = ', round(theory_se, 3))
 ```
 
-Also note that each additional data point you have provides more information, which ultimately decreases the standard error of your estimates.
+
+#### **Shape** {-}
+Sometimes, the sampling distribution is approximately normal due to the CLT.
+For a sufficiently large sample of i.i.d. observations with finite positive variance, $M$ is approximately normal with mean $\mathbb{E}[X_{i}]$ and standard deviation $\text{SE}(M)=\sqrt{\mathbb{V}[X_{i}]/n}$.
+We estimate this standard error with $\hat{s}/\sqrt{n}$.
+
+```{r}
+# Bootstrap Distribution
+hist(boot_means, breaks=25,
+    main=NA, border=NA,
+    freq=FALSE, ylim=c(0, 0.7),
+    xlab=expression(hat(m)^group('(', b, ')')))
+title('Bootstrap vs Normal Distribution', font.main=1)
+
+# Theoretical Distribution: Normal Approximation with IID SEs
+x <- seq(5, 10, by=0.01)
+fx <- dnorm(x, mean(x_hat), theory_se)
+lines(x, fx, col=rgb(0, 0, 1, .8), lty=2)
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+The variance estimator $V=\sum_{i=1}^{n}(X_{i}-M)^2/n$ also has a sampling distribution.
+Write $Y_{i}=g(X_{i})=(X_{i}-\mathbb{E}[X_{i}])^2$ for the squared deviation of each observation from the population mean.
+Expanding the square, and using $\sum_{i=1}^{n}(X_{i}-\mathbb{E}[X_{i}])/n = M-\mathbb{E}[X_{i}]$,
+$$\begin{aligned}
+V &= \frac{1}{n}\sum_{i=1}^{n} \left( [X_{i}-\mathbb{E}[X_{i}]] - [M-\mathbb{E}[X_{i}]] \right)^2 \\
+&= \frac{1}{n}\sum_{i=1}^{n} Y_{i} - 2\left(M-\mathbb{E}[X_{i}]\right)^2 + \left(M-\mathbb{E}[X_{i}]\right)^2 \\
+&= \frac{1}{n}\sum_{i=1}^{n} Y_{i} - \left(M-\mathbb{E}[X_{i}]\right)^2.
+\end{aligned}$$
+So $V$ is a sample mean of the $Y_{i}$ minus a correction term.
+By LOTUS, each $Y_{i}$ has mean $\mathbb{E}[Y_{i}]=\mathbb{V}[X_{i}]$ and variance $\mathbb{V}[Y_{i}]=\mathbb{E}[(X_{i}-\mathbb{E}[X_{i}])^4]-\mathbb{V}[X_{i}]^2$.
+The correction term has mean $\mathbb{E}[(M-\mathbb{E}[X_{i}])^2]=\mathbb{V}[M]=\mathbb{V}[X_{i}]/n$, so $\mathbb{E}[V]=\frac{n-1}{n}\mathbb{V}[X_{i}]$.
+The correction term shrinks like $1/n$, faster than the $1/\sqrt{n}$ standard error of the sample mean of the $Y_{i}$.
+So the CLT applied to the $Y_{i}$ says that, in large samples, $V$ is approximately normal with mean $\mathbb{V}[X_{i}]$ and standard error $\text{SE}(V)=\sqrt{\mathbb{V}[Y_{i}]/n}$.
+
+For the five-sided die, LOTUS gives $\mathbb{V}[X_{i}]=2$ and $\mathbb{E}[(X_{i}-3)^4]=(16+1+0+1+16)/5=34/5$, so $\mathbb{V}[Y_{i}]=34/5-2^2=14/5$.
+With $n=100$ rolls, $\mathbb{E}[V]=\frac{99}{100} \times 2=\frac{99}{50}$ and $\text{SE}(V)=\sqrt{\frac{14/5}{100}}=\sqrt{\frac{7}{250}}\approx 0.167$.
+```{r}
+# Five-sided die: population moments by LOTUS
+x <- c(1, 2, 3, 4, 5)
+x_probs <- rep(1/5, 5)
+population_mean <- sum(x * x_probs)
+population_var <- sum((x - population_mean)^2 * x_probs) # E[Y_i]
+population_m4 <- sum((x - population_mean)^4 * x_probs) # E[(X_i - E[X_i])^4]
+y_var <- population_m4 - population_var^2 # V[Y_i]
+
+# Sampling distribution of V across many samples of n rolls
+n <- 100
+sample_vars <- rep(NA, 2000)
+for(i in seq_along(sample_vars)){
+    x_sim <- sample(x, prob=x_probs, size=n, replace=TRUE)
+    v_hat <- mean((x_sim - mean(x_sim))^2) # divide-by-n variance
+    sample_vars[i] <- v_hat
+}
+round(mean(sample_vars), 3) # near (n-1)/n * 2 = 1.98
+round(sd(sample_vars), 3) # near sqrt(2.8/n) = 0.167
+
+hist(sample_vars, breaks=25,
+    border=NA, freq=FALSE, ylim=c(0, 2.6),
+    xlab=expression(hat(v)),
+    main=NA)
+title('Sampling Distribution of the Variance', font.main=1)
+
+# CLT approximation, with the SE from LOTUS
+v <- seq(1, 3, by=0.01)
+fv <- dnorm(v, population_var, sqrt(y_var/n))
+lines(v, fv, col=rgb(0, 0, 1, .8), lty=2)
+```
+Try it yourself with $n=10$ rolls.
+Is the normal approximation still good?
+:::
+
+
+
+
+## Bias and Consistency
+
+Knowing an estimator's sampling distribution lets us judge how good the estimator is.
+
+#### **Bias** {-}
+
+A natural first question is whether an estimator is right on average.
+The *bias* of an estimator is its expected value minus the parameter it targets.
+For the sample mean, $\text{Bias}(M) = \mathbb{E}[M] - \mathbb{E}[X_{i}]$.
+An estimator is *unbiased* if its bias is zero.
+
+
+Bias is useful for separating two reasons an estimate can miss its target: bad luck in one sample, which averages out across samples, and a systematic error, which does not.
+From [Means](#means), $\mathbb{E}[M]=\mathbb{E}[X_{i}]$, so the sample mean is unbiased.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+The variance estimator is $V=\sum_{i=1}^{n}(X_{i}-M)^2/n$, which is biased; $\text{Bias}(V) = \mathbb{E}[V] - \mathbb{V}[X_{i}]$.
+On average, it is too small by a factor of $\frac{n-1}{n}$,
+$$\begin{aligned}
+\mathbb{E}[V] &= \frac{n-1}{n}\mathbb{V}[X_{i}] \\
+\text{Bias}(V) &= -\frac{\mathbb{V}[X_{i}]}{n}.
+\end{aligned}$$
+The reason is that $V$ measures deviations from the sample mean, which sits at the center of its own sample.
+In total, the observations are closer to it than to the population mean, so the squared deviations come out too small.
+This is why the version in [Summary Statistics](01_03_SummaryStatistics.qmd#variance) that divides by $n-1$ is called unbiased.
+The Test Yourself in [Shape](#shape) derives the formula.
+The bias shrinks as $n$ grows.
+
+The wage population lets us check this with samples of $n=10$ workers, where the bias is a tenth of the population variance.
+```{r}
+# Many samples of 10 workers
+n <- 10
+wage_vars <- rep(NA, 10000)
+for(i in seq_along(wage_vars)){
+    x_sim <- sample(population_wages, n, replace=FALSE)
+    v_hat <- mean((x_sim - mean(x_sim))^2) # divide-by-n variance
+    wage_vars[i] <- v_hat
+}
+round(mean(wage_vars), 2) # average estimate across samples
+round((n-1)/n*population_wage_var, 2) # E[V] from the formula
+round(population_wage_var, 2) # population variance
+```
+The average estimate is close to $\frac{n-1}{n}\mathbb{V}[X_{i}]$, not to $\mathbb{V}[X_{i}]$.
+
+Now return to the two fair coin flips in [Statistical Theory](#statistical-theory), where $\mathbb{V}[X_{i}]=\frac{1}{2} \times \frac{1}{2}=\frac{1}{4}$.
+In each of the four samples, compute $V=[(X_{1}-M)^2+(X_{2}-M)^2]/2$:
+$$\begin{aligned}
+\text{HH}: \quad V &= [(1-1)^2+(1-1)^2]/2 = 0 \\
+\text{HT}: \quad V &= [(1-\frac{1}{2})^2+(0-\frac{1}{2})^2]/2 = 1/4 \\
+\text{TH}: \quad V &= [(0-\frac{1}{2})^2+(1-\frac{1}{2})^2]/2 = 1/4 \\
+\text{TT}: \quad V &= [(0-0)^2+(0-0)^2]/2 = 0.
+\end{aligned}$$
+Each sample has probability $1/4$, so
+$$\begin{aligned}
+\mathbb{E}[V] &= 0 \times \frac{1}{4} + \frac{1}{4} \times \frac{1}{4} + \frac{1}{4} \times \frac{1}{4} + 0 \times \frac{1}{4} = \frac{1}{8} \\
+\text{Bias}(V) &= \frac{1}{8} - \frac{1}{4} = -\frac{1}{8},
+\end{aligned}$$
+which matches $-\mathbb{V}[X_{i}]/n = -\frac{1}{4}/2 = -\frac{1}{8}$.
+```{r}
+# The four samples HH, HT, TH, TT, each with probability 1/4
+x1 <- c(1, 1, 0, 0) # first flip
+x2 <- c(1, 0, 1, 0) # second flip
+x_probs <- c(1/4, 1/4, 1/4, 1/4)
+m_samples <- (x1 + x2)/2
+v_samples <- ((x1 - m_samples)^2 + (x2 - m_samples)^2)/2
+v_samples
+
+sum(v_samples * x_probs) # E[V]
+sum(v_samples * x_probs) - 1/4 # Bias(V)
+```
+:::
+
+#### **Consistency** {-}
+
+Bias describes an estimator at one sample size, so a natural next question is what happens as we collect more data.
+An estimator is *consistent* if its estimates get closer and closer to the parameter it targets as the sample grows.
+With enough data, nearly every sample gives an estimate close to the parameter.
+
+Consistency is useful as a minimum requirement: an estimator that is not consistent can stay wrong no matter how much data we collect.
+The [Law of Large Numbers](01_05_Sampling.qmd#law-of-large-numbers-lln) says that the sample mean is consistent.
+The reason is the shrinking standard error from [Variances](#variances).
+As $\text{SE}(M)=\sqrt{\mathbb{V}[X_{i}]/n}$ falls toward zero, the sampling distribution of $M$ piles up around $\mathbb{E}[X_{i}]$.
+
+
+Note that each additional data point you have provides more information, which ultimately decreases the standard error of your estimates.
 This is why statisticians will often recommend that you get more data.
 However, the $1/\sqrt{n}$ rate means each additional data point lowers the standard error by less than the one before.
 In economics, this is known as diminishing returns, and it is why economists may recommend you do not get more data.
@@ -646,25 +802,30 @@ plot(sample_sizes, se_by_n, pch=16, col=grey(0, 0.5),
 lines(sample_sizes, se_theory_n, col=rgb(0, 0, 1, .8), lwd=1, lty=2)
 ```
 
-
-#### **Shape** {-}
-Sometimes, the sampling distribution is approximately normal due to the CLT.
-For a sufficiently large sample of i.i.d. observations with finite positive variance, $M$ is approximately normal with mean $\mathbb{E}[X_{i}]$ and standard deviation $\text{SE}(M)=\sqrt{\mathbb{V}[X_{i}]/n}$.
-We estimate this standard error with $\hat{s}/\sqrt{n}$.
-
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+With the wage population, we can watch this happen.
+The chunk below records how often the sample mean misses the population mean by one dollar or more.
 ```{r}
-# Bootstrap Distribution
-hist(boot_means, breaks=25,
-    main=NA, border=NA,
-    freq=FALSE, ylim=c(0, 0.7),
-    xlab=expression(hat(m)^group('(', b, ')')))
-title('Bootstrap vs Normal Distribution', font.main=1)
-
-# Theoretical Distribution: Normal Approximation with IID SEs
-x <- seq(5, 10, by=0.01)
-fx <- dnorm(x, mean(x_hat), theory_se)
-lines(x, fx, col=rgb(0, 0, 1, .8))
+# Share of 2000 samples whose mean misses by one dollar or more
+n_values <- c(10, 50, 250)
+miss_share <- rep(NA, length(n_values))
+for(ni in seq_along(n_values)){
+    wage_means_n <- rep(NA, 2000)
+    for(i in seq_along(wage_means_n)){
+        x_sim <- sample(population_wages, n_values[ni], replace=FALSE)
+        wage_means_n[i] <- mean(x_sim)
+    }
+    miss_share[ni] <- mean(abs(wage_means_n - population_wage_mean) >= 1)
+}
+round(cbind(n=n_values, share=miss_share), 3)
 ```
+The share of samples that miss by a dollar or more falls toward zero as $n$ grows.
+:::
+
+Consistency does not require an unbiased estimator.
+The variance estimator $V$ is biased, but both its bias and its spread shrink as $n$ grows, so $V$ is consistent too.
+The reverse also happens.
+The first observation $X_{1}$ is an unbiased estimator of $\mathbb{E}[X_{i}]$, but it is not consistent, because its distribution does not change as $n$ grows.
 
 
 
@@ -685,6 +846,10 @@ lines(x, fx, col=rgb(0, 0, 1, .8))
 4. Using the `USArrests` dataset in R, compute the sample mean and the bootstrap standard error of the mean for the `Assault` variable.
    Then compute the theory-driven standard error $\hat{s}/\sqrt{n}$ and compare the two estimates.
 
+5. Using the `Wages1` population, draw many samples of $n=5$ workers and compute the bias of the variance estimator $V$.
+   Compare it with the formula $-\mathbb{V}[X_{i}]/n$.
+   Repeat with $n=50$.
+
 #### **Further Reading** {-}
 
 * <https://www.khanacademy.org/math/statistics-probability/probability-library/basic-theoretical-probability/a/probability-the-basics> -- Refresher on the basics of probability theory.
@@ -698,3 +863,7 @@ We also covered *LOTUS* and *linearity of expectation*.
 The standard error of the sample mean shrinks at the $1/\sqrt{n}$ rate.
 The five-sided die computation made the parameters concrete: with outcomes $\{1, 2, 3, 4, 5\}$ each having probability $1/5$, the population mean is $\mathbb{E}[X_{i}] = 15/5 = 3$ and the variance is $\mathbb{V}[X_{i}] = (4+1+0+1+4)/5 = 2$.
 The $1/\sqrt{n}$ rule then says that if a population has standard deviation $10$, samples of size $n=4$ have $\text{SE}(M) = 5$ but quadrupling the sample size to $n=16$ halves the standard error to $2.5$.
+An estimator's *bias* is its expected value minus its target.
+For two fair coin flips, the divide-by-$n$ variance has $\mathbb{E}[V]=1/8$ against a target of $\mathbb{V}[X_{i}]=1/4$, so its bias is $-1/8$.
+An estimator is *consistent* if its estimates get closer and closer to the parameter it targets as the sample grows.
+In the wage population, the share of samples whose mean missed by a dollar or more fell from about 30% with $10$ workers to almost none with $250$.
