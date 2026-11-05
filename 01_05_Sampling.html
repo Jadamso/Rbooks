@@ -500,7 +500,24 @@ window.Quarto = {
 
 
 <hr>
-<p>We rarely observe an entire population; instead we work with a sample and ask what its statistics tell us about the population that produced it. This chapter introduces sampling distributions, which show how a statistic varies from sample to sample. We then cover the Law of Large Numbers and the Central Limit Theorem, two profound results about sampling distributions. Finally, we use the jackknife and the bootstrap to approximate sampling variability from a single dataset.</p>
+<p>We rarely observe an entire population; instead we work with a sample and ask what its statistics tell us about the population that produced it.</p>
+<p>This chapter asks three questions.</p>
+<ul>
+<li>How much does a statistic change from one sample to the next?
+<ul>
+<li><em>Sampling distribution</em>: this shows how a statistic, such as the <a href="./01_03_SummaryStatistics.html#mean-and-variance">mean</a>, varies across samples from one population.</li>
+</ul></li>
+<li>What happens to the sample mean as samples grow?
+<ul>
+<li><em>Central Limit Theorem</em>: this says the sampling distribution of <span class="math inline">\(\hat{m}\)</span> becomes approximately Normal.</li>
+<li><em>Law of Large Numbers</em>: this says the sampling distribution of <span class="math inline">\(\hat{m}\)</span> tightens around the population mean.</li>
+</ul></li>
+<li>How sure are we?
+<ul>
+<li><em>Bootstrap and jackknife</em>: with only one sample, these resample the data to approximate the sampling distribution.</li>
+<li><em>Standard error</em>: this is the standard deviation of a sampling distribution, which reports precision as one number.</li>
+</ul></li>
+</ul>
 <section id="sampling" class="level2" data-number="5.1">
 <h2 data-number="5.1" class="anchored" data-anchor-id="sampling"><span class="header-section-number">5.1</span> Sampling</h2>
 <p>In practice we almost never observe the entire group we care about; we observe a slice and have to make judgments from that slice.</p>
@@ -594,19 +611,21 @@ window.Quarto = {
 </div>
 <section id="population-theory" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="population-theory"><strong>Population Theory</strong></h4>
-<p>In practice, we never see the whole population, so we cannot check how close a sample statistic is to the truth. To make such checks possible, this chapter pretends that the <span class="math inline">\(3294\)</span> workers in the <code>Wages1</code> dataset are the entire population. They are really a sample themselves, but pretending lets us compute the true population mean and compare it with what one sample of workers tells us. The data come from the <code>Ecdat</code> package, which you need to install once.</p>
+<p>In practice, we never see the whole population, so we cannot check how close a sample statistic is to the truth. To make such checks possible, this chapter pretends that one dataset is the entire population. It is really a sample itself, but pretending lets us compute the true population mean and compare it with what one sample tells us.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages('Ecdat') # only once</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Wages1, <span class="at">package=</span><span class="st">'Ecdat'</span>)</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Pretend these 3294 hourly wages are the whole population</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>population_wages <span class="ot">&lt;-</span> Wages1[, <span class="st">'wage'</span>]</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># One simple random sample of 50 workers</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Each time you run, you get a different sample of workers.</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, <span class="dv">50</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># The data come from the Ecdat package, which you need to install once.</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages('Ecdat') # only once</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Wages1, <span class="at">package=</span><span class="st">'Ecdat'</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Pretend these 3294 hourly wages are the whole population</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>population_wages <span class="ot">&lt;-</span> Wages1[, <span class="st">'wage'</span>] <span class="co"># hourly wage in 1980 dollars</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co"># One simple random sample of 50 workers</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Each time you run, you get a different sample of workers.</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, <span class="dv">50</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span></code></pre></div>
 </details>
 </div>
 </section>
@@ -927,27 +946,28 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>Now draw three samples of <span class="math inline">\(50\)</span> workers from the wage population. Each sample mean (red) lands near, but not on, the population mean (blue dashed).</p>
+<p>Now draw three samples from the pretend population. Each sample mean (red) lands near, but not on, the population mean (blue dashed).</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Population mean</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>population_wage_mean <span class="ot">&lt;-</span> <span class="fu">mean</span>(population_wages)</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Three samples of workers, each with its own mean</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>){</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, <span class="dv">50</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">hist</span>(x_sim,</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">40</span>, <span class="at">by=</span><span class="dv">2</span>), <span class="co">#for comparability</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">main=</span><span class="cn">NA</span>, <span class="at">border=</span><span class="cn">NA</span>,</span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab=</span><span class="st">'hourly wage'</span>)</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rug</span>(x_sim, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>))</span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">abline</span>(<span class="at">v=</span>m_hat, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">abline</span>(<span class="at">v=</span>population_wage_mean, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'mean= '</span>, <span class="fu">round</span>(m_hat, <span class="dv">2</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Population mean</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>population_wage_mean <span class="ot">&lt;-</span> <span class="fu">mean</span>(population_wages)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Three samples of workers, each with its own mean</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>){</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, <span class="dv">50</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">hist</span>(x_sim,</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">40</span>, <span class="at">by=</span><span class="dv">2</span>), <span class="co">#for comparability</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">main=</span><span class="cn">NA</span>, <span class="at">border=</span><span class="cn">NA</span>,</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab=</span><span class="st">'Hourly wage (1980 dollars)'</span>)</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rug</span>(x_sim, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>))</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">abline</span>(<span class="at">v=</span>m_hat, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">abline</span>(<span class="at">v=</span>population_wage_mean, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'mean= '</span>, <span class="fu">round</span>(m_hat, <span class="dv">2</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -957,25 +977,26 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>Repeating this for many samples of workers gives the sampling distribution of the mean wage. We color this histogram red to make clear we are looking at the distribution of a statistic, while the grey histograms above show data. In what follows, we typically use the default grey for both sampling distributions and data.</p>
+<p>Repeating this for many samples gives the sampling distribution of the mean. We color this histogram red to make clear we are looking at the distribution of a statistic, while the grey histograms above show data. In what follows, we typically use the default grey for both sampling distributions and data.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Many samples of workers</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>wage_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">500</span>)</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(wage_means)){</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, <span class="dv">50</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    wage_means[i] <span class="ot">&lt;-</span> m_hat</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(wage_means,</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">breaks=</span><span class="dv">30</span>,</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">5</span>), <span class="co"># red marks the distribution of a statistic, not data</span></span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)),</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>population_wage_mean, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Sampling Distribution of the mean wage'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Many samples of workers</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>wage_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">500</span>)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(wage_means)){</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, <span class="dv">50</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    wage_means[i] <span class="ot">&lt;-</span> m_hat</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(wage_means,</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">breaks=</span><span class="dv">30</span>,</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">5</span>), <span class="co"># red marks the distribution of a statistic, not data</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)),</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>population_wage_mean, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Sampling Distribution of the mean wage'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1052,34 +1073,37 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>The wage population is a harder case, because wages are strongly skewed: most workers earn a moderate wage and a few earn much more. The means of samples of <span class="math inline">\(50\)</span> workers are not skewed in the same way.</p>
+<p>A strongly skewed population is a harder case. The figure below compares the population with the means of many samples drawn from it.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Population: skewed</span></span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(population_wages,</span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">40</span>, <span class="at">by=</span><span class="dv">1</span>),</span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'hourly wage'</span>,</span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="fu">rug</span>(population_wages, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>))</span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>population_wage_mean, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Population'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Sampling distribution: approximately Normal?</span></span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(wage_means,</span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">breaks=</span><span class="dv">30</span>,</span>
-<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)),</span>
-<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>m_sampling_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(wage_means)</span>
-<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>s_sampling_hat <span class="ot">&lt;-</span> <span class="fu">sd</span>(wage_means)</span>
-<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">min</span>(wage_means), <span class="fu">max</span>(wage_means), <span class="at">length.out=</span><span class="dv">200</span>)</span>
-<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>fx <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(x, m_sampling_hat, s_sampling_hat)</span>
-<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x, fx, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span>
-<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Sample means, n=50'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Population: skewed</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(population_wages,</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">40</span>, <span class="at">by=</span><span class="dv">1</span>),</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Hourly wage (1980 dollars)'</span>,</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="fu">rug</span>(population_wages, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>))</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>population_wage_mean, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Population'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Wages are strongly skewed.</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Most workers earn a moderate wage and a few earn much more.</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Sampling distribution: approximately Normal?</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(wage_means,</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">breaks=</span><span class="dv">30</span>,</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)),</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>m_sampling_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(wage_means)</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>s_sampling_hat <span class="ot">&lt;-</span> <span class="fu">sd</span>(wage_means)</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">min</span>(wage_means), <span class="fu">max</span>(wage_means), <span class="at">length.out=</span><span class="dv">200</span>)</span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>fx <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(x, m_sampling_hat, s_sampling_hat)</span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x, fx, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Sample means, n=50'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1088,6 +1112,10 @@ window.Quarto = {
 </figure>
 </div>
 </div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The means of samples of 50 workers are not skewed in the same way.</span></span></code></pre></div>
+</details>
 </div>
 <p>Many statistics have an approximately Normal sampling distribution.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
@@ -1106,26 +1134,26 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># CLT example of the 'sd' statistic</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>sample_sds <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">1000</span>)</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_sds)){</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">100</span>) <span class="co"># same distribution</span></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    s_hat <span class="ot">&lt;-</span> <span class="fu">sd</span>(x_sim) <span class="co"># different statistic</span></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    sample_sds[i] <span class="ot">&lt;-</span> s_hat</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(sample_sds,</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">breaks=</span><span class="fu">seq</span>(<span class="fl">0.2</span>, <span class="fl">0.4</span>, <span class="at">by=</span>.<span class="dv">01</span>),</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(s)),</span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Sampling Distribution of the sd'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Approximately normal?</span></span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>m_sampling_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(sample_sds)</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>s_sampling_hat <span class="ot">&lt;-</span> <span class="fu">sd</span>(sample_sds)</span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fl">0.1</span>, <span class="fl">0.9</span>, <span class="at">by=</span><span class="fl">0.001</span>)</span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>fx <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(x, m_sampling_hat, s_sampling_hat)</span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x, fx, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># CLT example of the 'sd' statistic</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>sample_sds <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">1000</span>)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_sds)){</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">100</span>) <span class="co"># same distribution</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    s_hat <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">mean</span>((x_sim <span class="sc">-</span> <span class="fu">mean</span>(x_sim))<span class="sc">^</span><span class="dv">2</span>)) <span class="co"># different statistic, which divides by n, unlike sd()</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    sample_sds[i] <span class="ot">&lt;-</span> s_hat</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(sample_sds,</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">breaks=</span><span class="fu">seq</span>(<span class="fl">0.2</span>, <span class="fl">0.4</span>, <span class="at">by=</span>.<span class="dv">01</span>),</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(s)),</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Sampling Distribution of the sd'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Approximately normal?</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>m_sampling_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(sample_sds)</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>s_sampling_hat <span class="ot">&lt;-</span> <span class="fu">sd</span>(sample_sds)</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fl">0.1</span>, <span class="fl">0.9</span>, <span class="at">by=</span><span class="fl">0.001</span>)</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>fx <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(x, m_sampling_hat, s_sampling_hat)</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x, fx, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1136,14 +1164,14 @@ window.Quarto = {
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="co"># try another random variable, such as rexp(100) instead of runif(100)</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="co"># try another random variable, such as rexp(100) instead of runif(100)</span></span></code></pre></div>
 </details>
 </div>
 </div>
 </div>
 </div>
-<p>It is beyond this class to prove this result mathematically, but you should know that not all sampling distributions are standard normal. The CLT approximation is better for “large <span class="math inline">\(n\)</span>” datasets with “well behaved” variances. The CLT also does not apply to “extreme” statistics.</p>
+<p>It is beyond this book to prove this result mathematically, but you should know that not all sampling distributions are Normal. The CLT approximation is better for “large <span class="math inline">\(n\)</span>” datasets with “well behaved” variances. The CLT also does not apply to “extreme” statistics.</p>
 <div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-14-contents" aria-controls="callout-14" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -1160,29 +1188,29 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create 300 samples, each with 1000 random uniform variables</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>X_samples <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">nrow=</span><span class="dv">300</span>, <span class="at">ncol=</span><span class="dv">1000</span>)</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(X_samples))){</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    X_samples[i, ] <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1000</span>)</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Each row is a new sample</span></span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(X_samples[<span class="dv">1</span>, ])</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1000</span></span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute min and max for each sample</span></span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>x_mins <span class="ot">&lt;-</span> <span class="fu">apply</span>(X_samples, <span class="dv">1</span>, quantile, <span class="at">probs=</span><span class="dv">0</span>)</span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>x_maxs <span class="ot">&lt;-</span> <span class="fu">apply</span>(X_samples, <span class="dv">1</span>, quantile, <span class="at">probs=</span><span class="dv">1</span>)</span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the sampling distributions of min, median, and max</span></span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Median looks normal. Maximum and minimum do not!</span></span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(x_mins, <span class="at">breaks=</span><span class="dv">100</span>, <span class="at">main=</span><span class="cn">NA</span>,</span>
-<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(q)[<span class="dv">0</span>]), <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>)</span>
-<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Min'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(x_maxs, <span class="at">breaks=</span><span class="dv">100</span>, <span class="at">main=</span><span class="cn">NA</span>,</span>
-<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(q)[<span class="dv">1</span>]), <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>)</span>
-<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Max'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Sampling Distributions'</span>, <span class="at">outer=</span><span class="cn">TRUE</span>, <span class="at">line=</span><span class="sc">-</span><span class="dv">1</span>, <span class="at">adj=</span><span class="dv">0</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create 300 samples, each with 1000 random uniform variables</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>X_samples <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">nrow=</span><span class="dv">300</span>, <span class="at">ncol=</span><span class="dv">1000</span>)</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(X_samples))){</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    X_samples[i, ] <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1000</span>)</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Each row is a new sample</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(X_samples[<span class="dv">1</span>, ])</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1000</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute min and max for each sample</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>x_mins <span class="ot">&lt;-</span> <span class="fu">apply</span>(X_samples, <span class="dv">1</span>, quantile, <span class="at">probs=</span><span class="dv">0</span>)</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>x_maxs <span class="ot">&lt;-</span> <span class="fu">apply</span>(X_samples, <span class="dv">1</span>, quantile, <span class="at">probs=</span><span class="dv">1</span>)</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the sampling distributions of the min and max</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Neither one looks normal.</span></span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(x_mins, <span class="at">breaks=</span><span class="dv">100</span>, <span class="at">main=</span><span class="cn">NA</span>,</span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(q)[<span class="dv">0</span>]), <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>)</span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Min'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(x_maxs, <span class="at">breaks=</span><span class="dv">100</span>, <span class="at">main=</span><span class="cn">NA</span>,</span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(q)[<span class="dv">1</span>]), <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>)</span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Max'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Sampling Distributions'</span>, <span class="at">outer=</span><span class="cn">TRUE</span>, <span class="at">line=</span><span class="sc">-</span><span class="dv">1</span>, <span class="at">adj=</span><span class="dv">0</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1211,10 +1239,10 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>my_function <span class="ot">&lt;-</span> <span class="cf">function</span>(x){ <span class="fu">diff</span>(<span class="fu">range</span>(x)) }</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>x_ranges <span class="ot">&lt;-</span> <span class="fu">apply</span>(X_samples, <span class="dv">1</span>, my_function)</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(x_ranges, <span class="at">breaks=</span><span class="dv">100</span>, <span class="at">main=</span><span class="cn">NA</span>,</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Sample Range'</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>my_function <span class="ot">&lt;-</span> <span class="cf">function</span>(x){ <span class="fu">diff</span>(<span class="fu">range</span>(x)) }</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>x_ranges <span class="ot">&lt;-</span> <span class="fu">apply</span>(X_samples, <span class="dv">1</span>, my_function)</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(x_ranges, <span class="at">breaks=</span><span class="dv">100</span>, <span class="at">main=</span><span class="cn">NA</span>,</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Sample Range'</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1243,15 +1271,15 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>sample_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_means)){</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">rcauchy</span>(<span class="dv">1000</span>, <span class="dv">0</span>, <span class="dv">10</span>)</span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    sample_means[i] <span class="ot">&lt;-</span> m_hat</span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(sample_means, <span class="at">breaks=</span><span class="dv">100</span>,</span>
-<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">''</span>,</span>
-<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>) <span class="co"># Tails look too 'fat'</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>sample_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">999</span>)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_means)){</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">rcauchy</span>(<span class="dv">1000</span>, <span class="dv">0</span>, <span class="dv">10</span>)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    sample_means[i] <span class="ot">&lt;-</span> m_hat</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(sample_means, <span class="at">breaks=</span><span class="dv">100</span>,</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="st">''</span>,</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>) <span class="co"># Tails look too 'fat'</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -1294,35 +1322,35 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>sample_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">500</span>)</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_means)){</span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1000</span>)</span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    sample_means[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>m_sampling_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(sample_means)</span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(m_sampling_hat, <span class="dv">3</span>)</span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>sample_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">500</span>)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_means)){</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1000</span>)</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    sample_means[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>m_sampling_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(sample_means)</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(m_sampling_hat, <span class="dv">3</span>)</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5</span></span></code></pre></div>
 </details>
 </div>
 <p>and more tightly centered with more data</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">50</span>, <span class="dv">500</span>)){</span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    sample_means_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">299</span>)</span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_means_n)){</span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>        x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>        m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>        sample_means_n[i] <span class="ot">&lt;-</span> m_hat</span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">hist</span>(sample_means_n,</span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">by=</span>.<span class="dv">01</span>),</span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)),</span>
-<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'n='</span>, n), <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">50</span>, <span class="dv">500</span>)){</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    sample_means_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">299</span>)</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_means_n)){</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>        x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>        m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>        sample_means_n[i] <span class="ot">&lt;-</span> m_hat</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">hist</span>(sample_means_n,</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">by=</span>.<span class="dv">01</span>),</span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)),</span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'n='</span>, n), <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1335,36 +1363,37 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>In the wage population, the sample means are centered on the population mean</p>
+<p>In the pretend population, the sample means are centered on the population mean</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>(wage_means), <span class="dv">3</span>) <span class="co"># center of the sampling distribution</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.746</span></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(population_wage_mean, <span class="dv">3</span>) <span class="co"># population mean</span></span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.758</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>(wage_means), <span class="dv">3</span>) <span class="co"># center of the sampling distribution</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.746</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(population_wage_mean, <span class="dv">3</span>) <span class="co"># population mean</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.758</span></span></code></pre></div>
 </details>
 </div>
-<p>and are more tightly centered with larger samples of workers.</p>
+<p>and are more tightly centered with larger samples.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">50</span>, <span class="dv">500</span>)){</span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>    wage_means_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">299</span>)</span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(wage_means_n)){</span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>        x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, n, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
-<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>        m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
-<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>        wage_means_n[i] <span class="ot">&lt;-</span> m_hat</span>
-<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">hist</span>(wage_means_n,</span>
-<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">20</span>, <span class="at">by=</span>.<span class="dv">25</span>),</span>
-<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)),</span>
-<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">abline</span>(<span class="at">v=</span>population_wage_mean, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span>
-<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'n='</span>, n), <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">50</span>, <span class="dv">500</span>)){</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>    wage_means_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">299</span>)</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(wage_means_n)){</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>        x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, n, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>        m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>        wage_means_n[i] <span class="ot">&lt;-</span> m_hat</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">hist</span>(wage_means_n,</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">20</span>, <span class="at">by=</span>.<span class="dv">25</span>),</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)),</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">abline</span>(<span class="at">v=</span>population_wage_mean, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'n='</span>, n), <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1390,19 +1419,19 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>n_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">40</span>)</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>sd_seq <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(n_seq))</span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="fu">seq_along</span>(sd_seq)){</span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>    sample_means_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">499</span>)</span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_means_n)){</span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>        x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
-<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>        m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
-<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>        sample_means_n[i] <span class="ot">&lt;-</span> m_hat</span>
-<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>    sd_seq[n] <span class="ot">&lt;-</span> <span class="fu">sd</span>(sample_means_n)</span>
-<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(n_seq, sd_seq, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, <span class="fl">0.5</span>),</span>
-<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'n'</span>, <span class="at">ylab=</span><span class="st">'sd of sample means'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>n_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">40</span>)</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>sd_seq <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(n_seq))</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="fu">seq_along</span>(sd_seq)){</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    sample_means_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">499</span>)</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_means_n)){</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>        x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>        m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>        sample_means_n[i] <span class="ot">&lt;-</span> m_hat</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>    sd_seq[n] <span class="ot">&lt;-</span> <span class="fu">sd</span>(sample_means_n)</span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(n_seq, sd_seq, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, <span class="fl">0.5</span>),</span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'n'</span>, <span class="at">ylab=</span><span class="st">'sd of sample means'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1437,29 +1466,29 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>population_values <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">18</span>, <span class="dv">20</span>, <span class="dv">22</span>, <span class="dv">24</span>) <span class="co">#student ages (population values)</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(population_values) <span class="co"># Population mean</span></span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 21</span></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="co"># six possible samples of size 2</span></span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>m1_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>)] ) <span class="co">#{1, 2}</span></span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>m2_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)] ) <span class="co">#{1, 3}</span></span>
-<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>m3_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">4</span>)] ) <span class="co">#{1, 4}</span></span>
-<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>m4_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">3</span>)] ) <span class="co">#{2, 3}</span></span>
-<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>m5_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>)] ) <span class="co">#{2, 4}</span></span>
-<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>m6_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">4</span>)] ) <span class="co">#{3, 4}</span></span>
-<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>means_2 <span class="ot">&lt;-</span> <span class="fu">c</span>(m1_hat, m2_hat, m3_hat, m4_hat, m5_hat, m6_hat)</span>
-<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a><span class="fu">sort</span>(means_2)</span>
-<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 19 20 21 21 22 23</span></span>
-<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a><span class="co"># four possible samples of size 3</span></span>
-<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a>m1_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)] )</span>
-<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a>m2_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">4</span>)] )</span>
-<span id="cb28-19"><a href="#cb28-19" aria-hidden="true" tabindex="-1"></a>m3_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">4</span>)] )</span>
-<span id="cb28-20"><a href="#cb28-20" aria-hidden="true" tabindex="-1"></a>m4_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>)] )</span>
-<span id="cb28-21"><a href="#cb28-21" aria-hidden="true" tabindex="-1"></a>means_3 <span class="ot">&lt;-</span> <span class="fu">c</span>(m1_hat, m2_hat, m3_hat, m4_hat)</span>
-<span id="cb28-22"><a href="#cb28-22" aria-hidden="true" tabindex="-1"></a><span class="fu">sort</span>(means_3)</span>
-<span id="cb28-23"><a href="#cb28-23" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 20.00000 20.66667 21.33333 22.00000</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>population_values <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">18</span>, <span class="dv">20</span>, <span class="dv">22</span>, <span class="dv">24</span>) <span class="co">#student ages (population values)</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(population_values) <span class="co"># Population mean</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 21</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="co"># six possible samples of size 2</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>m1_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>)] ) <span class="co">#{1, 2}</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>m2_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)] ) <span class="co">#{1, 3}</span></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>m3_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">4</span>)] ) <span class="co">#{1, 4}</span></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>m4_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">3</span>)] ) <span class="co">#{2, 3}</span></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>m5_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>)] ) <span class="co">#{2, 4}</span></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>m6_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">4</span>)] ) <span class="co">#{3, 4}</span></span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>means_2 <span class="ot">&lt;-</span> <span class="fu">c</span>(m1_hat, m2_hat, m3_hat, m4_hat, m5_hat, m6_hat)</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a><span class="fu">sort</span>(means_2)</span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 19 20 21 21 22 23</span></span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a><span class="co"># four possible samples of size 3</span></span>
+<span id="cb29-17"><a href="#cb29-17" aria-hidden="true" tabindex="-1"></a>m1_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)] )</span>
+<span id="cb29-18"><a href="#cb29-18" aria-hidden="true" tabindex="-1"></a>m2_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">4</span>)] )</span>
+<span id="cb29-19"><a href="#cb29-19" aria-hidden="true" tabindex="-1"></a>m3_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">4</span>)] )</span>
+<span id="cb29-20"><a href="#cb29-20" aria-hidden="true" tabindex="-1"></a>m4_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>( population_values[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>)] )</span>
+<span id="cb29-21"><a href="#cb29-21" aria-hidden="true" tabindex="-1"></a>means_3 <span class="ot">&lt;-</span> <span class="fu">c</span>(m1_hat, m2_hat, m3_hat, m4_hat)</span>
+<span id="cb29-22"><a href="#cb29-22" aria-hidden="true" tabindex="-1"></a><span class="fu">sort</span>(means_3)</span>
+<span id="cb29-23"><a href="#cb29-23" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 20.00000 20.66667 21.33333 22.00000</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -1485,21 +1514,21 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">50</span>, <span class="dv">500</span>)){</span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>    sample_props_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">299</span>)</span>
-<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_props_n)){</span>
-<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>        x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
-<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>        p3_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim<span class="sc">&lt;=</span><span class="fl">0.75</span>)</span>
-<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>        sample_props_n[i] <span class="ot">&lt;-</span> p3_hat</span>
-<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">hist</span>(sample_props_n,</span>
-<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">by=</span>.<span class="dv">01</span>),</span>
-<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab=</span><span class="st">'Sample Proportion'</span>,</span>
-<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'n='</span>, n), <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">50</span>, <span class="dv">500</span>)){</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>    sample_props_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">299</span>)</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_props_n)){</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>        x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>        p3_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim<span class="sc">&lt;=</span><span class="fl">0.75</span>)</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>        sample_props_n[i] <span class="ot">&lt;-</span> p3_hat</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">hist</span>(sample_props_n,</span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">by=</span>.<span class="dv">01</span>),</span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab=</span><span class="st">'Sample Proportion'</span>,</span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'n='</span>, n), <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1513,21 +1542,21 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">50</span>, <span class="dv">500</span>)){</span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>    sample_quants_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">299</span>)</span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_quants_n)){</span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>        x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>        q_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x_sim, <span class="at">probs=</span><span class="fl">0.75</span>)</span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>        sample_quants_n[i] <span class="ot">&lt;-</span> q_hat</span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">hist</span>(sample_quants_n,</span>
-<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">by=</span>.<span class="dv">01</span>),</span>
-<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab=</span><span class="st">'Sample Quantile'</span>,</span>
-<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'n='</span>, n), <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">50</span>, <span class="dv">500</span>)){</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>    sample_quants_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">299</span>)</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_quants_n)){</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>        x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>        q_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x_sim, <span class="at">probs=</span><span class="fl">0.75</span>)</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>        sample_quants_n[i] <span class="ot">&lt;-</span> q_hat</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">hist</span>(sample_quants_n,</span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">by=</span>.<span class="dv">01</span>),</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlab=</span><span class="st">'Sample Quantile'</span>,</span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'n='</span>, n), <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1573,13 +1602,13 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">50</span>, <span class="dv">500</span>, <span class="dv">5000</span>)) {</span>
-<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
-<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  F_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(x_sim)</span>
-<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(F_hat, <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'n='</span>, n), <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">50</span>, <span class="dv">500</span>, <span class="dv">5000</span>)) {</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  F_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(x_sim)</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(F_hat, <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'n='</span>, n), <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1592,20 +1621,20 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>In the wage population, the ECDF of a sample of workers (red) gets closer to the population CDF (black) as the sample grows.</p>
+<p>In the pretend population, the ECDF of a sample (red) gets closer to the population CDF (black) as the sample grows.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>F_population <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(population_wages)</span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">50</span>, <span class="dv">500</span>)){</span>
-<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, n, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
-<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>    F_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(x_sim)</span>
-<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plot</span>(F_population, <span class="at">do.points=</span><span class="cn">FALSE</span>,</span>
-<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">20</span>), <span class="at">xlab=</span><span class="st">'hourly wage'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plot</span>(F_hat, <span class="at">do.points=</span><span class="cn">FALSE</span>, <span class="at">add=</span><span class="cn">TRUE</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>))</span>
-<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'n='</span>, n), <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>F_population <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(population_wages)</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">50</span>, <span class="dv">500</span>)){</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, n, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>    F_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(x_sim)</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plot</span>(F_population, <span class="at">do.points=</span><span class="cn">FALSE</span>,</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">20</span>), <span class="at">xlab=</span><span class="st">'Hourly wage (1980 dollars)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plot</span>(F_hat, <span class="at">do.points=</span><span class="cn">FALSE</span>, <span class="at">add=</span><span class="cn">TRUE</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>))</span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'n='</span>, n), <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1631,52 +1660,52 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>population_values <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">18</span>, <span class="dv">20</span>, <span class="dv">22</span>, <span class="dv">24</span>, <span class="dv">26</span>) <span class="co">#student ages (population values)</span></span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>F_population <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(population_values)</span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="fu">F_population</span>(population_values) <span class="co"># each age adds 1/5</span></span>
-<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.2 0.4 0.6 0.8 1.0</span></span>
-<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a><span class="co"># All possible samples of each size, one sample per column</span></span>
-<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>){</span>
-<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>( <span class="fu">combn</span>(population_values, n) )</span>
-<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a><span class="do">##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]</span></span>
-<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a><span class="do">## [1,]   18   18   18   18   20   20   20   22   22    24</span></span>
-<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [2,]   20   22   24   26   22   24   26   24   26    26</span></span>
-<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a><span class="do">##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]</span></span>
-<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1,]   18   18   18   18   18   18   20   20   20    22</span></span>
-<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a><span class="do">## [2,]   20   20   20   22   22   24   22   22   24    24</span></span>
-<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a><span class="do">## [3,]   22   24   26   24   26   26   24   26   26    26</span></span>
-<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a><span class="do">##      [,1] [,2] [,3] [,4] [,5]</span></span>
-<span id="cb33-18"><a href="#cb33-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [1,]   18   18   18   18   20</span></span>
-<span id="cb33-19"><a href="#cb33-19" aria-hidden="true" tabindex="-1"></a><span class="do">## [2,]   20   20   20   22   22</span></span>
-<span id="cb33-20"><a href="#cb33-20" aria-hidden="true" tabindex="-1"></a><span class="do">## [3,]   22   22   24   24   24</span></span>
-<span id="cb33-21"><a href="#cb33-21" aria-hidden="true" tabindex="-1"></a><span class="do">## [4,]   24   26   26   26   26</span></span>
-<span id="cb33-22"><a href="#cb33-22" aria-hidden="true" tabindex="-1"></a><span class="do">##      [,1]</span></span>
-<span id="cb33-23"><a href="#cb33-23" aria-hidden="true" tabindex="-1"></a><span class="do">## [1,]   18</span></span>
-<span id="cb33-24"><a href="#cb33-24" aria-hidden="true" tabindex="-1"></a><span class="do">## [2,]   20</span></span>
-<span id="cb33-25"><a href="#cb33-25" aria-hidden="true" tabindex="-1"></a><span class="do">## [3,]   22</span></span>
-<span id="cb33-26"><a href="#cb33-26" aria-hidden="true" tabindex="-1"></a><span class="do">## [4,]   24</span></span>
-<span id="cb33-27"><a href="#cb33-27" aria-hidden="true" tabindex="-1"></a><span class="do">## [5,]   26</span></span>
-<span id="cb33-28"><a href="#cb33-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb33-29"><a href="#cb33-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Population CDF nudged up by 0.01, so it stays visible above the red lines</span></span>
-<span id="cb33-30"><a href="#cb33-30" aria-hidden="true" tabindex="-1"></a>F_population_up <span class="ot">&lt;-</span> <span class="fu">stepfun</span>(population_values, <span class="fu">c</span>(<span class="dv">0</span>, <span class="fu">F_population</span>(population_values)) <span class="sc">+</span> <span class="fl">0.01</span>)</span>
-<span id="cb33-31"><a href="#cb33-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb33-32"><a href="#cb33-32" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">4</span>))</span>
-<span id="cb33-33"><a href="#cb33-33" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>){</span>
-<span id="cb33-34"><a href="#cb33-34" aria-hidden="true" tabindex="-1"></a>    samples_n <span class="ot">&lt;-</span> <span class="fu">combn</span>(population_values, n)</span>
-<span id="cb33-35"><a href="#cb33-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plot</span>(F_population_up, <span class="at">do.points=</span><span class="cn">FALSE</span>, <span class="at">verticals=</span><span class="cn">FALSE</span>,</span>
-<span id="cb33-36"><a href="#cb33-36" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">16</span>, <span class="dv">28</span>), <span class="at">xlab=</span><span class="st">'age'</span>, <span class="at">ylab=</span><span class="st">'Fn(x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb33-37"><a href="#cb33-37" aria-hidden="true" tabindex="-1"></a>    max_gaps <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">ncol</span>(samples_n))</span>
-<span id="cb33-38"><a href="#cb33-38" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(s <span class="cf">in</span> <span class="fu">seq</span>(<span class="fu">ncol</span>(samples_n))){</span>
-<span id="cb33-39"><a href="#cb33-39" aria-hidden="true" tabindex="-1"></a>        F_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(samples_n[, s])</span>
-<span id="cb33-40"><a href="#cb33-40" aria-hidden="true" tabindex="-1"></a>        <span class="fu">plot</span>(F_hat, <span class="at">do.points=</span><span class="cn">FALSE</span>, <span class="at">add=</span><span class="cn">TRUE</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">3</span>), <span class="at">lwd=</span><span class="dv">4</span>)</span>
-<span id="cb33-41"><a href="#cb33-41" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Both curves only jump at the five ages, so the largest gap is at one of them</span></span>
-<span id="cb33-42"><a href="#cb33-42" aria-hidden="true" tabindex="-1"></a>        max_gaps[s] <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">abs</span>(<span class="fu">F_hat</span>(population_values) <span class="sc">-</span> <span class="fu">F_population</span>(population_values)))</span>
-<span id="cb33-43"><a href="#cb33-43" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb33-44"><a href="#cb33-44" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Largest gap over all possible samples of size n</span></span>
-<span id="cb33-45"><a href="#cb33-45" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'n='</span>, n, <span class="st">', largest gap='</span>, <span class="fu">round</span>(<span class="fu">max</span>(max_gaps), <span class="dv">2</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb33-46"><a href="#cb33-46" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>population_values <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">18</span>, <span class="dv">20</span>, <span class="dv">22</span>, <span class="dv">24</span>, <span class="dv">26</span>) <span class="co">#student ages (population values)</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>F_population <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(population_values)</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="fu">F_population</span>(population_values) <span class="co"># each age adds 1/5</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.2 0.4 0.6 0.8 1.0</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a><span class="co"># All possible samples of each size, one sample per column</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>){</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>( <span class="fu">combn</span>(population_values, n) )</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a><span class="do">##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]</span></span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a><span class="do">## [1,]   18   18   18   18   20   20   20   22   22    24</span></span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [2,]   20   22   24   26   22   24   26   24   26    26</span></span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a><span class="do">##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]</span></span>
+<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1,]   18   18   18   18   18   18   20   20   20    22</span></span>
+<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a><span class="do">## [2,]   20   20   20   22   22   24   22   22   24    24</span></span>
+<span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a><span class="do">## [3,]   22   24   26   24   26   26   24   26   26    26</span></span>
+<span id="cb34-17"><a href="#cb34-17" aria-hidden="true" tabindex="-1"></a><span class="do">##      [,1] [,2] [,3] [,4] [,5]</span></span>
+<span id="cb34-18"><a href="#cb34-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [1,]   18   18   18   18   20</span></span>
+<span id="cb34-19"><a href="#cb34-19" aria-hidden="true" tabindex="-1"></a><span class="do">## [2,]   20   20   20   22   22</span></span>
+<span id="cb34-20"><a href="#cb34-20" aria-hidden="true" tabindex="-1"></a><span class="do">## [3,]   22   22   24   24   24</span></span>
+<span id="cb34-21"><a href="#cb34-21" aria-hidden="true" tabindex="-1"></a><span class="do">## [4,]   24   26   26   26   26</span></span>
+<span id="cb34-22"><a href="#cb34-22" aria-hidden="true" tabindex="-1"></a><span class="do">##      [,1]</span></span>
+<span id="cb34-23"><a href="#cb34-23" aria-hidden="true" tabindex="-1"></a><span class="do">## [1,]   18</span></span>
+<span id="cb34-24"><a href="#cb34-24" aria-hidden="true" tabindex="-1"></a><span class="do">## [2,]   20</span></span>
+<span id="cb34-25"><a href="#cb34-25" aria-hidden="true" tabindex="-1"></a><span class="do">## [3,]   22</span></span>
+<span id="cb34-26"><a href="#cb34-26" aria-hidden="true" tabindex="-1"></a><span class="do">## [4,]   24</span></span>
+<span id="cb34-27"><a href="#cb34-27" aria-hidden="true" tabindex="-1"></a><span class="do">## [5,]   26</span></span>
+<span id="cb34-28"><a href="#cb34-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-29"><a href="#cb34-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Population CDF nudged up by 0.01, so it stays visible above the red lines</span></span>
+<span id="cb34-30"><a href="#cb34-30" aria-hidden="true" tabindex="-1"></a>F_population_up <span class="ot">&lt;-</span> <span class="fu">stepfun</span>(population_values, <span class="fu">c</span>(<span class="dv">0</span>, <span class="fu">F_population</span>(population_values)) <span class="sc">+</span> <span class="fl">0.01</span>)</span>
+<span id="cb34-31"><a href="#cb34-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-32"><a href="#cb34-32" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">4</span>))</span>
+<span id="cb34-33"><a href="#cb34-33" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>){</span>
+<span id="cb34-34"><a href="#cb34-34" aria-hidden="true" tabindex="-1"></a>    samples_n <span class="ot">&lt;-</span> <span class="fu">combn</span>(population_values, n)</span>
+<span id="cb34-35"><a href="#cb34-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plot</span>(F_population_up, <span class="at">do.points=</span><span class="cn">FALSE</span>, <span class="at">verticals=</span><span class="cn">FALSE</span>,</span>
+<span id="cb34-36"><a href="#cb34-36" aria-hidden="true" tabindex="-1"></a>        <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">16</span>, <span class="dv">28</span>), <span class="at">xlab=</span><span class="st">'age'</span>, <span class="at">ylab=</span><span class="st">'Fn(x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb34-37"><a href="#cb34-37" aria-hidden="true" tabindex="-1"></a>    max_gaps <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">ncol</span>(samples_n))</span>
+<span id="cb34-38"><a href="#cb34-38" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(s <span class="cf">in</span> <span class="fu">seq</span>(<span class="fu">ncol</span>(samples_n))){</span>
+<span id="cb34-39"><a href="#cb34-39" aria-hidden="true" tabindex="-1"></a>        F_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(samples_n[, s])</span>
+<span id="cb34-40"><a href="#cb34-40" aria-hidden="true" tabindex="-1"></a>        <span class="fu">plot</span>(F_hat, <span class="at">do.points=</span><span class="cn">FALSE</span>, <span class="at">add=</span><span class="cn">TRUE</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">3</span>), <span class="at">lwd=</span><span class="dv">4</span>)</span>
+<span id="cb34-41"><a href="#cb34-41" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Both curves only jump at the five ages, so the largest gap is at one of them</span></span>
+<span id="cb34-42"><a href="#cb34-42" aria-hidden="true" tabindex="-1"></a>        max_gaps[s] <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">abs</span>(<span class="fu">F_hat</span>(population_values) <span class="sc">-</span> <span class="fu">F_population</span>(population_values)))</span>
+<span id="cb34-43"><a href="#cb34-43" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb34-44"><a href="#cb34-44" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Largest gap over all possible samples of size n</span></span>
+<span id="cb34-45"><a href="#cb34-45" aria-hidden="true" tabindex="-1"></a>    <span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'n='</span>, n, <span class="st">', largest gap='</span>, <span class="fu">round</span>(<span class="fu">max</span>(max_gaps), <span class="dv">2</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb34-46"><a href="#cb34-46" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1694,14 +1723,17 @@ window.Quarto = {
 </section>
 <section id="resampling-distributions" class="level2" data-number="5.3">
 <h2 data-number="5.3" class="anchored" data-anchor-id="resampling-distributions"><span class="header-section-number">5.3</span> Resampling Distributions</h2>
-<p>With the wage population, we could draw as many samples as we liked. Often, we only have one sample, and no population to draw more samples from. The lab data on murder arrests are one such sample. How then can we estimate the sampling distribution of a statistic?</p>
+<p>With the pretend population, we could draw as many samples as we liked. Often, we only have one sample, and no population to draw more samples from. To mimic this, we draw one sample as our lab data, and pretend it is all we observed. How then can we estimate the sampling distribution of a statistic?</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>] <span class="co"># lab data: murder arrests per 100,000</span></span>
-<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_hat)</span>
-<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>m_hat</span>
-<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 7.788</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Lab data: one random sample of 50 workers, as if it were all we observed</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, <span class="dv">50</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_hat)</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>m_hat</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.634566</span></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a><span class="co"># The sample mean is about 5.63, a little below the population mean of 5.758.</span></span></code></pre></div>
 </details>
 </div>
 <p>We can <em>resample</em> our data. <span class="citation" data-cites="Hesterberg2015">Hesterberg (<a href="#ref-Hesterberg2015" role="doc-biblioref">2015</a>)</span> provides a nice illustration of the idea. The two most basic versions are the <em>jackknife</em> and the <em>bootstrap</em>, which are discussed below. The red histogram in the figure again shows the distribution of a statistic.</p>
@@ -1751,15 +1783,14 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>x0_hat <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">6</span>, <span class="dv">7</span>, <span class="dv">22</span>)</span>
-<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>boot_medians <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">8</span>)</span>
-<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_medians)){</span>
-<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x0_hat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>    boot_medians[b] <span class="ot">&lt;-</span> <span class="fu">median</span>(x_boot)</span>
-<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>boot_medians</span>
-<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 4.0 6.5 6.5 1.0 6.0 1.0 1.0 6.0</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>x0_hat <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">6</span>, <span class="dv">7</span>, <span class="dv">22</span>)</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>boot_medians <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">8</span>)</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_medians)){</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x0_hat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>    boot_medians[b] <span class="ot">&lt;-</span> <span class="fu">median</span>(x_boot)</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>boot_medians</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1]  7.0  3.5  7.0  7.0  6.5 14.5  6.5  1.0</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -1768,17 +1799,18 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap estimates</span></span>
-<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>boot_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">9999</span>)</span>
-<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_means)){</span>
-<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">replace=</span><span class="cn">TRUE</span>) <span class="co"># c.f. jackknife</span></span>
-<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>    m_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot)</span>
-<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>    boot_means[b] <span class="ot">&lt;-</span>m_b_hat</span>
-<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_means, <span class="at">breaks=</span><span class="dv">25</span>,</span>
-<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)<span class="sc">^</span><span class="fu">group</span>(<span class="st">'('</span>, b, <span class="st">')'</span>)))</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap estimates</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>boot_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">9999</span>)</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_means)){</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">replace=</span><span class="cn">TRUE</span>) <span class="co"># c.f. jackknife</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>    m_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot)</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>    boot_means[b] <span class="ot">&lt;-</span>m_b_hat</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_means, <span class="at">breaks=</span><span class="dv">25</span>,</span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)<span class="sc">^</span><span class="fu">group</span>(<span class="st">'('</span>, b, <span class="st">')'</span>)))</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1787,8 +1819,11 @@ window.Quarto = {
 </figure>
 </div>
 </div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The bootstrap means center on the sample mean of about 5.63.</span></span></code></pre></div>
+</details>
 </div>
-<p>Why does this work? The sample: <span class="math inline">\(\{\hat{x}_{1}, \hat{x}_{2}, ... \hat{x}_{n}\}\)</span> is drawn from a CDF <span class="math inline">\(F\)</span>. Each bootstrap sample: <span class="math inline">\(\{\hat{x}_{1}^{(b)}, \hat{x}_{2}^{(b)}, ... \hat{x}_{n}^{(b)}\}\)</span> is drawn from the ECDF <span class="math inline">\(\hat{F}\)</span>. With <span class="math inline">\(\hat{F} \approx F\)</span> by the <a href="#the-fundamental-theorem-of-statistics">Fundamental-Theorem</a> above, each bootstrap sample is approximately a random sample. So when we compute a statistic on each bootstrap sample, we approximate the sampling distribution of the statistic.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-27-contents" aria-controls="callout-27" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -1801,22 +1836,68 @@ window.Quarto = {
 </div>
 <div id="callout-27" class="callout-27-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
+<p>Repeat the bootstrap with the murder arrests in <code>USArrests</code>.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># These 50 US states are one sample, with no known population.</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>x2_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>] <span class="co"># murder arrests per 100,000</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>m2_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x2_hat)</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>m2_hat</span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 7.788</span></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap estimates</span></span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>boot_means2 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">9999</span>)</span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_means2)){</span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x2_hat, <span class="at">replace=</span><span class="cn">TRUE</span>) <span class="co"># c.f. jackknife</span></span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>    m_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot)</span>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>    boot_means2[b] <span class="ot">&lt;-</span> m_b_hat</span>
+<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb39-14"><a href="#cb39-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-15"><a href="#cb39-15" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_means2, <span class="at">breaks=</span><span class="dv">25</span>,</span>
+<span id="cb39-16"><a href="#cb39-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb39-17"><a href="#cb39-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)<span class="sc">^</span><span class="fu">group</span>(<span class="st">'('</span>, b, <span class="st">')'</span>)))</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="01_05_Sampling_files/figure-html/unnamed-chunk-38-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p>Why does this work? The sample: <span class="math inline">\(\{\hat{x}_{1}, \hat{x}_{2}, ... \hat{x}_{n}\}\)</span> is drawn from a CDF <span class="math inline">\(F\)</span>. Each bootstrap sample: <span class="math inline">\(\{\hat{x}_{1}^{(b)}, \hat{x}_{2}^{(b)}, ... \hat{x}_{n}^{(b)}\}\)</span> is drawn from the ECDF <span class="math inline">\(\hat{F}\)</span>. With <span class="math inline">\(\hat{F} \approx F\)</span> by the <a href="#the-fundamental-theorem-of-statistics">Fundamental-Theorem</a> above, each bootstrap sample is approximately a random sample. So when we compute a statistic on each bootstrap sample, we approximate the sampling distribution of the statistic.</p>
+<div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-28-contents" aria-controls="callout-28" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Test Yourself
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-28" class="callout-28-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
 <p>Here is an intuitive example with Bernoulli random variables (unfair coin flips)</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># theoretical probabilities</span></span>
-<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>x_probs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">3</span><span class="sc">/</span><span class="dv">4</span>)</span>
-<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="co"># sample draws</span></span>
-<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>coin_hat <span class="ot">&lt;-</span> <span class="fu">sample</span>(x, <span class="at">prob=</span>x_probs, <span class="dv">1000</span>, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>F_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(coin_hat)</span>
-<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>x_probs_boot <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">F_hat</span>(<span class="dv">0</span>), <span class="dv">1</span><span class="sc">-</span><span class="fu">F_hat</span>(<span class="dv">0</span>))</span>
-<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>x_probs_boot <span class="co"># approximately the theoretical value</span></span>
-<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.277 0.723</span></span>
-<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>coin_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x, <span class="at">prob=</span>x_probs_boot, <span class="dv">999</span>, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a><span class="co"># any draw from here is almost the same as the original process</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># theoretical probabilities</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>x_probs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">3</span><span class="sc">/</span><span class="dv">4</span>)</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="co"># sample draws</span></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>coin_hat <span class="ot">&lt;-</span> <span class="fu">sample</span>(x, <span class="at">prob=</span>x_probs, <span class="dv">1000</span>, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>F_hat <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(coin_hat)</span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>x_probs_boot <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">F_hat</span>(<span class="dv">0</span>), <span class="dv">1</span><span class="sc">-</span><span class="fu">F_hat</span>(<span class="dv">0</span>))</span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>x_probs_boot <span class="co"># approximately the theoretical value</span></span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.24 0.76</span></span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a>coin_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x, <span class="at">prob=</span>x_probs_boot, <span class="dv">999</span>, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a><span class="co"># any draw from here is almost the same as the original process</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -1827,7 +1908,7 @@ window.Quarto = {
 <h4 class="unnumbered anchored" data-anchor-id="jackknife-distribution"><strong>Jackknife Distribution</strong></h4>
 <p>Here, we compute all “leave-one-out” estimates. Specifically, for a dataset with <span class="math inline">\(n\)</span> observations, the jackknife uses <span class="math inline">\(n-1\)</span> observations other than <span class="math inline">\(i\)</span> for each unique subsample.</p>
 <div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-28-contents" aria-controls="callout-28" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-29-contents" aria-controls="callout-29" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -1836,7 +1917,7 @@ window.Quarto = {
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-28" class="callout-28-contents callout-collapse collapse">
+<div id="callout-29" class="callout-29-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>Given the sample <span class="math inline">\(\{1,6,7,22\}\)</span>, compute the jackknife estimate of the median. Leave out each observation in turn and take the median of the remaining three.</p>
 <ul>
@@ -1849,15 +1930,15 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>x0_hat <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">6</span>, <span class="dv">7</span>, <span class="dv">22</span>)</span>
-<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>jackknife_meds <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x0_hat))</span>
-<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(jackknife_meds)){</span>
-<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>    jackknife_meds[i] <span class="ot">&lt;-</span> <span class="fu">median</span>(x0_hat[<span class="sc">-</span>i])</span>
-<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>jackknife_meds</span>
-<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 7 7 6 6</span></span>
-<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(jackknife_meds)</span>
-<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 6.5</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>x0_hat <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">6</span>, <span class="dv">7</span>, <span class="dv">22</span>)</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>jackknife_meds <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x0_hat))</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(jackknife_meds)){</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>    jackknife_meds[i] <span class="ot">&lt;-</span> <span class="fu">median</span>(x0_hat[<span class="sc">-</span>i])</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>jackknife_meds</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 7 7 6 6</span></span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(jackknife_meds)</span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 6.5</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -1866,23 +1947,70 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Jackknife Estimates</span></span>
-<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">length</span>(x_hat)</span>
-<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>jack_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, n)</span>
-<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(jack_means)){</span>
-<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>    x_jack <span class="ot">&lt;-</span> x_hat[<span class="sc">-</span>i]</span>
-<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>    m_i_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_jack)</span>
-<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>    jack_means[i] <span class="ot">&lt;-</span> m_i_hat</span>
-<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(jack_means, <span class="at">breaks=</span><span class="dv">25</span>,</span>
-<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)<span class="sc">^</span><span class="fu">group</span>(<span class="st">'('</span>, <span class="sc">-</span>i, <span class="st">')'</span>)))</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Jackknife Estimates</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">length</span>(x_hat)</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>jack_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, n)</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(jack_means)){</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>    x_jack <span class="ot">&lt;-</span> x_hat[<span class="sc">-</span>i]</span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>    m_i_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_jack)</span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>    jack_means[i] <span class="ot">&lt;-</span> m_i_hat</span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(jack_means, <span class="at">breaks=</span><span class="dv">25</span>,</span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)<span class="sc">^</span><span class="fu">group</span>(<span class="st">'('</span>, <span class="sc">-</span>i, <span class="st">')'</span>)))</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="01_05_Sampling_files/figure-html/unnamed-chunk-40-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="01_05_Sampling_files/figure-html/unnamed-chunk-41-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The estimates stay close together, since each drops only one of 50 workers.</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="co"># The lowest one, about 5.36, drops the highest wage of about 19 dollars.</span></span></code></pre></div>
+</details>
+</div>
+<div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-30-contents" aria-controls="callout-30" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Test Yourself
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-30" class="callout-30-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Repeat the jackknife with the murder arrests in <code>USArrests</code>.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>x2_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>] <span class="co"># murder arrests per 100,000</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Jackknife Estimates</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>n2 <span class="ot">&lt;-</span> <span class="fu">length</span>(x2_hat)</span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>jack_means2 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, n2)</span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(jack_means2)){</span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>    x_jack <span class="ot">&lt;-</span> x2_hat[<span class="sc">-</span>i]</span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>    m_i_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_jack)</span>
+<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>    jack_means2[i] <span class="ot">&lt;-</span> m_i_hat</span>
+<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(jack_means2, <span class="at">breaks=</span><span class="dv">25</span>,</span>
+<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)<span class="sc">^</span><span class="fu">group</span>(<span class="st">'('</span>, <span class="sc">-</span>i, <span class="st">')'</span>)))</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="01_05_Sampling_files/figure-html/unnamed-chunk-42-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -1897,7 +2025,7 @@ window.Quarto = {
 <h2 data-number="5.4" class="anchored" data-anchor-id="standard-errors"><span class="header-section-number">5.4</span> Standard Errors</h2>
 <p>Having an entire sampling distribution is conceptually clear but unwieldy in practice; we usually compress it to a single number describing its spread.</p>
 <div class="callout callout-style-default callout-important no-icon callout-titled" title="Key Definition">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-29-contents" aria-controls="callout-29" aria-expanded="true" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-31-contents" aria-controls="callout-31" aria-expanded="true" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -1906,7 +2034,7 @@ window.Quarto = {
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-29" class="callout-29-contents callout-collapse collapse show">
+<div id="callout-31" class="callout-31-contents callout-collapse collapse show">
 <div class="callout-body-container callout-body">
 <p>The <em>standard error</em> of a statistic is the standard deviation of its sampling distribution.</p>
 </div>
@@ -1921,7 +2049,7 @@ window.Quarto = {
 </ul>
 <p>Here, the superscript <span class="math inline">\((b)\)</span> identifies one bootstrap replicate, while <span class="math inline">\(\text{boot}\)</span> labels summaries computed across the replicates.</p>
 <div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-30-contents" aria-controls="callout-30" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-32-contents" aria-controls="callout-32" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -1930,16 +2058,17 @@ window.Quarto = {
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-30" class="callout-30-contents callout-collapse collapse">
+<div id="callout-32" class="callout-32-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>Using the bootstrap distribution above, with many replicates, we can compute this easily as</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sd</span>(boot_means) <span class="co"># standard error estimate for the mean</span></span>
-<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5991904</span></span>
-<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sd</span>(x_hat) <span class="co"># standard deviation</span></span>
-<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 4.35551</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sd</span>(boot_means) <span class="co"># standard error estimate for the mean</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.4602069</span></span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((x_hat <span class="sc">-</span> <span class="fu">mean</span>(x_hat))<span class="sc">^</span><span class="dv">2</span>)) <span class="co"># standard deviation, which divides by n, unlike sd()</span></span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 3.252514</span></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a><span class="co"># The sample sd, about 3.25, is close to the population sd of 3.269.</span></span></code></pre></div>
 </details>
 </div>
 <p>We can also calculate this explicitly for a small number of replicates. Suppose we have five bootstrap estimates of the sample mean: <span class="math inline">\(\{3,5,6,7,9\}\)</span>. Then</p>
@@ -1952,7 +2081,7 @@ window.Quarto = {
 </div>
 </div>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-31-contents" aria-controls="callout-31" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-33-contents" aria-controls="callout-33" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -1961,7 +2090,7 @@ window.Quarto = {
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-31" class="callout-31-contents callout-collapse collapse">
+<div id="callout-33" class="callout-33-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>For a jackknife example, we have</p>
 <ul>
@@ -1973,73 +2102,36 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sd</span>(jack_means)<span class="sc">*</span><span class="fu">sqrt</span>(n) <span class="co"># standard error estimate for the mean</span></span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.6285328</span></span>
-<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sd</span>(boot_means) <span class="co"># standard error estimate for the mean</span></span>
-<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5991904</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sd</span>(jack_means)<span class="sc">*</span><span class="fu">sqrt</span>(n) <span class="co"># standard error estimate for the mean</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.4741274</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sd</span>(boot_means) <span class="co"># standard error estimate for the mean</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.4602069</span></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a><span class="co"># The two estimates nearly agree, at about 0.47 and 0.46.</span></span></code></pre></div>
 </details>
 </div>
-<p>We modify the <code>sd</code> calculation with a correction, <span class="math inline">\(\sqrt{n}\)</span>, because leave-one-out estimates barely move (only one point changes out of <span class="math inline">\(n\)</span>). Their spread is therefore of order <span class="math inline">\(1/n\)</span> smaller than the real sampling spread, and the correction puts us back on the right scale.</p>
+<p>We modify the <code>sd</code> calculation with a correction, <span class="math inline">\(\sqrt{n}\)</span>, because leave-one-out estimates barely move (only one point changes out of <span class="math inline">\(n\)</span>). Their spread is therefore smaller than the real sampling spread by a factor of about <span class="math inline">\(\sqrt{n}\)</span>, and the correction puts us back on the right scale.</p>
 </div>
 </div>
 </div>
-<p>The wage population lets us check whether the bootstrap works. Take one sample of <span class="math inline">\(50\)</span> workers, and pretend it is all we observed. Its bootstrap standard error can then be compared with the true standard error: the standard deviation of the <span class="math inline">\(500\)</span> sample means <code>wage_means</code> drawn from the population in <a href="#sampling-distributions">Sampling Distributions</a>.</p>
+<p>The pretend population lets us check whether the bootstrap works. The lab data are one sample from it, which we pretend is all we observed. Its bootstrap standard error can then be compared with the true standard error: the standard deviation of the <span class="math inline">\(500\)</span> sample means <code>wage_means</code> drawn from the population in <a href="#sampling-distributions">Sampling Distributions</a>.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># One sample of 50 workers, as if it were all we observed</span></span>
-<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, <span class="dv">50</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
-<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap standard error, from that one sample</span></span>
-<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>boot_means_wage <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">9999</span>)</span>
-<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_means_wage)){</span>
-<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_sim, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>    m_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot)</span>
-<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>    boot_means_wage[b] <span class="ot">&lt;-</span> m_b_hat</span>
-<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">sd</span>(boot_means_wage), <span class="dv">3</span>)</span>
-<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.546</span></span>
-<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a><span class="co"># True standard error, from many samples of the population</span></span>
-<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">sd</span>(wage_means), <span class="dv">3</span>)</span>
-<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.436</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap standard error, from the one lab sample</span></span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">sd</span>(boot_means), <span class="dv">3</span>)</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.46</span></span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a><span class="co"># True standard error, from many samples of the population</span></span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">sd</span>(wage_means), <span class="dv">3</span>)</span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.436</span></span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a><span class="co"># The bootstrap estimate lands in the same range as the true standard error.</span></span>
+<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a><span class="co"># It is about 0.46 against about 0.44, so not exactly on it.</span></span></code></pre></div>
 </details>
 </div>
-<p>The bootstrap used only one sample, so its answer is itself noisy. It lands in the same range as the true standard error, but not exactly on it. With skewed data like wages, one sample may include a few very high earners or none at all, which moves the bootstrap estimate. Run the chunk again to see how much the bootstrap estimate itself changes from one sample to the next.</p>
-<section id="generalization" class="level4 unnumbered">
-<h4 class="unnumbered anchored" data-anchor-id="generalization"><strong>Generalization</strong></h4>
-<p>The above procedure works for many different statistics</p>
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>med_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x_hat, <span class="at">prob=</span><span class="fl">0.5</span>)</span>
-<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap estimates</span></span>
-<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>boot_medians <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">9999</span>)</span>
-<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_medians)){</span>
-<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">replace=</span><span class="cn">TRUE</span>) <span class="co"># c.f. jackknife</span></span>
-<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>    med_b_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x_boot, <span class="at">prob=</span><span class="fl">0.5</span>)</span>
-<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>    boot_medians[b] <span class="ot">&lt;-</span> med_b_hat</span>
-<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>SE_med <span class="ot">&lt;-</span> <span class="fu">sd</span>(boot_medians)</span>
-<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_medians, <span class="at">breaks=</span><span class="dv">25</span>,</span>
-<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="fu">paste0</span>(<span class="st">'SE='</span>, <span class="fu">round</span>(SE_med,<span class="dv">2</span>)),</span>
-<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">font.main=</span><span class="dv">1</span>,</span>
-<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(Med[b]))</span></code></pre></div>
-</details>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="01_05_Sampling_files/figure-html/unnamed-chunk-44-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
-</div>
-</div>
-<p>This means we can compute bootstrap SEs for other statistics, too.</p>
+<p>The bootstrap used only one sample, so its answer is itself noisy. With skewed data, one sample may include a few very large values or none at all, which moves the bootstrap estimate. To see how much the bootstrap estimate itself changes from one sample to the next, draw a new sample into <code>x_hat</code> and repeat the bootstrap.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-32-contents" aria-controls="callout-32" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-34-contents" aria-controls="callout-34" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -2048,7 +2140,71 @@ window.Quarto = {
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-32" class="callout-32-contents callout-collapse collapse">
+<div id="callout-34" class="callout-34-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Compute the same standard errors for the murder arrests, using the callouts in <a href="#bootstrap-distribution">Bootstrap Distribution</a> and <a href="#jackknife-distribution">Jackknife Distribution</a>. With no known population, there is no true standard error to compare with.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sd</span>(boot_means2) <span class="co"># bootstrap standard error estimate for the mean</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.6218279</span></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sd</span>(jack_means2)<span class="sc">*</span><span class="fu">sqrt</span>(n2) <span class="co"># jackknife standard error estimate for the mean</span></span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.6285328</span></span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((x2_hat <span class="sc">-</span> <span class="fu">mean</span>(x2_hat))<span class="sc">^</span><span class="dv">2</span>)) <span class="co"># standard deviation, which divides by n, unlike sd()</span></span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 4.311735</span></span></code></pre></div>
+</details>
+</div>
+</div>
+</div>
+</div>
+<section id="generalization" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="generalization"><strong>Generalization</strong></h4>
+<p>The above procedure works for many different statistics</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>med_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x_hat, <span class="at">prob=</span><span class="fl">0.5</span>)</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="co"># The sample median is about 4.84, below the population median of 5.206.</span></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap estimates</span></span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>boot_medians <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">9999</span>)</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_medians)){</span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">replace=</span><span class="cn">TRUE</span>) <span class="co"># c.f. jackknife</span></span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>    med_b_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x_boot, <span class="at">prob=</span><span class="fl">0.5</span>)</span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>    boot_medians[b] <span class="ot">&lt;-</span> med_b_hat</span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a>SE_med <span class="ot">&lt;-</span> <span class="fu">sd</span>(boot_medians)</span>
+<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-13"><a href="#cb49-13" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_medians, <span class="at">breaks=</span><span class="dv">25</span>,</span>
+<span id="cb49-14"><a href="#cb49-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb49-15"><a href="#cb49-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="fu">paste0</span>(<span class="st">'SE='</span>, <span class="fu">round</span>(SE_med,<span class="dv">2</span>)),</span>
+<span id="cb49-16"><a href="#cb49-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">font.main=</span><span class="dv">1</span>,</span>
+<span id="cb49-17"><a href="#cb49-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(Med[b]))</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="01_05_Sampling_files/figure-html/unnamed-chunk-47-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The bootstrap medians bunch near a few values in the middle of the sample.</span></span></code></pre></div>
+</details>
+</div>
+<p>This means we can compute bootstrap SEs for other statistics, too.</p>
+<div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-35-contents" aria-controls="callout-35" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Test Yourself
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-35" class="callout-35-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>Taking the bootstrap distribution of the median, for example, we have</p>
 <ul>
@@ -2059,10 +2215,56 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Standard error estimate for the median</span></span>
-<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sd</span>(boot_medians)</span>
-<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.8700405</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Standard error estimate for the median</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sd</span>(boot_medians)</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.3879503</span></span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a><span class="co"># In this sample it is about 0.39, below the mean's standard error, about 0.46.</span></span></code></pre></div>
 </details>
+</div>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-36-contents" aria-controls="callout-36" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Test Yourself
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-36" class="callout-36-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Repeat the bootstrap of the median with the murder arrests in <code>USArrests</code>.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>x2_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>] <span class="co"># murder arrests per 100,000</span></span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>med2_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x2_hat, <span class="at">prob=</span><span class="fl">0.5</span>)</span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap estimates</span></span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>boot_medians2 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">9999</span>)</span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_medians2)){</span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x2_hat, <span class="at">replace=</span><span class="cn">TRUE</span>) <span class="co"># c.f. jackknife</span></span>
+<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>    med_b_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x_boot, <span class="at">prob=</span><span class="fl">0.5</span>)</span>
+<span id="cb52-9"><a href="#cb52-9" aria-hidden="true" tabindex="-1"></a>    boot_medians2[b] <span class="ot">&lt;-</span> med_b_hat</span>
+<span id="cb52-10"><a href="#cb52-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb52-11"><a href="#cb52-11" aria-hidden="true" tabindex="-1"></a>SE_med2 <span class="ot">&lt;-</span> <span class="fu">sd</span>(boot_medians2)</span>
+<span id="cb52-12"><a href="#cb52-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-13"><a href="#cb52-13" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_medians2, <span class="at">breaks=</span><span class="dv">25</span>,</span>
+<span id="cb52-14"><a href="#cb52-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb52-15"><a href="#cb52-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="fu">paste0</span>(<span class="st">'SE='</span>, <span class="fu">round</span>(SE_med2,<span class="dv">2</span>)),</span>
+<span id="cb52-16"><a href="#cb52-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">font.main=</span><span class="dv">1</span>,</span>
+<span id="cb52-17"><a href="#cb52-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(Med[b]))</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="01_05_Sampling_files/figure-html/unnamed-chunk-49-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
 </div>
 </div>
 </div>

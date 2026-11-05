@@ -500,7 +500,20 @@ window.Quarto = {
 
 
 <hr>
-<p>In practice, it is hard to find a good natural experiment and easy to find a bad one. Paradoxically, natural experiments are something you are supposed to find but never search for. As you search for natural experiments, sometimes patterns will appear from random noise. In this age of big data, we are getting increasingly more data and, perhaps surprisingly, this makes it easier to make false discoveries. This chapter examines how those discoveries arise. We first cover data errors, <span class="math inline">\(p\)</span>-hacking, and spurious regression. We then apply the latest and greatest empirical recipes (IV, RDD, DID) to data that is nothing but noise. Although it is difficult to express numerically, searching for a good natural experiment can also lead you astray from important questions. Convenient measures can mislead as well <span class="citation" data-cites="Campbell1979">(<a href="#ref-Campbell1979" role="doc-biblioref">Campbell 1979</a>)</span>. For example, <span class="citation" data-cites="AdamsonRentschler2025">Adamson and Rentschler (<a href="#ref-AdamsonRentschler2025" role="doc-biblioref">2025</a>)</span> show that the clearance rate, a police performance measure widely used in econometric studies, can suggest performance is better when it is unambiguously worse. There are good reasons to be excited about empirical social science, but we would be wise to recall some earlier wisdom from economists on the matter.</p>
+<p>In practice, it is hard to find a good natural experiment and easy to find a bad one. Paradoxically, natural experiments are something you are supposed to find but never search for. As you search for natural experiments, sometimes patterns will appear from random noise. In this age of big data, we are getting increasingly more data and, perhaps surprisingly, this makes it easier to make false discoveries.</p>
+<p>This chapter asks two questions.</p>
+<ul>
+<li>How can a significant result come from noise?
+<ul>
+<li><em>P-hacking</em>: this tries many models and reports a <span class="math inline">\(p\)</span>-value that does not account for the search. Honest data errors can also produce such false discoveries.</li>
+<li><em>Spurious regression</em>: this regresses one trending series on another, and the shared trend can produce a large <span class="math inline">\(\hat{R}^2\)</span> and a small <span class="math inline">\(p\)</span>-value.</li>
+</ul></li>
+<li>Do causal recipes protect us from false discoveries?
+<ul>
+<li><em>IV, RDD, and DID on random walks</em>: these apply the latest and greatest empirical recipes from <a href="./03_27_ExperimentalData.html">Experimental Data</a> to data that is nothing but noise.</li>
+</ul></li>
+</ul>
+<p>Although it is difficult to express numerically, searching for a good natural experiment can also lead you astray from important questions. Convenient measures can mislead as well <span class="citation" data-cites="Campbell1979">(<a href="#ref-Campbell1979" role="doc-biblioref">Campbell 1979</a>)</span>. For example, <span class="citation" data-cites="AdamsonRentschler2025">Adamson and Rentschler (<a href="#ref-AdamsonRentschler2025" role="doc-biblioref">2025</a>)</span> show that the clearance rate, a police performance measure widely used in econometric studies, can suggest performance is better when it is unambiguously worse. There are good reasons to be excited about empirical social science, but we would be wise to recall some earlier wisdom from economists on the matter.</p>
 <blockquote class="blockquote">
 <p>The most reckless and treacherous of all theorists is he who professes to let facts and figures speak for themselves, who keeps in the background the part he has played, perhaps unconsciously, in selecting and grouping them</p>
 <p>— Alfred Marshall, 1885</p>
@@ -575,33 +588,34 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># P-hacking OLS with different explanatory vars</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">50</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>x1_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Regression Machine:</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># repeatedly finds covariate, runs regression</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># stops when statistically significant at .1%</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>i <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span>(p <span class="sc">&gt;=</span> .<span class="dv">001</span>){ </span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Get Random Covariate</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    x2_sim_b <span class="ot">&lt;-</span>  <span class="fu">runif</span>(n)</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Merge and 'Analyze'</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    xy_sim_b <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(x1_sim, x2_sim_b)</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    reg_i <span class="ot">&lt;-</span> <span class="fu">lm</span>(x1_sim <span class="sc">~</span> x2_sim_b, <span class="at">data=</span>xy_sim_b)</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># update results in global environment</span></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    p <span class="ot">&lt;-</span> <span class="fu">summary</span>(reg_i)<span class="sc">$</span>coefficients[<span class="dv">2</span>, <span class="dv">4</span>]</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    i <span class="ot">&lt;-</span> i<span class="sc">+</span><span class="dv">1</span></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="co">#summary(reg_i)</span></span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x1_sim <span class="sc">~</span> x2_sim_b, <span class="at">data=</span>xy_sim_b,</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>), <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'Random Dataset '</span>, i, <span class="st">':   p='</span>,</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">formatC</span>(p, <span class="at">digits=</span><span class="dv">2</span>, <span class="at">format=</span><span class="st">'fg'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(reg_i, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>))</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># P-hacking OLS with different explanatory vars</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">50</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>x1_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Regression Machine:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># repeatedly finds covariate, runs regression</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># stops when statistically significant at .1%</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>i <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span>(p <span class="sc">&gt;=</span> .<span class="dv">001</span>){ </span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Get Random Covariate</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    x2_sim_b <span class="ot">&lt;-</span>  <span class="fu">runif</span>(n)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Merge and 'Analyze'</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    xy_sim_b <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(x1_sim, x2_sim_b)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    reg_i <span class="ot">&lt;-</span> <span class="fu">lm</span>(x1_sim <span class="sc">~</span> x2_sim_b, <span class="at">data=</span>xy_sim_b)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># update results in global environment</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    p <span class="ot">&lt;-</span> <span class="fu">summary</span>(reg_i)<span class="sc">$</span>coefficients[<span class="dv">2</span>, <span class="dv">4</span>]</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    i <span class="ot">&lt;-</span> i<span class="sc">+</span><span class="dv">1</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co">#summary(reg_i)</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x1_sim <span class="sc">~</span> x2_sim_b, <span class="at">data=</span>xy_sim_b,</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>), <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'Random Dataset '</span>, i, <span class="st">':   p='</span>,</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">formatC</span>(p, <span class="at">digits=</span><span class="dv">2</span>, <span class="at">format=</span><span class="st">'fg'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(reg_i, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -726,40 +740,42 @@ window.Quarto = {
 </div>
 </div>
 <p><em>Spurious regression</em> is useful to know about because the resulting significance is not a property of any underlying relationship. It grows with the sample length, so longer time series make the problem worse rather than better. The problem is that trending series violate the OLS independence assumption. The standard errors assume independent observations. But trending series share so much information across periods that the effective sample size is far smaller than <span class="math inline">\(n\)</span>.</p>
-<p>First, get and inspect some data from https://tylervigen.com/spurious-correlations</p>
+<p>First, get and inspect some data.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Your data is not made up in the computer (hopefully!)</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>vigen_csv <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'https://raw.githubusercontent.com/the-mad-statter/whysospurious/master/data-raw/tylervigen.csv'</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>) </span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(vigen_csv)</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "data.frame"</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(vigen_csv)</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="do">##  [1] "year"                         "science_spending"            </span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="do">##  [3] "hanging_suicides"             "pool_fall_drownings"         </span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="do">##  [5] "cage_films"                   "cheese_percap"               </span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="do">##  [7] "bed_deaths"                   "maine_divorce_rate"          </span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="do">##  [9] "margarine_percap"             "miss_usa_age"                </span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="do">## [11] "steam_murders"                "arcade_revenue"              </span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [13] "computer_science_doctorates"  "noncom_space_launches"       </span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="do">## [15] "sociology_doctorates"         "mozzarella_percap"           </span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="do">## [17] "civil_engineering_doctorates" "fishing_drownings"           </span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="do">## [19] "kentucky_marriage_rate"       "oil_imports_norway"          </span></span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [21] "chicken_percap"               "train_collision_deaths"      </span></span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="do">## [23] "oil_imports_total"            "pool_drownings"              </span></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="do">## [25] "nuclear_power"                "japanese_cars_sold"          </span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="do">## [27] "motor_vehicle_suicides"       "spelling_bee_word_length"    </span></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="do">## [29] "spider_deaths"                "math_doctorates"             </span></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="do">## [31] "uranium"</span></span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>vigen_csv[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="do">##   year science_spending hanging_suicides pool_fall_drownings cage_films</span></span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="do">## 1 1996               NA               NA                  NA         NA</span></span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="do">## 2 1997               NA               NA                  NA         NA</span></span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="do">## 3 1998               NA               NA                  NA         NA</span></span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="do">## 4 1999            18079             5427                 109          2</span></span>
-<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="do">## 5 2000            18594             5688                 102          2</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Your data is not made up in the computer (hopefully!)</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Original source: https://tylervigen.com/spurious-correlations</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>vigen_csv <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">'https://raw.githubusercontent.com/the-mad-statter/whysospurious/master/data-raw/tylervigen.csv'</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>) </span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(vigen_csv)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "data.frame"</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(vigen_csv)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="do">##  [1] "year"                         "science_spending"            </span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="do">##  [3] "hanging_suicides"             "pool_fall_drownings"         </span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="do">##  [5] "cage_films"                   "cheese_percap"               </span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="do">##  [7] "bed_deaths"                   "maine_divorce_rate"          </span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="do">##  [9] "margarine_percap"             "miss_usa_age"                </span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="do">## [11] "steam_murders"                "arcade_revenue"              </span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="do">## [13] "computer_science_doctorates"  "noncom_space_launches"       </span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="do">## [15] "sociology_doctorates"         "mozzarella_percap"           </span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [17] "civil_engineering_doctorates" "fishing_drownings"           </span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="do">## [19] "kentucky_marriage_rate"       "oil_imports_norway"          </span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="do">## [21] "chicken_percap"               "train_collision_deaths"      </span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="do">## [23] "oil_imports_total"            "pool_drownings"              </span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="do">## [25] "nuclear_power"                "japanese_cars_sold"          </span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="do">## [27] "motor_vehicle_suicides"       "spelling_bee_word_length"    </span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="do">## [29] "spider_deaths"                "math_doctorates"             </span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="do">## [31] "uranium"</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>vigen_csv[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="do">##   year science_spending hanging_suicides pool_fall_drownings cage_films</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="do">## 1 1996               NA               NA                  NA         NA</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="do">## 2 1997               NA               NA                  NA         NA</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="do">## 3 1998               NA               NA                  NA         NA</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a><span class="do">## 4 1999            18079             5427                 109          2</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a><span class="do">## 5 2000            18594             5688                 102          2</span></span></code></pre></div>
 </details>
 </div>
 <p>Examine some data</p>
@@ -775,16 +791,18 @@ window.Quarto = {
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(<span class="dv">2004</span>, <span class="dv">6500</span>, <span class="st">'US Suicides by hanging, strangulation, suffocation (Deaths)'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">cex=</span>.<span class="dv">6</span>, <span class="at">srt=</span><span class="dv">30</span>)</span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>)</span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>)</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.new</span>()</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.window</span>(<span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">2002</span>, <span class="dv">2009</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">5</span>))</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(cage_films <span class="sc">~</span> year, <span class="at">data=</span>vigen_csv[vigen_csv<span class="sc">$</span>year<span class="sc">&gt;=</span><span class="dv">2002</span>, ], <span class="at">lty=</span><span class="dv">1</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">pch=</span><span class="dv">16</span>)</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(<span class="dv">2006</span>, <span class="fl">0.5</span>, <span class="st">'Number of films with Nicolas Cage (Films)'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">cex=</span>.<span class="dv">6</span>, <span class="at">srt=</span><span class="dv">0</span>)</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(pool_fall_drownings<span class="sc">/</span><span class="dv">25</span> <span class="sc">~</span> year, <span class="at">data=</span>vigen_csv[vigen_csv<span class="sc">$</span>year<span class="sc">&gt;=</span><span class="dv">2002</span>, ], <span class="at">lty=</span><span class="dv">1</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">pch=</span><span class="dv">16</span>)</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(<span class="dv">2006</span>, <span class="fl">4.5</span>, <span class="st">'Number of drownings by falling into pool (US Deaths/25)'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">cex=</span>.<span class="dv">6</span>, <span class="at">srt=</span><span class="dv">0</span>)</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>)</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>)</span></code></pre></div>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Both series trend upward, and their correlation is 0.99.</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co"># They have no causal connection.</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.new</span>()</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.window</span>(<span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">2002</span>, <span class="dv">2009</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">5</span>))</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(cage_films <span class="sc">~</span> year, <span class="at">data=</span>vigen_csv[vigen_csv<span class="sc">$</span>year<span class="sc">&gt;=</span><span class="dv">2002</span>, ], <span class="at">lty=</span><span class="dv">1</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">pch=</span><span class="dv">16</span>)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(<span class="dv">2006</span>, <span class="fl">0.5</span>, <span class="st">'Number of films with Nicolas Cage (Films)'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">cex=</span>.<span class="dv">6</span>, <span class="at">srt=</span><span class="dv">0</span>)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(pool_fall_drownings<span class="sc">/</span><span class="dv">25</span> <span class="sc">~</span> year, <span class="at">data=</span>vigen_csv[vigen_csv<span class="sc">$</span>year<span class="sc">&gt;=</span><span class="dv">2002</span>, ], <span class="at">lty=</span><span class="dv">1</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">pch=</span><span class="dv">16</span>)</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(<span class="dv">2006</span>, <span class="fl">4.5</span>, <span class="st">'Number of drownings by falling into pool (US Deaths/25)'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">cex=</span>.<span class="dv">6</span>, <span class="at">srt=</span><span class="dv">0</span>)</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -793,6 +811,11 @@ window.Quarto = {
 </figure>
 </div>
 </div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># These series correlate at 0.76 from 2002 to 2009.</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># They have no causal connection.</span></span></code></pre></div>
+</details>
 </div>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-6-contents" aria-controls="callout-6" aria-expanded="false" aria-label="Toggle callout">
@@ -806,57 +829,59 @@ window.Quarto = {
 </div>
 <div id="callout-6" class="callout-6-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>Both plots show variables with high correlations (<span class="math inline">\(r &gt; 0.9\)</span>) that have no causal connection. The correlations arise because both series trend upward over time. When two time series share a common trend, their correlation can be very high even if they are completely unrelated. This is why regression with trending time series requires special care (e.g., detrending or differencing).</p>
+<p>When two time series share a common trend, their correlation can be very high even if they are completely unrelated. This is why regression with trending time series requires special care (e.g., detrending or differencing).</p>
 </div>
 </div>
 </div>
 </section>
 <section id="another-example" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="another-example"><strong>Another Example</strong></h4>
-<p>The US government spending on science is ruining cinema (p&lt;.001)!?</p>
+<p>Now regress one of these series on another.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Drop Data before 1999</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>vigen_csv <span class="ot">&lt;-</span> vigen_csv[vigen_csv<span class="sc">$</span>year <span class="sc">&gt;=</span> <span class="dv">1999</span>, ]</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Run OLS Regression of Cage's film count on science spending.</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># The p-value on `science_spending` will be tiny, despite zero plausible causal link.</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>reg1 <span class="ot">&lt;-</span>  <span class="fu">lm</span>(cage_films <span class="sc">~</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">+</span> science_spending, <span class="at">data=</span>vigen_csv)</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(reg1)</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="do">## Call:</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="do">## lm(formula = cage_films ~ -1 + science_spending, data = vigen_csv)</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="do">## Residuals:</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="do">##     Min      1Q  Median      3Q     Max </span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="do">## -1.7670 -0.7165  0.1447  0.7890  1.4531 </span></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="do">## Coefficients:</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="do">##                   Estimate Std. Error t value Pr(&gt;|t|)    </span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="do">## science_spending 9.978e-05  1.350e-05    7.39 2.34e-05 ***</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="do">## ---</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="do">## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="do">## Residual standard error: 1.033 on 10 degrees of freedom</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="do">##   (1 observation deleted due to missingness)</span></span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="do">## Multiple R-squared:  0.8452, Adjusted R-squared:  0.8297 </span></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="do">## F-statistic: 54.61 on 1 and 10 DF,  p-value: 2.343e-05</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Drop Data before 1999</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>vigen_csv <span class="ot">&lt;-</span> vigen_csv[vigen_csv<span class="sc">$</span>year <span class="sc">&gt;=</span> <span class="dv">1999</span>, ]</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Run OLS Regression of Cage's film count on science spending.</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># The p-value on `science_spending` will be tiny, despite zero plausible causal link.</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>reg1 <span class="ot">&lt;-</span>  <span class="fu">lm</span>(cage_films <span class="sc">~</span> <span class="sc">-</span><span class="dv">1</span> <span class="sc">+</span> science_spending, <span class="at">data=</span>vigen_csv)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(reg1)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="do">## Call:</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="do">## lm(formula = cage_films ~ -1 + science_spending, data = vigen_csv)</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="do">## Residuals:</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="do">##     Min      1Q  Median      3Q     Max </span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="do">## -1.7670 -0.7165  0.1447  0.7890  1.4531 </span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="do">## Coefficients:</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="do">##                   Estimate Std. Error t value Pr(&gt;|t|)    </span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="do">## science_spending 9.978e-05  1.350e-05    7.39 2.34e-05 ***</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="do">## ---</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="do">## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="do">## Residual standard error: 1.033 on 10 degrees of freedom</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="do">##   (1 observation deleted due to missingness)</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="do">## Multiple R-squared:  0.8452, Adjusted R-squared:  0.8297 </span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="do">## F-statistic: 54.61 on 1 and 10 DF,  p-value: 2.343e-05</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="co"># The US government spending on science is ruining cinema (p&lt;.001)!?</span></span></code></pre></div>
 </details>
 </div>
-<p>It’s not all bad, because people in Maine stay married longer?</p>
+<p>Next, plot science spending beside another series.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.new</span>()</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.window</span>(<span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">1999</span>, <span class="dv">2009</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">7</span>, <span class="dv">9</span>))</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(<span class="fu">log</span>(maine_divorce_rate<span class="sc">*</span><span class="dv">1000</span>) <span class="sc">~</span> year, <span class="at">data=</span>vigen_csv)</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(<span class="fu">log</span>(science_spending<span class="sc">/</span><span class="dv">10</span>) <span class="sc">~</span> year, <span class="at">data=</span>vigen_csv, <span class="at">lty=</span><span class="dv">2</span>)</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topright'</span>, <span class="at">lty=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">bty=</span><span class="st">'n'</span>, <span class="at">legend=</span><span class="fu">c</span>(</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">'log(maine_divorce_rate*1000)'</span>,</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">'log(science_spending/10)'</span>))</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.new</span>()</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.window</span>(<span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">1999</span>, <span class="dv">2009</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">7</span>, <span class="dv">9</span>))</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(<span class="fu">log</span>(maine_divorce_rate<span class="sc">*</span><span class="dv">1000</span>) <span class="sc">~</span> year, <span class="at">data=</span>vigen_csv)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(<span class="fu">log</span>(science_spending<span class="sc">/</span><span class="dv">10</span>) <span class="sc">~</span> year, <span class="at">data=</span>vigen_csv, <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topright'</span>, <span class="at">lty=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">bty=</span><span class="st">'n'</span>, <span class="at">legend=</span><span class="fu">c</span>(</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">'log(maine_divorce_rate*1000)'</span>,</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">'log(science_spending/10)'</span>))</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -865,6 +890,10 @@ window.Quarto = {
 </figure>
 </div>
 </div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># It's not all bad, because people in Maine stay married longer?</span></span></code></pre></div>
+</details>
 </div>
 <p>For more intuition on spurious correlations, try http://shiny.calpoly.sh/Corr_Reg_Game/ The same principles apply to more sophisticated methods.</p>
 </section>
@@ -891,7 +920,7 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>A <em>spurious instrument</em> is useful to recognize because it is the IV analog of p-hacking. Search over enough candidate instruments and one will pass the formal tests by luck. The 2SLS estimate it produces has no causal interpretation. The risk grows with the number of candidates considered, which is the same multiple-testing problem as p-hacking applied to instrument selection. The Vigen IV exercise below shows this directly: about a third of the random variable triples in the spurious-correlations dataset return “significant” results at conventional levels.</p>
+<p>A <em>spurious instrument</em> is useful to recognize because it is the IV analog of p-hacking. Search over enough candidate instruments and one will pass the formal tests by luck. The 2SLS estimate it produces has no causal interpretation. The risk grows with the number of candidates considered, which is the same multiple-testing problem as p-hacking applied to instrument selection. The Vigen IV exercise below runs this kind of search.</p>
 </section>
 <section id="example-vigen-ivs" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="example-vigen-ivs"><strong>Example: Vigen IV’s</strong></h4>
@@ -899,30 +928,30 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>knames <span class="ot">&lt;-</span> <span class="fu">names</span>(vigen_csv)[<span class="dv">2</span><span class="sc">:</span><span class="dv">11</span>] <span class="co"># First 10 Variables</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">#knames &lt;- names(vigen_csv)[-1] # Try All Variables</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>ii <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>ivreg_list <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">'list'</span>, <span class="fu">factorial</span>(<span class="fu">length</span>(knames))<span class="sc">/</span><span class="fu">factorial</span>(<span class="fu">length</span>(knames)<span class="sc">-</span><span class="dv">3</span>))</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Choose 3 variable</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>( k1 <span class="cf">in</span> knames){</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>( k2 <span class="cf">in</span> <span class="fu">setdiff</span>(knames, k1)){</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>( k3 <span class="cf">in</span> <span class="fu">setdiff</span>(knames, <span class="fu">c</span>(k1, k2)) ){   </span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    x1_hat <span class="ot">&lt;-</span> vigen_csv[, k1]</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    x2_hat <span class="ot">&lt;-</span> vigen_csv[, k2]</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    x3_hat <span class="ot">&lt;-</span> vigen_csv[, k3]</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Merge and 'Analyze'        </span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    xy_iv_hat <span class="ot">&lt;-</span> <span class="fu">na.omit</span>(<span class="fu">data.frame</span>(x1_hat, x2_hat, x3_hat))</span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    ivreg_i <span class="ot">&lt;-</span> <span class="fu">feols</span>(x1_hat <span class="sc">~</span> <span class="dv">1</span><span class="sc">|</span>x2_hat <span class="sc">~</span> x3_hat, <span class="at">data=</span>xy_iv_hat)</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    ivreg_list[[ii]] <span class="ot">&lt;-</span> <span class="fu">list</span>(ivreg_i, <span class="fu">c</span>(k1, k2, k3))</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    ii <span class="ot">&lt;-</span> ii<span class="sc">+</span><span class="dv">1</span></span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>}}}</span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>pvals <span class="ot">&lt;-</span> <span class="fu">sapply</span>(ivreg_list, <span class="cf">function</span>(ivreg_i){ivreg_i[[<span class="dv">1</span>]]<span class="sc">$</span>coeftable[<span class="dv">2</span>, <span class="dv">4</span>]})</span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">ecdf</span>(pvals), <span class="at">xlab=</span><span class="st">'p-value'</span>, <span class="at">ylab=</span><span class="st">'CDF'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Frequency IV is Statistically Significant'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">c</span>(.<span class="dv">01</span>, .<span class="dv">05</span>), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>knames <span class="ot">&lt;-</span> <span class="fu">names</span>(vigen_csv)[<span class="dv">2</span><span class="sc">:</span><span class="dv">11</span>] <span class="co"># First 10 Variables</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co">#knames &lt;- names(vigen_csv)[-1] # Try All Variables</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>ii <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>ivreg_list <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">'list'</span>, <span class="fu">factorial</span>(<span class="fu">length</span>(knames))<span class="sc">/</span><span class="fu">factorial</span>(<span class="fu">length</span>(knames)<span class="sc">-</span><span class="dv">3</span>))</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Choose 3 variable</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>( k1 <span class="cf">in</span> knames){</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>( k2 <span class="cf">in</span> <span class="fu">setdiff</span>(knames, k1)){</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>( k3 <span class="cf">in</span> <span class="fu">setdiff</span>(knames, <span class="fu">c</span>(k1, k2)) ){   </span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    x1_hat <span class="ot">&lt;-</span> vigen_csv[, k1]</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    x2_hat <span class="ot">&lt;-</span> vigen_csv[, k2]</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    x3_hat <span class="ot">&lt;-</span> vigen_csv[, k3]</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Merge and 'Analyze'        </span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    xy_iv_hat <span class="ot">&lt;-</span> <span class="fu">na.omit</span>(<span class="fu">data.frame</span>(x1_hat, x2_hat, x3_hat))</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    ivreg_i <span class="ot">&lt;-</span> <span class="fu">feols</span>(x1_hat <span class="sc">~</span> <span class="dv">1</span><span class="sc">|</span>x2_hat <span class="sc">~</span> x3_hat, <span class="at">data=</span>xy_iv_hat)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>    ivreg_list[[ii]] <span class="ot">&lt;-</span> <span class="fu">list</span>(ivreg_i, <span class="fu">c</span>(k1, k2, k3))</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>    ii <span class="ot">&lt;-</span> ii<span class="sc">+</span><span class="dv">1</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>}}}</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>pvals <span class="ot">&lt;-</span> <span class="fu">sapply</span>(ivreg_list, <span class="cf">function</span>(ivreg_i){ivreg_i[[<span class="dv">1</span>]]<span class="sc">$</span>coeftable[<span class="dv">2</span>, <span class="dv">4</span>]})</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">ecdf</span>(pvals), <span class="at">xlab=</span><span class="st">'p-value'</span>, <span class="at">ylab=</span><span class="st">'CDF'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Frequency IV is Statistically Significant'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="fu">c</span>(.<span class="dv">01</span>, .<span class="dv">05</span>), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -933,28 +962,30 @@ window.Quarto = {
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Most Significant Spurious Combinations</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>pvars <span class="ot">&lt;-</span> <span class="fu">sapply</span>(ivreg_list, <span class="cf">function</span>(ivreg_i){ivreg_i[[<span class="dv">2</span>]]})</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>pdat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">t</span>(pvars), pvals)</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>pdat <span class="ot">&lt;-</span> pdat[<span class="fu">order</span>(pdat<span class="sc">$</span>pvals), ]</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(pdat)</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="do">##                     X1                 X2            X3        pvals</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="do">## 76    hanging_suicides   science_spending    bed_deaths 3.049883e-08</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="do">## 4     science_spending   hanging_suicides    bed_deaths 3.049883e-08</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="do">## 3     science_spending   hanging_suicides cheese_percap 3.344890e-08</span></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="do">## 75    hanging_suicides   science_spending cheese_percap 3.344890e-08</span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="do">## 485 maine_divorce_rate   margarine_percap cheese_percap 3.997738e-08</span></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="do">## 557   margarine_percap maine_divorce_rate cheese_percap 3.997738e-08</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Fraction of all combinations significant at conventional levels</span></span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">at_0.05 =</span> <span class="fu">mean</span>(pvals <span class="sc">&lt;</span> <span class="fl">0.05</span>, <span class="at">na.rm=</span><span class="cn">TRUE</span>),</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">at_0.01 =</span> <span class="fu">mean</span>(pvals <span class="sc">&lt;</span> <span class="fl">0.01</span>, <span class="at">na.rm=</span><span class="cn">TRUE</span>))</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="do">##   at_0.05   at_0.01 </span></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="do">## 0.3166667 0.2194444</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Most Significant Spurious Combinations</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>pvars <span class="ot">&lt;-</span> <span class="fu">sapply</span>(ivreg_list, <span class="cf">function</span>(ivreg_i){ivreg_i[[<span class="dv">2</span>]]})</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>pdat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">t</span>(pvars), pvals)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>pdat <span class="ot">&lt;-</span> pdat[<span class="fu">order</span>(pdat<span class="sc">$</span>pvals), ]</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(pdat)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="do">##                     X1                 X2            X3        pvals</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="do">## 76    hanging_suicides   science_spending    bed_deaths 3.049883e-08</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="do">## 4     science_spending   hanging_suicides    bed_deaths 3.049883e-08</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="do">## 3     science_spending   hanging_suicides cheese_percap 3.344890e-08</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="do">## 75    hanging_suicides   science_spending cheese_percap 3.344890e-08</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="do">## 485 maine_divorce_rate   margarine_percap cheese_percap 3.997738e-08</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="do">## 557   margarine_percap maine_divorce_rate cheese_percap 3.997738e-08</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Fraction of all combinations significant at conventional levels</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">at_0.05 =</span> <span class="fu">mean</span>(pvals <span class="sc">&lt;</span> <span class="fl">0.05</span>, <span class="at">na.rm=</span><span class="cn">TRUE</span>),</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">at_0.01 =</span> <span class="fu">mean</span>(pvals <span class="sc">&lt;</span> <span class="fl">0.01</span>, <span class="at">na.rm=</span><span class="cn">TRUE</span>))</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="do">##   at_0.05   at_0.01 </span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="do">## 0.3166667 0.2194444</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="co"># About 32% of the triples are significant at 5%, and about 22% at 1%.</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="co"># That is far more than the rates a single hypothesis test would imply.</span></span></code></pre></div>
 </details>
 </div>
-<p>A noticeable share of the random variable triples returns “significant” results at both the 5% and 1% levels. That is far more than the rates a single hypothesis test would imply.</p>
+<p>The share of “significant” results in such a search can far exceed the rates a single hypothesis test would imply.</p>
 </section>
 <section id="simulation-study" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="simulation-study"><strong>Simulation Study</strong></h4>
@@ -962,20 +993,19 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>n_index <span class="ot">&lt;-</span> <span class="fu">seq</span>(n)</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>random_walk1 <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(<span class="fu">runif</span>(n, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>))</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2</span>)</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>random_walk2 <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(<span class="fu">runif</span>(n, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>))</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(random_walk1, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">25</span>),</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Time'</span>, <span class="at">ylab=</span><span class="st">'Random Value'</span>)</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(random_walk2, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">25</span>),</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Time'</span>, <span class="at">ylab=</span><span class="st">'Random Value'</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>n_index <span class="ot">&lt;-</span> <span class="fu">seq</span>(n)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>random_walk1 <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(<span class="fu">runif</span>(n, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>random_walk2 <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(<span class="fu">runif</span>(n, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(random_walk1, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">25</span>),</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Time'</span>, <span class="at">ylab=</span><span class="st">'Random Value'</span>)</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(random_walk2, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">25</span>),</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Time'</span>, <span class="at">ylab=</span><span class="st">'Random Value'</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -989,56 +1019,59 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 'Find' 'valid' ingredients</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'fixest'</span>)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>random_walk3 <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(<span class="fu">runif</span>(n, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>))</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>xy_iv_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">x1_sim=</span>random_walk1,</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">x2_sim=</span>random_walk2,</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">x3_sim=</span>random_walk3)</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>ivreg_i <span class="ot">&lt;-</span> <span class="fu">feols</span>(x1_sim <span class="sc">~</span> <span class="dv">1</span><span class="sc">|</span>x2_sim <span class="sc">~</span> x3_sim, <span class="at">data=</span>xy_iv_sim)</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(ivreg_i)</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="do">## TSLS estimation: Second stage</span></span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="do">## |- D.V.   : x1_sim</span></span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="do">## |- Endo.  : x2_sim</span></span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="do">## |- Instr. : x3_sim</span></span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="do">## Dep. Var.: x1_sim</span></span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="do">## Observations: 1,000</span></span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="do">## Standard-errors: IID </span></span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="do">##             Estimate Std. Error t value   Pr(&gt;|t|)    </span></span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="do">## (Intercept)  8.53309   1.644285 5.18954 2.5533e-07 ***</span></span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="do">## fit_x2_sim   1.79901   0.472285 3.80916 1.4796e-04 ***</span></span>
-<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="do">## ---</span></span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="do">## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
-<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="do">## RMSE: 6.25733   Adj. R2: 0.032314</span></span>
-<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a><span class="do">## F-test (1st stage), x2_sim: stat = 10.804, p = 0.001048, on 1 and 998 DoF.</span></span>
-<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a><span class="do">##                 Wu-Hausman: stat = 23.407, p = 1.518e-6, on 1 and 997 DoF.</span></span>
-<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a><span class="co"># After experimenting with different instruments</span></span>
-<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a><span class="co"># you can find even stronger results!</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 'Find' 'valid' ingredients</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'fixest'</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>random_walk3 <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(<span class="fu">runif</span>(n, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>xy_iv_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">x1_sim=</span>random_walk1,</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">x2_sim=</span>random_walk2,</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">x3_sim=</span>random_walk3)</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>ivreg_i <span class="ot">&lt;-</span> <span class="fu">feols</span>(x1_sim <span class="sc">~</span> <span class="dv">1</span><span class="sc">|</span>x2_sim <span class="sc">~</span> x3_sim, <span class="at">data=</span>xy_iv_sim)</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(ivreg_i)</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="do">## TSLS estimation: Second stage</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="do">## |- D.V.   : x1_sim</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="do">## |- Endo.  : x2_sim</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="do">## |- Instr. : x3_sim</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="do">## Dep. Var.: x1_sim</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="do">## Observations: 1,000</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="do">## Standard-errors: IID </span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="do">##              Estimate Std. Error   t value   Pr(&gt;|t|)    </span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="do">## (Intercept) -2.019742   0.360628  -5.60063 2.7608e-08 ***</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="do">## fit_x2_sim  -0.303747   0.018652 -16.28518  &lt; 2.2e-16 ***</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="do">## ---</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="do">## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a><span class="do">## RMSE: 5.16906   Adj. R2: 0.198148</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a><span class="do">## F-test (1st stage), x2_sim: stat = 1,434.504, p &lt; 2.2e-16 , on 1 and 998 DoF.</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a><span class="do">##                 Wu-Hausman: stat =    10.690, p = 0.001114, on 1 and 997 DoF.</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a><span class="co"># The slope on x2_sim is significant, with no true relationship.</span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a><span class="co"># After experimenting with different instruments</span></span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a><span class="co"># you can find even stronger results!</span></span></code></pre></div>
 </details>
 </div>
 <p><strong>RDD</strong>. Second, find a large discrete change in the data that you can associate with a policy. You can use this as an instrument too, also providing a causal estimate of <span class="math inline">\(X_{i2}\)</span> on <span class="math inline">\(X_{i1}\)</span>.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Let the data take shape</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># (around the large differences before and after)</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>n1 <span class="ot">&lt;-</span> <span class="dv">290</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>wind1 <span class="ot">&lt;-</span> <span class="fu">c</span>(n1<span class="dv">-300</span>, n1<span class="sc">+</span><span class="dv">300</span>)</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>xy1_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">t=</span>n_index, <span class="at">y_sim=</span>random_walk1, <span class="at">d=</span><span class="dv">1</span><span class="sc">*</span>(n_index <span class="sc">&gt;</span> n1))</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>xy1_sub_sim <span class="ot">&lt;-</span> xy1_sim[ n_index<span class="sc">&gt;</span>wind1[<span class="dv">1</span>] <span class="sc">&amp;</span> n_index <span class="sc">&lt;</span> wind1[<span class="dv">2</span>], ]</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Then find your big break</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>reg0 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> t, <span class="at">data=</span>xy1_sub_sim[xy1_sub_sim<span class="sc">$</span>d<span class="sc">==</span><span class="dv">0</span>, ])</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>reg1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> t, <span class="at">data=</span>xy1_sub_sim[xy1_sub_sim<span class="sc">$</span>d<span class="sc">==</span><span class="dv">1</span>, ])</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="co"># The evidence should show openly (it's just science)</span></span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(random_walk1, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">25</span>),</span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlim=</span>wind1, <span class="at">xlab=</span><span class="st">'Time'</span>, <span class="at">ylab=</span><span class="st">'Random Value'</span>)</span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>n1, <span class="at">col=</span><span class="fu">grey</span>(.<span class="dv">5</span>), <span class="at">lty=</span><span class="dv">3</span>)</span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(reg0<span class="sc">$</span>model<span class="sc">$</span>t, reg0<span class="sc">$</span>fitted.values, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>))</span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(reg1<span class="sc">$</span>model<span class="sc">$</span>t, reg1<span class="sc">$</span>fitted.values, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>))</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Let the data take shape</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># (around the large differences before and after)</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>n1 <span class="ot">&lt;-</span> <span class="dv">290</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>wind1 <span class="ot">&lt;-</span> <span class="fu">c</span>(n1<span class="dv">-300</span>, n1<span class="sc">+</span><span class="dv">300</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>xy1_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">t=</span>n_index, <span class="at">y_sim=</span>random_walk1, <span class="at">d=</span><span class="dv">1</span><span class="sc">*</span>(n_index <span class="sc">&gt;</span> n1))</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>xy1_sub_sim <span class="ot">&lt;-</span> xy1_sim[ n_index<span class="sc">&gt;</span>wind1[<span class="dv">1</span>] <span class="sc">&amp;</span> n_index <span class="sc">&lt;</span> wind1[<span class="dv">2</span>], ]</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Then find your big break</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>reg0 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> t, <span class="at">data=</span>xy1_sub_sim[xy1_sub_sim<span class="sc">$</span>d<span class="sc">==</span><span class="dv">0</span>, ])</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>reg1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> t, <span class="at">data=</span>xy1_sub_sim[xy1_sub_sim<span class="sc">$</span>d<span class="sc">==</span><span class="dv">1</span>, ])</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="co"># The evidence should show openly (it's just science)</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(random_walk1, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">25</span>),</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlim=</span>wind1, <span class="at">xlab=</span><span class="st">'Time'</span>, <span class="at">ylab=</span><span class="st">'Random Value'</span>)</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>n1, <span class="at">col=</span><span class="fu">grey</span>(.<span class="dv">5</span>), <span class="at">lty=</span><span class="dv">3</span>)</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(reg0<span class="sc">$</span>model<span class="sc">$</span>t, reg0<span class="sc">$</span>fitted.values, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(reg1<span class="sc">$</span>model<span class="sc">$</span>t, reg1<span class="sc">$</span>fitted.values, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1050,16 +1083,17 @@ window.Quarto = {
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Dress with some statistics for added credibility</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>rdd_sub <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> d<span class="sc">+</span>t<span class="sc">+</span>d<span class="sc">*</span>t, <span class="at">data=</span>xy1_sub_sim)</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>rdd_full <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> d<span class="sc">+</span>t<span class="sc">+</span>d<span class="sc">*</span>t, <span class="at">data=</span>xy1_sim)</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>stargazer<span class="sc">::</span><span class="fu">stargazer</span>(rdd_sub, rdd_full, </span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">type=</span><span class="st">'html'</span>,</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">title=</span><span class="st">'Recipe RDD'</span>,</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">header=</span><span class="cn">FALSE</span>,</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">omit=</span><span class="fu">c</span>(<span class="st">'Constant'</span>),</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">notes=</span><span class="fu">c</span>(<span class="st">'First column uses a dataset around the discontinuity.'</span>,</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">'Smaller windows are more causal, and where the effect is bigger.'</span>))</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Dress with some statistics for added credibility</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>rdd_sub <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> d<span class="sc">+</span>t<span class="sc">+</span>d<span class="sc">*</span>t, <span class="at">data=</span>xy1_sub_sim)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>rdd_full <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> d<span class="sc">+</span>t<span class="sc">+</span>d<span class="sc">*</span>t, <span class="at">data=</span>xy1_sim)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>stargazer<span class="sc">::</span><span class="fu">stargazer</span>(rdd_sub, rdd_full, </span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">type=</span><span class="st">'html'</span>,</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">title=</span><span class="st">'Recipe RDD'</span>,</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">header=</span><span class="cn">FALSE</span>,</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">omit=</span><span class="fu">c</span>(<span class="st">'Constant'</span>),</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">notes=</span><span class="fu">c</span>(<span class="st">'First column uses a dataset around the discontinuity.'</span>,</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">'Smaller windows are more causal, and where the effect is bigger.'</span>))</span></code></pre></div>
 </details>
 <table style="text-align:center">
 <caption>
@@ -1108,20 +1142,20 @@ y_sim
 d
 </td>
 <td>
--13.169<sup>***</sup>
+17.849<sup>***</sup>
 </td>
 <td>
--9.639<sup>***</sup>
+5.063<sup>***</sup>
 </td>
 </tr>
 <tr>
 <td style="text-align:left">
 </td>
 <td>
-(0.569)
+(0.978)
 </td>
 <td>
-(0.527)
+(0.615)
 </td>
 </tr>
 <tr>
@@ -1137,20 +1171,20 @@ d
 t
 </td>
 <td>
-0.011<sup>***</sup>
+0.046<sup>***</sup>
 </td>
 <td>
-0.011<sup>***</sup>
+0.046<sup>***</sup>
 </td>
 </tr>
 <tr>
 <td style="text-align:left">
 </td>
 <td>
-(0.001)
+(0.002)
 </td>
 <td>
-(0.002)
+(0.003)
 </td>
 </tr>
 <tr>
@@ -1166,20 +1200,20 @@ t
 d:t
 </td>
 <td>
-0.009<sup>***</sup>
+-0.085<sup>***</sup>
 </td>
 <td>
-0.004<sup>*</sup>
+-0.057<sup>***</sup>
 </td>
 </tr>
 <tr>
 <td style="text-align:left">
 </td>
 <td>
-(0.002)
+(0.003)
 </td>
 <td>
-(0.002)
+(0.003)
 </td>
 </tr>
 <tr>
@@ -1210,10 +1244,10 @@ Observations
 R<sup>2</sup>
 </td>
 <td>
-0.771
+0.709
 </td>
 <td>
-0.447
+0.639
 </td>
 </tr>
 <tr>
@@ -1221,10 +1255,10 @@ R<sup>2</sup>
 Adjusted R<sup>2</sup>
 </td>
 <td>
-0.770
+0.708
 </td>
 <td>
-0.446
+0.638
 </td>
 </tr>
 <tr>
@@ -1232,10 +1266,10 @@ Adjusted R<sup>2</sup>
 Residual Std. Error
 </td>
 <td>
-1.764 (df = 585)
+3.031 (df = 585)
 </td>
 <td>
-3.081 (df = 996)
+3.599 (df = 996)
 </td>
 </tr>
 <tr>
@@ -1243,10 +1277,10 @@ Residual Std. Error
 F Statistic
 </td>
 <td>
-658.281<sup>***</sup> (df = 3; 585)
+476.123<sup>***</sup> (df = 3; 585)
 </td>
 <td>
-268.763<sup>***</sup> (df = 3; 996)
+586.637<sup>***</sup> (df = 3; 996)
 </td>
 </tr>
 <tr>
@@ -1276,18 +1310,23 @@ Smaller windows are more causal, and where the effect is bigger.
 </td>
 </tr>
 </tbody></table>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The jump d is significant in both columns, with no true break.</span></span></code></pre></div>
+</details>
 <p><strong>DID</strong>. Third, find a change in the data that you can associate with a policy where the control group has parallel trends. This also provides a causal estimate of <span class="math inline">\(X_{i2}\)</span> on <span class="math inline">\(X_{i1}\)</span>.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Find a reversal of fortune</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># (A good story always goes well with a nice pre-trend)</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>n2 <span class="ot">&lt;-</span> <span class="dv">318</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>wind2 <span class="ot">&lt;-</span> <span class="fu">c</span>(n2<span class="dv">-20</span>, n2<span class="sc">+</span><span class="dv">20</span>)</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(random_walk2, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">5</span>),</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlim=</span>wind2, <span class="at">ylim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="dv">15</span>, <span class="dv">15</span>), <span class="at">xlab=</span><span class="st">'Time'</span>, <span class="at">ylab=</span><span class="st">'Random Value'</span>)</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(random_walk1, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">5</span>))</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>n2, <span class="at">col=</span><span class="fu">grey</span>(.<span class="dv">5</span>), <span class="at">lty=</span><span class="dv">3</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Find a reversal of fortune</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co"># (A good story always goes well with a nice pre-trend)</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>n2 <span class="ot">&lt;-</span> <span class="dv">318</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>wind2 <span class="ot">&lt;-</span> <span class="fu">c</span>(n2<span class="dv">-20</span>, n2<span class="sc">+</span><span class="dv">20</span>)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(random_walk2, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">5</span>),</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlim=</span>wind2, <span class="at">ylim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="dv">15</span>, <span class="dv">15</span>), <span class="at">xlab=</span><span class="st">'Time'</span>, <span class="at">ylab=</span><span class="st">'Random Value'</span>)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(random_walk1, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">5</span>))</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>n2, <span class="at">col=</span><span class="fu">grey</span>(.<span class="dv">5</span>), <span class="at">lty=</span><span class="dv">3</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1299,29 +1338,30 @@ Smaller windows are more causal, and where the effect is bigger.
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Knead out any effects that are non-causal (aka correlation)</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>xy2A_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">t=</span>n_index, <span class="at">y_sim=</span>random_walk1, <span class="at">d=</span><span class="dv">1</span><span class="sc">*</span>(n_index <span class="sc">&gt;</span> n2), <span class="at">RWid=</span><span class="dv">1</span>)</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>xy2B_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">t=</span>n_index, <span class="at">y_sim=</span>random_walk2, <span class="at">d=</span><span class="dv">0</span>, <span class="at">RWid=</span><span class="dv">2</span>)</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>xy2_sim  <span class="ot">&lt;-</span> <span class="fu">rbind</span>(xy2A_sim, xy2B_sim)</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>xy2_sim<span class="sc">$</span>RWid <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(xy2_sim<span class="sc">$</span>RWid)</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>xy2_sim<span class="sc">$</span>tid <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(xy2_sim<span class="sc">$</span>t)</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>xy2_sub_sim <span class="ot">&lt;-</span> xy2_sim[ xy2_sim<span class="sc">$</span>t<span class="sc">&gt;</span>wind2[<span class="dv">1</span>] <span class="sc">&amp;</span> xy2_sim<span class="sc">$</span>t <span class="sc">&lt;</span> wind2[<span class="dv">2</span>], ]</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Report the stars for all to enjoy</span></span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co"># (what about the intercept?)</span></span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="co"># (stable coefficients are the good ones?)</span></span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>did_fe1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> d<span class="sc">+</span>tid, <span class="at">data=</span>xy2_sub_sim)</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>did_fe2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> d<span class="sc">+</span>RWid, <span class="at">data=</span>xy2_sub_sim)</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>did_fe3 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> d<span class="sc">*</span>RWid<span class="sc">+</span>tid, <span class="at">data=</span>xy2_sub_sim)</span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>stargazer<span class="sc">::</span><span class="fu">stargazer</span>(did_fe1, did_fe2, did_fe3,</span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">type=</span><span class="st">'html'</span>,</span>
-<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">title=</span><span class="st">'Recipe DID'</span>,</span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">header=</span><span class="cn">FALSE</span>,</span>
-<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">omit=</span><span class="fu">c</span>(<span class="st">'tid'</span>, <span class="st">'RWid'</span>, <span class="st">'Constant'</span>),</span>
-<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">notes=</span><span class="fu">c</span>(</span>
-<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>     <span class="st">'Fixed effects for time in column 1, for id in column 2, and both in column 3.'</span>,</span>
-<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>     <span class="st">'Fixed effects control for most of your concerns.'</span>,</span>
-<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>     <span class="st">'Anything else creates a bias in the opposite direction.'</span>))</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Knead out any effects that are non-causal (aka correlation)</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>xy2A_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">t=</span>n_index, <span class="at">y_sim=</span>random_walk1, <span class="at">d=</span><span class="dv">1</span><span class="sc">*</span>(n_index <span class="sc">&gt;</span> n2), <span class="at">RWid=</span><span class="dv">1</span>)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>xy2B_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">t=</span>n_index, <span class="at">y_sim=</span>random_walk2, <span class="at">d=</span><span class="dv">0</span>, <span class="at">RWid=</span><span class="dv">2</span>)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>xy2_sim  <span class="ot">&lt;-</span> <span class="fu">rbind</span>(xy2A_sim, xy2B_sim)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>xy2_sim<span class="sc">$</span>RWid <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(xy2_sim<span class="sc">$</span>RWid)</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>xy2_sim<span class="sc">$</span>tid <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(xy2_sim<span class="sc">$</span>t)</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>xy2_sub_sim <span class="ot">&lt;-</span> xy2_sim[ xy2_sim<span class="sc">$</span>t<span class="sc">&gt;</span>wind2[<span class="dv">1</span>] <span class="sc">&amp;</span> xy2_sim<span class="sc">$</span>t <span class="sc">&lt;</span> wind2[<span class="dv">2</span>], ]</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Report the stars for all to enjoy</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="co"># (what about the intercept?)</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="co"># (stable coefficients are the good ones?)</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>did_fe1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> d<span class="sc">+</span>tid, <span class="at">data=</span>xy2_sub_sim)</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>did_fe2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> d<span class="sc">+</span>RWid, <span class="at">data=</span>xy2_sub_sim)</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>did_fe3 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> d<span class="sc">*</span>RWid<span class="sc">+</span>tid, <span class="at">data=</span>xy2_sub_sim)</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>stargazer<span class="sc">::</span><span class="fu">stargazer</span>(did_fe1, did_fe2, did_fe3,</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">type=</span><span class="st">'html'</span>,</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">title=</span><span class="st">'Recipe DID'</span>,</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">header=</span><span class="cn">FALSE</span>,</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">omit=</span><span class="fu">c</span>(<span class="st">'tid'</span>, <span class="st">'RWid'</span>, <span class="st">'Constant'</span>),</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">notes=</span><span class="fu">c</span>(</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>     <span class="st">'Fixed effects for time in column 1, for id in column 2, and both in column 3.'</span>,</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>     <span class="st">'Fixed effects control for most of your concerns.'</span>,</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>     <span class="st">'Anything else creates a bias in the opposite direction.'</span>))</span></code></pre></div>
 </details>
 <table style="text-align:center">
 <caption>
@@ -1373,26 +1413,26 @@ y_sim
 d
 </td>
 <td>
-1.804<sup>*</sup>
+-5.851<sup>***</sup>
 </td>
 <td>
-1.847<sup>***</sup>
+-2.132<sup>***</sup>
 </td>
 <td>
-5.851<sup>***</sup>
+-0.899<sup>**</sup>
 </td>
 </tr>
 <tr>
 <td style="text-align:left">
 </td>
 <td>
-(0.892)
+(0.869)
 </td>
 <td>
-(0.652)
+(0.404)
 </td>
 <td>
-(0.828)
+(0.388)
 </td>
 </tr>
 <tr>
@@ -1428,13 +1468,13 @@ Observations
 R<sup>2</sup>
 </td>
 <td>
-0.227
+0.627
 </td>
 <td>
-0.164
+0.837
 </td>
 <td>
-0.668
+0.963
 </td>
 </tr>
 <tr>
@@ -1442,13 +1482,13 @@ R<sup>2</sup>
 Adjusted R<sup>2</sup>
 </td>
 <td>
--0.566
+0.244
 </td>
 <td>
-0.142
+0.832
 </td>
 <td>
-0.309
+0.923
 </td>
 </tr>
 <tr>
@@ -1456,13 +1496,13 @@ Adjusted R<sup>2</sup>
 Residual Std. Error
 </td>
 <td>
-2.750 (df = 38)
+2.677 (df = 38)
 </td>
 <td>
-2.035 (df = 75)
+1.260 (df = 75)
 </td>
 <td>
-1.827 (df = 37)
+0.856 (df = 37)
 </td>
 </tr>
 <tr>
@@ -1470,13 +1510,13 @@ Residual Std. Error
 F Statistic
 </td>
 <td>
-0.287 (df = 39; 38)
+1.637<sup>*</sup> (df = 39; 38)
 </td>
 <td>
-7.379<sup>***</sup> (df = 2; 75)
+192.233<sup>***</sup> (df = 2; 75)
 </td>
 <td>
-1.860<sup>**</sup> (df = 40; 37)
+23.990<sup>***</sup> (df = 40; 37)
 </td>
 </tr>
 <tr>
@@ -1513,6 +1553,10 @@ Anything else creates a bias in the opposite direction.
 </td>
 </tr>
 </tbody></table>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The coefficient on d has stars in all three columns, with no true effect.</span></span></code></pre></div>
+</details>
 <div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-8-contents" aria-controls="callout-8" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -1525,7 +1569,7 @@ Anything else creates a bias in the opposite direction.
 </div>
 <div id="callout-8" class="callout-8-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>All three empirical recipes (IV, RDD, DID) produced statistically significant results from random walks with no true relationship. What is the common thread? In your own empirical work, how would you distinguish a genuine causal finding from a spurious one?</p>
+<p>All three empirical recipes (IV, RDD, DID) can produce statistically significant results from random walks with no true relationship. What is the common thread? In your own empirical work, how would you distinguish a genuine causal finding from a spurious one?</p>
 </div>
 </div>
 </div>

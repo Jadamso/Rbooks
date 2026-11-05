@@ -500,7 +500,25 @@ window.Quarto = {
 
 
 <hr>
-<p>This chapter covers five more distributions that use <a href="./01_05_Sampling.html#permutations-and-combinations">factorials</a> (!). The Binomial and Poisson are discrete, and the Irwin–Hall, Beta, and F are continuous. It then formalizes basic set theory, Bayes’ theorem, and the Law of Total Probability so that conditional reasoning has a clear language.</p>
+<p>This chapter asks three questions.</p>
+<ul>
+<li>How are discrete counts distributed?
+<ul>
+<li><em>Binomial distribution</em>: this counts successes across <span class="math inline">\(n\)</span> independent <a href="./01_04_RandomVariables.html#bernoulli">Bernoulli</a> trials, each with success probability <span class="math inline">\(\theta\)</span>. Its formula uses <a href="./01_05_Sampling.html#permutations-and-combinations">factorials</a> (!), as do the other four distributions below.</li>
+<li><em>Poisson distribution</em>: this counts events in a fixed interval when they arrive at a constant rate <span class="math inline">\(\lambda\)</span>.</li>
+</ul></li>
+<li>How are continuous sums, proportions, and ratios distributed?
+<ul>
+<li><em>Irwin–Hall distribution</em>: this describes a sum of independent Uniforms.</li>
+<li><em>Beta distribution</em>: this describes a proportion on the unit interval.</li>
+<li><em>F distribution</em>: this describes a ratio of two averages of squared Normals.</li>
+</ul></li>
+<li>How does one event change the probability of another?
+<ul>
+<li><em>Conditional probability</em>: this uses basic set theory to give conditional reasoning a clear language, <span class="math inline">\(\text{Prob}(A \mid B) = \text{Prob}(A \cap B) / \text{Prob}(B)\)</span>.</li>
+<li><em>Bayes’ theorem</em>: this reverses the direction of a conditional probability, and the Law of Total Probability supplies its denominator.</li>
+</ul></li>
+</ul>
 <section id="discrete-distributions" class="level2" data-number="9.1">
 <h2 data-number="9.1" class="anchored" data-anchor-id="discrete-distributions"><span class="header-section-number">9.1</span> Discrete Distributions</h2>
 <section id="binomial" class="level4 unnumbered">
@@ -525,7 +543,7 @@ window.Quarto = {
 <p>The <em>Binomial distribution</em> is useful for any situation that aggregates independent yes/no events: defective items in a batch, customers who enter a store, voters who pick a candidate, free throws that go in. The full specification gathers sample space, PMF, and CDF in one place: <span class="math display">\[\begin{aligned}
 X_{i} &amp;~\text{in}~\{0,1,\ldots,n\} \\
 \text{Prob}(X_{i}=x) &amp;= \binom{n}{x}\theta^{x}(1-\theta)^{n-x} \\
-F(x) = \text{Prob}(X_{i} \leq x) &amp;= \sum_{k=0}^{\lfloor x \rfloor} \text{Prob}(X_{i}=x)
+F(x) = \text{Prob}(X_{i} \leq x) &amp;= \sum_{k=0}^{\lfloor x \rfloor} \text{Prob}(X_{i}=k)
 \end{aligned}\]</span></p>
 <p>The simplest case: how many heads will I get when I flip a fair coin twice? We can first see that there are four potential outcomes: <span class="math inline">\(\{ (1,1), (1,0), (0,1), (0,0) \}\)</span>, each of which is equally likely. The corresponding sums are <span class="math inline">\(\{2,1,1,0\}\)</span>, which leads to probabilities <span class="math inline">\(\text{Prob}(X_{i}=0)=1/4\)</span>, <span class="math inline">\(\text{Prob}(X_{i}=1)=2/4\)</span>, and <span class="math inline">\(\text{Prob}(X_{i}=2)=1/4\)</span>.</p>
 <p>If the coin is unfair, with probability of heads equal to <span class="math inline">\(1/4\)</span>, then the four outcomes <span class="math inline">\(\{(1,1), (1,0), (0,1), (0,0)\}\)</span> are no longer equally likely: they have probabilities <span class="math inline">\(\{1/16, 3/16, 3/16, 9/16\}\)</span>. Collecting the matching sums, <span class="math inline">\(\text{Prob}(X_{i}=2)=1/16\)</span>, <span class="math inline">\(\text{Prob}(X_{i}=1)=3/16+3/16=6/16\)</span>, and <span class="math inline">\(\text{Prob}(X_{i}=0)=9/16\)</span>.</p>
@@ -555,27 +573,28 @@ F(x) = \text{Prob}(X_{i} \leq x) &amp;= \sum_{k=0}^{\lfloor x \rfloor} \text{Pro
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Store: 15 passers-by, 30% chance each enters</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">15</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>theta <span class="ot">&lt;-</span> <span class="fl">0.3</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># PMF and CDF side by side</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># PMF plot</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, n)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>f_x <span class="ot">&lt;-</span> <span class="fu">dbinom</span>(x, n, theta)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, f_x, <span class="at">type =</span> <span class="st">'h'</span>, <span class="at">col =</span> <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab =</span> <span class="st">'Customers entering'</span>, <span class="at">ylab =</span> <span class="st">'Prob(X = x)'</span>)</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'Binom('</span>, .(n), <span class="st">', '</span>, .(theta), <span class="st">')'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(x, f_x, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">col =</span> <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="do">## Theoretical CDF</span></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>F_x <span class="ot">&lt;-</span> <span class="fu">pbinom</span>(x, n, theta)</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, F_x, <span class="at">type=</span><span class="st">'s'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab =</span> <span class="st">'Customers entering'</span>, <span class="at">ylab =</span> <span class="st">'F(x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(x, F_x, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'Binom('</span>, .(n), <span class="st">', '</span>, .(theta), <span class="st">') CDF'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="do">## Store: 15 passers-by, 30% chance each enters</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">15</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>theta <span class="ot">&lt;-</span> <span class="fl">0.3</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># PMF and CDF side by side</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># PMF plot</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, n)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>f_x <span class="ot">&lt;-</span> <span class="fu">dbinom</span>(x, n, theta)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, f_x, <span class="at">type =</span> <span class="st">'h'</span>, <span class="at">col =</span> <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab =</span> <span class="st">'Customers entering'</span>, <span class="at">ylab =</span> <span class="st">'Prob(X = x)'</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'Binom('</span>, .(n), <span class="st">', '</span>, .(theta), <span class="st">')'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(x, f_x, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">col =</span> <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="do">## Theoretical CDF</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>F_x <span class="ot">&lt;-</span> <span class="fu">pbinom</span>(x, n, theta)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, F_x, <span class="at">type=</span><span class="st">'s'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab =</span> <span class="st">'Customers entering'</span>, <span class="at">ylab =</span> <span class="st">'F(x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(x, F_x, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'Binom('</span>, .(n), <span class="st">', '</span>, .(theta), <span class="st">') CDF'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -729,7 +748,7 @@ F(x) = \text{Prob}(X_{i} \leq x) &amp;= \sum_{k=0}^{\lfloor x \rfloor} \text{Pro
 <p>The <em>Poisson distribution</em> is useful for count outcomes where events are sparse but the opportunities are many: arrivals at a store, decay events from a radioactive source, typos per page. The single parameter <span class="math inline">\(\lambda\)</span> is the average number of events per interval, and the full specification adds the CDF: <span class="math display">\[\begin{aligned}
 X_{i} &amp;~\text{in}~\{0,1,\ldots\} \\
 \text{Prob}(X_{i}=x) &amp;= e^{-\lambda}\lambda^x/x! \\
-F(x) = \text{Prob}(X_{i} \leq x) &amp;= \sum_{k=0}^{\lfloor x \rfloor} \text{Prob}(X_{i}=x)
+F(x) = \text{Prob}(X_{i} \leq x) &amp;= \sum_{k=0}^{\lfloor x \rfloor} \text{Prob}(X_{i}=k)
 \end{aligned}\]</span> Note the infinite discrete support <span class="math inline">\(\{0,1,2,\ldots\}\)</span>: there is no upper bound on the count, though large values become vanishingly unlikely.</p>
 <p>For example, a small store averages <span class="math inline">\(\lambda = 3.5\)</span> customers per hour. In any given hour the actual count might be 2, or 5, or 7. For our store, <span class="math inline">\(\lambda = 3.5\)</span> means we expect 3.5 customers per hour on average and the following assumptions hold</p>
 <ul>
@@ -745,26 +764,27 @@ F(x) = \text{Prob}(X_{i} \leq x) &amp;= \sum_{k=0}^{\lfloor x \rfloor} \text{Pro
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Store: lambda = 3.5 customers per hour</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>lambda <span class="ot">&lt;-</span> <span class="fl">3.5</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># PMF and CDF side by side</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># PMF plot</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">15</span>)</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>f_x <span class="ot">&lt;-</span> <span class="fu">dpois</span>(x, lambda)</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, f_x, <span class="at">type=</span><span class="st">'h'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">'Customers per hour'</span>, <span class="at">ylab =</span> <span class="st">'Prob(X = x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(x, f_x, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">col =</span> <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'Pois('</span>, .(lambda), <span class="st">')'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co"># CDF plot</span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>F_x <span class="ot">&lt;-</span> <span class="fu">ppois</span>(x, lambda)</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, F_x, <span class="at">type=</span><span class="st">'s'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab =</span> <span class="st">'Customers per hour'</span>, <span class="at">ylab =</span> <span class="st">'F(x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(x, F_x, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'Pois('</span>, .(lambda), <span class="st">') CDF'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="do">## Store: lambda = 3.5 customers per hour</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>lambda <span class="ot">&lt;-</span> <span class="fl">3.5</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># PMF and CDF side by side</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co"># PMF plot</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">15</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>f_x <span class="ot">&lt;-</span> <span class="fu">dpois</span>(x, lambda)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, f_x, <span class="at">type=</span><span class="st">'h'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">'Customers per hour'</span>, <span class="at">ylab =</span> <span class="st">'Prob(X = x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(x, f_x, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">col =</span> <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'Pois('</span>, .(lambda), <span class="st">')'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co"># CDF plot</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>F_x <span class="ot">&lt;-</span> <span class="fu">ppois</span>(x, lambda)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, F_x, <span class="at">type=</span><span class="st">'s'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab =</span> <span class="st">'Customers per hour'</span>, <span class="at">ylab =</span> <span class="st">'F(x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(x, F_x, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'Pois('</span>, .(lambda), <span class="st">') CDF'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -999,58 +1019,59 @@ F(x) &amp;= \dfrac{1}{n!} \displaystyle\sum_{k=0}^{\lfloor x \rfloor} (-1)^k \bi
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Tip jar: total tips from n customers, each Uniform(0, 1)</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Irwin-Hall PDF function</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>dirwinhall <span class="ot">&lt;-</span> <span class="cf">function</span>(x, n) {</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    f_x <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x))</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(x)) {</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        xx <span class="ot">&lt;-</span> x[i]</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span>(xx <span class="sc">&lt;</span> <span class="dv">0</span> <span class="sc">|</span> xx <span class="sc">&gt;</span> n){</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>            f_x[i] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>        } <span class="cf">else</span> {</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>            k <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="fu">floor</span>(xx))</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>            f_k <span class="ot">&lt;-</span> <span class="fu">sum</span>((<span class="sc">-</span><span class="dv">1</span>)<span class="sc">^</span>k<span class="sc">*</span><span class="fu">choose</span>(n, k)<span class="sc">*</span>(xx<span class="sc">-</span>k)<span class="sc">^</span>(n<span class="dv">-1</span>))<span class="sc">/</span><span class="fu">factorial</span>(n<span class="dv">-1</span>)</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>            f_x[i] <span class="ot">&lt;-</span> f_k</span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(f_x)</span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Irwin-Hall CDF function</span></span>
-<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>pirwinhall <span class="ot">&lt;-</span> <span class="cf">function</span>(x, n) {</span>
-<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>    F_x <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x))</span>
-<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(x)) {</span>
-<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>        xx <span class="ot">&lt;-</span> x[i]</span>
-<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span>(xx <span class="sc">&lt;</span> <span class="dv">0</span>){</span>
-<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>            F_x[i] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>        } <span class="cf">else</span> <span class="cf">if</span>(xx <span class="sc">&gt;</span> n){</span>
-<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>            F_x[i] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>        } <span class="cf">else</span> {</span>
-<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>            k <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="fu">floor</span>(xx))</span>
-<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>            F_x[i] <span class="ot">&lt;-</span> <span class="fu">sum</span>((<span class="sc">-</span><span class="dv">1</span>)<span class="sc">^</span>k<span class="sc">*</span><span class="fu">choose</span>(n, k)<span class="sc">*</span>(xx<span class="sc">-</span>k)<span class="sc">^</span>n)<span class="sc">/</span><span class="fu">factorial</span>(n)</span>
-<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(F_x)</span>
-<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Two customers</span></span>
-<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">2</span></span>
-<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, n, <span class="at">length.out =</span> <span class="dv">500</span>)</span>
-<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a><span class="co"># PDF and CDF side by side</span></span>
-<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute and plot PDF</span></span>
-<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>f_x <span class="ot">&lt;-</span> <span class="fu">dirwinhall</span>(x, n)</span>
-<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, f_x, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
-<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab =</span> <span class="st">'Total tips ($)'</span>, <span class="at">ylab =</span> <span class="st">'f(x)'</span>)</span>
-<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'IrwinHall('</span>, .(n), <span class="st">')'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute and plot CDF</span></span>
-<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a>F_x <span class="ot">&lt;-</span> <span class="fu">pirwinhall</span>(x, n)</span>
-<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, F_x, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
-<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab =</span> <span class="st">'Total tips ($)'</span>, <span class="at">ylab =</span> <span class="st">'F(x)'</span>)</span>
-<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'IrwinHall('</span>, .(n), <span class="st">') CDF'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="do">## Tip jar: total tips from n customers, each Uniform(0, 1)</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Irwin-Hall PDF function</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>dirwinhall <span class="ot">&lt;-</span> <span class="cf">function</span>(x, n) {</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    f_x <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x))</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(x)) {</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>        xx <span class="ot">&lt;-</span> x[i]</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span>(xx <span class="sc">&lt;</span> <span class="dv">0</span> <span class="sc">|</span> xx <span class="sc">&gt;</span> n){</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>            f_x[i] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>        } <span class="cf">else</span> {</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>            k <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="fu">floor</span>(xx))</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>            f_k <span class="ot">&lt;-</span> <span class="fu">sum</span>((<span class="sc">-</span><span class="dv">1</span>)<span class="sc">^</span>k<span class="sc">*</span><span class="fu">choose</span>(n, k)<span class="sc">*</span>(xx<span class="sc">-</span>k)<span class="sc">^</span>(n<span class="dv">-1</span>))<span class="sc">/</span><span class="fu">factorial</span>(n<span class="dv">-1</span>)</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>            f_x[i] <span class="ot">&lt;-</span> f_k</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(f_x)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Irwin-Hall CDF function</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>pirwinhall <span class="ot">&lt;-</span> <span class="cf">function</span>(x, n) {</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>    F_x <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x))</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(x)) {</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>        xx <span class="ot">&lt;-</span> x[i]</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span>(xx <span class="sc">&lt;</span> <span class="dv">0</span>){</span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>            F_x[i] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>        } <span class="cf">else</span> <span class="cf">if</span>(xx <span class="sc">&gt;</span> n){</span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>            F_x[i] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>        } <span class="cf">else</span> {</span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>            k <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="fu">floor</span>(xx))</span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>            F_x[i] <span class="ot">&lt;-</span> <span class="fu">sum</span>((<span class="sc">-</span><span class="dv">1</span>)<span class="sc">^</span>k<span class="sc">*</span><span class="fu">choose</span>(n, k)<span class="sc">*</span>(xx<span class="sc">-</span>k)<span class="sc">^</span>n)<span class="sc">/</span><span class="fu">factorial</span>(n)</span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(F_x)</span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a><span class="co"># Two customers</span></span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, n, <span class="at">length.out =</span> <span class="dv">500</span>)</span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a><span class="co"># PDF and CDF side by side</span></span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute and plot PDF</span></span>
+<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a>f_x <span class="ot">&lt;-</span> <span class="fu">dirwinhall</span>(x, n)</span>
+<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, f_x, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
+<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab =</span> <span class="st">'Total tips ($)'</span>, <span class="at">ylab =</span> <span class="st">'f(x)'</span>)</span>
+<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'IrwinHall('</span>, .(n), <span class="st">')'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute and plot CDF</span></span>
+<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a>F_x <span class="ot">&lt;-</span> <span class="fu">pirwinhall</span>(x, n)</span>
+<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, F_x, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
+<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab =</span> <span class="st">'Total tips ($)'</span>, <span class="at">ylab =</span> <span class="st">'F(x)'</span>)</span>
+<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'IrwinHall('</span>, .(n), <span class="st">') CDF'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1094,23 +1115,24 @@ f(x) &amp;= \frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha)\Gamma(\beta)} x^{\alpha-1
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Daily purchase rate: Beta(2, 2)</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">by=</span>.<span class="dv">01</span>)</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># PDF and CDF side by side</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co"># PDF</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>f_x <span class="ot">&lt;-</span> <span class="fu">dbeta</span>(x, <span class="dv">2</span>, <span class="dv">2</span>)</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, f_x, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Purchase rate'</span>, <span class="at">ylab=</span><span class="st">'f(x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Beta(2, 2)'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="co"># CDF</span></span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>F_x <span class="ot">&lt;-</span> <span class="fu">pbeta</span>(x, <span class="dv">2</span>, <span class="dv">2</span>)</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, F_x, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Purchase rate'</span>, <span class="at">ylab=</span><span class="st">'F(x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Beta(2, 2) CDF'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="do">## Daily purchase rate: Beta(2, 2)</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">by=</span>.<span class="dv">01</span>)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co"># PDF and CDF side by side</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="co"># PDF</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>f_x <span class="ot">&lt;-</span> <span class="fu">dbeta</span>(x, <span class="dv">2</span>, <span class="dv">2</span>)</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, f_x, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Purchase rate'</span>, <span class="at">ylab=</span><span class="st">'f(x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Beta(2, 2)'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="co"># CDF</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>F_x <span class="ot">&lt;-</span> <span class="fu">pbeta</span>(x, <span class="dv">2</span>, <span class="dv">2</span>)</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, F_x, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Purchase rate'</span>, <span class="at">ylab=</span><span class="st">'F(x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Beta(2, 2) CDF'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1228,25 +1250,26 @@ f(x) &amp;= \frac{\Gamma\left(\frac{d_{1}+d_{2}}{2}\right)}{\Gamma\left(\frac{d_
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Sales volatility: 5 days at store 1, 20 days at store 2</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>d1 <span class="ot">&lt;-</span> <span class="dv">5</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>d2 <span class="ot">&lt;-</span> <span class="dv">20</span></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">6</span>, <span class="at">by=</span>.<span class="dv">01</span>)</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="co"># PDF and CDF side by side</span></span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="co"># PDF</span></span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>f_x <span class="ot">&lt;-</span> <span class="fu">df</span>(x, d1, d2)</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, f_x, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Volatility ratio'</span>, <span class="at">ylab=</span><span class="st">'f(x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'F('</span>, .(d1), <span class="st">', '</span>, .(d2), <span class="st">')'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="co"># CDF</span></span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>F_x <span class="ot">&lt;-</span> <span class="fu">pf</span>(x, d1, d2)</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, F_x, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Volatility ratio'</span>, <span class="at">ylab=</span><span class="st">'F(x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'F('</span>, .(d1), <span class="st">', '</span>, .(d2), <span class="st">') CDF'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="do">## Sales volatility: 5 days at store 1, 20 days at store 2</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>d1 <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>d2 <span class="ot">&lt;-</span> <span class="dv">20</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">6</span>, <span class="at">by=</span>.<span class="dv">01</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="co"># PDF and CDF side by side</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="co"># PDF</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>f_x <span class="ot">&lt;-</span> <span class="fu">df</span>(x, d1, d2)</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, f_x, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Volatility ratio'</span>, <span class="at">ylab=</span><span class="st">'f(x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'F('</span>, .(d1), <span class="st">', '</span>, .(d2), <span class="st">')'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="co"># CDF</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>F_x <span class="ot">&lt;-</span> <span class="fu">pf</span>(x, d1, d2)</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x, F_x, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Volatility ratio'</span>, <span class="at">ylab=</span><span class="st">'F(x)'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">bquote</span>(<span class="fu">paste</span>(<span class="st">'F('</span>, .(d1), <span class="st">', '</span>, .(d2), <span class="st">') CDF'</span>)), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1476,15 +1499,15 @@ f(x) &amp;= \frac{\Gamma\left(\frac{d_{1}+d_{2}}{2}\right)}{\Gamma\left(\frac{d_
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulation verification</span></span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulation verification</span></span>
 <span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">6</span>)</span>
 <span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>rolls <span class="ot">&lt;-</span> <span class="fu">sample</span>(x, <span class="fl">1e6</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>A <span class="ot">&lt;-</span> rolls <span class="sc">&gt;</span> <span class="dv">2</span></span>
 <span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>B <span class="ot">&lt;-</span> rolls <span class="sc">%%</span> <span class="dv">2</span> <span class="sc">==</span> <span class="dv">0</span></span>
 <span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>P_AcondB <span class="ot">&lt;-</span> <span class="fu">mean</span>(A <span class="sc">&amp;</span> B) <span class="sc">/</span> <span class="fu">mean</span>(B)</span>
 <span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(P_AcondB, <span class="dv">3</span>)</span>
-<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.667</span></span></code></pre></div>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.666</span></span></code></pre></div>
 </details>
 </div>
 <p>Note that independent events mean <span class="math display">\[\text{Prob}(A \mid B)= \text{Prob}(A \cap B) / \text{Prob}(B) = [\text{Prob}(A) \cdot \text{Prob}(B)]/ \text{Prob}(B)  =\text{Prob}(A).\]</span></p>
@@ -1553,14 +1576,14 @@ f(x) &amp;= \frac{\Gamma\left(\frac{d_{1}+d_{2}}{2}\right)}{\Gamma\left(\frac{d_
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulation verification</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulation verification</span></span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>rolls <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">6</span>), <span class="fl">1e6</span>, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
 <span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>A <span class="ot">&lt;-</span> rolls <span class="sc">&gt;</span> <span class="dv">2</span></span>
 <span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>B <span class="ot">&lt;-</span> rolls <span class="sc">%%</span> <span class="dv">2</span> <span class="sc">==</span> <span class="dv">0</span></span>
 <span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Prob(B | A)</span></span>
 <span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(B[A])</span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5001065</span></span></code></pre></div>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5004191</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -1590,15 +1613,14 @@ f(x) &amp;= \frac{\Gamma\left(\frac{d_{1}+d_{2}}{2}\right)}{\Gamma\left(\frac{d_
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulation verification</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fl">1e6</span></span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>supplier <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">'A'</span>, <span class="st">'B'</span>), n, <span class="at">replace=</span><span class="cn">TRUE</span>, <span class="at">prob=</span><span class="fu">c</span>(<span class="fl">0.6</span>, <span class="fl">0.4</span>))</span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>defect_rate <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(supplier <span class="sc">==</span> <span class="st">'A'</span>, <span class="fl">0.03</span>, <span class="fl">0.05</span>)</span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>defective <span class="ot">&lt;-</span> <span class="fu">runif</span>(n) <span class="sc">&lt;</span> defect_rate</span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Prob(A | D)</span></span>
-<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(supplier[defective] <span class="sc">==</span> <span class="st">'A'</span>)</span>
-<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.4796915</span></span></code></pre></div>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fl">1e6</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>supplier <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">'A'</span>, <span class="st">'B'</span>), n, <span class="at">replace=</span><span class="cn">TRUE</span>, <span class="at">prob=</span><span class="fu">c</span>(<span class="fl">0.6</span>, <span class="fl">0.4</span>))</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>defect_rate <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(supplier <span class="sc">==</span> <span class="st">'A'</span>, <span class="fl">0.03</span>, <span class="fl">0.05</span>)</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>defective <span class="ot">&lt;-</span> <span class="fu">runif</span>(n) <span class="sc">&lt;</span> defect_rate</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Prob(A | D)</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(supplier[defective] <span class="sc">==</span> <span class="st">'A'</span>)</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.4731349</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -1612,7 +1634,7 @@ f(x) &amp;= \frac{\Gamma\left(\frac{d_{1}+d_{2}}{2}\right)}{\Gamma\left(\frac{d_
 <li><p>Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in <a href="./04_A_WorkingWithAI.html">Working with AI</a>. Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing. Finish with your own questions about whatever you found hardest.</p></li>
 <li><p>The Poisson distribution assumes events are independent and occur at a constant rate. Give an example of a real-world count variable where these assumptions are likely violated, and explain which assumption fails.</p></li>
 <li><p>A call center receives an average of <span class="math inline">\(\lambda = 6\)</span> calls per hour. Using the Poisson distribution, compute <span class="math inline">\(\text{Prob}(X_{i} \leq 3)\)</span> and <span class="math inline">\(\text{Prob}(X_{i} &gt; 10)\)</span> by hand (set up the sums) and then verify with <code>ppois</code> in R.</p></li>
-<li><p>Using the <code>warpbreaks</code> dataset in R, compute the sample mean and variance of <code>breaks</code>. Compare their ratio to what the Poisson distribution predicts (i.e., <span class="math inline">\(\mathbb{E}[X_{i}] = \mathbb{V}[X_{i}] = \lambda\)</span>). Does the Poisson seem like a good fit? Simulate 10000 draws from a Poisson with <span class="math inline">\(\lambda = \bar{X}\)</span> and compare the simulated histogram to the observed data.</p></li>
+<li><p>Using the <code>warpbreaks</code> dataset in R, compute the sample mean and variance of <code>breaks</code>. Compare their ratio to what the Poisson distribution predicts (i.e., <span class="math inline">\(\mathbb{E}[X_{i}] = \mathbb{V}[X_{i}] = \lambda\)</span>). Does the Poisson seem like a good fit? Simulate 10000 draws from a Poisson with <span class="math inline">\(\lambda = \hat{m}\)</span> and compare the simulated histogram to the observed data.</p></li>
 </ol>
 <section id="further-reading" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="further-reading"><strong>Further Reading</strong></h4>

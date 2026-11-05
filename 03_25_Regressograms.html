@@ -500,7 +500,23 @@ window.Quarto = {
 
 
 <hr>
-<p>In <a href="./02_16_LocalRegression.html">Local Regression</a>, we estimated nonparametric models with a single explanatory variable. We now extend those tools to multiple explanatory variables. The ideas carry over directly: instead of binning one variable, we bin each variable, and instead of fitting a line in pieces, we fit a plane in pieces. This chapter covers three nonparametric tools for multivariate data: regressograms, piecewise regressions, and <a href="./02_15_SimpleRegression.html#cross-validation">cross-validated</a> model selection. It then shows how to summarize the gradients these models produce.</p>
+<p>In <a href="./02_16_LocalRegression.html">Local Regression</a>, we estimated nonparametric models with a single explanatory variable. We now extend those tools to multiple explanatory variables. The ideas carry over directly: instead of binning one variable, we bin each variable, and instead of fitting a line in pieces, we fit a plane in pieces.</p>
+<p>This chapter asks three questions.</p>
+<ul>
+<li>How does the mean of <span class="math inline">\(\hat{y}\)</span> vary with several explanatory variables when no single plane fits?
+<ul>
+<li><em>Multivariate regressogram</em>: this gives each combination of bins its own mean, generalizing the <a href="./02_16_LocalRegression.html#regressograms">univariate regressogram</a>.</li>
+<li><em>Piecewise regression</em>: this bins one explanatory variable and fits a plane within each bin, where the <a href="./02_16_LocalRegression.html#piecewise-regression">bivariate version</a> fits a line.</li>
+</ul></li>
+<li>How many bins should we use?
+<ul>
+<li><em><span class="math inline">\(k\)</span>-fold cross-validation</em>: this model assessment check picks the number of bins by prediction error on held-out observations. It drops a group at a time, where <a href="./02_15_SimpleRegression.html#cross-validation">leave-one-out cross-validation</a> drops one observation.</li>
+</ul></li>
+<li>How does <span class="math inline">\(\hat{y}\)</span> change with <span class="math inline">\(\hat{x}_{k}\)</span> at different points in the data?
+<ul>
+<li><em>Finite differences and within-bin slopes</em>: these estimate <a href="./02_17_Gradients.html#gradients">gradients</a> the same two ways as before, now from the regressogram and the piecewise regression.</li>
+</ul></li>
+</ul>
 <section id="regressograms" class="level2" data-number="25.1">
 <h2 data-number="25.1" class="anchored" data-anchor-id="regressograms"><span class="header-section-number">25.1</span> Regressograms</h2>
 <section id="setup" class="level4 unnumbered">
@@ -526,46 +542,47 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Simulate data: y_sim is a nonlinear function of x1_sim and x2_sim plus noise.</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">10000</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>e <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>x1_sim <span class="ot">&lt;-</span> <span class="fu">seq</span>(.<span class="dv">1</span>, <span class="dv">20</span>, <span class="at">length.out=</span>N)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>x2_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(N, <span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>y_sim  <span class="ot">&lt;-</span> <span class="dv">3</span><span class="sc">*</span><span class="fu">exp</span>(<span class="sc">-</span><span class="dv">2</span><span class="sc">*</span>x2_sim <span class="sc">+</span> <span class="fl">1.5</span><span class="sc">*</span>x1_sim <span class="sc">-</span> .<span class="dv">1</span><span class="sc">*</span>x1_sim<span class="sc">^</span><span class="dv">2</span>)<span class="sc">*</span>x1_sim <span class="sc">+</span> e</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>xy_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(x1_sim, x2_sim, y_sim)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="do">## Create color palette (reused in later examples)</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>col_scale <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">min</span>(y_sim)<span class="sc">*</span><span class="fl">1.1</span>, <span class="fu">max</span>(y_sim)<span class="sc">*</span><span class="fl">1.1</span>, <span class="at">length.out=</span><span class="dv">401</span>)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>ycol_pal <span class="ot">&lt;-</span> <span class="fu">hcl.colors</span>(<span class="fu">length</span>(col_scale), <span class="at">alpha=</span>.<span class="dv">5</span>)</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(ycol_pal) <span class="ot">&lt;-</span> <span class="fu">sort</span>(col_scale)</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="do">## Add legend (reused in later examples)</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>add_legend <span class="ot">&lt;-</span> <span class="cf">function</span>(col_scale,</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">yl=</span><span class="dv">11</span>,</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">colfun=</span><span class="cf">function</span>(x){ <span class="fu">hcl.colors</span>(x, <span class="at">alpha=</span>.<span class="dv">5</span>) },</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    ...) {</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  opar <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">fig=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">oma=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>), </span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>              <span class="at">mar=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>), <span class="at">new=</span><span class="cn">TRUE</span>)</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">on.exit</span>(<span class="fu">par</span>(opar))</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  bin_mids <span class="ot">&lt;-</span> <span class="fu">hist</span>(col_scale, <span class="at">plot=</span><span class="cn">FALSE</span>, <span class="at">breaks=</span>yl<span class="dv">-1</span>)<span class="sc">$</span>mids</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="at">type=</span><span class="st">'n'</span>, <span class="at">bty=</span><span class="st">'n'</span>, <span class="at">xaxt=</span><span class="st">'n'</span>, <span class="at">yaxt=</span><span class="st">'n'</span>)</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">legend</span>(...,</span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend=</span>bin_mids,</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">fill=</span><span class="fu">colfun</span>(<span class="fu">length</span>(bin_mids)),</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>,</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">bty=</span><span class="st">'n'</span>)</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a></span>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="do">## Simulate data: y_sim is a nonlinear function of x1_sim and x2_sim plus noise.</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">10000</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>e <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>x1_sim <span class="ot">&lt;-</span> <span class="fu">seq</span>(.<span class="dv">1</span>, <span class="dv">20</span>, <span class="at">length.out=</span>N)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>x2_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(N, <span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>y_sim  <span class="ot">&lt;-</span> <span class="dv">3</span><span class="sc">*</span><span class="fu">exp</span>(<span class="sc">-</span><span class="dv">2</span><span class="sc">*</span>x2_sim <span class="sc">+</span> <span class="fl">1.5</span><span class="sc">*</span>x1_sim <span class="sc">-</span> .<span class="dv">1</span><span class="sc">*</span>x1_sim<span class="sc">^</span><span class="dv">2</span>)<span class="sc">*</span>x1_sim <span class="sc">+</span> e</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>xy_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(x1_sim, x2_sim, y_sim)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="do">## Create color palette (reused in later examples)</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>col_scale <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">min</span>(y_sim)<span class="sc">*</span><span class="fl">1.1</span>, <span class="fu">max</span>(y_sim)<span class="sc">*</span><span class="fl">1.1</span>, <span class="at">length.out=</span><span class="dv">401</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>ycol_pal <span class="ot">&lt;-</span> <span class="fu">hcl.colors</span>(<span class="fu">length</span>(col_scale), <span class="at">alpha=</span>.<span class="dv">5</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(ycol_pal) <span class="ot">&lt;-</span> <span class="fu">sort</span>(col_scale)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="do">## Add legend (reused in later examples)</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>add_legend <span class="ot">&lt;-</span> <span class="cf">function</span>(col_scale,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">yl=</span><span class="dv">11</span>,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">colfun=</span><span class="cf">function</span>(x){ <span class="fu">hcl.colors</span>(x, <span class="at">alpha=</span>.<span class="dv">5</span>) },</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    ...) {</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  opar <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">fig=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">oma=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>), </span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>              <span class="at">mar=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>), <span class="at">new=</span><span class="cn">TRUE</span>)</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">on.exit</span>(<span class="fu">par</span>(opar))</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  bin_mids <span class="ot">&lt;-</span> <span class="fu">hist</span>(col_scale, <span class="at">plot=</span><span class="cn">FALSE</span>, <span class="at">breaks=</span>yl<span class="dv">-1</span>)<span class="sc">$</span>mids</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="at">type=</span><span class="st">'n'</span>, <span class="at">bty=</span><span class="st">'n'</span>, <span class="at">xaxt=</span><span class="st">'n'</span>, <span class="at">yaxt=</span><span class="st">'n'</span>)</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">legend</span>(...,</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend=</span>bin_mids,</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">fill=</span><span class="fu">colfun</span>(<span class="fu">length</span>(bin_mids)),</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>,</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">bty=</span><span class="st">'n'</span>)</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot Data</span></span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">oma=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">2</span>))</span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x1_sim <span class="sc">~</span> x2_sim, xy_sim,</span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span>ycol_pal[<span class="fu">cut</span>(y_sim, col_scale)],</span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">16</span>, <span class="at">cex=</span>.<span class="dv">5</span>,</span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Raw Data'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a><span class="fu">add_legend</span>(<span class="at">x=</span><span class="st">'topright'</span>, <span class="at">col_scale=</span>col_scale,</span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>    <span class="at">yl=</span><span class="dv">6</span>, <span class="at">inset=</span><span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">05</span>), <span class="at">title=</span><span class="st">'y'</span>)</span></code></pre></div>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot Data</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">oma=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">2</span>))</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x1_sim <span class="sc">~</span> x2_sim, xy_sim,</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span>ycol_pal[<span class="fu">cut</span>(y_sim, col_scale)],</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">16</span>, <span class="at">cex=</span>.<span class="dv">5</span>,</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Raw Data'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a><span class="fu">add_legend</span>(<span class="at">x=</span><span class="st">'topright'</span>, <span class="at">col_scale=</span>col_scale,</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>    <span class="at">yl=</span><span class="dv">6</span>, <span class="at">inset=</span><span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">05</span>), <span class="at">title=</span><span class="st">'y'</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -582,36 +599,37 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="do">## OLS (without interaction; the additive baseline)</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> x1_sim<span class="sc">+</span>x2_sim, <span class="at">data=</span>xy_sim)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Grid Points for Prediction</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># X1 bins</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>l1 <span class="ot">&lt;-</span> <span class="dv">11</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>bks1 <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">20</span>, <span class="at">length.out=</span>l1)</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>h1 <span class="ot">&lt;-</span> <span class="fu">diff</span>(bks1)[<span class="dv">1</span>]<span class="sc">/</span><span class="dv">2</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>mids1 <span class="ot">&lt;-</span> bks1[<span class="sc">-</span><span class="dv">1</span>]<span class="sc">-</span>h1</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># X2 bins</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>l2 <span class="ot">&lt;-</span> <span class="dv">11</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>bks2 <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">length.out=</span>l2)</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>h2 <span class="ot">&lt;-</span> <span class="fu">diff</span>(bks2)[<span class="dv">1</span>]<span class="sc">/</span><span class="dv">2</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>mids2 <span class="ot">&lt;-</span> bks2[<span class="sc">-</span><span class="dv">1</span>]<span class="sc">-</span>h2</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Grid</span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>pred_x <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">x1_sim=</span>mids1, <span class="at">x2_sim=</span>mids2)</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="do">## OLS Predictions</span></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>y_pred_ols <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg, <span class="at">newdata=</span>pred_x)</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>pred_df_ols  <span class="ot">&lt;-</span> <span class="fu">cbind</span>(y_pred_ols, pred_x)</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot Predictions</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">oma=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">2</span>))</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x1_sim <span class="sc">~</span> x2_sim, pred_df_ols,</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span>ycol_pal[<span class="fu">cut</span>(y_pred_ols, col_scale)],</span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">15</span>, <span class="at">cex=</span><span class="dv">2</span>,</span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'OLS Predictions'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="fu">add_legend</span>(<span class="at">x=</span><span class="st">'topright'</span>, <span class="at">col_scale=</span>col_scale,</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">yl=</span><span class="dv">6</span>, <span class="at">inset=</span><span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">05</span>), <span class="at">title=</span><span class="st">'y'</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="do">## OLS (without interaction; the additive baseline)</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> x1_sim<span class="sc">+</span>x2_sim, <span class="at">data=</span>xy_sim)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="do">## Grid Points for Prediction</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># X1 bins</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>l1 <span class="ot">&lt;-</span> <span class="dv">11</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>bks1 <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">20</span>, <span class="at">length.out=</span>l1)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>h1 <span class="ot">&lt;-</span> <span class="fu">diff</span>(bks1)[<span class="dv">1</span>]<span class="sc">/</span><span class="dv">2</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>mids1 <span class="ot">&lt;-</span> bks1[<span class="sc">-</span><span class="dv">1</span>]<span class="sc">-</span>h1</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># X2 bins</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>l2 <span class="ot">&lt;-</span> <span class="dv">11</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>bks2 <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">length.out=</span>l2)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>h2 <span class="ot">&lt;-</span> <span class="fu">diff</span>(bks2)[<span class="dv">1</span>]<span class="sc">/</span><span class="dv">2</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>mids2 <span class="ot">&lt;-</span> bks2[<span class="sc">-</span><span class="dv">1</span>]<span class="sc">-</span>h2</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Grid</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>pred_x <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">x1_sim=</span>mids1, <span class="at">x2_sim=</span>mids2)</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="do">## OLS Predictions</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>y_pred_ols <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg, <span class="at">newdata=</span>pred_x)</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>pred_df_ols  <span class="ot">&lt;-</span> <span class="fu">cbind</span>(y_pred_ols, pred_x)</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot Predictions</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">oma=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">2</span>))</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x1_sim <span class="sc">~</span> x2_sim, pred_df_ols,</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span>ycol_pal[<span class="fu">cut</span>(y_pred_ols, col_scale)],</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">15</span>, <span class="at">cex=</span><span class="dv">2</span>,</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'OLS Predictions'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="fu">add_legend</span>(<span class="at">x=</span><span class="st">'topright'</span>, <span class="at">col_scale=</span>col_scale,</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">yl=</span><span class="dv">6</span>, <span class="at">inset=</span><span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">05</span>), <span class="at">title=</span><span class="st">'y'</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -627,35 +645,36 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Multivariate Regressogram</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="do">## Cut each variable into bins, then interact them: each (x1c_sim, x2c_sim) cell</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="do">## gets its own mean. With the `*` interaction the model is fully saturated.</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>xy_sim<span class="sc">$</span>x1c_sim <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_sim<span class="sc">$</span>x1_sim, bks1)</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>xy_sim<span class="sc">$</span>x2c_sim <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_sim<span class="sc">$</span>x2_sim, bks2)</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="do">## Regressogram (interacted bins -&gt; one mean per (x1c_sim, x2c_sim) cell)</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> x1c_sim<span class="sc">*</span>x2c_sim, <span class="at">data=</span>xy_sim)</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="do">## Predicted Values</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="do">## For Points in Middle of Each Bin</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>pred_df_rgrm <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">x1c_sim=</span><span class="fu">levels</span>(xy_sim<span class="sc">$</span>x1c_sim),</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">x2c_sim=</span><span class="fu">levels</span>(xy_sim<span class="sc">$</span>x2c_sim))</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>pred_df_rgrm<span class="sc">$</span>y_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg, <span class="at">newdata=</span>pred_df_rgrm)</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>pred_df_rgrm <span class="ot">&lt;-</span> <span class="fu">cbind</span>(pred_df_rgrm, pred_x)</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot Predictions</span></span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">oma=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">2</span>))</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x1_sim <span class="sc">~</span> x2_sim, pred_df_rgrm,</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span>ycol_pal[<span class="fu">cut</span>(pred_df_rgrm<span class="sc">$</span>y_pred, col_scale)],</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">15</span>, <span class="at">cex=</span><span class="dv">2</span>,</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Regressogram Predictions'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="fu">add_legend</span>(<span class="at">x=</span><span class="st">'topright'</span>, <span class="at">col_scale=</span>col_scale,</span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">yl=</span><span class="dv">6</span>, <span class="at">inset=</span><span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">05</span>), <span class="at">title=</span><span class="st">'y'</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Multivariate Regressogram</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="do">## Cut each variable into bins, then interact them: each (x1c_sim, x2c_sim) cell</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="do">## gets its own mean. With the `*` interaction the model is fully saturated.</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>xy_sim<span class="sc">$</span>x1c_sim <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_sim<span class="sc">$</span>x1_sim, bks1)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>xy_sim<span class="sc">$</span>x2c_sim <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_sim<span class="sc">$</span>x2_sim, bks2)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="do">## Regressogram (interacted bins -&gt; one mean per (x1c_sim, x2c_sim) cell)</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> x1c_sim<span class="sc">*</span>x2c_sim, <span class="at">data=</span>xy_sim)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="do">## Predicted Values</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="do">## For Points in Middle of Each Bin</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>pred_df_rgrm <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">x1c_sim=</span><span class="fu">levels</span>(xy_sim<span class="sc">$</span>x1c_sim),</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">x2c_sim=</span><span class="fu">levels</span>(xy_sim<span class="sc">$</span>x2c_sim))</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>pred_df_rgrm<span class="sc">$</span>y_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg, <span class="at">newdata=</span>pred_df_rgrm)</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>pred_df_rgrm <span class="ot">&lt;-</span> <span class="fu">cbind</span>(pred_df_rgrm, pred_x)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot Predictions</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">oma=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">2</span>))</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x1_sim <span class="sc">~</span> x2_sim, pred_df_rgrm,</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span>ycol_pal[<span class="fu">cut</span>(pred_df_rgrm<span class="sc">$</span>y_pred, col_scale)],</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">15</span>, <span class="at">cex=</span><span class="dv">2</span>,</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Regressogram Predictions'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="fu">add_legend</span>(<span class="at">x=</span><span class="st">'topright'</span>, <span class="at">col_scale=</span>col_scale,</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">yl=</span><span class="dv">6</span>, <span class="at">inset=</span><span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">05</span>), <span class="at">title=</span><span class="st">'y'</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -734,7 +753,7 @@ window.Quarto = {
 </div>
 <div id="callout-4" class="callout-4-contents callout-collapse collapse show">
 <div class="callout-body-container callout-body">
-<p>A multivariate <em>piecewise regression</em> bins one explanatory variable and fits a separate OLS line on the others within each bin.</p>
+<p>A multivariate <em>piecewise regression</em> bins one explanatory variable and fits a separate OLS plane on all the explanatory variables within each bin.</p>
 </div>
 </div>
 </div>
@@ -742,29 +761,30 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Multivariate Piecewise Regression</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="do">## Bin x1_sim, then fit a linear model of y_sim on (x1_sim, x2_sim) within each bin</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>xy_sim<span class="sc">$</span>x1c_sim <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_sim<span class="sc">$</span>x1_sim, bks1)</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>preg <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> x1c_sim<span class="sc">/</span>(x1_sim <span class="sc">+</span> x2_sim), <span class="at">data=</span>xy_sim)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="do">## Predicted Values</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="do">## For the same grid of points used above</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>pred_df_preg <span class="ot">&lt;-</span> pred_x</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>pred_df_preg<span class="sc">$</span>x1c_sim <span class="ot">&lt;-</span> <span class="fu">cut</span>(pred_df_preg<span class="sc">$</span>x1_sim, bks1)</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>pred_df_preg<span class="sc">$</span>y_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(preg, <span class="at">newdata=</span>pred_df_preg)</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot Predictions</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">oma=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">2</span>))</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x1_sim <span class="sc">~</span> x2_sim, pred_df_preg,</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span>ycol_pal[<span class="fu">cut</span>(pred_df_preg<span class="sc">$</span>y_pred, col_scale)],</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">15</span>, <span class="at">cex=</span><span class="dv">2</span>,</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Piecewise Regression Predictions'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="fu">add_legend</span>(<span class="at">x=</span><span class="st">'topright'</span>, <span class="at">col_scale=</span>col_scale,</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">yl=</span><span class="dv">6</span>, <span class="at">inset=</span><span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">05</span>), <span class="at">title=</span><span class="st">'y'</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Multivariate Piecewise Regression</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="do">## Bin x1_sim, then fit a linear model of y_sim on (x1_sim, x2_sim) within each bin</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>xy_sim<span class="sc">$</span>x1c_sim <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_sim<span class="sc">$</span>x1_sim, bks1)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>preg <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> x1c_sim<span class="sc">/</span>(x1_sim <span class="sc">+</span> x2_sim), <span class="at">data=</span>xy_sim)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="do">## Predicted Values</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="do">## For the same grid of points used above</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>pred_df_preg <span class="ot">&lt;-</span> pred_x</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>pred_df_preg<span class="sc">$</span>x1c_sim <span class="ot">&lt;-</span> <span class="fu">cut</span>(pred_df_preg<span class="sc">$</span>x1_sim, bks1)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>pred_df_preg<span class="sc">$</span>y_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(preg, <span class="at">newdata=</span>pred_df_preg)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot Predictions</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">oma=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">2</span>))</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x1_sim <span class="sc">~</span> x2_sim, pred_df_preg,</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span>ycol_pal[<span class="fu">cut</span>(pred_df_preg<span class="sc">$</span>y_pred, col_scale)],</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">15</span>, <span class="at">cex=</span><span class="dv">2</span>,</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Piecewise Regression Predictions'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="fu">add_legend</span>(<span class="at">x=</span><span class="st">'topright'</span>, <span class="at">col_scale=</span>col_scale,</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">yl=</span><span class="dv">6</span>, <span class="at">inset=</span><span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">05</span>), <span class="at">title=</span><span class="st">'y'</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -799,12 +819,12 @@ window.Quarto = {
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Wages1, <span class="at">package=</span><span class="st">'Ecdat'</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>xy2_hat <span class="ot">&lt;-</span> Wages1[, <span class="fu">c</span>(<span class="st">'school'</span>, <span class="st">'wage'</span>)]</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(xy2_hat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'x_hat'</span>, <span class="st">'y_hat'</span>) <span class="co"># x_hat=years of schooling, y_hat=hourly wage</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_hat)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>xy_hat <span class="ot">&lt;-</span> Wages1[, <span class="fu">c</span>(<span class="st">'school'</span>, <span class="st">'wage'</span>)]</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(xy_hat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'x_hat'</span>, <span class="st">'y_hat'</span>) <span class="co"># x_hat=years of schooling, y_hat=hourly wage</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat)</span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co"># F-test for a break at school = 12</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>reg2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat<span class="sc">*</span><span class="fu">I</span>(x_hat<span class="sc">&gt;</span><span class="dv">12</span>), <span class="at">data=</span>xy2_hat)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>reg2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat<span class="sc">*</span><span class="fu">I</span>(x_hat<span class="sc">&gt;</span><span class="dv">12</span>), <span class="at">data=</span>xy_hat)</span>
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(reg, reg2)</span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="do">## Analysis of Variance Table</span></span>
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
@@ -817,12 +837,12 @@ window.Quarto = {
 <span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="do">## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
 <span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Chow test for the same break</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>data_splits <span class="ot">&lt;-</span> <span class="fu">split</span>(xy2_hat, xy2_hat<span class="sc">$</span>x_hat <span class="sc">&lt;=</span> <span class="dv">12</span>)</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>resids <span class="ot">&lt;-</span> <span class="fu">sapply</span>(data_splits, <span class="cf">function</span>(xy2_sub){</span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    reg_sub <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_sub)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>data_splits <span class="ot">&lt;-</span> <span class="fu">split</span>(xy_hat, xy_hat<span class="sc">$</span>x_hat <span class="sc">&lt;=</span> <span class="dv">12</span>)</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>resids <span class="ot">&lt;-</span> <span class="fu">sapply</span>(data_splits, <span class="cf">function</span>(xy_sub){</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    reg_sub <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_sub)</span>
 <span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(<span class="fu">resid</span>(reg_sub)<span class="sc">^</span><span class="dv">2</span>)</span>
 <span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>Ns <span class="ot">&lt;-</span> <span class="fu">sapply</span>(data_splits, <span class="cf">function</span>(xy2_sub){ <span class="fu">nrow</span>(xy2_sub) })</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>Ns <span class="ot">&lt;-</span> <span class="fu">sapply</span>(data_splits, <span class="cf">function</span>(xy_sub){ <span class="fu">nrow</span>(xy_sub) })</span>
 <span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Chow F-statistic: does splitting the sample reduce RSS enough?</span></span>
 <span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>Rt <span class="ot">&lt;-</span> (<span class="fu">sum</span>(<span class="fu">resid</span>(reg)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">-</span> <span class="fu">sum</span>(resids))<span class="sc">/</span><span class="fu">sum</span>(resids)</span>
@@ -830,13 +850,15 @@ window.Quarto = {
 <span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>Ft <span class="ot">&lt;-</span> Rt<span class="sc">*</span>Rb</span>
 <span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="fu">pf</span>(Ft, reg<span class="sc">$</span>rank, <span class="fu">sum</span>(Ns)<span class="sc">-</span><span class="dv">2</span><span class="sc">*</span>reg<span class="sc">$</span>rank, <span class="at">lower.tail=</span><span class="cn">FALSE</span>)</span>
 <span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 4.901941e-06</span></span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a><span class="co"># See also</span></span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a><span class="co"># strucchange::sctest(y_hat ~ x_hat, data=xy2_hat, type='Chow', point=.5)</span></span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a><span class="co"># segmented::segmented(reg)</span></span></code></pre></div>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="co"># The p-value is about 5e-06, which is evidence of a break at 12 years.</span></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a><span class="co"># Twelve years is the end of secondary school.</span></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a><span class="co"># See also</span></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a><span class="co"># strucchange::sctest(y_hat ~ x_hat, data=xy_hat, type='Chow', point=.5)</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a><span class="co"># segmented::segmented(reg)</span></span></code></pre></div>
 </details>
 </div>
-<p>A small <span class="math inline">\(p\)</span>-value is evidence that the wage-schooling slope changes at 12 years (the end of secondary school). The ratio <code>Rt</code> in the Chow test is the drop in the residual sum of squares, divided by the unrestricted residual sum of squares. This is the same loss-in-fit ratio as in <a href="./02_17_Gradients.html#model-fit">Model Fit</a>.</p>
+<p>A small <span class="math inline">\(p\)</span>-value is evidence that the line changes at the candidate break. The ratio <code>Rt</code> in the Chow test is the drop in the residual sum of squares, divided by the unrestricted residual sum of squares. This is the same loss-in-fit ratio as in <a href="./02_17_Gradients.html#model-fit">Model Fit</a>.</p>
 <div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-6-contents" aria-controls="callout-6" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -902,12 +924,12 @@ h_{1} &amp; 0 &amp; 0  \\
 </div>
 </div>
 </div>
-<p>To make this concrete, we use cross-validation to choose the number of <code>x1_sim</code> bins for the piecewise regression above. We split the data into 5 folds, fit the model on 4 of them, and measure the squared prediction error on the held-out fold. The noise in <code>y_sim</code> is tiny compared to its curvature, so we first add more noise (standard deviation <span class="math inline">\(2500\)</span>); otherwise the error would keep falling across all the bin counts we try.</p>
+<p>To make this concrete, we use cross-validation to choose the number of <code>x1_sim</code> bins for the piecewise regression above. We split the data into 5 folds, fit the model on 4 of them, and measure the squared prediction error on the held-out fold. With almost no noise, finer bins tend to keep lowering the error, so we first add more noise to <code>y_sim</code> (standard deviation <span class="math inline">\(2500\)</span>).</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">## 5-fold cross-validation for the number of x1_sim bins</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="do">## 5-fold cross-validation for the number of x1_sim bins</span></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>n_folds <span class="ot">&lt;-</span> <span class="dv">5</span></span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>fold_id <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>n_folds, <span class="at">length.out=</span><span class="fu">nrow</span>(xy_sim)))</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>bin_counts <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">6</span>, <span class="dv">10</span>, <span class="dv">14</span>, <span class="dv">18</span>, <span class="dv">22</span>)</span>
@@ -915,28 +937,30 @@ h_{1} &amp; 0 &amp; 0  \\
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Noisier copy of the data, so that too many bins overfit</span></span>
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>xy_cv_sim <span class="ot">&lt;-</span> xy_sim</span>
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>xy_cv_sim<span class="sc">$</span>y_sim <span class="ot">&lt;-</span> xy_sim<span class="sc">$</span>y_sim <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="fu">nrow</span>(xy_sim), <span class="at">sd=</span><span class="dv">2500</span>)</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>cv_mse <span class="ot">&lt;-</span> <span class="fu">sapply</span>(bin_counts, <span class="cf">function</span>(L){</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    bks <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">20</span>, <span class="at">length.out=</span>L<span class="sc">+</span><span class="dv">1</span>)</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    fold_mse <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>n_folds, <span class="cf">function</span>(k){</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>        xy_train_sim <span class="ot">&lt;-</span> xy_cv_sim[fold_id <span class="sc">!=</span> k, ]</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>        xy_test_sim  <span class="ot">&lt;-</span> xy_cv_sim[fold_id <span class="sc">==</span> k, ]</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        xy_train_sim<span class="sc">$</span>x1c_sim <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_train_sim<span class="sc">$</span>x1_sim, bks)</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        xy_test_sim<span class="sc">$</span>x1c_sim  <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_test_sim<span class="sc">$</span>x1_sim, bks)</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        reg_k <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> x1c_sim<span class="sc">/</span>(x1_sim <span class="sc">+</span> x2_sim), <span class="at">data=</span>xy_train_sim)</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>        y_pred_k <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg_k, <span class="at">newdata=</span>xy_test_sim)</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mean</span>((xy_test_sim<span class="sc">$</span>y_sim <span class="sc">-</span> y_pred_k)<span class="sc">^</span><span class="dv">2</span>, <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    })</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mean</span>(fold_mse)</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot CV error against model complexity</span></span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bin_counts, cv_mse, <span class="at">type=</span><span class="st">'o'</span>, <span class="at">pch=</span><span class="dv">16</span>,</span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Number of x1 bins'</span>, <span class="at">ylab=</span><span class="st">'5-fold CV mean squared error'</span>,</span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>L_star <span class="ot">&lt;-</span> bin_counts[<span class="fu">which.min</span>(cv_mse)]</span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>L_star, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'CV-optimal: '</span>, L_star, <span class="st">' bins'</span>), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co"># The noise in y_sim alone is tiny compared to its curvature.</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Without more, the error would keep falling across all these bin counts.</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>cv_mse <span class="ot">&lt;-</span> <span class="fu">sapply</span>(bin_counts, <span class="cf">function</span>(L){</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    bks <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">20</span>, <span class="at">length.out=</span>L<span class="sc">+</span><span class="dv">1</span>)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    fold_mse <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>n_folds, <span class="cf">function</span>(k){</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        xy_train_sim <span class="ot">&lt;-</span> xy_cv_sim[fold_id <span class="sc">!=</span> k, ]</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        xy_test_sim  <span class="ot">&lt;-</span> xy_cv_sim[fold_id <span class="sc">==</span> k, ]</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        xy_train_sim<span class="sc">$</span>x1c_sim <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_train_sim<span class="sc">$</span>x1_sim, bks)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>        xy_test_sim<span class="sc">$</span>x1c_sim  <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_test_sim<span class="sc">$</span>x1_sim, bks)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        reg_k <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_sim <span class="sc">~</span> x1c_sim<span class="sc">/</span>(x1_sim <span class="sc">+</span> x2_sim), <span class="at">data=</span>xy_train_sim)</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>        y_pred_k <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg_k, <span class="at">newdata=</span>xy_test_sim)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mean</span>((xy_test_sim<span class="sc">$</span>y_sim <span class="sc">-</span> y_pred_k)<span class="sc">^</span><span class="dv">2</span>, <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mean</span>(fold_mse)</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot CV error against model complexity</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bin_counts, cv_mse, <span class="at">type=</span><span class="st">'o'</span>, <span class="at">pch=</span><span class="dv">16</span>,</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Number of x1 bins'</span>, <span class="at">ylab=</span><span class="st">'5-fold CV mean squared error'</span>,</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>L_star <span class="ot">&lt;-</span> bin_counts[<span class="fu">which.min</span>(cv_mse)]</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>L_star, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="fu">paste0</span>(<span class="st">'CV-optimal: '</span>, L_star, <span class="st">' bins'</span>), <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -945,8 +969,12 @@ h_{1} &amp; 0 &amp; 0  \\
 </figure>
 </div>
 </div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The error is smallest at 10 bins, between too few and too many.</span></span></code></pre></div>
+</details>
 </div>
-<p>Too few bins cannot capture the curvature in <code>x1_sim</code> (high bias); too many bins split the data so finely that each local regression is noisy (high variance). The cross-validated error is smallest in between.</p>
+<p>Too few bins cannot capture the curvature in <code>x1_sim</code> (high bias); too many bins split the data so finely that each local regression is noisy (high variance). The cross-validated error is usually smallest in between.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-9-contents" aria-controls="callout-9" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -999,30 +1027,31 @@ h_{1} &amp; 0 &amp; 0  \\
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Method 1: finite-difference gradients from the regressogram</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="do">## Arrange the regressogram predictions into an x1_sim-by-x2_sim grid</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>grid_y_pred <span class="ot">&lt;-</span> <span class="fu">matrix</span>(pred_df_rgrm<span class="sc">$</span>y_pred,</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">nrow=</span><span class="fu">length</span>(mids1), <span class="at">ncol=</span><span class="fu">length</span>(mids2))</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="do">## Centered finite difference at each interior x1_sim bin edge, with d equal to the bin width</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="do">## The points x1 - d/2 and x1 + d/2 are the midpoints of the two adjacent bins</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>d1 <span class="ot">&lt;-</span> <span class="fu">diff</span>(bks1)[<span class="dv">1</span>]</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>grad_x1 <span class="ot">&lt;-</span> <span class="fu">apply</span>(grid_y_pred, <span class="dv">2</span>, diff)<span class="sc">/</span>d1</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>x1_edges <span class="ot">&lt;-</span> mids1[<span class="sc">-</span><span class="dv">1</span>] <span class="sc">-</span> d1<span class="sc">/</span><span class="dv">2</span></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="do">## Summarize the gradient distribution</span></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(grad_x1, <span class="at">breaks=</span><span class="dv">20</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(b)[<span class="dv">1</span>](x)))</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Distribution of x1-gradients'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">rep</span>(x1_edges, <span class="fu">ncol</span>(grad_x1)), grad_x1,</span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>),</span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(x[<span class="dv">1</span>]), <span class="at">ylab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(b)[<span class="dv">1</span>](x)),</span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Gradient vs x1'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Method 1: finite-difference gradients from the regressogram</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="do">## Arrange the regressogram predictions into an x1_sim-by-x2_sim grid</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>grid_y_pred <span class="ot">&lt;-</span> <span class="fu">matrix</span>(pred_df_rgrm<span class="sc">$</span>y_pred,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">nrow=</span><span class="fu">length</span>(mids1), <span class="at">ncol=</span><span class="fu">length</span>(mids2))</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="do">## Centered finite difference at each interior x1_sim bin edge, with d equal to the bin width</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="do">## The points x1 - d/2 and x1 + d/2 are the midpoints of the two adjacent bins</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>d1 <span class="ot">&lt;-</span> <span class="fu">diff</span>(bks1)[<span class="dv">1</span>]</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>grad_x1 <span class="ot">&lt;-</span> <span class="fu">apply</span>(grid_y_pred, <span class="dv">2</span>, diff)<span class="sc">/</span>d1</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>x1_edges <span class="ot">&lt;-</span> mids1[<span class="sc">-</span><span class="dv">1</span>] <span class="sc">-</span> d1<span class="sc">/</span><span class="dv">2</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="do">## Summarize the gradient distribution</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(grad_x1, <span class="at">breaks=</span><span class="dv">20</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(b)[<span class="dv">1</span>](x)))</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Distribution of x1-gradients'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">rep</span>(x1_edges, <span class="fu">ncol</span>(grad_x1)), grad_x1,</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>),</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(x[<span class="dv">1</span>]), <span class="at">ylab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(b)[<span class="dv">1</span>](x)),</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Gradient vs x1'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1038,18 +1067,19 @@ h_{1} &amp; 0 &amp; 0  \\
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Method 2: slope coefficients from the piecewise regression</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="do">## The within-bin slope on x1_sim is itself a gradient estimate</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>coef_preg <span class="ot">&lt;-</span> <span class="fu">coef</span>(preg)</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>slope_x1 <span class="ot">&lt;-</span> coef_preg[<span class="fu">grep</span>(<span class="st">':x1_sim$'</span>, <span class="fu">names</span>(coef_preg))]</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="do">## Mean and standard deviation of the x1_sim-gradient</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">mean=</span><span class="fu">mean</span>(slope_x1, <span class="at">na.rm=</span><span class="cn">TRUE</span>), <span class="at">sd=</span><span class="fu">sd</span>(slope_x1, <span class="at">na.rm=</span><span class="cn">TRUE</span>))</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="do">##        mean          sd </span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="do">##   0.8222098 422.1854069</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Method 2: slope coefficients from the piecewise regression</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="do">##################</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="do">## The within-bin slope on x1_sim is itself a gradient estimate</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>coef_preg <span class="ot">&lt;-</span> <span class="fu">coef</span>(preg)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>slope_x1 <span class="ot">&lt;-</span> coef_preg[<span class="fu">grep</span>(<span class="st">':x1_sim$'</span>, <span class="fu">names</span>(coef_preg))]</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="do">## Mean and standard deviation of the x1_sim-gradient</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">mean=</span><span class="fu">mean</span>(slope_x1, <span class="at">na.rm=</span><span class="cn">TRUE</span>), <span class="at">sd=</span><span class="fu">sd</span>(slope_x1, <span class="at">na.rm=</span><span class="cn">TRUE</span>))</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="do">##        mean          sd </span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="do">##   0.8222098 422.1854069</span></span></code></pre></div>
 </details>
 </div>
 <p>The mean gradient is a single-number summary, much like an OLS slope. The standard deviation across bins measures how much the gradient changes over the data, which a single OLS coefficient cannot show. To test whether a mean gradient differs from zero, bootstrap it exactly as in <a href="./02_17_Gradients.html#hypothesis-testing">Gradients</a>. To test whether all gradients equal zero, use <a href="./02_17_Gradients.html#all-gradients">Racine’s statistic</a> instead.</p>

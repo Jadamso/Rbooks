@@ -500,7 +500,21 @@ window.Quarto = {
 
 
 <hr>
-<p>The previous chapter showed how observational data complicate causal inference. This chapter introduces the standard remedies. Experiments combine <em>control</em>, where the researcher fixes other factors, and <em>randomization</em>, where the researcher manipulates one factor independently of the others. Quasi-experimental methods such as RDD, DID, and 2SLS can recover causal estimates when full experimental control is unavailable.</p>
+<p>The previous chapter showed how observational data complicate causal inference. Experiments combine <em>control</em>, where the researcher fixes other factors, and <em>randomization</em>, where the researcher manipulates one factor independently of the others.</p>
+<p>This chapter asks two questions.</p>
+<ul>
+<li>How does an experiment recover a causal effect?
+<ul>
+<li><em>Control and randomization</em>: these break the correlation between a regressor and the error term that produces <a href="./03_26_ObservationalData.html#endogeneity">endogeneity</a>. A cost shock in the <a href="./03_26_ObservationalData.html#competitive-market-equilibrium">competitive market</a> shows how.</li>
+<li><em>Blocking</em>: this randomizes treatment within homogeneous groups, so the estimated effect is more precise.</li>
+</ul></li>
+<li>How do quasi-experiments recover a causal effect without full control?
+<ul>
+<li><em>Regression discontinuity design (RDD)</em>: this estimates the effect as the jump in the outcome at a known cutoff.</li>
+<li><em>Difference-in-differences (DID)</em>: this compares the pre/post change in a treated group to the pre/post change in a control group.</li>
+<li><em>Two-stage least squares (2SLS)</em>: this uses an instrumental variable to recover the causal effect of an endogenous regressor.</li>
+</ul></li>
+</ul>
 <section id="design-basics" class="level2" data-number="27.1">
 <h2 data-number="27.1" class="anchored" data-anchor-id="design-basics"><span class="header-section-number">27.1</span> Design Basics</h2>
 <section id="control-and-randomize" class="level4 unnumbered">
@@ -530,47 +544,49 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Demand Curve Simulator</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>qd_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(p, <span class="at">Ad=</span><span class="dv">8</span>, <span class="at">Bd=</span><span class="sc">-</span>.<span class="dv">8</span>, <span class="at">Ed_sigma=</span>.<span class="dv">25</span>){</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    Qd <span class="ot">&lt;-</span> Ad <span class="sc">+</span> Bd<span class="sc">*</span>p <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, Ed_sigma)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(Qd)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Supply Curve Simulator</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>qs_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(p, <span class="at">As=</span><span class="sc">-</span><span class="dv">8</span>, <span class="at">Bs=</span><span class="dv">1</span>, <span class="at">Es_sigma=</span>.<span class="dv">25</span>){</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    Qs <span class="ot">&lt;-</span> As <span class="sc">+</span> Bs<span class="sc">*</span>p <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, Es_sigma)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(Qs)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Quantity Supplied and Demanded at 3 Prices</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">cbind</span>(<span class="at">P=</span><span class="dv">8</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">D=</span><span class="fu">qd_fun</span>(<span class="dv">8</span><span class="sc">:</span><span class="dv">10</span>), <span class="at">S=</span><span class="fu">qs_fun</span>(<span class="dv">8</span><span class="sc">:</span><span class="dv">10</span>))</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="do">##       P          D          S</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="do">## [1,]  8  1.4433865 0.04591083</span></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="do">## [2,]  9  0.6433865 1.04591083</span></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [3,] 10 -0.1566135 2.04591083</span></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Market Equilibrium Finder</span></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>eq_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(demand, supply, P){</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute EQ (what we observe)</span></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    eq_id <span class="ot">&lt;-</span> <span class="fu">which.min</span>( <span class="fu">abs</span>(demand<span class="sc">-</span>supply) )</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">P=</span>P[eq_id], <span class="at">Q=</span>demand[eq_id]) </span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Demand Curve Simulator</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>qd_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(p, <span class="at">Ad=</span><span class="dv">8</span>, <span class="at">Bd=</span><span class="sc">-</span>.<span class="dv">8</span>, <span class="at">Ed_sigma=</span>.<span class="dv">25</span>){</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    Qd <span class="ot">&lt;-</span> Ad <span class="sc">+</span> Bd<span class="sc">*</span>p <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, Ed_sigma)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(Qd)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Supply Curve Simulator</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>qs_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(p, <span class="at">As=</span><span class="sc">-</span><span class="dv">8</span>, <span class="at">Bs=</span><span class="dv">1</span>, <span class="at">Es_sigma=</span>.<span class="dv">25</span>){</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    Qs <span class="ot">&lt;-</span> As <span class="sc">+</span> Bs<span class="sc">*</span>p <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, Es_sigma)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(Qs)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Quantity Supplied and Demanded at 3 Prices</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">cbind</span>(<span class="at">P=</span><span class="dv">8</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">D=</span><span class="fu">qd_fun</span>(<span class="dv">8</span><span class="sc">:</span><span class="dv">10</span>), <span class="at">S=</span><span class="fu">qs_fun</span>(<span class="dv">8</span><span class="sc">:</span><span class="dv">10</span>))</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="do">##       P          D          S</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="do">## [1,]  8  1.4433865 0.04591083</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [2,]  9  0.6433865 1.04591083</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="do">## [3,] 10 -0.1566135 2.04591083</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Market Equilibrium Finder</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>eq_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(demand, supply, P){</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute EQ (what we observe)</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    eq_id <span class="ot">&lt;-</span> <span class="fu">which.min</span>( <span class="fu">abs</span>(demand<span class="sc">-</span>supply) )</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">P=</span>P[eq_id], <span class="at">Q=</span>demand[eq_id]) </span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </details>
 </div>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">300</span> <span class="co"># Number of Market Interactions</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>P <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">5</span>, <span class="dv">10</span>, <span class="at">by=</span>.<span class="dv">01</span>) <span class="co"># Price Range to Consider</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>EQ1 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>N, <span class="cf">function</span>(n){</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Market Data Generating Process</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    demand <span class="ot">&lt;-</span> <span class="fu">qd_fun</span>(P)</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    supply <span class="ot">&lt;-</span> <span class="fu">qs_fun</span>(P)</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">eq_fun</span>(demand, supply, P)    </span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>xy1_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">t</span>(EQ1), <span class="at">cost=</span><span class="st">'1'</span>, <span class="at">T=</span><span class="dv">1</span><span class="sc">:</span>N)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">300</span> <span class="co"># Number of Market Interactions</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>P <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">5</span>, <span class="dv">10</span>, <span class="at">by=</span>.<span class="dv">01</span>) <span class="co"># Price Range to Consider</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>EQ1 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>N, <span class="cf">function</span>(n){</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Market Data Generating Process</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    demand <span class="ot">&lt;-</span> <span class="fu">qd_fun</span>(P)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    supply <span class="ot">&lt;-</span> <span class="fu">qs_fun</span>(P)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">eq_fun</span>(demand, supply, P)    </span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>xy1_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">t</span>(EQ1), <span class="at">cost=</span><span class="st">'1'</span>, <span class="at">T=</span><span class="dv">1</span><span class="sc">:</span>N)</span></code></pre></div>
 </details>
 </div>
 <p>If you have exogenous variation on one side of the market, you can get information on the other. For example, lower costs shift out supply (more is produced at given price), allowing you to trace out part of a demand curve.</p>
@@ -598,27 +614,28 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># New Observations After Cost Change</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>EQ2 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>N, <span class="cf">function</span>(n){</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    demand <span class="ot">&lt;-</span> <span class="fu">qd_fun</span>(P)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    supply2 <span class="ot">&lt;-</span> <span class="fu">qs_fun</span>(P, <span class="at">As=</span><span class="sc">-</span><span class="fl">6.5</span>) <span class="co"># More Supplied at Given Price</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">eq_fun</span>(demand, supply2, P)</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># lines(supply2, P, col=rgb(0, 0, 1, .01))</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">#points(eq[2], eq[1], col=rgb(0, 0, 1, .05), pch=16)</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>xy2_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">t</span>(EQ2), <span class="at">cost=</span><span class="st">'2'</span>, <span class="at">T=</span>(<span class="dv">1</span><span class="sc">:</span>N) <span class="sc">+</span> N)</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>xy2_sim <span class="ot">&lt;-</span> <span class="fu">rbind</span>(xy1_sim, xy2_sim)</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot Simulated Market Data</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">as.numeric</span>(xy2_sim<span class="sc">$</span>cost)<span class="sc">==</span><span class="dv">2</span>, <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">2</span>), <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">2</span>))</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.new</span>()</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.window</span>(<span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>), <span class="at">ylim=</span><span class="fu">range</span>(P))</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(xy2_sim<span class="sc">$</span>Q, xy2_sim<span class="sc">$</span>P, <span class="at">col=</span>cols, <span class="at">pch=</span><span class="dv">16</span>)</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>)</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>)</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">'Quantity'</span>, <span class="dv">1</span>, <span class="at">line=</span><span class="dv">2</span>)</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">'Price'</span>, <span class="dv">2</span>, <span class="at">line=</span><span class="dv">2</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># New Observations After Cost Change</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>EQ2 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>N, <span class="cf">function</span>(n){</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    demand <span class="ot">&lt;-</span> <span class="fu">qd_fun</span>(P)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    supply2 <span class="ot">&lt;-</span> <span class="fu">qs_fun</span>(P, <span class="at">As=</span><span class="sc">-</span><span class="fl">6.5</span>) <span class="co"># More Supplied at Given Price</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">eq_fun</span>(demand, supply2, P)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># lines(supply2, P, col=rgb(0, 0, 1, .01))</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">#points(eq[2], eq[1], col=rgb(0, 0, 1, .05), pch=16)</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>xy2_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">t</span>(EQ2), <span class="at">cost=</span><span class="st">'2'</span>, <span class="at">T=</span>(<span class="dv">1</span><span class="sc">:</span>N) <span class="sc">+</span> N)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>xy2_sim <span class="ot">&lt;-</span> <span class="fu">rbind</span>(xy1_sim, xy2_sim)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot Simulated Market Data</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">as.numeric</span>(xy2_sim<span class="sc">$</span>cost)<span class="sc">==</span><span class="dv">2</span>, <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">2</span>), <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">2</span>))</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.new</span>()</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="fu">plot.window</span>(<span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>), <span class="at">ylim=</span><span class="fu">range</span>(P))</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(xy2_sim<span class="sc">$</span>Q, xy2_sim<span class="sc">$</span>P, <span class="at">col=</span>cols, <span class="at">pch=</span><span class="dv">16</span>)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>)</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">'Quantity'</span>, <span class="dv">1</span>, <span class="at">line=</span><span class="dv">2</span>)</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">'Price'</span>, <span class="dv">2</span>, <span class="at">line=</span><span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -656,19 +673,20 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Locally Linear Regression </span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># (Compare means near break)</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">as.numeric</span>(xy2_sim<span class="sc">$</span>cost)<span class="sc">==</span><span class="dv">2</span>, <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">5</span>), <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">5</span>))</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(P <span class="sc">~</span> T, xy2_sim, <span class="at">main=</span><span class="cn">NA</span>, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span>cols)</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Effect of Cost Shock on Price'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>regP1 <span class="ot">&lt;-</span> <span class="fu">loess</span>(P <span class="sc">~</span> T, xy2_sim[xy2_sim<span class="sc">$</span>cost<span class="sc">==</span><span class="dv">1</span>, ])</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>x1_sim <span class="ot">&lt;-</span> regP1<span class="sc">$</span>x</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">#lm(): x1_sim &lt;- regP1$model$T</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x1_sim, <span class="fu">predict</span>(regP1), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>regP2 <span class="ot">&lt;-</span> <span class="fu">loess</span>(P <span class="sc">~</span> T, xy2_sim[xy2_sim<span class="sc">$</span>cost<span class="sc">==</span><span class="dv">2</span>, ])</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>x2_sim <span class="ot">&lt;-</span> regP2<span class="sc">$</span>x <span class="co">#regP1$model$T</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x2_sim, <span class="fu">predict</span>(regP2), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Locally Linear Regression </span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># (Compare means near break)</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">as.numeric</span>(xy2_sim<span class="sc">$</span>cost)<span class="sc">==</span><span class="dv">2</span>, <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">5</span>), <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">5</span>))</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(P <span class="sc">~</span> T, xy2_sim, <span class="at">main=</span><span class="cn">NA</span>, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span>cols)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Effect of Cost Shock on Price'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>regP1 <span class="ot">&lt;-</span> <span class="fu">loess</span>(P <span class="sc">~</span> T, xy2_sim[xy2_sim<span class="sc">$</span>cost<span class="sc">==</span><span class="dv">1</span>, ])</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>x1_sim <span class="ot">&lt;-</span> regP1<span class="sc">$</span>x</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co">#lm(): x1_sim &lt;- regP1$model$T</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x1_sim, <span class="fu">predict</span>(regP1), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>regP2 <span class="ot">&lt;-</span> <span class="fu">loess</span>(P <span class="sc">~</span> T, xy2_sim[xy2_sim<span class="sc">$</span>cost<span class="sc">==</span><span class="dv">2</span>, ])</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>x2_sim <span class="ot">&lt;-</span> regP2<span class="sc">$</span>x <span class="co">#regP1$model$T</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x2_sim, <span class="fu">predict</span>(regP2), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -984,50 +1002,51 @@ F Statistic (df = 3; 96)
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>EQ3 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>(<span class="dv">2</span><span class="sc">*</span>N), <span class="cf">function</span>(n){</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Market Mechanisms</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    demand <span class="ot">&lt;-</span> <span class="fu">qd_fun</span>(P)</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    supply <span class="ot">&lt;-</span> <span class="fu">qs_fun</span>(P)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute EQ (what we observe)</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    eq_id <span class="ot">&lt;-</span> <span class="fu">which.min</span>( <span class="fu">abs</span>(demand<span class="sc">-</span>supply) )</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">P=</span>P[eq_id], <span class="at">Q=</span>demand[eq_id]) </span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Return Equilibrium Observations</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>xy3_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">t</span>(EQ3), <span class="at">cost=</span><span class="st">'1'</span>, <span class="at">T=</span><span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(EQ3))</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>xy3_pre_sim  <span class="ot">&lt;-</span> xy3_sim[xy3_sim<span class="sc">$</span>T <span class="sc">&lt;=</span> N , ]</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>xy3_post_sim <span class="ot">&lt;-</span> xy3_sim[xy3_sim<span class="sc">$</span>T <span class="sc">&gt;</span> N , ]</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot Price Data</span></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(P <span class="sc">~</span> T, xy2_sim, <span class="at">main=</span><span class="cn">NA</span>, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span>cols, <span class="at">cex=</span>.<span class="dv">5</span>)</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Effect of Cost Shock on Price'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x1_sim, <span class="fu">predict</span>(regP1), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x2_sim, <span class="fu">predict</span>(regP2), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="co"># W/ Control group</span></span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(P <span class="sc">~</span> T, xy3_sim, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">5</span>), <span class="at">cex=</span>.<span class="dv">5</span>)</span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>regP3a <span class="ot">&lt;-</span> <span class="fu">loess</span>(P <span class="sc">~</span> T, xy3_pre_sim)</span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>x3a_sim <span class="ot">&lt;-</span> regP3a<span class="sc">$</span>x</span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x3a_sim, <span class="fu">predict</span>(regP3a), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>regP3b <span class="ot">&lt;-</span> <span class="fu">loess</span>(P <span class="sc">~</span> T, xy3_post_sim)</span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>x3b_sim <span class="ot">&lt;-</span> regP3b<span class="sc">$</span>x</span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x3b_sim, <span class="fu">predict</span>(regP3b), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a></span>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>EQ3 <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>(<span class="dv">2</span><span class="sc">*</span>N), <span class="cf">function</span>(n){</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Market Mechanisms</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    demand <span class="ot">&lt;-</span> <span class="fu">qd_fun</span>(P)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    supply <span class="ot">&lt;-</span> <span class="fu">qs_fun</span>(P)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute EQ (what we observe)</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    eq_id <span class="ot">&lt;-</span> <span class="fu">which.min</span>( <span class="fu">abs</span>(demand<span class="sc">-</span>supply) )</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    eq <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">P=</span>P[eq_id], <span class="at">Q=</span>demand[eq_id]) </span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Return Equilibrium Observations</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(eq)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>xy3_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">t</span>(EQ3), <span class="at">cost=</span><span class="st">'1'</span>, <span class="at">T=</span><span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(EQ3))</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>xy3_pre_sim  <span class="ot">&lt;-</span> xy3_sim[xy3_sim<span class="sc">$</span>T <span class="sc">&lt;=</span> N , ]</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>xy3_post_sim <span class="ot">&lt;-</span> xy3_sim[xy3_sim<span class="sc">$</span>T <span class="sc">&gt;</span> N , ]</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot Price Data</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(P <span class="sc">~</span> T, xy2_sim, <span class="at">main=</span><span class="cn">NA</span>, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span>cols, <span class="at">cex=</span>.<span class="dv">5</span>)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Effect of Cost Shock on Price'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x1_sim, <span class="fu">predict</span>(regP1), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x2_sim, <span class="fu">predict</span>(regP2), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="co"># W/ Control group</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(P <span class="sc">~</span> T, xy3_sim, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">5</span>), <span class="at">cex=</span>.<span class="dv">5</span>)</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>regP3a <span class="ot">&lt;-</span> <span class="fu">loess</span>(P <span class="sc">~</span> T, xy3_pre_sim)</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>x3a_sim <span class="ot">&lt;-</span> regP3a<span class="sc">$</span>x</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x3a_sim, <span class="fu">predict</span>(regP3a), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>regP3b <span class="ot">&lt;-</span> <span class="fu">loess</span>(P <span class="sc">~</span> T, xy3_post_sim)</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>x3b_sim <span class="ot">&lt;-</span> regP3b<span class="sc">$</span>x</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x3b_sim, <span class="fu">predict</span>(regP3b), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
 <span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot Quantity Data</span></span>
-<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(Q <span class="sc">~</span> T, xy2_sim, <span class="at">main=</span><span class="cn">NA</span>, <span class="at">pch=</span><span class="dv">17</span>, <span class="at">col=</span>cols, <span class="at">cex=</span>.<span class="dv">5</span>)</span>
-<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Effect of Cost Shock on Quantity'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x1_sim, <span class="fu">predict</span>(regQ1), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x2_sim, <span class="fu">predict</span>(regQ2), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a><span class="co"># W/ Control group</span></span>
-<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(Q <span class="sc">~</span> T, xy3_sim, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">5</span>), <span class="at">cex=</span>.<span class="dv">5</span>)</span>
-<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>regQ3a <span class="ot">&lt;-</span> <span class="fu">loess</span>(Q <span class="sc">~</span> T, xy3_pre_sim)</span>
-<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x3a_sim, <span class="fu">predict</span>(regQ3a), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>regQ3b <span class="ot">&lt;-</span> <span class="fu">loess</span>(Q <span class="sc">~</span> T, xy3_post_sim)</span>
-<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x3b_sim, <span class="fu">predict</span>(regQ3b), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code></pre></div>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot Quantity Data</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(Q <span class="sc">~</span> T, xy2_sim, <span class="at">main=</span><span class="cn">NA</span>, <span class="at">pch=</span><span class="dv">17</span>, <span class="at">col=</span>cols, <span class="at">cex=</span>.<span class="dv">5</span>)</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Effect of Cost Shock on Quantity'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x1_sim, <span class="fu">predict</span>(regQ1), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x2_sim, <span class="fu">predict</span>(regQ2), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a><span class="co"># W/ Control group</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(Q <span class="sc">~</span> T, xy3_sim, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">5</span>), <span class="at">cex=</span>.<span class="dv">5</span>)</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>regQ3a <span class="ot">&lt;-</span> <span class="fu">loess</span>(Q <span class="sc">~</span> T, xy3_pre_sim)</span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x3a_sim, <span class="fu">predict</span>(regQ3a), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>regQ3b <span class="ot">&lt;-</span> <span class="fu">loess</span>(Q <span class="sc">~</span> T, xy3_post_sim)</span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x3b_sim, <span class="fu">predict</span>(regQ3b), <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1040,20 +1059,21 @@ F Statistic (df = 3; 96)
 <p>Linear Regression Estimates</p>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Pool Data</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>xy_pooled_sim <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cbind</span>(xy2_sim, <span class="at">EverTreated=</span><span class="dv">1</span>, <span class="at">PostPeriod=</span>(xy2_sim<span class="sc">$</span>T <span class="sc">&gt;</span> N)),</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cbind</span>(xy3_sim, <span class="at">EverTreated=</span><span class="dv">0</span>, <span class="at">PostPeriod=</span>(xy3_sim<span class="sc">$</span>T <span class="sc">&gt;</span> N)))</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>xy_pooled_sim<span class="sc">$</span>EverTreated <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(xy_pooled_sim<span class="sc">$</span>EverTreated)</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>xy_pooled_sim<span class="sc">$</span>PostPeriod <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(xy_pooled_sim<span class="sc">$</span>PostPeriod)</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate Level Shift for Different Groups after T=300</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>regP <span class="ot">&lt;-</span> <span class="fu">lm</span>(P <span class="sc">~</span> PostPeriod<span class="sc">*</span>EverTreated, xy_pooled_sim)</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>regQ <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q <span class="sc">~</span> PostPeriod<span class="sc">*</span>EverTreated, xy_pooled_sim)</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>stargazer<span class="sc">::</span><span class="fu">stargazer</span>(regP, regQ, </span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">type=</span><span class="st">'html'</span>,</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">title=</span><span class="st">'Recipe DiD'</span>,</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">header=</span><span class="cn">FALSE</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Pool Data</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>xy_pooled_sim <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cbind</span>(xy2_sim, <span class="at">EverTreated=</span><span class="dv">1</span>, <span class="at">PostPeriod=</span>(xy2_sim<span class="sc">$</span>T <span class="sc">&gt;</span> N)),</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cbind</span>(xy3_sim, <span class="at">EverTreated=</span><span class="dv">0</span>, <span class="at">PostPeriod=</span>(xy3_sim<span class="sc">$</span>T <span class="sc">&gt;</span> N)))</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>xy_pooled_sim<span class="sc">$</span>EverTreated <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(xy_pooled_sim<span class="sc">$</span>EverTreated)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>xy_pooled_sim<span class="sc">$</span>PostPeriod <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(xy_pooled_sim<span class="sc">$</span>PostPeriod)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate Level Shift for Different Groups after T=300</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>regP <span class="ot">&lt;-</span> <span class="fu">lm</span>(P <span class="sc">~</span> PostPeriod<span class="sc">*</span>EverTreated, xy_pooled_sim)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>regQ <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q <span class="sc">~</span> PostPeriod<span class="sc">*</span>EverTreated, xy_pooled_sim)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>stargazer<span class="sc">::</span><span class="fu">stargazer</span>(regP, regQ, </span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">type=</span><span class="st">'html'</span>,</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">title=</span><span class="st">'Recipe DiD'</span>,</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">header=</span><span class="cn">FALSE</span>)</span></code></pre></div>
 </details>
 <table style="text-align:center">
 <caption>
@@ -1352,8 +1372,8 @@ F Statistic (df = 3; 1196)
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Contrast completely randomized vs blocked assignment</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Contrast completely randomized vs blocked assignment</span></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>industry <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">'Computer'</span>, <span class="st">'Lumber'</span>), <span class="at">each=</span><span class="dv">20</span>)</span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">length</span>(industry)</span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
@@ -1375,10 +1395,11 @@ F Statistic (df = 3; 1196)
 <span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="do">##           blocked</span></span>
 <span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="do">## industry   Control Treat</span></span>
 <span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="do">##   Computer      10    10</span></span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="do">##   Lumber        10    10</span></span></code></pre></div>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="do">##   Lumber        10    10</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Every seed gives 10-10 in each industry.</span></span></code></pre></div>
 </details>
 </div>
-<p>Notice that the blocked design always returns 10-10 in each industry, whereas the completely randomized design can drift away from that balance from one realization to the next.</p>
+<p>Notice that the blocked design always returns an even split in each industry, whereas the completely randomized design can drift away from that balance from one realization to the next.</p>
 <p>A within-subject design takes blocking to its limit, with each subject as its own block <span class="citation" data-cites="Fisher1935">(<a href="#ref-Fisher1935" role="doc-biblioref">Fisher 1935</a>)</span>. Standard errors can then be clustered by session or by matched pair, using a cluster bootstrap or jackknife <span class="citation" data-cites="CameronEtAl2008 CameronMiller2015 MacKinnonEtAl2023 MacKinnonEtAl2023_Jackknife Hansen2026">(<a href="#ref-CameronEtAl2008" role="doc-biblioref">Cameron et al. 2008</a>; <a href="#ref-CameronMiller2015" role="doc-biblioref">Cameron and Miller 2015</a>; <a href="#ref-MacKinnonEtAl2023" role="doc-biblioref">MacKinnon et al. 2023a</a>, <a href="#ref-MacKinnonEtAl2023_Jackknife" role="doc-biblioref">2023b</a>; <a href="#ref-Hansen2026" role="doc-biblioref">Hansen 2026</a>)</span>.</p>
 </section>
 </section>
@@ -1431,12 +1452,20 @@ F Statistic (df = 3; 1196)
 <span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="do">## F-statistic: 773.8 on 1 and 598 DF,  p-value: &lt; 2.2e-16</span></span></code></pre></div>
 </details>
 </div>
-It turns out that the noisiness of the process within each group affects our OLS estimate: <span class="math inline">\(\hat{b}=\hat{c}_{Q^{*}P^{*}} / \hat{v}_{P^{*}}\)</span>. For details, see
-<details>
-<summary>
-<i>Within Group Variance</i>
-</summary>
-<p>You can experiment with the effect of different variances on both OLS and IV in the code below. And note that if we had multiple supply shifts and recorded their magnitudes, then we could recover more information about demand, perhaps tracing it out entirely.</p>
+<p>It turns out that the noisiness of the process within each group affects our OLS estimate: <span class="math inline">\(\hat{b}=\hat{c}_{Q^{*}P^{*}} / \hat{v}_{P^{*}}\)</span>.</p>
+<div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-10-contents" aria-controls="callout-10" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Test Yourself
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-10" class="callout-10-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>You can experiment with the effect of different within-group variances on both OLS and IV in the code below. And note that if we had multiple supply shifts and recorded their magnitudes, then we could recover more information about demand, perhaps tracing it out entirely.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -1475,18 +1504,20 @@ It turns out that the noisiness of the process within each group affects our OLS
 <span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>})</span>
 <span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a><span class="do">## [[1]]</span></span>
 <span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a><span class="do">##                Es_sigma.0.001 Es_sigma.0.25 Es_sigma.1</span></span>
-<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a><span class="do">## Ed_sigma.0.001           -0.8         -0.80      -0.80</span></span>
-<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a><span class="do">## Ed_sigma.0.25            -0.6         -0.64      -0.71</span></span>
-<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a><span class="do">## Ed_sigma.1                0.3          0.28      -0.05</span></span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a><span class="do">## Ed_sigma.0.001          -0.80         -0.80      -0.80</span></span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a><span class="do">## Ed_sigma.0.25           -0.64         -0.60      -0.74</span></span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a><span class="do">## Ed_sigma.1               0.34          0.28      -0.11</span></span>
 <span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
 <span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a><span class="do">## [[2]]</span></span>
 <span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a><span class="do">##                Es_sigma.0.001 Es_sigma.0.25 Es_sigma.1</span></span>
 <span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a><span class="do">## Ed_sigma.0.001          -0.80         -0.80      -0.80</span></span>
-<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a><span class="do">## Ed_sigma.0.25           -0.80         -0.80      -0.84</span></span>
-<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a><span class="do">## Ed_sigma.1              -0.68         -0.78      -0.79</span></span></code></pre></div>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a><span class="do">## Ed_sigma.0.25           -0.83         -0.77      -0.80</span></span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a><span class="do">## Ed_sigma.1              -0.83         -0.72      -0.86</span></span></code></pre></div>
 </details>
 </div>
-</details>
+</div>
+</div>
+</div>
 <p>To overcome this issue, we can compute the change in the expected values <span class="math inline">\(d \mathbb{E}[Q^{*}] / d \mathbb{E}[P^{*}] =-\beta_{D}\)</span>. Empirically, this is estimated via the change in average value.</p>
 <div class="cell">
 <details class="code-fold">
@@ -1527,54 +1558,55 @@ Q_{D} &amp;= \alpha_{D} - \beta_{D} P + E_{D}.
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Two Stage Least Squares Estimate</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>ols_1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(P <span class="sc">~</span> cost, <span class="at">data=</span>xy2_sim)</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>xy2_new_sim  <span class="ot">&lt;-</span> <span class="fu">cbind</span>(xy2_sim, <span class="at">p_fit=</span><span class="fu">predict</span>(ols_1))</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>reg_2sls <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q <span class="sc">~</span> p_fit, <span class="at">data=</span>xy2_new_sim)</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(reg_2sls)</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Call:</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="do">## lm(formula = Q ~ p_fit, data = xy2_new_sim)</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="do">## Residuals:</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="do">##      Min       1Q   Median       3Q      Max </span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="do">## -0.57706 -0.12815  0.00387  0.11967  0.59216 </span></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="do">## Coefficients:</span></span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="do">##             Estimate Std. Error t value Pr(&gt;|t|)    </span></span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="do">## (Intercept)  7.98381    0.15581   51.24   &lt;2e-16 ***</span></span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="do">## p_fit       -0.79881    0.01837  -43.48   &lt;2e-16 ***</span></span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="do">## ---</span></span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="do">## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="do">## Residual standard error: 0.1832 on 598 degrees of freedom</span></span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a><span class="do">## Multiple R-squared:  0.7597, Adjusted R-squared:  0.7593 </span></span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a><span class="do">## F-statistic:  1891 on 1 and 598 DF,  p-value: &lt; 2.2e-16</span></span>
-<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a><span class="co"># One Stage Instrumental Variables Estimate</span></span>
-<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'fixest'</span>)</span>
-<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>reg2_iv <span class="ot">&lt;-</span> <span class="fu">feols</span>(Q <span class="sc">~</span> <span class="dv">1</span><span class="sc">|</span>P <span class="sc">~</span> cost, <span class="at">data=</span>xy2_sim)</span>
-<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(reg2_iv)</span>
-<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a><span class="do">## TSLS estimation: Second stage</span></span>
-<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a><span class="do">## |- D.V.   : Q</span></span>
-<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a><span class="do">## |- Endo.  : P</span></span>
-<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a><span class="do">## |- Instr. : cost</span></span>
-<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a><span class="do">## Dep. Var.: Q</span></span>
-<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a><span class="do">## Observations: 600</span></span>
-<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a><span class="do">## Standard-errors: IID </span></span>
-<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a><span class="do">##              Estimate Std. Error  t value  Pr(&gt;|t|)    </span></span>
-<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a><span class="do">## (Intercept)  7.983806   0.221571  36.0327 &lt; 2.2e-16 ***</span></span>
-<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a><span class="do">## fit_P       -0.798815   0.026125 -30.5771 &lt; 2.2e-16 ***</span></span>
-<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a><span class="do">## ---</span></span>
-<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a><span class="do">## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
-<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a><span class="do">## RMSE: 0.260034   Adj. R2: 0.759305</span></span>
-<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a><span class="do">## F-test (1st stage), P: stat = 2,387.65, p &lt; 2.2e-16, on 1 and 598 DoF.</span></span>
-<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a><span class="do">##            Wu-Hausman: stat =   504.45, p &lt; 2.2e-16, on 1 and 597 DoF.</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Two Stage Least Squares Estimate</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>ols_1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(P <span class="sc">~</span> cost, <span class="at">data=</span>xy2_sim)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>xy2_new_sim  <span class="ot">&lt;-</span> <span class="fu">cbind</span>(xy2_sim, <span class="at">p_fit=</span><span class="fu">predict</span>(ols_1))</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>reg_2sls <span class="ot">&lt;-</span> <span class="fu">lm</span>(Q <span class="sc">~</span> p_fit, <span class="at">data=</span>xy2_new_sim)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(reg_2sls)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="do">## Call:</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="do">## lm(formula = Q ~ p_fit, data = xy2_new_sim)</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="do">## Residuals:</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="do">##      Min       1Q   Median       3Q      Max </span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="do">## -0.57706 -0.12815  0.00387  0.11967  0.59216 </span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="do">## Coefficients:</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="do">##             Estimate Std. Error t value Pr(&gt;|t|)    </span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="do">## (Intercept)  7.98381    0.15581   51.24   &lt;2e-16 ***</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="do">## p_fit       -0.79881    0.01837  -43.48   &lt;2e-16 ***</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="do">## ---</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a><span class="do">## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a><span class="do">## Residual standard error: 0.1832 on 598 degrees of freedom</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a><span class="do">## Multiple R-squared:  0.7597, Adjusted R-squared:  0.7593 </span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a><span class="do">## F-statistic:  1891 on 1 and 598 DF,  p-value: &lt; 2.2e-16</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a><span class="co"># One Stage Instrumental Variables Estimate</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'fixest'</span>)</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>reg2_iv <span class="ot">&lt;-</span> <span class="fu">feols</span>(Q <span class="sc">~</span> <span class="dv">1</span><span class="sc">|</span>P <span class="sc">~</span> cost, <span class="at">data=</span>xy2_sim)</span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(reg2_iv)</span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a><span class="do">## TSLS estimation: Second stage</span></span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a><span class="do">## |- D.V.   : Q</span></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a><span class="do">## |- Endo.  : P</span></span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a><span class="do">## |- Instr. : cost</span></span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a><span class="do">## Dep. Var.: Q</span></span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a><span class="do">## Observations: 600</span></span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a><span class="do">## Standard-errors: IID </span></span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a><span class="do">##              Estimate Std. Error  t value  Pr(&gt;|t|)    </span></span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a><span class="do">## (Intercept)  7.983806   0.221571  36.0327 &lt; 2.2e-16 ***</span></span>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a><span class="do">## fit_P       -0.798815   0.026125 -30.5771 &lt; 2.2e-16 ***</span></span>
+<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a><span class="do">## ---</span></span>
+<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a><span class="do">## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span>
+<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a><span class="do">## RMSE: 0.260034   Adj. R2: 0.759305</span></span>
+<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a><span class="do">## F-test (1st stage), P: stat = 2,387.65, p &lt; 2.2e-16, on 1 and 598 DoF.</span></span>
+<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a><span class="do">##            Wu-Hausman: stat =   504.45, p &lt; 2.2e-16, on 1 and 597 DoF.</span></span></code></pre></div>
 </details>
 </div>
 <p>The Wald <span class="citation" data-cites="Wald1940">(<a href="#ref-Wald1940" role="doc-biblioref">Wald 1940</a>)</span>, Heckman <span class="citation" data-cites="heckman2000">(<a href="#ref-heckman2000" role="doc-biblioref">Heckman 2000, 58</a>)</span>, and 2SLS slopes are algebraically identical in this just-identified linear model: each one recovers <span class="math inline">\(-\beta_{D}\)</span> by using the cost shock as the source of exogenous variation in price.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-10-contents" aria-controls="callout-10" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-11-contents" aria-controls="callout-11" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -1583,7 +1615,7 @@ Q_{D} &amp;= \alpha_{D} - \beta_{D} P + E_{D}.
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-10" class="callout-10-contents callout-collapse collapse">
+<div id="callout-11" class="callout-11-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>The 2SLS procedure works in two steps. First, regress the endogenous variable (price) on the instrument (cost): this isolates the part of price variation driven by supply shifts. Second, regress quantity on the predicted prices from step 1. Because predicted prices reflect only supply-side variation, the second-stage coefficient estimates the demand slope. The key requirement is that cost shifts affect quantity <em>only</em> through price (the exclusion restriction).</p>
 </div>

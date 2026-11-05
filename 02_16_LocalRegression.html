@@ -500,34 +500,50 @@ window.Quarto = {
 
 
 <hr>
-<p>This chapter models how the average of <span class="math inline">\(\hat{y}_{i}\)</span> changes with <span class="math inline">\(\hat{x}_{i}\)</span> without assuming a single straight line. We build up from regressograms (bin averages) to piecewise and local linear regression, carrying one running example throughout: wages and years of schooling.</p>
+<p>This chapter asks three questions.</p>
+<ul>
+<li>How does the average of <span class="math inline">\(\hat{y}_{i}\)</span> change with <span class="math inline">\(\hat{x}_{i}\)</span> without assuming a single straight line?
+<ul>
+<li><em>Regressogram and piecewise regression</em>: these split <span class="math inline">\(\hat{x}\)</span> into fixed bins and fit a constant or a line in each bin. Both are new, and each bin runs a <a href="./02_15_SimpleRegression.html">simple regression</a> on its own observations.</li>
+</ul></li>
+<li>How do we avoid jumps at the bin edges?
+<ul>
+<li><em>Locally constant and local linear regression</em>: these fit a constant or a line in a window that slides along <span class="math inline">\(x\)</span>. Both are new, and each window uses the uniform kernel from the <a href="./01_10_AdvancedEmpirics.html#kernel-density">kernel density</a>.</li>
+</ul></li>
+<li>How local should each estimate be?
+<ul>
+<li><em>Bandwidth</em>: this half-width <span class="math inline">\(h\)</span> is the same one that set the bins of a <a href="./01_02_Data.html#histogram-density">histogram</a>. Larger <span class="math inline">\(h\)</span> pools more observations, and smaller <span class="math inline">\(h\)</span> tracks the data more closely.</li>
+</ul></li>
+</ul>
 <section id="local-relationships" class="level2" data-number="16.1">
 <h2 data-number="16.1" class="anchored" data-anchor-id="local-relationships"><span class="header-section-number">16.1</span> Local Relationships</h2>
 <p>Scatterplots are a great and simple plot for bivariate data that simply plots each observation. There are many extensions and similar tools. The example below helps understand how both the central tendency and dispersion change.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Running example for the whole chapter: wages and years of schooling</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Wages1, <span class="at">package=</span><span class="st">'Ecdat'</span>)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>xy2_hat <span class="ot">&lt;-</span> Wages1[<span class="fu">order</span>(Wages1[, <span class="st">'school'</span>]), <span class="fu">c</span>(<span class="st">'school'</span>, <span class="st">'wage'</span>)]</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(xy2_hat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'x_hat'</span>, <span class="st">'y_hat'</span>) <span class="co"># x_hat=years of schooling, y_hat=hourly wage</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Scatter of every observation</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>),</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'School'</span>, <span class="at">ylab=</span><span class="st">'Wage'</span>)</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional mean at each integer schooling level</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>school_means <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_hat, mean)</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>school_means,    <span class="co"># connect dots so the trend pops</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">17</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">type=</span><span class="st">'b'</span>)</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional median at each integer schooling level</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>school_medians <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_hat, median)</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>school_medians,</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">15</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">type=</span><span class="st">'b'</span>)</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Mean'</span>, <span class="st">'Median'</span>),</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="fu">c</span>(<span class="dv">17</span>, <span class="dv">15</span>), <span class="at">lty=</span><span class="dv">1</span>, <span class="at">col=</span><span class="fu">c</span>(<span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>)), <span class="at">bty=</span><span class="st">'n'</span>)</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Grouped Means, Medians, and Scatterplot'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Running example for the whole chapter: wages and years of schooling</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Wages1, <span class="at">package=</span><span class="st">'Ecdat'</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>xy_hat <span class="ot">&lt;-</span> Wages1[<span class="fu">order</span>(Wages1[, <span class="st">'school'</span>]), <span class="fu">c</span>(<span class="st">'school'</span>, <span class="st">'wage'</span>)]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(xy_hat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'x_hat'</span>, <span class="st">'y_hat'</span>) <span class="co"># x_hat=years of schooling, y_hat=hourly wage</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Scatter of every observation</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>),</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'School'</span>, <span class="at">ylab=</span><span class="st">'Wage'</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional mean at each integer schooling level</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Each group is the window of half-width 1/2 around one schooling level</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>school_means <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, mean)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>school_means,    <span class="co"># connect dots so the trend pops</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">17</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">type=</span><span class="st">'b'</span>)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional median at each integer schooling level</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>school_medians <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, median)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>school_medians,</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">15</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">type=</span><span class="st">'b'</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Mean'</span>, <span class="st">'Median'</span>),</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="fu">c</span>(<span class="dv">17</span>, <span class="dv">15</span>), <span class="at">lty=</span><span class="dv">1</span>, <span class="at">col=</span><span class="fu">c</span>(<span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>)), <span class="at">bty=</span><span class="st">'n'</span>)</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Grouped Means, Medians, and Scatterplot'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -536,8 +552,14 @@ window.Quarto = {
 </figure>
 </div>
 </div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Nearly all workers have 7 to 15 years of schooling.</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># At each of those levels, the median sits below the mean.</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># That is a sign that wages within each level are skewed right.</span></span></code></pre></div>
+</details>
 </div>
-<p>Each schooling level is a group, so the red triangles are the conditional means <span class="math inline">\(\hat{m}_{Y}(g)\)</span> from <a href="./02_13_MultipleGroups.html#group-summaries">Comparing Multiple Groups</a>, now ordered along <span class="math inline">\(\hat{x}\)</span>. The blue squares are the grouped medians, the <a href="./02_12_TwoGroups.html#discrete-data">conditional quantile</a> <span class="math inline">\(\hat{F}_{Y}^{-1}(0.5 \mid x)\)</span> at each schooling level. From 7 to 15 years of schooling, where nearly all the observations lie, each median sits below its mean, a sign that wages within each level are skewed right.</p>
+<p>Each value of <span class="math inline">\(\hat{x}\)</span> is a group, so the red triangles are the conditional means <span class="math inline">\(\hat{m}_{Y}(g)\)</span> from <a href="./02_13_MultipleGroups.html#group-summaries">Comparing Multiple Groups</a>, now ordered along <span class="math inline">\(\hat{x}\)</span>. The blue squares are the grouped medians, the <a href="./02_12_TwoGroups.html#discrete-data">conditional quantile</a> <span class="math inline">\(\hat{F}_{Y}^{-1}(0.5 \mid x)\)</span> at each value of <span class="math inline">\(\hat{x}\)</span>. A median below its mean is a sign that <span class="math inline">\(\hat{y}\)</span> is skewed right within that group.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -554,9 +576,9 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>xy_hat <span class="ot">&lt;-</span> USArrests[, <span class="fu">c</span>(<span class="st">'UrbanPop'</span>, <span class="st">'Murder'</span>)]</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(xy_hat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'x_hat'</span>, <span class="st">'y_hat'</span>) <span class="co"># x_hat=urban population share, y_hat=murder arrests per 100K</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>bins <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_hat[, <span class="st">'x_hat'</span>], <span class="dv">6</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>xy2_hat <span class="ot">&lt;-</span> USArrests[, <span class="fu">c</span>(<span class="st">'UrbanPop'</span>, <span class="st">'Murder'</span>)]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(xy2_hat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'x_hat'</span>, <span class="st">'y_hat'</span>) <span class="co"># x_hat=urban population share, y_hat=murder arrests per 100K</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>bins <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy2_hat[, <span class="st">'x_hat'</span>], <span class="dv">6</span>)</span></code></pre></div>
 </details>
 </div>
 </div>
@@ -611,8 +633,8 @@ window.Quarto = {
 </div>
 </div>
 <p>The bandwidth is useful for controlling how smooth a local estimate is. All four methods in the table above use it. It is the same <span class="math inline">\(h\)</span> that set the bin half-width of a <a href="./01_02_Data.html#histogram-density">histogram</a> and the spread of a <a href="./01_10_AdvancedEmpirics.html#kernel-density">kernel density</a>. There, it controlled how much data went into a density estimate at <span class="math inline">\(x\)</span>. Here, it controls how much data goes into a conditional-mean estimate at <span class="math inline">\(x\)</span>. Larger <span class="math inline">\(h\)</span> pools more observations into each estimate but smooths over real variation; smaller <span class="math inline">\(h\)</span> tracks the data more closely but uses fewer points per estimate, so the fitted curve becomes noisier.</p>
-<p>This chapter writes the grouped means <span class="math inline">\(\hat{m}_{Y}(g)\)</span> as <span class="math inline">\(\hat{m}_{Y}(x,h)\)</span>, because each group is the set of observations with <span class="math inline">\(\hat{x}_{i}~\text{in}~[x-h,x+h]\)</span>. In the grouped-means figure, <span class="math inline">\(x\)</span> is a schooling level and <span class="math inline">\(h=1/2\)</span>, so each group holds a single schooling level.</p>
-<p>The figure below fits all four methods to the wage data, each with half-width <span class="math inline">\(h=7/2\)</span>. The left panel uses two fixed bins, schooling levels 3 to 9 and 10 to 16, and the right panel slides a window of the same width along <span class="math inline">\(x\)</span>. The grey triangles are the grouped means from the figure above. At the bin midpoints, <span class="math inline">\(x=6\)</span> and <span class="math inline">\(x=13\)</span>, each window holds exactly one bin, so the sliding fits equal the fixed-bin fits there.</p>
+<p>This chapter writes the grouped means <span class="math inline">\(\hat{m}_{Y}(g)\)</span> as <span class="math inline">\(\hat{m}_{Y}(x,h)\)</span>, because each group is the set of observations with <span class="math inline">\(\hat{x}_{i}~\text{in}~[x-h,x+h]\)</span>. In the grouped-means figure, <span class="math inline">\(x\)</span> is one value of <span class="math inline">\(\hat{x}\)</span>, and <span class="math inline">\(h\)</span> is small enough that each group holds only that value.</p>
+<p>The figure below fits all four methods to the running example, each with the same half-width <span class="math inline">\(h\)</span>. The left panel uses two fixed bins, and the right panel slides a window of the same width along <span class="math inline">\(x\)</span>. The grey triangles are the grouped means from the figure above. The dotted lines in the left panel mark the bin midpoints. At these midpoints, each window holds exactly one bin, so the sliding fits equal the fixed-bin fits there.</p>
 <div class="cell">
 <div class="cell-output-display">
 <div>
@@ -622,7 +644,35 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>Each step fixes one problem with the step before it. Adding a slope captures the trend within a bin. Sliding the window replaces the jump at the bin edge with smaller steps. Adding a slope to the sliding window reduces bias near the edges of the data. Near the top of the schooling range, for example, the locally constant fit falls below the grouped means. Each window there still includes many people with 12 years of schooling, which pulls the window average down. The locally linear fit follows the trend.</p>
+<p>Each step fixes one problem with the step before it. Adding a slope captures the trend within a bin. Sliding the window replaces the jump at the bin edge with smaller steps. Adding a slope to the sliding window reduces bias near the edges of the data. A window near an edge can hold many observations from one side of the design point, which pulls the window average away from the trend. The locally linear fit follows the trend. The code below checks this at one design point near an edge.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The figure above uses half-width h=3.5 and two fixed bins.</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># The bins hold schooling levels 3 to 9 and 10 to 16, with midpoints 6 and 13.</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># The sliding window around 15 years of schooling, near the top of the range</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>xy_window <span class="ot">&lt;-</span> xy_hat[<span class="fu">abs</span>(xy_hat[, <span class="st">'x_hat'</span>]<span class="sc">-</span><span class="dv">15</span>) <span class="sc">&lt;=</span> <span class="fl">3.5</span>, ]</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(xy_window[, <span class="st">'x_hat'</span>])</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="do">##   12   13   14   15   16 </span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="do">## 1188  339  264  134   16</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Of its 1941 workers, 1188 have 12 years of schooling.</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Grouped mean at 15 years, then the locally constant and locally linear fits</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>school_means[school_means[, <span class="st">'x_hat'</span>]<span class="sc">==</span><span class="dv">15</span>, <span class="st">'y_hat'</span>]</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 8.375111</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(xy_window[, <span class="st">'y_hat'</span>])</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 6.291988</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(<span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_window), <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span><span class="dv">15</span>))</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="do">##        1 </span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="do">## 8.244139</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Near the top, the locally constant fit falls below the grouped means.</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="co"># At 15 years it is about 6.29, and the grouped mean is about 8.38.</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="co"># The many workers with 12 years of schooling pull the window average down.</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="co"># The locally linear fit, about 8.24, follows the trend.</span></span></code></pre></div>
+</details>
+</div>
 </section>
 <section id="fixed-bins" class="level2" data-number="16.2">
 <h2 data-number="16.2" class="anchored" data-anchor-id="fixed-bins"><span class="header-section-number">16.2</span> Fixed Bins</h2>
@@ -652,34 +702,35 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Data</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>),</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'School'</span>, <span class="at">ylab=</span><span class="st">'Wage'</span>)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># xy2_hat defined above</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="do">## Simple Regression</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>reg  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_hat) <span class="do">## OLS</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Regressogram: Two Schooling Bins, levels 3-9 and 10-16</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>xy2_hat[, <span class="st">'xcc'</span>] <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy2_hat[, <span class="st">'x_hat'</span>], <span class="at">breaks=</span><span class="fu">c</span>(<span class="fl">2.5</span>, <span class="fl">9.5</span>, <span class="fl">16.5</span>))</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>rgram_c  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> xcc, <span class="at">data=</span>xy2_hat)</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Regressogram: Three Schooling Bins</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>xy2_hat[, <span class="st">'xcf'</span>]   <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy2_hat[, <span class="st">'x_hat'</span>], <span class="dv">3</span>)</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>rgram_f  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> xcf, <span class="at">data=</span>xy2_hat)</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="do">## Compare Models (Only 2 for simplicity)</span></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( xy2_hat[, <span class="st">'x_hat'</span>], <span class="fu">predict</span>(reg), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>))</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( xy2_hat[, <span class="st">'x_hat'</span>], <span class="fu">predict</span>(rgram_f), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">type=</span><span class="st">'s'</span>)</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>,</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Linear Regression'</span>, <span class="st">'Regressogram (3)'</span>),</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">c</span>(<span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>)),</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">lty=</span><span class="dv">1</span>, <span class="at">cex=</span>.<span class="dv">8</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Data</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>),</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'School'</span>, <span class="at">ylab=</span><span class="st">'Wage'</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># xy_hat defined above</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Simple Regression</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>reg  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat) <span class="do">## OLS</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Regressogram: Two Schooling Bins, levels 3-9 and 10-16</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>xy_hat[, <span class="st">'xcc'</span>] <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_hat[, <span class="st">'x_hat'</span>], <span class="at">breaks=</span><span class="fu">c</span>(<span class="fl">2.5</span>, <span class="fl">9.5</span>, <span class="fl">16.5</span>))</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>rgram_c  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> xcc, <span class="at">data=</span>xy_hat)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Regressogram: Three Schooling Bins</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>xy_hat[, <span class="st">'xcf'</span>]   <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_hat[, <span class="st">'x_hat'</span>], <span class="dv">3</span>)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>rgram_f  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> xcf, <span class="at">data=</span>xy_hat)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="do">## Compare Models (Only 2 for simplicity)</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( xy_hat[, <span class="st">'x_hat'</span>], <span class="fu">predict</span>(reg), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>))</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( xy_hat[, <span class="st">'x_hat'</span>], <span class="fu">predict</span>(rgram_f), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">type=</span><span class="st">'s'</span>)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>,</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Linear Regression'</span>, <span class="st">'Regressogram (3)'</span>),</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">c</span>(<span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>)),</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">lty=</span><span class="dv">1</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">cex=</span>.<span class="dv">8</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="02_16_LocalRegression_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="02_16_LocalRegression_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -713,8 +764,8 @@ window.Quarto = {
 </div>
 <div id="callout-4" class="callout-4-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>Consider this two-bin regressogram example of how wages differ with schooling for people with <span class="math inline">\(\leq 9\)</span> years of school completed vs <span class="math inline">\(&gt; 9\)</span>. <span class="math display">\[\begin{aligned}
-\text{Wage}_{i} &amp;= b_{0}(x=6, h=7/2) \mathbf{1}\left(\text{School}_{i}~\text{in}~(2.5,9.5]\right) + b_{0}(x=13, h=7/2) \mathbf{1}\left(\text{School}_{i}~\text{in}~(9.5,16.5] \right) + \hat{e}_{i}.
+<p>Consider this two-bin regressogram example of how <span class="math inline">\(\hat{y}_{i}\)</span> differs between a lower and an upper bin of <span class="math inline">\(\hat{x}_{i}\)</span>. <span class="math display">\[\begin{aligned}
+\hat{y}_{i} &amp;= b_{0}(x=6, h=7/2) \mathbf{1}\left(\hat{x}_{i}~\text{in}~(2.5,9.5]\right) + b_{0}(x=13, h=7/2) \mathbf{1}\left(\hat{x}_{i}~\text{in}~(9.5,16.5] \right) + \hat{e}_{i}.
 \end{aligned}\]</span></p>
 <p>Here is a simple example with three data points <span class="math inline">\((\hat{x}_{i}, \hat{y}_{i})~\text{in}~\{ (3,2), (4,4), (12,3) \}\)</span>, for which we can easily compute <span class="math display">\[\begin{aligned}
 n(x=6,h=7/2) &amp;= 2 \\
@@ -726,19 +777,21 @@ n(x=13,h=7/2) &amp;= 1 \\
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>y_fit_c <span class="ot">&lt;-</span> <span class="fu">predict</span>(rgram_c)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>fit_dat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">xcc=</span>xy2_hat[, <span class="st">'xcc'</span>], <span class="at">y_fit=</span><span class="fu">round</span>(y_fit_c, <span class="dv">6</span>))</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(fit_dat)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="do">##             y_fit</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="do">## xcc          4.115873 5.917872</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="do">##   (2.5,9.5]       293        0</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="do">##   (9.5,16.5]        0     3001</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="do">## Compare to simple aggregation </span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">aggregate</span>(y_hat <span class="sc">~</span> xcc, <span class="at">data=</span>xy2_hat, mean)</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="do">##          xcc    y_hat</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="do">## 1  (2.5,9.5] 4.115873</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="do">## 2 (9.5,16.5] 5.917872</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Two bins: workers with at most 9 years of schooling and workers with more</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>y_fit_c <span class="ot">&lt;-</span> <span class="fu">predict</span>(rgram_c)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>fit_dat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">xcc=</span>xy_hat[, <span class="st">'xcc'</span>], <span class="at">y_fit=</span><span class="fu">round</span>(y_fit_c, <span class="dv">6</span>))</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(fit_dat)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="do">##             y_fit</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="do">## xcc          4.115873 5.917872</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="do">##   (2.5,9.5]       293        0</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="do">##   (9.5,16.5]        0     3001</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="do">## Compare to simple aggregation </span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">aggregate</span>(y_hat <span class="sc">~</span> xcc, <span class="at">data=</span>xy_hat, mean)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="do">##          xcc    y_hat</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="do">## 1  (2.5,9.5] 4.115873</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="do">## 2 (9.5,16.5] 5.917872</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co"># The mean wage is about 4.12 dollars in the first bin and 5.92 in the second.</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -770,30 +823,30 @@ n(x=13,h=7/2) &amp;= 1 \\
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Data</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>),</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'School'</span>, <span class="at">ylab=</span><span class="st">'Wage'</span>)</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># xy2_hat, with the bins xcc and xcf, defined above</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Piecewise: Two Schooling Bins</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>preg_c  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> xcc<span class="sc">*</span>x_hat, <span class="at">data=</span>xy2_hat)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Piecewise: Three Schooling Bins</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>preg_f  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> xcf<span class="sc">*</span>x_hat, <span class="at">data=</span>xy2_hat)</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="do">## Compare Models</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>pw_cols <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rgb</span>(.<span class="dv">8</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">75</span>), <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>, .<span class="dv">75</span>))</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( xy2_hat[, <span class="st">'x_hat'</span>], <span class="fu">predict</span>(preg_c), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pw_cols[<span class="dv">1</span>])</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( xy2_hat[, <span class="st">'x_hat'</span>], <span class="fu">predict</span>(preg_f), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pw_cols[<span class="dv">2</span>])</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>,</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'2 bins'</span>, <span class="st">'3 bins'</span>),</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">lty=</span><span class="dv">1</span>, <span class="at">col=</span>pw_cols, <span class="at">cex=</span>.<span class="dv">8</span>)</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Piecewise Regressions'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Data</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>),</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'School'</span>, <span class="at">ylab=</span><span class="st">'Wage'</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># xy_hat, with the bins xcc and xcf, defined above</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Piecewise: Two Schooling Bins</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>preg_c  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> xcc<span class="sc">*</span>x_hat, <span class="at">data=</span>xy_hat)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Piecewise: Three Schooling Bins</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>preg_f  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> xcf<span class="sc">*</span>x_hat, <span class="at">data=</span>xy_hat)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="do">## Compare Models</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( xy_hat[, <span class="st">'x_hat'</span>], <span class="fu">predict</span>(preg_c), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>))</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>( xy_hat[, <span class="st">'x_hat'</span>], <span class="fu">predict</span>(preg_f), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>,</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'2 bins'</span>, <span class="st">'3 bins'</span>),</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">lty=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">cex=</span>.<span class="dv">8</span>)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Piecewise Regressions'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="02_16_LocalRegression_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="02_16_LocalRegression_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -817,24 +870,24 @@ n(x=13,h=7/2) &amp;= 1 \\
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># See that two methods give the same predictions</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Piecewise: Two Schooling Bins</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>xy2_hat[, <span class="st">'xcc'</span>] <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy2_hat[, <span class="st">'x_hat'</span>], <span class="at">breaks=</span><span class="fu">c</span>(<span class="fl">2.5</span>, <span class="fl">9.5</span>, <span class="fl">16.5</span>))</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>preg_c  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> xcc<span class="sc">*</span>x_hat, <span class="at">data=</span>xy2_hat)</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>y_fit_piecewise <span class="ot">&lt;-</span> <span class="fu">predict</span>(preg_c)</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Split Sample Regressions</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>xy2_split_hat <span class="ot">&lt;-</span> <span class="fu">split</span>( xy2_hat, xy2_hat[, <span class="st">'xcc'</span>])</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>y_fit_split <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">'list'</span>, <span class="fu">length</span>(xy2_split_hat))</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(y_fit_split) <span class="ot">&lt;-</span> <span class="fu">names</span>(xy2_split_hat)</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(xy2_split_hat)) {</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    reg2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, xy2_split_hat[[i]])</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    y_fit_split[[i]] <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg2)</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Any differences?</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="fu">all</span>( <span class="fu">abs</span>(y_fit_piecewise <span class="sc">-</span> <span class="fu">unlist</span>(y_fit_split)) <span class="sc">&lt;</span> <span class="fl">1e-10</span> )</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] TRUE</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># See that two methods give the same predictions</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Piecewise: Two Schooling Bins</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>xy_hat[, <span class="st">'xcc'</span>] <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_hat[, <span class="st">'x_hat'</span>], <span class="at">breaks=</span><span class="fu">c</span>(<span class="fl">2.5</span>, <span class="fl">9.5</span>, <span class="fl">16.5</span>))</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>preg_c  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> xcc<span class="sc">*</span>x_hat, <span class="at">data=</span>xy_hat)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>y_fit_piecewise <span class="ot">&lt;-</span> <span class="fu">predict</span>(preg_c)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Split Sample Regressions</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>xy_split_hat <span class="ot">&lt;-</span> <span class="fu">split</span>( xy_hat, xy_hat[, <span class="st">'xcc'</span>])</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>y_fit_split <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">'list'</span>, <span class="fu">length</span>(xy_split_hat))</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(y_fit_split) <span class="ot">&lt;-</span> <span class="fu">names</span>(xy_split_hat)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(xy_split_hat)) {</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    reg2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, xy_split_hat[[i]])</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    y_fit_split[[i]] <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg2)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Any differences?</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="fu">all</span>( <span class="fu">abs</span>(y_fit_piecewise <span class="sc">-</span> <span class="fu">unlist</span>(y_fit_split)) <span class="sc">&lt;</span> <span class="fl">1e-10</span> )</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] TRUE</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -856,70 +909,70 @@ n(x=13,h=7/2) &amp;= 1 \\
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>xy_hat <span class="ot">&lt;-</span> USArrests[, <span class="fu">c</span>(<span class="st">'UrbanPop'</span>, <span class="st">'Murder'</span>)]</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(xy_hat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'x_hat'</span>, <span class="st">'y_hat'</span>) <span class="co"># x_hat=urban population share, y_hat=murder arrests per 100K</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Globally Linear</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>xy2_hat <span class="ot">&lt;-</span> USArrests[, <span class="fu">c</span>(<span class="st">'UrbanPop'</span>, <span class="st">'Murder'</span>)]</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(xy2_hat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'x_hat'</span>, <span class="st">'y_hat'</span>) <span class="co"># x_hat=urban population share, y_hat=murder arrests per 100K</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Globally Linear</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_hat)</span></code></pre></div>
 </details>
 </div>
 <p>Try to do so on your own before looking at the code below, which compares two piecewise regressions to a simple linear regression.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Diagnose Fit</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">#plot( fitted(reg), resid(reg), pch=16, col=grey(0, .5))</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co">#plot( xy_hat[, 'x_hat'], resid(reg), pch=16, col=grey(0, .5))</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Linear in 2 Pieces (subsets)</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>xcut2 <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_hat[, <span class="st">'x_hat'</span>], <span class="dv">2</span>)</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>xy_list2 <span class="ot">&lt;-</span> <span class="fu">split</span>(xy_hat, xcut2)</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>regs2 <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">'list'</span>, <span class="fu">length</span>(xy_list2))</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(regs2) <span class="ot">&lt;-</span> <span class="fu">names</span>(xy_list2)</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(xy_list2)) {</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    regs2[[i]] <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_list2[[i]])</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Linear in 3 Pieces (subsets or bins)</span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>xcut3 <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy_hat[, <span class="st">'x_hat'</span>], <span class="fu">seq</span>(<span class="dv">32</span>, <span class="dv">92</span>, <span class="at">by=</span><span class="dv">20</span>), <span class="at">include.lowest=</span><span class="cn">TRUE</span>) <span class="co"># Finer Bins</span></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>xy_list3 <span class="ot">&lt;-</span> <span class="fu">split</span>(xy_hat, xcut3)</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>regs3 <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">'list'</span>, <span class="fu">length</span>(xy_list3))</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(regs3) <span class="ot">&lt;-</span> <span class="fu">names</span>(xy_list3)</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(xy_list3)) {</span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    regs3[[i]] <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_list3[[i]])</span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="do">## Make Predictions</span></span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>fit1 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">y_fit=</span><span class="fu">predict</span>(reg),</span>
-<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>                   <span class="at">x_hat=</span>reg[[<span class="st">'model'</span>]][, <span class="st">'x_hat'</span>])</span>
-<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>fit1 <span class="ot">&lt;-</span> fit1[<span class="fu">order</span>(fit1[, <span class="st">'x_hat'</span>]), ]</span>
-<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">'list'</span>, <span class="fu">length</span>(regs2))</span>
-<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(regs2)) {</span>
-<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>    fit2[[i]] <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">y_fit=</span><span class="fu">predict</span>(regs2[[i]]),</span>
-<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>               <span class="at">x_hat=</span>regs2[[i]][[<span class="st">'model'</span>]][, <span class="st">'x_hat'</span>])</span>
-<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, fit2)</span>
-<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> fit2[<span class="fu">order</span>(fit2[, <span class="st">'x_hat'</span>]), ]</span>
-<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>fit3 <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">'list'</span>, <span class="fu">length</span>(regs3))</span>
-<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(regs3)) {</span>
-<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>    fit3[[i]] <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">y_fit=</span><span class="fu">predict</span>(regs3[[i]]),</span>
-<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>               <span class="at">x_hat=</span>regs3[[i]][[<span class="st">'model'</span>]][, <span class="st">'x_hat'</span>])</span>
-<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>fit3 <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, fit3)</span>
-<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>fit3 <span class="ot">&lt;-</span> fit3[<span class="fu">order</span>(fit3[, <span class="st">'x_hat'</span>]), ]</span>
-<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare Predictions</span></span>
-<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>), <span class="at">data=</span>xy_hat)</span>
-<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(y_fit <span class="sc">~</span> x_hat, fit1, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">2</span>)</span>
-<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(y_fit <span class="sc">~</span> x_hat, fit2, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">4</span>)</span>
-<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(y_fit <span class="sc">~</span> x_hat, fit3, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="dv">3</span>)</span>
-<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>,</span>
-<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Globally Linear'</span>,</span>
-<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>             <span class="st">'Piecewise Linear (2)'</span>,</span>
-<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>             <span class="st">'Piecewise Linear (3)'</span>),</span>
-<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>    <span class="at">lty=</span><span class="dv">1</span>, <span class="at">col=</span><span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">3</span>), <span class="at">cex=</span>.<span class="dv">8</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Diagnose Fit</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co">#plot( fitted(reg), resid(reg), pch=16, col=grey(0, .5))</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">#plot( xy2_hat[, 'x_hat'], resid(reg), pch=16, col=grey(0, .5))</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Linear in 2 Pieces (subsets)</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>xcut2 <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy2_hat[, <span class="st">'x_hat'</span>], <span class="dv">2</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>xy2_list2 <span class="ot">&lt;-</span> <span class="fu">split</span>(xy2_hat, xcut2)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>regs2 <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">'list'</span>, <span class="fu">length</span>(xy2_list2))</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(regs2) <span class="ot">&lt;-</span> <span class="fu">names</span>(xy2_list2)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(xy2_list2)) {</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    regs2[[i]] <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_list2[[i]])</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Linear in 3 Pieces (subsets or bins)</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>xcut3 <span class="ot">&lt;-</span> <span class="fu">cut</span>(xy2_hat[, <span class="st">'x_hat'</span>], <span class="fu">seq</span>(<span class="dv">32</span>, <span class="dv">92</span>, <span class="at">by=</span><span class="dv">20</span>), <span class="at">include.lowest=</span><span class="cn">TRUE</span>) <span class="co"># Finer Bins</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>xy2_list3 <span class="ot">&lt;-</span> <span class="fu">split</span>(xy2_hat, xcut3)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>regs3 <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">'list'</span>, <span class="fu">length</span>(xy2_list3))</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(regs3) <span class="ot">&lt;-</span> <span class="fu">names</span>(xy2_list3)</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(xy2_list3)) {</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    regs3[[i]] <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_list3[[i]])</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="do">## Make Predictions</span></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>fit1 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">y_fit=</span><span class="fu">predict</span>(reg),</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>                   <span class="at">x_hat=</span>reg[[<span class="st">'model'</span>]][, <span class="st">'x_hat'</span>])</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>fit1 <span class="ot">&lt;-</span> fit1[<span class="fu">order</span>(fit1[, <span class="st">'x_hat'</span>]), ]</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">'list'</span>, <span class="fu">length</span>(regs2))</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(regs2)) {</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>    fit2[[i]] <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">y_fit=</span><span class="fu">predict</span>(regs2[[i]]),</span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>               <span class="at">x_hat=</span>regs2[[i]][[<span class="st">'model'</span>]][, <span class="st">'x_hat'</span>])</span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, fit2)</span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> fit2[<span class="fu">order</span>(fit2[, <span class="st">'x_hat'</span>]), ]</span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>fit3 <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">'list'</span>, <span class="fu">length</span>(regs3))</span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(regs3)) {</span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a>    fit3[[i]] <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">y_fit=</span><span class="fu">predict</span>(regs3[[i]]),</span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a>               <span class="at">x_hat=</span>regs3[[i]][[<span class="st">'model'</span>]][, <span class="st">'x_hat'</span>])</span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a>fit3 <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, fit3)</span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a>fit3 <span class="ot">&lt;-</span> fit3[<span class="fu">order</span>(fit3[, <span class="st">'x_hat'</span>]), ]</span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare Predictions</span></span>
+<span id="cb10-45"><a href="#cb10-45" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>), <span class="at">data=</span>xy2_hat)</span>
+<span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(y_fit <span class="sc">~</span> x_hat, fit1, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>))</span>
+<span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(y_fit <span class="sc">~</span> x_hat, fit2, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(y_fit <span class="sc">~</span> x_hat, fit3, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">3</span>)</span>
+<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>,</span>
+<span id="cb10-50"><a href="#cb10-50" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Globally Linear'</span>,</span>
+<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a>             <span class="st">'Piecewise Linear (2)'</span>,</span>
+<span id="cb10-52"><a href="#cb10-52" aria-hidden="true" tabindex="-1"></a>             <span class="st">'Piecewise Linear (3)'</span>),</span>
+<span id="cb10-53"><a href="#cb10-53" aria-hidden="true" tabindex="-1"></a>    <span class="at">lty=</span><span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">cex=</span>.<span class="dv">8</span>)</span></code></pre></div>
 </details>
 </div>
 </div>
@@ -954,28 +1007,28 @@ k_{U}\left( \hat{x}_{i}, x, h \right)
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Generate Sample Data</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>x0_hat <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>y0_hat <span class="ot">&lt;-</span> <span class="fu">round</span>( <span class="fu">rnorm</span>(<span class="fu">length</span>(x0_hat)) , <span class="dv">2</span>)</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>y0_hat</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] -0.63  0.18 -0.84  1.60  0.33</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="do">## plot(x0_hat, y0_hat)</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="do">## Manually Compute Estimate at x=3</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>k3_weights <span class="ot">&lt;-</span> <span class="fu">dunif</span>( <span class="fu">abs</span>(x0_hat<span class="dv">-3</span>)<span class="sc">/</span>h, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="co">#(x0_hat &gt;= 2)*(x0_hat &lt;= 4)</span></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>k3_weights</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.0 0.5 0.5 0.5 0.0</span></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Divide by the total so the weights sum to one</span></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>w3 <span class="ot">&lt;-</span> k3_weights<span class="sc">/</span><span class="fu">sum</span>(k3_weights)</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>y_pred_3 <span class="ot">&lt;-</span> <span class="fu">sum</span>(w3<span class="sc">*</span>y0_hat)</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>y_pred_3</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.3133333</span></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Equals the simple average of the y's within h of x=3</span></span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>( y0_hat[ <span class="fu">abs</span>(x0_hat<span class="dv">-3</span>) <span class="sc">&lt;=</span> h ] )</span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.3133333</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Generate Sample Data</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>x0_hat <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>y0_hat <span class="ot">&lt;-</span> <span class="fu">round</span>( <span class="fu">rnorm</span>(<span class="fu">length</span>(x0_hat)) , <span class="dv">2</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>y0_hat</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] -0.63  0.18 -0.84  1.60  0.33</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="do">## plot(x0_hat, y0_hat)</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="do">## Manually Compute Estimate at x=3</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>k3_weights <span class="ot">&lt;-</span> <span class="fu">dunif</span>( <span class="fu">abs</span>(x0_hat<span class="dv">-3</span>)<span class="sc">/</span>h, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="co">#(x0_hat &gt;= 2)*(x0_hat &lt;= 4)</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>k3_weights</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.0 0.5 0.5 0.5 0.0</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Divide by the total so the weights sum to one</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>w3 <span class="ot">&lt;-</span> k3_weights<span class="sc">/</span><span class="fu">sum</span>(k3_weights)</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>y_pred_3 <span class="ot">&lt;-</span> <span class="fu">sum</span>(w3<span class="sc">*</span>y0_hat)</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>y_pred_3</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.3133333</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Equals the simple average of the y's within h of x=3</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>( y0_hat[ <span class="fu">abs</span>(x0_hat<span class="dv">-3</span>) <span class="sc">&lt;=</span> h ] )</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.3133333</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -1013,34 +1066,35 @@ k_{U}\left( \hat{x}_{i}, x, h \right)
 w_{i}(x, h) &amp;=  \left[ \frac{ k_{U} \left( \hat{x}_{i}, x, h \right) }{ \sum_{i} k_{U}\left( \hat{x}_{i}, x, h \right)} \right]
 = \frac{\mathbf{1}\left( |\hat{x}_{i} - x| \leq h \right)}{n(x, h)}
 \end{aligned}\]</span> So locally constant kernel regression recovers the weighted mean of <span class="math inline">\(\hat{y}_{i}\)</span> around design point <span class="math inline">\(x\)</span>. If we use exclusive bins, then we are essentially running a regressogram. As such, the regressogram is more crude but can be estimated more easily.</p>
-<p>Here is the locally constant regression on the wage data. At each design point, we take the kernel-weighted average of wages for people with nearby years of schooling.</p>
+<p>Here is the locally constant regression on the running example. At each design point, we take the kernel-weighted average of <span class="math inline">\(\hat{y}_{i}\)</span> for observations with nearby values of <span class="math inline">\(\hat{x}_{i}\)</span>.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># xy2_hat defined above</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>x_values <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">3</span>, <span class="dv">16</span>, <span class="at">by=</span>.<span class="dv">5</span>) <span class="co"># Design points</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="co"># bandwidth</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Kernel-weighted mean at each design point</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>y_pred_lc <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x_values))</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(x_values)) {</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    ki <span class="ot">&lt;-</span> <span class="fu">dunif</span>( <span class="fu">abs</span>(xy2_hat[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x_values[i])<span class="sc">/</span>h, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="co"># the uniform kernel k_U</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    wi <span class="ot">&lt;-</span> ki<span class="sc">/</span><span class="fu">sum</span>(ki) <span class="co"># weights sum to one</span></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    y_pred_lc[i] <span class="ot">&lt;-</span> <span class="fu">sum</span>(wi<span class="sc">*</span>xy2_hat[, <span class="st">'y_hat'</span>])</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot</span></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>),</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'School'</span>, <span class="at">ylab=</span><span class="st">'Wage'</span>)</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_lc, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">title=</span><span class="st">'Locally Constant'</span>,</span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend=</span><span class="st">'h=2'</span>,</span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">lty=</span><span class="dv">1</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">cex=</span>.<span class="dv">8</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># xy_hat defined above</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>x_values <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">3</span>, <span class="dv">16</span>, <span class="at">by=</span>.<span class="dv">5</span>) <span class="co"># Design points</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="co"># bandwidth</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Kernel-weighted mean at each design point</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>y_pred_lc <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x_values))</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(x_values)) {</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    ki <span class="ot">&lt;-</span> <span class="fu">dunif</span>( <span class="fu">abs</span>(xy_hat[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x_values[i])<span class="sc">/</span>h, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="co"># the uniform kernel k_U</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    wi <span class="ot">&lt;-</span> ki<span class="sc">/</span><span class="fu">sum</span>(ki) <span class="co"># weights sum to one</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    y_pred_lc[i] <span class="ot">&lt;-</span> <span class="fu">sum</span>(wi<span class="sc">*</span>xy_hat[, <span class="st">'y_hat'</span>])</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>),</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'School'</span>, <span class="at">ylab=</span><span class="st">'Wage'</span>)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_lc, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">title=</span><span class="st">'Locally Constant'</span>,</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend=</span><span class="st">'h=2'</span>,</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">lty=</span><span class="dv">1</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">pch=</span><span class="dv">1</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">cex=</span>.<span class="dv">8</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="02_16_LocalRegression_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="02_16_LocalRegression_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -1068,27 +1122,27 @@ w_{i}(x, h) &amp;=  \left[ \frac{ k_{U} \left( \hat{x}_{i}, x, h \right) }{ \sum
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Generate Sample Data</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>x0_hat <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>y0_hat <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="fu">length</span>(x0_hat))</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>y0_hat</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] -0.8204684  0.4874291  0.7383247  0.5757814 -0.3053884</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Manually Compute Estimate at x=5</span></span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="dv">2</span></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>k5_weights <span class="ot">&lt;-</span> <span class="fu">dunif</span>( <span class="fu">abs</span>(x0_hat<span class="dv">-5</span>)<span class="sc">/</span>h, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="co">#(x0_hat &gt;= 3)*(x0_hat =&lt; 7)/2</span></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>k5_weights</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.0 0.0 0.5 0.5 0.5</span></span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>y_pred_5 <span class="ot">&lt;-</span> <span class="fu">sum</span>(k5_weights<span class="sc">*</span>y0_hat)</span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>y_pred_5</span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5043588</span></span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="do">## Divide by the total so the weights sum to one</span></span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>k5_weights_ec <span class="ot">&lt;-</span> k5_weights<span class="sc">/</span><span class="fu">sum</span>(k5_weights)</span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>y_pred_5_ec <span class="ot">&lt;-</span> <span class="fu">sum</span>(k5_weights_ec<span class="sc">*</span>y0_hat)</span>
-<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>y_pred_5_ec</span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.3362392</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Generate Sample Data</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>x0_hat <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>y0_hat <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="fu">length</span>(x0_hat))</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>y0_hat</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] -0.8204684  0.4874291  0.7383247  0.5757814 -0.3053884</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Manually Compute Estimate at x=5</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>k5_weights <span class="ot">&lt;-</span> <span class="fu">dunif</span>( <span class="fu">abs</span>(x0_hat<span class="dv">-5</span>)<span class="sc">/</span>h, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="co">#(x0_hat &gt;= 3)*(x0_hat =&lt; 7)/2</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>k5_weights</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.0 0.0 0.5 0.5 0.5</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>y_pred_5 <span class="ot">&lt;-</span> <span class="fu">sum</span>(k5_weights<span class="sc">*</span>y0_hat)</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>y_pred_5</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5043588</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="do">## Divide by the total so the weights sum to one</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>k5_weights_ec <span class="ot">&lt;-</span> k5_weights<span class="sc">/</span><span class="fu">sum</span>(k5_weights)</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>y_pred_5_ec <span class="ot">&lt;-</span> <span class="fu">sum</span>(k5_weights_ec<span class="sc">*</span>y0_hat)</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>y_pred_5_ec</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.3362392</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -1107,26 +1161,27 @@ w_{i}(x, h) &amp;=  \left[ \frac{ k_{U} \left( \hat{x}_{i}, x, h \right) }{ \sum
 &amp;\approx \sum_{i}^{n}\left[ \hat{e}_{i} \right]^2 \hat{d}_{i}(x,h) / 2 \\
 &amp;= \sum_{i}^{n(x,h)}\left[\hat{y}_{i}- b_{0}\left(x,h\right) - b_{1}(x,h) \hat{x}_{i} \right]^2 / 2,
 \end{aligned}\]</span> The constant term <span class="math inline">\(1/2\)</span> is irrelevant to finding the optimal solution (you can check the math yourself).</p>
-<p>Here is the weighted regression on the wage data, at the midpoint of the first bin of the two-bin piecewise regression. Both predictions are the same, about <span class="math inline">\(4.378\)</span>.</p>
+<p>Here is the weighted regression on the running example, at the midpoint of the first bin of the two-bin piecewise regression. The code prints the weighted prediction and then the piecewise prediction.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># xy2_hat and preg_c defined above</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="do">## Weighted Regression</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">6</span> <span class="co"># midpoint of the first schooling bin</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="fl">3.5</span> <span class="co"># window [2.5, 9.5] covers schooling levels 3 to 9</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="fu">abs</span>(xy2_hat[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x) <span class="sc">/</span>h</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>k_weights <span class="ot">&lt;-</span> <span class="fu">dunif</span>(k, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="co"># the uniform kernel k_U</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>preg_k  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_hat, <span class="at">weights=</span>k_weights)</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(preg_k, <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span>x))</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="do">##        1 </span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="do">## 4.378248</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare to Piecewise</span></span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(preg_c, <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span>x, <span class="at">xcc=</span><span class="st">'(2.5,9.5]'</span>))</span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="do">##        1 </span></span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="do">## 4.378248</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># xy_hat and preg_c defined above</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="do">## Weighted Regression</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">6</span> <span class="co"># midpoint of the first schooling bin</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="fl">3.5</span> <span class="co"># window [2.5, 9.5] covers schooling levels 3 to 9</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="fu">abs</span>(xy_hat[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x) <span class="sc">/</span>h</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>k_weights <span class="ot">&lt;-</span> <span class="fu">dunif</span>(k, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="co"># the uniform kernel k_U</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>preg_k  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, <span class="at">weights=</span>k_weights)</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(preg_k, <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span>x))</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="do">##        1 </span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="do">## 4.378248</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare to Piecewise</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(preg_c, <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span>x, <span class="at">xcc=</span><span class="st">'(2.5,9.5]'</span>))</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="do">##        1 </span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="do">## 4.378248</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Both predictions are the same, about 4.378.</span></span></code></pre></div>
 </details>
 </div>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
@@ -1141,24 +1196,24 @@ w_{i}(x, h) &amp;=  \left[ \frac{ k_{U} \left( \hat{x}_{i}, x, h \right) }{ \sum
 </div>
 <div id="callout-11" class="callout-11-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>Check the same result at a different design point. Use the second bin, <code>(9.5,16.5]</code>, which holds schooling levels <span class="math inline">\(10\)</span> to <span class="math inline">\(16\)</span>.</p>
+<p>Check the same result at a different design point. Use the second bin, <code>(9.5,16.5]</code>.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">13</span> <span class="co"># midpoint of the second schooling bin</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="fl">3.5</span> <span class="co"># window [9.5, 16.5] covers schooling levels 10 to 16</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Weighted Regression</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>k_weights <span class="ot">&lt;-</span> <span class="fu">dunif</span>( <span class="fu">abs</span>(xy2_hat[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x)<span class="sc">/</span>h, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>preg_k  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_hat, <span class="at">weights=</span>k_weights)</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(preg_k, <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span>x))</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="do">##        1 </span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="do">## 6.592354</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare to Piecewise</span></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(preg_c, <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span>x, <span class="at">xcc=</span><span class="st">'(9.5,16.5]'</span>))</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="do">##        1 </span></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="do">## 6.592354</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">13</span> <span class="co"># midpoint of the second schooling bin</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>h <span class="ot">&lt;-</span> <span class="fl">3.5</span> <span class="co"># window [9.5, 16.5] covers schooling levels 10 to 16</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Weighted Regression</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>k_weights <span class="ot">&lt;-</span> <span class="fu">dunif</span>( <span class="fu">abs</span>(xy_hat[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x)<span class="sc">/</span>h, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>preg_k  <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, <span class="at">weights=</span>k_weights)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(preg_k, <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span>x))</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="do">##        1 </span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="do">## 6.592354</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare to Piecewise</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(preg_c, <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span>x, <span class="at">xcc=</span><span class="st">'(9.5,16.5]'</span>))</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="do">##        1 </span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="do">## 6.592354</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -1188,48 +1243,49 @@ w_{i}(x, h) &amp;=  \left[ \frac{ k_{U} \left( \hat{x}_{i}, x, h \right) }{ \sum
 </div>
 </div>
 </div>
-<p>Local linear regression is useful when the relationship slopes near the edges of the data, where the locally constant fit is biased, and it also reports a local slope <span class="math inline">\(\hat{b}_{1}(x,h)\)</span> at every design point. It is the sliding-window version of piecewise regression: with the uniform kernel <span class="math inline">\(k_{U}\)</span> and a design point at a bin midpoint, it reproduces the piecewise fit, as the weighted regression at <span class="math inline">\(x=6\)</span> showed. Deriving the optimal values <span class="math inline">\(\hat{b}_{0}(x, h)\)</span> and <span class="math inline">\(\hat{b}_{1}(x,h)\)</span> for <span class="math inline">\(k_{U}\)</span> is left as a homework exercise.</p>
+<p>Local linear regression is useful when the relationship slopes near the edges of the data, where the locally constant fit is biased, and it also reports a local slope <span class="math inline">\(\hat{b}_{1}(x,h)\)</span> at every design point. It is the sliding-window version of piecewise regression: with the uniform kernel <span class="math inline">\(k_{U}\)</span> and a design point at a bin midpoint, it reproduces the piecewise fit, as the weighted regression above showed. Deriving the optimal values <span class="math inline">\(\hat{b}_{0}(x, h)\)</span> and <span class="math inline">\(\hat{b}_{1}(x,h)\)</span> for <span class="math inline">\(k_{U}\)</span> is left as a homework exercise.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 'Naive' Smoother</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>pred_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(x0, h){</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Assign equal weight to observations within h distance to x0</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 0 weight for all other observations</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    ki <span class="ot">&lt;-</span> <span class="fu">abs</span>(xy2_hat[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x0)<span class="sc">/</span>h</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    ki <span class="ot">&lt;-</span> <span class="fu">dunif</span>(ki, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="do">## The uniform kernel k_U; could change, e.g. dnorm(ki)</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    wi <span class="ot">&lt;-</span> ki<span class="sc">/</span><span class="fu">sum</span>(ki, <span class="at">na.rm=</span><span class="cn">TRUE</span>) <span class="co"># always sum to 1 (for edge-effects)</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># run regression with weighted data</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    llls_i <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_hat, <span class="at">weights=</span>wi)</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    y_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(llls_i, <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span>x0))</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>x_values <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">4</span>, <span class="dv">16</span>, <span class="at">by=</span><span class="dv">1</span>) <span class="co"># Design points</span></span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Fine Bins</span></span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>y_pred_1 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x_values))</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(x_values)){</span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    y_pred_1[i] <span class="ot">&lt;-</span> <span class="fu">pred_fun</span>(<span class="at">x0=</span>x_values[i], <span class="at">h=</span><span class="dv">2</span>)</span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Coarse Bins</span></span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>y_pred_2 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x_values))</span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(x_values)){</span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>    y_pred_2[i] <span class="ot">&lt;-</span> <span class="fu">pred_fun</span>(<span class="at">x0=</span>x_values[i], <span class="at">h=</span><span class="dv">6</span>)</span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot</span></span>
-<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">data=</span>xy2_hat, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>),</span>
-<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">ylab=</span><span class="st">'Wage'</span>, <span class="at">xlab=</span><span class="st">'School'</span>)</span>
-<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rgb</span>(.<span class="dv">8</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">5</span>), <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>, .<span class="dv">5</span>))</span>
-<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_1, <span class="at">col=</span>cols[<span class="dv">1</span>], <span class="at">lwd=</span><span class="dv">1</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
-<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_2, <span class="at">col=</span>cols[<span class="dv">2</span>], <span class="at">lwd=</span><span class="dv">1</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
-<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">title=</span><span class="st">'Locally Linear'</span>,</span>
-<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'h=2'</span>, <span class="st">'h=6'</span>),</span>
-<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">lty=</span><span class="dv">1</span>, <span class="at">col=</span>cols, <span class="at">cex=</span>.<span class="dv">8</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 'Naive' Smoother</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>pred_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(x0, h){</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Assign equal weight to observations within h distance to x0</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 0 weight for all other observations</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    ki <span class="ot">&lt;-</span> <span class="fu">abs</span>(xy_hat[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x0)<span class="sc">/</span>h</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    ki <span class="ot">&lt;-</span> <span class="fu">dunif</span>(ki, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="do">## The uniform kernel k_U; could change, e.g. dnorm(ki)</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    wi <span class="ot">&lt;-</span> ki<span class="sc">/</span><span class="fu">sum</span>(ki, <span class="at">na.rm=</span><span class="cn">TRUE</span>) <span class="co"># always sum to 1 (for edge-effects)</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># run regression with weighted data</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>    llls_i <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, <span class="at">weights=</span>wi)</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>    y_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(llls_i, <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span>x0))</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>x_values <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">4</span>, <span class="dv">16</span>, <span class="at">by=</span><span class="dv">1</span>) <span class="co"># Design points</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Fine Bins</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>y_pred_1 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x_values))</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(x_values)){</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>    y_pred_1[i] <span class="ot">&lt;-</span> <span class="fu">pred_fun</span>(<span class="at">x0=</span>x_values[i], <span class="at">h=</span><span class="dv">2</span>)</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Coarse Bins</span></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>y_pred_2 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x_values))</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(x_values)){</span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>    y_pred_2[i] <span class="ot">&lt;-</span> <span class="fu">pred_fun</span>(<span class="at">x0=</span>x_values[i], <span class="at">h=</span><span class="dv">6</span>)</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot</span></span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">data=</span>xy_hat, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>),</span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">ylab=</span><span class="st">'Wage'</span>, <span class="at">xlab=</span><span class="st">'School'</span>)</span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_1, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_2, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">lty=</span><span class="dv">2</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">title=</span><span class="st">'Locally Linear'</span>,</span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'h=2'</span>, <span class="st">'h=6'</span>),</span>
+<span id="cb16-33"><a href="#cb16-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">lty=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">pch=</span><span class="dv">1</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">cex=</span>.<span class="dv">8</span>,</span>
+<span id="cb16-34"><a href="#cb16-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">seg.len=</span><span class="dv">4</span>) <span class="co"># long enough that the circle does not hide the dashes</span></span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="02_16_LocalRegression_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="02_16_LocalRegression_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -1266,36 +1322,36 @@ w_{i}(x, h) &amp;=  \left[ \frac{ k_{U} \left( \hat{x}_{i}, x, h \right) }{ \sum
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># xy_hat defined above</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Same smoother as pred_fun, but for any data with columns x_hat and y_hat</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>pred_fun_xy <span class="ot">&lt;-</span> <span class="cf">function</span>(x0, h, xy){</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    ki <span class="ot">&lt;-</span> <span class="fu">abs</span>(xy[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x0)<span class="sc">/</span>h</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    ki <span class="ot">&lt;-</span> <span class="fu">dunif</span>(ki, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="do">## The uniform kernel k_U</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    wi <span class="ot">&lt;-</span> ki<span class="sc">/</span><span class="fu">sum</span>(ki, <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    llls_i <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy, <span class="at">weights=</span>wi)</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    y_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(llls_i, <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span>x0))</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>x_values <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">unique</span>(xy_hat[, <span class="st">'x_hat'</span>]))</span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">data=</span>xy_hat, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>),</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylab=</span><span class="st">'Murder Rate'</span>, <span class="at">xlab=</span><span class="st">'Urban Population (%)'</span>)</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>y_pred_1 <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">length</span>(x_values))</span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(x_values)) {</span>
-<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    y_pred_1[i] <span class="ot">&lt;-</span> <span class="fu">pred_fun_xy</span>(x_values[i], <span class="at">h=</span><span class="dv">2</span>, <span class="at">xy=</span>xy_hat)</span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>y_pred_2 <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">length</span>(x_values))</span>
-<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(x_values)) {</span>
-<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    y_pred_2[i] <span class="ot">&lt;-</span> <span class="fu">pred_fun_xy</span>(x_values[i], <span class="at">h=</span><span class="dv">20</span>, <span class="at">xy=</span>xy_hat)</span>
-<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rgb</span>(.<span class="dv">8</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">5</span>), <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>, .<span class="dv">5</span>))</span>
-<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_1, <span class="at">col=</span>cols[<span class="dv">1</span>], <span class="at">lwd=</span><span class="dv">1</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
-<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_2, <span class="at">col=</span>cols[<span class="dv">2</span>], <span class="at">lwd=</span><span class="dv">1</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
-<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">title=</span><span class="st">'Locally Linear'</span>,</span>
-<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'h=2 '</span>, <span class="st">'h=20'</span>),</span>
-<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">lty=</span><span class="dv">1</span>, <span class="at">col=</span>cols, <span class="at">cex=</span>.<span class="dv">8</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># xy2_hat defined above</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Same smoother as pred_fun, but for any data with columns x_hat and y_hat</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>pred_fun_xy <span class="ot">&lt;-</span> <span class="cf">function</span>(x0, h, xy){</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    ki <span class="ot">&lt;-</span> <span class="fu">abs</span>(xy[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x0)<span class="sc">/</span>h</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    ki <span class="ot">&lt;-</span> <span class="fu">dunif</span>(ki, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="do">## The uniform kernel k_U</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    wi <span class="ot">&lt;-</span> ki<span class="sc">/</span><span class="fu">sum</span>(ki, <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    llls_i <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy, <span class="at">weights=</span>wi)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    y_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(llls_i, <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span>x0))</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>x_values <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">unique</span>(xy2_hat[, <span class="st">'x_hat'</span>]))</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">data=</span>xy2_hat, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>),</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylab=</span><span class="st">'Murder Rate'</span>, <span class="at">xlab=</span><span class="st">'Urban Population (%)'</span>)</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>y_pred_1 <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">length</span>(x_values))</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(x_values)) {</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>    y_pred_1[i] <span class="ot">&lt;-</span> <span class="fu">pred_fun_xy</span>(x_values[i], <span class="at">h=</span><span class="dv">2</span>, <span class="at">xy=</span>xy2_hat)</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>y_pred_2 <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">length</span>(x_values))</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(x_values)) {</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>    y_pred_2[i] <span class="ot">&lt;-</span> <span class="fu">pred_fun_xy</span>(x_values[i], <span class="at">h=</span><span class="dv">20</span>, <span class="at">xy=</span>xy2_hat)</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_1, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_2, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">lty=</span><span class="dv">2</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">title=</span><span class="st">'Locally Linear'</span>,</span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'h=2 '</span>, <span class="st">'h=20'</span>),</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">lty=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">pch=</span><span class="dv">1</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">cex=</span>.<span class="dv">8</span>,</span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">seg.len=</span><span class="dv">4</span>) <span class="co"># long enough that the circle does not hide the dashes</span></span></code></pre></div>
 </details>
 </div>
 </div>

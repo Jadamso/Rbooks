@@ -481,7 +481,26 @@ window.Quarto = {
 
 
 <hr>
-<p>We will now dig a little deeper theoretically into the statistics we compute. When we know how the data are generated theoretically, we can often compute the theoretical value of the two most basic and often-used statistics: the mean and variance. This chapter distinguishes between an <em>estimate</em>, an <em>estimator</em>, and a <em>parameter</em>. It then derives the mean and variance of the sample mean, using linearity of expectation, and shows that the variance shrinks like <span class="math inline">\(1/n\)</span>. These two results set the center and spread of the Normal curve in the central limit theorem from the previous chapter, but they do not explain why the curve is Normal. Finally, it defines two properties for judging estimators, bias and consistency. The shrinking variance explains why the sample mean is consistent, which is the law of large numbers from the previous chapter.</p>
+<p>We will now dig a little deeper theoretically into the statistics we compute. When we know how the data are generated theoretically, we can often compute the theoretical value of the two most basic and often-used statistics: the mean and variance.</p>
+<p>This chapter asks three questions.</p>
+<ul>
+<li>What does a statistic estimate?
+<ul>
+<li><em>Parameter, estimator, and estimate</em>: these separate a fixed population number, a formula for any sample, and the specific number from our sample.</li>
+<li><em>Expected value and population variance</em>: these are the theoretical mean and variance, computed from known probabilities.</li>
+<li><em>Plug-in principle</em>: this puts sample proportions into a population formula, which recovers the sample <a href="./01_03_SummaryStatistics.html#mean-and-variance">mean and variance</a>.</li>
+</ul></li>
+<li>How sure are we?
+<ul>
+<li><em>Mean and variance of the sample mean</em>: these are <span class="math inline">\(\mathbb{E}[M]=\mathbb{E}[X_{i}]\)</span>, from linearity of expectation, and <span class="math inline">\(\mathbb{V}[M]=\mathbb{V}[X_{i}]/n\)</span>, which shrinks like <span class="math inline">\(1/n\)</span>. These two results set the center and spread of the Normal curve in the <a href="./01_05_Sampling.html#central-limit-theorem-clt">central limit theorem</a>, but they do not explain why the curve is Normal.</li>
+<li><em>Standard error formula</em>: this estimates <span class="math inline">\(\text{SE}(M)\)</span> with <span class="math inline">\(\hat{s}/\sqrt{n}\)</span>, as an alternative to the <a href="./01_05_Sampling.html#standard-errors">bootstrap</a>.</li>
+</ul></li>
+<li>How do we judge an estimator?
+<ul>
+<li><em>Bias</em>: this asks whether an estimator is right on average.</li>
+<li><em>Consistency</em>: this asks whether estimates get closer to the parameter as the sample grows. The shrinking variance explains why the sample mean is consistent, which is the <a href="./01_05_Sampling.html#law-of-large-numbers-lln">law of large numbers</a>.</li>
+</ul></li>
+</ul>
 <section id="statistical-theory" class="level2" data-number="6.1">
 <h2 data-number="6.1" class="anchored" data-anchor-id="statistical-theory"><span class="header-section-number">6.1</span> Statistical Theory</h2>
 <p>Recall that we denote <span class="math inline">\(X_{i}\)</span> as a random variable that can take on specific values <span class="math inline">\(x\)</span> from the sample space with known probabilities (see this <a href="https://www.khanacademy.org/math/statistics-probability/probability-library/basic-theoretical-probability/a/probability-the-basics">probability refresher</a> if needed). For example, <span class="math inline">\(X_{i}\)</span> is a coin that we will flip and it can land on heads (<span class="math inline">\(x=1\)</span>) or tails (<span class="math inline">\(x=0\)</span>).</p>
@@ -517,25 +536,26 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># M in each of the four samples HH, HT, TH, TT</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>) <span class="co"># first flip</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>x2 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>) <span class="co"># second flip</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>m_samples <span class="ot">&lt;-</span> (x1 <span class="sc">+</span> x2)<span class="sc">/</span><span class="dv">2</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>m_samples</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.0 0.5 0.5 0.0</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># PMF of M, since each sample has probability 1/4</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>m_probs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">table</span>(m_samples))<span class="sc">/</span><span class="dv">4</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>m_values <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">names</span>(m_probs))</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>m_probs</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="do">##    0  0.5    1 </span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="do">## 0.25 0.50 0.25</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(m_values, m_probs, <span class="at">type=</span><span class="st">'h'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.25</span>, <span class="fl">1.25</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.6</span>),</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'Sample mean of two flips'</span>, <span class="at">ylab=</span><span class="st">'Prob(M = m)'</span>)</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(m_values, m_probs, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'PMF of M for Two Fair Coin Flips'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># M in each of the four samples HH, HT, TH, TT</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>) <span class="co"># first flip</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>x2 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>) <span class="co"># second flip</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>m_samples <span class="ot">&lt;-</span> (x1 <span class="sc">+</span> x2)<span class="sc">/</span><span class="dv">2</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>m_samples</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.0 0.5 0.5 0.0</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># PMF of M, since each sample has probability 1/4</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>m_probs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">table</span>(m_samples))<span class="sc">/</span><span class="dv">4</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>m_values <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">names</span>(m_probs))</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>m_probs</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="do">##    0  0.5    1 </span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="do">## 0.25 0.50 0.25</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(m_values, m_probs, <span class="at">type=</span><span class="st">'h'</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>),</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.25</span>, <span class="fl">1.25</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.6</span>),</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'Sample mean of two flips'</span>, <span class="at">ylab=</span><span class="st">'Prob(M = m)'</span>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(m_values, m_probs, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>))</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'PMF of M for Two Fair Coin Flips'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -550,12 +570,11 @@ window.Quarto = {
 <table class="caption-top table">
 <caption>Statistical definitions</caption>
 <colgroup>
-<col style="width: 10%">
-<col style="width: 18%">
-<col style="width: 8%">
-<col style="width: 18%">
-<col style="width: 34%">
+<col style="width: 11%">
+<col style="width: 20%">
 <col style="width: 9%">
+<col style="width: 20%">
+<col style="width: 38%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -564,7 +583,6 @@ window.Quarto = {
 <th>What it is</th>
 <th>Terminology</th>
 <th>Alternative Terminology</th>
-<th></th>
 </tr>
 </thead>
 <tbody>
@@ -574,13 +592,11 @@ window.Quarto = {
 <td>one number you compute for a single sample of size <span class="math inline">\(n\)</span></td>
 <td>empirical mean, variance</td>
 <td>sample mean, uncorrected sample variance (divide-by-<span class="math inline">\(n\)</span>)</td>
-<td></td>
 </tr>
 <tr class="even">
 <td>Estimator</td>
 <td><span class="math inline">\(M\)</span>, <span class="math inline">\(V\)</span></td>
 <td>a random variable, formula that computes the statistic for any sample of size <span class="math inline">\(n\)</span></td>
-<td></td>
 <td></td>
 <td></td>
 </tr>
@@ -590,11 +606,10 @@ window.Quarto = {
 <td>a number defined by the theoretical distribution</td>
 <td>theoretical mean, variance</td>
 <td>population/long-run mean, variance</td>
-<td></td>
 </tr>
 </tbody>
 </table>
-<p>For example, pretend the <span class="math inline">\(3294\)</span> workers in the <code>Wages1</code> data are the whole population, as in <a href="./01_05_Sampling.html#population-theory">Sampling &amp; Resampling</a>. Their average wage is a parameter. The sample mean formula, applied to any sample of <span class="math inline">\(50\)</span> workers, is an estimator. The number it returns for one particular sample of <span class="math inline">\(50\)</span> workers is an estimate.</p>
+<p>For example, pretend the data are the whole population, as in <a href="./01_05_Sampling.html#population-theory">Sampling &amp; Resampling</a>. Their average is a parameter. The sample mean formula, applied to any sample of <span class="math inline">\(n\)</span> observations, is an estimator. The number it returns for one particular sample of <span class="math inline">\(n\)</span> observations is an estimate.</p>
 <p>For concreteness, we separately analyze how the theoretical mean and variance are computed for discrete and continuous random variables.</p>
 </section>
 <section id="population-parameters" class="level2" data-number="6.2">
@@ -673,34 +688,36 @@ window.Quarto = {
 <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>          <span class="at">size=</span><span class="dv">10000</span>, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
 <span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(x_sim_hat)</span>
 <span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 2.9651</span></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="fu">sd</span>(x_sim_hat)</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.409568</span></span></code></pre></div>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((x_sim_hat <span class="sc">-</span> <span class="fu">mean</span>(x_sim_hat))<span class="sc">^</span><span class="dv">2</span>)) <span class="co"># divides by n, unlike sd()</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.409497</span></span></code></pre></div>
 </details>
 </div>
 </div>
 </div>
 </div>
-<p>A finite population is also a discrete random variable. In <a href="./01_05_Sampling.html#population-theory">Sampling &amp; Resampling</a>, we pretended the <span class="math inline">\(3294\)</span> workers in <code>Wages1</code> were the whole population. Drawing one worker at random gives each worker a probability of <span class="math inline">\(1/3294\)</span>, so the population mean and variance follow directly from the formulas above.</p>
+<p>A finite population is also a discrete random variable. In <a href="./01_05_Sampling.html#population-theory">Sampling &amp; Resampling</a>, we pretended the data were the whole population. Drawing one observation at random gives each of the <span class="math inline">\(N\)</span> observations a probability of <span class="math inline">\(1/N\)</span>, so the population mean and variance follow directly from the formulas above.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Wages1, <span class="at">package=</span><span class="st">'Ecdat'</span>)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>population_wages <span class="ot">&lt;-</span> Wages1[, <span class="st">'wage'</span>]</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="fu">length</span>(population_wages)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>wage_probs <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">/</span>N, N) <span class="co"># each worker equally likely</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Population mean and variance, from the formulas</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>population_wage_mean <span class="ot">&lt;-</span> <span class="fu">sum</span>(population_wages <span class="sc">*</span> wage_probs)</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>population_wage_mean</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.757585</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>population_wage_var <span class="ot">&lt;-</span> <span class="fu">sum</span>((population_wages <span class="sc">-</span> population_wage_mean)<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> wage_probs)</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>population_wage_var</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 10.68433</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="fu">sqrt</span>(population_wage_var) <span class="do">##sd</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 3.26869</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Pretend the 3294 workers in Wages1 are the whole population</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Wages1, <span class="at">package=</span><span class="st">'Ecdat'</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>population_wages <span class="ot">&lt;-</span> Wages1[, <span class="st">'wage'</span>] <span class="co"># hourly wage in 1980 dollars</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="fu">length</span>(population_wages)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>wage_probs <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">/</span>N, N) <span class="co"># each worker equally likely, with probability 1/3294</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Population mean and variance, from the formulas</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>population_wage_mean <span class="ot">&lt;-</span> <span class="fu">sum</span>(population_wages <span class="sc">*</span> wage_probs)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>population_wage_mean</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.757585</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>population_wage_var <span class="ot">&lt;-</span> <span class="fu">sum</span>((population_wages <span class="sc">-</span> population_wage_mean)<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> wage_probs)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>population_wage_var</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 10.68433</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="fu">sqrt</span>(population_wage_var) <span class="do">##sd</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 3.26869</span></span></code></pre></div>
 </details>
 </div>
-<p>With equal probabilities, <span class="math inline">\(\mathbb{E}[X_{i}]\)</span> is just the average wage over the whole population, <code>mean(population_wages)</code>. Note that <code>var(population_wages)</code> would divide by <span class="math inline">\(N-1\)</span> instead of <span class="math inline">\(N\)</span>, and so differs slightly from <span class="math inline">\(\mathbb{V}[X_{i}]\)</span>.</p>
+<p>With equal probabilities, <span class="math inline">\(\mathbb{E}[X_{i}]\)</span> is just the average over the whole population, which <code>mean()</code> computes. Note that <code>var()</code> would divide by <span class="math inline">\(N-1\)</span> instead of <span class="math inline">\(N\)</span>, and so differs slightly from <span class="math inline">\(\mathbb{V}[X_{i}]\)</span> when <span class="math inline">\(N\)</span> is large.</p>
 <div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -713,7 +730,7 @@ window.Quarto = {
 </div>
 <div id="callout-4" class="callout-4-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>For example, consider an unfair coin with a <span class="math inline">\(3/4\)</span> probability of heads (<span class="math inline">\(x=1\)</span>) and a <span class="math inline">\(1/4\)</span> probability of tails (<span class="math inline">\(x=0\)</span>) has a theoretical mean of <span class="math display">\[
+<p>For example, an unfair coin with a <span class="math inline">\(3/4\)</span> probability of heads (<span class="math inline">\(x=1\)</span>) and a <span class="math inline">\(1/4\)</span> probability of tails (<span class="math inline">\(x=0\)</span>) has a theoretical mean of <span class="math display">\[
 \mathbb{E}[X_{i}] = 0\frac{1}{4} + 1\frac{3}{4} = \frac{3}{4}
 \]</span> and a theoretical variance of <span class="math display">\[
 \mathbb{V}[X_{i}] = [0 - \frac{3}{4}]^2 \frac{1}{4} + [1 - \frac{3}{4}]^2 \frac{3}{4}
@@ -732,8 +749,8 @@ window.Quarto = {
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>( <span class="fu">mean</span>(x_sim), <span class="dv">4</span>)</span>
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.737</span></span>
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>( <span class="fu">var</span>(x_sim), <span class="dv">4</span>)</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.194</span></span></code></pre></div>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>( <span class="fu">mean</span>((x_sim <span class="sc">-</span> <span class="fu">mean</span>(x_sim))<span class="sc">^</span><span class="dv">2</span>), <span class="dv">4</span>)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.1938</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -773,8 +790,8 @@ window.Quarto = {
 <span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(x, <span class="at">prob=</span>x_probs, <span class="at">size=</span><span class="dv">10000</span>, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
 <span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>(x_sim), <span class="dv">2</span>)</span>
 <span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 3</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">var</span>(x_sim), <span class="dv">2</span>)</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.26</span></span></code></pre></div>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>((x_sim <span class="sc">-</span> <span class="fu">mean</span>(x_sim))<span class="sc">^</span><span class="dv">2</span>), <span class="dv">2</span>)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.25</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -841,92 +858,61 @@ X_{i} &amp;= \begin{cases}
 </div>
 </div>
 </section>
-<section id="law-of-the-unconscious-statistician-lotus" class="level4 unnumbered">
-<h4 class="unnumbered anchored" data-anchor-id="law-of-the-unconscious-statistician-lotus"><strong>Law of the Unconscious Statistician (LOTUS)</strong></h4>
-<p>We often care about a transformed quantity like <span class="math inline">\(X_{i}^{2}\)</span> or <span class="math inline">\(\log(X_{i})\)</span>, and would prefer not to derive its full distribution from scratch just to take its expectation. The <em>Law of the Unconscious Statistician</em> (LOTUS) gives the expected value of a function of a random variable without first deriving the distribution of that function. For discrete <span class="math inline">\(X_{i}\)</span> and any function <span class="math inline">\(g\)</span>, <span class="math display">\[\mathbb{E}[g(X_{i})] = \sum_{x} g(x) \text{Prob}(X_{i}=x).\]</span> For continuous <span class="math inline">\(X_{i}\)</span>, replace the sum with an integral against <span class="math inline">\(f(x)\)</span>. LOTUS is useful as a shortcut: instead of deriving the distribution of <span class="math inline">\(g(X_{i})\)</span> and then summing <span class="math inline">\(y \cdot \text{Prob}(g(X_{i}) = y)\)</span>, we sum <span class="math inline">\(g(x) \cdot \text{Prob}(X_{i}=x)\)</span> directly using the original distribution of <span class="math inline">\(X_{i}\)</span>. You have already seen the special case <span class="math inline">\(g(X_{i})=\left(X_{i}-\mathbb{E}[X_{i}]\right)^2\)</span>, which is the population variance.</p>
-<div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
+<section id="continuous-random-variables" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="continuous-random-variables"><strong>Continuous Random Variables</strong></h4>
+<p>The distribution parameters of a continuous random variable determine its mean and variance. For example, an exponential random variable with rate parameter <span class="math inline">\(\lambda\)</span> has theoretical mean <span class="math inline">\(\mathbb{E}[X_{i}]=1/\lambda\)</span> and variance <span class="math inline">\(\mathbb{V}[X_{i}]=1/\lambda^2\)</span>. For a normal random variable, we can specify its theoretical mean <span class="math inline">\(\mathbb{E}[X_{i}]=\mu\)</span> and variance <span class="math inline">\(\mathbb{V}[X_{i}]=\sigma^2\)</span> directly.</p>
+<div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-9-contents" aria-controls="callout-9" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Tip</span>Test Yourself
+<span class="screen-reader-only">Note</span>Must Know
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
 <div id="callout-9" class="callout-9-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>Let <span class="math inline">\(X_{i}\)</span> take values <span class="math inline">\(\{1,2,3\}\)</span> with <span class="math display">\[
-\text{Prob}(X_{i}=1)=0.2,\quad \text{Prob}(X_{i}=2)=0.5,\quad \text{Prob}(X_{i}=3)=0.3.
-\]</span> Let <span class="math inline">\(g(x)=x^2+1\)</span>. Then <span class="math inline">\(g(1)=1^2+1=2\)</span>, <span class="math inline">\(g(2)=2^2+1=5\)</span>, <span class="math inline">\(g(3)=3^2+1=10\)</span>.</p>
-<p>Then, by LOTUS, <span class="math display">\[\begin{aligned}
-\mathbb E[g(X_{i})]=\sum_{x} g(x)\text{Prob}(X_{i}=x)
-&amp;= g(1)\cdot 0.2 + g(2)\cdot 0.5 + g(3)\cdot 0.3 \\
-&amp;= 2 \cdot 0.2 + 5 \cdot 0.5 + 10 \cdot 0.3 \\
-&amp;= 0.4 + 2.5 + 3 = 5.9.
-\end{aligned}\]</span></p>
+<p>An exponential random variable with <span class="math inline">\(\lambda=2\)</span> has <span class="math inline">\(\mathbb{E}[X_{i}]=1/2\)</span>. R’s <code>rnorm()</code> takes the mean and standard deviation, so the normal draws below have <span class="math inline">\(\mathbb{E}[X_{i}]=1\)</span> and <span class="math inline">\(\mathbb{V}[X_{i}]=2^2=4\)</span>.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>x  <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>x_probs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="fl">0.3</span>)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>g  <span class="ot">&lt;-</span> <span class="cf">function</span>(x) x<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">g</span>(x) <span class="sc">*</span> x_probs) </span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.9</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Exponential Random Variable</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">rexp</span>(<span class="dv">5000</span>, <span class="dv">2</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(m_hat, <span class="dv">2</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Normal Random Variable</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">5000</span>, <span class="dv">1</span>, <span class="dv">2</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>(x_sim), <span class="dv">2</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.02</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>((x_sim <span class="sc">-</span> <span class="fu">mean</span>(x_sim))<span class="sc">^</span><span class="dv">2</span>), <span class="dv">2</span>)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 3.98</span></span></code></pre></div>
 </details>
 </div>
 </div>
 </div>
 </div>
-<div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-10-contents" aria-controls="callout-10" aria-expanded="false" aria-label="Toggle callout">
-<div class="callout-icon-container">
-<i class="callout-icon no-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Must Know
-</div>
-<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
-</div>
-<div id="callout-10" class="callout-10-contents callout-collapse collapse">
-<div class="callout-body-container callout-body">
-<p>For a fair four-sided die and <span class="math inline">\(g(x)=x^2+1\)</span>, LOTUS gives <span class="math inline">\(\mathbb{E}[g(X_{i})]\)</span> exactly, and a simulation gives nearly the same number.</p>
+<p>Data recorded to many decimal places can also be treated as continuous, with a density <span class="math inline">\(f(x)\)</span> that a histogram approximates. The integral <span class="math inline">\(\mathbb{E}[X_{i}]=\int x f(x) dx\)</span> is then approximated by a sum over the histogram bins: each bin midpoint times the area of its bar.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>g  <span class="ot">&lt;-</span> <span class="cf">function</span>(x) x<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># A theoretical example</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>)</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>x_probs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">g</span>(x) <span class="sc">*</span> x_probs)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 8.5</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co"># A simulation example</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(x, <span class="at">prob=</span>x_probs, <span class="at">size=</span><span class="dv">1000</span>, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">g</span>(x_sim))</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 8.549</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Wages are recorded to many decimal places, so treat them as continuous.</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>f_hat <span class="ot">&lt;-</span> <span class="fu">hist</span>(population_wages, <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">40</span>, <span class="at">by=</span><span class="dv">1</span>), <span class="at">plot=</span><span class="cn">FALSE</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>bin_areas <span class="ot">&lt;-</span> f_hat[[<span class="st">'density'</span>]] <span class="sc">*</span> <span class="fu">diff</span>(f_hat[[<span class="st">'breaks'</span>]]) <span class="co"># f(x) dx</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Mean from the histogram, and the exact population mean</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(f_hat[[<span class="st">'mids'</span>]] <span class="sc">*</span> bin_areas)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.757134</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>population_wage_mean</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.757585</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co"># The two numbers are close, 5.757 and 5.758.</span></span></code></pre></div>
 </details>
 </div>
-</div>
-</div>
-</div>
-<p>Economists often work with log wages. LOTUS gives the population mean of log wages directly from the wage distribution, with <span class="math inline">\(g(x)=\log(x)\)</span>.</p>
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># E[log(X)] by LOTUS</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">log</span>(population_wages) <span class="sc">*</span> wage_probs)</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.587268</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co"># log(E[X]) is a different number</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="fu">log</span>(population_wage_mean)</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.750518</span></span></code></pre></div>
-</details>
-</div>
-<p>The two numbers differ. In general, <span class="math inline">\(\mathbb{E}[g(X_{i})] \neq g(\mathbb{E}[X_{i}])\)</span>, so you cannot compute the expected value first and transform it afterwards.</p>
+<p>As the bins get narrower, the sum approaches the exact mean.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-11-contents" aria-controls="callout-11" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-10-contents" aria-controls="callout-10" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -935,84 +921,13 @@ X_{i} &amp;= \begin{cases}
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-11" class="callout-11-contents callout-collapse collapse">
+<div id="callout-10" class="callout-10-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>If <span class="math inline">\(X_{i}\)</span> is a continuous random variable (a random variable with a continuous sample space) and <span class="math inline">\(g\)</span> is a function, then <span class="math inline">\(\mathbb E[g(X_{i})] = \int_{-\infty}^{\infty} g(x)f(x) dx\)</span>.</p>
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">rexp</span>(<span class="fl">5e5</span>, <span class="at">rate =</span> <span class="dv">1</span>)           <span class="co"># X ~ Exp(1)</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">sqrt</span>(x_sim))                      <span class="co"># LOTUS Simulation</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.8862198</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sqrt</span>(pi) <span class="sc">/</span> <span class="dv">2</span>                       <span class="co"># Exact via LOTUS integral</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.8862269</span></span></code></pre></div>
-</details>
-</div>
-</div>
-</div>
-</div>
-</section>
-<section id="continuous-random-variables" class="level4 unnumbered">
-<h4 class="unnumbered anchored" data-anchor-id="continuous-random-variables"><strong>Continuous Random Variables</strong></h4>
-<p>The distribution parameters of a continuous random variable determine its mean and variance. For example, an exponential random variable with rate parameter <span class="math inline">\(\lambda\)</span> has theoretical mean <span class="math inline">\(\mathbb{E}[X_{i}]=1/\lambda\)</span> and variance <span class="math inline">\(\mathbb{V}[X_{i}]=1/\lambda^2\)</span>. For a normal random variable, we can specify its theoretical mean <span class="math inline">\(\mathbb{E}[X_{i}]=\mu\)</span> and variance <span class="math inline">\(\mathbb{V}[X_{i}]=\sigma^2\)</span> directly.</p>
-<div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-12-contents" aria-controls="callout-12" aria-expanded="false" aria-label="Toggle callout">
-<div class="callout-icon-container">
-<i class="callout-icon no-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Must Know
-</div>
-<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
-</div>
-<div id="callout-12" class="callout-12-contents callout-collapse collapse">
-<div class="callout-body-container callout-body">
-<p>An exponential random variable with <span class="math inline">\(\lambda=2\)</span> has <span class="math inline">\(\mathbb{E}[X_{i}]=1/2\)</span>. R’s <code>rnorm()</code> takes the mean and standard deviation, so the normal draws below have <span class="math inline">\(\mathbb{E}[X_{i}]=1\)</span> and <span class="math inline">\(\mathbb{V}[X_{i}]=2^2=4\)</span>.</p>
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Exponential Random Variable</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">rexp</span>(<span class="dv">5000</span>, <span class="dv">2</span>)</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(m_hat, <span class="dv">2</span>)</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.49</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Normal Random Variable</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">5000</span>, <span class="dv">1</span>, <span class="dv">2</span>)</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>(x_sim), <span class="dv">2</span>)</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.99</span></span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">var</span>(x_sim), <span class="dv">2</span>)</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 4.18</span></span></code></pre></div>
-</details>
-</div>
-</div>
-</div>
-</div>
-<p>Wages are recorded to many decimal places, so we can also treat them as continuous, with a density <span class="math inline">\(f(x)\)</span> that a histogram approximates. The integral <span class="math inline">\(\mathbb{E}[X_{i}]=\int x f(x) dx\)</span> is then approximated by a sum over the histogram bins: each bin midpoint times the area of its bar.</p>
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>f_hat <span class="ot">&lt;-</span> <span class="fu">hist</span>(population_wages, <span class="at">breaks=</span><span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">40</span>, <span class="at">by=</span><span class="dv">1</span>), <span class="at">plot=</span><span class="cn">FALSE</span>)</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>bin_areas <span class="ot">&lt;-</span> f_hat[[<span class="st">'density'</span>]] <span class="sc">*</span> <span class="fu">diff</span>(f_hat[[<span class="st">'breaks'</span>]]) <span class="co"># f(x) dx</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Mean from the histogram, and the exact population mean</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(f_hat[[<span class="st">'mids'</span>]] <span class="sc">*</span> bin_areas)</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.757134</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>population_wage_mean</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.757585</span></span></code></pre></div>
-</details>
-</div>
-<p>The two numbers are close, and narrower bins would make them closer.</p>
-<details>
-<summary>
-Advanced and Optional
-</summary>
-<p>
-</p><p>If the sample space is continuous, we can compute the theoretical mean (or expected value) as <span class="math display">\[
+<p>If the sample space is continuous, we can compute the theoretical mean (or expected value) as <span class="math display">\[
 \mathbb{E}[X_{i}] = \int x f(x) d x,
 \]</span> where <span class="math inline">\(f(x)\)</span> is the probability density for the particular value <span class="math inline">\(x\)</span>. Note that this is not a probability; probabilities are areas under <span class="math inline">\(f\)</span>.</p>
 <p>Similarly, we can compute the theoretical variance as <span class="math display">\[
-\mathbb{V}[X_{i}]= \int \left(x - \mathbb{E}[X_{i}] \right)^2 f(x) d x,
+\mathbb{V}[X_{i}]= \int \left(x - \mathbb{E}[X_{i}] \right)^2 f(x) d x.
 \]</span></p>
 <p>For example, consider a random variable with a continuous uniform distribution over <span class="math inline">\([-1, 1]\)</span>. In this case, <span class="math inline">\(f(x)=1/[1 - (-1)]=1/2\)</span> for each <span class="math inline">\(x~\text{in}~[-1, 1]\)</span> and <span class="math display">\[
 \mathbb{E}[X_{i}] = \int_{-1}^{1} \frac{x}{2} d x = \int_{-1}^{0} \frac{x}{2} d x + \int_{0}^{1} \frac{x}{2} d x = 0
@@ -1022,16 +937,17 @@ Advanced and Optional
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify by simulation</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">100000</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>( <span class="fu">mean</span>(x_sim), <span class="dv">2</span>)</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>( <span class="fu">mean</span>((x_sim <span class="sc">-</span> <span class="fu">mean</span>(x_sim))<span class="sc">^</span><span class="dv">2</span>), <span class="dv">2</span>)</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.33</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify by simulation</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">100000</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>( <span class="fu">mean</span>(x_sim), <span class="dv">2</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>( <span class="fu">mean</span>((x_sim <span class="sc">-</span> <span class="fu">mean</span>(x_sim))<span class="sc">^</span><span class="dv">2</span>), <span class="dv">2</span>)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.33</span></span></code></pre></div>
 </details>
 </div>
-<p></p>
-</details>
+</div>
+</div>
+</div>
 </section>
 </section>
 <section id="estimates" class="level2" data-number="6.3">
@@ -1039,9 +955,9 @@ Advanced and Optional
 <p>Each population formula above has a sample counterpart. Replace <span class="math inline">\(\text{Prob}(X_{i}=x)\)</span> with the sample proportion <span class="math inline">\(\hat{p}(x)\)</span> from the <a href="./01_02_Data.html#empirical-mass-function">empirical mass function</a>. The expected value and variance then become the sample mean and the divide-by-<span class="math inline">\(n\)</span> sample variance from <a href="./01_03_SummaryStatistics.html#mean-and-variance">Summary Statistics</a>, <span class="math display">\[\begin{aligned}
 \hat{m} &amp;= \sum_{x} x \hat{p}(x) \\
 \hat{v} &amp;= \sum_{x} \left(x - \hat{m}\right)^2 \hat{p}(x).
-\end{aligned}\]</span> Building an estimate this way, by putting sample proportions into a population formula, is called the <em>plug-in</em> principle. The same substitution works for other parameters. For example, putting <span class="math inline">\(\hat{p}(x)\)</span> into LOTUS estimates <span class="math inline">\(\mathbb{E}[g(X_{i})]\)</span> with <span class="math inline">\(\sum_{x} g(x)\hat{p}(x)\)</span>, which is the sample mean of the <span class="math inline">\(g(\hat{x}_{i})\)</span>.</p>
+\end{aligned}\]</span> Building an estimate this way, by putting sample proportions into a population formula, is called the <em>plug-in</em> principle. The same substitution works for other parameters.</p>
 <div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-13-contents" aria-controls="callout-13" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-11-contents" aria-controls="callout-11" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -1050,7 +966,7 @@ Advanced and Optional
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-13" class="callout-13-contents callout-collapse collapse">
+<div id="callout-11" class="callout-11-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>Suppose we flipped a coin <span class="math inline">\(100\)</span> times and found that <span class="math inline">\(75\)</span> were heads and <span class="math inline">\(25\)</span> were tails. The estimated probabilities are <span class="math inline">\(\hat{p}(1)=75/100=3/4\)</span> and <span class="math inline">\(\hat{p}(0)=25/100=1/4\)</span>, so <span class="math display">\[\begin{aligned}
 \hat{m} &amp;= 1 \times \frac{3}{4} + 0 \times \frac{1}{4} = \frac{3}{4} \\
@@ -1059,39 +975,48 @@ Advanced and Optional
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>x0_hat <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">1</span>, <span class="dv">75</span>), <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">25</span>)) <span class="co"># 75 heads and 25 tails</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>p_hat <span class="ot">&lt;-</span> <span class="fu">table</span>(x0_hat)<span class="sc">/</span><span class="fu">length</span>(x0_hat)</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">names</span>(p_hat))</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>(x <span class="sc">*</span> p_hat)</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>v_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>((x <span class="sc">-</span> m_hat)<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> p_hat)</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(m_hat, v_hat)</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.7500 0.1875</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>x0_hat <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">1</span>, <span class="dv">75</span>), <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">25</span>)) <span class="co"># 75 heads and 25 tails</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>p_hat <span class="ot">&lt;-</span> <span class="fu">table</span>(x0_hat)<span class="sc">/</span><span class="fu">length</span>(x0_hat)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">names</span>(p_hat))</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>(x <span class="sc">*</span> p_hat)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>v_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>((x <span class="sc">-</span> m_hat)<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> p_hat)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(m_hat, v_hat)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.7500 0.1875</span></span></code></pre></div>
 </details>
 </div>
 </div>
 </div>
 </div>
-<p>The lab data on murder arrests have many unique values, but the plug-in mean and variance still match the averages over the observations.</p>
+<p>With many unique values, the plug-in mean and variance still match the averages over the observations. To see this, take one sample from the pretend population, as if it were all we observed.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>] <span class="co"># lab data: murder arrests per 100,000</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Plug-in mean and variance, from the estimated probability of each unique value</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>p_hat <span class="ot">&lt;-</span> <span class="fu">table</span>(x_hat)<span class="sc">/</span><span class="fu">length</span>(x_hat)</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">names</span>(p_hat))</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>(x <span class="sc">*</span> p_hat)</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>v_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>((x <span class="sc">-</span> m_hat)<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> p_hat)</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">c</span>(m_hat, v_hat), <span class="dv">4</span>)</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [1]  7.7880 18.5911</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Same numbers, from the observations directly</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">c</span>(<span class="fu">mean</span>(x_hat), <span class="fu">mean</span>((x_hat <span class="sc">-</span> <span class="fu">mean</span>(x_hat))<span class="sc">^</span><span class="dv">2</span>)), <span class="dv">4</span>)</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="do">## [1]  7.7880 18.5911</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># One sample of 50 workers, as if it were all we observed</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, <span class="dv">50</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Wages have many unique values.</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Plug-in mean and variance, from the estimated probability of each unique value</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>p_hat <span class="ot">&lt;-</span> <span class="fu">table</span>(x_sim)<span class="sc">/</span><span class="fu">length</span>(x_sim)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">names</span>(p_hat))</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>(x <span class="sc">*</span> p_hat)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>v_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>((x <span class="sc">-</span> m_hat)<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> p_hat)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">c</span>(m_hat, v_hat), <span class="dv">4</span>)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [1]  6.1480 12.7499</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Same numbers, from the observations directly</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">c</span>(<span class="fu">mean</span>(x_sim), <span class="fu">mean</span>((x_sim <span class="sc">-</span> <span class="fu">mean</span>(x_sim))<span class="sc">^</span><span class="dv">2</span>)), <span class="dv">4</span>)</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="do">## [1]  6.1480 12.7499</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Population parameters, which these numbers estimate</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">c</span>(population_wage_mean, population_wage_var), <span class="dv">4</span>)</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="do">## [1]  5.7576 10.6843</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="co"># The estimates, about 6.15 and 12.75, differ from these parameters.</span></span></code></pre></div>
 </details>
 </div>
+<p>An estimate can differ from its population parameter because it comes from only one sample.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-14-contents" aria-controls="callout-14" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-12-contents" aria-controls="callout-12" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -1100,31 +1025,31 @@ Advanced and Optional
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-14" class="callout-14-contents callout-collapse collapse">
+<div id="callout-12" class="callout-12-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>You can estimate means and variances for continuous random variables with weights, but here we have an additional approximation error due to binning by the histogram.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">5000</span>, <span class="dv">1</span>, <span class="dv">2</span>) <span class="co"># continuous draws, as in Continuous Random Variables</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># values and probabilities</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>f_hat  <span class="ot">&lt;-</span> <span class="fu">hist</span>(x_sim, <span class="at">plot=</span><span class="cn">FALSE</span>)</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>wt <span class="ot">&lt;-</span> f_hat[[<span class="st">'counts'</span>]]<span class="sc">/</span><span class="fu">length</span>(x_sim)</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>xt <span class="ot">&lt;-</span> f_hat[[<span class="st">'mids'</span>]]</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Weighted mean</span></span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>(wt<span class="sc">*</span>xt)</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>m_hat</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.0342</span></span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare to 'mean(x_sim)'</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">5000</span>, <span class="dv">1</span>, <span class="dv">2</span>) <span class="co"># continuous draws, as in Continuous Random Variables</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># values and probabilities</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>f_hat  <span class="ot">&lt;-</span> <span class="fu">hist</span>(x_sim, <span class="at">plot=</span><span class="cn">FALSE</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>wt <span class="ot">&lt;-</span> f_hat[[<span class="st">'counts'</span>]]<span class="sc">/</span><span class="fu">length</span>(x_sim)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>xt <span class="ot">&lt;-</span> f_hat[[<span class="st">'mids'</span>]]</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Weighted mean</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>m_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>(wt<span class="sc">*</span>xt)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>m_hat</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.9946</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare to 'mean(x_sim)'</span></span></code></pre></div>
 </details>
 </div>
 <p>Try it yourself with</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">2000</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">2000</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span></code></pre></div>
 </details>
 </div>
 </div>
@@ -1140,7 +1065,7 @@ Advanced and Optional
 \mathbb{E}\left[M\right] = \mathbb{E}\left[ \sum_{i=1}^{n} X_{i}/n \right] = \sum_{i=1}^{n} \mathbb{E}[X_{i}]/n.
 \]</span> Assuming each observation has the same finite expected value, the expected value of the sample average equals this common population mean: <span class="math inline">\(\mathbb{E}\left[M\right] = \mathbb{E}[X_{i}]\)</span> for every <span class="math inline">\(i\)</span>. For a detailed treatment, see <a href="https://dlsun.github.io/probability/linearity.html">here</a>.</p>
 <div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-15-contents" aria-controls="callout-15" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-13-contents" aria-controls="callout-13" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -1149,7 +1074,7 @@ Advanced and Optional
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-15" class="callout-15-contents callout-collapse collapse">
+<div id="callout-13" class="callout-13-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>Return to the two fair coin flips in <a href="#statistical-theory">Statistical Theory</a>, where <span class="math inline">\(\mathbb{E}[X_{1}]=\mathbb{E}[X_{2}]=1/2\)</span> and each of the four samples HH, HT, TH, and TT has probability <span class="math inline">\(1/4\)</span>. Weighting the sum <span class="math inline">\(X_{1}+X_{2}\)</span> and the sample mean <span class="math inline">\(M\)</span> of each sample by <span class="math inline">\(1/4\)</span> gives <span class="math display">\[\begin{aligned}
 \mathbb{E}[X_{1}+X_{2}] &amp;= 2 \times \frac{1}{4} + 1 \times \frac{1}{4} + 1 \times \frac{1}{4} + 0 \times \frac{1}{4} = 1 = \mathbb{E}[X_{1}] + \mathbb{E}[X_{2}] \\
@@ -1158,48 +1083,50 @@ Advanced and Optional
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The four samples HH, HT, TH, TT, each with probability 1/4</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>) <span class="co"># first flip</span></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>x2 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>) <span class="co"># second flip</span></span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>x_probs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>)</span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>((x1 <span class="sc">+</span> x2) <span class="sc">*</span> x_probs) <span class="co"># E[X1 + X2]</span></span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1</span></span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>((x1 <span class="sc">+</span> x2)<span class="sc">/</span><span class="dv">2</span> <span class="sc">*</span> x_probs) <span class="co"># E[M]</span></span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5</span></span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify by simulation</span></span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>coin_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">10000</span>)</span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(coin_means)){</span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">size=</span><span class="dv">2</span>, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    coin_means[i] <span class="ot">&lt;-</span> m_hat</span>
-<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>(coin_means), <span class="dv">2</span>)</span>
-<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The four samples HH, HT, TH, TT, each with probability 1/4</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>) <span class="co"># first flip</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>x2 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>) <span class="co"># second flip</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>x_probs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>((x1 <span class="sc">+</span> x2) <span class="sc">*</span> x_probs) <span class="co"># E[X1 + X2]</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>((x1 <span class="sc">+</span> x2)<span class="sc">/</span><span class="dv">2</span> <span class="sc">*</span> x_probs) <span class="co"># E[M]</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify by simulation</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>coin_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">10000</span>)</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(coin_means)){</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">size=</span><span class="dv">2</span>, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    coin_means[i] <span class="ot">&lt;-</span> m_hat</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>(coin_means), <span class="dv">2</span>)</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5</span></span></code></pre></div>
 </details>
 </div>
 </div>
 </div>
 </div>
-<p>The wage population lets us check this: the average of many sample means is close to the population mean.</p>
+<p>The pretend population lets us check this by comparing the average of many sample means with the population mean.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Many samples of 50 workers</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>wage_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">1000</span>)</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(wage_means)){</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, <span class="dv">50</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    wage_means[i] <span class="ot">&lt;-</span> m_hat</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>(wage_means), <span class="dv">3</span>) <span class="co"># average estimate across samples</span></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.758</span></span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(population_wage_mean, <span class="dv">3</span>) <span class="co"># population mean</span></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.758</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Many samples of 50 workers</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>wage_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">1000</span>)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(wage_means)){</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, <span class="dv">50</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    m_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    wage_means[i] <span class="ot">&lt;-</span> m_hat</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>(wage_means), <span class="dv">3</span>) <span class="co"># average estimate across samples</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.742</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(population_wage_mean, <span class="dv">3</span>) <span class="co"># population mean</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.758</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="co"># The average estimate, about 5.742, is close to the population mean, 5.758.</span></span></code></pre></div>
 </details>
 </div>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-16-contents" aria-controls="callout-16" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-14-contents" aria-controls="callout-14" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -1208,9 +1135,9 @@ Advanced and Optional
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-16" class="callout-16-contents callout-collapse collapse">
+<div id="callout-14" class="callout-14-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>Now consider an unfair coin with Heads <span class="math inline">\(X_{i}=1\)</span> having probability <span class="math inline">\(\theta\)</span> and Tails <span class="math inline">\(X_{i}=0\)</span> having probability <span class="math inline">\(1-\theta\)</span>. First notice that <span class="math inline">\(\mathbb{E}[X_{i}]=\theta\)</span>. Then notice we can first <span class="math display">\[\begin{aligned}
+<p>Now consider an unfair coin with Heads <span class="math inline">\(X_{i}=1\)</span> having probability <span class="math inline">\(\theta\)</span> and Tails <span class="math inline">\(X_{i}=0\)</span> having probability <span class="math inline">\(1-\theta\)</span>. First notice that <span class="math inline">\(\mathbb{E}[X_{i}]=\theta\)</span>. Then notice we can first list the four outcomes, and then separate the first and second flips: <span class="math display">\[\begin{aligned}
 \mathbb{E}[X_{1}+X_{2}]
 &amp;= [1+1][\theta \times \theta] + [1+0][\theta \times (1-\theta)] + [0+1][(1-\theta) \times \theta] + [0+0][(1-\theta) \times (1-\theta)] \quad \text{"HH + HT + TH + TT"} \\
 &amp;= [1][\theta \times \theta] + [1][\theta \times (1-\theta)] + [0][(1-\theta) \times \theta] + [0][(1-\theta) \times (1-\theta)] \quad \text{first outcomes times prob.} \\
@@ -1234,7 +1161,7 @@ Advanced and Optional
 \text{SE}\left(M\right) &amp;= \sqrt{\mathbb{V}\left[ M \right] } = \sqrt{\mathbb{V}[X_{i}]/n} = \sqrt{\mathbb{V}[X_{i}]}/\sqrt{n}.
 \end{aligned}\]</span></p>
 <div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-17-contents" aria-controls="callout-17" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-15-contents" aria-controls="callout-15" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -1243,20 +1170,21 @@ Advanced and Optional
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-17" class="callout-17-contents callout-collapse collapse">
+<div id="callout-15" class="callout-15-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>For example, if the population standard deviation is <span class="math inline">\(10\)</span> and we draw samples of size <span class="math inline">\(n=4\)</span>, then <span class="math inline">\(\mathbb{V}[M]=\mathbb{V}[X_{i}]/n=100/4=25\)</span> and <span class="math inline">\(\text{SE}(M)=\sqrt{\mathbb{V}[X_{i}]/n}=10/2=5\)</span>. Quadrupling the sample size to <span class="math inline">\(n=16\)</span> halves the standard error to <span class="math inline">\(10/\sqrt{16}=2.5\)</span>.</p>
 </div>
 </div>
 </div>
-<p>With the wage population, the formula can be checked against the spread of the sample means computed above.</p>
+<p>With the pretend population, the formula can be checked against the spread of the sample means computed above.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">sqrt</span>(population_wage_var<span class="sc">/</span><span class="dv">50</span>), <span class="dv">3</span>) <span class="co"># SE from the formula</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.462</span></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">sd</span>(wage_means), <span class="dv">3</span>) <span class="co"># SE from many samples</span></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.455</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">sqrt</span>(population_wage_var<span class="sc">/</span><span class="dv">50</span>), <span class="dv">3</span>) <span class="co"># SE from the formula</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.462</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">sd</span>(wage_means), <span class="dv">3</span>) <span class="co"># SE from many samples</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.454</span></span></code></pre></div>
 </details>
 </div>
 <p>The standard error is distinct from the <em>sample standard deviation</em> <span class="math inline">\(\hat{s}\)</span>, which measures spread of observations. The two are easy to confuse. The sample standard deviation <span class="math inline">\(\hat{s}\)</span> is the variability of individual observations <em>within</em> a single sample, while the standard error is the variability of a statistic <em>across</em> repeated samples. To be clear,</p>
@@ -1291,29 +1219,36 @@ Advanced and Optional
 \text{SE}(M) = \sqrt{\mathbb{V}[X_{i}]/n} \approx \hat{s}/\sqrt{n}.
 \]</span></p>
 <p>Another data-driven way is to create a bootstrap distribution for the sample mean and then compute the standard deviation of the bootstrap distribution <span class="math inline">\(\hat{\text{SE}}^{\text{boot}} \approx \text{SE}(M)\)</span>, as shown in <a href="./01_05_Sampling.html#standard-errors">Sampling &amp; Resampling</a>. The theory-driven estimate can differ from the bootstrap estimate in a finite sample, although both methods here assume i.i.d. observations. The standard error formula does not require normality. The theory-driven estimate does have some advantages too, but we do not go into that as we would need more advanced mathematics.</p>
+<p>To compare the two, take another sample from the pretend population, as if it were all we observed.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>] <span class="co"># lab data: murder arrests per 100,000</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">length</span>(x_hat)</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>theory_se <span class="ot">&lt;-</span> <span class="fu">sd</span>(x_hat)<span class="sc">/</span><span class="fu">sqrt</span>(n)</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap estimates</span></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>boot_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">9999</span>)</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_means)){</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">replace=</span><span class="cn">TRUE</span>) <span class="co"># c.f. jackknife</span></span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    m_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot)</span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>    boot_means[b] <span class="ot">&lt;-</span>m_b_hat</span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>boot_se <span class="ot">&lt;-</span> <span class="fu">sd</span>(boot_means)</span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare SE's</span></span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">'Bootstrap SE = '</span>, <span class="fu">round</span>(boot_se, <span class="dv">3</span>))</span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "Bootstrap SE = 0.602"</span></span>
-<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">'Class SE = '</span>, <span class="fu">round</span>(theory_se, <span class="dv">3</span>))</span>
-<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "Class SE = 0.616"</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># One sample of 50 workers, as if it were all we observed</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, <span class="dv">50</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">length</span>(x_sim)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>s_hat <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">mean</span>((x_sim <span class="sc">-</span> <span class="fu">mean</span>(x_sim))<span class="sc">^</span><span class="dv">2</span>)) <span class="co"># divides by n, unlike sd()</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>theory_se <span class="ot">&lt;-</span> s_hat<span class="sc">/</span><span class="fu">sqrt</span>(n)</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap estimates</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>boot_means_wage <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">9999</span>)</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_means_wage)){</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_sim, <span class="at">replace=</span><span class="cn">TRUE</span>) <span class="co"># c.f. jackknife</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>    m_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot)</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>    boot_means_wage[b] <span class="ot">&lt;-</span> m_b_hat</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>boot_se <span class="ot">&lt;-</span> <span class="fu">sd</span>(boot_means_wage)</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare SE's</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">'Bootstrap SE = '</span>, <span class="fu">round</span>(boot_se, <span class="dv">3</span>))</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "Bootstrap SE = 0.458"</span></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">'Class SE = '</span>, <span class="fu">round</span>(theory_se, <span class="dv">3</span>))</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "Class SE = 0.459"</span></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">'True SE = '</span>, <span class="fu">round</span>(<span class="fu">sqrt</span>(population_wage_var<span class="sc">/</span>n), <span class="dv">3</span>))</span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "True SE = 0.462"</span></span></code></pre></div>
 </details>
 </div>
+<p>Both estimates use only the one sample. We can compute the true standard error only because we pretend to know the population.</p>
 </section>
 <section id="shape" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="shape"><strong>Shape</strong></h4>
@@ -1321,28 +1256,28 @@ Advanced and Optional
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap Distribution</span></span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_means, <span class="at">breaks=</span><span class="dv">25</span>,</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">border=</span><span class="cn">NA</span>,</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.7</span>),</span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)<span class="sc">^</span><span class="fu">group</span>(<span class="st">'('</span>, b, <span class="st">')'</span>)))</span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Bootstrap vs Normal Distribution'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Theoretical Distribution: Normal Approximation with IID SEs</span></span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">5</span>, <span class="dv">10</span>, <span class="at">by=</span><span class="fl">0.01</span>)</span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>fx <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(x, <span class="fu">mean</span>(x_hat), theory_se)</span>
-<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x, fx, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap Distribution</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_means_wage, <span class="at">breaks=</span><span class="dv">25</span>,</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">border=</span><span class="cn">NA</span>,</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>),</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)<span class="sc">^</span><span class="fu">group</span>(<span class="st">'('</span>, b, <span class="st">')'</span>)))</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Bootstrap vs Normal Distribution'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Theoretical Distribution: Normal Approximation with IID SEs</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">3</span>, <span class="dv">9</span>, <span class="at">by=</span><span class="fl">0.01</span>)</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>fx <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(x, <span class="fu">mean</span>(x_sim), theory_se)</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x, fx, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="01_06_EstimationTheory_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="01_06_EstimationTheory_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-18-contents" aria-controls="callout-18" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-16-contents" aria-controls="callout-16" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -1351,7 +1286,180 @@ Advanced and Optional
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
+<div id="callout-16" class="callout-16-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Repeat the comparison with murder arrests in <code>USArrests</code>. With no known population, there is no true standard error to compare with.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># These 50 US states are one sample, with no known population.</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>x2_hat <span class="ot">&lt;-</span> USArrests[, <span class="st">'Murder'</span>] <span class="co"># murder arrests per 100,000</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>n2 <span class="ot">&lt;-</span> <span class="fu">length</span>(x2_hat)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>s2_hat <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">mean</span>((x2_hat <span class="sc">-</span> <span class="fu">mean</span>(x2_hat))<span class="sc">^</span><span class="dv">2</span>)) <span class="co"># divides by n, unlike sd()</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>theory_se2 <span class="ot">&lt;-</span> s2_hat<span class="sc">/</span><span class="fu">sqrt</span>(n2)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap estimates</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>boot_means2 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">9999</span>)</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(boot_means2)){</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x2_hat, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    m_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot)</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    boot_means2[b] <span class="ot">&lt;-</span> m_b_hat</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>boot_se2 <span class="ot">&lt;-</span> <span class="fu">sd</span>(boot_means2)</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare SE's</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">'Bootstrap SE = '</span>, <span class="fu">round</span>(boot_se2, <span class="dv">3</span>))</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "Bootstrap SE = 0.603"</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">'Class SE = '</span>, <span class="fu">round</span>(theory_se2, <span class="dv">3</span>))</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] "Class SE = 0.61"</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap Distribution</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_means2, <span class="at">breaks=</span><span class="dv">25</span>,</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">border=</span><span class="cn">NA</span>,</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.7</span>),</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(m)<span class="sc">^</span><span class="fu">group</span>(<span class="st">'('</span>, b, <span class="st">')'</span>)))</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Bootstrap vs Normal Distribution'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Theoretical Distribution: Normal Approximation with IID SEs</span></span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">5</span>, <span class="dv">10</span>, <span class="at">by=</span><span class="fl">0.01</span>)</span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>fx <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(x, <span class="fu">mean</span>(x2_hat), theory_se2)</span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x, fx, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="01_06_EstimationTheory_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="law-of-the-unconscious-statistician-lotus" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="law-of-the-unconscious-statistician-lotus"><strong>Law of the Unconscious Statistician (LOTUS)</strong></h4>
+<p>The variance estimator <span class="math inline">\(V=\sum_{i=1}^{n}(X_{i}-M)^2/n\)</span> is nearly a sample mean of the squared deviations <span class="math inline">\(Y_{i}=(X_{i}-\mathbb{E}[X_{i}])^2\)</span>. So in large samples, the CLT says <span class="math inline">\(V\)</span> is approximately normal, with a center and spread set by the mean and variance of <span class="math inline">\(Y_{i}\)</span>. We often care about a transformed quantity like <span class="math inline">\(Y_{i}\)</span> or <span class="math inline">\(\log(X_{i})\)</span>, and would prefer not to derive its full distribution from scratch just to take its expectation. The <em>Law of the Unconscious Statistician</em> (LOTUS) gives the expected value of a function of a random variable without first deriving the distribution of that function. For discrete <span class="math inline">\(X_{i}\)</span> and any function <span class="math inline">\(g\)</span>, <span class="math display">\[\mathbb{E}[g(X_{i})] = \sum_{x} g(x) \text{Prob}(X_{i}=x).\]</span> For continuous <span class="math inline">\(X_{i}\)</span>, replace the sum with an integral against <span class="math inline">\(f(x)\)</span>. LOTUS is useful as a shortcut: instead of deriving the distribution of <span class="math inline">\(g(X_{i})\)</span> and then summing <span class="math inline">\(y \cdot \text{Prob}(g(X_{i}) = y)\)</span>, we sum <span class="math inline">\(g(x) \cdot \text{Prob}(X_{i}=x)\)</span> directly using the original distribution of <span class="math inline">\(X_{i}\)</span>. You have already seen the special case <span class="math inline">\(g(X_{i})=\left(X_{i}-\mathbb{E}[X_{i}]\right)^2\)</span>, which is the population variance. The <a href="#estimates">plug-in principle</a> applies here too: putting <span class="math inline">\(\hat{p}(x)\)</span> into LOTUS estimates <span class="math inline">\(\mathbb{E}[g(X_{i})]\)</span> with <span class="math inline">\(\sum_{x} g(x)\hat{p}(x)\)</span>, which is the sample mean of the <span class="math inline">\(g(\hat{x}_{i})\)</span>. With <span class="math inline">\(g(x)=(x-\mathbb{E}[X_{i}])^2\)</span>, this is the average squared deviation from the population mean, and <span class="math inline">\(V\)</span> differs from it only by using <span class="math inline">\(M\)</span> in place of <span class="math inline">\(\mathbb{E}[X_{i}]\)</span>.</p>
+<div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-17-contents" aria-controls="callout-17" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Test Yourself
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-17" class="callout-17-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Let <span class="math inline">\(X_{i}\)</span> take values <span class="math inline">\(\{1,2,3\}\)</span> with <span class="math display">\[
+\text{Prob}(X_{i}=1)=0.2,\quad \text{Prob}(X_{i}=2)=0.5,\quad \text{Prob}(X_{i}=3)=0.3.
+\]</span> Let <span class="math inline">\(g(x)=x^2+1\)</span>. Then <span class="math inline">\(g(1)=1^2+1=2\)</span>, <span class="math inline">\(g(2)=2^2+1=5\)</span>, <span class="math inline">\(g(3)=3^2+1=10\)</span>.</p>
+<p>Then, by LOTUS, <span class="math display">\[\begin{aligned}
+\mathbb E[g(X_{i})]=\sum_{x} g(x)\text{Prob}(X_{i}=x)
+&amp;= g(1)\cdot 0.2 + g(2)\cdot 0.5 + g(3)\cdot 0.3 \\
+&amp;= 2 \cdot 0.2 + 5 \cdot 0.5 + 10 \cdot 0.3 \\
+&amp;= 0.4 + 2.5 + 3 = 5.9.
+\end{aligned}\]</span></p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>x  <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>x_probs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="fl">0.3</span>)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>g  <span class="ot">&lt;-</span> <span class="cf">function</span>(x) x<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">g</span>(x) <span class="sc">*</span> x_probs) </span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 5.9</span></span></code></pre></div>
+</details>
+</div>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-18-contents" aria-controls="callout-18" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Must Know
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
 <div id="callout-18" class="callout-18-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>For a fair four-sided die and <span class="math inline">\(g(x)=x^2+1\)</span>, LOTUS gives <span class="math inline">\(\mathbb{E}[g(X_{i})]\)</span> exactly, and a simulation gives nearly the same number.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>g  <span class="ot">&lt;-</span> <span class="cf">function</span>(x) x<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="co"># A theoretical example</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>)</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>x_probs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">g</span>(x) <span class="sc">*</span> x_probs)</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 8.5</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="co"># A simulation example</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(x, <span class="at">prob=</span>x_probs, <span class="at">size=</span><span class="dv">1000</span>, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">g</span>(x_sim))</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 8.348</span></span></code></pre></div>
+</details>
+</div>
+</div>
+</div>
+</div>
+<p>Economists often work with logged data. LOTUS gives the population mean of the logged values directly from the original distribution, with <span class="math inline">\(g(x)=\log(x)\)</span>.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># E[log(X)] by LOTUS</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">log</span>(population_wages) <span class="sc">*</span> wage_probs)</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.587268</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="co"># The population mean of log wages is 1.59.</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="co"># log(E[X]) is a different number</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="fu">log</span>(population_wage_mean)</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.750518</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="co"># The log of the population mean wage is 1.75, so the two numbers differ.</span></span></code></pre></div>
+</details>
+</div>
+<p>In general, <span class="math inline">\(\mathbb{E}[g(X_{i})] \neq g(\mathbb{E}[X_{i}])\)</span>, so you cannot compute the expected value first and transform it afterwards.</p>
+<div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-19-contents" aria-controls="callout-19" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Test Yourself
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-19" class="callout-19-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>If <span class="math inline">\(X_{i}\)</span> is a continuous random variable (a random variable with a continuous sample space) and <span class="math inline">\(g\)</span> is a function, then <span class="math inline">\(\mathbb E[g(X_{i})] = \int_{-\infty}^{\infty} g(x)f(x) dx\)</span>.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">rexp</span>(<span class="fl">5e5</span>, <span class="at">rate =</span> <span class="dv">1</span>)           <span class="co"># X ~ Exp(1)</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">sqrt</span>(x_sim))                      <span class="co"># LOTUS Simulation</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.8857528</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sqrt</span>(pi) <span class="sc">/</span> <span class="dv">2</span>                       <span class="co"># Exact via LOTUS integral</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.8862269</span></span></code></pre></div>
+</details>
+</div>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-20-contents" aria-controls="callout-20" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Test Yourself
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-20" class="callout-20-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>The variance estimator <span class="math inline">\(V=\sum_{i=1}^{n}(X_{i}-M)^2/n\)</span> also has a sampling distribution. Write <span class="math inline">\(Y_{i}=g(X_{i})=(X_{i}-\mathbb{E}[X_{i}])^2\)</span> for the squared deviation of each observation from the population mean. Expanding the square, and using <span class="math inline">\(\sum_{i=1}^{n}(X_{i}-\mathbb{E}[X_{i}])/n = M-\mathbb{E}[X_{i}]\)</span>, <span class="math display">\[\begin{aligned}
 V &amp;= \frac{1}{n}\sum_{i=1}^{n} \left( [X_{i}-\mathbb{E}[X_{i}]] - [M-\mathbb{E}[X_{i}]] \right)^2 \\
@@ -1362,42 +1470,42 @@ V &amp;= \frac{1}{n}\sum_{i=1}^{n} \left( [X_{i}-\mathbb{E}[X_{i}]] - [M-\mathbb
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Five-sided die: population moments by LOTUS</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>)</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>x_probs <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">5</span>, <span class="dv">5</span>)</span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>population_mean <span class="ot">&lt;-</span> <span class="fu">sum</span>(x <span class="sc">*</span> x_probs)</span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>population_var <span class="ot">&lt;-</span> <span class="fu">sum</span>((x <span class="sc">-</span> population_mean)<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> x_probs) <span class="co"># E[Y_i]</span></span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>population_m4 <span class="ot">&lt;-</span> <span class="fu">sum</span>((x <span class="sc">-</span> population_mean)<span class="sc">^</span><span class="dv">4</span> <span class="sc">*</span> x_probs) <span class="co"># E[(X_i - E[X_i])^4]</span></span>
-<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>y_var <span class="ot">&lt;-</span> population_m4 <span class="sc">-</span> population_var<span class="sc">^</span><span class="dv">2</span> <span class="co"># V[Y_i]</span></span>
-<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Sampling distribution of V across many samples of n rolls</span></span>
-<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">100</span></span>
-<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>sample_vars <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">2000</span>)</span>
-<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_vars)){</span>
-<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(x, <span class="at">prob=</span>x_probs, <span class="at">size=</span>n, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>    v_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>((x_sim <span class="sc">-</span> <span class="fu">mean</span>(x_sim))<span class="sc">^</span><span class="dv">2</span>) <span class="co"># divide-by-n variance</span></span>
-<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>    sample_vars[i] <span class="ot">&lt;-</span> v_hat</span>
-<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>(sample_vars), <span class="dv">3</span>) <span class="co"># near (n-1)/n * 2 = 1.98</span></span>
-<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.978</span></span>
-<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">sd</span>(sample_vars), <span class="dv">3</span>) <span class="co"># near sqrt(2.8/n) = 0.167</span></span>
-<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.167</span></span>
-<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(sample_vars, <span class="at">breaks=</span><span class="dv">25</span>,</span>
-<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">2.6</span>),</span>
-<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(v)),</span>
-<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Sampling Distribution of the Variance'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a><span class="co"># CLT approximation, with the SE from LOTUS</span></span>
-<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a>v <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">3</span>, <span class="at">by=</span><span class="fl">0.01</span>)</span>
-<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a>fv <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(v, population_var, <span class="fu">sqrt</span>(y_var<span class="sc">/</span>n))</span>
-<span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(v, fv, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Five-sided die: population moments by LOTUS</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>)</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>x_probs <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">5</span>, <span class="dv">5</span>)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>population_mean <span class="ot">&lt;-</span> <span class="fu">sum</span>(x <span class="sc">*</span> x_probs)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>population_var <span class="ot">&lt;-</span> <span class="fu">sum</span>((x <span class="sc">-</span> population_mean)<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> x_probs) <span class="co"># E[Y_i]</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>population_m4 <span class="ot">&lt;-</span> <span class="fu">sum</span>((x <span class="sc">-</span> population_mean)<span class="sc">^</span><span class="dv">4</span> <span class="sc">*</span> x_probs) <span class="co"># E[(X_i - E[X_i])^4]</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>y_var <span class="ot">&lt;-</span> population_m4 <span class="sc">-</span> population_var<span class="sc">^</span><span class="dv">2</span> <span class="co"># V[Y_i]</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Sampling distribution of V across many samples of n rolls</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>sample_vars <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">2000</span>)</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(sample_vars)){</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(x, <span class="at">prob=</span>x_probs, <span class="at">size=</span>n, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>    v_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>((x_sim <span class="sc">-</span> <span class="fu">mean</span>(x_sim))<span class="sc">^</span><span class="dv">2</span>) <span class="co"># divide-by-n variance</span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>    sample_vars[i] <span class="ot">&lt;-</span> v_hat</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>(sample_vars), <span class="dv">3</span>) <span class="co"># near (n-1)/n * 2 = 1.98</span></span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 1.986</span></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">sd</span>(sample_vars), <span class="dv">3</span>) <span class="co"># near sqrt(2.8/n) = 0.167</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.17</span></span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(sample_vars, <span class="at">breaks=</span><span class="dv">25</span>,</span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">2.6</span>),</span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(v)),</span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Sampling Distribution of the Variance'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a><span class="co"># CLT approximation, with the SE from LOTUS</span></span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a>v <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">3</span>, <span class="at">by=</span><span class="fl">0.01</span>)</span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a>fv <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(v, population_var, <span class="fu">sqrt</span>(y_var<span class="sc">/</span>n))</span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(v, fv, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="01_06_EstimationTheory_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="01_06_EstimationTheory_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -1415,8 +1523,11 @@ V &amp;= \frac{1}{n}\sum_{i=1}^{n} \left( [X_{i}-\mathbb{E}[X_{i}]] - [M-\mathbb
 <h4 class="unnumbered anchored" data-anchor-id="bias"><strong>Bias</strong></h4>
 <p>A natural first question is whether an estimator is right on average. The <em>bias</em> of an estimator is its expected value minus the parameter it targets. For the sample mean, <span class="math inline">\(\text{Bias}(M) = \mathbb{E}[M] - \mathbb{E}[X_{i}]\)</span>. An estimator is <em>unbiased</em> if its bias is zero.</p>
 <p>Bias is useful for separating two reasons an estimate can miss its target: bad luck in one sample, which averages out across samples, and a systematic error, which does not. From <a href="#means">Means</a>, <span class="math inline">\(\mathbb{E}[M]=\mathbb{E}[X_{i}]\)</span>, so the sample mean is unbiased.</p>
+<p>The variance estimator <span class="math inline">\(V=\sum_{i=1}^{n}(X_{i}-M)^2/n\)</span> is biased, because <span class="math inline">\(\mathbb{E}[V]=\frac{n-1}{n}\mathbb{V}[X_{i}]\)</span>. So we often use the <em>adjusted</em> sample standard deviation in theoretical calculations, <span class="math display">\[
+\hat{s}_{\text{adj}} = \sqrt{\frac{\sum_{i=1}^{n} (\hat{x}_{i} - \hat{m})^2}{n-1}},
+\]</span> which divides by <span class="math inline">\(n-1\)</span> instead of <span class="math inline">\(n\)</span>. R’s <code>sd()</code> computes <span class="math inline">\(\hat{s}_{\text{adj}}\)</span>, and <code>var()</code> computes its square.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-19-contents" aria-controls="callout-19" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-21-contents" aria-controls="callout-21" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -1425,33 +1536,34 @@ V &amp;= \frac{1}{n}\sum_{i=1}^{n} \left( [X_{i}-\mathbb{E}[X_{i}]] - [M-\mathbb
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-19" class="callout-19-contents callout-collapse collapse">
+<div id="callout-21" class="callout-21-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>The variance estimator is <span class="math inline">\(V=\sum_{i=1}^{n}(X_{i}-M)^2/n\)</span>, which is biased; <span class="math inline">\(\text{Bias}(V) = \mathbb{E}[V] - \mathbb{V}[X_{i}]\)</span>. On average, it is too small by a factor of <span class="math inline">\(\frac{n-1}{n}\)</span>, <span class="math display">\[\begin{aligned}
 \mathbb{E}[V] &amp;= \frac{n-1}{n}\mathbb{V}[X_{i}] \\
 \text{Bias}(V) &amp;= -\frac{\mathbb{V}[X_{i}]}{n}.
-\end{aligned}\]</span> The reason is that <span class="math inline">\(V\)</span> measures deviations from the sample mean, which sits at the center of its own sample. In total, the observations are closer to it than to the population mean, so the squared deviations come out too small. This is why the version in <a href="./01_03_SummaryStatistics.html#variance">Summary Statistics</a> that divides by <span class="math inline">\(n-1\)</span> is called unbiased. The Test Yourself in <a href="#shape">Shape</a> derives the formula. The bias shrinks as <span class="math inline">\(n\)</span> grows.</p>
-<p>The wage population lets us check this with samples of <span class="math inline">\(n=10\)</span> workers, where the bias is a tenth of the population variance.</p>
+\end{aligned}\]</span> The reason is that <span class="math inline">\(V\)</span> measures deviations from the sample mean, which sits at the center of its own sample. In total, the observations are closer to it than to the population mean, so the squared deviations come out too small. This is why the adjusted version in <a href="./01_03_SummaryStatistics.html#variance">Summary Statistics</a>, which divides by <span class="math inline">\(n-1\)</span>, is called unbiased. The Test Yourself in <a href="#law-of-the-unconscious-statistician-lotus">LOTUS</a> derives the formula. The bias shrinks as <span class="math inline">\(n\)</span> grows.</p>
+<p>The pretend population lets us check this with samples of <span class="math inline">\(n=10\)</span> observations, where the bias is a tenth of the population variance.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Many samples of 10 workers</span></span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">10</span></span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>wage_vars <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">10000</span>)</span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(wage_vars)){</span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, n, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    v_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>((x_sim <span class="sc">-</span> <span class="fu">mean</span>(x_sim))<span class="sc">^</span><span class="dv">2</span>) <span class="co"># divide-by-n variance</span></span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    wage_vars[i] <span class="ot">&lt;-</span> v_hat</span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>(wage_vars), <span class="dv">2</span>) <span class="co"># average estimate across samples</span></span>
-<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 9.5</span></span>
-<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>((n<span class="dv">-1</span>)<span class="sc">/</span>n<span class="sc">*</span>population_wage_var, <span class="dv">2</span>) <span class="co"># E[V] from the formula</span></span>
-<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 9.62</span></span>
-<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(population_wage_var, <span class="dv">2</span>) <span class="co"># population variance</span></span>
-<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 10.68</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Many samples of 10 workers</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>wage_vars <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">10000</span>)</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(wage_vars)){</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>    x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, n, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>    v_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>((x_sim <span class="sc">-</span> <span class="fu">mean</span>(x_sim))<span class="sc">^</span><span class="dv">2</span>) <span class="co"># divide-by-n variance</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>    wage_vars[i] <span class="ot">&lt;-</span> v_hat</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">mean</span>(wage_vars), <span class="dv">2</span>) <span class="co"># average estimate across samples</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 9.6</span></span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>((n<span class="dv">-1</span>)<span class="sc">/</span>n<span class="sc">*</span>population_wage_var, <span class="dv">2</span>) <span class="co"># E[V] from the formula</span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 9.62</span></span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(population_wage_var, <span class="dv">2</span>) <span class="co"># population variance</span></span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 10.68</span></span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a><span class="co"># The average estimate, about 9.6, is close to E[V] from the formula, 9.62.</span></span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a><span class="co"># It is not close to the population variance, 10.68.</span></span></code></pre></div>
 </details>
 </div>
-<p>The average estimate is close to <span class="math inline">\(\frac{n-1}{n}\mathbb{V}[X_{i}]\)</span>, not to <span class="math inline">\(\mathbb{V}[X_{i}]\)</span>.</p>
 <p>Now return to the two fair coin flips in <a href="#statistical-theory">Statistical Theory</a>, where <span class="math inline">\(\mathbb{V}[X_{i}]=\frac{1}{2} \times \frac{1}{2}=\frac{1}{4}\)</span>. In each of the four samples, compute <span class="math inline">\(V=[(X_{1}-M)^2+(X_{2}-M)^2]/2\)</span>: <span class="math display">\[\begin{aligned}
 \text{HH}: \quad V &amp;= [(1-1)^2+(1-1)^2]/2 = 0 \\
 \text{HT}: \quad V &amp;= [(1-\frac{1}{2})^2+(0-\frac{1}{2})^2]/2 = 1/4 \\
@@ -1464,19 +1576,19 @@ V &amp;= \frac{1}{n}\sum_{i=1}^{n} \left( [X_{i}-\mathbb{E}[X_{i}]] - [M-\mathbb
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The four samples HH, HT, TH, TT, each with probability 1/4</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>) <span class="co"># first flip</span></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>x2 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>) <span class="co"># second flip</span></span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>x_probs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>)</span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>m_samples <span class="ot">&lt;-</span> (x1 <span class="sc">+</span> x2)<span class="sc">/</span><span class="dv">2</span></span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>v_samples <span class="ot">&lt;-</span> ((x1 <span class="sc">-</span> m_samples)<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> (x2 <span class="sc">-</span> m_samples)<span class="sc">^</span><span class="dv">2</span>)<span class="sc">/</span><span class="dv">2</span></span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>v_samples</span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.00 0.25 0.25 0.00</span></span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(v_samples <span class="sc">*</span> x_probs) <span class="co"># E[V]</span></span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.125</span></span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(v_samples <span class="sc">*</span> x_probs) <span class="sc">-</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span> <span class="co"># Bias(V)</span></span>
-<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] -0.125</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The four samples HH, HT, TH, TT, each with probability 1/4</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>) <span class="co"># first flip</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>x2 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>) <span class="co"># second flip</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>x_probs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>)</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>m_samples <span class="ot">&lt;-</span> (x1 <span class="sc">+</span> x2)<span class="sc">/</span><span class="dv">2</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>v_samples <span class="ot">&lt;-</span> ((x1 <span class="sc">-</span> m_samples)<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> (x2 <span class="sc">-</span> m_samples)<span class="sc">^</span><span class="dv">2</span>)<span class="sc">/</span><span class="dv">2</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>v_samples</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.00 0.25 0.25 0.00</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(v_samples <span class="sc">*</span> x_probs) <span class="co"># E[V]</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.125</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(v_samples <span class="sc">*</span> x_probs) <span class="sc">-</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span> <span class="co"># Bias(V)</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] -0.125</span></span></code></pre></div>
 </details>
 </div>
 </div>
@@ -1491,40 +1603,44 @@ V &amp;= \frac{1}{n}\sum_{i=1}^{n} \left( [X_{i}-\mathbb{E}[X_{i}]] - [M-\mathbb
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>n_boot <span class="ot">&lt;-</span> <span class="dv">999</span> <span class="co"># number of bootstrap samples</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>sample_sizes <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="fu">length</span>(x_hat), <span class="at">by=</span><span class="dv">1</span>) <span class="co"># different resample sizes</span></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="do">## For each sample size, compute the bootstrap SE</span></span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>se_by_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(sample_sizes))</span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="fu">seq_along</span>(sample_sizes)){</span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    boot_means_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, n_boot)</span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq</span>(<span class="dv">1</span>, n_boot)){</span>
-<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>        x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_hat, <span class="at">size=</span>n, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>        m_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot) <span class="co"># statistic of interest</span></span>
-<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>        boot_means_n[b] <span class="ot">&lt;-</span> m_b_hat</span>
-<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>    se_n <span class="ot">&lt;-</span> <span class="fu">sd</span>(boot_means_n) <span class="co"># How much the statistic varies across samples</span></span>
-<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>    se_by_n[n] <span class="ot">&lt;-</span> se_n</span>
-<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Theory-driven standard error at each sample size, with s_hat in place of the population SD</span></span>
-<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a>se_theory_n <span class="ot">&lt;-</span> <span class="fu">sd</span>(x_hat)<span class="sc">/</span><span class="fu">sqrt</span>(sample_sizes)</span>
-<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-20"><a href="#cb25-20" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sample_sizes, se_by_n, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, <span class="fl">0.5</span>),</span>
-<span id="cb25-21"><a href="#cb25-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylim=</span><span class="fu">range</span>(<span class="fu">c</span>(se_by_n, se_theory_n)),</span>
-<span id="cb25-22"><a href="#cb25-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylab=</span><span class="st">'standard error'</span>, <span class="at">xlab=</span><span class="st">'sample size'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb25-23"><a href="#cb25-23" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(sample_sizes, se_theory_n, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">1</span>, <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="co"># One sample of 50 workers, as if it were all we observed</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, <span class="dv">50</span>, <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>n_boot <span class="ot">&lt;-</span> <span class="dv">999</span> <span class="co"># number of bootstrap samples</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>sample_sizes <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="fu">length</span>(x_sim), <span class="at">by=</span><span class="dv">1</span>) <span class="co"># different resample sizes</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="do">## For each sample size, compute the bootstrap SE</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>se_by_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(sample_sizes))</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(n <span class="cf">in</span> <span class="fu">seq_along</span>(sample_sizes)){</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>    boot_means_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, n_boot)</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq</span>(<span class="dv">1</span>, n_boot)){</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>        x_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(x_sim, <span class="at">size=</span>n, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>        m_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_boot) <span class="co"># statistic of interest</span></span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>        boot_means_n[b] <span class="ot">&lt;-</span> m_b_hat</span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>    se_n <span class="ot">&lt;-</span> <span class="fu">sd</span>(boot_means_n) <span class="co"># How much the statistic varies across samples</span></span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>    se_by_n[n] <span class="ot">&lt;-</span> se_n</span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Theory-driven standard error at each sample size, with s_adj in place of the population SD</span></span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>se_theory_n <span class="ot">&lt;-</span> <span class="fu">sd</span>(x_sim)<span class="sc">/</span><span class="fu">sqrt</span>(sample_sizes)</span>
+<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sample_sizes, se_by_n, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, <span class="fl">0.5</span>),</span>
+<span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylim=</span><span class="fu">range</span>(<span class="fu">c</span>(se_by_n, se_theory_n)),</span>
+<span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylab=</span><span class="st">'standard error'</span>, <span class="at">xlab=</span><span class="st">'sample size'</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(sample_sizes, se_theory_n, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">1</span>, <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="01_06_EstimationTheory_files/figure-html/unnamed-chunk-25-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="01_06_EstimationTheory_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
 <div class="callout callout-style-default callout-tip no-icon callout-titled" title="Test Yourself">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-20-contents" aria-controls="callout-20" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-22-contents" aria-controls="callout-22" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
@@ -1533,31 +1649,32 @@ V &amp;= \frac{1}{n}\sum_{i=1}^{n} \left( [X_{i}-\mathbb{E}[X_{i}]] - [M-\mathbb
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-20" class="callout-20-contents callout-collapse collapse">
+<div id="callout-22" class="callout-22-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>With the wage population, we can watch this happen. The chunk below records how often the sample mean misses the population mean by one dollar or more.</p>
+<p>With the pretend population, we can watch this happen. The chunk below records how often the sample mean misses the population mean by a fixed amount.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Share of 2000 samples whose mean misses by one dollar or more</span></span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>n_values <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">50</span>, <span class="dv">250</span>)</span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>miss_share <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(n_values))</span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(ni <span class="cf">in</span> <span class="fu">seq_along</span>(n_values)){</span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    wage_means_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">2000</span>)</span>
-<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(wage_means_n)){</span>
-<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>        x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, n_values[ni], <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
-<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>        wage_means_n[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
-<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    miss_share[ni] <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(wage_means_n <span class="sc">-</span> population_wage_mean) <span class="sc">&gt;=</span> <span class="dv">1</span>)</span>
-<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">cbind</span>(<span class="at">n=</span>n_values, <span class="at">share=</span>miss_share), <span class="dv">3</span>)</span>
-<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a><span class="do">##        n share</span></span>
-<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1,]  10 0.305</span></span>
-<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a><span class="do">## [2,]  50 0.028</span></span>
-<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a><span class="do">## [3,] 250 0.000</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Share of 2000 samples whose mean misses by one dollar or more</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>n_values <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">50</span>, <span class="dv">250</span>)</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>miss_share <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(n_values))</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(ni <span class="cf">in</span> <span class="fu">seq_along</span>(n_values)){</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>    wage_means_n <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">2000</span>)</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(wage_means_n)){</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>        x_sim <span class="ot">&lt;-</span> <span class="fu">sample</span>(population_wages, n_values[ni], <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>        wage_means_n[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(x_sim)</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>    miss_share[ni] <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(wage_means_n <span class="sc">-</span> population_wage_mean) <span class="sc">&gt;=</span> <span class="dv">1</span>)</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">cbind</span>(<span class="at">n=</span>n_values, <span class="at">share=</span>miss_share), <span class="dv">3</span>)</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a><span class="do">##        n share</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a><span class="do">## [1,]  10 0.314</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a><span class="do">## [2,]  50 0.024</span></span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a><span class="do">## [3,] 250 0.000</span></span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a><span class="co"># The share of samples that miss falls toward zero as n grows.</span></span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a><span class="co"># It is about 31% with n=10, about 2% with n=50, and about 0% with n=250.</span></span></code></pre></div>
 </details>
 </div>
-<p>The share of samples that miss by a dollar or more falls toward zero as <span class="math inline">\(n\)</span> grows.</p>
 </div>
 </div>
 </div>
@@ -1583,7 +1700,7 @@ V &amp;= \frac{1}{n}\sum_{i=1}^{n} \left( [X_{i}-\mathbb{E}[X_{i}]] - [M-\mathbb
 </section>
 <section id="recall" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="recall"><strong>Recall</strong></h4>
-<p>We defined <em>population parameters</em>, <span class="math inline">\(\mathbb{E}[X_{i}]\)</span> and <span class="math inline">\(\mathbb{V}[X_{i}]\)</span>, and their <em>estimators</em>, <span class="math inline">\(M\)</span> and <span class="math inline">\(V\)</span>. We also covered <em>LOTUS</em> and <em>linearity of expectation</em>. The standard error of the sample mean shrinks at the <span class="math inline">\(1/\sqrt{n}\)</span> rate. The five-sided die computation made the parameters concrete: with outcomes <span class="math inline">\(\{1, 2, 3, 4, 5\}\)</span> each having probability <span class="math inline">\(1/5\)</span>, the population mean is <span class="math inline">\(\mathbb{E}[X_{i}] = 15/5 = 3\)</span> and the variance is <span class="math inline">\(\mathbb{V}[X_{i}] = (4+1+0+1+4)/5 = 2\)</span>. The <span class="math inline">\(1/\sqrt{n}\)</span> rule then says that if a population has standard deviation <span class="math inline">\(10\)</span>, samples of size <span class="math inline">\(n=4\)</span> have <span class="math inline">\(\text{SE}(M) = 5\)</span> but quadrupling the sample size to <span class="math inline">\(n=16\)</span> halves the standard error to <span class="math inline">\(2.5\)</span>. An estimator’s <em>bias</em> is its expected value minus its target. For two fair coin flips, the divide-by-<span class="math inline">\(n\)</span> variance has <span class="math inline">\(\mathbb{E}[V]=1/8\)</span> against a target of <span class="math inline">\(\mathbb{V}[X_{i}]=1/4\)</span>, so its bias is <span class="math inline">\(-1/8\)</span>. An estimator is <em>consistent</em> if its estimates get closer and closer to the parameter it targets as the sample grows. In the wage population, the share of samples whose mean missed by a dollar or more fell from about 30% with <span class="math inline">\(10\)</span> workers to almost none with <span class="math inline">\(250\)</span>.</p>
+<p>We defined <em>population parameters</em>, <span class="math inline">\(\mathbb{E}[X_{i}]\)</span> and <span class="math inline">\(\mathbb{V}[X_{i}]\)</span>, and their <em>estimators</em>, <span class="math inline">\(M\)</span> and <span class="math inline">\(V\)</span>. We also covered <em>linearity of expectation</em> and <em>LOTUS</em>. The standard error of the sample mean shrinks at the <span class="math inline">\(1/\sqrt{n}\)</span> rate. The five-sided die computation made the parameters concrete: with outcomes <span class="math inline">\(\{1, 2, 3, 4, 5\}\)</span> each having probability <span class="math inline">\(1/5\)</span>, the population mean is <span class="math inline">\(\mathbb{E}[X_{i}] = 15/5 = 3\)</span> and the variance is <span class="math inline">\(\mathbb{V}[X_{i}] = (4+1+0+1+4)/5 = 2\)</span>. The <span class="math inline">\(1/\sqrt{n}\)</span> rule then says that if a population has standard deviation <span class="math inline">\(10\)</span>, samples of size <span class="math inline">\(n=4\)</span> have <span class="math inline">\(\text{SE}(M) = 5\)</span> but quadrupling the sample size to <span class="math inline">\(n=16\)</span> halves the standard error to <span class="math inline">\(2.5\)</span>. An estimator’s <em>bias</em> is its expected value minus its target. For two fair coin flips, the divide-by-<span class="math inline">\(n\)</span> variance has <span class="math inline">\(\mathbb{E}[V]=1/8\)</span> against a target of <span class="math inline">\(\mathbb{V}[X_{i}]=1/4\)</span>, so its bias is <span class="math inline">\(-1/8\)</span>. An estimator is <em>consistent</em> if its estimates get closer and closer to the parameter it targets as the sample grows. In the wage population, the share of samples whose mean missed by a dollar or more fell from about 31% with <span class="math inline">\(10\)</span> workers to almost none with <span class="math inline">\(250\)</span>.</p>
 
 
 </section>

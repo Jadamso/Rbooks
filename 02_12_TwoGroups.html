@@ -500,7 +500,24 @@ window.Quarto = {
 
 
 <hr>
-<p>This chapter compares two groups: how the distribution of one variable changes across the categories of another. We begin with discrete data and then turn to continuous data. In both cases, a cardinal outcome <span class="math inline">\(\hat{y}_{i}\)</span> is split into groups by a factor <span class="math inline">\(\hat{x}_{i}\)</span>. In each case we summarize the groups, compute a statistic for the difference between them, and test that difference using the resampling methods from <a href="./01_08_HypothesisTests.html">Hypothesis Testing</a>.</p>
+<p>We now compare two groups: how the distribution of one variable changes across the categories of another. We begin with discrete data and then turn to continuous data. In both cases, a cardinal outcome <span class="math inline">\(\hat{y}_{i}\)</span> is split into groups by a factor <span class="math inline">\(\hat{x}_{i}\)</span>.</p>
+<p>This chapter asks three questions.</p>
+<ul>
+<li>How does <span class="math inline">\(\hat{y}\)</span> differ across groups?
+<ul>
+<li><em>Conditional mean and conditional quantile</em>: these compute the mean and the <a href="./01_02_Data.html#quantiles">quantiles</a> of <span class="math inline">\(\hat{y}\)</span> inside each subgroup.</li>
+<li><em>Difference statistic</em>: this is a new statistic, <span class="math inline">\(\hat{d}=\hat{g}_{1}-\hat{g}_{2}\)</span>, the gap in a statistic such as the mean or the median.</li>
+</ul></li>
+<li>Do the whole distributions differ?
+<ul>
+<li><em>KS and CVM statistics</em>: these are new statistics that summarize the gaps between two <a href="./01_02_Data.html#empirical-cumulative-distribution-function">ECDFs</a>.</li>
+</ul></li>
+<li>How sure are we?
+<ul>
+<li><em>Bootstrap confidence interval</em>: this resamples each group separately and uses the recipe from <a href="./01_08_HypothesisTests.html">Hypothesis Testing</a> to test the difference.</li>
+<li><em>Permutation test</em>: this is a new way to <a href="./01_08_HypothesisTests.html#impose-the-null">impose the null</a>, by reshuffling the group labels.</li>
+</ul></li>
+</ul>
 <section id="discrete-data" class="level2" data-number="12.1">
 <h2 data-number="12.1" class="anchored" data-anchor-id="discrete-data"><span class="header-section-number">12.1</span> Discrete Data</h2>
 <p>When both variables are factors, a natural way to summarize their association is to look at how the average of one (treated as cardinal) changes across categories of the other. When its categories are ordered, we can also look at how its quantiles change.</p>
@@ -520,27 +537,31 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>Comparing <span class="math inline">\(\hat{m}_{Y}(x)\)</span> across values of <span class="math inline">\(x\)</span> is useful as the simplest summary of association between a cardinal outcome and a factor. One number per subgroup shows whether <span class="math inline">\(\hat{y}\)</span> tends to be higher in one category. The calculation breaks into two steps: row-by-row, compute the conditional distribution <span class="math inline">\(\hat{p}(y\mid x)\)</span>, then take its weighted average using the values of <span class="math inline">\(y\)</span>.</p>
-<p>For example, consider years of schooling (treated as cardinal) across sex in the <code>Wages1</code> data from the <code>Ecdat</code> package. We first split schooling into one group per sex, and then average within each group.</p>
+<p>Comparing <span class="math inline">\(\hat{m}_{Y}(x)\)</span> across values of <span class="math inline">\(x\)</span> is useful as the simplest summary of association between a cardinal outcome and a factor. One number per subgroup shows whether <span class="math inline">\(\hat{y}\)</span> tends to be higher in one category. The calculation breaks into two steps: column-by-column, compute the conditional distribution <span class="math inline">\(\hat{p}(y\mid x)\)</span>, then take its weighted average using the values of <span class="math inline">\(y\)</span>.</p>
+<p>For example, the code below treats a discrete <span class="math inline">\(\hat{y}\)</span> as cardinal and compares it across the categories of <span class="math inline">\(\hat{x}\)</span>. We first split <span class="math inline">\(\hat{y}\)</span> into one group per category, and then average within each group.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Wages1, <span class="at">package=</span><span class="st">'Ecdat'</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Years of schooling within each sex</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>D_female <span class="ot">&lt;-</span> Wages1[, <span class="st">'sex'</span>] <span class="sc">==</span> <span class="st">'female'</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>y1_hat <span class="ot">&lt;-</span> Wages1[D_female, <span class="st">'school'</span>]</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>y2_hat <span class="ot">&lt;-</span> Wages1[<span class="sc">!</span>D_female, <span class="st">'school'</span>]</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional mean of schooling within each sex</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>m1_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y1_hat)</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>m2_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y2_hat)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">m1_hat=</span>m1_hat, <span class="at">m2_hat=</span>m2_hat)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="do">##   m1_hat   m2_hat </span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="do">## 11.83748 11.44232</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Lab data: 3294 US workers from the Ecdat package</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># school is years of schooling, treated here as cardinal</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># sex is a factor with levels female and male</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Wages1, <span class="at">package=</span><span class="st">'Ecdat'</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Years of schooling within each sex</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>D_female <span class="ot">&lt;-</span> Wages1[, <span class="st">'sex'</span>] <span class="sc">==</span> <span class="st">'female'</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>y1_hat <span class="ot">&lt;-</span> Wages1[D_female, <span class="st">'school'</span>]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>y2_hat <span class="ot">&lt;-</span> Wages1[<span class="sc">!</span>D_female, <span class="st">'school'</span>]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional mean of schooling within each sex</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>m1_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y1_hat)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>m2_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y2_hat)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">m1_hat=</span>m1_hat, <span class="at">m2_hat=</span>m2_hat)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="do">##   m1_hat   m2_hat </span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="do">## 11.83748 11.44232</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Women in this sample average about 11.8 years and men about 11.4 years.</span></span></code></pre></div>
 </details>
 </div>
-<p>Women in this sample average about <span class="math inline">\(11.8\)</span> years of schooling and men about <span class="math inline">\(11.4\)</span> years.</p>
-<p>Alternatively, <code>aggregate</code> computes the conditional mean for every group at once. To see the two steps in the definition, we first compute the conditional distribution of schooling within each sex, so that each column sums to 1. We then take the weighted average of the schooling values within each column.</p>
+<p>Alternatively, <code>aggregate</code> computes the conditional mean for every group at once. To see the two steps in the definition, we first compute the conditional distribution of <span class="math inline">\(\hat{y}\)</span> within each category of <span class="math inline">\(\hat{x}\)</span>, so that each column sums to 1. We then take the weighted average of the values of <span class="math inline">\(y\)</span> within each column.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -573,16 +594,17 @@ window.Quarto = {
 <span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="do">##   14  0.089 0.072</span></span>
 <span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="do">##   15  0.043 0.038</span></span>
 <span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="do">##   16  0.007 0.003</span></span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional mean of schooling within each sex</span></span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>school_values <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">rownames</span>(p_school_sex))</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>m_school_sex <span class="ot">&lt;-</span> <span class="fu">colSums</span>(school_values <span class="sc">*</span> p_school_sex)</span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>m_school_sex</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="do">##   female     male </span></span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="do">## 11.83748 11.44232</span></span></code></pre></div>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Men are more common at 10 years or fewer.</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Women are more common at 12 years or more.</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional mean of schooling within each sex</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>school_values <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">rownames</span>(p_school_sex))</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>m_school_sex <span class="ot">&lt;-</span> <span class="fu">colSums</span>(school_values <span class="sc">*</span> p_school_sex)</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>m_school_sex</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="do">##   female     male </span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="do">## 11.83748 11.44232</span></span></code></pre></div>
 </details>
 </div>
-<p>Men are more common at <span class="math inline">\(10\)</span> years or fewer, while women are more common at <span class="math inline">\(12\)</span> years or more.</p>
 <div class="callout callout-style-default callout-note no-icon callout-titled" title="Must Know">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -656,7 +678,7 @@ window.Quarto = {
 </tr>
 </tbody>
 </table>
-<p>Second, we apply the conditional-mean formula row by row: <span class="math display">\[\begin{aligned}
+<p>Second, we apply the conditional-mean formula column by column: <span class="math display">\[\begin{aligned}
 \hat{m}_{Y}(x=0) &amp;= 1 \frac{12}{40} + 2 \frac{18}{40} + 3 \frac{10}{40} = \frac{12+36+30}{40} = \frac{78}{40} \\
 \hat{m}_{Y}(x=1) &amp;= 1 \frac{8}{30} + 2 \frac{6}{30} + 3 \frac{16}{30} = \frac{8+12+48}{30} = \frac{68}{30}
 \end{aligned}\]</span> Notice that <span class="math inline">\(\hat{m}_{Y}(x=0) &lt; \hat{m}_{Y}(x=1)\)</span>, which shows that the mean value of <span class="math inline">\(\hat{y}\)</span> is higher when <span class="math inline">\(\hat{x}\)</span> is higher. I.e., there is a positive association.</p>
@@ -741,28 +763,34 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>Conditional quantiles are useful when <span class="math inline">\(\hat{y}\)</span> is ordered but not cardinal: unlike the conditional mean, they only use the ordering of the categories, as with <a href="./01_03_SummaryStatistics.html#ordered-factors">ordered factors</a>. In R, <code>quantile</code> with <code>type=1</code> inverts the ECDF within each group, so it returns an observed number of years.</p>
+<p>Conditional quantiles are useful when <span class="math inline">\(\hat{y}\)</span> is ordered but not cardinal: unlike the conditional mean, they only use the ordering of the categories, as with <a href="./01_03_SummaryStatistics.html#ordered-factors">ordered factors</a>. In R, <code>quantile</code> with <code>type=1</code> inverts the ECDF within each group, so it returns an observed value.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional medians within each sex</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>med1_hat <span class="ot">&lt;-</span> <span class="fu">median</span>(y1_hat)</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>med2_hat <span class="ot">&lt;-</span> <span class="fu">median</span>(y2_hat)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">med1_hat=</span>med1_hat, <span class="at">med2_hat=</span>med2_hat)</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="do">## med1_hat med2_hat </span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="do">##       12       12</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional quartiles within each sex</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>q1_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(y1_hat, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">25</span>, .<span class="dv">5</span>, .<span class="dv">75</span>), <span class="at">type=</span><span class="dv">1</span>)</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>q2_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(y2_hat, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">25</span>, .<span class="dv">5</span>, .<span class="dv">75</span>), <span class="at">type=</span><span class="dv">1</span>)</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(q1_hat, q2_hat)</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="do">##        25% 50% 75%</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="do">## q1_hat  11  12  13</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="do">## q2_hat  10  12  12</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional medians within each sex</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>med1_hat <span class="ot">&lt;-</span> <span class="fu">median</span>(y1_hat)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>med2_hat <span class="ot">&lt;-</span> <span class="fu">median</span>(y2_hat)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">med1_hat=</span>med1_hat, <span class="at">med2_hat=</span>med2_hat)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="do">## med1_hat med2_hat </span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="do">##       12       12</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># The medians are both 12 years.</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co"># That is because over a third of each group stopped at exactly 12 years.</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional quartiles within each sex</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>q1_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(y1_hat, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">25</span>, .<span class="dv">5</span>, .<span class="dv">75</span>), <span class="at">type=</span><span class="dv">1</span>)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>q2_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(y2_hat, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">25</span>, .<span class="dv">5</span>, .<span class="dv">75</span>), <span class="at">type=</span><span class="dv">1</span>)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(q1_hat, q2_hat)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="do">##        25% 50% 75%</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="do">## q1_hat  11  12  13</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="do">## q2_hat  10  12  12</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co"># The quartiles still show a difference.</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co"># The middle half of women have between 11 and 13 years.</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co"># The middle half of men have between 10 and 12 years.</span></span></code></pre></div>
 </details>
 </div>
-<p>The medians are both <span class="math inline">\(12\)</span> years, because over a third of each group stopped at exactly <span class="math inline">\(12\)</span> years of schooling. The quartiles still show a difference: the middle half of women have between <span class="math inline">\(11\)</span> and <span class="math inline">\(13\)</span> years, while the middle half of men have between <span class="math inline">\(10\)</span> and <span class="math inline">\(12\)</span> years. With lumpy discrete data, a single median can hide a difference that several quantiles reveal.</p>
-<p>Alternatively, <code>aggregate</code> computes the conditional quantiles for every group at once. To see where these quantiles come from, <code>cumsum</code> down each column of <code>p_school_sex</code> gives <span class="math inline">\(\hat{F}_{Y}(y \mid x)\)</span> for each sex. Each quartile is the first row where its column reaches <span class="math inline">\(p\)</span>.</p>
+<p>With lumpy discrete data, a single median can hide a difference that several quantiles reveal.</p>
+<p>Alternatively, <code>aggregate</code> computes the conditional quantiles for every group at once. To see where these quantiles come from, <code>cumsum</code> down each column of the conditional distribution gives <span class="math inline">\(\hat{F}_{Y}(y \mid x)\)</span> for each group. Each quartile is the first row where its column reaches <span class="math inline">\(p\)</span>.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -802,35 +830,37 @@ window.Quarto = {
 <section id="continuous-data" class="level2" data-number="12.2">
 <h2 data-number="12.2" class="anchored" data-anchor-id="continuous-data"><span class="header-section-number">12.2</span> Continuous Data</h2>
 <p>Consider a mixed dataset where <span class="math inline">\(\hat{y}_{i}\)</span> is a continuous cardinal variable and <span class="math inline">\(\hat{x}_{i}\)</span> is a factor variable (typically unordered). For such “grouped data”, we analyze associations via group comparisons. The basic idea is best seen in a comparison of two samples, which corresponds to an <span class="math inline">\(\hat{x}_{i}\)</span> with two categories. For example, we might compare the heights of men and women in Canada or the homicide rates in two different American states.</p>
-<p>We will consider the wages for people who did and did not complete a degree, again from <code>Wages1</code>. To compare the two groups, we start by making a <a href="./01_02_Data.html#histogram-density">histogram</a> for each.</p>
+<p>To compare two groups, we start by making a <a href="./01_02_Data.html#histogram-density">histogram</a> for each.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Workers with 12 or 16 years of schooling, and which of them are high school only</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>xy_hat <span class="ot">&lt;-</span> Wages1[Wages1[, <span class="st">'school'</span>] <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">12</span>, <span class="dv">16</span>), <span class="fu">c</span>(<span class="st">'school'</span>, <span class="st">'wage'</span>)]</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>D_hs <span class="ot">&lt;-</span> xy_hat[, <span class="st">'school'</span>] <span class="sc">==</span> <span class="dv">12</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Hourly wages within each level of schooling</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>y1_hat <span class="ot">&lt;-</span> xy_hat[D_hs, <span class="st">'wage'</span>] <span class="co"># high school only</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>y2_hat <span class="ot">&lt;-</span> xy_hat[<span class="sc">!</span>D_hs, <span class="st">'wage'</span>] <span class="co"># university graduates</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Initial summary figure: two overlaid histograms on a common grid</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>bks <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">34</span>, <span class="at">by=</span><span class="dv">1</span>)             <span class="co"># shared bin edges</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>dlim <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">2</span>)                    <span class="co"># shared y limit</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rgb</span>(.<span class="dv">8</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">5</span>), <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>, .<span class="dv">5</span>)) <span class="co"># semi-transparent fill</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(y1_hat, <span class="at">breaks=</span>bks, <span class="at">ylim=</span>dlim,</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>     <span class="at">col=</span>cols[<span class="dv">1</span>], <span class="at">xlab=</span><span class="st">'Wages'</span>,</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>     <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="fu">rug</span>(y1_hat, <span class="at">col=</span>cols[<span class="dv">1</span>])</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(y2_hat, <span class="at">breaks=</span>bks, <span class="at">ylim=</span>dlim,</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>     <span class="at">col=</span>cols[<span class="dv">2</span>],</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>     <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">add=</span><span class="cn">TRUE</span>)</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="fu">rug</span>(y2_hat, <span class="at">col=</span>cols[<span class="dv">2</span>])</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topright'</span>,</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>       <span class="at">col=</span>cols, <span class="at">pch=</span><span class="dv">15</span>,</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>       <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'12 Years (High School)'</span>, <span class="st">'16 Years (University)'</span>),</span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>       <span class="at">title=</span><span class="st">'School Completed'</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare wages for people who did and did not complete a degree</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Workers with 12 or 16 years of schooling, and which of them are high school only</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>xy_hat <span class="ot">&lt;-</span> Wages1[Wages1[, <span class="st">'school'</span>] <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">12</span>, <span class="dv">16</span>), <span class="fu">c</span>(<span class="st">'school'</span>, <span class="st">'wage'</span>)]</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>D_hs <span class="ot">&lt;-</span> xy_hat[, <span class="st">'school'</span>] <span class="sc">==</span> <span class="dv">12</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Hourly wages within each level of schooling</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>y1_hat <span class="ot">&lt;-</span> xy_hat[D_hs, <span class="st">'wage'</span>] <span class="co"># high school only</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>y2_hat <span class="ot">&lt;-</span> xy_hat[<span class="sc">!</span>D_hs, <span class="st">'wage'</span>] <span class="co"># university graduates</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Initial summary figure: two overlaid histograms on a common grid</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>bks <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">34</span>, <span class="at">by=</span><span class="dv">1</span>)             <span class="co"># shared bin edges</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>dlim <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">2</span>)                    <span class="co"># shared y limit</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rgb</span>(.<span class="dv">8</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">5</span>), <span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>, .<span class="dv">5</span>)) <span class="co"># semi-transparent fill</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(y1_hat, <span class="at">breaks=</span>bks, <span class="at">ylim=</span>dlim,</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>     <span class="at">col=</span>cols[<span class="dv">1</span>], <span class="at">xlab=</span><span class="st">'Wages'</span>,</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>     <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="fu">rug</span>(y1_hat, <span class="at">col=</span>cols[<span class="dv">1</span>])</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(y2_hat, <span class="at">breaks=</span>bks, <span class="at">ylim=</span>dlim,</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>     <span class="at">col=</span>cols[<span class="dv">2</span>],</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>     <span class="at">freq=</span><span class="cn">FALSE</span>, <span class="at">border=</span><span class="cn">NA</span>, <span class="at">add=</span><span class="cn">TRUE</span>)</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="fu">rug</span>(y2_hat, <span class="at">col=</span>cols[<span class="dv">2</span>])</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topright'</span>,</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>       <span class="at">col=</span>cols, <span class="at">pch=</span><span class="dv">15</span>,</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>       <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'12 Years (High School)'</span>, <span class="st">'16 Years (University)'</span>),</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>       <span class="at">title=</span><span class="st">'School Completed'</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -859,38 +889,40 @@ window.Quarto = {
 </div>
 <section id="mean-differences" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="mean-differences"><strong>Mean Differences</strong></h4>
-<p>The <em>mean difference</em> is useful for summarizing how different two groups are on average. It is on the same scale as the outcome. Its <a href="./01_08_HypothesisTests.html#choosing-a-null">null hypothesis</a> is no difference in population means, <span class="math inline">\(H_{0}: \mathbb{E}[Y_{i1}]=\mathbb{E}[Y_{i2}]\)</span>. We can test that hypothesis by inverting a confidence interval. The code below computes <span class="math inline">\(\hat{m}_{1}\)</span> and <span class="math inline">\(\hat{m}_{2}\)</span> from the wage data and reports <span class="math inline">\(\hat{d}\)</span>. The university group has the higher mean wage, so <span class="math inline">\(\hat{d}&lt;0\)</span> here. Is the gap bigger than we would expect from sampling noise? To answer that, we resample each group separately and recompute <span class="math inline">\(\hat{d}\)</span> each time.</p>
+<p>The <em>mean difference</em> is useful for summarizing how different two groups are on average. It is on the same scale as the outcome. Its <a href="./01_08_HypothesisTests.html#choosing-a-null">null hypothesis</a> is no difference in population means, <span class="math inline">\(H_{0}: \mathbb{E}[Y_{i1}]=\mathbb{E}[Y_{i2}]\)</span>. We can test that hypothesis by inverting a confidence interval. The code below computes <span class="math inline">\(\hat{m}_{1}\)</span> and <span class="math inline">\(\hat{m}_{2}\)</span> and reports <span class="math inline">\(\hat{d}\)</span>. Is the gap bigger than we would expect from sampling noise? To answer that, we resample each group separately and recompute <span class="math inline">\(\hat{d}\)</span> each time.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Difference between means</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>m1_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y1_hat)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>m2_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y2_hat)</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>d_hat <span class="ot">&lt;-</span> m1_hat <span class="sc">-</span> m2_hat</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">c</span>(<span class="at">m1_hat=</span>m1_hat, <span class="at">m2_hat=</span>m2_hat, <span class="at">d_hat=</span>d_hat), <span class="dv">2</span>)</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="do">## m1_hat m2_hat  d_hat </span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="do">##   5.67   7.54  -1.87</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap Distribution</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>bootstrap_diff <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">9999</span>)</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq</span>(bootstrap_diff) ){</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># keep each worker's group fixed and resample wages within each group</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    y1_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(xy_hat[D_hs, <span class="st">'wage'</span>], <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    y2_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(xy_hat[<span class="sc">!</span>D_hs, <span class="st">'wage'</span>], <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    m1_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y1_boot)</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    m2_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y2_boot)</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    d_b <span class="ot">&lt;-</span> m1_b_hat <span class="sc">-</span> m2_b_hat</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    bootstrap_diff[b] <span class="ot">&lt;-</span> d_b</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_diff, <span class="at">breaks=</span><span class="dv">50</span>,</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'Difference in Means'</span>)</span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Bootstrapped Difference in Means'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co"># 2-Sided Test via Confidence Interval</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>boot_ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_diff, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>boot_ci, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="dv">0</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Difference between means</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>m1_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y1_hat)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>m2_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y2_hat)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>d_hat <span class="ot">&lt;-</span> m1_hat <span class="sc">-</span> m2_hat</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">c</span>(<span class="at">m1_hat=</span>m1_hat, <span class="at">m2_hat=</span>m2_hat, <span class="at">d_hat=</span>d_hat), <span class="dv">2</span>)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="do">## m1_hat m2_hat  d_hat </span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="do">##   5.67   7.54  -1.87</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co"># The university group has the higher mean wage, so d_hat is negative.</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap Distribution</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>bootstrap_diff <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">9999</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq</span>(bootstrap_diff) ){</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># keep each worker's group fixed and resample wages within each group</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    y1_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(xy_hat[D_hs, <span class="st">'wage'</span>], <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    y2_boot <span class="ot">&lt;-</span> <span class="fu">sample</span>(xy_hat[<span class="sc">!</span>D_hs, <span class="st">'wage'</span>], <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    m1_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y1_boot)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    m2_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y2_boot)</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    d_b <span class="ot">&lt;-</span> m1_b_hat <span class="sc">-</span> m2_b_hat</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    bootstrap_diff[b] <span class="ot">&lt;-</span> d_b</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(bootstrap_diff, <span class="at">breaks=</span><span class="dv">50</span>,</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'Difference in Means'</span>)</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Bootstrapped Difference in Means'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="co"># 2-Sided Test via Confidence Interval</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>boot_ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(bootstrap_diff, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>boot_ci, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span><span class="dv">0</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1080,19 +1112,20 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># KS and CVM statistics for any two-group split</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>ks_cvm <span class="ot">&lt;-</span> <span class="cf">function</span>(y1_hat, y2_hat){</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    y_values <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">c</span>(y1_hat, y2_hat)) <span class="co"># pooled sample points</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    F1_vals <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(y1_hat)(y_values)</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    F2_vals <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(y2_hat)(y_values)</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    gap <span class="ot">&lt;-</span> <span class="fu">abs</span>(F1_vals <span class="sc">-</span> F2_vals)</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># KS: largest vertical gap (p=1); CVM: summed squared gaps (p=2)</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">c</span>(<span class="at">KS=</span><span class="fu">max</span>(gap), <span class="at">CVM=</span><span class="fu">sum</span>(gap<span class="sc">^</span><span class="dv">2</span>)))</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>stat_obs <span class="ot">&lt;-</span> <span class="fu">ks_cvm</span>(y1_hat, y2_hat)</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(stat_obs, <span class="dv">2</span>)</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="do">##    KS   CVM </span></span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="do">##  0.42 76.16</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># KS and CVM statistics for any two-group split</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>ks_cvm <span class="ot">&lt;-</span> <span class="cf">function</span>(y1_hat, y2_hat){</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    y_values <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">c</span>(y1_hat, y2_hat)) <span class="co"># pooled sample points</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    F1_vals <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(y1_hat)(y_values)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    F2_vals <span class="ot">&lt;-</span> <span class="fu">ecdf</span>(y2_hat)(y_values)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    gap <span class="ot">&lt;-</span> <span class="fu">abs</span>(F1_vals <span class="sc">-</span> F2_vals)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># KS: largest vertical gap (p=1); CVM: summed squared gaps (p=2)</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">c</span>(<span class="at">KS=</span><span class="fu">max</span>(gap), <span class="at">CVM=</span><span class="fu">sum</span>(gap<span class="sc">^</span><span class="dv">2</span>)))</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>stat_obs <span class="ot">&lt;-</span> <span class="fu">ks_cvm</span>(y1_hat, y2_hat)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(stat_obs, <span class="dv">2</span>)</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="do">##    KS   CVM </span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="do">##  0.42 76.16</span></span></code></pre></div>
 </details>
 </div>
 <div class="cell">
@@ -1255,7 +1288,7 @@ window.Quarto = {
 <span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>,</span>
 <span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">25</span>))</span>
 <span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Quantile-Quantile Plot'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">a=</span><span class="dv">0</span>, <span class="at">b=</span><span class="dv">1</span>, <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">a=</span><span class="dv">0</span>, <span class="at">b=</span><span class="dv">1</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1288,7 +1321,7 @@ window.Quarto = {
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Group A Earnings'</span>, <span class="at">ylab=</span><span class="st">'Group B Earnings'</span>,</span>
 <span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">5</span>))</span>
 <span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Quantile-Quantile Plot'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">a=</span><span class="dv">0</span>, <span class="at">b=</span><span class="dv">1</span>, <span class="at">lty=</span><span class="dv">2</span>) <span class="co"># 45 degree line: identical distributions</span></span></code></pre></div>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">a=</span><span class="dv">0</span>, <span class="at">b=</span><span class="dv">1</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">8</span>), <span class="at">lty=</span><span class="dv">2</span>) <span class="co"># 45 degree line: identical distributions</span></span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1420,32 +1453,33 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>For the wage data, there are far too many relabelings to list, so we draw many of them at random.</p>
+<p>With larger samples, there are far too many relabelings to list, so we draw many of them at random.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Permutation Distribution: re-split the pooled wages of the two groups</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>permute_diff <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">9999</span>)</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq</span>(permute_diff) ){</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">#randomize data</span></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    D_hs0 <span class="ot">&lt;-</span> <span class="fu">sample</span>(D_hs)</span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    y1_perm <span class="ot">&lt;-</span> xy_hat[D_hs0, <span class="st">'wage'</span>]</span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    y2_perm <span class="ot">&lt;-</span> xy_hat[<span class="sc">!</span>D_hs0, <span class="st">'wage'</span>]</span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># recompute statistic</span></span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    m1_perm_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y1_perm)</span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    m2_perm_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y2_perm)</span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    d_b <span class="ot">&lt;-</span> m1_perm_hat <span class="sc">-</span> m2_perm_hat</span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    permute_diff[b] <span class="ot">&lt;-</span> d_b</span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(permute_diff, <span class="at">breaks=</span><span class="dv">50</span>,</span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'Difference in Means'</span>)</span>
-<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Permuted Difference in Means'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a><span class="co"># 2-Sided Test via the middle 95% of the permutation distribution</span></span>
-<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>perm_ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(permute_diff, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
-<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>perm_ci, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>d_hat, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Permutation Distribution: re-split the pooled wages of the two groups</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>permute_diff <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">9999</span>)</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq</span>(permute_diff) ){</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">#randomize data</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    D_hs0 <span class="ot">&lt;-</span> <span class="fu">sample</span>(D_hs)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    y1_perm <span class="ot">&lt;-</span> xy_hat[D_hs0, <span class="st">'wage'</span>]</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    y2_perm <span class="ot">&lt;-</span> xy_hat[<span class="sc">!</span>D_hs0, <span class="st">'wage'</span>]</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># recompute statistic</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    m1_perm_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y1_perm)</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    m2_perm_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y2_perm)</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    d_b <span class="ot">&lt;-</span> m1_perm_hat <span class="sc">-</span> m2_perm_hat</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    permute_diff[b] <span class="ot">&lt;-</span> d_b</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(permute_diff, <span class="at">breaks=</span><span class="dv">50</span>,</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'Difference in Means'</span>)</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Permuted Difference in Means'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a><span class="co"># 2-Sided Test via the middle 95% of the permutation distribution</span></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>perm_ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(permute_diff, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>perm_ci, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>d_hat, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1466,7 +1500,7 @@ window.Quarto = {
 </section>
 <section id="permuting-quantiles" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="permuting-quantiles"><strong>Permuting Quantiles</strong></h4>
-<p>The same reshuffling works for medians: only the statistic that we recompute on each permutation changes. We pool the wages of the two groups, randomly pick which of them belong to the high-school group, and compute the difference in medians.</p>
+<p>The same reshuffling works for medians: only the statistic that we recompute on each permutation changes. We pool the outcomes of the two groups, randomly pick which of them belong to group 1, and compute the difference in medians.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
