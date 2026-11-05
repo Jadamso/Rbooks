@@ -6,10 +6,20 @@
 set.seed(1)
 ```
 
-This chapter compares two groups: how the distribution of one variable changes across the categories of another.
+We now compare two groups: how the distribution of one variable changes across the categories of another.
 We begin with discrete data and then turn to continuous data.
 In both cases, a cardinal outcome $\hat{y}_{i}$ is split into groups by a factor $\hat{x}_{i}$.
-In each case we summarize the groups, compute a statistic for the difference between them, and test that difference using the resampling methods from [Hypothesis Testing](01_08_HypothesisTests.qmd).
+
+This chapter asks three questions.
+
+* How does $\hat{y}$ differ across groups?
+    * *Conditional mean and conditional quantile*: these compute the mean and the [quantiles](01_02_Data.qmd#quantiles) of $\hat{y}$ inside each subgroup.
+    * *Difference statistic*: this is a new statistic, $\hat{d}=\hat{g}_{1}-\hat{g}_{2}$, the gap in a statistic such as the mean or the median.
+* Do the whole distributions differ?
+    * *KS and CVM statistics*: these are new statistics that summarize the gaps between two [ECDFs](01_02_Data.qmd#empirical-cumulative-distribution-function).
+* How sure are we?
+    * *Bootstrap confidence interval*: this resamples each group separately and uses the recipe from [Hypothesis Testing](01_08_HypothesisTests.qmd) to test the difference.
+    * *Permutation test*: this is a new way to [impose the null](01_08_HypothesisTests.qmd#impose-the-null), by reshuffling the group labels.
 
 ## Discrete Data
 
@@ -23,12 +33,16 @@ $$\hat{m}_{Y}(x)=\sum_{y} y\,\hat{p}(y\mid x).$$
 
 Comparing $\hat{m}_{Y}(x)$ across values of $x$ is useful as the simplest summary of association between a cardinal outcome and a factor.
 One number per subgroup shows whether $\hat{y}$ tends to be higher in one category.
-The calculation breaks into two steps: row-by-row, compute the conditional distribution $\hat{p}(y\mid x)$, then take its weighted average using the values of $y$.
+The calculation breaks into two steps: column-by-column, compute the conditional distribution $\hat{p}(y\mid x)$, then take its weighted average using the values of $y$.
 
-For example, consider years of schooling (treated as cardinal) across sex in the `Wages1` data from the `Ecdat` package.
-We first split schooling into one group per sex, and then average within each group.
+For example, the code below treats a discrete $\hat{y}$ as cardinal and compares it across the categories of $\hat{x}$.
+We first split $\hat{y}$ into one group per category, and then average within each group.
 
 ```{r}
+## MAIN EXAMPLE
+# Lab data: 3294 US workers from the Ecdat package
+# school is years of schooling, treated here as cardinal
+# sex is a factor with levels female and male
 data(Wages1, package='Ecdat')
 # Years of schooling within each sex
 D_female <- Wages1[, 'sex'] == 'female'
@@ -39,13 +53,12 @@ y2_hat <- Wages1[!D_female, 'school']
 m1_hat <- mean(y1_hat)
 m2_hat <- mean(y2_hat)
 c(m1_hat=m1_hat, m2_hat=m2_hat)
+# Women in this sample average about 11.8 years and men about 11.4 years.
 ```
 
-Women in this sample average about $11.8$ years of schooling and men about $11.4$ years.
-
 Alternatively, `aggregate` computes the conditional mean for every group at once.
-To see the two steps in the definition, we first compute the conditional distribution of schooling within each sex, so that each column sums to 1.
-We then take the weighted average of the schooling values within each column.
+To see the two steps in the definition, we first compute the conditional distribution of $\hat{y}$ within each category of $\hat{x}$, so that each column sums to 1.
+We then take the weighted average of the values of $y$ within each column.
 
 ```{r}
 # Mean years of school by sex
@@ -58,14 +71,14 @@ school_sex <- table(Wages1[, 'school'], Wages1[, 'sex'])
 # Conditional distribution p(y|x): each column sums to 1
 p_school_sex <- prop.table(school_sex, 2)
 round(p_school_sex, 3)
+# Men are more common at 10 years or fewer.
+# Women are more common at 12 years or more.
 
 # Conditional mean of schooling within each sex
 school_values <- as.numeric(rownames(p_school_sex))
 m_school_sex <- colSums(school_values * p_school_sex)
 m_school_sex
 ```
-
-Men are more common at $10$ years or fewer, while women are more common at $12$ years or more.
 
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
@@ -89,7 +102,7 @@ First, we compute conditional probabilities to examine how the distribution chan
 |       | $40/40$ | $30/30$ |
 : Conditional Proportions of $y$ Given $x$
 
-Second, we apply the conditional-mean formula row by row:
+Second, we apply the conditional-mean formula column by column:
 $$\begin{aligned}
 \hat{m}_{Y}(x=0) &= 1 \frac{12}{40} + 2 \frac{18}{40} + 3 \frac{10}{40} = \frac{12+36+30}{40} = \frac{78}{40} \\
 \hat{m}_{Y}(x=1) &= 1 \frac{8}{30} + 2 \frac{6}{30} + 3 \frac{16}{30} = \frac{8+12+48}{30} = \frac{68}{30}
@@ -145,26 +158,30 @@ For discrete $\hat{y}$, $\hat{F}_{Y}^{-1}(p \mid x)$ is the smallest $y$ where $
 :::
 
 Conditional quantiles are useful when $\hat{y}$ is ordered but not cardinal: unlike the conditional mean, they only use the ordering of the categories, as with [ordered factors](01_03_SummaryStatistics.qmd#ordered-factors).
-In R, `quantile` with `type=1` inverts the ECDF within each group, so it returns an observed number of years.
+In R, `quantile` with `type=1` inverts the ECDF within each group, so it returns an observed value.
 
 ```{r}
+## MAIN EXAMPLE
 # Conditional medians within each sex
 med1_hat <- median(y1_hat)
 med2_hat <- median(y2_hat)
 c(med1_hat=med1_hat, med2_hat=med2_hat)
+# The medians are both 12 years.
+# That is because over a third of each group stopped at exactly 12 years.
 
 # Conditional quartiles within each sex
 q1_hat <- quantile(y1_hat, probs=c(.25, .5, .75), type=1)
 q2_hat <- quantile(y2_hat, probs=c(.25, .5, .75), type=1)
 rbind(q1_hat, q2_hat)
+# The quartiles still show a difference.
+# The middle half of women have between 11 and 13 years.
+# The middle half of men have between 10 and 12 years.
 ```
 
-The medians are both $12$ years, because over a third of each group stopped at exactly $12$ years of schooling.
-The quartiles still show a difference: the middle half of women have between $11$ and $13$ years, while the middle half of men have between $10$ and $12$ years.
 With lumpy discrete data, a single median can hide a difference that several quantiles reveal.
 
 Alternatively, `aggregate` computes the conditional quantiles for every group at once.
-To see where these quantiles come from, `cumsum` down each column of `p_school_sex` gives $\hat{F}_{Y}(y \mid x)$ for each sex.
+To see where these quantiles come from, `cumsum` down each column of the conditional distribution gives $\hat{F}_{Y}(y \mid x)$ for each group.
 Each quartile is the first row where its column reaches $p$.
 
 ```{r}
@@ -186,10 +203,11 @@ The basic idea is best seen in a comparison of two samples, which corresponds to
 For example, we might compare the heights of men and women in Canada or the homicide rates in two different American states.
 
 
-We will consider the wages for people who did and did not complete a degree, again from `Wages1`.
-To compare the two groups, we start by making a [histogram](01_02_Data.qmd#histogram-density) for each.
+To compare two groups, we start by making a [histogram](01_02_Data.qmd#histogram-density) for each.
 
 ```{r}
+## MAIN EXAMPLE
+# Compare wages for people who did and did not complete a degree
 # Workers with 12 or 16 years of schooling, and which of them are high school only
 xy_hat <- Wages1[Wages1[, 'school'] %in% c(12, 16), c('school', 'wage')]
 D_hs <- xy_hat[, 'school'] == 12
@@ -235,17 +253,18 @@ The *mean difference* is useful for summarizing how different two groups are on 
 It is on the same scale as the outcome.
 Its [null hypothesis](01_08_HypothesisTests.qmd#choosing-a-null) is no difference in population means, $H_{0}: \mathbb{E}[Y_{i1}]=\mathbb{E}[Y_{i2}]$.
 We can test that hypothesis by inverting a confidence interval.
-The code below computes $\hat{m}_{1}$ and $\hat{m}_{2}$ from the wage data and reports $\hat{d}$.
-The university group has the higher mean wage, so $\hat{d}<0$ here.
+The code below computes $\hat{m}_{1}$ and $\hat{m}_{2}$ and reports $\hat{d}$.
 Is the gap bigger than we would expect from sampling noise?
 To answer that, we resample each group separately and recompute $\hat{d}$ each time.
 
 ```{r}
+## MAIN EXAMPLE
 # Difference between means
 m1_hat <- mean(y1_hat)
 m2_hat <- mean(y2_hat)
 d_hat <- m1_hat - m2_hat
 round(c(m1_hat=m1_hat, m2_hat=m2_hat, d_hat=d_hat), 2)
+# The university group has the higher mean wage, so d_hat is negative.
 
 # Bootstrap Distribution
 bootstrap_diff <- rep(NA, 9999)
@@ -406,6 +425,7 @@ The cost is that $\hat{\text{KS}}$ uses only the single largest gap, so it can m
 $\hat{\text{CVM}}$ is useful for accumulated small differences spread across the support, since every pooled sample point contributes to the sum.
 
 ```{r}
+## MAIN EXAMPLE
 # KS and CVM statistics for any two-group split
 ks_cvm <- function(y1_hat, y2_hat){
     y_values <- sort(c(y1_hat, y2_hat)) # pooled sample points
@@ -512,7 +532,7 @@ plot(Q1, Q2, xlim=ry, ylim=ry,
     main=NA,
     pch=16, col=grey(0, .25))
 title('Quantile-Quantile Plot', font.main=1)
-abline(a=0, b=1, lty=2)
+abline(a=0, b=1, col=rgb(0, 0, 1, .8), lty=2)
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -527,7 +547,7 @@ plot(sort(yA0_hat), sort(yB0_hat), xlim=ry0, ylim=ry0,
     xlab='Group A Earnings', ylab='Group B Earnings',
     main=NA, pch=16, col=grey(0, .5))
 title('Quantile-Quantile Plot', font.main=1)
-abline(a=0, b=1, lty=2) # 45 degree line: identical distributions
+abline(a=0, b=1, col=rgb(0, 0, 1, .8), lty=2) # 45 degree line: identical distributions
 ```
 The 45° reference line indicates identical distributions.
 Point 1, $(18,19)$, lies above the line, and so do points 2 and 4.
@@ -605,9 +625,10 @@ About $77\%$ of the $70$ relabelings produce a gap at least as large as $1.5$, s
 Likewise, $\hat{d}=-1.5$ sits well inside the middle $95\%$ of relabelings, from about $-7.1$ to $7.1$.
 :::
 
-For the wage data, there are far too many relabelings to list, so we draw many of them at random.
+With larger samples, there are far too many relabelings to list, so we draw many of them at random.
 
 ```{r}
+## MAIN EXAMPLE
 # Permutation Distribution: re-split the pooled wages of the two groups
 permute_diff <- rep(NA, 9999)
 for(b in seq(permute_diff) ){
@@ -639,7 +660,7 @@ p
 #### **Permuting Quantiles** {-}
 
 The same reshuffling works for medians: only the statistic that we recompute on each permutation changes.
-We pool the wages of the two groups, randomly pick which of them belong to the high-school group, and compute the difference in medians.
+We pool the outcomes of the two groups, randomly pick which of them belong to group 1, and compute the difference in medians.
 
 ```{r}
 # Observed difference in medians

@@ -4,18 +4,31 @@
 
 Earlier chapters summarized one variable at a time.
 We now study two variables together.
-This chapter covers two basic ways to summarize them.
-The *joint* distribution records how often each combination of values occurs.
-The *conditional* distribution records the distribution of one variable within fixed values of the other.
-We do each for discrete data and then for continuous data.
 Throughout, the data for each observation are grouped together as a vector $(\hat{x}_{i}, \hat{y}_{i})$.
 As in [Summary Statistics](01_03_SummaryStatistics.qmd#mean-and-variance), $\hat{x}$ and $\hat{y}$ without a subscript denote all $n$ observed values of each variable.
+
+This chapter asks two questions.
+
+* How often does each combination of values occur?
+    * *Joint and marginal distributions*: the joint distribution $\hat{p}(x,y)$ is a table of shares, one per combination of values.
+      Summing it over one variable gives the marginal distribution of the other.
+    * *Scatterplot*: this shows the joint distribution of continuous data, with one point per observation.
+* How does the distribution of $\hat{y}$ change with $\hat{x}$?
+    * *Conditional distribution*: this rescales the joint distribution so each row sums to one, $\hat{p}(y \mid x)=\hat{p}(x,y)/\hat{p}(x)$.
+    * *Confusion of the inverse and base-rate fallacy*: these are the common mistakes of confusing $\hat{p}(y \mid x)$ with $\hat{p}(x \mid y)$ or with $\hat{p}(y)$.
+    * *Split-sample histograms, ECDFs, and boxplots*: these cut a continuous $\hat{x}$ into groups, then reuse the plots from [Data & Visualization](01_02_Data.qmd) within each group.
+
 ```{r}
-# USArrests has 50 rows (one per US state) and four crime columns;
-# pick two of those columns to form a bivariate dataset.
-xy_hat <- USArrests[, c('UrbanPop', 'Murder')]
-colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
-xy_hat[1, ]                             # first state's two values
+## MAIN EXAMPLE
+# Lab data: 3294 US workers.
+# Wages1 has one row per worker and four columns.
+data(Wages1, package='Ecdat')
+
+# Pick two of those columns to form a bivariate dataset.
+# Schooling is in years, and wages are per hour in 1980 dollars.
+xy_hat <- Wages1[, c('school', 'wage')]
+colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
+xy_hat[1, ]                             # first worker's two values
 ```
 
 ## Joint Distributions
@@ -47,40 +60,41 @@ It is useful for recovering each variable's own distribution from the joint tabl
 It also supplies the base rates $\hat{p}(x)$ and $\hat{p}(y)$, which conditional distributions divide by.
 The same numbers can also be computed directly from the univariate data without ever forming the joint table (see [here](01_06_EstimationTheory.qmd#estimates)).
 
-For example, consider the `Wages1` data on US workers.
-Let $\hat{x}_{i}$ be years of schooling and $\hat{y}_{i}$ be sex.
-We use all $n=3294$ workers.
+For example, consider two discrete variables from the lab data.
 ```{r}
-data(Wages1, package='Ecdat')
-
-# All workers: schooling and sex
-xy2_hat <- Wages1[, c('school', 'sex')]
+## MAIN EXAMPLE
+# All 3294 workers: x=years of schooling, y=sex
+school_sex <- Wages1[, c('school', 'sex')]
 
 # Frequency table and joint distribution
-tab <- table(xy2_hat)    # raw counts: rows=school, cols=sex
+tab <- table(school_sex) # raw counts: rows=school, cols=sex
 tab
 prop <- tab / sum(tab)   # joint sample distribution (sums to 1)
 round(prop, 3)
+# For example, p(x=12, y=female) is about 0.180.
+# So about 18% of workers are women with 12 years of schooling.
 
 # addmargins() appends row and column totals (i.e., the marginals)
 prop_m <- addmargins(prop)
 round(prop_m, 3)
+# The row totals give the marginal of schooling: p(x=12) is about 0.361.
+# The column totals give the marginal of sex: p(y=female) is about 0.48.
 ```
 
-Each cell of the joint table is the share of all workers with that schooling and sex.
-For example, $\hat{p}(x=12, y=\text{female}) \approx 0.180$, so about $18\%$ of workers are women with $12$ years of schooling.
-The row totals are the marginal distribution of schooling: $\hat{p}(x=12) \approx 0.361$.
-The column totals are the marginal distribution of sex: $\hat{p}(y=\text{female}) \approx 0.48$.
+Each cell of the joint table is the share of all observations with that combination of values.
+The row totals are the marginal distribution of $\hat{x}_{i}$.
+The column totals are the marginal distribution of $\hat{y}_{i}$.
 
 Note that you can compute various univariate statistics using the marginal distributions.
 E.g., the mean of $\hat{x}_{i}$ is $\hat{m}_{X}=\sum_{x} x \hat{p}(x)$.
-In the above example, that equals about $11.6$ years of schooling.
+The code below computes it for the above example.
 Try computing the standard deviation $\hat{s}_{X}$ yourself.
 ```{r}
 # marginals and univariate statistics
 p_x <- margin.table(prop, 1)
 sum(p_x * as.numeric(names(p_x)))
-mean(xy2_hat[, 'school'])
+mean(school_sex[, 'school'])
+# Both ways give a mean of about 11.6 years of schooling.
 
 # p_y <- margin.table(prop, 2)
 ```
@@ -168,8 +182,13 @@ As a default, use semi-transparent points so as not to hide any points (and perh
 You can also add other features that help summarize the relationship.
 
 ```{r}
-plot(y_hat ~ x_hat, xy_hat, pch=16, col=grey(0, .5),
-    main=NA, xlab='Urban Population', ylab='Murder Arrests')
+## MAIN EXAMPLE
+# With 3294 points, very transparent points keep dense areas readable.
+# Schooling is in whole years, so the points form vertical stripes.
+plot(y_hat ~ x_hat, xy_hat, pch=16, col=grey(0, .1),
+    main=NA, xlab='Years of schooling', ylab='Hourly wage (1980 dollars)')
+# The darkest stripe is at 12 years, where workers are most concentrated.
+# A few very high wages stretch the vertical axis.
 ```
 
 You can also show the marginal distributions of each variable along each axis (see this [margin and layout cheatsheet](https://r-graph-gallery.com/74-margin-and-oma-cheatsheet.html) for how `layout()`, `mar`, and `oma` work together).
@@ -179,20 +198,54 @@ You can also show the marginal distributions of each variable along each axis (s
 layout( matrix(c(2, 0, 1, 3), ncol=2, byrow=TRUE),
     widths=c(9/10, 1/10), heights=c(1/10, 9/10))
 
+# Scatterplot, with limits that line up with the marginal bars below
+# The wage axis stops just past 20 dollars, so the 16 largest wages are not drawn.
+par(mar=c(4, 4, 1, 1))
+plot(y_hat ~ x_hat, xy_hat, pch=16, col=grey(0, .1),
+    main=NA, xlab='Years of schooling', ylab='Hourly wage (1980 dollars)',
+    xlim=c(2.5, 16.5), ylim=c(0, 20))
+
+# Add Marginals
+# Schooling bars are centered on whole years.
+par(mar=c(0, 4, 1, 1))
+f_x_hat <- hist(xy_hat[, 'x_hat'], breaks=seq(2.5, 16.5, by=1), plot=FALSE)
+barplot(f_x_hat[['counts']], axes=FALSE, space=0, border=NA)
+
+# Wage bars span one dollar, and only the 20 bars up to 20 dollars are drawn.
+par(mar=c(4, 0, 1, 1))
+f_y_hat <- hist(xy_hat[, 'y_hat'], breaks=seq(0, 40, by=1), plot=FALSE)
+barplot(f_y_hat[['counts']][1:20], axes=FALSE, space=0, horiz=TRUE, border=NA)
+# Schooling piles up at 12 years, and wages have a long right tail.
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat this figure for the $50$ states in `USArrests`, with urban population on the horizontal axis and murder arrests on the vertical axis.
+```{r}
+# USArrests has 50 rows (one per US state) and four columns.
+# Pick two of those columns to form a bivariate dataset.
+xy2_hat <- USArrests[, c('UrbanPop', 'Murder')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+xy2_hat[1, ]                             # first state's two values
+
+# Setup Plot
+layout( matrix(c(2, 0, 1, 3), ncol=2, byrow=TRUE),
+    widths=c(9/10, 1/10), heights=c(1/10, 9/10))
+
 # Scatterplot
 par(mar=c(4, 4, 1, 1))
-plot(y_hat ~ x_hat, xy_hat, pch=16, col=grey(0, .5),
+plot(y_hat ~ x_hat, xy2_hat, pch=16, col=grey(0, .5),
     main=NA, xlab='Urban Population', ylab='Murder Arrests')
 
 # Add Marginals
 par(mar=c(0, 4, 1, 1))
-f_x_hat <- hist(xy_hat[, 'x_hat'], plot=FALSE)
-barplot(f_x_hat[['counts']], axes=FALSE, space=0, border=NA)
+f_x2_hat <- hist(xy2_hat[, 'x_hat'], plot=FALSE)
+barplot(f_x2_hat[['counts']], axes=FALSE, space=0, border=NA)
 
 par(mar=c(4, 0, 1, 1))
-f_y_hat <- hist(xy_hat[, 'y_hat'], plot=FALSE)
-barplot(f_y_hat[['counts']], axes=FALSE, space=0, horiz=TRUE, border=NA)
+f_y2_hat <- hist(xy2_hat[, 'y_hat'], plot=FALSE)
+barplot(f_y2_hat[['counts']], axes=FALSE, space=0, horiz=TRUE, border=NA)
 ```
+:::
 
 A two-dimensional histogram summarizes the joint distribution by counting the observations in each rectangle of a grid [@Scott2015].
 
@@ -204,7 +257,7 @@ Often we want to know how the distribution of one variable changes when we restr
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *conditional distribution* of $\hat{y}_{i}$ given $\hat{x}_{i}=x$ is the joint share renormalized so the row at $\hat{x}_{i}=x$ sums to one:
-$$\hat{p}(y \mid x) = \frac{\hat{p}(x,y)}{\hat{p}(x)}, \quad \quad \hat{p}(x|y) = \frac{\hat{p}(x,y)}{\hat{p}(y)},$$
+$$\hat{p}(y \mid x) = \frac{\hat{p}(x,y)}{\hat{p}(x)}, \quad \quad \hat{p}(x \mid y) =\frac{\hat{p}(x,y)}{\hat{p}(y)},$$
 where $\hat{p}(x)$ is the marginal of $\hat{x}_{i}$ and where $\hat{p}(y)$ is the marginal of $\hat{y}_{i}$.
 :::
 
@@ -213,25 +266,23 @@ Dividing by $\hat{p}(x)$ changes the unit of analysis.
 Each row now sums to one, so each row is a probability distribution over $y$ for the given $x$.
 A cell no longer reports a share of the whole sample.
 
-For example, return to the `Wages1` workers and their joint distribution table.
+For example, return to the joint distribution table from the lab data.
 To compute the conditional distribution of $\hat{y}_{i}$ given $\hat{x}_{i}=x$, we rescale the numbers in each row so that each row sums to 1.
 ```{r}
+## MAIN EXAMPLE
 # Conditional distribution of sex given schooling: each row sums to 1
 round(prop.table(tab, 1), 3)
+# With 10 years of schooling, about 58% of workers are male and 42% female.
+# With 13 years of schooling, about 44% of workers are male and 56% female.
 ```
-
-In this example, we say that
-
-* conditional on workers having $10$ years of schooling, about $58\%$ are male and $42\%$ are female.
-* conditional on workers having $13$ years of schooling, about $44\%$ are male and $56\%$ are female.
 
 We can also compute the conditional distribution of $\hat{x}_{i}$ given $\hat{y}_{i}=y$, $\hat{p}(x \mid y) = \hat{p}(x,y) / \hat{p}(y)$, just as we did above.
 In this case, we rescale the numbers in each *column* of the joint distribution table so that each column sums to 1.
 ```{r}
 # Conditional distribution of schooling given sex: each column sums to 1
 round(prop.table(tab, 2), 3)
+# Among female workers, about 38% have 12 years of schooling.
 ```
-For example, among female workers, about $38\%$ have $12$ years of schooling.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Return to the sample of $n=13$ students and its joint distribution table, @eq-joint-educ-sex.
@@ -352,6 +403,7 @@ Only the base rate $\hat{p}(y=1)$ changed, from $8/13$ to $8/58$, and that alone
 The Test Yourself examples below repeat this pattern.
 
 ```{r}
+## MAIN EXAMPLE
 # Count table for the 13 students: rows = education, columns = sex
 counts <- rbind(
     '12' = c(male=4, female=3),
@@ -491,114 +543,253 @@ round(prop.table(counts_common, 1), 3)
 
 Conditional distributions describe the relationship between $\hat{y}_{i}$ and $\hat{x}_{i}$.
 We show how $\hat{y}$ changes according to $\hat{x}$ using a [histogram](01_02_Data.qmd#histogram-density) or bar plot.
-When $\hat{x}$ is continuous, as it often is, we split it into distinct bins and convert it to a factor variable.
+When $\hat{x}$ is continuous, as it often is, or takes many values, we split it into distinct bins and convert it to a factor variable.
 E.g.,
 
 ```{r}
-# Split Data by Urban Population above/below mean
+## MAIN EXAMPLE
+# Split Data by Years of Schooling above/below mean
+# Schooling takes many values, so we bin it like a continuous variable.
 m_x_hat <- mean(xy_hat[, 'x_hat'])
-low_urban <- xy_hat[, 'x_hat'] <= m_x_hat
-y1_hat <- xy_hat[low_urban, 'y_hat']  # murder arrests, low urban population
-y2_hat <- xy_hat[!low_urban, 'y_hat'] # murder arrests, high urban population
+m_x_hat
+# The mean is about 11.63, so the split falls between 11 and 12 years.
+low_school <- xy_hat[, 'x_hat'] <= m_x_hat
+y1_hat <- xy_hat[low_school, 'y_hat']  # hourly wages, 11 or fewer years
+y2_hat <- xy_hat[!low_school, 'y_hat'] # hourly wages, 12 or more years
 cols <- c(low=rgb(.8, 0, 0, .75), high=rgb(0, 0, .8, .75))
 
-# Common Histogram 
-ylim <- c(0, .25)
-xbks <-  seq(min(xy_hat[, 'y_hat'])-1, max(xy_hat[, 'y_hat'])+1, by=1)
+# Common Histogram
+# One-dollar bins cover every wage.
+# The axis stops just past 20 dollars, so the 16 largest wages are not drawn.
+ylim <- c(0, .2)
+xlim <- c(0, 20)
+xbks <- seq(0, 40, by=1)
 
 par(mfrow=c(1, 2))
 hist(y1_hat,
     breaks=xbks, col=cols[1],
     main=NA,
-    xlab='Murder Arrests', freq=FALSE,
-    border=NA, ylim=ylim)
-title('Urban Pop <= Mean', font.main=1)
-# Raw Observations
-rug(y1_hat, col=grey(0, .5))
+    xlab='Hourly wage (1980 dollars)', freq=FALSE,
+    border=NA, ylim=ylim, xlim=xlim)
+title('Schooling <= Mean', font.main=1)
+# Raw Observations (quiet=TRUE skips the warning about wages off the axis)
+rug(y1_hat, col=grey(0, .1), quiet=TRUE)
 
 hist(y2_hat,
     breaks=xbks, col=cols[2],
     main=NA,
-    xlab='Murder Arrests', freq=FALSE,
-    border=NA, ylim=ylim)
-title('Urban Pop > Mean', font.main=1)
-rug(y2_hat, col=grey(0, .5))
+    xlab='Hourly wage (1980 dollars)', freq=FALSE,
+    border=NA, ylim=ylim, xlim=xlim)
+title('Schooling > Mean', font.main=1)
+rug(y2_hat, col=grey(0, .1), quiet=TRUE)
+# Both histograms have a long right tail.
+# The group with 12 or more years has more of its wages at higher values.
 ```
 
 It is sometimes preferable to show the [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function) instead.
 And you can glue various combinations together to convey more information all at once
 
 ```{r}
+## MAIN EXAMPLE
 layout( t(c(1, 2, 2)))
 # Full Sample Density
+# The axis stops just past 20 dollars, so the 16 largest wages are not drawn.
 hist(xy_hat[, 'y_hat'],
     main=NA,
-    xlab='Murder Arrests',
-    breaks=xbks, freq=FALSE, border=NA)
+    xlab='Hourly wage (1980 dollars)',
+    breaks=xbks, xlim=xlim, freq=FALSE, border=NA)
 title('Full Sample Density', font.main=1)
-rug(xy_hat[, 'y_hat'], col=grey(0, .5))
+rug(xy_hat[, 'y_hat'], col=grey(0, .1), quiet=TRUE)
 
 # Split Sample Distribution Comparison
-F_lowpop_hat <- ecdf(y1_hat)
-plot(F_lowpop_hat, col=cols[1],
-    pch=16, xlab='Murder Arrests',
+# Each curve has over a thousand steps, so draw lines rather than points.
+F1_hat <- ecdf(y1_hat)
+plot(F1_hat, col=cols[1],
+    lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA,
+    xlim=xlim, xlab='Hourly wage (1980 dollars)', ylab='Proportion of workers',
     main=NA, bty='n')
 title('Split Sample Distributions', font.main=1)
-F_highpop_hat <- ecdf(y2_hat)
-plot(F_highpop_hat, add=TRUE, col=cols[2], pch=16)
+F2_hat <- ecdf(y2_hat)
+plot(F2_hat, add=TRUE, col=cols[2],
+    lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA)
 
 legend('bottomright', col=cols,
-    pch=16, bty='n', inset=c(0, .1),
-    title='% Urban Pop.',
+    lwd=2, bty='n', inset=c(0, .1),
+    title='Years of schooling',
     legend=c('Low (<= Mean)', 'High (> Mean)'))
+# The curve for 12 or more years sits to the right over the whole range shown.
+# So its higher wages are not driven by a few workers.
 ```
 
 [Boxplots](01_02_Data.qmd#boxplots) summarize the same two groups side by side.
 
 ```{r}
-# Boxplots for the low and high urban population groups
+## MAIN EXAMPLE
+# Boxplots for the low and high schooling groups
+# The axis stops just past 20 dollars, so the 16 largest wages are not drawn.
 boxplot(y1_hat, y2_hat,
     names=c('Low (<= Mean)', 'High (> Mean)'),
-    main=NA, col=cols,
+    main=NA, col=cols, ylim=c(0, 20),
     whisklty=0, staplelty=0, outline=FALSE,
     varwidth=TRUE, #show number of obs. per group
-    xlab='% Urban Pop.', ylab='Murder Arrests')
+    xlab='Years of schooling', ylab='Hourly wage (1980 dollars)')
 # Raw Observations, in place of whiskers and outliers
 stripchart(list(y1_hat, y2_hat),
-    pch='-', col=grey(0, .5), cex=2,
+    pch='-', col=grey(0, .2), cex=1,
     vert=TRUE, add=TRUE)
+# The median and both quartiles are higher for 12 or more years.
 ```
 
 Boxplots are better suited for conditioning on multiple levels.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 You can also split data into more than two groups.
-Here we cut urban population into $K=4$ bins and draw one boxplot per bin.
+Here we cut $\hat{x}$ into $K=4$ bins and draw one boxplot per bin.
+It helps to check how many observations fall in each bin, since evenly spaced bins can be nearly empty.
 
 ```{r}
+# Here x_hat is years of schooling.
 # K Groups with even spacing (not even counts)
 K <- 4
-x_cut_hat <- cut(xy_hat[, 'x_hat'], K)
+table(cut(xy_hat[, 'x_hat'], K))
+# Even spacing leaves only 22 workers in the lowest bin.
+# It also puts 2248 workers in one bin, including everyone with 12 years.
+
+# K Groups with even counts
+quantile(xy_hat[, 'x_hat'], probs=c(.25, .5, .75))
+# Even counts are not possible either.
+# The median and the third quartile are both 12, so those two breaks coincide.
+
+# K Groups with breaks chosen by hand, about as even as whole years allow
+x_cut_hat <- cut(xy_hat[, 'x_hat'], breaks=c(0, 10, 11, 12, 16),
+    labels=c('<11', '11', '12', '>12'))
 table(x_cut_hat)
 
 # Boxplots for each group
+# The axis stops just past 20 dollars, so the 16 largest wages are not drawn.
 Kcols <- hcl.colors(K, alpha=.5)
 boxplot(xy_hat[, 'y_hat'] ~ x_cut_hat,
-    main=NA, col=Kcols,
+    main=NA, col=Kcols, ylim=c(0, 20),
+    whisklty=0, staplelty=0, outline=FALSE,
+    varwidth=TRUE, #show number of obs. per group
+    xlab='Years of schooling', ylab='Hourly wage (1980 dollars)')
+# Raw Observations, in place of whiskers and outliers
+stripchart(xy_hat[, 'y_hat'] ~ x_cut_hat,
+    pch='-', col=grey(0, .2), cex=1,
+    vert=TRUE, add=TRUE)
+# The median wage rises from each bin to the next.
+```
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat these comparisons for the $50$ states in `USArrests`, with murder arrests split by urban population.
+Start with one histogram for the states at or below the mean urban population and one for the states above it.
+
+```{r}
+# USArrests has 50 rows (one per US state) and four columns.
+# Pick two of those columns to form a bivariate dataset.
+xy2_hat <- USArrests[, c('UrbanPop', 'Murder')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+
+# Split Data by Urban Population above/below mean
+m_x2_hat <- mean(xy2_hat[, 'x_hat'])
+low_urban <- xy2_hat[, 'x_hat'] <= m_x2_hat
+murder1_hat <- xy2_hat[low_urban, 'y_hat']  # murder arrests, low urban population
+murder2_hat <- xy2_hat[!low_urban, 'y_hat'] # murder arrests, high urban population
+cols2 <- c(low=rgb(.8, 0, 0, .75), high=rgb(0, 0, .8, .75))
+
+# Common Histogram
+ylim2 <- c(0, .25)
+xbks2 <- seq(min(xy2_hat[, 'y_hat'])-1, max(xy2_hat[, 'y_hat'])+1, by=1)
+
+par(mfrow=c(1, 2))
+hist(murder1_hat,
+    breaks=xbks2, col=cols2[1],
+    main=NA,
+    xlab='Murder Arrests', freq=FALSE,
+    border=NA, ylim=ylim2)
+title('Urban Pop <= Mean', font.main=1)
+# Raw Observations
+rug(murder1_hat, col=grey(0, .5))
+
+hist(murder2_hat,
+    breaks=xbks2, col=cols2[2],
+    main=NA,
+    xlab='Murder Arrests', freq=FALSE,
+    border=NA, ylim=ylim2)
+title('Urban Pop > Mean', font.main=1)
+rug(murder2_hat, col=grey(0, .5))
+```
+
+Next, compare the full sample density with the ECDF of each group.
+
+```{r}
+layout( t(c(1, 2, 2)))
+# Full Sample Density
+hist(xy2_hat[, 'y_hat'],
+    main=NA,
+    xlab='Murder Arrests',
+    breaks=xbks2, freq=FALSE, border=NA)
+title('Full Sample Density', font.main=1)
+rug(xy2_hat[, 'y_hat'], col=grey(0, .5))
+
+# Split Sample Distribution Comparison
+F_lowpop_hat <- ecdf(murder1_hat)
+plot(F_lowpop_hat, col=cols2[1],
+    pch=16, xlab='Murder Arrests',
+    main=NA, bty='n')
+title('Split Sample Distributions', font.main=1)
+F_highpop_hat <- ecdf(murder2_hat)
+plot(F_highpop_hat, add=TRUE, col=cols2[2], pch=16)
+
+legend('bottomright', col=cols2,
+    pch=16, bty='n', inset=c(0, .1),
+    title='% Urban Pop.',
+    legend=c('Low (<= Mean)', 'High (> Mean)'))
+```
+
+Then compare the same two groups with boxplots.
+
+```{r}
+# Boxplots for the low and high urban population groups
+boxplot(murder1_hat, murder2_hat,
+    names=c('Low (<= Mean)', 'High (> Mean)'),
+    main=NA, col=cols2,
+    whisklty=0, staplelty=0, outline=FALSE,
+    varwidth=TRUE, #show number of obs. per group
+    xlab='% Urban Pop.', ylab='Murder Arrests')
+# Raw Observations, in place of whiskers and outliers
+stripchart(list(murder1_hat, murder2_hat),
+    pch='-', col=grey(0, .5), cex=2,
+    vert=TRUE, add=TRUE)
+```
+
+Finally, cut urban population into $K=4$ evenly spaced bins and draw one boxplot per bin.
+
+```{r}
+# K Groups with even spacing (not even counts)
+K2 <- 4
+x2_cut_hat <- cut(xy2_hat[, 'x_hat'], K2)
+table(x2_cut_hat)
+
+# Boxplots for each group
+Kcols2 <- hcl.colors(K2, alpha=.5)
+boxplot(xy2_hat[, 'y_hat'] ~ x2_cut_hat,
+    main=NA, col=Kcols2,
     whisklty=0, staplelty=0, outline=FALSE,
     varwidth=TRUE, #show number of obs. per group
     xlab='Urban Population', ylab='Murder Arrests')
 # Raw Observations, in place of whiskers and outliers
-stripchart(xy_hat[, 'y_hat'] ~ x_cut_hat,
+stripchart(xy2_hat[, 'y_hat'] ~ x2_cut_hat,
     pch='-', col=grey(0, .5), cex=2,
     vert=TRUE, add=TRUE)
 
 # 4 Groups with equal numbers of observations
 #Qcuts <- c(
-#    '0%'=min(xy_hat[, 'x_hat'])-10*.Machine[['double.eps']],
-#    quantile(xy_hat[, 'x_hat'], probs=c(.25, .5, .75, 1)))
-#x_qcut_hat <- cut(xy_hat[, 'x_hat'], Qcuts)
-#boxplot(xy_hat[, 'y_hat'] ~ x_qcut_hat, col=hcl.colors(4, alpha=.5))
+#    '0%'=min(xy2_hat[, 'x_hat'])-10*.Machine[['double.eps']],
+#    quantile(xy2_hat[, 'x_hat'], probs=c(.25, .5, .75, 1)))
+#x2_qcut_hat <- cut(xy2_hat[, 'x_hat'], Qcuts)
+#boxplot(xy2_hat[, 'y_hat'] ~ x2_qcut_hat, col=hcl.colors(4, alpha=.5))
 ```
 :::
 

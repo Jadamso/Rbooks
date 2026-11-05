@@ -6,8 +6,17 @@
 set.seed(1)
 ```
 
-This chapter models how the average of $\hat{y}_{i}$ changes with $\hat{x}_{i}$ without assuming a single straight line.
-We build up from regressograms (bin averages) to piecewise and local linear regression, carrying one running example throughout: wages and years of schooling.
+This chapter asks three questions.
+
+* How does the average of $\hat{y}_{i}$ change with $\hat{x}_{i}$ without assuming a single straight line?
+    * *Regressogram and piecewise regression*: these split $\hat{x}$ into fixed bins and fit a constant or a line in each bin.
+      Both are new, and each bin runs a [simple regression](02_15_SimpleRegression.qmd) on its own observations.
+* How do we avoid jumps at the bin edges?
+    * *Locally constant and local linear regression*: these fit a constant or a line in a window that slides along $x$.
+      Both are new, and each window uses the uniform kernel from the [kernel density](01_10_AdvancedEmpirics.qmd#kernel-density).
+* How local should each estimate be?
+    * *Bandwidth*: this half-width $h$ is the same one that set the bins of a [histogram](01_02_Data.qmd#histogram-density).
+      Larger $h$ pools more observations, and smaller $h$ tracks the data more closely.
 
 ## Local Relationships
 
@@ -15,40 +24,45 @@ Scatterplots are a great and simple plot for bivariate data that simply plots ea
 There are many extensions and similar tools.
 The example below helps understand how both the central tendency and dispersion change.
 ```{r}
+## MAIN EXAMPLE
 # Running example for the whole chapter: wages and years of schooling
 data(Wages1, package='Ecdat')
-xy2_hat <- Wages1[order(Wages1[, 'school']), c('school', 'wage')]
-colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
+xy_hat <- Wages1[order(Wages1[, 'school']), c('school', 'wage')]
+colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
 
 # Scatter of every observation
-plot(y_hat ~ x_hat, data=xy2_hat, pch=16, col=grey(0, .1),
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .1),
     main=NA, xlab='School', ylab='Wage')
 
 # Conditional mean at each integer schooling level
-school_means <- aggregate(y_hat ~ x_hat, data=xy2_hat, mean)
+# Each group is the window of half-width 1/2 around one schooling level
+school_means <- aggregate(y_hat ~ x_hat, data=xy_hat, mean)
 points(y_hat ~ x_hat, data=school_means,    # connect dots so the trend pops
     pch=17, col=rgb(1, 0, 0, .8), type='b')
 
 # Conditional median at each integer schooling level
-school_medians <- aggregate(y_hat ~ x_hat, data=xy2_hat, median)
+school_medians <- aggregate(y_hat ~ x_hat, data=xy_hat, median)
 points(y_hat ~ x_hat, data=school_medians,
     pch=15, col=rgb(0, 0, 1, .8), type='b')
 legend('topleft', legend=c('Mean', 'Median'),
     pch=c(17, 15), lty=1, col=c(rgb(1, 0, 0, .8), rgb(0, 0, 1, .8)), bty='n')
 title('Grouped Means, Medians, and Scatterplot', font.main=1)
+# Nearly all workers have 7 to 15 years of schooling.
+# At each of those levels, the median sits below the mean.
+# That is a sign that wages within each level are skewed right.
 ```
 
-Each schooling level is a group, so the red triangles are the conditional means $\hat{m}_{Y}(g)$ from [Comparing Multiple Groups](02_13_MultipleGroups.qmd#group-summaries), now ordered along $\hat{x}$.
-The blue squares are the grouped medians, the [conditional quantile](02_12_TwoGroups.qmd#discrete-data) $\hat{F}_{Y}^{-1}(0.5 \mid x)$ at each schooling level.
-From 7 to 15 years of schooling, where nearly all the observations lie, each median sits below its mean, a sign that wages within each level are skewed right.
+Each value of $\hat{x}$ is a group, so the red triangles are the conditional means $\hat{m}_{Y}(g)$ from [Comparing Multiple Groups](02_13_MultipleGroups.qmd#group-summaries), now ordered along $\hat{x}$.
+The blue squares are the grouped medians, the [conditional quantile](02_12_TwoGroups.qmd#discrete-data) $\hat{F}_{Y}^{-1}(0.5 \mid x)$ at each value of $\hat{x}$.
+A median below its mean is a sign that $\hat{y}$ is skewed right within that group.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Examine the local relationship between 'Murder' and 'Urbanization' in the `USArrests` dataset.
 Use custom bins.
 ```{r, eval=FALSE}
-xy_hat <- USArrests[, c('UrbanPop', 'Murder')]
-colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
-bins <- cut(xy_hat[, 'x_hat'], 6)
+xy2_hat <- USArrests[, c('UrbanPop', 'Murder')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+bins <- cut(xy2_hat[, 'x_hat'], 6)
 ```
 :::
 
@@ -84,12 +98,13 @@ Here, it controls how much data goes into a conditional-mean estimate at $x$.
 Larger $h$ pools more observations into each estimate but smooths over real variation; smaller $h$ tracks the data more closely but uses fewer points per estimate, so the fitted curve becomes noisier.
 
 This chapter writes the grouped means $\hat{m}_{Y}(g)$ as $\hat{m}_{Y}(x,h)$, because each group is the set of observations with $\hat{x}_{i}~\text{in}~[x-h,x+h]$.
-In the grouped-means figure, $x$ is a schooling level and $h=1/2$, so each group holds a single schooling level.
+In the grouped-means figure, $x$ is one value of $\hat{x}$, and $h$ is small enough that each group holds only that value.
 
-The figure below fits all four methods to the wage data, each with half-width $h=7/2$.
-The left panel uses two fixed bins, schooling levels 3 to 9 and 10 to 16, and the right panel slides a window of the same width along $x$.
+The figure below fits all four methods to the running example, each with the same half-width $h$.
+The left panel uses two fixed bins, and the right panel slides a window of the same width along $x$.
 The grey triangles are the grouped means from the figure above.
-At the bin midpoints, $x=6$ and $x=13$, each window holds exactly one bin, so the sliding fits equal the fixed-bin fits there.
+The dotted lines in the left panel mark the bin midpoints.
+At these midpoints, each window holds exactly one bin, so the sliding fits equal the fixed-bin fits there.
 
 ```{r, echo=FALSE, fig.height=4}
 # Four local fits to the wage data, all with half-width h=3.5
@@ -100,10 +115,10 @@ h <- 3.5 # same half-width as the two schooling bins
 bin_breaks <- c(2.5, 9.5, 16.5) # schooling levels 3-9 and 10-16
 
 # Fixed bins: regressogram and piecewise regression
-xy2_bins <- xy2_hat
-xy2_bins[, 'xcc'] <- cut(xy2_bins[, 'x_hat'], breaks=bin_breaks)
-rgram_bins <- lm(y_hat ~ xcc, data=xy2_bins)
-preg_bins <- lm(y_hat ~ xcc*x_hat, data=xy2_bins)
+xy_bins <- xy_hat
+xy_bins[, 'xcc'] <- cut(xy_bins[, 'x_hat'], breaks=bin_breaks)
+rgram_bins <- lm(y_hat ~ xcc, data=xy_bins)
+preg_bins <- lm(y_hat ~ xcc*x_hat, data=xy_bins)
 pred_bins <- data.frame(x_hat=x_grid, xcc=cut(x_grid, breaks=bin_breaks))
 y_pred_rgram <- predict(rgram_bins, newdata=pred_bins)
 y_pred_preg <- predict(preg_bins, newdata=pred_bins)
@@ -112,14 +127,14 @@ y_pred_preg <- predict(preg_bins, newdata=pred_bins)
 y_pred_lc <- rep(NA, length(x_values))
 y_pred_ll <- rep(NA, length(x_values))
 for (i in seq_along(x_values)) {
-    ki <- dunif( abs(xy2_hat[, 'x_hat']-x_values[i])/h, -1, 1) # the uniform kernel k_U
-    y_pred_lc[i] <- sum(ki*xy2_hat[, 'y_hat'])/sum(ki) # weighted mean
-    reg_i <- lm(y_hat ~ x_hat, data=xy2_hat, weights=ki) # weighted line
+    ki <- dunif( abs(xy_hat[, 'x_hat']-x_values[i])/h, -1, 1) # the uniform kernel k_U
+    y_pred_lc[i] <- sum(ki*xy_hat[, 'y_hat'])/sum(ki) # weighted mean
+    reg_i <- lm(y_hat ~ x_hat, data=xy_hat, weights=ki) # weighted line
     y_pred_ll[i] <- predict(reg_i, newdata=data.frame(x_hat=x_values[i]))
 }
 
 # Rows of the table become panels, and columns become colors
-cols <- c(rgb(0, 0, .8, .5), rgb(.8, 0, 0, .5)) # constant, line
+cols <- c(rgb(0, 0, 1, .8), rgb(1, 0, 0, .8)) # constant, line
 y_range <- range(school_means[, 'y_hat'], y_pred_preg, y_pred_ll)
 par(mfrow=c(1, 2), mar=c(4, 4, 2, 1))
 
@@ -134,8 +149,8 @@ title('Fixed Bins', font.main=1)
 
 plot(y_hat ~ x_hat, data=school_means, pch=17, col=grey(0, .5), ylim=y_range,
     main=NA, xlab='School', ylab='Mean Wage')
-lines(x_values, y_pred_lc, col=cols[1], lwd=2)
-lines(x_values, y_pred_ll, col=cols[2], lwd=2)
+lines(x_values, y_pred_lc, col=cols[1], lwd=2, type='o')
+lines(x_values, y_pred_ll, col=cols[2], lwd=2, type='o')
 title('Sliding Window', font.main=1)
 ```
 
@@ -143,9 +158,28 @@ Each step fixes one problem with the step before it.
 Adding a slope captures the trend within a bin.
 Sliding the window replaces the jump at the bin edge with smaller steps.
 Adding a slope to the sliding window reduces bias near the edges of the data.
-Near the top of the schooling range, for example, the locally constant fit falls below the grouped means.
-Each window there still includes many people with 12 years of schooling, which pulls the window average down.
+A window near an edge can hold many observations from one side of the design point, which pulls the window average away from the trend.
 The locally linear fit follows the trend.
+The code below checks this at one design point near an edge.
+
+```{r}
+# The figure above uses half-width h=3.5 and two fixed bins.
+# The bins hold schooling levels 3 to 9 and 10 to 16, with midpoints 6 and 13.
+
+# The sliding window around 15 years of schooling, near the top of the range
+xy_window <- xy_hat[abs(xy_hat[, 'x_hat']-15) <= 3.5, ]
+table(xy_window[, 'x_hat'])
+# Of its 1941 workers, 1188 have 12 years of schooling.
+
+# Grouped mean at 15 years, then the locally constant and locally linear fits
+school_means[school_means[, 'x_hat']==15, 'y_hat']
+mean(xy_window[, 'y_hat'])
+predict(lm(y_hat ~ x_hat, data=xy_window), newdata=data.frame(x_hat=15))
+# Near the top, the locally constant fit falls below the grouped means.
+# At 15 years it is about 6.29, and the grouped mean is about 8.38.
+# The many workers with 12 years of schooling pull the window average down.
+# The locally linear fit, about 8.24, follows the trend.
+```
 
 
 ## Fixed Bins
@@ -168,29 +202,30 @@ The model is fit using [ordinary least squares](02_15_SimpleRegression.qmd) (OLS
 
 The regressogram is useful when we expect the relationship between $\hat{x}$ and $\hat{y}$ to bend in ways a single line cannot capture, because the bin averages can rise, fall, or stay flat from one bin to the next without imposing any global shape.
 ```{r}
+## MAIN EXAMPLE
 # Data
-plot(y_hat ~ x_hat, data=xy2_hat, pch=16, col=grey(0, .1),
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .1),
     main=NA, xlab='School', ylab='Wage')
-# xy2_hat defined above
+# xy_hat defined above
 
 ## Simple Regression
-reg  <- lm(y_hat ~ x_hat, data=xy2_hat) ## OLS
+reg  <- lm(y_hat ~ x_hat, data=xy_hat) ## OLS
 
 # Regressogram: Two Schooling Bins, levels 3-9 and 10-16
-xy2_hat[, 'xcc'] <- cut(xy2_hat[, 'x_hat'], breaks=c(2.5, 9.5, 16.5))
-rgram_c  <- lm(y_hat ~ xcc, data=xy2_hat)
+xy_hat[, 'xcc'] <- cut(xy_hat[, 'x_hat'], breaks=c(2.5, 9.5, 16.5))
+rgram_c  <- lm(y_hat ~ xcc, data=xy_hat)
 
 # Regressogram: Three Schooling Bins
-xy2_hat[, 'xcf']   <- cut(xy2_hat[, 'x_hat'], 3)
-rgram_f  <- lm(y_hat ~ xcf, data=xy2_hat)
+xy_hat[, 'xcf']   <- cut(xy_hat[, 'x_hat'], 3)
+rgram_f  <- lm(y_hat ~ xcf, data=xy_hat)
 
 ## Compare Models (Only 2 for simplicity)
-lines( xy2_hat[, 'x_hat'], predict(reg), lwd=2, col=rgb(1, 0, 0, .8))
-lines( xy2_hat[, 'x_hat'], predict(rgram_f), lwd=2, col=rgb(0, 0, 1, .8), type='s')
+lines( xy_hat[, 'x_hat'], predict(reg), lwd=2, col=rgb(1, 0, 0, .8))
+lines( xy_hat[, 'x_hat'], predict(rgram_f), lwd=2, col=rgb(0, 0, 1, .8), type='s')
 legend('topleft',
     legend=c('Linear Regression', 'Regressogram (3)'),
     col=c(rgb(1, 0, 0, .8), rgb(0, 0, 1, .8)),
-    lty=1, cex=.8)
+    lty=1, lwd=2, cex=.8)
 ```
 
 In the regressogram model, $\hat{e}_{i}$ depends on the trial bin coefficients $b_{0}(x,h)$; the final residuals use the fitted coefficients $\hat{b}_{0}(x,h)$.
@@ -225,9 +260,9 @@ $$
 I.e., the predicted value of observation $i$ is the average value for its bin. 
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Consider this two-bin regressogram example of how wages differ with schooling for people with $\leq 9$ years of school completed vs $> 9$.
+Consider this two-bin regressogram example of how $\hat{y}_{i}$ differs between a lower and an upper bin of $\hat{x}_{i}$.
 $$\begin{aligned}
-\text{Wage}_{i} &= b_{0}(x=6, h=7/2) \mathbf{1}\left(\text{School}_{i}~\text{in}~(2.5,9.5]\right) + b_{0}(x=13, h=7/2) \mathbf{1}\left(\text{School}_{i}~\text{in}~(9.5,16.5] \right) + \hat{e}_{i}.
+\hat{y}_{i} &= b_{0}(x=6, h=7/2) \mathbf{1}\left(\hat{x}_{i}~\text{in}~(2.5,9.5]\right) + b_{0}(x=13, h=7/2) \mathbf{1}\left(\hat{x}_{i}~\text{in}~(9.5,16.5] \right) + \hat{e}_{i}.
 \end{aligned}$$
 
 Here is a simple example with three data points $(\hat{x}_{i}, \hat{y}_{i})~\text{in}~\{ (3,2), (4,4), (12,3) \}$, for which we can easily compute
@@ -240,12 +275,14 @@ n(x=13,h=7/2) &= 1 \\
 
 Here is a simple example with data
 ```{r}
+# Two bins: workers with at most 9 years of schooling and workers with more
 y_fit_c <- predict(rgram_c)
-fit_dat <- data.frame(xcc=xy2_hat[, 'xcc'], y_fit=round(y_fit_c, 6))
+fit_dat <- data.frame(xcc=xy_hat[, 'xcc'], y_fit=round(y_fit_c, 6))
 table(fit_dat)
 
 ## Compare to simple aggregation 
-aggregate(y_hat ~ xcc, data=xy2_hat, mean)
+aggregate(y_hat ~ xcc, data=xy_hat, mean)
+# The mean wage is about 4.12 dollars in the first bin and 5.92 in the second.
 ```
 :::
 
@@ -271,24 +308,24 @@ Piecewise regression captures the trend within each bin and lets the slope chang
 A bin boundary can also mark a real change in the data, such as a new political regime.
 
 ```{r}
+## MAIN EXAMPLE
 # Data
-plot(y_hat ~ x_hat, data=xy2_hat, pch=16, col=grey(0, .1),
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .1),
     main=NA, xlab='School', ylab='Wage')
-# xy2_hat, with the bins xcc and xcf, defined above
+# xy_hat, with the bins xcc and xcf, defined above
 
 # Piecewise: Two Schooling Bins
-preg_c  <- lm(y_hat ~ xcc*x_hat, data=xy2_hat)
+preg_c  <- lm(y_hat ~ xcc*x_hat, data=xy_hat)
 
 # Piecewise: Three Schooling Bins
-preg_f  <- lm(y_hat ~ xcf*x_hat, data=xy2_hat)
+preg_f  <- lm(y_hat ~ xcf*x_hat, data=xy_hat)
 
 ## Compare Models
-pw_cols <- c(rgb(.8, 0, 0, .75), rgb(0, 0, .8, .75))
-lines( xy2_hat[, 'x_hat'], predict(preg_c), lwd=2, col=pw_cols[1])
-lines( xy2_hat[, 'x_hat'], predict(preg_f), lwd=2, col=pw_cols[2])
+lines( xy_hat[, 'x_hat'], predict(preg_c), lwd=2, col=rgb(1, 0, 0, .8))
+lines( xy_hat[, 'x_hat'], predict(preg_f), lwd=2, col=rgb(1, 0, 0, .8), lty=2)
 legend('topleft',
     legend=c('2 bins', '3 bins'),
-    lty=1, col=pw_cols, cex=.8)
+    lty=c(1, 2), lwd=2, col=rgb(1, 0, 0, .8), cex=.8)
 title('Piecewise Regressions', font.main=1)
 ```
 
@@ -304,16 +341,16 @@ $$\begin{aligned}
 ```{r}
 # See that two methods give the same predictions
 # Piecewise: Two Schooling Bins
-xy2_hat[, 'xcc'] <- cut(xy2_hat[, 'x_hat'], breaks=c(2.5, 9.5, 16.5))
-preg_c  <- lm(y_hat ~ xcc*x_hat, data=xy2_hat)
+xy_hat[, 'xcc'] <- cut(xy_hat[, 'x_hat'], breaks=c(2.5, 9.5, 16.5))
+preg_c  <- lm(y_hat ~ xcc*x_hat, data=xy_hat)
 y_fit_piecewise <- predict(preg_c)
 
 ## Split Sample Regressions
-xy2_split_hat <- split( xy2_hat, xy2_hat[, 'xcc'])
-y_fit_split <- vector('list', length(xy2_split_hat))
-names(y_fit_split) <- names(xy2_split_hat)
-for (i in seq_along(xy2_split_hat)) {
-    reg2 <- lm(y_hat ~ x_hat, xy2_split_hat[[i]])
+xy_split_hat <- split( xy_hat, xy_hat[, 'xcc'])
+y_fit_split <- vector('list', length(xy_split_hat))
+names(y_fit_split) <- names(xy_split_hat)
+for (i in seq_along(xy_split_hat)) {
+    reg2 <- lm(y_hat ~ x_hat, xy_split_hat[[i]])
     y_fit_split[[i]] <- predict(reg2)
 }
 
@@ -327,35 +364,35 @@ Compare a simple regression to a regressogram and a piecewise regression.
 Examine the relationship between 'Murder' and 'Urbanization' in the `USArrests` dataset. 
 
 ```{r}
-xy_hat <- USArrests[, c('UrbanPop', 'Murder')]
-colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+xy2_hat <- USArrests[, c('UrbanPop', 'Murder')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
 
 # Globally Linear
-reg <- lm(y_hat ~ x_hat, data=xy_hat)
+reg <- lm(y_hat ~ x_hat, data=xy2_hat)
 ```
 
 Try to do so on your own before looking at the code below, which compares two piecewise regressions to a simple linear regression.
 ```{r, eval=FALSE}
 # Diagnose Fit
 #plot( fitted(reg), resid(reg), pch=16, col=grey(0, .5))
-#plot( xy_hat[, 'x_hat'], resid(reg), pch=16, col=grey(0, .5))
+#plot( xy2_hat[, 'x_hat'], resid(reg), pch=16, col=grey(0, .5))
 
 # Linear in 2 Pieces (subsets)
-xcut2 <- cut(xy_hat[, 'x_hat'], 2)
-xy_list2 <- split(xy_hat, xcut2)
-regs2 <- vector('list', length(xy_list2))
-names(regs2) <- names(xy_list2)
-for (i in seq_along(xy_list2)) {
-    regs2[[i]] <- lm(y_hat ~ x_hat, data=xy_list2[[i]])
+xcut2 <- cut(xy2_hat[, 'x_hat'], 2)
+xy2_list2 <- split(xy2_hat, xcut2)
+regs2 <- vector('list', length(xy2_list2))
+names(regs2) <- names(xy2_list2)
+for (i in seq_along(xy2_list2)) {
+    regs2[[i]] <- lm(y_hat ~ x_hat, data=xy2_list2[[i]])
 }
 
 # Linear in 3 Pieces (subsets or bins)
-xcut3 <- cut(xy_hat[, 'x_hat'], seq(32, 92, by=20), include.lowest=TRUE) # Finer Bins
-xy_list3 <- split(xy_hat, xcut3)
-regs3 <- vector('list', length(xy_list3))
-names(regs3) <- names(xy_list3)
-for (i in seq_along(xy_list3)) {
-    regs3[[i]] <- lm(y_hat ~ x_hat, data=xy_list3[[i]])
+xcut3 <- cut(xy2_hat[, 'x_hat'], seq(32, 92, by=20), include.lowest=TRUE) # Finer Bins
+xy2_list3 <- split(xy2_hat, xcut3)
+regs3 <- vector('list', length(xy2_list3))
+names(regs3) <- names(xy2_list3)
+for (i in seq_along(xy2_list3)) {
+    regs3[[i]] <- lm(y_hat ~ x_hat, data=xy2_list3[[i]])
 }
 
 ## Make Predictions
@@ -380,15 +417,15 @@ fit3 <- do.call(rbind, fit3)
 fit3 <- fit3[order(fit3[, 'x_hat']), ]
 
 # Compare Predictions
-plot(y_hat ~ x_hat, pch=16, col=grey(0, .5), data=xy_hat)
-lines(y_fit ~ x_hat, fit1, lwd=2, col=2)
-lines(y_fit ~ x_hat, fit2, lwd=2, col=4)
-lines(y_fit ~ x_hat, fit3, lwd=2, col=3)
+plot(y_hat ~ x_hat, pch=16, col=grey(0, .5), data=xy2_hat)
+lines(y_fit ~ x_hat, fit1, lwd=2, col=rgb(1, 0, 0, .8))
+lines(y_fit ~ x_hat, fit2, lwd=2, col=rgb(1, 0, 0, .8), lty=2)
+lines(y_fit ~ x_hat, fit3, lwd=2, col=rgb(1, 0, 0, .8), lty=3)
 legend('topleft',
     legend=c('Globally Linear',
              'Piecewise Linear (2)',
              'Piecewise Linear (3)'),
-    lty=1, col=c(2, 4, 3), cex=.8)
+    lty=1:3, lwd=2, col=rgb(1, 0, 0, .8), cex=.8)
 ```
 :::
 
@@ -474,28 +511,29 @@ If we use exclusive bins, then we are essentially running a regressogram.
 As such, the regressogram is more crude but can be estimated more easily.
 
 
-Here is the locally constant regression on the wage data.
-At each design point, we take the kernel-weighted average of wages for people with nearby years of schooling.
+Here is the locally constant regression on the running example.
+At each design point, we take the kernel-weighted average of $\hat{y}_{i}$ for observations with nearby values of $\hat{x}_{i}$.
 ```{r}
-# xy2_hat defined above
+## MAIN EXAMPLE
+# xy_hat defined above
 x_values <- seq(3, 16, by=.5) # Design points
 h <- 2 # bandwidth
 
 # Kernel-weighted mean at each design point
 y_pred_lc <- rep(NA, length(x_values))
 for (i in seq_along(x_values)) {
-    ki <- dunif( abs(xy2_hat[, 'x_hat']-x_values[i])/h, -1, 1) # the uniform kernel k_U
+    ki <- dunif( abs(xy_hat[, 'x_hat']-x_values[i])/h, -1, 1) # the uniform kernel k_U
     wi <- ki/sum(ki) # weights sum to one
-    y_pred_lc[i] <- sum(wi*xy2_hat[, 'y_hat'])
+    y_pred_lc[i] <- sum(wi*xy_hat[, 'y_hat'])
 }
 
 # Plot
-plot(y_hat ~ x_hat, data=xy2_hat, pch=16, col=grey(0, .1),
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .1),
     main=NA, xlab='School', ylab='Wage')
 lines(x_values, y_pred_lc, col=rgb(0, 0, 1, .8), lwd=2, type='o')
 legend('topleft', title='Locally Constant',
     legend='h=2',
-    lty=1, col=rgb(0, 0, 1, .8), cex=.8)
+    lty=1, lwd=2, pch=1, col=rgb(0, 0, 1, .8), cex=.8)
 ```
 
 #### **Notes**{-}
@@ -556,33 +594,34 @@ $$\begin{aligned}
 \end{aligned}$$
 The constant term $1/2$ is irrelevant to finding the optimal solution (you can check the math yourself).
 
-Here is the weighted regression on the wage data, at the midpoint of the first bin of the two-bin piecewise regression.
-Both predictions are the same, about $4.378$.
+Here is the weighted regression on the running example, at the midpoint of the first bin of the two-bin piecewise regression.
+The code prints the weighted prediction and then the piecewise prediction.
 ```{r}
-# xy2_hat and preg_c defined above
+# xy_hat and preg_c defined above
 
 ## Weighted Regression
 x <- 6 # midpoint of the first schooling bin
 h <- 3.5 # window [2.5, 9.5] covers schooling levels 3 to 9
-k <- abs(xy2_hat[, 'x_hat']-x) /h
+k <- abs(xy_hat[, 'x_hat']-x) /h
 k_weights <- dunif(k, -1, 1) # the uniform kernel k_U
-preg_k  <- lm(y_hat ~ x_hat, data=xy2_hat, weights=k_weights)
+preg_k  <- lm(y_hat ~ x_hat, data=xy_hat, weights=k_weights)
 predict(preg_k, newdata=data.frame(x_hat=x))
 
 # Compare to Piecewise
 predict(preg_c, newdata=data.frame(x_hat=x, xcc='(2.5,9.5]'))
+# Both predictions are the same, about 4.378.
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Check the same result at a different design point.
-Use the second bin, `(9.5,16.5]`, which holds schooling levels $10$ to $16$.
+Use the second bin, `(9.5,16.5]`.
 ```{r}
 x <- 13 # midpoint of the second schooling bin
 h <- 3.5 # window [9.5, 16.5] covers schooling levels 10 to 16
 
 ## Weighted Regression
-k_weights <- dunif( abs(xy2_hat[, 'x_hat']-x)/h, -1, 1)
-preg_k  <- lm(y_hat ~ x_hat, data=xy2_hat, weights=k_weights)
+k_weights <- dunif( abs(xy_hat[, 'x_hat']-x)/h, -1, 1)
+preg_k  <- lm(y_hat ~ x_hat, data=xy_hat, weights=k_weights)
 predict(preg_k, newdata=data.frame(x_hat=x))
 
 # Compare to Piecewise
@@ -610,20 +649,21 @@ The prediction at $x$ is $\hat{y}^{\mathrm{pred}}(x) = \hat{b}_{0}(x,h) + \hat{b
 :::
 
 Local linear regression is useful when the relationship slopes near the edges of the data, where the locally constant fit is biased, and it also reports a local slope $\hat{b}_{1}(x,h)$ at every design point.
-It is the sliding-window version of piecewise regression: with the uniform kernel $k_{U}$ and a design point at a bin midpoint, it reproduces the piecewise fit, as the weighted regression at $x=6$ showed.
+It is the sliding-window version of piecewise regression: with the uniform kernel $k_{U}$ and a design point at a bin midpoint, it reproduces the piecewise fit, as the weighted regression above showed.
 Deriving the optimal values $\hat{b}_{0}(x, h)$ and  $\hat{b}_{1}(x,h)$ for $k_{U}$ is left as a homework exercise.
 
 
 ```{r}
+## MAIN EXAMPLE
 # 'Naive' Smoother
 pred_fun <- function(x0, h){
     # Assign equal weight to observations within h distance to x0
     # 0 weight for all other observations
-    ki <- abs(xy2_hat[, 'x_hat']-x0)/h
+    ki <- abs(xy_hat[, 'x_hat']-x0)/h
     ki <- dunif(ki, -1, 1) ## The uniform kernel k_U; could change, e.g. dnorm(ki)
     wi <- ki/sum(ki, na.rm=TRUE) # always sum to 1 (for edge-effects)
     # run regression with weighted data
-    llls_i <- lm(y_hat ~ x_hat, data=xy2_hat, weights=wi)
+    llls_i <- lm(y_hat ~ x_hat, data=xy_hat, weights=wi)
     y_pred <- predict(llls_i, newdata=data.frame(x_hat=x0))
 }
 
@@ -640,14 +680,14 @@ for(i in seq_along(x_values)){
 }
 
 # Plot
-plot(y_hat ~ x_hat, pch=16, data=xy2_hat, col=grey(0, .1),
+plot(y_hat ~ x_hat, pch=16, data=xy_hat, col=grey(0, .1),
     main=NA, ylab='Wage', xlab='School')
-cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
-lines(x_values, y_pred_1, col=cols[1], lwd=1, type='o')
-lines(x_values, y_pred_2, col=cols[2], lwd=1, type='o')
+lines(x_values, y_pred_1, col=rgb(1, 0, 0, .8), lwd=2, type='o')
+lines(x_values, y_pred_2, col=rgb(1, 0, 0, .8), lwd=2, lty=2, type='o')
 legend('topleft', title='Locally Linear',
     legend=c('h=2', 'h=6'),
-    lty=1, col=cols, cex=.8)
+    lty=c(1, 2), lwd=2, pch=1, col=rgb(1, 0, 0, .8), cex=.8,
+    seg.len=4) # long enough that the circle does not hide the dashes
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
@@ -658,7 +698,7 @@ Also try different kernels and different datasets.
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Examine the local relationship between 'Murder' and 'Urbanization' in the `USArrests` dataset using LLLS.
 ```{r, eval=FALSE}
-# xy_hat defined above
+# xy2_hat defined above
 # Same smoother as pred_fun, but for any data with columns x_hat and y_hat
 pred_fun_xy <- function(x0, h, xy){
     ki <- abs(xy[, 'x_hat']-x0)/h
@@ -668,26 +708,26 @@ pred_fun_xy <- function(x0, h, xy){
     y_pred <- predict(llls_i, newdata=data.frame(x_hat=x0))
 }
 
-x_values <- sort(unique(xy_hat[, 'x_hat']))
-plot(y_hat ~ x_hat, pch=16, data=xy_hat, col=grey(0, .5),
+x_values <- sort(unique(xy2_hat[, 'x_hat']))
+plot(y_hat ~ x_hat, pch=16, data=xy2_hat, col=grey(0, .5),
     ylab='Murder Rate', xlab='Urban Population (%)')
 
 y_pred_1 <- numeric(length(x_values))
 for (i in seq_along(x_values)) {
-    y_pred_1[i] <- pred_fun_xy(x_values[i], h=2, xy=xy_hat)
+    y_pred_1[i] <- pred_fun_xy(x_values[i], h=2, xy=xy2_hat)
 }
 
 y_pred_2 <- numeric(length(x_values))
 for (i in seq_along(x_values)) {
-    y_pred_2[i] <- pred_fun_xy(x_values[i], h=20, xy=xy_hat)
+    y_pred_2[i] <- pred_fun_xy(x_values[i], h=20, xy=xy2_hat)
 }
 
-cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
-lines(x_values, y_pred_1, col=cols[1], lwd=1, type='o')
-lines(x_values, y_pred_2, col=cols[2], lwd=1, type='o')
+lines(x_values, y_pred_1, col=rgb(1, 0, 0, .8), lwd=2, type='o')
+lines(x_values, y_pred_2, col=rgb(1, 0, 0, .8), lwd=2, lty=2, type='o')
 legend('topleft', title='Locally Linear',
     legend=c('h=2 ', 'h=20'),
-    lty=1, col=cols, cex=.8)
+    lty=c(1, 2), lwd=2, pch=1, col=rgb(1, 0, 0, .8), cex=.8,
+    seg.len=4) # long enough that the circle does not hide the dashes
 ```
 :::
 

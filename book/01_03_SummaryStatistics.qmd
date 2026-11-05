@@ -8,9 +8,6 @@ set.seed(1)
 
 We often summarize distributions with *statistics*: functions of data.
 We will go through some specific examples mathematically below, but can intuitively understand that they are generally computed as `statistic <- function(x){ .... }`.
-This chapter first covers statistics for cardinal data.
-The mean and median measure center, the variance, IQR, and MAD measure spread, and skewness and kurtosis measure shape.
-It then covers the statistics that remain meaningful for factor data: the mode, the Herfindahl index, and quantiles of ordered levels.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Note that functions can take functions as arguments, meaning we can also program statistics generally as 
@@ -25,19 +22,34 @@ statistic(x0_hat, sum)
 ```
 :::
 
+This chapter asks four questions.
+
+* Where is the center of the data?
+    * *Mean and median*: the mean $\hat{m}$ averages every observation, while the median $\tilde{m}$ is the middle [quantile](01_02_Data.qmd#quantiles) and barely moves with one extreme value.
+* How spread out are the data?
+    * *Variance and standard deviation*: the variance $\hat{v}$ averages squared deviations from the mean, and $\hat{s}=\sqrt{\hat{v}}$ is in the data's units.
+    * *IQR and MAD*: these are built from quantiles, so extreme values have little influence on them.
+    * *Standardized values*: these measure distance from the mean in standard deviations, $\hat{z}_{i}=(\hat{x}_{i}-\hat{m})/\hat{s}$.
+* What shape does the distribution have?
+    * *Skewness and kurtosis*: these put numbers on two things a [histogram](01_02_Data.qmd#histogram-density) shows, asymmetry and heavy tails.
+* What if the data are factors?
+    * *Mode and Herfindahl index*: the mode is the most common category, and $\hat{H}=\sum_{x}\hat{p}(x)^2$ measures how concentrated the categories are.
+      Ordered factors also have a median and quartiles.
+
 
 The most basic way to compute statistics is with `summary`, which reports multiple values that can all be calculated individually. 
 
 ```{r}
-# A random sample (real data)
-x_hat <- USArrests[, 'Murder'] # lab data: murder arrests per 100,000
+## MAIN EXAMPLE
+# A sample of real data: 3294 US workers
+data(Wages1, package='Ecdat')
+x_hat <- Wages1[, 'wage'] # lab data: hourly wages in 1980 dollars
 summary(x_hat)
 ```
 
 Together, the sample mean and variance statistics summarize the central tendency and dispersion of a distribution.
 In some special cases, such as with the normal distribution, they completely describe the distribution.
 Other distributions are better described with other statistics, either as an alternative or in addition to the mean and variance.
-After discussing those other statistics, we will return to the two most basic statistics in theoretical detail.
 
 ## Mean and Variance
 
@@ -150,10 +162,11 @@ $$\begin{aligned}
 \end{aligned}$$
 The variance is largest, $1/4$, when half the observations are ones, and is zero when every observation is the same.
 
-Check this on the lab data, where $15$ of the $50$ states have more than $10$ murder arrests per $100,000$.
+Check this on the lab data.
 ```{r}
-# 1 if a state has more than 10 murder arrests per 100,000, 0 otherwise
+# 1 if a worker earns more than 10 dollars an hour, 0 otherwise
 x1_hat <- as.numeric(x_hat > 10)
+sum(x1_hat) # 290 of the 3294 workers
 p1_hat <- mean(x1_hat) # proportion of ones, which is also the mean
 p1_hat*(1 - p1_hat)
 
@@ -163,6 +176,7 @@ mean( (x1_hat - p1_hat)^2 )
 :::
 
 ```{r}
+## MAIN EXAMPLE
 # compute the mean and standard deviation of the lab data
 m_hat <- mean(x_hat)
 s1_hat <- sqrt(mean((x_hat - m_hat)^2)) # divides by n, as defined above; sd() divides by n-1
@@ -170,28 +184,65 @@ m1_sd_bounds <- c(m_hat - s1_hat,  m_hat + s1_hat)
 m2_sd_bounds <- c(m_hat - 2*s1_hat,  m_hat + 2*s1_hat)
 m2_sd_bounds
 range(x_hat) # smallest and largest observation
+# The upper bound lands inside the data.
+# The lower bound, about -0.78, is below the smallest observation.
+# It is also below zero, which no wage can be.
 
 # visualize on a histogram, widened to include both sets of bounds
-hist(x_hat, breaks=15, border=NA, freq=FALSE, main=NA,
-    xlim=range(c(x_hat, m2_sd_bounds)),
-    xlab='Murder arrests (per 100k)')
-rug(x_hat, col=grey(0, .5))
+# The 18 wages above 20 dollars are not drawn
+hist(x_hat[x_hat <= 20], breaks=seq(0, 20, by=1), border=NA, freq=FALSE, main=NA,
+    xlim=c(m2_sd_bounds[1], 20),
+    xlab='Hourly wage (1980 dollars)')
+rug(x_hat[x_hat <= 20], col=grey(0, .1))
 abline(v=m_hat, col=rgb(1, 0, 0, .8), lwd=2) # mean
 abline(v=m1_sd_bounds, col=rgb(0, 0, 0, .8), lwd=2) # mean +- sd
 abline(v=m2_sd_bounds, col=rgb(0, 0, 0, .8), lwd=2, lty=2) # mean +- 2 sd
 mtext(expression(hat(m)-2*hat(s), hat(m)-hat(s), hat(m), hat(m)+hat(s), hat(m)+2*hat(s)),
     side=3, at=c(m2_sd_bounds[1], m1_sd_bounds[1], m_hat, m1_sd_bounds[2], m2_sd_bounds[2]),
     col=c(rgb(0, 0, 0, .8), rgb(0, 0, 0, .8), rgb(1, 0, 0, .8), rgb(0, 0, 0, .8), rgb(0, 0, 0, .8)))
+# The bounds are symmetric, but wages are not.
+# They stop at zero on the left and stretch much further to the right.
 ```
 
-The upper bound $\hat{m}+2\hat{s}$ lands inside the data, but the lower bound $\hat{m}-2\hat{s}$ is about $-0.8$.
-That is below the smallest observation, and below zero, which no arrest rate can be.
-The bounds are symmetric around the mean by construction, but murder arrests are not: they stop at zero on the left and stretch further to the right.
+The bounds are symmetric around the mean by construction, but the data need not be.
+So a bound can land outside the data, or even on a value the variable cannot take.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat this figure with the murder arrest rates in `USArrests`.
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000, one value per state
+
+# compute the mean and standard deviation
+m2_hat <- mean(x2_hat)
+s2_hat <- sqrt(mean((x2_hat - m2_hat)^2)) # divides by n, as defined above; sd() divides by n-1
+m1_sd_bounds2 <- c(m2_hat - s2_hat,  m2_hat + s2_hat)
+m2_sd_bounds2 <- c(m2_hat - 2*s2_hat,  m2_hat + 2*s2_hat)
+m2_sd_bounds2
+range(x2_hat) # smallest and largest observation
+# The upper bound lands inside the data.
+# The lower bound, about -0.8, is below the smallest observation.
+# It is also below zero, which no arrest rate can be.
+
+# visualize on a histogram, widened to include both sets of bounds
+hist(x2_hat, breaks=15, border=NA, freq=FALSE, main=NA,
+    xlim=range(c(x2_hat, m2_sd_bounds2)),
+    xlab='Murder arrests (per 100k)')
+rug(x2_hat, col=grey(0, .5))
+abline(v=m2_hat, col=rgb(1, 0, 0, .8), lwd=2) # mean
+abline(v=m1_sd_bounds2, col=rgb(0, 0, 0, .8), lwd=2) # mean +- sd
+abline(v=m2_sd_bounds2, col=rgb(0, 0, 0, .8), lwd=2, lty=2) # mean +- 2 sd
+mtext(expression(hat(m)-2*hat(s), hat(m)-hat(s), hat(m), hat(m)+hat(s), hat(m)+2*hat(s)),
+    side=3, at=c(m2_sd_bounds2[1], m1_sd_bounds2[1], m2_hat, m1_sd_bounds2[2], m2_sd_bounds2[2]),
+    col=c(rgb(0, 0, 0, .8), rgb(0, 0, 0, .8), rgb(1, 0, 0, .8), rgb(0, 0, 0, .8), rgb(0, 0, 0, .8)))
+# The bounds are symmetric, but murder arrests are not.
+# They stop at zero on the left and stretch further to the right.
+```
+:::
 
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Note that an "unbiased version" of the empirical variance is used by R and many statisticians: $\hat{v}' =\frac{\sum_{i=1}^{n} [\hat{x}_{i} - \hat{m}]^2}{n-1}$ and $\hat{s}' = \sqrt{\hat{v}'}$.
-In this class, we use the version defined previously because we do not yet know about "bias/unbiased" statistics.
+Note that an *adjusted* version of the empirical variance, also called the "unbiased version", is used by R and many statisticians: $\hat{v}_{\text{adj}} =\frac{\sum_{i=1}^{n} [\hat{x}_{i} - \hat{m}]^2}{n-1}$ and $\hat{s}_{\text{adj}} = \sqrt{\hat{v}_{\text{adj}}}$.
+In this book, we use the version defined previously because we do not yet know about "bias/unbiased" statistics.
 Do not be concerned, as there is hardly any difference when $n$ is large: e.g., $\frac{1}{n}\approx \frac{1}{n-1}$ for $n=100,000$.
 ```{r}
 x0_hat <- c(4, 1, 10)
@@ -200,10 +251,10 @@ m_hat <- mean(x0_hat)
 v_hat <- mean( (x0_hat - m_hat)^2 )
 v_hat
 
-# Corrected Version
+# Adjusted Version
 n <- length(x0_hat)
-v_corrected_hat <- sum( (x0_hat - m_hat)^2 )/(n-1)
-v_corrected_hat
+v_adj_hat <- sum( (x0_hat - m_hat)^2 )/(n-1)
+v_adj_hat
 
 var(x0_hat) # R-Version
 ```
@@ -284,7 +335,7 @@ Mean and Variance are measurements of Center and Spread, but there are others th
 #### **Center/Spread based on Quantiles** {-}
 
 When the data are skewed or contain outliers, statistics built from quantiles often give a more representative summary of center and spread than the mean and variance.
-Every quantile lies between the smallest and largest observation, so a quantile-based range can never produce an impossible value like the negative $\hat{m}-2\hat{s}$ for murder arrests above.
+Every quantile lies between the smallest and largest observation, so a quantile-based range can never produce an impossible value, as $\hat{m}-2\hat{s}$ can.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The sample *median* $\tilde{m}$ is the value where one half of the data fall below and one half above; it is the $0.5$ quantile.
@@ -301,8 +352,11 @@ Use these robust summaries when the distribution is skewed or has values you can
 For example, income and house prices have a few very large values that can pull the mean far from a typical observation.
 
 ```{r}
+## MAIN EXAMPLE
 median(x_hat)
 quantile(x_hat, prob=0.5)
+# The median, about 5.21, is below the mean, about 5.76.
+# The long right tail pulls the mean up, but not the median.
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
@@ -328,6 +382,7 @@ quantile(x1_extreme_hat, prob=0.5)
 The $\hat{\text{IQR}}$ corresponds to the box in the boxplot [@Tukey1977], and the $\hat{\text{MAD}}$ uses the same robust idea but measures distances from the median directly rather than reading off quartile cut-offs.
 
 ```{r}
+## MAIN EXAMPLE
 IQR(x_hat)
 mad(x_hat)
 ```
@@ -342,9 +397,10 @@ p <- c(.25, .5, .75)
 q_hat <- quantile(x_hat, probs=p)
 
 # visualize on the ECDF
+# The axis stops just past 20 dollars, so the 16 largest wages are not drawn
 F_hat <- ecdf(x_hat)
-plot(F_hat, pch=16, col=grey(0, .5), main=NA,
-    xlab='Murder arrests (per 100k)', ylab='Proportion <= x')
+plot(F_hat, verticals=TRUE, do.points=FALSE, col.01line=NA, lwd=2, xlim=c(0, 20), main=NA,
+    xlab='Hourly wage (1980 dollars)', ylab='Proportion <= x')
 cols <- c(rgb(0, 0, 1, .8), rgb(1, 0, 0, .8), rgb(0, 0, 1, .8))
 segments(q_hat, p, -10, p, col=cols, lwd=c(1, 2, 1)) # read across from p
 segments(q_hat, p, q_hat, -1, col=cols, lwd=c(1, 2, 1)) # read down to the quantile
@@ -354,6 +410,31 @@ mtext(round(q_hat, 2), side=1, at=q_hat, col=cols)
 arrows(q_hat[1], .9, q_hat[3], .9, code=3, length=.1, col=rgb(0, 0, 1, .8))
 text(mean(q_hat[c(1, 3)]), .9, 'IQR', pos=3, col=rgb(0, 0, 1, .8))
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat these statistics with the murder arrest rates in `USArrests`, and read the quartiles off the ECDF.
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000, one value per state
+median(x2_hat)
+IQR(x2_hat)
+mad(x2_hat)
+
+# median and quartiles
+q2_hat <- quantile(x2_hat, probs=p)
+
+# visualize on the ECDF
+F2_hat <- ecdf(x2_hat)
+plot(F2_hat, pch=16, col=grey(0, .5), main=NA,
+    xlab='Murder arrests (per 100k)', ylab='Proportion <= x')
+segments(q2_hat, p, -10, p, col=cols, lwd=c(1, 2, 1)) # read across from p
+segments(q2_hat, p, q2_hat, -1, col=cols, lwd=c(1, 2, 1)) # read down to the quantile
+mtext(round(q2_hat, 2), side=1, at=q2_hat, col=cols)
+
+# IQR is the distance between the quartiles
+arrows(q2_hat[1], .9, q2_hat[3], .9, code=3, length=.1, col=rgb(0, 0, 1, .8))
+text(mean(q2_hat[c(1, 3)]), .9, 'IQR', pos=3, col=rgb(0, 0, 1, .8))
+```
+:::
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Compute the $\hat{\text{IQR}}$ statistic for the dataset $\{-100,1,4,10,10\}$. 
@@ -384,8 +465,9 @@ mad(x0_hat, constant=1)
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Compare the robustness of various "spread" metrics to an extreme value
 ```{r}
-sd(x_hat)
-sd(x1_extreme_hat)
+# Standard deviation, which divides by n, unlike sd()
+sqrt(mean((x_hat - mean(x_hat))^2))
+sqrt(mean((x1_extreme_hat - mean(x1_extreme_hat))^2))
 
 IQR(x_hat)
 IQR(x1_extreme_hat)
@@ -490,7 +572,7 @@ $$\hat{z}_{i} = \frac{\hat{x}_{i} - \hat{m}}{\hat{s}}.$$
 Standardized values are also called *z-scores*.
 A standardized value of $2$ means the observation lies two standard deviations above the mean, and a value of $-1$ means it lies one standard deviation below.
 The units of $\hat{x}_{i}-\hat{m}$ and $\hat{s}$ cancel, so standardized values have no units.
-Standardized values are useful for flagging observations that are far from the center of their own distribution, and for comparing observations across variables measured on different scales, such as a state's murder and assault arrest rates.
+Standardized values are useful for flagging observations that are far from the center of their own distribution, and for comparing observations across variables measured on different scales, such as a worker's wage and years of schooling.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Compute the standardized values of the dataset $\{1,2,1,3,1\}$ from above.
@@ -519,12 +601,14 @@ mean(z_hat)
 sqrt(mean((z_hat - mean(z_hat))^2))
 
 # same shape, new units: standardize the bin edges too
-f_hat <- hist(x_hat, breaks=15, plot=FALSE)
+# The 18 wages above 20 dollars are not drawn in either panel
+drawn <- x_hat <= 20
+f_hat <- hist(x_hat[drawn], breaks=seq(0, 20, by=1), plot=FALSE)
 par(mfrow=c(1, 2), mar=c(4, 4, 1, 1))
-hist(x_hat, breaks=f_hat[['breaks']], border=NA, freq=FALSE, main=NA,
-    xlab='Murder arrests (per 100k)')
-hist(z_hat, breaks=(f_hat[['breaks']] - m_hat)/s_hat, border=NA, freq=FALSE, main=NA,
-    xlab='Standardized murder arrests')
+hist(x_hat[drawn], breaks=f_hat[['breaks']], border=NA, freq=FALSE, main=NA,
+    xlab='Hourly wage (1980 dollars)')
+hist(z_hat[drawn], breaks=(f_hat[['breaks']] - m_hat)/s_hat, border=NA, freq=FALSE, main=NA,
+    xlab='Standardized hourly wage')
 ```
 
 Standardizing moves the center to $0$ and changes the units on the horizontal axis, but the two histograms have the same shape.
@@ -537,22 +621,25 @@ To see why, note that the standardized values satisfy $\frac{1}{n}\sum_{i=1}^{n}
 
 Check the bound on the lab data for $k=2$ and $k=3$.
 ```{r}
-# proportion of states at least k standard deviations from the mean
+# proportion of workers at least k standard deviations from the mean
 mean(abs(z_hat) >= 2)
 mean(abs(z_hat) >= 3)
+# About 3.4% of workers are at least 2 standard deviations from the mean.
+# About 1.3% are at least 3.
 
 # Chebyshev's upper bound
 1/c(2, 3)^2
+# Both proportions are far below what the bound allows.
 ```
-Only one state is two or more standard deviations from the mean, far fewer than the bound allows.
 The bound is loose because it must hold for every dataset, including ones with much heavier tails.
 :::
 
 Standardizing also lets us compare variables measured on different scales.
-Georgia has the highest murder arrest rate of any state, and North Carolina has the highest assault arrest rate.
-Both rates are per $100,000$ people, but assaults are far more common, so the raw numbers cannot be compared directly.
+Their raw numbers cannot be compared directly, but their standardized values can.
+Below, we standardize two variables and compare them for two observations.
 
 ```{r}
+## MAIN EXAMPLE
 # a function that standardizes any variable
 standardize <- function(x_hat){
     m_hat <- mean(x_hat)
@@ -562,28 +649,54 @@ standardize <- function(x_hat){
 }
 
 # standardize two variables measured on different scales
-z_arrests_hat <- data.frame(
+# Wages are in dollars and schooling is in years.
+z_wages_hat <- data.frame(
+    wage=standardize(Wages1[, 'wage']),
+    school=standardize(Wages1[, 'school']))
+
+# raw and standardized values for two workers
+# which.max() returns the row number of the first largest value
+workers <- c(which.max(Wages1[, 'wage']), which.max(Wages1[, 'school']))
+Wages1[workers, c('wage', 'school')]
+round(z_wages_hat[workers, ], 2)
+# Worker 1813 has the highest wage, 10.42 standard deviations above the mean.
+# That worker's schooling is 0.38 below the mean.
+# Worker 50 has the most schooling, 16 years, which is 2.64 above the mean.
+# That worker's wage is 0.09 below the mean.
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the comparison with the murder and assault arrest rates in `USArrests`, for the state with the highest rate of each.
+```{r}
+# standardize two variables measured on different scales
+# Both rates are per 100,000 people, but assaults are far more common.
+# So the raw numbers cannot be compared directly.
+z2_hat <- data.frame(
     Murder=standardize(USArrests[, 'Murder']),
     Assault=standardize(USArrests[, 'Assault']),
     row.names=rownames(USArrests))
 
 # raw and standardized values for two states
+# Georgia has the highest murder arrest rate of any state.
+# North Carolina has the highest assault arrest rate.
 states <- c('Georgia', 'North Carolina')
 USArrests[states, c('Murder', 'Assault')]
-round(z_arrests_hat[states, ], 2)
+round(z2_hat[states, ], 2)
+# Georgia's murder rate is 2.23 standard deviations above the mean.
+# Its assault rate is only 0.49 above.
+# North Carolina is the reverse, with an assault rate 2.02 above the mean.
+# Its murder rate is 1.21 above.
 ```
-
-Georgia's murder rate is $2.23$ standard deviations above the mean, but its assault rate is only $0.49$ above.
-North Carolina is the reverse, with an assault rate $2.02$ standard deviations above the mean and a murder rate $1.21$ above.
+:::
 
 Replacing the mean and standard deviation in the standardized value with the median and $\hat{\text{MAD}}$ gives a *robust z-score*,
 $$\tilde{z}_{i} = \frac{\hat{x}_{i} - \tilde{m}}{\hat{\text{MAD}}},$$
 which a single extreme value cannot distort by inflating the spread.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Georgia has the highest murder arrest rate.
-Compute its standard and robust z-scores, with and without the extreme value in `x1_extreme_hat`.
-Which one still flags Georgia as unusual?
+Take the worker with the highest hourly wage in the lab data.
+Compute that worker's standard and robust z-scores, with and without the extreme value in `x1_extreme_hat`.
+Which one still flags this worker as unusual?
 ```{r}
 # robust version of the standardize function above
 standardize_robust <- function(x_hat){
@@ -593,20 +706,26 @@ standardize_robust <- function(x_hat){
     return(z_hat)
 }
 
-# Georgia, the state with the highest murder rate
+# the worker with the highest hourly wage, about 39.81 dollars
 id <- which.max(x_hat)
 
 # standard z-scores, without and with the extreme value
 standardize(x_hat)[id]
 standardize(x1_extreme_hat)[id]
+# The extreme value inflates the standard deviation from about 3.3 to 17.6.
+# So this worker's z-score falls from about 10.42 to about 1.92.
+# The highest wage in the lab data no longer looks very unusual.
 
 # robust z-scores, without and with the extreme value
 standardize_robust(x_hat)[id]
 standardize_robust(x1_extreme_hat)[id]
+# The robust z-score stays at about 18.83.
+# The MAD, about 1.84, is smaller than the standard deviation.
+# So the robust z-scores are larger than the standard ones.
 ```
-The extreme value inflates the standard deviation from about $4.3$ to about $138$, so Georgia's standard z-score falls from $2.23$ to $-0.07$, and the state with the highest murder rate looks slightly below average.
-Its robust z-score barely moves, from $2.78$ to $2.66$, because the median and $\hat{\text{MAD}}$ hardly change.
-The robust z-scores are larger than the standard ones here because the $\hat{\text{MAD}}$ is smaller than the standard deviation; R's default `mad(x_hat)` multiplies by $1.4826$ so that the two are on the same scale for Normal data.
+A new extreme value can inflate the standard deviation enough to hide an observation that was unusual before.
+The median and $\hat{\text{MAD}}$ hardly change, so the robust z-score still flags that observation.
+R's default `mad(x_hat)` multiplies by $1.4826$ so that the $\hat{\text{MAD}}$ and the standard deviation are on the same scale for Normal data.
 :::
 
 ## Shape Statistics
@@ -683,17 +802,19 @@ m3_hat / s_hat^3 # skewness
 :::
 
 ```{r}
+## MAIN EXAMPLE
 skewness <- function(x_hat){
     z_hat <- standardize(x_hat)
     skew <- mean(z_hat^3) # average cubed standardized value
     return(skew)
 }
 
-# skewness of murder arrests
+# skewness of hourly wages
 skewness(x_hat)
+# Wages have a large positive skew, about 1.97.
+# So their right tail is much longer than their left.
+# The mean, about 5.76, sits above the median, about 5.21.
 ```
-
-Murder arrests have a small positive skew, so their right tail is slightly longer than their left.
 
 #### **Kurtosis** {-}
 
@@ -760,6 +881,7 @@ Boxplot whiskers are a great way to examine kurtosis, with more circle "outliers
 You can also see skew in the boxplot when one quartile is much further from the median than the other. 
 
 ```{r}
+## MAIN EXAMPLE
 kurtosis <- function(x_hat){
     z_hat <- standardize(x_hat)
     kurt <- mean(z_hat^4) # average fourth power of standardized values
@@ -768,11 +890,29 @@ kurtosis <- function(x_hat){
     # excess_kurt <- kurt - 3
 }
 
-# kurtosis of murder arrests
+# kurtosis of hourly wages
 kurtosis(x_hat)
+# Wages have a kurtosis of about 12.63, well above 3.
+# So their tails are much heavier than normal.
 ```
 
-Murder arrests have a kurtosis below $3$, so their tails are lighter than normal.
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Compute both shape statistics for the murder arrest rates in `USArrests`.
+How do they compare with the values for the lab data?
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000, one value per state
+
+# skewness of murder arrests
+skewness(x2_hat)
+# Murder arrests have a small positive skew.
+# So their right tail is slightly longer than their left.
+
+# kurtosis of murder arrests
+kurtosis(x2_hat)
+# Murder arrests have a kurtosis below 3.
+# So their tails are lighter than normal.
+```
+:::
 
 
 #### **Clusters/Gaps** {-}
@@ -801,7 +941,7 @@ hist(x_sim, breaks=60,
 plot(ecdf(x_sim), verticals=TRUE, do.points=FALSE, col.01line=NA, lwd=2,
     xlim=range(x_sim), main=NA, xlab='x', ylab='Proportion <= x')
 
-#hist( rbeta(1000, .6, .6), border=NA, main=NA, freq=F, breaks=20)
+#hist( rbeta(1000, .6, .6), border=NA, main=NA, freq=FALSE, breaks=20)
 ```
 
 ```{r, echo=FALSE, fig.height=4}
@@ -822,13 +962,14 @@ plot(ecdf(x_sim), verticals=TRUE, do.points=FALSE, col.01line=NA, lwd=2,
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-The built-in `LifeCycleSavings` data record the percent of the population under age 15 in fifty countries, averaged over 1960 to 1970.
+Use the built-in `LifeCycleSavings` data.
 Plot a histogram of `pop15` with `breaks=15`.
 How many clusters do you see, and where is the gap?
 Then compute the mean and mark it on the histogram with `abline(v=...)`.
 How many countries have a value close to the mean?
 ```{r}
 # percent of the population under age 15, fifty countries
+# Each country's value is averaged over 1960 to 1970.
 pop15 <- LifeCycleSavings[, 'pop15']
 ```
 :::
@@ -868,9 +1009,9 @@ Compute the median of the original `USArrests[, 'UrbanPop']` and check which ban
 Then move the inner breaks from $50$ and $75$ to $40$ and $60$ and recompute the median band.
 Does the median band always contain the cardinal median?
 
-Below, the urban share of each state's population is recorded in three bands.
+Below, a cardinal variable is recorded in three bands.
 ```{r}
-# urban population in bands, an ordered factor
+# urban share of each state's population in three bands, an ordered factor
 urban_band <- cut(USArrests[, 'UrbanPop'], breaks=c(0, 50, 75, 100),
     labels=c('mostly rural', 'mixed', 'mostly urban'), ordered_result=TRUE)
 p_hat <- table(urban_band)/length(urban_band)
@@ -932,6 +1073,7 @@ sum(p_hat^2)
 :::
 
 ```{r}
+## MAIN EXAMPLE
 # census region of each state, an unordered factor
 region <- state.region
 p_hat <- table(region)/length(region)
@@ -969,10 +1111,10 @@ Here is a table to help you recall which apply.
 Note that the mode and Herfindahl index need repeated values, so for continuous cardinal data we can describe proportions with a histogram instead (seeing the highest peak as the mode, for example).
 
 | Statistic | Factor | Cardinal |
-|-----------|------------------|----------------|----------|
+|-----------|------------------|----------------|
 | Mean, variance, skewness, kurtosis | No | Yes |
 | Median, quantiles, $\hat{\text{IQR}}$ | Ordered only (not Unordered) | Yes |
-| Mode, Herfindahl index| Yes | Discrete only (not Continuous)* |
+| Mode, Herfindahl index| Yes | Discrete only (not Continuous) |
 : Summary Statistics by Data Type
 
 
@@ -1018,5 +1160,5 @@ We used the five-point dataset $\{0, 1, 2, 3, 9\}$ for the shape statistics.
 Its mean is $3$, and its cubed deviations average to $36$, giving a skewness of about $1.14$ and a long right tail.
 Its quartic deviations give a kurtosis of about $2.79$.
 The single outlier at $9$ drives both numbers.
-For real data such as `USArrests[, 'Murder']`, a histogram with the mean and standard deviation already shows most of the shape.
+For real data such as `Wages1[, 'wage']`, a histogram with the mean and standard deviation already shows most of the shape.
 The median, MAD, skewness, and kurtosis add detail when the data are not symmetric.

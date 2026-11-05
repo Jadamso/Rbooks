@@ -5,9 +5,16 @@ In practice, it is hard to find a good natural experiment and easy to find a bad
 Paradoxically, natural experiments are something you are supposed to find but never search for.
 As you search for natural experiments, sometimes patterns will appear from random noise.
 In this age of big data, we are getting increasingly more data and, perhaps surprisingly, this makes it easier to make false discoveries.
-This chapter examines how those discoveries arise.
-We first cover data errors, $p$-hacking, and spurious regression.
-We then apply the latest and greatest empirical recipes (IV, RDD, DID) to data that is nothing but noise.
+
+This chapter asks two questions.
+
+* How can a significant result come from noise?
+    * *P-hacking*: this tries many models and reports a $p$-value that does not account for the search.
+      Honest data errors can also produce such false discoveries.
+    * *Spurious regression*: this regresses one trending series on another, and the shared trend can produce a large $\hat{R}^2$ and a small $p$-value.
+* Do causal recipes protect us from false discoveries?
+    * *IV, RDD, and DID on random walks*: these apply the latest and greatest empirical recipes from [Experimental Data](03_27_ExperimentalData.qmd) to data that is nothing but noise.
+
 Although it is difficult to express numerically, searching for a good natural experiment can also lead you astray from important questions.
 Convenient measures can mislead as well [@Campbell1979].
 For example, @AdamsonRentschler2025 show that the clearance rate, a police performance measure widely used in econometric studies, can suggest performance is better when it is unambiguously worse.
@@ -84,6 +91,7 @@ Its various synonyms (*data dredging*, *star mining*) name the same behavior acr
 The practice is both [pernicious](https://elephantinthelab.org/a-replication-crisis-in-the-making/) and [widespread](https://www.americanscientist.org/article/the-statistical-crisis-in-science), and applies equally to OLS and to more sophisticated tools like 2SLS, as the next two code blocks illustrate.
 
 ```{r}
+## MAIN EXAMPLE
 # P-hacking OLS with different explanatory vars
 set.seed(123)
 n <- 50
@@ -110,7 +118,7 @@ plot(x1_sim ~ x2_sim_b, data=xy_sim_b,
     pch=16, col=grey(0, .5), main=NA)
 title(paste0('Random Dataset ', i, ':   p=',
     formatC(p, digits=2, format='fg')), font.main=1)
-abline(reg_i, col=rgb(1, 0, 0, .8))
+abline(reg_i, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -187,9 +195,11 @@ The standard errors assume independent observations.
 But trending series share so much information across periods that the effective sample size is far smaller than $n$.
 
 
-First, get and inspect some data from https://tylervigen.com/spurious-correlations
+First, get and inspect some data.
 ```{r}
+## MAIN EXAMPLE
 # Your data is not made up in the computer (hopefully!)
+# Original source: https://tylervigen.com/spurious-correlations
 vigen_csv <- read.csv(
     'https://raw.githubusercontent.com/the-mad-statter/whysospurious/master/data-raw/tylervigen.csv'
 ) 
@@ -210,6 +220,8 @@ lines(hanging_suicides ~ year, data=vigen_csv, lty=1, col=rgb(0, 0, 1, .8), pch=
 text(2004, 6500, 'US Suicides by hanging, strangulation, suffocation (Deaths)', col=rgb(0, 0, 1, .8), cex=.6, srt=30)
 axis(1)
 axis(2)
+# Both series trend upward, and their correlation is 0.99.
+# They have no causal connection.
 
 
 plot.new()
@@ -220,19 +232,19 @@ lines(pool_fall_drownings/25 ~ year, data=vigen_csv[vigen_csv$year>=2002, ], lty
 text(2006, 4.5, 'Number of drownings by falling into pool (US Deaths/25)', col=rgb(0, 0, 1, .8), cex=.6, srt=0)
 axis(1)
 axis(2)
+# These series correlate at 0.76 from 2002 to 2009.
+# They have no causal connection.
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Both plots show variables with high correlations ($r > 0.9$) that have no causal connection.
-The correlations arise because both series trend upward over time.
 When two time series share a common trend, their correlation can be very high even if they are completely unrelated.
 This is why regression with trending time series requires special care (e.g., detrending or differencing).
 :::
 
 #### **Another Example** {-}
-The US government spending on science is ruining cinema
-(p<.001)!?
+Now regress one of these series on another.
 ```{r}
+## MAIN EXAMPLE
 # Drop Data before 1999
 vigen_csv <- vigen_csv[vigen_csv$year >= 1999, ]
 
@@ -240,8 +252,9 @@ vigen_csv <- vigen_csv[vigen_csv$year >= 1999, ]
 # The p-value on `science_spending` will be tiny, despite zero plausible causal link.
 reg1 <-  lm(cage_films ~ -1 + science_spending, data=vigen_csv)
 summary(reg1)
+# The US government spending on science is ruining cinema (p<.001)!?
 ```
-It's not all bad, because people in Maine stay married longer?
+Next, plot science spending beside another series.
 ```{r}
 plot.new()
 plot.window(xlim=c(1999, 2009), ylim=c(7, 9))
@@ -252,6 +265,7 @@ axis(2)
 legend('topright', lty=c(1, 2), bty='n', legend=c(
     'log(maine_divorce_rate*1000)',
     'log(science_spending/10)'))
+# It's not all bad, because people in Maine stay married longer?
 ```
 
 
@@ -279,7 +293,7 @@ A *spurious instrument* is useful to recognize because it is the IV analog of p-
 Search over enough candidate instruments and one will pass the formal tests by luck.
 The 2SLS estimate it produces has no causal interpretation.
 The risk grows with the number of candidates considered, which is the same multiple-testing problem as p-hacking applied to instrument selection.
-The Vigen IV exercise below shows this directly: about a third of the random variable triples in the spurious-correlations dataset return "significant" results at conventional levels.
+The Vigen IV exercise below runs this kind of search.
 
 #### **Example: Vigen IV's** {-}
 We now run IV regressions for different variable combinations in the dataset of spurious relationships
@@ -318,9 +332,10 @@ head(pdat)
 # Fraction of all combinations significant at conventional levels
 c(at_0.05 = mean(pvals < 0.05, na.rm=TRUE),
   at_0.01 = mean(pvals < 0.01, na.rm=TRUE))
+# About 32% of the triples are significant at 5%, and about 22% at 1%.
+# That is far more than the rates a single hypothesis test would imply.
 ```
-A noticeable share of the random variable triples returns "significant" results at both the 5% and 1% levels.
-That is far more than the rates a single hypothesis test would imply.
+The share of "significant" results in such a search can far exceed the rates a single hypothesis test would imply.
 
 #### **Simulation Study** {-}
 We do not have many theoretical results for these newer recipes yet, but a numerical example should make the issue clear.
@@ -331,13 +346,12 @@ The analysis looks scientific and the story sounds plausible, so you could proba
 
 
 ```{r, message=FALSE, warning=FALSE}
+## MAIN EXAMPLE
 n <- 1000
 n_index <- seq(n)
 
-set.seed(1)
 random_walk1 <- cumsum(runif(n, -1, 1))
 
-set.seed(2)
 random_walk2 <- cumsum(runif(n, -1, 1))
 
 par(mfrow=c(1, 2))
@@ -349,6 +363,7 @@ plot(random_walk2, pch=16, col=rgb(0, 0, 1, .25),
 
 **IV**. First, find an instrument that satisfies various statistical criteria to provide a causal estimate of $X_{i2}$ on $X_{i1}$.
 ```{r}
+## MAIN EXAMPLE
 # 'Find' 'valid' ingredients
 library('fixest')
 random_walk3 <- cumsum(runif(n, -1, 1))
@@ -358,6 +373,7 @@ xy_iv_sim <- data.frame(
     x3_sim=random_walk3)
 ivreg_i <- feols(x1_sim ~ 1|x2_sim ~ x3_sim, data=xy_iv_sim)
 summary(ivreg_i)
+# The slope on x2_sim is significant, with no true relationship.
 
 # After experimenting with different instruments
 # you can find even stronger results!
@@ -366,6 +382,7 @@ summary(ivreg_i)
 **RDD**. Second, find a large discrete change in the data that you can associate with a policy.
 You can use this as an instrument too, also providing a causal estimate of $X_{i2}$ on $X_{i1}$.
 ```{r, message=FALSE, warning=FALSE}
+## MAIN EXAMPLE
 # Let the data take shape
 # (around the large differences before and after)
 n1 <- 290
@@ -381,11 +398,12 @@ reg1 <- lm(y_sim ~ t, data=xy1_sub_sim[xy1_sub_sim$d==1, ])
 plot(random_walk1, pch=16, col=rgb(0, 0, 1, .25),
     xlim=wind1, xlab='Time', ylab='Random Value')
 abline(v=n1, col=grey(.5), lty=3)
-lines(reg0$model$t, reg0$fitted.values, col=rgb(0, 0, 0, .8))
-lines(reg1$model$t, reg1$fitted.values, col=rgb(0, 0, 0, .8))
+lines(reg0$model$t, reg0$fitted.values, col=rgb(1, 0, 0, .8), lwd=2)
+lines(reg1$model$t, reg1$fitted.values, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 ```{r, message=FALSE, warning=FALSE, results='asis'}
+## MAIN EXAMPLE
 # Dress with some statistics for added credibility
 rdd_sub <- lm(y_sim ~ d+t+d*t, data=xy1_sub_sim)
 rdd_full <- lm(y_sim ~ d+t+d*t, data=xy1_sim)
@@ -396,11 +414,13 @@ stargazer::stargazer(rdd_sub, rdd_full,
     omit=c('Constant'),
     notes=c('First column uses a dataset around the discontinuity.',
     'Smaller windows are more causal, and where the effect is bigger.'))
+# The jump d is significant in both columns, with no true break.
 ```
 
 **DID**. Third, find a change in the data that you can associate with a policy where the control group has parallel trends.
 This also provides a causal estimate of $X_{i2}$ on $X_{i1}$.
 ```{r, message=FALSE, warning=FALSE}
+## MAIN EXAMPLE
 # Find a reversal of fortune
 # (A good story always goes well with a nice pre-trend)
 n2 <- 318
@@ -412,6 +432,7 @@ abline(v=n2, col=grey(.5), lty=3)
 ```
 
 ```{r, message=FALSE, warning=FALSE, results='asis'}
+## MAIN EXAMPLE
 # Knead out any effects that are non-causal (aka correlation)
 xy2A_sim <- data.frame(t=n_index, y_sim=random_walk1, d=1*(n_index > n2), RWid=1)
 xy2B_sim <- data.frame(t=n_index, y_sim=random_walk2, d=0, RWid=2)
@@ -435,10 +456,11 @@ stargazer::stargazer(did_fe1, did_fe2, did_fe3,
      'Fixed effects for time in column 1, for id in column 2, and both in column 3.',
      'Fixed effects control for most of your concerns.',
      'Anything else creates a bias in the opposite direction.'))
+# The coefficient on d has stars in all three columns, with no true effect.
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-All three empirical recipes (IV, RDD, DID) produced statistically significant results from random walks with no true relationship.
+All three empirical recipes (IV, RDD, DID) can produce statistically significant results from random walks with no true relationship.
 What is the common thread?
 In your own empirical work, how would you distinguish a genuine causal finding from a spurious one?
 :::

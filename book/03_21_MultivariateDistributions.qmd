@@ -1,11 +1,26 @@
 # Multivariate Distributions
 ***
 
+```{r seed, include=FALSE}
+# Hidden seed so every render draws the same random numbers
+set.seed(1)
+```
+
 Most datasets record more than two variables for each observation.
-A state has a murder rate, an assault rate, an urban share, and a region.
 A worker has a wage, years of schooling, years of experience, and a sex.
-This chapter describes such data with tables and figures before any model is fit: three-way tables for discrete data, scatterplot matrices for continuous data, and conditioning plots and grouped summaries for mixed data.
-It ends with Simpson's paradox, where pooling groups reverses a relationship.
+
+This chapter asks three questions.
+
+* How do we describe three or more variables before fitting a model?
+    * *Three-way tables*: these extend the [joint distribution](02_11_BivariateDistributions.qmd#joint-distributions) to a third discrete variable, $\hat{p}(x,y,z)$.
+    * *Scatterplot matrices*: these draw the [scatterplot](02_11_BivariateDistributions.qmd#continuous-data) for every pair of cardinal variables in one grid.
+* What happens when we hold a third variable fixed?
+    * *Conditional proportions*: these compare groups within one value of a third discrete variable, $\hat{p}(y \mid x, z)$.
+    * *Conditioning plots*: these draw one scatterplot per group, so any pattern that appears is a within-group pattern.
+    * *Grouped boxplots*: these place the [boxplots](01_02_Data.qmd#boxplots) for one factor side by side within each level of another.
+* When does pooling groups mislead us?
+    * *Simpson's paradox*: this is when a relationship that holds inside all or most subgroups reverses once the data are pooled.
+
 The recurring lesson is that a comparison between two variables can look different once a third variable is held fixed.
 The only prerequisites are the data frames, proportions, ECDFs, and boxplots from [Data & Visualization](01_02_Data.qmd), and the scatterplot from [Bivariate Distributions](02_11_BivariateDistributions.qmd#continuous-data).
 
@@ -25,10 +40,11 @@ Summing over the values of one variable *collapses* the table to the two-way joi
 A three-way table is useful whenever a two-way comparison might depend on a third factor.
 It keeps every combination visible.
 Collapsing it recovers the two-way table you would have made had you ignored the third variable.
-The built-in `UCBAdmissions` data record graduate applications to six departments at Berkeley in 1973 by admission outcome and gender.
-R stores it directly as a three-way table of counts.
+R can store counts directly as a three-way table, such as the built-in `UCBAdmissions`.
 
 ```{r}
+## MAIN EXAMPLE
+# UCBAdmissions counts graduate applications to six Berkeley departments in 1973.
 # Three factors: Admit (2 levels), Gender (2 levels), Dept (6 levels)
 dim(UCBAdmissions)
 dimnames(UCBAdmissions)
@@ -97,32 +113,39 @@ So differences in which departments people apply to cannot drive the comparison.
 In R, `prop.table()` with a `margin=` argument divides each cell by the total of its slice.
 
 ```{r}
+## MAIN EXAMPLE
 # Admission rate by Gender, pooling all departments
 p_pooled <- prop.table(margin.table(UCBAdmissions, c(1, 2)), margin=2)
 round(p_pooled['Admitted', ], 2)
+# Pooled over departments, men were admitted at a higher rate than women.
 
 # Admission rate by Gender within each Dept
 p_within <- prop.table(UCBAdmissions, margin=c(2, 3))
 round(p_within['Admitted', , ], 2)
+# Women had higher rates than men in four of the six: A, B, D, and F.
+# The gaps in D and F are small.
+# Men had higher rates in C and E, so the reversal holds in most departments, not all.
 ```
 
-Pooled over departments, men were admitted at a higher rate than women.
-Within departments, women were admitted at a similar or higher rate in four of the six.
-Both tables are correct summaries of the same data.
-They differ because the departments differ in how selective they are and in who applies to them, which the pooled table mixes together.
+The pooled and within-group tables are both correct summaries of the same data.
+They can differ when the slices differ in their rates and in their composition, which the pooled table mixes together.
+The code below computes both.
 
 ```{r}
 # Where did each gender apply? Share of each gender's applications going to each Dept
 p_apply <- prop.table(margin.table(UCBAdmissions, c(2, 3)), margin=1)
 round(p_apply, 2)
+# Just over half of the men applied to departments A and B.
+# Over 90% of the women applied to departments C to F.
 
 # How selective is each Dept? Admission rate by Dept, pooling genders
 p_dept <- prop.table(margin.table(UCBAdmissions, c(1, 3)), margin=2)
 round(p_dept['Admitted', ], 2)
+# Departments A and B admitted over 60% of their applicants.
+# Departments C to F admitted about 35% of their applicants or fewer.
+# The pooled gap mostly reflects where people applied, not how they were treated.
 ```
 
-Most men applied to departments A and B, which admitted more than half of their applicants.
-Most women applied to departments C through F, which admitted a third or fewer.
 The descriptive lesson is to report the within-group comparison alongside the pooled one, and say how the groups differ in composition.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -136,73 +159,142 @@ Then verify that `p_within` can be rebuilt from the joint distribution as $\hat{
 #### **Scatterplot Matrices** {-}
 
 For two cardinal variables, the basic figure is the [scatterplot](02_11_BivariateDistributions.qmd#continuous-data): one point per observation, with $\hat{x}_{i}$ on the horizontal axis and $\hat{y}_{i}$ on the vertical axis.
-We return to `USArrests`, which records four cardinal variables for each state, so there are six pairs.
+With several cardinal variables, there is one scatterplot for each pair.
 A *scatterplot matrix* draws all of them in one grid, so you can scan every pairwise relationship at once.
 
 ```{r, fig.height=7, fig.width=7}
-# Store the observed data, one row per state
-xy_hat <- USArrests
+## MAIN EXAMPLE
+# Store the observed data, one row per worker
+# The data cover 3294 US workers.
+# wage is the hourly wage in 1980 dollars, and school and exper are in years.
+data(Wages1, package='Ecdat')
+xy_hat <- Wages1
 
-# Every pair of variables, one panel each
-pairs(xy_hat, pch=16, col=grey(0, .5), main=NA)
+# Every pair of the three cardinal variables, one panel each
+pairs(xy_hat[, c('wage', 'school', 'exper')], pch=16, col=grey(0, .1), main=NA)
+# Row wage, column school plots wage (vertical) against schooling (horizontal).
+# Schooling and experience are whole numbers, so their panels form stripes.
+# More schooling goes with higher wages and with less experience.
 ```
 
-The panel in row `Murder` and column `Assault` plots murder rates on the vertical axis against assault rates on the horizontal axis.
+Each panel plots the variable named in its row on the vertical axis against the variable named in its column on the horizontal axis.
 The panel below the diagonal repeats the panel above it with the axes swapped, so you only need to read one triangle.
 The `psych` package adds histograms on the diagonal and a summary of each pairwise relationship in the upper triangle.
 
 ```{r, fig.height=7, fig.width=7}
 # pairs.panels lays out univariate histograms on the diagonal,
 # scatterplots in the lower triangle, and correlations in the upper triangle.
-psych::pairs.panels(xy_hat,
+# With this many workers, smoother=TRUE shades each scatterplot by point density.
+psych::pairs.panels(xy_hat[, c('wage', 'school', 'exper')],
     hist.col=grey(0, .25), breaks=30, density=FALSE, hist.border=NA, # Diagonal
-    ellipses=FALSE, rug=FALSE, smoother=FALSE, pch=16, col=rgb(1, 0, 0, .8) # Lower Triangle
+    ellipses=FALSE, rug=FALSE, smoother=TRUE, pch=16, col=rgb(0, .7, .7, .8) # Lower Triangle
     )
+# Wages have a long right tail, and schooling piles up at 12 years.
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 The diagonal shows univariate histograms.
-The lower triangle shows scatterplots between each pair of variables.
+The lower triangle shows scatterplots between each pair of variables, shaded darker where observations pile up.
 The upper triangle shows correlation coefficients, a summary of linear association between $-1$ and $1$ that [Associations](02_14_Associations.qmd) defines.
 Scan the matrix for pairs where the cloud bends rather than running straight, and for points far from the rest of the cloud.
 Also look for pairs so tightly related that they carry almost the same information.
-Which pair of variables in `USArrests` is most tightly related, and which variable is nearly unrelated to the others?
+Which pair of variables in `Wages1` is most tightly related, and which pair is nearly unrelated?
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the matrix with the `USArrests` data on US states.
+Which pair of variables is most tightly related, and which variable is nearly unrelated to the others?
+
+```{r, fig.height=7, fig.width=7}
+# 50 US states in 1973, with four cardinal variables, so there are six pairs.
+# Murder, Assault, and Rape are arrests per 100,000 residents.
+# UrbanPop is the percent of the population in urban areas.
+xy2_hat <- USArrests
+
+psych::pairs.panels(xy2_hat,
+    hist.col=grey(0, .25), breaks=30, density=FALSE, hist.border=NA, # Diagonal
+    ellipses=FALSE, rug=FALSE, smoother=FALSE, pch=16, col=rgb(0, .7, .7, .8) # Lower Triangle
+    )
+# Row Murder, column Assault plots murder (vertical) against assault (horizontal).
+```
 :::
 
 #### **Encoding More Variables** {-}
 
 A scatterplot has two axes, but a point has more attributes than position: color, shape, and size can each carry another variable.
-The figure below colors and shapes each state by whether its assault rate is above the median, and sizes each point by its rape arrest rate.
+With many observations the points overlap, so differences in size are hard to see.
+The figure below therefore draws one point for each combination of the horizontal variable and a factor, placed at the mean of the vertical variable.
+Color and shape mark the factor, and size marks how many observations the point summarizes.
 
 ```{r}
-# Split states at the median assault rate
-assault_high <- xy_hat$Assault > median(xy_hat$Assault)
-col_high <- rgb(.8, 0, 0, .5)
-col_low <- rgb(0, 0, .8, .5)
-cols <- ifelse(assault_high, col_high, col_low)
-pchs <- ifelse(assault_high, 16, 17)
+# One row per combination of schooling and sex: mean wage and number of workers
+xy_cell_hat <- aggregate(wage ~ school + sex, data=xy_hat, FUN=mean)
+xy_cell_hat$n_cell <- aggregate(wage ~ school + sex, data=xy_hat, FUN=length)$wage
 
-# Scale point size by a fourth variable
-sizes <- xy_hat$Rape / max(xy_hat$Rape) * 2.5
+# Color and shape mark sex
+cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
+pchs <- c(16, 17)
+
+# Point area scales with the number of workers
+sizes <- sqrt(xy_cell_hat$n_cell / max(xy_cell_hat$n_cell)) * 3
 
 # Legends go in the margin above the plot so they cover no points
 par(mar=c(4, 4, 4, 1))
-plot(Murder ~ UrbanPop, data=xy_hat, pch=pchs, col=cols, cex=sizes,
+plot(wage ~ school, data=xy_cell_hat,
+    pch=pchs[xy_cell_hat$sex], col=cols[xy_cell_hat$sex], cex=sizes,
+    xlab='Years of schooling',
+    ylab='Mean hourly wage (1980 dollars)', main=NA)
+legend('topleft', inset=c(0, -.14), xpd=TRUE, horiz=TRUE, bty='n',
+    legend=levels(xy_cell_hat$sex),
+    pch=pchs, col=cols)
+legend('topright', inset=c(0, -.14), xpd=TRUE, horiz=TRUE, bty='n',
+    legend=c('10 workers', '500 workers'),
+    pch=16, col=grey(0, .5), pt.cex=sqrt(c(10, 500) / max(xy_cell_hat$n_cell)) * 3)
+# Men's mean wage is above women's at all 12 schooling levels where both appear.
+# Both means rise with schooling from 9 to 15 years.
+# The largest points are at 12 years, with 594 workers of each sex.
+# The smallest points hold only a few workers, so their means jump around.
+```
+
+Extra channels can show patterns that the plain panel of the matrix hid.
+Each added channel makes the figure harder to read, so two extra variables is a practical limit.
+Interactive versions, where hovering over a point reveals every variable at once, are covered in [Communicating Results](02_20_DataAnalysis.qmd#interactive-figures).
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+With few observations, each point can stand for one observation.
+Repeat the figure with `USArrests`, coloring and shaping each state by whether its assault rate is above the median, and sizing each point by its rape arrest rate.
+
+```{r}
+# 50 US states, so points overlap little and size can carry a fourth variable.
+xy2_hat <- USArrests
+
+# Split states at the median assault rate
+assault2_high <- xy2_hat$Assault > median(xy2_hat$Assault)
+col2_high <- rgb(.8, 0, 0, .5)
+col2_low <- rgb(0, 0, .8, .5)
+cols2 <- ifelse(assault2_high, col2_high, col2_low)
+pchs2 <- ifelse(assault2_high, 16, 17)
+
+# Scale point size by a fourth variable
+sizes2 <- xy2_hat$Rape / max(xy2_hat$Rape) * 2.5
+
+# Legends go in the margin above the plot so they cover no points
+par(mar=c(4, 4, 4, 1))
+plot(Murder ~ UrbanPop, data=xy2_hat, pch=pchs2, col=cols2, cex=sizes2,
     xlab='Percent of population in urban areas',
     ylab='Murder arrests (per 100,000)', main=NA)
 legend('topleft', inset=c(0, -.14), xpd=TRUE, horiz=TRUE, bty='n',
     legend=c('High assault', 'Low assault'),
-    pch=c(16, 17), col=c(col_high, col_low))
+    pch=c(16, 17), col=c(col2_high, col2_low))
 legend('topright', inset=c(0, -.14), xpd=TRUE, horiz=TRUE, bty='n',
     title='Rape arrests (per 100,000)', legend=c('10', '40'),
-    pch=16, col=grey(0, .5), pt.cex=c(10, 40) / max(xy_hat$Rape) * 2.5)
+    pch=16, col=grey(0, .5), pt.cex=c(10, 40) / max(xy2_hat$Rape) * 2.5)
+# High-assault states sit toward the top at every level of urbanization.
+# So the murder rate tracks the assault rate rather than the urban share.
+# Larger points also cluster toward the top.
+# So states with many murder arrests tend to have many rape arrests too.
 ```
-
-Two patterns appear that the plain `Murder` against `UrbanPop` panel of the matrix hid.
-High-assault states sit toward the top of the figure at every level of urbanization, so the murder rate tracks the assault rate rather than the urban share.
-Larger points also cluster toward the top, so states with many murder arrests tend to have many rape arrests too.
-Each added channel makes the figure harder to read, so two extra variables is a practical limit.
-Interactive versions, where hovering over a point reveals the state name and every variable at once, are covered in [Communicating Results](02_20_DataAnalysis.qmd#interactive-figures).
+:::
 
 ## Mixed Data
 
@@ -210,51 +302,114 @@ Interactive versions, where hovering over a point reveals the state name and eve
 
 A scatterplot can also be split by a factor: draw it separately for each group.
 A *conditioning plot* holds the factor fixed within each panel, so any pattern that appears is a within-group pattern.
-[Comparing More Than Two Groups](02_13_MultipleGroups.qmd#describing-groups) summarizes one factor at a time with boxplots and ECDFs; here we go straight to conditioning, and then combine two factors at once below.
+[Comparing Multiple Groups](02_13_MultipleGroups.qmd#describing-groups) summarizes one factor at a time with boxplots and ECDFs; here we go straight to conditioning, and then combine two factors at once below.
 
 ```{r}
-# Attach the four-level region factor to the observed data
-xy_hat$Region <- state.region
+## MAIN EXAMPLE
+# Three-level schooling factor, as in Comparing Multiple Groups
+xy_hat$school_g <- cut(xy_hat$school, breaks=c(0, 11, 12, 16), labels=c('<12', '12', '>12'))
 ```
 
-```{r, fig.height=7, fig.width=7}
-# One scatterplot per region, on common axes so the panels are comparable
-par(mfrow=c(2, 2))
-for (r in levels(xy_hat$Region)) {
-    xy_r_hat <- xy_hat[xy_hat$Region == r, ]
-    plot(Murder ~ UrbanPop, data=xy_r_hat, pch=16, col=grey(0, .5),
-        xlim=range(xy_hat$UrbanPop), ylim=range(xy_hat$Murder),
-        xlab='Percent urban', ylab='Murder arrests (per 100,000)', main=NA)
-    title(r, font.main=1)
+The line in each panel joins the group's mean outcome across values of the horizontal variable, so the eye can follow the center of the cloud.
+
+```{r, fig.height=3.5, fig.width=8}
+## MAIN EXAMPLE
+# One scatterplot per schooling group, on common axes to compare the panels
+# Experience is on the horizontal axis, since the groups already use schooling.
+# The wage axis ends just above 20 dollars, leaving out the 16 highest wages.
+par(mfrow=c(1, 3))
+for (g in levels(xy_hat$school_g)) {
+    xy_g_hat <- xy_hat[xy_hat$school_g == g, ]
+    plot(wage ~ exper, data=xy_g_hat, pch=16, col=grey(0, .1),
+        xlim=range(xy_hat$exper), ylim=c(0, 20),
+        xlab='Years of experience', ylab='Hourly wage (1980 dollars)', main=NA)
+    title(paste0(g, ' years of schooling'), font.main=1)
+    # Mean wage at each experience value held by 20 or more workers
+    m_g_hat <- aggregate(wage ~ exper, data=xy_g_hat, FUN=mean)
+    n_g <- table(xy_g_hat$exper)
+    lines(wage ~ exper, data=m_g_hat[n_g >= 20, ], col=rgb(0, 0, 1, .8), lwd=2)
 }
+# Pooled, wage and experience are nearly unrelated (correlation 0.05).
+# Under 12 years: the mean wage stays near 5 dollars after 5 years of experience.
+# Exactly 12 years: the mean wage rises from about 5 to about 6 dollars.
+# Over 12 years: the mean wage is the highest at every experience value drawn.
+# Its line also rises up to 9 years, then falls where few workers remain.
 ```
 
-Pooled over regions, murder rates were nearly unrelated to urbanization.
-Within the Northeast and the North Central states, more urban states have clearly higher murder rates.
-Within the South and the West there is little pattern, but the South sits high at every level of urbanization.
-The pooled figure hides the first two patterns because the regions differ so much in their average murder rate.
+A pooled figure can hide within-group patterns like these when the groups differ in their averages.
 
 The pooled and within-group views can be placed on one figure.
 We mark each group with its own symbol and add each group's center as a large hollow symbol.
-The hollow marker does not cover the states beneath it.
+The hollow marker does not cover the observations beneath it.
 
 ```{r}
-# Small filled points: states, by region; large hollow points: region means
-reg_cols <- hcl.colors(4, alpha=.6)
-reg_pch <- c(15, 16, 17, 18)
-reg_pch_hollow <- c(0, 1, 2, 5)
+## MAIN EXAMPLE
+# Small filled points: workers, by schooling; large hollow points: group means
+# The wage axis ends just above 20 dollars, leaving out the 16 highest wages.
+g_hues <- c(rgb(.8, 0, 0), rgb(0, .8, 0), rgb(0, 0, .8))
+g_cols <- adjustcolor(g_hues, alpha.f=.1)
+g_pch <- c(15, 16, 17)
+g_pch_hollow <- c(0, 1, 2)
 par(mar=c(4, 4, 4, 1))
-plot(Murder ~ UrbanPop, data=xy_hat, pch=reg_pch[xy_hat$Region], col=reg_cols[xy_hat$Region],
-    xlab='Percent urban', ylab='Murder arrests (per 100,000)', main=NA)
-means <- aggregate(cbind(UrbanPop, Murder) ~ Region, data=xy_hat, FUN=mean)
-points(means$UrbanPop, means$Murder, pch=reg_pch_hollow, col=hcl.colors(4), cex=2.5, lwd=2)
+plot(wage ~ exper, data=xy_hat, pch=g_pch[xy_hat$school_g], col=g_cols[xy_hat$school_g],
+    ylim=c(0, 20),
+    xlab='Years of experience', ylab='Hourly wage (1980 dollars)', main=NA)
+means <- aggregate(cbind(exper, wage) ~ school_g, data=xy_hat, FUN=mean)
+points(means$exper, means$wage, pch=g_pch_hollow, col=g_hues, cex=2.5, lwd=2)
 
 # Legends in the margin above the plot
 legend('topleft', inset=c(0, -.14), xpd=TRUE, horiz=TRUE, bty='n',
-    legend=levels(xy_hat$Region), pch=reg_pch, col=hcl.colors(4))
+    legend=paste0(levels(xy_hat$school_g), ' years'), pch=g_pch, col=g_hues)
+legend('topright', inset=c(0, -.14), xpd=TRUE, bty='n',
+    legend='group mean', pch=1, col='black', pt.cex=1.8, pt.lwd=2)
+# The most-schooled group has the highest mean wage and the least experience.
+# So the pooled cloud looks flatter than the panels with 12 or more years.
+# Every worker with over 12 years of experience has under 12 years of schooling.
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the conditioning plot and the overlay with `USArrests`, using one panel per census region.
+
+```{r, fig.height=7, fig.width=7}
+# 50 US states, with the four-level region factor attached
+xy2_hat <- USArrests
+xy2_hat$Region <- state.region
+
+# One scatterplot per region, on common axes so the panels are comparable
+par(mfrow=c(2, 2))
+for (r in levels(xy2_hat$Region)) {
+    xy2_r_hat <- xy2_hat[xy2_hat$Region == r, ]
+    plot(Murder ~ UrbanPop, data=xy2_r_hat, pch=16, col=grey(0, .5),
+        xlim=range(xy2_hat$UrbanPop), ylim=range(xy2_hat$Murder),
+        xlab='Percent urban', ylab='Murder arrests (per 100,000)', main=NA)
+    title(r, font.main=1)
+}
+# Pooled over regions, murder rates are nearly unrelated to urbanization.
+# In the Northeast and North Central, more urban states have higher murder rates.
+# In the South and West there is little pattern.
+# But the South sits high at every level of urbanization.
+# The pooled figure hides the first two patterns.
+# That is because the regions differ so much in their average murder rate.
+```
+
+```{r}
+# Small filled points: states, by region; large hollow points: region means
+region2_cols <- hcl.colors(4, alpha=.6)
+region2_pch <- c(15, 16, 17, 18)
+region2_pch_hollow <- c(0, 1, 2, 5)
+par(mar=c(4, 4, 4, 1))
+plot(Murder ~ UrbanPop, data=xy2_hat, pch=region2_pch[xy2_hat$Region], col=region2_cols[xy2_hat$Region],
+    xlab='Percent urban', ylab='Murder arrests (per 100,000)', main=NA)
+means2 <- aggregate(cbind(UrbanPop, Murder) ~ Region, data=xy2_hat, FUN=mean)
+points(means2$UrbanPop, means2$Murder, pch=region2_pch_hollow, col=hcl.colors(4), cex=2.5, lwd=2)
+
+# Legends in the margin above the plot
+legend('topleft', inset=c(0, -.14), xpd=TRUE, horiz=TRUE, bty='n',
+    legend=levels(xy2_hat$Region), pch=region2_pch, col=hcl.colors(4))
 legend('topright', inset=c(0, -.14), xpd=TRUE, bty='n',
     legend='region mean', pch=1, col='black', pt.cex=1.8, pt.lwd=2)
 ```
+:::
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Conditional means can reverse when pooled, for the same compositional reason as conditional proportions.
@@ -280,63 +435,126 @@ c(men=m_men_hat, women=m_women_hat)
 :::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Load `Wages1` from the `Ecdat` package, store it as `xy2_hat <- Wages1`, and draw a conditioning plot of `wage` against `exper` with one panel per `sex`.
-Use `col=grey(0, .1)` since there are $3294$ points.
-Then compute the mean wage by sex, pooled and within each value of `school`, with `aggregate(wage ~ sex + school, data=xy2_hat, FUN=mean)`.
+Using `xy_hat`, draw a conditioning plot of `wage` against `exper` with one panel per `sex`.
+Use `col=grey(0, .1)`, as in the panels above.
+Then compute the mean wage by sex, pooled and within each value of `school`, with `aggregate(wage ~ sex + school, data=xy_hat, FUN=mean)`.
 Does the pooled gap match the within-schooling gaps?
 :::
 
 #### **Two Factors at Once** {-}
 
 A group summary is not limited to one factor.
-[Encoding More Variables](#encoding-more-variables) split states into high- and low-assault groups at the median; crossing that split with `Region` gives eight groups, each small but still worth comparing.
+Crossing two factors gives one group for each combination of levels, each smaller than the groups of either factor alone but still worth comparing.
 
 ```{r}
-# A second factor: assault rate split at the median, same split as Encoding More Variables
-xy_hat$AssaultLevel <- factor(ifelse(xy_hat$Assault > median(xy_hat$Assault), 'High assault', 'Low assault'),
-    levels=c('Low assault', 'High assault'))
-table(xy_hat$Region, xy_hat$AssaultLevel)
+# Schooling group (3 levels) crossed with sex (2 levels) gives six groups
+table(xy_hat$school_g, xy_hat$sex)
+# Even the smallest group holds 345 workers.
 ```
 
-A grouped boxplot places the two low/high assault boxes side by side within each region, so a within-region comparison and a between-region comparison are both visible at once.
-Color keeps the region hues used in [Conditioning Plots](#conditioning-plots) above, and a lighter or darker shade of each region's hue marks low or high assault, so hue and shade carry two different variables.
-Regions are ordered left to right by their median murder rate, from lowest to highest.
+A grouped boxplot places the boxes for one factor side by side within each level of the other, so a within-group comparison and a between-group comparison are both visible at once.
+Color keeps the group hues used in [Conditioning Plots](#conditioning-plots) above, and a lighter or darker shade of each hue marks the second factor, so hue and shade carry two different variables.
 
 ```{r}
+## MAIN EXAMPLE
+# Hue stays fixed to each schooling group; shade (light/dark) marks sex.
+# Groups keep their own order, which also runs from low to high median wage.
+col_f_shade <- adjustcolor(g_hues, alpha.f=.35)
+col_m_shade <- adjustcolor(g_hues, alpha.f=.85)
+box_cols <- as.vector(rbind(col_f_shade, col_m_shade))
+
+# The wage axis ends just above 20 dollars, leaving out the 16 highest wages.
+par(mar=c(4, 4, 4, 1))
+boxplot(wage ~ sex + school_g, data=xy_hat,
+    col=box_cols, xaxt='n', ylim=c(0, 20),
+    xlab='Years of schooling', ylab='Hourly wage (1980 dollars)', main=NA)
+axis(1, at=seq(1.5, by=2, length.out=3), labels=levels(xy_hat$school_g), tick=FALSE, line=0.5)
+axis(1, at=seq_len(6), labels=FALSE)
+legend('topleft', inset=c(0, -.16), xpd=TRUE, horiz=TRUE, bty='n',
+    legend=levels(xy_hat$sex), fill=c(grey(.75), grey(.25)))
+# In every schooling group the median wage for men is above the median for women.
+```
+
+The same comparison as an ECDF, one panel per group, shows the full distribution rather than five numbers per box, with a single legend shared across all the panels.
+
+```{r, fig.height=4, fig.width=8}
+# One panel per schooling group; within each panel, one ECDF for each sex
+# The wage axis ends just above 20 dollars, leaving out the 16 highest wages.
+cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
+par(mfrow=c(1, 3), oma=c(0, 0, 3, 0))
+for (g in levels(xy_hat$school_g)) {
+    xy_g_hat <- xy_hat[xy_hat$school_g == g, ]
+    plot(NULL, xlim=c(0, 20), ylim=c(0, 1),
+        xlab='Hourly wage (1980 dollars)', ylab='Proportion of workers', main=NA)
+    F_f_hat <- ecdf(xy_g_hat$wage[xy_g_hat$sex == 'female'])
+    F_m_hat <- ecdf(xy_g_hat$wage[xy_g_hat$sex == 'male'])
+    plot(F_f_hat, add=TRUE, col=cols[1], lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA)
+    plot(F_m_hat, add=TRUE, col=cols[2], lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA)
+    title(paste0(g, ' years of schooling'), font.main=1)
+}
+
+# One legend for all three panels, drawn on an invisible full-figure overlay
+par(fig=c(0, 1, 0, 1), oma=c(0, 0, 0, 0), mar=c(0, 0, 0, 0), new=TRUE)
+plot(0, 0, type='n', bty='n', xaxt='n', yaxt='n')
+legend('top', horiz=TRUE, bty='n',
+    legend=levels(xy_hat$sex), col=cols, lwd=2)
+# In every panel the curve for men sits to the right of the curve for women.
+# So the wage gap between men and women is not an artifact of schooling.
+# The gap is narrowest among workers with fewer than 12 years of schooling.
+# Every curve rests on at least 345 workers, so no panel is thin.
+```
+
+When one curve sits to the right of the other in every panel, the difference between the curves is not an artifact of the factor that defines the panels.
+A panel with few observations should be read cautiously.
+
+Grouped boxplots [@Tukey1977] like the one above are also common in experimental economics.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the comparison with `USArrests`, crossing the four census regions with a split of states at the median assault rate.
+
+```{r}
+# 50 US states, with the four-level region factor attached
+xy2_hat <- USArrests
+xy2_hat$Region <- state.region
+
+# A second factor: assault rate split at the median
+# Crossing it with the regions gives eight groups, each small.
+xy2_hat$AssaultLevel <- factor(ifelse(xy2_hat$Assault > median(xy2_hat$Assault), 'High assault', 'Low assault'),
+    levels=c('Low assault', 'High assault'))
+table(xy2_hat$Region, xy2_hat$AssaultLevel)
+
 # Region hue stays fixed to each region's identity; shade (light/dark) marks assault level.
-# Regions are ordered along the x-axis by their median murder rate.
-region_order <- names(sort(tapply(xy_hat$Murder, xy_hat$Region, median)))
-xy_hat$RegionOrdered <- factor(xy_hat$Region, levels=region_order)
-reg_hues <- setNames(hcl.colors(4), levels(xy_hat$Region))
-col_low_shade  <- sapply(reg_hues[region_order], adjustcolor, alpha.f=.35)
-col_high_shade <- sapply(reg_hues[region_order], adjustcolor, alpha.f=.85)
-box_cols <- as.vector(rbind(col_low_shade, col_high_shade))
+# Regions are ordered along the x-axis by median murder rate, lowest to highest.
+region2_order <- names(sort(tapply(xy2_hat$Murder, xy2_hat$Region, median)))
+xy2_hat$RegionOrdered <- factor(xy2_hat$Region, levels=region2_order)
+region2_hues <- setNames(hcl.colors(4), levels(xy2_hat$Region))
+col2_low_shade  <- sapply(region2_hues[region2_order], adjustcolor, alpha.f=.35)
+col2_high_shade <- sapply(region2_hues[region2_order], adjustcolor, alpha.f=.85)
+box2_cols <- as.vector(rbind(col2_low_shade, col2_high_shade))
 
 par(mar=c(4, 4, 4, 1))
-boxplot(Murder ~ AssaultLevel + RegionOrdered, data=xy_hat,
-    col=box_cols, xaxt='n',
+boxplot(Murder ~ AssaultLevel + RegionOrdered, data=xy2_hat,
+    col=box2_cols, xaxt='n',
     xlab='Region (ordered by median murder rate)', ylab='Murder arrests (per 100,000)', main=NA)
-axis(1, at=seq(1.5, by=2, length.out=4), labels=region_order, tick=FALSE, line=0.5)
+axis(1, at=seq(1.5, by=2, length.out=4), labels=region2_order, tick=FALSE, line=0.5)
 axis(1, at=seq_len(8), labels=FALSE)
 legend('topleft', inset=c(0, -.16), xpd=TRUE, horiz=TRUE, bty='n',
     legend=c('Low assault', 'High assault'), fill=c(grey(.75), grey(.25)))
 ```
 
-The same comparison as an ECDF, one panel per region, shows the full distribution rather than five numbers per box, with a single legend shared across all four panels.
-
 ```{r, fig.height=7.5, fig.width=7}
 # One panel per region; within each panel, one ECDF for each assault level
-col_high <- rgb(.8, 0, 0, .5)
-col_low  <- rgb(0, 0, .8, .5)
+col2_high <- rgb(.8, 0, 0, .5)
+col2_low  <- rgb(0, 0, .8, .5)
 par(mfrow=c(2, 2), oma=c(0, 0, 3, 0))
-for (r in levels(xy_hat$Region)) {
-    xy_r_hat <- xy_hat[xy_hat$Region == r, ]
-    plot(NULL, xlim=range(xy_hat$Murder), ylim=c(0, 1),
+for (r in levels(xy2_hat$Region)) {
+    xy2_r_hat <- xy2_hat[xy2_hat$Region == r, ]
+    plot(NULL, xlim=range(xy2_hat$Murder), ylim=c(0, 1),
         xlab='Murder arrests (per 100,000)', ylab='Proportion of states', main=NA)
-    F_lo_hat <- ecdf(xy_r_hat$Murder[xy_r_hat$AssaultLevel == 'Low assault'])
-    F_hi_hat <- ecdf(xy_r_hat$Murder[xy_r_hat$AssaultLevel == 'High assault'])
-    plot(F_lo_hat, add=TRUE, col=col_low, lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA)
-    plot(F_hi_hat, add=TRUE, col=col_high, lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA)
+    F2_lo_hat <- ecdf(xy2_r_hat$Murder[xy2_r_hat$AssaultLevel == 'Low assault'])
+    F2_hi_hat <- ecdf(xy2_r_hat$Murder[xy2_r_hat$AssaultLevel == 'High assault'])
+    plot(F2_lo_hat, add=TRUE, col=col2_low, lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA)
+    plot(F2_hi_hat, add=TRUE, col=col2_high, lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA)
     title(r, font.main=1)
 }
 
@@ -344,35 +562,33 @@ for (r in levels(xy_hat$Region)) {
 par(fig=c(0, 1, 0, 1), oma=c(0, 0, 0, 0), mar=c(0, 0, 0, 0), new=TRUE)
 plot(0, 0, type='n', bty='n', xaxt='n', yaxt='n')
 legend('top', horiz=TRUE, bty='n',
-    legend=c('Low assault', 'High assault'), col=c(col_low, col_high), lwd=2)
+    legend=c('Low assault', 'High assault'), col=c(col2_low, col2_high), lwd=2)
+# In every region the high-assault curve is to the right of the low-assault curve.
+# So the assault-murder link is not an artifact of region.
+# The South's high-assault states reach the highest murder rates of any group.
+# Its own low-assault states resemble the low-assault states elsewhere.
+# The Northeast panel is the thinnest, with only two high-assault states.
+# So its curve should be read cautiously.
 ```
-
-In every region the high-assault curve sits to the right of the low-assault curve, so the assault-murder link is not an artifact of region.
-The South's high-assault states reach the highest murder rates of any group, while its own low-assault states resemble the low-assault states elsewhere.
-The Northeast panel is the thinnest, with only two high-assault states, so its curve should be read cautiously.
-
-Grouped boxplots [@Tukey1977] like the one above are also common in experimental economics.
+:::
 
 ## Simpson's Paradox
 
-A relationship visible inside every subgroup can flip direction once those subgroups are pooled.
+A relationship visible inside subgroups can flip direction once those subgroups are pooled.
 The [conditional proportions](#conditional-proportions) above compare outcomes within values of a third variable $\hat{z}_{i}$, so we can compare $\hat{p}(y\mid x,z)$ within each group to the pooled $\hat{p}(y\mid x)$.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-*Simpson's paradox* [@Yule1903; @Simpson1951] arises when a relationship that holds inside every subgroup reverses when the data are pooled.
+*Simpson's paradox* [@Yule1903; @Simpson1951] arises when a relationship that holds inside all or most subgroups reverses when the data are pooled.
 The within-group conditional distributions $\hat{p}(y\mid x, z)$ point one way; the overall $\hat{p}(y\mid x)$ points the other.
 :::
 
 Simpson's paradox is useful as a warning whenever you are tempted to pool subgroups: the pooled relationship reflects both the within-group pattern and how the subgroups differ in size.
 The [base-rate fallacy](02_11_BivariateDistributions.qmd#conditional-distributions) is a related composition effect: a category's share of a pooled statistic can be driven by its size rather than its rate.
-The Berkeley admissions in [Conditional Proportions](#conditional-proportions) are the classic example.
-Women had higher admission rates than men in four of the six departments (A, B, D, and F).
-Men applied mostly to departments A and B, which admitted over $60\%$ of applicants.
-Over $90\%$ of women applied to departments C to F, which admitted $35\%$ of applicants or fewer.
-The pooled gap mostly reflects where men and women applied, not how each department treated them.
+The Berkeley admissions in [Conditional Proportions](#conditional-proportions) are the classic example of the paradox.
 The example is part of a real debate about discrimination (<http://homepage.stat.uiowa.edu/~mbognar/1030/Bickel-Berkeley.pdf>).
+A pooled gap can reflect how groups spread across subgroups rather than differences within those subgroups.
 The same logic applies to the gender pay gap, cross-country growth comparisons, and many other social issues.^[A ratio can also change due to changes in either the numerator or the denominator.]
-Neither the pooled rates nor the within-department rates alone identify what would happen under an intervention.
+Neither the pooled rates nor the within-group rates alone identify what would happen under an intervention.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 A stylized version of the admissions example makes the arithmetic easy to follow.
@@ -430,10 +646,10 @@ for (g in seq_len(3)) {
 }
 
 # The pooled regression line is positive.
-abline(lm(X2 ~ X1, data=xy_agg_sim), lwd=3, lty=2)
+abline(lm(X2 ~ X1, data=xy_agg_sim), col=rgb(0, 0, 0, .8), lwd=2, lty=2)
 legend('topleft', bty='n', cex=.8,
     legend=c('within group', 'pooled'),
-    lwd=c(2, 3), lty=c(1, 2), col=c(grey(0, .7), 'black'))
+    lwd=2, lty=c(1, 2), col=c(grey(0, .7), rgb(0, 0, 0, .8)))
 ```
 Each within-group regression line (solid) slopes downward, yet the pooled regression line (dashed) slopes upward.
 A researcher who ignored the groups would report a positive relationship that holds within no single group.
@@ -478,5 +694,6 @@ Yet women were admitted at a similar or higher rate within most departments, bec
 This reversal is *Simpson's paradox*, and a simulated example showed that it can happen with continuous data too.
 Scatterplot matrices and extra point channels did the same job for continuous data.
 Conditioning plots, grouped boxplots, and ECDFs did it for mixed data.
-The region panels revealed within-region patterns in murder rates that the pooled scatterplot hid.
-Crossing region with assault level showed the same assault-murder link inside every region.
+The panels by schooling group showed a pattern that the pooled scatterplot hid.
+Among workers with exactly $12$ years of schooling, the mean wage rose from about $5$ to about $6$ dollars with experience.
+Crossing schooling group with sex showed higher wages for men than for women inside every schooling group.

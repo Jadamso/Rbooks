@@ -2,8 +2,18 @@
 ***
 
 A *hypothesis test* turns a question about the population into a decision: given the data, do we have enough evidence to reject a specific value for the parameter?
-This chapter conducts those tests two ways (by inverting a confidence interval and by imposing the null), then summarizes the evidence with a $p$-value and a $t$-value.
-We also cover one-sided versions and common pitfalls so that "statistically significant" stays linked to its statistical meaning.
+
+This chapter asks three questions.
+
+* How do we decide whether to reject a value?
+    * *Invert a CI*: this reuses a [confidence interval](01_07_Intervals.qmd#resampling-intervals), and rejects the value if it falls outside.
+    * *Impose the null*: this is a new use of the [bootstrap](01_05_Sampling.qmd#bootstrap-distribution), which centers the resampled statistics on the value and checks how unusual the observed statistic is.
+* How strong is the evidence against that value?
+    * *Two-sided and one-sided $p$-values*: these give the probability, if the null is true, of a statistic at least as extreme as the one observed, looking in both tails or in one.
+    * *$t$-value*: this measures the distance from the null in standard errors, $t=(M-m_{0})/\text{SE}(M)$, so it does not depend on units.
+* What does "statistically significant" mean?
+    * *False rejections*: when the null is true, $p$-values still vary from sample to sample, and some fall below $0.05$ by chance.
+      So "significant" says only that the $p$-value fell below a chosen cutoff.
 
 ## Testing Methods
 
@@ -69,18 +79,26 @@ A $95\%$ confidence interval corresponds to a $5\%$ rejection region split betwe
 So a test at level $\alpha$ uses an interval with coverage $1-\alpha$.
 See the previous [Confidence Intervals chapter](01_07_Intervals.qmd) for how the interval is computed.
 
-For example, suppose you hypothesize the mean murder arrest rate is $9$ per $100{,}000$.
+For example, suppose you hypothesize the mean equals $m_{0}$.
 You then construct a bootstrap distribution with $95\%$ confidence interval, and find your hypothesized value falls outside of the confidence interval.
-Then, after accounting for sampling variability (which you estimate), it still seems extremely unlikely that the theoretical mean actually equals $9$, so you reject that hypothesis.
-(If the theoretical value landed in the interval, you would "fail to reject" the theoretical mean equals $9$.)
+Then, after accounting for sampling variability (which you estimate), it still seems extremely unlikely that the theoretical mean actually equals $m_{0}$, so you reject that hypothesis.
+(If the theoretical value landed in the interval, you would "fail to reject" the theoretical mean equals $m_{0}$.)
 ```{r}
-x_hat <- USArrests[, 'Murder'] # lab data: murder arrests per 100,000
+## MAIN EXAMPLE
+# Pretend these 3294 hourly wages are the whole population
+# Source: US workers, with hourly wages in 1980 dollars
+data(Wages1, package='Ecdat')
+population_wages <- Wages1[, 'wage']
+
+# Lab data: one random sample of 50 workers, as if it were all we observed
+set.seed(1) # to be replicable
+x_hat <- sample(population_wages, 50, replace=FALSE)
 m_hat <- mean(x_hat)
 m_hat
+# The sample mean is about 5.71 dollars an hour.
 
 # Bootstrap Distribution
 n <- length(x_hat)
-set.seed(1) # to be replicable
 boot_means <- rep(NA, 999)
 for(b in seq_along(boot_means)){
     x_boot <- sample(x_hat, replace=TRUE) # c.f. jackknife
@@ -96,9 +114,43 @@ hist(boot_means, breaks=25,
 # CI
 ci_95 <- quantile(boot_means, probs=c(.025, .975))
 abline(v=ci_95, col=rgb(0, 0, 0, .8), lwd=2)
+# H0: mean=6.5
+abline(v=6.5, col=rgb(0, 0, 1, .8), lty=2)
+# The 95% interval runs from about 4.93 to 6.47 dollars an hour.
+# The hypothesized 6.5 falls just above it, so we reject this null.
+# The population mean is about 5.76, so this null is in fact false.
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat this test with the murder arrest rates in `USArrests`, for the hypothesized mean of $9$ arrests per $100{,}000$.
+
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+m2_hat <- mean(x2_hat)
+m2_hat
+
+# Bootstrap Distribution
+n2 <- length(x2_hat)
+boot_means2 <- rep(NA, 999)
+for(b in seq_along(boot_means2)){
+    x_boot <- sample(x2_hat, replace=TRUE) # c.f. jackknife
+    m_b_hat <- mean(x_boot)
+    boot_means2[b] <- m_b_hat
+}
+
+hist(boot_means2, breaks=25,
+    border=NA,
+    freq=FALSE,
+    main=NA,
+    xlab='Bootstrap Samples')
+# CI
+ci2_95 <- quantile(boot_means2, probs=c(.025, .975))
+abline(v=ci2_95, col=rgb(0, 0, 0, .8), lwd=2)
 # H0: mean=9
 abline(v=9, col=rgb(0, 0, 1, .8), lty=2)
+# The hypothesized 9 falls just above the 95% interval, so we reject it.
 ```
+:::
 
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -108,16 +160,16 @@ E.g., you can conduct hypothesis tests for `sd` and `IQR`, or `skew` and `kurtos
 
 ```{r}
 # Bootstrap Distribution for SD
-s_hat <- sd(x_hat)
+s_adj_hat <- sd(x_hat)
 boot_sds <- rep(NA, 999)
 for(b in seq_along(boot_sds)){
     x_boot <- sample(x_hat, replace=TRUE)
-    s_b_hat <- sd(x_boot)
-    boot_sds[b] <- s_b_hat
+    s_adj_b_hat <- sd(x_boot)
+    boot_sds[b] <- s_adj_b_hat
 }
 
 # Test for SD Differences (Invert CI)
-sd_null <- 3.6
+sd_null <- 2.2
 hist(boot_sds, freq=FALSE, breaks=50,
     border=NA, xlab='Bootstrap',
     main=NA)
@@ -125,6 +177,7 @@ title('Standard Deviations (Invert CI)', font.main=1)
 sd_ci <- quantile(boot_sds, probs=c(0.025, .975) )
 abline(v=sd_ci, col=rgb(0, 0, 0, .8), lwd=2)
 abline(v=sd_null, col=rgb(0, 0, 1, .8), lty=2)
+# The hypothesized 2.2 falls just below the 95% interval, so we reject it.
 ```
 
 To better your understanding, try redoing the above for any function (such as `IQR(x_boot)/median(x_boot)`)
@@ -140,6 +193,8 @@ If the confidence interval comes out narrow, it may exclude $85\%$, and the $85\
 But an interval wide enough to contain $85\%$ is also wide enough to contain $70\%$, so the same evidence fails to rule out a worse student who simply got lucky.
 A single exam cannot easily distinguish the two stories.
 
+We compute the student's interval and mark both $70\%$ and $85\%$ on it.
+
 ```{r}
 # One exam: 34 correct out of 44 questions
 n_questions <- 44
@@ -147,7 +202,6 @@ n_correct <- 34
 outcomes <- c(rep(1, n_correct), rep(0, n_questions - n_correct)) # 1=correct, 0=incorrect
 
 # Bootstrap Distribution for the proportion correct
-set.seed(1)
 boot_props <- rep(NA, 999)
 for(b in seq_along(boot_props)){
     x_boot <- sample(outcomes, replace=TRUE)
@@ -160,9 +214,10 @@ hist(boot_props, breaks=25,
 ci_95 <- quantile(boot_props, probs=c(.025, .975))
 abline(v=ci_95, col=rgb(0, 0, 0, .8), lwd=2)
 abline(v=c(.70, .85), col=rgb(0, 0, 1, .8), lty=2)
+# The 95% interval runs from about 0.64 to 0.89.
+# It comfortably contains both 0.70 and 0.85.
+# So the student can reject neither story.
 ```
-
-The interval comfortably contains both $70\%$ and $85\%$, so the student can reject neither story.
 
 The deeper issue is what the bootstrap resample actually represents.
 Resampling only reshuffles the same $44$ questions, so it approximates how the score would vary if the student retook that exact exam.
@@ -179,19 +234,19 @@ We use the bootstrap to loop through a large number of "resamples".
 In each iteration of the loop, we impose the null hypothesis and re-estimate the statistic of interest.
 We then calculate the range of the statistic across all resamples and compare how extreme the original value we observed is.
 
-For example, suppose you again hypothesize the mean murder arrest rate is $9$.
-You then construct a $95\%$ confidence interval around the *null* bootstrap distribution (resamples centered around $9$).
+For example, suppose you again hypothesize the mean equals $m_{0}$.
+You then construct a $95\%$ confidence interval around the *null* bootstrap distribution (resamples centered around $m_{0}$).
 Suppose your sample mean falls outside of that interval.
-Then even after accounting for sampling variability (which you estimate), it seems extremely unlikely that the theoretical mean actually equals $9$, so you reject that hypothesis.
-(If the sample mean landed in the interval, you would "fail to reject" the theoretical mean equals $9$.)
+Then even after accounting for sampling variability (which you estimate), it seems extremely unlikely that the theoretical mean actually equals $m_{0}$, so you reject that hypothesis.
+(If the sample mean landed in the interval, you would "fail to reject" the theoretical mean equals $m_{0}$.)
 
 ```{r}
+## MAIN EXAMPLE
 m_hat <- mean(x_hat)
 
-# Bootstrap NULL: mean=9
+# Bootstrap NULL: mean=6.5
 # Bootstrap shift: center each bootstrap resample so that the distribution satisfies the null hypothesis on average.
-set.seed(1)
-null_mean <- 9
+null_mean <- 6.5
 boot_means_null <- rep(NA, 999)
 for(b in seq_along(boot_means_null)){
     x_boot <- sample(x_hat, replace=TRUE)
@@ -204,7 +259,35 @@ hist(boot_means_null, breaks=25, border=NA, freq=FALSE,
 ci_95 <- quantile(boot_means_null, probs=c(.025, .975)) # critical region
 abline(v=ci_95, col=rgb(0, 0, 0, .8), lwd=2)
 abline(v=m_hat, col=rgb(1, 0, 0, .8), lwd=2)
+# The middle 95% of the null distribution runs from about 5.79 to 7.23.
+# The sample mean of about 5.71 falls just below it, so we reject this null.
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat this test with the murder arrest rates in `USArrests`, again for the hypothesized mean of $9$.
+
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+m2_hat <- mean(x2_hat)
+
+# Bootstrap NULL: mean=9
+# Bootstrap shift: center each bootstrap resample so that the distribution satisfies the null hypothesis on average.
+null_mean2 <- 9
+boot_means_null2 <- rep(NA, 999)
+for(b in seq_along(boot_means_null2)){
+    x_boot <- sample(x2_hat, replace=TRUE)
+    m_b_hat <- mean(x_boot) + (null_mean2 - m2_hat) # impose the null via Bootstrap shift
+    boot_means_null2[b] <- m_b_hat
+}
+hist(boot_means_null2, breaks=25, border=NA, freq=FALSE,
+    main=NA,
+    xlab='Null Bootstrap Samples')
+ci2_95 <- quantile(boot_means_null2, probs=c(.025, .975)) # critical region
+abline(v=ci2_95, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=m2_hat, col=rgb(1, 0, 0, .8), lwd=2)
+# The sample mean falls just below the middle 95%, so we reject a mean of 9.
+```
+:::
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Why does adding $(m_{0} - \hat{m})$ impose the null?
@@ -250,23 +333,24 @@ The $p$-value is *not* the probability that the null is true.
 :::
 
 The $p$-value is useful as a *continuous summary* of how strongly the data oppose the null, whereas a confidence interval gives only a yes/no answer at a fixed coverage level.
-For the running mean example, we want the probability that the random variable $M$ is at least as extreme (far from the null mean of $9$) as our observed sample mean $\hat{m}$.
+For the running mean example, we want the probability that the random variable $M$ is at least as extreme (far from the null mean $m_{0}$) as our observed sample mean $\hat{m}$.
 
 Recall that we used the bootstrap to estimate the distribution of the sample statistic like the mean, and the null-bootstrap shifted the bootstrap to be centered at a hypothesized value.
 The bootstrap idea here is to approximate $M-\mathbb{E}[X_{i}]$, the difference between the sample mean $M$ and the unknown theoretical mean $\mathbb{E}[X_{i}]$, with $M^{\text{boot}}-\hat{m}$.
 To test $H_{0}: \mathbb{E}[X_{i}]=m_{0}$, we recenter the bootstrap mean as $M^{\text{boot}}_{0}=M^{\text{boot}}+(m_{0}-\hat{m})$, so $M^{\text{boot}}_{0}-m_{0}=M^{\text{boot}}-\hat{m}$.
-For the running example, $m_{0}=9$.
+The two-sided $p$-value is then
 $$\begin{aligned}
 &  \text{Prob}( |M - m_{0}| \geq |\hat{m} - m_{0}| \mid \mathbb{E}[X_{i}] = m_{0} ) \\
 &  \approx \text{Prob}( |M^{\text{boot}}_{0}- m_{0}| \geq |\hat{m}- m_{0}| ) \\
-&  = 1-\hat{F}^{|\text{boot}|}_{0}(|\hat{m}-9|),
+&  = 1-\hat{F}^{|\text{boot}|}_{0}(|\hat{m}-m_{0}|),
 \end{aligned}$$
 where $\hat{F}^{|\text{boot}|}_{0}$ is the ECDF of $|M^{\text{boot}}_{0}- m_{0}|$.
 
 
-Using the null bootstrap distribution `boot_means_null` from above, we compute the two-sided $p$-value for the murder data.
+Using the null bootstrap distribution `boot_means_null` from above, we compute the two-sided $p$-value for the lab data.
 ```{r}
-# Two-Sided Test, ALTERNATIVE: mean < 9 or mean >9
+## MAIN EXAMPLE
+# Two-Sided Test, ALTERNATIVE: mean < 6.5 or mean > 6.5
 # Visualize Two Sided Prob. & reject region boundary
 par(mfrow=c(1, 2))
 hist(boot_means_null-null_mean,
@@ -288,7 +372,38 @@ abline(v=abs(m_hat-null_mean), col=rgb(1, 0, 0, .8), lwd=2)
 # with Two Sided Probability
 p2 <- 1 - F_hat( abs(m_hat-null_mean) )
 title( paste0('p=', round(p2, 3)), font.main=1)
+# The two-sided p-value is about 0.03, below the 5% level.
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the two-sided $p$-value with the murder arrest rates, using `boot_means_null2` from the Test Yourself in [Impose the Null](#impose-the-null).
+
+```{r}
+# Two-Sided Test, ALTERNATIVE: mean < 9 or mean > 9
+# Visualize Two Sided Prob. & reject region boundary
+par(mfrow=c(1, 2))
+hist(boot_means_null2-null_mean2,
+    freq=FALSE, breaks=25,
+    border=NA,
+    main=NA,
+    xlab=expression('Null Bootstrap for M - '~m[0]))
+abline(v=m2_hat-null_mean2, col=rgb(1, 0, 0, .8), lwd=2)
+ci2_95 <- quantile(boot_means_null2-null_mean2, probs=c(0.025, .975))
+abline(v=ci2_95, col=rgb(0, 0, 0, .8), lwd=2)
+
+# Equivalent Visualization
+boot_absval2 <- abs(boot_means_null2-null_mean2)
+F2_hat <- ecdf(boot_absval2)
+plot(F2_hat,
+    main=NA,
+    xlab=expression('Null Bootstrap for |M - '~m[0]~'|'))
+abline(v=abs(m2_hat-null_mean2), col=rgb(1, 0, 0, .8), lwd=2)
+# with Two Sided Probability
+p2_2 <- 1 - F2_hat( abs(m2_hat-null_mean2) )
+title( paste0('p=', round(p2_2, 3)), font.main=1)
+# The two-sided p-value is about 0.045, just below the 5% level.
+```
+:::
 
 :::{.callout-note icon=false collapse="false" title="Must Know"}
 Continuing the exam example from above: the student scored $\hat{p}=34/44 \approx 77\%$ and wants to test $H_{0}: p=0.85$.
@@ -300,7 +415,6 @@ n_correct <- 34
 outcomes <- c(rep(1, n_correct), rep(0, n_questions - n_correct))
 p_hat <- mean(outcomes)
 
-set.seed(1)
 # Bootstrap NULL: p=0.85
 # Bootstrap shift: center each bootstrap resample so that the distribution satisfies the null hypothesis on average.
 p0 <- 0.85
@@ -321,11 +435,27 @@ ci_95 <- quantile(boot_props_null, probs=c(.025, .975))
 abline(v=ci_95, col=rgb(0, 0, 0, .8), lwd=2)
 abline(v=p_hat, col=rgb(1, 0, 0, .8), lwd=2)
 title( paste0('p=', round(p2_exam, 3)), font.main=1)
+# The two-sided p-value is about 0.20, far above the 5% level.
+# So we fail to reject p=0.85, which matches the interval above.
 ```
 
-The two-sided $p$-value comes out around $0.2$, far above the conventional $5\%$ threshold, so we fail to reject $H_{0}: p=0.85$.
-This matches the earlier conclusion from the confidence interval, but the $p$-value adds a precise number for how weak the evidence against $85\%$ actually is, rather than just a reject/fail-to-reject label.
-Testing $H_{0}: p=0.70$ the same way would also fail to reject: the $p$-value is large in both directions because a single $44$-question exam simply cannot pin down the student's true ability closely enough to rule out either story.
+Compared with an interval, the $p$-value adds a precise number for how strong or weak the evidence against the null is, rather than just a reject/fail-to-reject label.
+
+The other story, $H_{0}: p=0.70$, can be tested the same way.
+
+```{r}
+# Impose p=0.70 instead, by shifting the same resamples
+p0_low <- 0.70
+boot_props_null_low <- boot_props_null + (p0_low - p0)
+
+# Two-Sided p-value
+1 - ecdf( abs(boot_props_null_low-p0_low) )( abs(p_hat-p0_low) )
+# The p-value is again about 0.20, so we also fail to reject p=0.70.
+# The two nulls are nearly equally far from p_hat, so their p-values match.
+# The p-value is large in both directions, so neither story is ruled out.
+```
+
+A single $44$-question exam simply cannot pin down the student's true ability closely enough to rule out either story.
 :::
 
 
@@ -342,7 +472,7 @@ That is false.
 A $p$-value is the frequency you see something at least as extreme as your statistic under the null hypothesis.
 
 Failing to reject $H_{0}$ does not show that $H_{0}$ is true [@AltmanBland1995; @Abadie2020].
-In the exam example, the data rejected neither $70\%$ nor $85\%$, yet the student's true score cannot be both.
+The exam example above is a case in point, because the student's true score cannot be both $70\%$ and $85\%$.
 A large $p$-value can simply mean that the sample is too small to tell nearby values apart.
 This is one reason why we say "fail to reject" rather than "accept".
 Another reason is that we can "fail to reject" multiple different hypotheses, and "accepting" them all would be nonsense.
@@ -364,19 +494,18 @@ The fix is to correct the level (e.g., @Bonferroni1936: use $0.05/k$ when runnin
 # Purely-Statistical Decision Making
 # via Two Sided Test
 if(p2 >.05){
-    print('fail to reject the null that mean=9, at the 5% level')
+    print('fail to reject the null that mean=6.5, at the 5% level')
 } else {
-    print('reject the null that mean=9 in favor of either <9 or >9, at the 5% level')
+    print('reject the null that mean=6.5 in favor of either <6.5 or >6.5, at the 5% level')
 }
 ```
 
 Also note that the $p$-value is itself a function of data, and hence a random variable that changes from sample to sample.
-To see this, return to the wage data from [Sampling](01_05_Sampling.qmd#population-theory) and pretend its $3294$ workers are the whole population.
-Then we know the population mean, and we can draw many samples and test the null that is actually true.
+To see this, return to the pretend population from [Sampling](01_05_Sampling.qmd#population-theory).
+We know its mean, so we can draw many samples and test the null that is actually true.
 ```{r}
-# Known population: hourly wages of 3294 workers
-data(Wages1, package='Ecdat')
-population_wages <- Wages1[, 'wage']
+## MAIN EXAMPLE
+# Known population mean, from the pretend population defined above
 population_wage_mean <- mean(population_wages)
 
 # 300 samples, each tested against the true mean
@@ -400,15 +529,16 @@ abline(v=.05, col=rgb(0, 0, 0, .8), lwd=2)
 
 # Share of samples that falsely reject at the 5% level
 mean(p_values <= .05)
+# About 5% of these samples still reject at the 5% level.
+# These are the false rejections described above.
 ```
 The null is true in every one of these samples, yet the $p$-values spread across the whole range from $0$ to $1$.
-A few samples still reject at the $5\%$ level, which is exactly the false rejection described above.
 Given that the $5\%$ level is somewhat arbitrary, and that the $p$-value both varies from sample to sample and is often misunderstood, it makes sense to give specific $p$-values a limited role in decision making.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 The $p$-value also varies a little each time you rerun the bootstrap on the *same* data, because each run draws different resamples.
 This variation comes from the computer, not from the sample, and it shrinks as you use more resamples.
-Here we repeat the murder test $300$ times on the one sample we have.
+Here we repeat the two-sided test $300$ times on the one sample we have.
 ```{r}
 p_values_boot <- rep(NA, 300)
 for(b2 in seq(p_values_boot)){
@@ -425,8 +555,10 @@ for(b2 in seq(p_values_boot)){
 hist(p_values_boot, freq=FALSE, breaks=50,
     border=NA, main=NA)
 abline(v=.05, col=rgb(0, 0, 0, .8), lwd=2)
+# The p-values run from about 0.02 to 0.06, so they land on both sides of 0.05.
+# Rerunning the bootstrap alone could flip this decision.
 ```
-The $p$-values here land on both sides of $0.05$, so rerunning the bootstrap alone could flip the decision.
+When the $p$-value is close to the cutoff, rerunning the bootstrap alone could flip the decision.
 This is one more reason not to lean on the exact $5\%$ cutoff.
 :::
 
@@ -444,16 +576,16 @@ Using a standardized statistic makes results comparable across studies and conne
 
 The $t$-value is useful as a *test statistic* that does not depend on units.
 The units cancel between the numerator and the denominator.
-So a $t$ of $2.05$ means roughly the same thing whether the data are measured in dollars or hours.
+So a given $t$-value means roughly the same thing whether the data are measured in dollars or hours.
 For any specific sample we must approximate the standard error.
-Using the theory-driven approach, we compute $\hat{t}=(\hat{m}-m_{0})/(\hat{s}/\sqrt{n})$.
+Using the theory-driven approach, we compute $\hat{t}=(\hat{m}-m_{0})/(\hat{s}_{\text{adj}}/\sqrt{n})$, with the [adjusted sample standard deviation](01_06_EstimationTheory.qmd#bias) $\hat{s}_{\text{adj}}$.
 Using the data-driven approach, we compute $\hat{t}=(\hat{m}-m_{0})/(\hat{\text{SE}}^{\text{jack}})$ or $\hat{t}=(\hat{m}-m_{0})/(\hat{\text{SE}}^{\text{boot}})$.
 In any case, we can use bootstrapping to estimate the variability of the $t$ statistic, just like we did with the mean.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Take the four observations $\{3, 5, 7, 9\}$ and the null $m_{0}=4$.
-The sample mean is $\hat{m}=6$ and the sample standard deviation is $\hat{s}\approx 2.58$.
-The theory-driven standard error is $\hat{s}/\sqrt{4} \approx 1.29$, so $\hat{t} \approx (6-4)/1.29 \approx 1.55$.
+The sample mean is $\hat{m}=6$ and the adjusted sample standard deviation is $\hat{s}_{\text{adj}}\approx 2.58$.
+The theory-driven standard error is $\hat{s}_{\text{adj}}/\sqrt{4} \approx 1.29$, so $\hat{t} \approx (6-4)/1.29 \approx 1.55$.
 The sample mean is about one and a half standard errors above the null.
 ```{r}
 x0_hat <- c(3, 5, 7, 9)
@@ -463,10 +595,11 @@ c(se0_hat, t0_hat)
 ```
 :::
 
-For the murder data, we compute $\hat{t}$ with jackknife standard errors and then bootstrap its null distribution.
+For the lab data, we compute $\hat{t}$ with jackknife standard errors and then bootstrap its null distribution.
 ```{r}
+## MAIN EXAMPLE
 #null hypothesis
-null_mean <- 9
+null_mean <- 6.5
 
 # t statistic
 jack_means <- rep(NA, length(x_hat))
@@ -477,7 +610,7 @@ for(i in seq_along(jack_means)){
 jackknife_se <- sd(jack_means)*sqrt(length(x_hat))
 t_hat <- (m_hat - null_mean)/jackknife_se
 
-# Boostrap Null Distribution
+# Bootstrap Null Distribution
 boot_t_null <- rep(NA, 999)
 for(b in seq_along(boot_t_null)){
     x_boot <- sample(x_hat, replace=TRUE)
@@ -511,10 +644,13 @@ p <- 1 - F_hat( abs(t_hat) )
 title( paste0('p=', round(p, 3)), font.main=1)
 
 if(p >.05){
-    print('fail to reject the null that mean=9, at the 5% level')
+    print('fail to reject the null that mean=6.5, at the 5% level')
 } else {
-    print('reject the null that mean=9 in favor of either <9 or >9, at the 5% level')
+    print('reject the null that mean=6.5 in favor of either <6.5 or >6.5, at the 5% level')
 }
+# The observed t is about -1.99, just inside the middle 95% of its null distribution.
+# Its two-sided p-value, about 0.045, is just below 0.05, so this test also rejects.
+# The interval and the p-value can disagree this close to the cutoff.
 ```
 
 
@@ -534,7 +670,6 @@ The observed $t$-values appear as points, with reference lines at $0$ and $\pm 1
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Make a spreadplot for three tests at once.
 In `USArrests`, test the nulls $\mathbb{E}[X_{i}]=9$ for `Murder`, $\mathbb{E}[X_{i}]=150$ for `Assault`, and $\mathbb{E}[X_{i}]=70$ for `UrbanPop`.
-The three means are on very different scales, but their $\hat{t}$ values are not.
 For each variable, compute $\hat{t}$ and bootstrap its null distribution as above.
 Then draw one spreadplot per variable and add each observed $\hat{t}$ as a point.
 Which nulls would you reject at the $5\%$ level?
@@ -552,35 +687,37 @@ t_jack <- function(x_hat, null_mean) {
 }
 
 # One null for each variable, on very different scales
-null_means <- c(Murder=9, Assault=150, UrbanPop=70)
+null_means2 <- c(Murder=9, Assault=150, UrbanPop=70)
 
 # Observed t and its bootstrap null distribution for each variable
 n_boot <- 999
-t_hats <- rep(NA, length(null_means))
-boot_t_nulls <- matrix(NA, nrow=n_boot, ncol=length(null_means))
-for (k in seq_along(null_means)) {
-    x_k_hat <- USArrests[, names(null_means)[k]]
-    t_hats[k] <- t_jack(x_k_hat, null_means[k])
+t2_hats <- rep(NA, length(null_means2))
+boot_t_nulls2 <- matrix(NA, nrow=n_boot, ncol=length(null_means2))
+for (k in seq_along(null_means2)) {
+    x2_k_hat <- USArrests[, names(null_means2)[k]]
+    t2_hats[k] <- t_jack(x2_k_hat, null_means2[k])
     for (b in seq(n_boot)) {
-        x_boot <- sample(x_k_hat, replace=TRUE)
-        x_boot <- x_boot + (null_means[k] - mean(x_k_hat)) # impose the null by recentering
-        boot_t_nulls[b, k] <- t_jack(x_boot, null_means[k])
+        x_boot <- sample(x2_k_hat, replace=TRUE)
+        x_boot <- x_boot + (null_means2[k] - mean(x2_k_hat)) # impose the null by recentering
+        boot_t_nulls2[b, k] <- t_jack(x_boot, null_means2[k])
     }
 }
 
 # Spreadplot: range as a black line, middle 95% as a grey bar, median as a white line
-plot(NA, xlim=c(0.5, length(null_means) + 0.5), ylim=range(boot_t_nulls, t_hats),
+plot(NA, xlim=c(0.5, length(null_means2) + 0.5), ylim=range(boot_t_nulls2, t2_hats),
     xaxt='n', xlab=NA, ylab=expression(hat(t)), main=NA)
-axis(1, at=seq_along(null_means), labels=names(null_means))
+axis(1, at=seq_along(null_means2), labels=names(null_means2))
 abline(h=0, col=grey(.5), lty=3)                   # zero line
 abline(h=c(-1.96, 1.96), col=grey(0.5), lty=3)     # Normal critical values
-for (k in seq_along(null_means)) {
-    t_q <- quantile(boot_t_nulls[, k], probs=c(0, 0.025, 0.5, 0.975, 1))
+for (k in seq_along(null_means2)) {
+    t_q <- quantile(boot_t_nulls2[, k], probs=c(0, 0.025, 0.5, 0.975, 1))
     segments(k, t_q[1], k, t_q[5], col=rgb(0, 0, 0, .8))
     rect(k - 0.1, t_q[2], k + 0.1, t_q[4], col=grey(0.6), border=NA)
     segments(k - 0.1, t_q[3], k + 0.1, t_q[3], col='white', lwd=2)
 }
-points(seq_along(null_means), t_hats, pch=16, col=rgb(1, 0, 0, .8)) # observed t
+points(seq_along(null_means2), t2_hats, pch=16, col=rgb(1, 0, 0, .8)) # observed t
+# The three means, about 7.8, 170.8, and 65.5, are on very different scales.
+# Their observed t-values, about -1.93, 1.73, and -2.14, are not.
 ```
 :::
 
@@ -595,7 +732,7 @@ For example, the above procedures generalize from means to quantile statistics l
 # Each Bootstrap shifts medians so that median = null_median
 
 med_hat <- quantile(x_hat, probs=.5)
-null_median <- 7.8
+null_median <- 5.7
 boot_medians_null <- rep(NA, 999)
 for(b in seq_along(boot_medians_null)){
     x_boot <- sample(x_hat, replace=TRUE) #bootstrap sample
@@ -616,10 +753,48 @@ abline(v=med_hat-null_median, col=rgb(1, 0, 0, .8), lwd=2)
 # 2-Sided Test for Median Difference
 ## Null: No Median Difference
 1 - ecdf( abs(boot_medians_null-null_median))( abs(med_hat-null_median) )
+# The p-value is about 0.58, so we fail to reject a median of 5.7.
+# The population median is about 5.21, so this unrejected null is still false.
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Conduct a hypothesis test for whether the upper quartile is statistically different from $12$.
+Repeat the median test with the murder arrest rates in `USArrests`, for the hypothesized median of $7.8$.
+
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+
+# Test for Median Differences (Impose the Null)
+# Bootstrap Null Distribution for the median
+# Each Bootstrap shifts medians so that median = null_median2
+
+med2_hat <- quantile(x2_hat, probs=.5)
+null_median2 <- 7.8
+boot_medians_null2 <- rep(NA, 999)
+for(b in seq_along(boot_medians_null2)){
+    x_boot <- sample(x2_hat, replace=TRUE) #bootstrap sample
+    med_b_hat <- quantile(x_boot, probs=.5) # median
+    med_null_b_hat <- med_b_hat + (null_median2 - med2_hat) # impose the null
+    boot_medians_null2[b] <- med_null_b_hat
+}
+
+# 2-Sided Test for Medians
+hist(boot_medians_null2-null_median2, breaks=50,
+    border=NA, freq=FALSE, xlab='Null Bootstrap',
+    main=NA)
+title('Medians (Impose Null)', font.main=1)
+median_ci2 <- quantile(boot_medians_null2-null_median2, probs=c(.025, .975))
+abline(v=median_ci2, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=med2_hat-null_median2, col=rgb(1, 0, 0, .8), lwd=2)
+
+# 2-Sided Test for Median Difference
+## Null: No Median Difference
+1 - ecdf( abs(boot_medians_null2-null_median2))( abs(med2_hat-null_median2) )
+# The p-value is about 0.58, so we fail to reject a median of 7.8.
+```
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Conduct a hypothesis test for whether the upper quartile is statistically different from $8$.
 ```{r}
 q_hat <- quantile(x_hat, probs=.75)
 ```
@@ -631,23 +806,23 @@ q_hat <- quantile(x_hat, probs=.75)
 Above, we tested whether the observed statistic is either extremely high or low.
 This is known as a *two-sided test*.
 There are also two *one-sided tests* (left tail: observed statistic is extremely low, right tail: observed statistic is extremely high).
-For a concrete example, consider whether the mean statistic, $M$, is centered on a theoretical value of $\mathbb{E}[X_{i}]=9$ for the population.
-If your null hypothesis is that the theoretical mean is nine, $H_{0}: \mathbb{E}[X_{i}] =9$, and you calculated the mean for your sample as $\hat{m}$, then you can consider any one of these three *alternative hypotheses*:
+For example, consider whether the mean statistic, $M$, is centered on a theoretical value of $\mathbb{E}[X_{i}]=m_{0}$ for the population.
+If your null hypothesis is that the theoretical mean is $m_{0}$, $H_{0}: \mathbb{E}[X_{i}] = m_{0}$, and you calculated the mean for your sample as $\hat{m}$, then you can consider any one of these three *alternative hypotheses*:
 
-* $H_{A}: \mathbb{E}[X_{i}] \neq 9$, a two-tail test
-* $H_{A}: \mathbb{E}[X_{i}] < 9$, a left-tail test
-* $H_{A}: \mathbb{E}[X_{i}] > 9$, a right-tail test
+* $H_{A}: \mathbb{E}[X_{i}] \neq m_{0}$, a two-tail test
+* $H_{A}: \mathbb{E}[X_{i}] < m_{0}$, a left-tail test
+* $H_{A}: \mathbb{E}[X_{i}] > m_{0}$, a right-tail test
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 A fitness tracker manufacturer claims that users take more than $8{,}000$ steps per day on average.
-A sample of $25$ users has $\hat{m}=8{,}492$ steps and $\hat{s}=1{,}200$ steps.
+A sample of $25$ users has $\hat{m}=8{,}492$ steps and $\hat{s}_{\text{adj}}=1{,}200$ steps.
 Test at the $5\%$ level using theory-based intervals.
 
 **(a) Hypotheses.**
 The claim is a right-tail alternative: $H_{0}: \mathbb{E}[X_{i}] = 8000$ versus $H_{A}: \mathbb{E}[X_{i}] > 8000$.
 
 **(b) Test statistic.**
-The classical standard error is $\hat{s}/\sqrt{n} = 1200/\sqrt{25} = 240$, so $t = (8492 - 8000)/240 \approx 2.05$.
+The classical standard error is $\hat{s}_{\text{adj}}/\sqrt{n} = 1200/\sqrt{25} = 240$, so $t = (8492 - 8000)/240 \approx 2.05$.
 
 **(c) Decision.**
 The right-tail critical value at $5\%$ is $q_{0.95} \approx 1.645$ from the Normal.
@@ -657,10 +832,10 @@ Since $t = 2.05 > 1.645$, we reject $H_{0}$.
 At the $5\%$ level, the data are consistent with the manufacturer's claim: there is evidence the population mean exceeds $8{,}000$ steps per day.
 ```{r}
 m_steps_hat <- 8492
-s_steps_hat <- 1200
+s_steps_adj_hat <- 1200
 n <- 25
 steps_null_mean <- 8000
-SE <- s_steps_hat / sqrt(n)
+SE <- s_steps_adj_hat / sqrt(n)
 t_stat <- (m_steps_hat - steps_null_mean) / SE
 t_stat
 
@@ -676,51 +851,89 @@ One-sided hypothesis tests can be conducted by inverting a one-sided confidence 
 The $p$-value for a one-sided test is more straightforward to implement via a bootstrap null distribution.
 
 For a left-tail test, we examine $$\begin{aligned}
-p = \text{Prob}( M < \hat{m} \mid \mathbb{E}[X_{i}] = 9 )
+p = \text{Prob}( M < \hat{m} \mid \mathbb{E}[X_{i}] = m_{0} )
     &\approx \text{Prob}( M^{\text{boot}}_{0} < \hat{m} ) = \hat{F}^{\text{boot}}_{0}(\hat{m}),
 \end{aligned}$$
 where $\hat{F}^{\text{boot}}_{0}$ is the ECDF of the bootstrap null distribution.
 We reject the null if $p < 0.05$ at the $5\%$ level, and otherwise fail to reject.
 
-For a right-tail test, we examine $p=\text{Prob}( M > \hat{m} \mid \mathbb{E}[X_{i}] = 9 ) \approx 1-\hat{F}^{\text{boot}}_{0}(\hat{m})$.
+For a right-tail test, we examine $p=\text{Prob}( M > \hat{m} \mid \mathbb{E}[X_{i}] = m_{0} ) \approx 1-\hat{F}^{\text{boot}}_{0}(\hat{m})$.
 
 
 ```{r}
-# Right-tail Test, ALTERNATIVE: mean > 9
+## MAIN EXAMPLE
+# Right-tail Test, ALTERNATIVE: mean > 6.5
 # Equivalent Visualization with p-value
 F_hat <- ecdf(boot_means_null) # Look at right tail
 plot(F_hat,
     main=NA,
     xlab='Null Bootstrap')
 abline(v=m_hat, col=rgb(1, 0, 0, .8), lwd=2)
-p1 <- 1- F_hat(m_hat) #Compute right tail prob: 0.987
+p1 <- 1- F_hat(m_hat) #Compute right tail prob: 0.99
 title( paste0('p=', round(p1, 3)), font.main=1)
 
 if(p1 >.05){
-    print('fail to reject the null that mean=9, at the 5% level')
+    print('fail to reject the null that mean=6.5, at the 5% level')
 } else {
-    print('reject the null that mean=9 in favor of >9, at the 5% level')
+    print('reject the null that mean=6.5 in favor of >6.5, at the 5% level')
 }
+# The sample mean is below 6.5, so it gives no evidence for a mean above 6.5.
 ```
 
 The left-tail test uses the other side of the same null distribution.
 ```{r}
-# Left-tail Test, ALTERNATIVE: mean < 9
+# Left-tail Test, ALTERNATIVE: mean < 6.5
 # Compute left-tail prob: p = F(m_hat)
 p_left <- F_hat(m_hat)
 p_left
 
 if(p_left >.05){
+    print('fail to reject the null that mean=6.5, at the 5% level')
+} else {
+    print('reject the null that mean=6.5 in favor of <6.5, at the 5% level')
+}
+# The left-tail p-value is about 0.01, so we favor a mean below 6.5.
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat both one-sided tests with the murder arrest rates, using `boot_means_null2` from the Test Yourself in [Impose the Null](#impose-the-null).
+
+```{r}
+# Right-tail Test, ALTERNATIVE: mean > 9
+# Equivalent Visualization with p-value
+F2_hat <- ecdf(boot_means_null2) # Look at right tail
+plot(F2_hat,
+    main=NA,
+    xlab='Null Bootstrap')
+abline(v=m2_hat, col=rgb(1, 0, 0, .8), lwd=2)
+p1_2 <- 1- F2_hat(m2_hat) #Compute right tail prob
+title( paste0('p=', round(p1_2, 3)), font.main=1)
+
+if(p1_2 >.05){
+    print('fail to reject the null that mean=9, at the 5% level')
+} else {
+    print('reject the null that mean=9 in favor of >9, at the 5% level')
+}
+# The sample mean is below 9, so it gives no evidence for a mean above 9.
+
+# Left-tail Test, ALTERNATIVE: mean < 9
+# Compute left-tail prob: p = F(m_hat)
+p_left2 <- F2_hat(m2_hat)
+p_left2
+
+if(p_left2 >.05){
     print('fail to reject the null that mean=9, at the 5% level')
 } else {
     print('reject the null that mean=9 in favor of <9, at the 5% level')
 }
+# The left-tail p-value is about 0.02, so we favor a mean below 9.
 ```
+:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 For two-sided tests, measure distance from $m_{0}$ by subtracting it before taking absolute values.
 For one-sided tests, subtracting $m_{0}$ from both the null-bootstrap statistic and the observed statistic leaves their ordering unchanged.
-Specifically, $p = \text{Prob}( M < \hat{m} \mid \mathbb{E}[X_{i}] = 9 ) = \text{Prob}( M - m_{0} < \hat{m} - m_{0} \mid \mathbb{E}[X_{i}] = 9 )$.
+Specifically, $p = \text{Prob}( M < \hat{m} \mid \mathbb{E}[X_{i}] = m_{0} ) = \text{Prob}( M - m_{0} < \hat{m} - m_{0} \mid \mathbb{E}[X_{i}] = m_{0} )$.
 That is intuitively also why the $t$-value can be used for both one and two-sided hypothesis tests.
 
 ```{r}
@@ -743,7 +956,7 @@ ecdf( boot_means_null )( m_hat)
 2. Explain the difference between "rejecting the null hypothesis" and "proving the alternative hypothesis is true."
    Why is the phrase "fail to reject" used instead of "accept the null"?
 
-3. Suppose you collect a sample of $n = 50$ observations with $\hat{m} = 22.4$ and $\hat{s} = 6.0$.
+3. Suppose you collect a sample of $n = 50$ observations with $\hat{m} = 22.4$ and $\hat{s}_{\text{adj}} = 6.0$.
    You want to test $H_{0}: \mathbb{E}[X_{i}] = 20$ against $H_{A}: \mathbb{E}[X_{i}] \neq 20$ at the $5\%$ level.
    Compute the $t$-value using theory-driven standard errors and determine whether you reject or fail to reject.
 
@@ -760,4 +973,4 @@ ecdf( boot_means_null )( m_hat)
 We built *hypothesis tests* in two ways, *invert a CI* and *impose the null*.
 We also summarized the evidence with the *$p$-value* and the *$t$-value*.
 Running many tests inflates the chance of a false rejection.
-The fitness-tracker example tied these ideas together: with $\hat{m}=8492$, $\hat{s}=1200$, and $n=25$, the standard error is $\text{SE} = 1200/\sqrt{25} = 240$ and the $t$-value for $H_{0}: \mathbb{E}[X_{i}] = 8000$ is $(8492 - 8000)/240 \approx 2.05$, which exceeds the right-tail critical value $1.645$ at the $5\%$ level and so rejects the null.
+The fitness-tracker example tied these ideas together: with $\hat{m}=8492$, $\hat{s}_{\text{adj}}=1200$, and $n=25$, the standard error is $\text{SE} = 1200/\sqrt{25} = 240$ and the $t$-value for $H_{0}: \mathbb{E}[X_{i}] = 8000$ is $(8492 - 8000)/240 \approx 2.05$, which exceeds the right-tail critical value $1.645$ at the $5\%$ level and so rejects the null.

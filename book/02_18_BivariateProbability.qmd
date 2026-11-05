@@ -8,10 +8,20 @@ set.seed(1)
 ```
 
 The previous chapters summarized bivariate data that we observed.
-This chapter develops the theoretical counterpart: the bivariate *random vector* and its joint, marginal, and conditional distributions.
-Bayes' theorem then reverses the direction of conditioning.
 Just as a single random variable has a theoretical mean and variance, a pair $(X_{i}, Y_{i})$ has a theoretical covariance, correlation, and regression coefficient.
-We then cover the two kinds of testing error and how Bayes' theorem turns a test result into an updated belief.
+
+This chapter asks three questions.
+
+* What do bivariate sample statistics estimate?
+    * *Joint, marginal, and conditional distributions*: these are the theoretical versions of the tables from [Bivariate Distributions](02_11_BivariateDistributions.qmd), with probabilities in place of proportions.
+    * *Conditional expectation*: this new object, $\mathbb{E}[Y_{i}\mid X_{i}=x]$, is the population target for regression.
+    * *Covariance, correlation, and regression coefficient*: these are the population counterparts of the sample [covariance and correlation](02_14_Associations.qmd#pearson-linear-correlation) and the sample [slope](02_15_SimpleRegression.qmd#model-and-objective).
+      In a linear data generating process, the population slope is $\beta_{1}=\mathbb{C}[X_{i}, Y_{i}]/\mathbb{V}[X_{i}]$.
+* How often does a test give the wrong answer?
+    * *Type I error rate and statistical power*: these are the chances of a false positive and of detecting a true effect.
+      Both reuse the [permutation test](02_15_SimpleRegression.qmd#impose-the-null) on repeated samples.
+* What should we believe after seeing a test result?
+    * *Bayes' theorem*: this reverses the direction of conditioning, which turns a prior belief and a test result into an updated belief.
 
 ## Theoretical Distributions
 
@@ -437,6 +447,7 @@ For example, consider a bivariate random vector with three outcomes for $X_{i}$ 
 
 The plot below shows each outcome $(x,y)$ with deeper colors reflecting higher probability events.
 ```{r}
+## MAIN EXAMPLE
 # Make a Probability Table
 x <- c(0, 1, 2)
 y <- c(0, 10, 20)
@@ -483,6 +494,7 @@ It decreases from $x=0$ to $x=1$ and then increases from $x=1$ to $x=2$.
 
 
 ```{r}
+## MAIN EXAMPLE
 # Compute Marginals
 P_x <- colSums(P_xy) #Prob(X_i=x)
 P_y <- rowSums(P_xy) #Prob(Y_i=y)
@@ -556,6 +568,7 @@ $$\begin{aligned}
 Note that you can do the above calculations using the computer instead of by hand.
 
 ```{r}
+## MAIN EXAMPLE
 # Compute Covariance
 dxy_grid <- expand.grid(dy=y-EY, dx=x-EX)[, c(2, 1)]
 dxy_grid[, 'p'] <- as.vector(P_xy)
@@ -587,6 +600,7 @@ $$\begin{aligned}
 which suggests a weak positive association between the variables.
 
 ```{r}
+## MAIN EXAMPLE
 # CovXY defined above
 # Compute Variances
 VX <- sum( (x-EX)^2 * P_x)
@@ -677,6 +691,7 @@ The line is "best" in the sense that it minimizes mean squared error among all l
 OLS estimates this slope from samples of the table, and it is positive because the line captures the overall upward tendency.
 But when the conditional expectation bends, the best line still misses: here it misses the dip at $x=1$.
 ```{r}
+## MAIN EXAMPLE
 # CovXY and VX defined above
 # Slope of the best linear approximation: covariance over variance of X
 CovXY / VX
@@ -774,21 +789,29 @@ power
 There is an important Trade-off for fixed sample sizes: Increasing significance (fewer false positives) often lowers power (more false negatives).
 Generally, power depends on the effect size and sample size: bigger true effects and larger $n$ make it easier to detect real differences (higher power, lower $\beta$).
 
+Power also depends on the test.
+A [rank test](02_13_MultipleGroups.qmd#kruskal-wallis-test) uses only the order of the data.
+It usually has a little less power than a test of means when the data are normal, but it can have much more when the tails are heavy [@HodgesLehmann1956].
+With [ordered categories](02_13_MultipleGroups.qmd#categorical-anova), a rank test usually has more power than the categorical ANOVA against differences along the ordering, because it concentrates on that one direction.
+The categorical ANOVA has more power against other differences, such as one group concentrated in the middle categories and another split between the extremes.
+
 #### **Regression Slope Example** {-}
 
-Consider testing $H_{0}: \beta_{1} = 0$ for the regression of hourly wage on years of schooling.
-As in [Sampling](01_05_Sampling.qmd#population-theory), pretend the $3294$ workers in `Wages1` are the whole population, so we know the true slope and whether the null is true.
+Consider testing $H_{0}: \beta_{1} = 0$ for a simple regression.
+As in [Sampling](01_05_Sampling.qmd#population-theory), pretend the data are the whole population, so we know the true slope and whether the null is true.
 When the true slope is nonzero (null is false), failing to reject is a Type II Error, and the share of samples that reject estimates the power.
-The population slope is `population_slope`, about $0.557$, so the null is false.
-Each sample is tested with the [permutation test](02_15_SimpleRegression.qmd#impose-the-null) from Simple Regression, which shuffles wages across workers.
+Each sample is tested with the [permutation test](02_15_SimpleRegression.qmd#impose-the-null) from Simple Regression, which shuffles the outcome across observations.
 
 ```{r}
+## MAIN EXAMPLE
+# Test the slope from a regression of hourly wage on years of schooling
 # Pretend these 3294 workers are the whole population
 data(Wages1, package='Ecdat')
 population_xy <- Wages1[, c('school', 'wage')]
 colnames(population_xy) <- c('x', 'y') # x=years of schooling, y=hourly wage
 population_slope <- coef(lm(y ~ x, data=population_xy))[2]
 population_slope
+# The population slope is about 0.557, so the null is false.
 
 # Function: draw one sample of n workers, return the permutation p-value for the slope
 sample_pval <- function(n, population, n_perm=199) {
@@ -825,12 +848,13 @@ power_est <- power_by_n['50']
 ```
 
 To study Type I errors, we need a population where the null is true.
-Shuffling the wages once breaks the link between schooling and wages.
+Shuffling the outcome once breaks the link between the two variables.
 By chance, the shuffled population still has a small slope, so we subtract it to make the population slope exactly $0$.
 When the true slope is $0$ (null is true), rejecting is a Type I Error.
 The share of samples that reject should be near $\alpha=0.05$ for every sample size.
 
 ```{r}
+## MAIN EXAMPLE
 # A population where schooling and wages are unrelated
 population_null <- population_xy
 population_null[, 'y'] <- sample(population_xy[, 'y'])
@@ -910,6 +934,7 @@ Even with a good test, the posterior depends strongly on prevalence: rare condit
 The fraud-detection example in [Bivariate Distributions](02_11_BivariateDistributions.qmd#conditional-distributions) showed the same pattern with counts: the same flag meant fraud was unlikely when fraud was rare and likely when it was common.
 
 ```{r}
+## MAIN EXAMPLE
 # States: X in {0, 1}, signal Y in {0, 1}
 # Prior Prob(X_i=1)
 p_x1 <- 0.12
@@ -973,7 +998,7 @@ plot(prior_grid, post_grid, type = 'l', lwd = 2,
     ylab = 'Posterior Prob(slope nonzero | reject)',
     main = NA)
 title('Bayesian Interpretation of Rejection', font.main = 1)
-abline(0, 1, lty = 2, col = grey(0.5))
+abline(a = 0, b = 1, col = rgb(0, 0, 1, .8), lty = 2)
 ```
 
 

@@ -6,9 +6,18 @@
 set.seed(1)
 ```
 
-This chapter is about communicating results.
-We cover how to present data in interactive figures and tables, how to polish a figure so a reader grasps it quickly, and how to assemble a reproducible report in Quarto.
 Good analysis is only useful to others if its output is clear.
+
+This chapter asks three questions.
+
+* How can readers explore the data for themselves?
+    * *Interactive figures*: these let a reader hover for details, zoom in, and filter the display.
+    * *Interactive tables*: these let a reader search, sort, and filter the rows.
+* How do we make a figure easy to read?
+    * *Data-ink ratio*: this is the share of a figure's ink that displays data, and it guides polishing.
+      We remove details that are not necessary and add details that are.
+* How can others rerun our analysis?
+    * *Quarto reports*: these keep prose and code in one file, so rendering regenerates every figure, table, and number.
 
 ## Outputs
 
@@ -26,35 +35,74 @@ For example, hovering can reveal labels for many points, and the reader can togg
 The `plotly` package wraps common plot types (notably [histograms](https://plotly.com/r/histograms/), [boxplots](https://plotly.com/r/box-plots/), and [scatterplots](https://plotly.com/r/line-and-scatter/)) into HTML widgets that work in any browser.
 
 ```{r}
+## MAIN EXAMPLE
 library('plotly')            # install.packages('plotly')
-USArrests[, 'ID'] <- rownames(USArrests) # state name for hover text
 
-# Scatter plot of arrests vs urbanization
+# Lab data: 3294 US workers.
+# wage is the hourly wage in 1980 dollars.
+# school and exper are years of schooling and of work experience.
+data(Wages1, package='Ecdat')
+
+# Scatter plot of wages vs schooling
 fig <- plot_ly(
-    USArrests, x = ~ UrbanPop, y = ~ Assault,
+    Wages1, x = ~ school, y = ~ wage,
     mode='markers',
     type='scatter',
     hoverinfo='text',                              # use custom hover text
-    marker=list( color='rgba(0, 0, 0, 0.5)'),      # semi-transparent points
-    text = ~ paste('<b>', ID, '</b>',              # one line per state
-        '<br>Urban  :', UrbanPop,
-        '<br>Assault:', Assault))
+    marker=list(color=grey(0, .1)),                # transparent, as n is large
+    text = ~ paste('<b>', sex, '</b>',             # one label per worker
+        '<br>Schooling :', school,
+        '<br>Wage :', round(wage, 2)))
 fig <- layout(fig,
     showlegend=FALSE,
-    title='Crime and Urbanization in America 1975',
-    xaxis = list(title = 'Percent of People in an Urban Area'),
-    yaxis = list(title = 'Assault Arrests per 100,000 People'))
+    title='Wages and Schooling in America',
+    xaxis = list(title = 'Years of schooling'),
+    yaxis = list(title = 'Hourly wage (1980 dollars)'))
 fig
+# Only 52 wages are above 15 dollars.
+# To see the rest in more detail, drag a box around them to zoom in.
 ```
 
 
 
-Color and size can carry two more variables, and the hover text can list every variable for the state under the cursor.
+Color and size can carry two more variables, and the hover text can list every variable for the observation under the cursor.
 See also <https://plotly.com/r/bubble-charts/>.
 ```{r}
+# Bubble chart: color encodes sex and size encodes years of experience
+fig <- plot_ly(
+    Wages1, x = ~ school, y = ~ wage,
+    mode='markers',
+    type='scatter',
+    hoverinfo='text',
+    text = ~ paste('<b>', sex, '</b>',
+        '<br>Schooling :', school,
+        '<br>Experience :', exper,
+        '<br>Wage :', round(wage, 2)),
+    color= ~ sex,
+    colors=c(rgb(.8, 0, 0), rgb(0, 0, .8)),        # one color per group
+    marker=list(
+        size= ~ exper,
+        opacity=0.1))
+fig <- layout(fig,
+    title='Wages and Schooling in America',
+    xaxis = list(title = 'Years of schooling'),
+    yaxis = list(title = 'Hourly wage (1980 dollars)'))
+fig
+# Click a legend entry to hide or show that group.
+# The largest bubbles are at low schooling, where workers have more experience.
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the bubble chart with `USArrests`, whose rows are named by state.
+The hover text can then show the name of the state under the cursor.
+```{r}
+# 50 US states, 1973: arrests per 100,000 people and percent urban population
+xy2_hat <- USArrests
+xy2_hat[, 'ID'] <- rownames(xy2_hat) # state name for hover text
+
 # Bubble chart: color and size both encode the murder rate
 fig <- plot_ly(
-    USArrests, x = ~ UrbanPop, y = ~ Assault,
+    xy2_hat, x = ~ UrbanPop, y = ~ Assault,
     mode='markers',
     type='scatter',
     hoverinfo='text',
@@ -70,54 +118,106 @@ fig <- plot_ly(
         colorbar = list(title='Murder Arrests (per 100,000)')))
 fig <- layout(fig,
     showlegend=FALSE,
-    title='Crime and Urbanization in America 1975',
+    title='Crime and Urbanization in America 1973',
     xaxis = list(title = 'Percent of People in an Urban Area'),
     yaxis = list(title = 'Assault Arrests per 100,000 People'))
 fig
 ```
+:::
 
-```{r, message=FALSE}
-# Box Plot
-fig <- plot_ly(USArrests,
-    y= ~ Murder, color= ~ cut(UrbanPop, 4),
-    alpha=0.6, type='box',
-    pointpos=0, boxpoints = 'all',
-    hoverinfo='text',    
-    text = ~ paste('<b>', ID, '</b>',
-        '<br>Urban  :', UrbanPop,
-        '<br>Assault:', Assault,
-        '<br>Murder :', Murder))    
+A second trace can add a fitted line, and the hover text can show each observation's fitted value and residual.
+The figure below adds the line from a [simple regression](02_15_SimpleRegression.qmd#predictions).
+```{r}
+## MAIN EXAMPLE
+# Wages and schooling, with the line from a simple regression
+xy_hat <- Wages1[, c('school', 'wage')]
+colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
+reg <- lm(y_hat ~ x_hat, data=xy_hat)
+
+# Copy the data and attach fitted values and residuals for hover text
+xy_plot_hat <- xy_hat
+xy_plot_hat[, 'y_fit'] <- predict(reg)
+xy_plot_hat[, 'e_hat'] <- resid(reg)
+
+# Plot Data
+fig <- plot_ly(
+    xy_plot_hat, x = ~ x_hat, y = ~ y_hat,
+    mode='markers',
+    type='scatter',
+    hoverinfo='text',
+    marker=list(color=grey(0, .1), size=10),
+    text = ~ paste('Schooling :', x_hat,
+        '<br>Wage :', round(y_hat, 2),
+        '<br>Predicted Wage :', round(y_fit, 2),
+        '<br>Residual :', round(e_hat, 2)))
 fig <- layout(fig,
     showlegend=FALSE,
-    title='Crime and Urbanization in America 1975',
-    xaxis = list(title = 'Percent of People in an Urban Area'),
-    yaxis = list(title = 'Murders Arrests per 100,000 People'))
+    title='Wages and Schooling in America',
+    xaxis = list(title = 'Years of schooling'),
+    yaxis = list(title = 'Hourly wage (1980 dollars)'))
+# Plot Model Predictions as a second trace, with no hover text of its own
+fig <- add_trace(fig, x = ~ x_hat, y = ~ y_fit,
+    inherit=FALSE, hoverinfo='none',
+    mode='lines', type='scatter',
+    color=I(rgb(1, 0, 0, .8)),
+    line=list(width=2))
 fig
 ```
 
 ```{r, message=FALSE}
-xy_hat <- USArrests[, c('UrbanPop', 'Murder')]
-colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+# Three schooling groups, as in Comparing Multiple Groups
+school_g <- cut(Wages1[, 'school'], breaks=c(0, 11, 12, 16),
+    labels=c('<12', '12', '>12'))
+
+# Box Plot
+fig <- plot_ly(Wages1,
+    y= ~ wage, color= ~ school_g,
+    colors=c(rgb(.8, 0, 0), rgb(0, .8, 0), rgb(0, 0, .8)), # one color per group
+    alpha=0.6, type='box',
+    pointpos=0, boxpoints = 'all',
+    marker=list(opacity=0.1),    # transparent points, so the boxes show through
+    hoverinfo='text',
+    text = ~ paste('<b>', sex, '</b>',
+        '<br>Schooling :', school,
+        '<br>Experience :', exper,
+        '<br>Wage :', round(wage, 2)))
+fig <- layout(fig,
+    showlegend=FALSE,
+    title='Wages and Schooling in America',
+    xaxis = list(title = 'Years of schooling',
+        type='category'),        # 12 is a group label, not a number
+    yaxis = list(title = 'Hourly wage (1980 dollars)', range=c(0, 20)))
+fig
+# The 18 wages above 20 dollars start off screen.
+# Double-click the figure to see them.
+# Median wages rise across the groups, at about 4.59, 5.17, and 6.74 dollars.
+```
+
+```{r, message=FALSE}
+# Split workers at the mean schooling, about 11.6 years
 m_x_hat <- mean(xy_hat[, 'x_hat'])
-pop_cut <- xy_hat[, 'x_hat'] < m_x_hat
-y1_hat <- xy_hat[pop_cut, 'y_hat']  # murder arrests, low urban population
-y2_hat <- xy_hat[!pop_cut, 'y_hat'] # murder arrests, high urban population
+school_cut <- xy_hat[, 'x_hat'] < m_x_hat
+y1_hat <- xy_hat[school_cut, 'y_hat']  # hourly wages, low schooling
+y2_hat <- xy_hat[!school_cut, 'y_hat'] # hourly wages, high schooling
 
 # Overlapping Histograms
 fig <- plot_ly(alpha=0.6, hovertemplate='%{y}')
-fig <- add_histogram(fig, y1_hat, name='Low Pop. (< Mean)',
+fig <- add_histogram(fig, y1_hat, name='Low (< Mean)',
     histnorm = 'probability density',
-    xbins = list(start=0, size=2))
-fig <- add_histogram(fig, y2_hat, name='High Pop (>= Mean)',
+    xbins = list(start=0, size=1))
+fig <- add_histogram(fig, y2_hat, name='High (>= Mean)',
     histnorm = 'probability density',
-    xbins = list(start=0, size=2))
+    xbins = list(start=0, size=1))
 fig <- layout(fig,
     barmode='overlay',
-    title='Crime and Urbanization in America 1975',
-    xaxis = list(title='Murders Arrests per 100,000 People'),
+    title='Wages and Schooling in America',
+    xaxis = list(title='Hourly wage (1980 dollars)', range=c(0, 20)),
     yaxis = list(title='Density'),
-    legend=list(title=list(text='<b> % Urban Pop. </b>')) )
+    legend=list(title=list(text='<b> Years of Schooling </b>')) )
 fig
+# The 18 wages above 20 dollars start off screen.
+# Both groups are right-skewed.
+# The high group sits further right, with a median wage of about 5.73 vs 4.59.
 
 # Possible, but less preferable, to stack histograms
 # barmode='stack', histnorm='count'
@@ -130,7 +230,7 @@ For more details, see [examples](https://plotly-r.com/) and then [applications](
 If you have many points, for example, you can make a [2D histogram](https://plotly.com/r/2D-Histogram/).
 ```{r, eval=FALSE}
 fig <- plot_ly(
-    USArrests, x = ~ UrbanPop, y = ~ Assault)
+    xy_hat, x = ~ x_hat, y = ~ y_hat)
 fig <- add_histogram2d(fig, nbinsx=25, nbinsy=25)
 fig
 ```
@@ -149,21 +249,27 @@ Interactive tables are useful when the reader wants to look up specific records 
 The `reactable` package renders a data frame as an HTML widget with these controls already built in.
 
 ```{r}
-data(USArrests, package='datasets') # reload the original, without the ID column added above
+## MAIN EXAMPLE
 library('reactable')                     # install.packages('reactable')
-reactable(USArrests,
+
+# Copy the data and round wages to the cent for display
+xy_table_hat <- Wages1
+xy_table_hat[, 'wage'] <- round(xy_table_hat[, 'wage'], 2)
+
+reactable(xy_table_hat,
     filterable=TRUE,                        # one search box per column
     highlight=TRUE)                         # row highlighting on hover
+# The 3294 workers fill many pages, so the table shows ten rows at a time.
 ```
 
 You can create an interactive table that summarizes the data too.
 ```{r}
-# Compute summary statistics
-vars <- names(USArrests)
+# Compute summary statistics for the numeric columns, since sex is a factor
+vars <- c('wage', 'school', 'exper')
 stats_list <- vector('list', length(vars))
 for (i in seq_along(vars)) {
   v <- vars[i]
-  x_v_hat <- USArrests[[v]]
+  x_v_hat <- Wages1[[v]]
   stats_list[[i]] <- c(
     Variable = v,
     N       = sum(!is.na(x_v_hat)),
@@ -220,16 +326,52 @@ Strip the background, border, and duplicate legends, and the ratio for the same 
 The figure carries the same information, and its ratio is eight times higher.
 :::
 
-The two panels below show the same data: a very weak positive relationship between urbanization and murder arrests across 50 American states.
+The two panels below show the same data.
 The left panel piles on non-data ink; the right strips it back.
-Both panels carry the same information about the data.
+The extra ink on the left adds no information about the data.
 ```{r}
-par(mfrow=c(1, 2), mar=c(4, 4, 2, 1))
+## MAIN EXAMPLE
+par(mfrow=c(1, 2), mar=c(5, 4, 3, 1))
 
 # Cluttered: oversized two-color markers, gridlines, redundant title
 plot(y_hat ~ x_hat, data=xy_hat,
     pch=21, bg='red', col='blue', cex=1.5,
-    main='Murder Arrests vs Urban Pop. (US, 1975)',
+    main='Hourly Wage vs Schooling\n(US Workers)',
+    sub='Source: Wages1',
+    xlab='school (years)',
+    ylab='Hourly Wage in 1980 Dollars (wage)')
+grid(col='black', lwd=1)
+box(lwd=2)
+legend('topright', legend='Worker', pch=21, pt.bg='red', col='blue')
+# The opaque markers merge into solid columns, hiding where workers pile up.
+
+# Polished: light points, no grid, no redundant labels or legend
+plot(y_hat ~ x_hat, data=xy_hat,
+    pch=16, col=grey(0, .1),                     # transparent black points
+    main=NA, xlab='Years of schooling', ylab='Hourly wage (1980 dollars)',
+    bty='n')                                     # drop the surrounding box
+title('US Workers', font.main=1, adj=0)
+# Schooling is in whole years, so the points form vertical stripes.
+# The stripes are darkest where workers pile up, above all at 12 years.
+# Wages tend to rise with schooling, though weakly (correlation about 0.28).
+```
+Removed: oversized two-color markers, grid, box, redundant title, subtitle, one-entry legend.
+Added: nothing; the cleaner panel reads faster because nothing competes with the points.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the comparison with `USArrests`, a much smaller dataset.
+Does the cluttered panel still hide any points?
+```{r}
+# 50 US states, 1973
+xy2_hat <- USArrests[, c('UrbanPop', 'Murder')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+
+par(mfrow=c(1, 2), mar=c(5, 4, 3, 1))
+
+# Cluttered: oversized two-color markers, gridlines, redundant title
+plot(y_hat ~ x_hat, data=xy2_hat,
+    pch=21, bg='red', col='blue', cex=1.5,
+    main='Murder Arrests vs Urban Pop.\n(US, 1973)',
     sub='Source: USArrests',
     xlab='UrbanPop (%)',
     ylab='Murder Arrests per 100,000 People (Murder)')
@@ -238,14 +380,16 @@ box(lwd=2)
 legend('topright', legend='State', pch=21, pt.bg='red', col='blue')
 
 # Polished: light points, no grid, no redundant labels or legend
-plot(y_hat ~ x_hat, data=xy_hat,
+plot(y_hat ~ x_hat, data=xy2_hat,
     pch=16, col=grey(0, .5),                     # transparent black points
     main=NA, xlab='Urban Population', ylab='Murder Arrests',
     bty='n')                                     # drop the surrounding box
-title('US States, 1975', font.main=1, adj=0)
+title('US States, 1973', font.main=1, adj=0)
+# Both panels show a very weak positive relationship across the 50 states.
+# With so few points, the markers barely overlap.
+# So both panels carry the same information about the data.
 ```
-Removed: oversized two-color markers, grid, box, redundant title, subtitle, one-entry legend.
-Added: nothing; the cleaner panel reads faster because nothing competes with the points.
+:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 A colleague sends a scatterplot of monthly sales against advertising spend.
@@ -258,10 +402,10 @@ If a few months are special (say, a promotion), a short text label on those poin
 :::
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-**Polishing a plot with many points.** The simulated data below have 45,001 points, so a default first draft would be a solid black blob.
+**Polishing a plot with many points.** The simulated data below have tens of thousands of points, so a default first draft would be a solid black blob.
 The second draft standardizes both variables, uses small transparent points, and adds a 45 degree line for reference.
 ```{r}
-# Random Data
+# Random Data: 45,001 points
 x_sim <- seq(1, 10, by=.0002)
 e <- rnorm(length(x_sim), mean=0, sd=1)
 y_sim <- .25*x_sim + e
@@ -280,10 +424,10 @@ plot(x_std_sim, y_std_sim,
 mtext(expression('['~X[i]-hat(m)[X]~'] /'~hat(s)[X]), 1, line=2.5)
 mtext(expression('['~Y[i]-hat(m)[Y]~'] /'~hat(s)[Y]), 2, line=2.5)
 # Add a 45 degree line
-abline(a=0, b=1, lty=2, col=rgb(1, 0, 0, .8))
+abline(a=0, b=1, col=rgb(0, 0, 1, .8), lty=2)
 legend('topleft',
     legend=c('data point', '45 deg. line'),
-    pch=c(16, NA), lty=c(NA, 2), col=c(grey(0, .05), rgb(1, 0, 0, .8)),
+    pch=c(16, NA), lty=c(NA, 2), col=c(grey(0, .05), rgb(0, 0, 1, .8)),
     bty='n')
 title('Standardized Relationship', font.main=1)
 ```
@@ -339,12 +483,12 @@ For small datasets, you can plot individual data points with a strip chart.
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 A *strip chart* shows every observation as a point along one axis, which works well when there are too few points to justify a histogram or boxplot.
 ```{r}
-# Six states: show each Murder arrest value directly
+# Six workers: show each hourly wage directly
 y_small_hat <- xy_hat[1:6, 'y_hat']
 stripchart(y_small_hat, pch=16, col=grey(0, .6),
-    xlab='Murder Arrests')
+    xlab='Hourly wage (1980 dollars)')
 ```
-With only six values, the strip chart shows the data honestly; a boxplot here would hide the individual points behind summary statistics.
+With few values, a strip chart shows the data honestly; a boxplot would hide the individual points behind summary statistics.
 :::
 
 For datasets with spatial information, a map is also helpful.
@@ -374,10 +518,11 @@ You can also export tables in a variety of formats, including many that other so
 ```{r, message=FALSE, warning=FALSE, results='asis'}
 library('stargazer')
 # summary statistics
-stargazer(USArrests,
-    type='html', 
+stargazer(Wages1,
+    type='html',
     summary=TRUE,
-    title='Summary Statistics for USArrests')
+    title='Summary Statistics for Wages1')
+# The table covers the numeric columns only, so the factor sex is left out.
 ```
 
 Note that many of the best plots are custom made (see <https://www.r-graph-gallery.com/>).
@@ -504,7 +649,7 @@ Now try each of the following steps, re-rendering the document after each step
 #### **Recall** {-}
 
 This chapter covered interactive figures and tables, the data-ink ratio, and Quarto for reproducible reports.
-Most examples used the `USArrests` data.
-A `plotly` scatterplot showed state names as hover text, and a `reactable` table showed summary statistics.
-Side-by-side panels compared a cluttered and a polished scatterplot of `Murder` vs. `UrbanPop`.
+Most examples used the `Wages1` data.
+A `plotly` scatterplot showed each worker's sex, schooling, and wage as hover text, and a `reactable` table showed summary statistics.
+Side-by-side panels compared a cluttered and a polished scatterplot of `wage` vs. `school`.
 

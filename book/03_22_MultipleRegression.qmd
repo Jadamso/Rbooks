@@ -9,6 +9,20 @@ set.seed(1)
 We often want to know the relationship between one outcome variable $\hat{y}_{i}$ and multiple explanatory variables.
 This builds on [Simple Regression](02_15_SimpleRegression.qmd), which related $\hat{y}_{i}$ to a single $\hat{x}_{i}$.
 *Multiple linear regression* fits a single linear model to several explanatory variables at once, and asks how each one moves the outcome while holding the others fixed.
+
+This chapter asks three questions.
+
+* How is $\hat{y}$ associated with each explanatory variable, holding the others fixed?
+    * *Multiple regression coefficients*: OLS picks one coefficient $\hat{b}_{k}$ per explanatory variable, with the same objective as [simple regression](02_15_SimpleRegression.qmd#model-and-objective).
+* How sure are we?
+    * *Bootstrap standard errors*: these assess sampling variability, with the same recipe as the [slope](02_15_SimpleRegression.qmd#bootstrap).
+    * *Joint bootstrap distribution and permutation $F$-test*: these assess several coefficients at once.
+      The test shuffles the outcome, the same recipe as earlier [permutation tests](02_12_TwoGroups.qmd#permutation-tests).
+    * *Adjusted R-squared*: this is a new model assessment check that does not reward adding pure noise, unlike [R-squared](02_15_SimpleRegression.qmd#goodness-of-fit).
+* What do the coefficients mean?
+    * *Correctly specified and misspecified simulations*: these show that coefficients center on the true values when the data are truly linear.
+      Otherwise, OLS returns the best linear approximation.
+
 For historical reasons, we start by fitting a linear model to data.
 
 ## The Linear Model
@@ -36,14 +50,32 @@ $$\hat{y}_{i}^{\mathrm{fit}} = \sum_{k=0}^{K} \hat{b}_{k} \hat{x}_{ik}.$$
 At these fitted coefficients, $\hat{e}_{i} = \hat{y}_{i} - \hat{y}_{i}^{\mathrm{fit}}$ is the observed value minus the fitted value.
 
 ```{r}
-# Store the observed data, then fit a multiple regression of Murder on Assault and UrbanPop
-xy_hat <- USArrests
-reg <- lm(Murder ~ Assault+UrbanPop, data=xy_hat)
+## MAIN EXAMPLE
+# Lab data: 3294 US workers
+# wage is the hourly wage in 1980 dollars
+# school and exper are years of schooling and of work experience
+# sex is a factor with levels female and male
+data(Wages1, package='Ecdat')
+xy_hat <- Wages1
+
+# Fit a multiple regression of wage on school and exper
+reg <- lm(wage ~ school + exper, data=xy_hat)
 coef(reg)
+# With experience fixed, a year of schooling goes with 60 cents more an hour.
+# With schooling fixed, a year of experience goes with 16 cents more an hour.
+
+# Compare with schooling alone and with the raw correlations
+coef(lm(wage ~ school, data=xy_hat))
+cor(xy_hat[, c('wage', 'school', 'exper')])
+# Experience barely correlates with wages on its own, about 0.05.
+# Its coefficient is still clearly positive once schooling is held fixed.
+# Schooling and experience are negatively correlated, about -0.19.
+# So holding experience fixed raises the schooling coefficient, 0.557 to 0.599.
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Add `Rape` as a third explanatory variable: run `lm(Murder ~ Assault + UrbanPop + Rape, data=xy_hat)` and compare the coefficients to those above.
+Add `sex` as a third explanatory variable: run `lm(wage ~ school + exper + sex, data=xy_hat)` and compare the coefficients to those above.
+R enters this two-level factor as one 0/1 dummy variable, shown as `sexmale` in the output.
 Which coefficients change the most?
 Does the sign of any coefficient change?
 What does this tell you about the relationship between the explanatory variables?
@@ -53,10 +85,35 @@ What does this tell you about the relationship between the explanatory variables
 
 To measure how well the model fits the data, we can again plot our predictions.
 ```{r}
-plot(xy_hat$Murder, predict(reg), pch=16, col=grey(0, .5),
-    main=NA, xlab='Observed Murder', ylab='Predicted Murder')
-abline(a=0, b=1, lty=2)
+# Limits near 20 dollars leave out the 16 largest wages
+plot(xy_hat$wage, predict(reg), pch=16, col=grey(0, .1),
+    xlim=c(0, 20), ylim=c(0, 20), main=NA,
+    xlab='Observed hourly wage (1980 dollars)',
+    ylab='Predicted hourly wage (1980 dollars)')
+abline(a=0, b=1, col=rgb(0, 0, 1, .8), lty=2)
+# Predicted wages span only about 2 to 8 dollars, so the cloud lies flat.
+# A close fit would hug the dashed line.
+# Here R-squared is about 0.09, so most of the wage variation goes unexplained.
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the plot with `USArrests`, regressing `Murder` on `Assault` and `UrbanPop`.
+How close do the points sit to the dashed line, compared to the figure above?
+
+```{r}
+# Second dataset: arrests per 100,000 residents in the 50 US states, 1973
+# UrbanPop is the percent of the population living in urban areas
+xy2_hat <- USArrests
+reg2 <- lm(Murder ~ Assault+UrbanPop, data=xy2_hat)
+coef(reg2)
+
+plot(xy2_hat$Murder, predict(reg2), pch=16, col=grey(0, .5),
+    main=NA, xlab='Observed Murder', ylab='Predicted Murder')
+abline(a=0, b=1, col=rgb(0, 0, 1, .8), lty=2)
+# Predictions track the observed values much more closely.
+# R-squared is about 0.66.
+```
+:::
 
 #### **Adjusted $\hat{R}^2$** {-}
 
@@ -82,6 +139,7 @@ With more covariates the penalty grows: if instead $K=9$, then $\hat{R}^2_{\text
 :::
 
 ```{r}
+## MAIN EXAMPLE
 # Add pure-noise covariates to a copy, so later chunks still use the original data
 ksims <- 1:30
 xy_noise_hat <- xy_hat
@@ -91,15 +149,16 @@ for(k in ksims){
 R2_sim <- rep(NA, length(ksims))
 R2adj_sim <- rep(NA, length(ksims))
 for(k in ksims){
-    rvars <- c('Assault', 'UrbanPop', paste0('R', 1:k))
+    rvars <- c('school', 'exper', paste0('R', 1:k))
     rvars2 <- paste0(rvars, collapse='+')
-    reg_k <- lm( paste0('Murder ~ ', rvars2), data=xy_noise_hat)
+    reg_k <- lm( paste0('wage ~ ', rvars2), data=xy_noise_hat)
     R2_sim[k] <- summary(reg_k)$r.squared
     R2adj_sim[k] <- summary(reg_k)$adj.r.squared
 }
 
+# Zoom in on the y-axis, since noise moves R-squared little with 3294 workers
 plot.new()
-plot.window(xlim=c(0, 30), ylim=c(0, 1))
+plot.window(xlim=c(0, 30), ylim=range(R2_sim, R2adj_sim))
 points(ksims, R2_sim)
 points(ksims, R2adj_sim, pch=16)
 axis(1)
@@ -108,7 +167,51 @@ mtext(expression(R^2), 2, line=3)
 mtext('Additional Random Covariates', 1, line=3)
 legend('topleft', horiz=TRUE,
     legend=c('Unadjusted', 'Adjusted'), pch=c(1, 16))
+# Pure noise lifts the unadjusted R-squared from about 0.092 to about 0.102.
+# The adjusted R-squared stays near 0.09.
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the simulation with `USArrests`.
+How does the number of rows change what noise can do to the unadjusted $\hat{R}^2$?
+
+```{r}
+# Second dataset: arrests per 100,000 residents in the 50 US states, 1973
+# Its 50 rows are far fewer than the 3294 workers in the lab data.
+xy2_hat <- USArrests
+
+# Add pure-noise covariates to a copy, so later chunks still use the original data
+ksims <- 1:30
+xy2_noise_hat <- xy2_hat
+for(k in ksims){
+    xy2_noise_hat[, paste0('R', k)] <- runif(nrow(xy2_hat), 0, 20)
+}
+R2_sim2 <- rep(NA, length(ksims))
+R2adj_sim2 <- rep(NA, length(ksims))
+for(k in ksims){
+    rvars <- c('Assault', 'UrbanPop', paste0('R', 1:k))
+    rvars2 <- paste0(rvars, collapse='+')
+    reg2_k <- lm( paste0('Murder ~ ', rvars2), data=xy2_noise_hat)
+    R2_sim2[k] <- summary(reg2_k)$r.squared
+    R2adj_sim2[k] <- summary(reg2_k)$adj.r.squared
+}
+
+plot.new()
+plot.window(xlim=c(0, 30), ylim=c(0, 1))
+points(ksims, R2_sim2)
+points(ksims, R2adj_sim2, pch=16)
+axis(1)
+axis(2)
+mtext(expression(R^2), 2, line=3)
+mtext('Additional Random Covariates', 1, line=3)
+legend('topleft', horiz=TRUE,
+    legend=c('Unadjusted', 'Adjusted'), pch=c(1, 16))
+# With only 50 states, noise lifts the unadjusted R-squared a lot.
+# It climbs from about 0.66 to about 0.9.
+# The adjusted R-squared falls to about 0.48 before ending near 0.7.
+# With so few rows per covariate, chance fits can move it a lot.
+```
+:::
 
 
 
@@ -125,19 +228,22 @@ However, we can also conduct *joint tests* that account for interdependencies in
 For example, to test whether two coefficients both equal $0$, we bootstrap the joint distribution of coefficients.
 
 ```{r}
+## MAIN EXAMPLE
 # Bootstrap SEs of all three coefficients jointly: resample rows of the
 # dataset with replacement, refit lm, and store the coefficient vector.
 boot_coefs <- matrix(NA, nrow=399, ncol=3)
 for(b in seq(nrow(boot_coefs))){
     b_id <- sample( nrow(xy_hat), replace=TRUE)
     xy_boot <- xy_hat[b_id, ]
-    reg_b <- lm(Murder ~ Assault+UrbanPop, data=xy_boot)
+    reg_b <- lm(wage ~ school + exper, data=xy_boot)
     boot_coefs[b, ] <- coef(reg_b)
 }
 colnames(boot_coefs) <- names(coef(reg))
 
 # The bootstrap SE is just the standard deviation across replications
 apply(boot_coefs, 2, sd)
+# The SEs are about 0.034 for school and 0.025 for exper.
+# Both are small next to the coefficients, 0.599 and 0.157.
 ```
 
 #### **Joint Hypothesis Tests** {-}
@@ -151,13 +257,65 @@ The bootstrap above approximates the joint sampling distribution of $\mathbf{B}$
 
 A *joint test* is useful when two coefficients move together across resamples: pooling the evidence into one test reflects the actual joint uncertainty, whereas two separate $t$-tests would either double-count or miss the dependence entirely.
 A joint test is also preferable to tests of single coefficients when multicollinearity makes the individual coefficient estimates highly variable [@BelsleyEtAl1980; @fox2020].
-The plot below visualizes the bootstrap joint distribution of the `UrbanPop` and `Assault` coefficients, where each point is one bootstrap replicate.
+The plot below visualizes the bootstrap joint distribution of two coefficients, where each point is one bootstrap replicate.
 
 ```{r}
+## MAIN EXAMPLE
+# The joint distribution of the exper and school coefficients
 boot_coef_df <- as.data.frame(cbind(
     ID=seq(nrow(boot_coefs)),
     boot_coefs))
 fig <- plotly::plot_ly(boot_coef_df,
+    type = 'scatter', mode = 'markers',
+    x = ~ exper, y = ~ school,
+    text = ~ paste('<b> bootstrap dataset: ', ID, '</b>',
+            '<br>Coef. exper :', round(exper, 3),
+            '<br>Coef. school :', round(school, 3),
+            '<br>Coef. Intercept :', round(`(Intercept)`, 3)),
+    hoverinfo='text',
+    showlegend=FALSE,
+    marker=list( color='rgba(0, 0, 0, 0.5)'))
+fig <- plotly::layout(fig,
+    showlegend=FALSE,
+    title='Joint Bootstrap Distribution of Coefficients',
+    xaxis = list(title='exper Coefficient'),
+    yaxis = list(title='school Coefficient'))
+fig
+# The cloud tilts up slightly: the two coefficients tend to move together.
+# Their correlation across replicates is about 0.2.
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the joint bootstrap with `USArrests`, regressing `Murder` on `Assault` and `UrbanPop`.
+Do the two coefficients move together in the same direction as in the figure above?
+
+```{r}
+# Second dataset: arrests per 100,000 residents in the 50 US states, 1973
+xy2_hat <- USArrests
+reg2 <- lm(Murder ~ Assault+UrbanPop, data=xy2_hat)
+
+# Bootstrap SEs of all three coefficients jointly: resample rows of the
+# dataset with replacement, refit lm, and store the coefficient vector.
+boot_coefs2 <- matrix(NA, nrow=399, ncol=3)
+for(b in seq(nrow(boot_coefs2))){
+    b_id <- sample( nrow(xy2_hat), replace=TRUE)
+    xy2_boot <- xy2_hat[b_id, ]
+    reg2_b <- lm(Murder ~ Assault+UrbanPop, data=xy2_boot)
+    boot_coefs2[b, ] <- coef(reg2_b)
+}
+colnames(boot_coefs2) <- names(coef(reg2))
+
+# The bootstrap SE is just the standard deviation across replications
+apply(boot_coefs2, 2, sd)
+# The SEs are about 0.005 for Assault and 0.027 for UrbanPop.
+# So the UrbanPop coefficient, about -0.045, lies within two SEs of 0.
+
+# The joint distribution of the UrbanPop and Assault coefficients
+# Each point is one bootstrap replicate
+boot_coef2_df <- as.data.frame(cbind(
+    ID=seq(nrow(boot_coefs2)),
+    boot_coefs2))
+fig2 <- plotly::plot_ly(boot_coef2_df,
     type = 'scatter', mode = 'markers',
     x = ~ UrbanPop, y = ~ Assault,
     text = ~ paste('<b> bootstrap dataset: ', ID, '</b>',
@@ -167,13 +325,16 @@ fig <- plotly::plot_ly(boot_coef_df,
     hoverinfo='text',
     showlegend=FALSE,
     marker=list( color='rgba(0, 0, 0, 0.5)'))
-fig <- plotly::layout(fig,
+fig2 <- plotly::layout(fig2,
     showlegend=FALSE,
     title='Joint Bootstrap Distribution of Coefficients',
     xaxis = list(title='UrbanPop Coefficient'),
     yaxis = list(title='Assault Coefficient'))
-fig
+fig2
+# The cloud tilts down: the two coefficients tend to move in opposite ways.
+# Their correlation across replicates is about -0.5.
 ```
+:::
 
 
 #### **F-statistic** {-}
@@ -210,23 +371,26 @@ You can verify: `qf(0.95, 2, 47)` $\approx 3.20$, so $\hat{F}_{K} = 25.5$ is hig
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 The `anova()` function compares two nested models with an F-test.
-Here we test whether `UrbanPop` adds explanatory power beyond `Assault`.
+Here we test whether `exper` adds explanatory power beyond `school`.
 
 ```{r}
-reg_r <- lm(Murder ~ Assault, data=xy_hat)            # restricted
-reg_u <- lm(Murder ~ Assault + UrbanPop, data=xy_hat) # unrestricted
+reg_r <- lm(wage ~ school, data=xy_hat)         # restricted
+reg_u <- lm(wage ~ school + exper, data=xy_hat) # unrestricted
 anova(reg_r, reg_u)
+# Experience adds explanatory power: F is about 42 and the p-value is near 0.
+# RSS falls only about 1 percent, but 3294 workers make that drop decisive.
 ```
 
-The F-statistic compares the drop in $\hat{\text{RSS}}$ to the residual variance of the unrestricted model.
+The F-statistic compares the drop in $\hat{\text{RSS}}$ to the adjusted mean squared error of the unrestricted model, $\hat{s}^2_{\text{adj}}=\hat{\text{RSS}}_{u}/(n-k_{u})$.
 A large F (small p-value) means the extra variable improves the fit by more than random noise would.
 :::
 
 To conduct a hypothesis test, use a [permutation test](02_12_TwoGroups.qmd#permutation-tests): randomly reshuffle the outcomes, recompute the F statistic each time, and then compare how often shuffled data give something as extreme as your initial statistic.
-Shuffling `Murder` across states keeps each state's `Assault` and `UrbanPop` together, but breaks the link between the outcome and both covariates, which imposes the null.
-Here we test whether `Assault` and `UrbanPop` are jointly zero in `Murder ~ Assault + UrbanPop`, using the $\hat{F}_{K}$ that `summary()` reports.
+Shuffling the outcome across observations keeps each observation's covariates together, but breaks the link between the outcome and both covariates, which imposes the null.
+Here we test whether both slope coefficients are jointly zero in the model above, using the $\hat{F}_{K}$ that `summary()` reports.
 ```{r}
-# Observed F-statistic
+## MAIN EXAMPLE
+# Observed F-statistic, testing whether school and exper are jointly zero
 F_hat <- summary(reg)$fstatistic['value']
 
 # Null distribution: shuffle the outcome to break its link with both covariates
@@ -234,9 +398,9 @@ F_perm <- rep(NA, 399)
 for(b in seq_along(F_perm)){
   # Permuted data
   xy_perm <- xy_hat
-  xy_perm$Murder <- sample(xy_perm$Murder, replace=FALSE)
+  xy_perm$wage <- sample(xy_perm$wage, replace=FALSE)
   # Run regression and store the F-statistic
-  reg_b <- lm(Murder ~ Assault+UrbanPop, data=xy_perm)
+  reg_b <- lm(wage ~ school + exper, data=xy_perm)
   F_perm[b] <- summary(reg_b)$fstatistic['value']
 }
 hist(F_perm, xlim=c(0, F_hat*1.1), breaks=25, border=NA,
@@ -246,8 +410,54 @@ hist(F_perm, xlim=c(0, F_hat*1.1), breaks=25, border=NA,
 abline(v=F_hat, lwd=2, col=rgb(1, 0, 0, .8))
 p_perm <- mean(F_perm >= F_hat)
 title(paste0('Permutation F-test: p = ', round(p_perm, 3)), font.main=1)
+# The observed F, about 166, lies far in the right tail.
+# The largest of the 399 shuffled F-statistics is only about 5.
 ```
-Under the null the F-statistic is small, averaging about $1$ as the formula above predicts when the covariates add nothing, while the observed $\hat{F}_{K}$ lies far in the right tail.
+Under the null the F-statistic is small, averaging about $1$ as the formula above predicts when the covariates add nothing.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat both tests with `USArrests`.
+First use `anova()` to test whether `UrbanPop` adds explanatory power beyond `Assault`.
+Then run the permutation test of `Assault` and `UrbanPop` jointly in `Murder ~ Assault + UrbanPop`.
+How can the two tests point in different directions?
+
+```{r}
+# Second dataset: arrests per 100,000 residents in the 50 US states, 1973
+xy2_hat <- USArrests
+reg2 <- lm(Murder ~ Assault+UrbanPop, data=xy2_hat)
+
+# Test UrbanPop alone, given Assault
+reg2_r <- lm(Murder ~ Assault, data=xy2_hat)            # restricted
+reg2_u <- lm(Murder ~ Assault + UrbanPop, data=xy2_hat) # unrestricted
+anova(reg2_r, reg2_u)
+# UrbanPop adds little beyond Assault: F is about 2.9 and the p-value about 0.1.
+
+# Observed F-statistic for both coefficients jointly
+F2_hat <- summary(reg2)$fstatistic['value']
+
+# Shuffling Murder keeps each state's Assault and UrbanPop together.
+# It breaks the link with both covariates, which imposes the null.
+F2_perm <- rep(NA, 399)
+for(b in seq_along(F2_perm)){
+  # Permuted data
+  xy2_perm <- xy2_hat
+  xy2_perm$Murder <- sample(xy2_perm$Murder, replace=FALSE)
+  # Run regression and store the F-statistic
+  reg2_b <- lm(Murder ~ Assault+UrbanPop, data=xy2_perm)
+  F2_perm[b] <- summary(reg2_b)$fstatistic['value']
+}
+hist(F2_perm, xlim=c(0, F2_hat*1.1), breaks=25, border=NA,
+    freq=FALSE, main=NA, xlab=expression(hat(F)[b]))
+
+# Compare to initial statistic
+abline(v=F2_hat, lwd=2, col=rgb(1, 0, 0, .8))
+p2_perm <- mean(F2_perm >= F2_hat)
+title(paste0('Permutation F-test: p = ', round(p2_perm, 3)), font.main=1)
+# The observed joint F, about 46, lies far in the right tail.
+# Assault alone already fits well, so the joint test rejects.
+# The test of UrbanPop alone asks only about what it adds beyond Assault.
+```
+:::
 
 Note that *hypothesis testing is not to be done routinely*, as additional complications arise when testing multiple hypothesis sequentially.
 
@@ -282,6 +492,7 @@ coef(lm(y_sim ~ x1_sim+x2_sim, data=xy_sim))
 Simulate the distribution of coefficients under a correctly specified model.
 Interpret the average.
 ```{r}
+## MAIN EXAMPLE
 N <- 30
 beta_true <- c(10, 2, -1)
 
@@ -298,7 +509,7 @@ for(sim in 1:400){
 
 par(mfrow=c(1, 2))
 for(i in 2:3){
-    hist(Coefs[i, ], breaks=50, xlab=bquote(beta[.(i)]), main=NA, border=NA, freq=FALSE)
+    hist(Coefs[i, ], breaks=50, xlab=bquote(beta[.(i-1)]), main=NA, border=NA, freq=FALSE)
     abline(v=mean(Coefs[i, ]), lwd=2, col=rgb(1, 0, 0, .8))
     abline(v=beta_true[i], col=rgb(0, 0, 1, .8), lty=2)
 }
@@ -308,8 +519,9 @@ for(i in 2:3){
 Many economic phenomena are nonlinear, even when including potential transforms of $\hat{y}$ and $\hat{x}_{k}$.
 Sometimes the linear model may still be a good or even great approximation.
 But sometimes not, and it is hard to know ex-ante.
-Examine the distribution of coefficients under this mispecified model and try to interpret the average.
+Examine the distribution of coefficients under this misspecified model and try to interpret the average.
 ```{r}
+## MAIN EXAMPLE
 N <- 30
 
 Coefs <- matrix(NA, nrow=3, ncol=600)
@@ -347,7 +559,7 @@ A simple way to let a relationship bend is to add the square of an explanatory v
 #### **$\hat{R}^2$ vs. $\hat{b}$** {-}
 
 A small $\hat{R}^2$ does not mean your coefficients are useless.
-The two quantities answer different questions: $\hat{b}_{k}$ tells us how $\hat{y}$ moves with $\hat{x}_{k}$, holding other regressors fixed, while $\hat{R}^2$ tells us how much of the variation in $\hat{y}$ the model captures.
+The two quantities answer [different questions](02_15_SimpleRegression.qmd#precision-and-fit): $\hat{b}_{k}$ tells us how $\hat{y}$ moves with $\hat{x}_{k}$, holding other regressors fixed, while $\hat{R}^2$ tells us how much of the variation in $\hat{y}$ the model captures.
 If most of the variation in $\hat{y}$ comes from things outside the model, $\hat{R}^2$ will be small even when $\hat{b}_{k}$ is precisely estimated.
 For example, wage regressions on years of schooling often report $\hat{R}^2$ around $0.1$, yet the schooling coefficient is one of the most studied quantities in labor economics.
 
@@ -382,5 +594,5 @@ In this case, you are not actually estimating a theoretical parameter.^[Even if 
 #### **Recall** {-}
 
 This chapter extended simple regression to multiple explanatory variables, introducing OLS, the adjusted $\hat{R}^2$, the $F$-statistic for joint tests, and bootstrap standard errors.
-In the R² vs. adjusted R² simulation, we added 30 random covariates to `Murder ~ Assault + UrbanPop`.
+In the R² vs. adjusted R² simulation, we added 30 random covariates to `wage ~ school + exper`.
 The unadjusted $\hat{R}^2$ crept upward, while the adjusted version stayed nearly flat.

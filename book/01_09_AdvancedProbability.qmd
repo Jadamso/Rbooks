@@ -6,9 +6,19 @@
 set.seed(1)
 ```
 
-This chapter covers five more distributions that use [factorials](01_05_Sampling.qmd#permutations-and-combinations) (!).
-The Binomial and Poisson are discrete, and the Irwin–Hall, Beta, and F are continuous.
-It then formalizes basic set theory, Bayes' theorem, and the Law of Total Probability so that conditional reasoning has a clear language.
+This chapter asks three questions.
+
+* How are discrete counts distributed?
+    * *Binomial distribution*: this counts successes across $n$ independent [Bernoulli](01_04_RandomVariables.qmd#bernoulli) trials, each with success probability $\theta$.
+      Its formula uses [factorials](01_05_Sampling.qmd#permutations-and-combinations) (!), as do the other four distributions below.
+    * *Poisson distribution*: this counts events in a fixed interval when they arrive at a constant rate $\lambda$.
+* How are continuous sums, proportions, and ratios distributed?
+    * *Irwin–Hall distribution*: this describes a sum of independent Uniforms.
+    * *Beta distribution*: this describes a proportion on the unit interval.
+    * *F distribution*: this describes a ratio of two averages of squared Normals.
+* How does one event change the probability of another?
+    * *Conditional probability*: this uses basic set theory to give conditional reasoning a clear language, $\text{Prob}(A \mid B) = \text{Prob}(A \cap B) / \text{Prob}(B)$.
+    * *Bayes' theorem*: this reverses the direction of a conditional probability, and the Law of Total Probability supplies its denominator.
 
 
 ## Discrete Distributions
@@ -27,7 +37,7 @@ The full specification gathers sample space, PMF, and CDF in one place:
 $$\begin{aligned}
 X_{i} &~\text{in}~\{0,1,\ldots,n\} \\
 \text{Prob}(X_{i}=x) &= \binom{n}{x}\theta^{x}(1-\theta)^{n-x} \\
-F(x) = \text{Prob}(X_{i} \leq x) &= \sum_{k=0}^{\lfloor x \rfloor} \text{Prob}(X_{i}=x)
+F(x) = \text{Prob}(X_{i} \leq x) &= \sum_{k=0}^{\lfloor x \rfloor} \text{Prob}(X_{i}=k)
 \end{aligned}$$
 
 The simplest case: how many heads will I get when I flip a fair coin twice?
@@ -59,6 +69,7 @@ The number of customers who enter is $X_{i} \sim \text{Binom}(15, 0.3)$.
 ```{r}
 #| fig-width: 8
 #| fig-height: 4
+## MAIN EXAMPLE
 ## Store: 15 passers-by, 30% chance each enters
 n <- 15
 theta <- 0.3
@@ -176,7 +187,7 @@ The single parameter $\lambda$ is the average number of events per interval, and
 $$\begin{aligned}
 X_{i} &~\text{in}~\{0,1,\ldots\} \\
 \text{Prob}(X_{i}=x) &= e^{-\lambda}\lambda^x/x! \\
-F(x) = \text{Prob}(X_{i} \leq x) &= \sum_{k=0}^{\lfloor x \rfloor} \text{Prob}(X_{i}=x)
+F(x) = \text{Prob}(X_{i} \leq x) &= \sum_{k=0}^{\lfloor x \rfloor} \text{Prob}(X_{i}=k)
 \end{aligned}$$
 Note the infinite discrete support $\{0,1,2,\ldots\}$: there is no upper bound on the count, though large values become vanishingly unlikely.
 
@@ -202,6 +213,7 @@ $$\begin{aligned}
 ```{r}
 #| fig-width: 8
 #| fig-height: 4
+## MAIN EXAMPLE
 ## Store: lambda = 3.5 customers per hour
 lambda <- 3.5
 
@@ -390,6 +402,7 @@ When $n=1$ this is just the Uniform density; when $n=2$ it is a triangle peaking
 ```{r}
 #| fig-width: 8
 #| fig-height: 4
+## MAIN EXAMPLE
 ## Tip jar: total tips from n customers, each Uniform(0, 1)
 # Irwin-Hall PDF function
 dirwinhall <- function(x, n) {
@@ -484,6 +497,7 @@ For the daily purchase rate with $\alpha=\beta=2$, the constant is $3!/(1! \cdot
 ```{r}
 #| fig-width: 8
 #| fig-height: 4
+## MAIN EXAMPLE
 ## Daily purchase rate: Beta(2, 2)
 x <- seq(0, 1, by=.01)
 
@@ -583,6 +597,7 @@ As with the Beta, the terms that do not involve $x$ form a constant that makes t
 ```{r}
 #| fig-width: 8
 #| fig-height: 4
+## MAIN EXAMPLE
 ## Sales volatility: 5 days at store 1, 20 days at store 2
 d1 <- 5
 d2 <- 20
@@ -753,8 +768,8 @@ In the die example, we can compute the probability the die is larger than 2 give
 $$\text{Prob}(\text{die is} >2 \mid \text{die shows even number}) = \text{Prob}(A \mid B) = \frac{\text{Prob}(A \cap B)}{\text{Prob}(B)} = \frac{1/3}{1/2} = 2/3$$
 
 ```{r}
+## MAIN EXAMPLE
 # Simulation verification
-set.seed(123)
 x <- seq(1, 6)
 rolls <- sample(x, 1e6, replace = TRUE)
 A <- rolls > 2
@@ -813,8 +828,8 @@ $$\begin{aligned}
 We can verify directly: given $A=\{3,4,5,6\}$, the even outcomes are $\{4,6\}$, so $\text{Prob}(B \mid A)=2/4=1/2$.
 Since $A$ and $B$ are independent, $\text{Prob}(B \mid A) = \text{Prob}(B)$ and flipping the conditioning changes nothing.
 ```{r}
+## MAIN EXAMPLE
 # Simulation verification
-set.seed(123)
 rolls <- sample(seq(1, 6), 1e6, replace=TRUE)
 A <- rolls > 2
 B <- rolls %% 2 == 0
@@ -844,7 +859,6 @@ $$\begin{aligned}
 Even though supplier $A$ provides $60\%$ of all parts, they account for only about $47\%$ of defectives because their defect rate is lower.
 ```{r}
 # Simulation verification
-set.seed(42)
 n <- 1e6
 supplier <- sample(c('A', 'B'), n, replace=TRUE, prob=c(0.6, 0.4))
 defect_rate <- ifelse(supplier == 'A', 0.03, 0.05)
@@ -871,7 +885,7 @@ mean(supplier[defective] == 'A')
 4. Using the `warpbreaks` dataset in R, compute the sample mean and variance of `breaks`.
    Compare their ratio to what the Poisson distribution predicts (i.e., $\mathbb{E}[X_{i}] = \mathbb{V}[X_{i}] = \lambda$).
    Does the Poisson seem like a good fit?
-   Simulate 10000 draws from a Poisson with $\lambda = \bar{X}$ and compare the simulated histogram to the observed data.
+   Simulate 10000 draws from a Poisson with $\lambda = \hat{m}$ and compare the simulated histogram to the observed data.
 
 #### **Further Reading** {-}
 

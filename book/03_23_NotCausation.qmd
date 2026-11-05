@@ -3,21 +3,37 @@
 
 ## Introduction
 
-[Comparing More Than Two Groups](02_13_MultipleGroups.qmd) compared means and distributions across several groups with ANOVA and Kruskal-Wallis.
-This chapter rewrites those group comparisons as regressions, first with treatment coding and then with effect coding.
-It then develops two resampling methods with different purposes.
-Permutation tests impose a null relationship by shuffling a factor variable.
-Subsampling keeps each observation intact and checks how estimates vary when some observations are omitted.
+[Comparing Multiple Groups](02_13_MultipleGroups.qmd) compared means and distributions across several groups with ANOVA and Kruskal-Wallis.
+
+This chapter asks three questions.
+
+* How do we compare groups with a regression?
+    * *Treatment coding and effect coding*: these rewrite the [ANOVA](02_13_MultipleGroups.qmd#equal-means-anova) comparison as a regression.
+      Treatment coding compares each group with a reference group, and effect coding compares it with the mean across group means.
+* What does a continuous predictor add to a group comparison?
+    * *Regression with factors and fixed effects*: these put a factor and a continuous predictor in one model, where each group gets its own intercept.
+    * *Nested-model $F$-tests*: these reuse the [$F$-statistic](02_13_MultipleGroups.qmd#the-f-statistic) to ask whether each added layer of a model adds information.
+* How sure are we?
+    * *Permutation test*: this imposes a null relationship by shuffling a factor variable, the same recipe as for [ANOVA](02_13_MultipleGroups.qmd#the-f-statistic).
+    * *Random subsampling*: this keeps each observation intact and checks how estimates vary when some observations are omitted.
+      It extends the [jackknife](01_05_Sampling.qmd#jackknife-distribution) by deleting several observations at a time.
+
 None of these methods turns an observational relationship into a causal effect.
 The word *effect* in *effect coding* names a parameterization, not a causal claim.
 
-We continue with `USArrests` and the four-level `state.region` factor from [Comparing More Than Two Groups](02_13_MultipleGroups.qmd).
+We continue with the group comparison from [Comparing Multiple Groups](02_13_MultipleGroups.qmd).
 
 ```{r}
-# Recreate the regional data so this chapter runs independently.
-xy_hat <- USArrests
-xy_hat$Region <- state.region
-table(xy_hat$Region)
+## MAIN EXAMPLE
+# 3294 US workers, one row per worker.
+# wage is the hourly wage in 1980 dollars.
+# school and exper are years of schooling and experience.
+data(Wages1, package='Ecdat')
+xy_hat <- Wages1
+# Three-level schooling factor, as in Comparing Multiple Groups
+xy_hat$school_g <- cut(xy_hat$school, breaks=c(0, 11, 12, 16), labels=c('<12', '12', '>12'))
+table(xy_hat$school_g)
+# The groups differ in size, which matters for effect coding below.
 ```
 
 ## Regression
@@ -26,30 +42,65 @@ table(xy_hat$Region)
 
 #### **ANOVA** {-}
 
-The model $\hat{y}_{ig} = b_{0} + \sum_{g=2}^{G} b_{g} \hat{d}_{ig} + \hat{e}_{ig}$ produces the same $F$-statistic as the ANOVA model fit above.
+The model $\hat{y}_{ig} = b_{0} + \sum_{g=2}^{G} b_{g} \hat{d}_{ig} + \hat{e}_{ig}$ produces the same $F$-statistic as the [ANOVA model](02_13_MultipleGroups.qmd#the-f-statistic).
 After fitting, $\hat{b}_{0}$ estimates the mean of the reference group and each $\hat{b}_{g}$ estimates the difference between group $g$ and the reference.
 This default representation is called *treatment coding*.
 
 ```{r}
-# Compare the regional means to treatment-coded coefficients.
-m_g_hat <- aggregate(Murder ~ Region, data=xy_hat, FUN=mean)[,'Murder']
+## MAIN EXAMPLE
+# Compare the group means to treatment-coded coefficients.
+m_g_hat <- aggregate(wage ~ school_g, data=xy_hat, FUN=mean)[,'wage']
 m_g_hat
+# Mean wages rise with schooling, from about 4.99 to 7.28 dollars.
 
 # The intercept is the reference mean.
 m_g_hat - m_g_hat[1]
 
 # Each remaining coefficient is a difference from the reference.
-reg_lm <- lm(Murder ~ Region, data=xy_hat)
+reg_lm <- lm(wage ~ school_g, data=xy_hat)
 coef(reg_lm)
+# The reference is the first level, fewer than 12 years of schooling.
+# The >12 group earns about 2.28 dollars more per hour than the reference.
 ```
 
 The ANOVA table for a regression with a single factor is therefore the same as the table from `aov()`.
 
 ```{r}
-reg_aov <- aov(Murder ~ Region, data=xy_hat)
+reg_aov <- aov(wage ~ school_g, data=xy_hat)
 anova(reg_aov)
 anova(reg_lm)
+# Both tables report the same F-statistic, about 128.
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the comparison with murder arrest rates across the four census regions.
+
+```{r}
+# All 50 US states, with murder arrests per 100,000 in the column Murder.
+xy2_hat <- USArrests
+# The built-in state.region lists regions in the same state order as USArrests.
+xy2_hat$Region <- state.region
+table(xy2_hat$Region)
+
+# Compare the regional means to treatment-coded coefficients.
+m2_g_hat <- aggregate(Murder ~ Region, data=xy2_hat, FUN=mean)[,'Murder']
+m2_g_hat
+
+# The intercept is the reference mean.
+m2_g_hat - m2_g_hat[1]
+
+# Each remaining coefficient is a difference from the reference.
+reg2_lm <- lm(Murder ~ Region, data=xy2_hat)
+coef(reg2_lm)
+# The reference is the Northeast.
+# The South's mean is about 7 arrests per 100,000 higher.
+
+reg2_aov <- aov(Murder ~ Region, data=xy2_hat)
+anova(reg2_aov)
+anova(reg2_lm)
+# Both tables report the same F-statistic, about 11.1.
+```
+:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Suppose there are $G=3$ groups with means $\hat{m}_{1}=4$, $\hat{m}_{2}=7$, and $\hat{m}_{3}=5$.
@@ -76,33 +127,37 @@ In a factor-only regression, $\hat{b}_{0}$ is the unweighted mean of the $G$ gro
 :::
 
 Effect coding is useful when no group is a natural reference and the deviations from a common center are easier to discuss than several pairwise differences.
-Because the four regions contain different numbers of states, the unweighted mean of their four means is not the observation-weighted mean across all 50 states.
+When the groups contain different numbers of observations, the unweighted mean of the group means generally differs from the observation-weighted mean across all observations.
 
 ```{r}
+## MAIN EXAMPLE
 # Display the sum-to-zero contrast matrix used for effect coding.
-effect_matrix <- contr.sum(nlevels(xy_hat$Region))
-rownames(effect_matrix) <- levels(xy_hat$Region)
+effect_matrix <- contr.sum(nlevels(xy_hat$school_g))
+rownames(effect_matrix) <- levels(xy_hat$school_g)
 effect_matrix
 
 # Apply contrasts to this model only, without changing global options.
 reg_effect <- lm(
-    Murder ~ Region,
+    wage ~ school_g,
     data=xy_hat,
-    contrasts=list(Region='contr.sum')
+    contrasts=list(school_g='contr.sum')
 )
 coef(reg_effect)
 
-# Compare each regional mean with the unweighted mean of group means.
-region_means <- aggregate(Murder ~ Region, data=xy_hat, FUN=mean)
-effect_mean <- mean(region_means[,'Murder'])
-region_effects <- region_means[,'Murder'] - effect_mean
+# Compare each group mean with the unweighted mean of group means.
+group_means <- aggregate(wage ~ school_g, data=xy_hat, FUN=mean)
+effect_mean <- mean(group_means[,'wage'])
+group_effects <- group_means[,'wage'] - effect_mean
 data.frame(
-    region=region_means[,'Region'],
-    group_mean=region_means[,'Murder'],
-    coded_effect=region_effects
+    school_g=group_means[,'school_g'],
+    group_mean=group_means[,'wage'],
+    coded_effect=group_effects
 )
+# The center is about 5.98 dollars.
+# Only workers with more than 12 years of schooling are above it.
 
-# Recover the omitted West effect from the sum-to-zero restriction.
+# Recover the omitted effect, for more than 12 years of schooling.
+# It follows from the sum-to-zero restriction.
 -sum(coef(reg_effect)[-1])
 ```
 
@@ -118,27 +173,98 @@ c(
     treatment_F=treatment_F,
     effect_F=effect_F
 )
+# The fitted values and residuals differ only by rounding error.
+# Both codings give the same F-statistic, about 128.
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-The effect-coded intercept is about $7.28$, while the overall mean of `Murder` across all states is about $7.79$.
-Use `table(xy_hat$Region)` and the regional means to explain why these numbers differ.
+Compare the effect-coded intercept with the overall mean of `wage` across all workers.
+Use `table(xy_hat$school_g)` and the group means to explain why these numbers differ.
 Then change the order of the factor levels and verify that the fitted values remain unchanged.
+
+```{r}
+coef(reg_effect)['(Intercept)']
+# The effect-coded intercept is about 5.98 dollars.
+
+mean(xy_hat[, 'wage'])
+# The overall mean is about 5.76 dollars.
+```
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat effect coding with murder arrest rates across the census regions.
+Is the effect-coded intercept above or below the overall mean, and why?
+
+```{r}
+# All 50 US states, with the four census regions as a factor.
+xy2_hat <- USArrests
+xy2_hat$Region <- state.region
+
+# Display the sum-to-zero contrast matrix used for effect coding.
+effect2_matrix <- contr.sum(nlevels(xy2_hat$Region))
+rownames(effect2_matrix) <- levels(xy2_hat$Region)
+effect2_matrix
+
+# Apply contrasts to this model only, without changing global options.
+reg2_effect <- lm(
+    Murder ~ Region,
+    data=xy2_hat,
+    contrasts=list(Region='contr.sum')
+)
+coef(reg2_effect)
+# The effect-coded intercept is about 7.28.
+
+# Compare each regional mean with the unweighted mean of group means.
+region_means <- aggregate(Murder ~ Region, data=xy2_hat, FUN=mean)
+effect2_mean <- mean(region_means[,'Murder'])
+region_effects <- region_means[,'Murder'] - effect2_mean
+data.frame(
+    region=region_means[,'Region'],
+    group_mean=region_means[,'Murder'],
+    coded_effect=region_effects
+)
+
+# Recover the omitted West effect from the sum-to-zero restriction.
+-sum(coef(reg2_effect)[-1])
+
+mean(xy2_hat[, 'Murder'])
+# The overall mean across all states is about 7.79.
+```
 :::
 
 #### **Regression with Factors** {-}
 
 We can extend the group-comparison model by adding continuous predictors alongside the factor.
-For example, we might ask whether regional differences in murder arrest rates persist after holding `Assault` fixed.
+For example, we might ask whether group differences persist after holding a continuous predictor fixed.
 
 ```{r}
-# Add a continuous predictor to the regional model.
-reg_combined <- lm(Murder ~ Region + Assault, data=xy_hat)
+## MAIN EXAMPLE
+# Add a continuous predictor to the schooling model.
+reg_combined <- lm(wage ~ school_g + exper, data=xy_hat)
 summary(reg_combined)
+# Holding experience fixed, the gaps from the <12 group are about 0.64 and 2.33.
+# Those are close to the raw gaps of about 0.68 and 2.28.
+# Each year of experience goes with about 0.10 dollars more per hour.
 ```
 
-Holding `Assault` fixed changes the conditional association being summarized.
+Holding a predictor fixed changes the conditional association being summarized.
 It does not by itself remove confounding, reverse causation, measurement error, or other reasons that a regression coefficient may not be causal.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the regression with murder arrest rates, and ask whether regional differences persist after holding assault arrest rates fixed.
+
+```{r}
+# All 50 US states, with assault arrests per 100,000 in the column Assault.
+xy2_hat <- USArrests
+xy2_hat$Region <- state.region
+
+# Add a continuous predictor to the regional model.
+reg2_combined <- lm(Murder ~ Region + Assault, data=xy2_hat)
+summary(reg2_combined)
+# Holding Assault fixed, the South's gap from the Northeast is about 3.7.
+# That is about half of its raw gap of about 7.
+```
+:::
 
 #### **Fixed Effects** {-}
 
@@ -167,14 +293,35 @@ Fixed effects are useful when a factor predicts the outcome but the coefficients
 The coefficient on another predictor then describes its partial relationship with the outcome after removing level differences across the factor.
 
 ```{r}
+## MAIN EXAMPLE
+# Estimate the experience coefficient with explicit schooling indicators.
+reg_dv <- lm(wage ~ -1 + exper + school_g, data=xy_hat)
+coef(reg_dv)['exper']
+
+# Estimate the same coefficient by absorbing the schooling group effects.
+reg_fe <- fixest::feols(wage ~ exper | school_g, data=xy_hat)
+coef(reg_fe)
+# Both give about 0.105 dollars per hour for each year of experience.
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the comparison with murder arrest rates, using assault arrest rates as the other predictor and census regions as the fixed effects.
+
+```{r}
+# All 50 US states, with the four census regions as a factor.
+xy2_hat <- USArrests
+xy2_hat$Region <- state.region
+
 # Estimate the Assault coefficient with explicit region indicators.
-reg_dv <- lm(Murder ~ -1 + Assault + Region, data=xy_hat)
-coef(reg_dv)['Assault']
+reg2_dv <- lm(Murder ~ -1 + Assault + Region, data=xy2_hat)
+coef(reg2_dv)['Assault']
 
 # Estimate the same coefficient by absorbing the region effects.
-reg_fe <- fixest::feols(Murder ~ Assault | Region, data=xy_hat)
-coef(reg_fe)
+reg2_fe <- fixest::feols(Murder ~ Assault | Region, data=xy2_hat)
+coef(reg2_fe)
+# Both give about 0.035 murder arrests per assault arrest.
 ```
+:::
 
 With fixed effects, we can also compute averages for each group: $\hat{m}_{Yg}=\sum_{i}^{n_{g}}\hat{y}_{ig}/n_{g}$, where group $g$ has $n_{g}$ observations denoted $\hat{y}_{ig}$.
 We can construct a *between estimator* from $\hat{m}_{Yg}=b_{0}+\hat{m}_{Xg}b_{1}$.
@@ -189,20 +336,25 @@ We can build a sequence of nested models, each adding one layer of complexity, t
 The first asks whether group means differ, the second whether a continuous predictor adds explanatory power, and the third whether that predictor's slope varies across groups [@BramborEtAl2006; @BalliSorensen2013].
 
 ```{r}
+## MAIN EXAMPLE
 # Order the nested models from simplest to most complex.
-reg0 <- lm(Murder ~ 1, data=xy_hat)
-reg1 <- lm(Murder ~ Region, data=xy_hat)
-reg2 <- lm(Murder ~ Region + Assault, data=xy_hat)
-reg3 <- lm(Murder ~ Region * Assault, data=xy_hat)
+reg0 <- lm(wage ~ 1, data=xy_hat)
+reg1 <- lm(wage ~ school_g, data=xy_hat)
+reg2 <- lm(wage ~ school_g + exper, data=xy_hat)
+reg3 <- lm(wage ~ school_g * exper, data=xy_hat)
 
-# Test whether Region adds information.
+# Test whether the schooling groups add information.
 anova(reg0, reg1)
+# F is about 128, and the p-value is essentially zero.
 
-# Test whether Assault adds information beyond Region.
+# Test whether experience adds information beyond the schooling groups.
 anova(reg1, reg2)
+# F is about 19, and the p-value is about 0.000015.
 
-# Test whether the Assault slope differs by Region.
+# Test whether the experience slope differs by schooling group.
 anova(reg2, reg3)
+# F is about 7, and the p-value is about 0.001.
+# All three tests reject, although RSS falls by only about 8% in total.
 ```
 
 ```{r}
@@ -212,16 +364,49 @@ rss1 <- sum(resid(reg1)^2)
 df0 <- df.residual(reg0)
 df1 <- df.residual(reg1)
 F <- ((rss0 - rss1)/(df0 - df1))/(rss1/df1)
-p <- 1 - pf(F, df0 - df1, df1)
+# Ask for the upper tail directly, since 1 - pf() would round this p to 0.
+p <- pf(F, df0 - df1, df1, lower.tail=FALSE)
 cbind(F, p)
+# F matches the first table above, about 128.
+# The p-value, about 3e-54, is below the 2.2e-16 limit that table prints.
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 The sequence of $F$-tests builds from simple to complex.
-The first test asks whether Region adds information at all.
-The second asks whether Assault adds information beyond Region.
-The third asks whether the Assault-Murder relationship varies across regions.
+The first test asks whether the factor adds information at all.
+The second asks whether a continuous predictor adds information beyond the factor.
+The third asks whether that predictor's relationship with the outcome varies across groups.
 A small $p$-value rejects the simpler model, but it does not explain why the relationship exists.
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Build the same sequence of nested models for murder arrest rates, with census regions as the factor and assault arrest rates as the continuous predictor.
+Does the slope vary across regions?
+
+```{r}
+# All 50 US states, with the four census regions as a factor.
+xy2_hat <- USArrests
+xy2_hat$Region <- state.region
+
+# Order the nested models from simplest to most complex.
+reg2_0 <- lm(Murder ~ 1, data=xy2_hat)
+reg2_1 <- lm(Murder ~ Region, data=xy2_hat)
+reg2_2 <- lm(Murder ~ Region + Assault, data=xy2_hat)
+reg2_3 <- lm(Murder ~ Region * Assault, data=xy2_hat)
+
+# Test whether Region adds information.
+anova(reg2_0, reg2_1)
+# F is about 11, and the p-value is about 0.000013.
+
+# Test whether Assault adds information beyond Region.
+anova(reg2_1, reg2_2)
+# F is about 63, and the p-value is about 5e-10.
+
+# Test whether the Assault slope differs by Region.
+anova(reg2_2, reg2_3)
+# F is about 0.86, and the p-value is about 0.47.
+# So there is little evidence that the slope differs across regions.
+```
 :::
 
 ## Permutation Tests
@@ -235,7 +420,7 @@ Under the null, the labels must be exchangeable across observations.
 :::
 
 Permutation tests are useful when we want a reference distribution that preserves the observed outcomes and the exact number of observations in each group.
-As in [Comparing More Than Two Groups](02_13_MultipleGroups.qmd#the-f-statistic), sampling without replacement keeps all four regional group counts fixed.
+As in [Comparing Multiple Groups](02_13_MultipleGroups.qmd#the-f-statistic), sampling without replacement keeps all the group counts fixed.
 
 #### **A Global Factor Test** {-}
 
@@ -244,6 +429,7 @@ This is preferable to separately permuting its $G-1$ coded columns, which would 
 It is also coding-invariant, so treatment and effect coding produce the same observed and permuted statistics.
 
 ```{r}
+## MAIN EXAMPLE
 set.seed(23)
 
 F_stat <- function(y_hat, group) {
@@ -252,45 +438,86 @@ F_stat <- function(y_hat, group) {
     return(F_value)
 }
 
-F_obs <- F_stat(y_hat=xy_hat[,'Murder'], group=xy_hat[,'Region'])
+F_obs <- F_stat(y_hat=xy_hat[,'wage'], group=xy_hat[,'school_g'])
 n_perm <- 9999
 F_perm <- rep(NA, n_perm)
 
 for (b in seq(n_perm)) {
-    group_b <- sample(xy_hat[,'Region'], replace=FALSE)
-    F_perm[b] <- F_stat(y_hat=xy_hat[,'Murder'], group=group_b)
+    group_b <- sample(xy_hat[,'school_g'], replace=FALSE)
+    F_perm[b] <- F_stat(y_hat=xy_hat[,'wage'], group=group_b)
 }
 
 # Add one simulated result to avoid reporting a zero Monte Carlo p-value.
 p_perm <- (sum(F_perm >= F_obs) + 1)/(n_perm + 1)
 p_param <- anova(reg_lm)[['Pr(>F)']][1]
 c(F_obs=F_obs, p_permutation=p_perm, p_parametric=p_param)
+# No shuffle reached the observed F of about 128.
+# So p_permutation is 1/10000, the smallest value 9999 shuffles can report.
+# It is limited by the number of shuffles, so p_parametric can be far smaller.
 
 hist(F_perm, breaks=40, border=NA, freq=FALSE, main=NA,
     xlim=c(0, F_obs*1.05),
-    xlab='F-statistic under permuted region labels')
+    xlab='F-statistic under permuted schooling labels')
 abline(v=F_obs, col=rgb(1, 0, 0, .8), lwd=2)
 title(paste0('permutation p-value = ',
     formatC(p_perm, format='f', digits=4)), font.main=1)
+# The observed F sits far to the right of every shuffled F.
+# Schooling was not randomly assigned, so this shows association only.
+# It does not estimate the effect of moving a worker to another group.
 ```
 
-The observed regional $F$-statistic lies in the far-right tail of the permutation distribution.
-The test therefore provides evidence that murder arrest rates and region are associated, under the assumption that the labels are exchangeable under the null.
+An observed $F$-statistic in the far-right tail of the permutation distribution provides evidence that the outcome and the factor are associated, under the assumption that the labels are exchangeable under the null.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the permutation test with murder arrest rates across the census regions.
+
+```{r}
+# All 50 US states, with the four census regions as a factor.
+xy2_hat <- USArrests
+xy2_hat$Region <- state.region
+reg2_lm <- lm(Murder ~ Region, data=xy2_hat)
+
+F2_obs <- F_stat(y_hat=xy2_hat[,'Murder'], group=xy2_hat[,'Region'])
+F2_perm <- rep(NA, n_perm)
+
+for (b in seq(n_perm)) {
+    group2_b <- sample(xy2_hat[,'Region'], replace=FALSE)
+    F2_perm[b] <- F_stat(y_hat=xy2_hat[,'Murder'], group=group2_b)
+}
+
+# Add one simulated result to avoid reporting a zero Monte Carlo p-value.
+p2_perm <- (sum(F2_perm >= F2_obs) + 1)/(n_perm + 1)
+p2_param <- anova(reg2_lm)[['Pr(>F)']][1]
+c(F_obs=F2_obs, p_permutation=p2_perm, p_parametric=p2_param)
+
+hist(F2_perm, breaks=40, border=NA, freq=FALSE, main=NA,
+    xlim=c(0, F2_obs*1.05),
+    xlab='F-statistic under permuted region labels')
+abline(v=F2_obs, col=rgb(1, 0, 0, .8), lwd=2)
+title(paste0('permutation p-value = ',
+    formatC(p2_perm, format='f', digits=4)), font.main=1)
+# The observed F of about 11 lies in the far-right tail of the shuffled F's.
+# This is evidence that murder arrest rates and region are associated.
+# That reading assumes the labels are exchangeable under the null.
+# States may be spatially related, and region was not randomly assigned.
+# The p-value does not estimate the effect of moving a state to another region.
+```
+:::
 
 #### **What Can Be Permuted** {-}
 
 The simple shuffle above is appropriate for the factor-only model because the null removes the only relationship in the model.
-In a regression with controls, naively shuffling `Region` would also break its relationship with those controls.
+In a regression with controls, naively shuffling the factor would also break its relationship with those controls.
 Adjusted permutation tests therefore require a design-specific restricted permutation or a method that permutes residuals under a reduced model.
 
 Exchangeability is also an assumption about the data, which the shuffle itself cannot check.
-States may be spatially related, and region was not randomly assigned.
-The small permutation $p$-value does not estimate the effect of moving a state to another region.
+Observations may be related to one another, and the factor may not have been randomly assigned.
+A small permutation $p$-value does not estimate the effect of moving an observation to another group.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-A permutation test changes the pairing between `Murder` and `Region` while preserving the four group counts.
-If `Region` had been randomly assigned in an experiment, the shuffle could reproduce the assignment mechanism.
-For these observational data, it instead tests a no-association null under exchangeability.
+A permutation test changes the pairing between the outcome and the factor while preserving the group counts.
+If the factor had been randomly assigned in an experiment, the shuffle could reproduce the assignment mechanism.
+For observational data, it instead tests a no-association null under exchangeability.
 :::
 
 ## Subsampling
@@ -323,18 +550,20 @@ $$
 =
 \frac{m}{dB}
 \sum_{b=1}^{B}
-\left(\hat{b}^{\text{sub}}_{b}-\bar{\hat{b}}^{\text{sub}}\right)^2,
+\left(\hat{b}^{\text{sub}}_{b}-\hat{b}^{\text{sub}}\right)^2,
 $$
-and $\hat{\text{SE}}^{\text{sub}}=\sqrt{\hat{v}^{\text{sub}}}$.
+where $\hat{b}^{\text{sub}}$ is the mean of the $\hat{b}^{\text{sub}}_{b}$, and $\hat{\text{SE}}^{\text{sub}}=\sqrt{\hat{v}^{\text{sub}}}$.
 The example uses a Normal approximation around the full-sample coefficient rather than taking raw percentiles of the overlapping subsample estimates.
 
 ```{r}
-reg <- lm(Murder ~ UrbanPop, data=xy_hat)
-b_full <- coef(reg)['UrbanPop']
+## MAIN EXAMPLE
+reg <- lm(wage ~ school, data=xy_hat)
+b_full <- coef(reg)['school']
 
-# Draw random delete-10 samples without replacement.
+# Draw random delete-d samples without replacement.
+# Each draw deletes about a fifth of the 3294 workers: d=659 and m=2635.
 n <- nrow(xy_hat)
-d <- 10
+d <- round(n/5)
 m <- n - d
 n_sub <- 999
 rs_coefs <- rep(NA, n_sub)
@@ -342,28 +571,73 @@ rs_coefs <- rep(NA, n_sub)
 for (b in seq(n_sub)) {
     b_id <- sample(n, m, replace=FALSE)
     xy_sub <- xy_hat[b_id,]
-    reg_b <- lm(Murder ~ UrbanPop, data=xy_sub)
-    rs_coefs[b] <- coef(reg_b)['UrbanPop']
+    reg_b <- lm(wage ~ school, data=xy_sub)
+    rs_coefs[b] <- coef(reg_b)['school']
 }
 
 # Correct the spread for overlapping delete-d samples.
+# Here m/d is about 4, so the correction about doubles the raw spread.
 rs_mean <- mean(rs_coefs)
 rs_var <- (m/d)*mean((rs_coefs - rs_mean)^2)
 rs_se <- sqrt(rs_var)
 rs_ci <- b_full + qnorm(c(.025, .975))*rs_se
 c(b_full=b_full, subsample_SE=rs_se, lower=rs_ci[1], upper=rs_ci[2])
+# Each year of schooling goes with about 0.56 dollars more per hour.
+# The subsample SE is about 0.036.
+# The interval runs from about 0.49 to 0.63, well above zero.
 
 hist(rs_coefs, breaks=25, border=NA, freq=FALSE, main=NA,
     xlim=range(c(rs_coefs, rs_ci)),
-    xlab='Subsample slope on UrbanPop')
+    xlab='Subsample slope on years of schooling')
 abline(v=rs_ci, col=rgb(0, 0, 0, .8), lwd=2)
 title(paste0('delete-', d, ' SE = ', round(rs_se, 3)), font.main=1)
+# Nearly all raw slopes sit inside the interval, since the subsamples overlap.
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-The example deletes $d=10$ observations and retains $m=40$ per iteration.
+The example deletes $d$ observations and retains $m=n-d$ per iteration.
 Increasing $d$ makes individual subsets less similar to the full dataset, while increasing $B$ only reduces Monte Carlo noise from which subsets happened to be drawn.
-Neither change creates new information beyond the original 50 states.
+Neither change creates new information beyond the original $n$ observations.
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the delete-$d$ standard error for the slope of murder arrest rates on urban population across the states.
+
+```{r}
+# All 50 US states, with percent urban population in the column UrbanPop.
+xy2_hat <- USArrests
+reg2_full <- lm(Murder ~ UrbanPop, data=xy2_hat)
+b2_full <- coef(reg2_full)['UrbanPop']
+
+# Draw random delete-10 samples without replacement, so m=40 states remain.
+n2 <- nrow(xy2_hat)
+d2 <- 10
+m2 <- n2 - d2
+n2_sub <- 999
+rs2_coefs <- rep(NA, n2_sub)
+
+for (b in seq(n2_sub)) {
+    b_id <- sample(n2, m2, replace=FALSE)
+    xy2_sub <- xy2_hat[b_id,]
+    reg2_b <- lm(Murder ~ UrbanPop, data=xy2_sub)
+    rs2_coefs[b] <- coef(reg2_b)['UrbanPop']
+}
+
+# Correct the spread for overlapping delete-d samples.
+rs2_mean <- mean(rs2_coefs)
+rs2_var <- (m2/d2)*mean((rs2_coefs - rs2_mean)^2)
+rs2_se <- sqrt(rs2_var)
+rs2_ci <- b2_full + qnorm(c(.025, .975))*rs2_se
+c(b_full=b2_full, subsample_SE=rs2_se, lower=rs2_ci[1], upper=rs2_ci[2])
+# The slope is about 0.02, and the subsample SE is about 0.045.
+# The interval runs from about -0.07 to 0.11, so it includes zero.
+
+hist(rs2_coefs, breaks=25, border=NA, freq=FALSE, main=NA,
+    xlim=range(c(rs2_coefs, rs2_ci)),
+    xlab='Subsample slope on UrbanPop')
+abline(v=rs2_ci, col=rgb(0, 0, 0, .8), lwd=2)
+title(paste0('delete-', d2, ' SE = ', round(rs2_se, 3)), font.main=1)
+```
 :::
 
 Subsampling also extends to strongly dependent data, including spatial data [@PolitisRomano1994; @Sherman1996; @PolitisEtAl1999; @ChoiChue2007; @Adamson2025_Greece].
@@ -383,15 +657,16 @@ For independent observations from the same nonnormal distribution with finite, p
 Keeping $d=1$, or any other fixed number, does not generally satisfy this condition.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Retain half of the 50 states in each subsample and estimate the mean murder arrest rate.
-Here $m=d=25$, so the rescaling factor is $\sqrt{m/d}=1$.
+Retain half of the workers in each subsample and estimate the mean hourly wage.
+With $m=d$, the rescaling factor is $\sqrt{m/d}=1$.
 Sampling without replacement reduces the variation across these overlapping half-samples enough that their spread already estimates the uncertainty in the full-sample mean.
 
 ```{r}
 # Use half-samples to construct a percentile interval for the mean.
-x_hat <- xy_hat[, 'Murder']
+x_hat <- xy_hat[, 'wage']
 m_hat <- mean(x_hat)
 n <- length(x_hat)
+# Half of the 3294 workers: 1647 retained and 1647 deleted.
 n_keep <- floor(n / 2)
 n_delete <- n - n_keep
 n_sub <- 9999
@@ -407,11 +682,43 @@ scaled_means <- m_hat + sqrt(n_keep / n_delete) * (sub_means - m_hat)
 ci_percentile <- quantile(scaled_means, probs=c(.025, .975))
 ci_normal <- m_hat + qnorm(c(.025, .975)) * sd(x_hat) / sqrt(n)
 round(rbind(percentile=ci_percentile, normal=ci_normal), 3)
+# Both intervals run from about 5.65 to 5.87 dollars.
 ```
 
-The confidence-interval interpretation treats the state rates as independent observations from a common population distribution.
-The interval has a large-sample justification, not a guarantee of exactly $95\%$ coverage with 50 observations.
+The confidence-interval interpretation treats the observations as independent draws from a common population distribution.
+The interval has a large-sample justification, not a guarantee of exactly $95\%$ coverage in a finite sample.
 Wu also reports undercoverage in some finite-sample examples.
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the half-sample interval with murder arrest rates across the states.
+How close are the percentile and Normal intervals?
+
+```{r}
+# Use half-samples to construct a percentile interval for the mean.
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+m2_hat <- mean(x2_hat)
+n2 <- length(x2_hat)
+# Half of the 50 states: 25 retained and 25 deleted.
+n2_keep <- floor(n2 / 2)
+n2_delete <- n2 - n2_keep
+n2_sub <- 9999
+sub2_means <- rep(NA, n2_sub)
+
+for (b in seq(n2_sub)) {
+    x2_sub <- sample(x2_hat, n2_keep, replace=FALSE)
+    sub2_means[b] <- mean(x2_sub)
+}
+
+# Put the subsample deviations on the full-sample scale.
+scaled2_means <- m2_hat + sqrt(n2_keep / n2_delete) * (sub2_means - m2_hat)
+ci2_percentile <- quantile(scaled2_means, probs=c(.025, .975))
+ci2_normal <- m2_hat + qnorm(c(.025, .975)) * sd(x2_hat) / sqrt(n2)
+round(rbind(percentile=ci2_percentile, normal=ci2_normal), 3)
+# Both intervals run from about 6.6 to 9.0 arrests per 100,000.
+# This treats the state rates as independent draws from a common population.
+# With 50 observations, coverage need not be exactly 95%.
+```
 :::
 
 For regression coefficients, Wu's method also uses weights based on the subset design matrices and a scale factor that accounts for the number of coefficients.
@@ -465,7 +772,7 @@ The subsampling distribution describes sensitivity to omitting observations and 
 
 Treatment coding and effect coding are two coordinate systems for the same fitted group means.
 
-The permutation test provides evidence against a no-association null under exchangeability.
+A small permutation $p$-value provides evidence against a no-association null under exchangeability.
 It shows that the observed pairing of outcomes and labels is unusual.
 It does not show what would happen under an intervention.
 
@@ -484,14 +791,14 @@ These limits extend the distinction introduced in [Association is not Causation]
    Compute the treatment-coded coefficients using the first group as the reference.
    Then compute the effect-coded intercept and all three group effects, checking that the effects sum to zero.
 
-3. Using `USArrests` and `state.region`, construct a permutation test of whether mean `Assault` arrest rates differ across regions.
-   Use $B=9999$ permutations, report the global $F$-statistic and permutation $p$-value, and compare the result with `anova(lm(Assault ~ Region, data=xy_hat))`.
+3. Store `USArrests` with a `Region` column from `state.region` as `xy2_hat`, then construct a permutation test of whether mean `Assault` arrest rates differ across regions.
+   Use $B=9999$ permutations, report the global $F$-statistic and permutation $p$-value, and compare the result with `anova(lm(Assault ~ Region, data=xy2_hat))`.
 
-4. Extend the running example by fitting `Murder ~ Region + Assault + UrbanPop` and `Murder ~ Region * Assault + UrbanPop`.
-   Use `anova()` to test whether the Region-Assault interaction terms are jointly significant after controlling for `UrbanPop`.
-   Explain why this test does not establish that assault arrests cause murder arrests.
+4. Extend the running example by fitting `wage ~ school_g + exper + sex` and `wage ~ school_g * exper + sex`.
+   Use `anova()` to test whether the `school_g`-`exper` interaction terms are jointly significant after controlling for `sex`.
+   Explain why this test does not establish that experience causes higher wages.
 
-5. Repeat the subsampling example with $d=5$, $d=10$, and $d=20$.
+5. Repeat the subsampling example with $d$ equal to about $10\%$, $20\%$, and $40\%$ of the observations.
    Apply the delete-$d$ correction in each case and compare the standard errors.
    Explain why increasing $B$ makes the simulation more stable without increasing the information in the original sample.
 
@@ -508,5 +815,5 @@ These limits extend the distinction introduced in [Association is not Causation]
 #### **Recall** {-}
 
 This chapter rewrote ANOVA as a regression with a factor variable and showed that treatment and effect coding change coefficient meanings without changing the fitted model.
-The regional example gave an effect-coded intercept of about $7.28$, the unweighted mean of the four regional means, while its global $F$-statistic was identical under both codings.
+The schooling example gave an effect-coded intercept of about $5.98$, the unweighted mean of the three group means, while its global $F$-statistic was identical under both codings.
 The permutation test shuffled the factor labels to test a no-association null, whereas random delete-$d$ subsampling preserved each row and measured sensitivity to omitted observations.

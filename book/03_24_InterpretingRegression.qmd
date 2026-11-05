@@ -7,8 +7,18 @@ set.seed(1)
 ```
 
 A fitted regression should be audited before its coefficients are reported.
-This chapter walks through that audit in two stages: the four standard diagnostic plots for outliers, collinearity, and residual structure, and then data transformations that can sometimes rescue a misspecified model.
-Before either stage, look at the raw data with the scatterplot matrices and conditioning plots from [Multivariate Distributions](03_21_MultivariateDistributions.qmd#scatterplot-matrices).
+
+This chapter asks two questions.
+
+* Is the fitted model bad in some way?
+    * *Diagnostic plots*: these are four standard model assessment checks from one call to `plot()`.
+    * *Leverage, standardized residuals, and Cook's Distance*: these find observations that deserve a closer look.
+    * *Variance Inflation Factor*: this measures how much collinearity inflates a coefficient's variance, $\hat{\text{VIF}}_{k}=1/(1-\hat{R}^2_{k})$.
+    * *Normal Q-Q plot and Breusch-Pagan test*: these check the residuals, since many tests and default standard errors rely on how the residuals behave.
+* Would transforming the data help?
+    * *Box-Cox transformation*: this searches over power transformations that can sometimes rescue a misspecified model.
+
+Before answering either question, look at the raw data with the scatterplot matrices and conditioning plots from [Multivariate Distributions](03_21_MultivariateDistributions.qmd#scatterplot-matrices).
 Nonlinear patterns and outliers are often visible before any model is fit.
 So are explanatory variables that carry almost the same information.
 
@@ -19,11 +29,21 @@ Plotting your regression object is a simple and easy step to help diagnose wheth
 Calling `plot()` on an `lm` object returns four standard plots: (1) residuals vs fitted, (2) Q-Q normal of residuals, (3) scale-location, and (4) residuals vs leverage with Cook's distance contours.
 We next go through what each shows.
 ```{r, fig.height=10, fig.width=10, fig.align="center"}
+## MAIN EXAMPLE
 # Fit a multiple regression and produce the four standard diagnostic plots.
-xy_hat <- USArrests
-reg <- lm(Murder ~ Assault+UrbanPop, data=xy_hat)
+# Lab data: 3294 US workers.
+# wage is the hourly wage in 1980 dollars.
+# school and exper are years of schooling and of work experience.
+data(Wages1, package='Ecdat')
+xy_hat <- Wages1
+reg <- lm(wage ~ school + exper, data=xy_hat)
 par(mfrow=c(2, 2))
-plot(reg, pch=16, col=grey(0, .5))
+plot(reg, pch=16, col=grey(0, .1))
+# The labels beside the most extreme points are row numbers.
+# Residuals vs fitted: the smoother stays near 0, but a few residuals are huge.
+# Q-Q: the upper tail bends far above the line, since a few wages are very high.
+# Scale-location: the smoother rises slowly, so spread grows with the fit.
+# Residuals vs leverage: no worker comes near the Cook's contour at 0.5.
 ```
 
 #### **Outliers** {-}
@@ -39,10 +59,11 @@ It is small when $\hat{x}_{i}$ sits near the centre of the predictor cloud and l
 Equivalently, $h_{i}$ is the share of the fitted value $\hat{y}_{i}^{\mathrm{fit}}$ that is determined by $\hat{y}_{i}$ itself rather than by the other observations.
 Across the sample, the $h_{i}$ sum to the number of coefficients $K+1$.
 
-The *standardized residual* $r_{i} = \hat{e}_{i} / (s^{(-i)}\sqrt{1-h_{i}})$ rescales the raw residual by an estimate of its standard deviation, where $s^{(-i)}$ is the root mean squared error of a regression with observation $i$ removed.
+The *standardized residual* $r_{i} = \hat{e}_{i} / (\hat{s}_{\text{adj}}\sqrt{1-h_{i}})$ rescales the raw residual by an estimate of its standard deviation, where $\hat{s}_{\text{adj}}$ is the square root of the *adjusted mean squared error* of the regression.
 
-*Cook's Distance* [@Cook1977] sums all prediction changes when observation $i$ is removed, scaled by the mean square error:
-$$D_{i} = \frac{\sum_{j} \left( \hat{y}^{\mathrm{pred}}(\hat{x}_{j}) - \hat{y}^{\mathrm{pred}(-i)}(\hat{x}_{j}) \right)^2 }{ (K+1) \hat{s}^2 } = \frac{\hat{e}_{i}^2}{(K+1) \hat{s}^2 } \frac{h_{i}}{(1-h_{i})^2}, \quad \hat{s}^2 = \frac{\sum_{i} \hat{e}_{i}^2}{n-K-1}.$$
+*Cook's Distance* [@Cook1977] sums all prediction changes when observation $i$ is removed, scaled by the adjusted mean squared error:
+$$D_{i} = \frac{\sum_{j} \left( \hat{y}^{\mathrm{pred}}(\hat{x}_{j}) - \hat{y}^{\mathrm{pred}(-i)}(\hat{x}_{j}) \right)^2 }{ (K+1) \hat{s}^2_{\text{adj}} } = \frac{\hat{e}_{i}^2}{(K+1) \hat{s}^2_{\text{adj}} } \frac{h_{i}}{(1-h_{i})^2}, \quad \hat{s}^2_{\text{adj}} = \frac{\sum_{i} \hat{e}_{i}^2}{n-K-1}.$$
+The adjusted mean squared error divides by $n-K-1$ instead of the $n$ in the [mean squared error](02_15_SimpleRegression.qmd#goodness-of-fit), an adjustment for degrees of freedom like the one in the [adjusted $\hat{R}^2$](03_22_MultipleRegression.qmd#adjusted-hatr2).
 In Cook's distance, the argument $\hat{x}_{j}$ identifies the prediction target and the superscript $(-i)$ identifies the observation omitted from the fit.
 :::
 
@@ -61,8 +82,10 @@ y_sim <- 3 + 0.6*sqrt(x_sim) + e
 plot(y_sim ~ x_sim, pch=16, col=grey(0, .5), main=NA)
 points(x_sim[1], y_sim[1], pch=16, col=rgb(1, 0, 0, .5))
 
-abline(lm(y_sim ~ x_sim), col=rgb(1, 0, 0, .8), lty=2)
-abline(lm(y_sim[-1] ~ x_sim[-1]))
+abline(lm(y_sim ~ x_sim), col=rgb(1, 0, 0, .8), lwd=2)
+abline(lm(y_sim[-1] ~ x_sim[-1]), col=rgb(1, 0, 0, .8), lwd=2, lty=2)
+legend('topleft', legend=c('All observations', 'Without the red point'),
+    col=rgb(1, 0, 0, .8), lwd=2, lty=c(1, 2), bty='n')
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
@@ -72,15 +95,24 @@ In your own data analysis, what steps would you take before deciding to remove a
 :::
 
 ```{r}
-# State with the highest leverage
-which.max(hatvalues(reg))
-# State with the largest standardized residual
-which.max(rstandard(reg))
+## MAIN EXAMPLE
+# Worker with the highest leverage, shown with its row number
+xy_hat[which.max(hatvalues(reg)), ]
+# Row 2102 has 3 years of schooling and 18 of experience, a rare mix.
+# Worker with the largest standardized residual
+xy_hat[which.max(rstandard(reg)), ]
+# Row 1813 earns about 40 dollars, the highest wage in the data.
+# The model predicts only about 5 dollars with 11 years of schooling.
 ```
 
 ```{r}
-# State with the largest Cook's Distance
-which.max(cooks.distance(reg))
+## MAIN EXAMPLE
+# Worker with the largest Cook's Distance
+xy_hat[which.max(cooks.distance(reg)), ]
+# Row 1813 again: a huge residual, though its leverage is about average.
+max(cooks.distance(reg))
+# Still only about 0.04, far below the contour at 0.5.
+# So this one worker does not move the fit much.
 
 # Influence plot: leverage vs. standardized residual,
 # with point area proportional to Cook's Distance
@@ -88,16 +120,57 @@ h_i <- hatvalues(reg)
 e_std_hat <- rstandard(reg)
 d_i <- cooks.distance(reg)
 
-plot(h_i, e_std_hat, pch=16, col=grey(0, .5),
+plot(h_i, e_std_hat, pch=16, col=grey(0, .1),
     cex=1 + 4*d_i/max(d_i), main=NA,
     xlab='Leverage', ylab='Standardized residual')
 abline(h=0, col=grey(.5), lty=3)
 
-# Label the most influential observations
+# Label the most influential observations by row number
 inf_id <- order(d_i, decreasing=TRUE)[1:3]
 text(h_i[inf_id], e_std_hat[inf_id],
-    labels=rownames(xy_hat)[inf_id], pos=3, cex=.7)
+    labels=inf_id, pos=3, cex=.7)
+# Row 1813 has a huge residual at ordinary leverage.
+# Row 1986 has high leverage, with 4 years of schooling and 18 of experience.
+# Row 2490 earns about 22 dollars, with about twice the average leverage.
+# So a worker can be influential through the residual, the leverage, or both.
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the outlier checks for `lm(Murder ~ Assault + UrbanPop)` on `USArrests`.
+```{r}
+# One row per state: arrests per 100,000 residents, and percent urban
+# The row names identify the 50 states.
+xy2_hat <- USArrests
+reg2 <- lm(Murder ~ Assault + UrbanPop, data=xy2_hat)
+
+# State with the highest leverage
+which.max(hatvalues(reg2))
+# North Carolina has the highest assault rate and few urban residents.
+# State with the largest standardized residual
+which.max(rstandard(reg2))
+# Georgia sits about 3 standard deviations above its prediction.
+# State with the largest Cook's Distance
+which.max(cooks.distance(reg2))
+# North Carolina again, through its leverage.
+# Its standardized residual is only about -1.3.
+
+# Influence plot: leverage vs. standardized residual,
+# with point area proportional to Cook's Distance
+h2_i <- hatvalues(reg2)
+e2_std_hat <- rstandard(reg2)
+d2_i <- cooks.distance(reg2)
+
+plot(h2_i, e2_std_hat, pch=16, col=grey(0, .5),
+    cex=1 + 4*d2_i/max(d2_i), main=NA,
+    xlab='Leverage', ylab='Standardized residual')
+abline(h=0, col=grey(.5), lty=3)
+
+# Label the most influential observations
+inf2_id <- order(d2_i, decreasing=TRUE)[1:3]
+text(h2_i[inf2_id], e2_std_hat[inf2_id],
+    labels=rownames(xy2_hat)[inf2_id], pos=3, cex=.7)
+```
+:::
 
 
 See <https://www.r-bloggers.com/2016/06/leverage-and-influence-in-a-nutshell/> for a good interactive explanation, and <https://online.stat.psu.edu/stat462/node/87/> for detail.
@@ -120,17 +193,37 @@ The *Variance Inflation Factor* is useful as a quick diagnostic for overlapping 
 Collinearity does not bias the coefficients; it only widens their standard errors so that coefficient estimates may change erratically in response to small changes in the model or the data.
 In the extreme case with more coefficients than observations ($K+1>n$), the linear model has infinitely many solutions.
 ```{r}
+## MAIN EXAMPLE
 # Variance Inflation Factor from its definition: VIF_k = 1/(1 - R^2_k),
 # where R^2_k comes from regressing covariate k on the other covariates.
-R2_assault  <- summary(lm(Assault ~ UrbanPop, data=xy_hat))$r.squared
-R2_urbanpop <- summary(lm(UrbanPop ~ Assault, data=xy_hat))$r.squared
+R2_school <- summary(lm(school ~ exper, data=xy_hat))$r.squared
+R2_exper  <- summary(lm(exper ~ school, data=xy_hat))$r.squared
 
-vif <- c(Assault=1/(1-R2_assault), UrbanPop=1/(1-R2_urbanpop))
+vif <- c(school=1/(1-R2_school), exper=1/(1-R2_exper))
 vif
+# Both are about 1.04, as schooling and experience correlate at about -0.19.
 
 # A common rule of thumb flags sqrt(VIF) > 2
 sqrt(vif) > 2
+# Neither is flagged, so collinearity is mild in this model.
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the Variance Inflation Factors for `lm(Murder ~ Assault + UrbanPop)` on `USArrests`.
+```{r}
+xy2_hat <- USArrests
+R2_assault  <- summary(lm(Assault ~ UrbanPop, data=xy2_hat))$r.squared
+R2_urbanpop <- summary(lm(UrbanPop ~ Assault, data=xy2_hat))$r.squared
+
+vif2 <- c(Assault=1/(1-R2_assault), UrbanPop=1/(1-R2_urbanpop))
+vif2
+# Both are about 1.07, as assault rates and urban share correlate at about 0.26.
+
+# A common rule of thumb flags sqrt(VIF) > 2
+sqrt(vif2) > 2
+# Neither is flagged.
+```
+:::
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 A $\hat{\text{VIF}}_{k}$ of $1$ means covariate $k$ is uncorrelated with the others.
@@ -147,19 +240,47 @@ Your OLS coefficient estimates do not depend on the normality of the residuals.
 Many hypothesis tests are, however, affected by the distribution of the residuals.
 For these reasons, you may be interested in assessing normality.
 ```{r}
+## MAIN EXAMPLE
 par(mfrow=c(1, 2))
-hist(resid(reg), breaks=15, border=NA, freq=FALSE,
+# The axis keeps every residual, since the long tail is the point here.
+hist(resid(reg), breaks=25, border=NA, freq=FALSE,
     main=NA, xlab='Residuals')
-rug(resid(reg), col=grey(0, .5))
+rug(resid(reg), col=grey(0, .1))
 title('Histogram of Residuals', font.main=1)
 
 qqnorm(resid(reg),
     main='Normal Q-Q Plot of Residuals',
-    font.main=1, col=grey(0, .5), pch=16)
-qqline(resid(reg), col=rgb(0, 0, 0, .8), lty=2)
+    font.main=1, col=grey(0, .1), pch=16)
+qqline(resid(reg), col=rgb(0, 0, 1, .8), lty=2)
+# The residuals are right-skewed, with a long tail from a few very high wages.
+# The Q-Q points rise far above the line in the upper tail.
+# The lower tail is shorter than normal, since wages cannot fall below zero.
+# So normality clearly fails here.
 
 #shapiro.test(resid(reg))
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the normality checks for `lm(Murder ~ Assault + UrbanPop)` on `USArrests`.
+How do these residuals compare with the ones above?
+```{r}
+xy2_hat <- USArrests
+reg2 <- lm(Murder ~ Assault + UrbanPop, data=xy2_hat)
+
+par(mfrow=c(1, 2))
+hist(resid(reg2), breaks=15, border=NA, freq=FALSE,
+    main=NA, xlab='Residuals')
+rug(resid(reg2), col=grey(0, .5))
+title('Histogram of Residuals', font.main=1)
+
+qqnorm(resid(reg2),
+    main='Normal Q-Q Plot of Residuals',
+    font.main=1, col=grey(0, .5), pch=16)
+qqline(resid(reg2), col=rgb(0, 0, 1, .8), lty=2)
+# The Q-Q points stay close to the line, apart from the largest few residuals.
+# The largest, about 7.6, belongs to Georgia.
+```
+:::
 
 #### **Heteroskedasticity** {-}
 
@@ -173,11 +294,12 @@ Detecting heteroskedasticity is useful because the standard errors that R report
 If that assumption fails, every $p$-value and confidence interval based on those standard errors is wrong too, and typically too narrow.
 The third diagnostic plot (scale-location) is the visual check; the *Breusch-Pagan test* [@BreuschPagan1979] below is a numerical alternative, whose $p$-value comes from a [chi-squared](01_09_AdvancedProbability.qmd#f) distribution.
 ```{r}
+## MAIN EXAMPLE
 # Breusch-Pagan test for heteroskedasticity, by hand.
 # Regress the squared residuals on the original regressors:
-# a good fit (high R^2) signals non-constant variance.
+# a large n*R^2 signals non-constant variance.
 e_sq_hat <- resid(reg)^2
-aux <- lm(e_sq_hat ~ Assault + UrbanPop, data=xy_hat)
+aux <- lm(e_sq_hat ~ school + exper, data=xy_hat)
 R2_aux <- summary(aux)$r.squared
 
 # Test statistic n*R^2 ~ chi-squared with K degrees of freedom
@@ -185,7 +307,30 @@ n <- nrow(xy_hat)
 K <- 2
 BP <- n*R2_aux
 c(statistic=BP, p.value=1-pchisq(BP, df=K))
+# The statistic is about 13 and the p-value about 0.0015, so the test rejects.
+# With n this large, even an auxiliary R^2 of about 0.004 is enough to reject.
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the Breusch-Pagan test for `lm(Murder ~ Assault + UrbanPop)` on `USArrests`.
+```{r}
+xy2_hat <- USArrests
+reg2 <- lm(Murder ~ Assault + UrbanPop, data=xy2_hat)
+
+# Breusch-Pagan test for heteroskedasticity, by hand.
+e2_sq_hat <- resid(reg2)^2
+aux2 <- lm(e2_sq_hat ~ Assault + UrbanPop, data=xy2_hat)
+R2_aux2 <- summary(aux2)$r.squared
+
+# Test statistic n*R^2 ~ chi-squared with K degrees of freedom
+n2 <- nrow(xy2_hat)
+K2 <- 2
+BP2 <- n2*R2_aux2
+c(statistic=BP2, p.value=1-pchisq(BP2, df=K2))
+# The statistic is about 1.9 and the p-value about 0.39, so no rejection.
+# With only 50 states, that does not show the variance is constant.
+```
+:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 The Breusch-Pagan test asks whether the residual variance depends on the regressors.
@@ -198,11 +343,12 @@ Why does heteroskedasticity leave the OLS coefficients unbiased, but make the us
 Transforming variables can often improve your model fit while still estimating it via OLS.
 This is because OLS only requires the model to be "linear in the parameters".
 Under the assumption that the model is correctly specified, the following table is how we can interpret the coefficients of the transformed data.
-(Note for small changes, $\Delta \log(x) \approx \Delta x / x = \Delta x \% \cdot 100$.)
+(Note for small changes, $\Delta \log(x) \approx \Delta x / x = \Delta x \% / 100$.)
+
 | *Specification* | *Regressand* | *Regressor* | *Derivative* | *Interpretation (If True)* |
 | --- | --- | --- | --- | --- |
 | linear--linear | $y$          | $x$   | $\Delta y = \beta_{1}\cdot\Delta x$ | Change $x$ by one unit $\rightarrow$ change $y$ by $\beta_{1}$ units.|
-| log--linear | $\log(y)$ | $x$ | $\Delta y \% \cdot 100 \approx \beta_{1} \cdot \Delta x$ | Change $x$ by one unit $\rightarrow$ change $y$ by $100 \cdot \beta_{1}$ percent. |
+| log--linear | $\log(y)$ | $x$ | $\Delta y \% / 100 \approx \beta_{1} \cdot \Delta x$ | Change $x$ by one unit $\rightarrow$ change $y$ by $100 \cdot \beta_{1}$ percent. |
 | linear--log | $y$ | $\log(x)$ | $\Delta y \approx  \frac{\beta_{1}}{100}\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\frac{\beta_{1}}{100}$ units |
 | log--log | $\log(y)$ | $\log(x)$ | $\Delta y \% \approx \beta_{1}\cdot \Delta x \%$ | Change $x$ by one percent $\rightarrow$ change $y$ by $\beta_{1}$ percent|
 : Interpreting Coefficients in Log Specifications
@@ -266,6 +412,7 @@ It is easiest to optimize parameters in a 2-step procedure called  *concentrated
 We first solve for $\hat{\mathbf{b}}(\rho,\lambda)$ and compute the mean squared error $\text{MSE}(\rho,\lambda)$.
 We then find the $(\rho,\lambda)$ which minimizes $\text{MSE}$.
 ```{r, fig.height=10, fig.width=10, fig.align="center"}
+## MAIN EXAMPLE
 # Box-Cox Transformation Function
 bxcx <- function( xy, rho){
     if (rho == 0L) {
@@ -287,9 +434,9 @@ bxcx_inv <- function( xy, rho){
 }
 
 # Which Variables
-reg <- lm(Murder ~ Assault+UrbanPop, data=xy_hat)
-X <- xy_hat[, c('Assault', 'UrbanPop')]
-y_hat <- xy_hat[, 'Murder']
+reg <- lm(wage ~ school + exper, data=xy_hat)
+X <- xy_hat[, c('school', 'exper')]
+y_hat <- xy_hat[, 'wage']
 
 # Simple Grid Search over potential (Rho, Lambda)
 rl_df <- expand.grid(rho=seq(-2, 2, by=.5), lambda=seq(-2, 2, by=.5))
@@ -299,8 +446,8 @@ rl_df <- expand.grid(rho=seq(-2, 2, by=.5), lambda=seq(-2, 2, by=.5))
 errors <- apply(rl_df, 1, function(rl){
     Xr <- bxcx(X, rl[[1]])
     y_trans_hat <- bxcx(y_hat, rl[[2]])
-    xy_trans_hat <- cbind(Murder=y_trans_hat, Xr)
-    Regr <- lm(Murder ~ Assault+UrbanPop, data=xy_trans_hat)
+    xy_trans_hat <- cbind(wage=y_trans_hat, Xr)
+    Regr <- lm(wage ~ school + exper, data=xy_trans_hat)
     y_fit <- bxcx_inv(predict(Regr), rl[[2]])
     e_hat  <- (y_hat - y_fit)
     return(e_hat)
@@ -324,6 +471,11 @@ plot(c(0, 2), c(0, 1), type='n', axes=FALSE,
 rasterImage(as.raster(matrix(hcl.colors(25), ncol=1)), 0, 0, 1, 1)
 text(x=1.5, y=seq(1, 0, l=10), cex=.5,
     labels=levels(cut(1/rl_df$mse, 10)))
+# The box marks the minimum, at rho=2 and lambda=1.
+# So wages stay in dollars, and schooling and experience enter squared.
+# This is the edge of the grid, but a wider grid finds nothing lower.
+# The yellow cells near the box fit about equally well.
+# Blank cells have no MSE, since some of their fits cannot be inverted.
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
@@ -334,37 +486,123 @@ What is the trade-off?
 :::
 
 The parameters $-1,0,1,2$ are easy to interpret and might be selected instead if there is only a small loss in fit.
-(In the above example, the log-log model $(\rho=\lambda=0)$ fits worse than the linear model $(\rho=\lambda=1)$, so the loss in fit is too large to choose it.)
 You can also plot the specific predictions to better understand the effect of data  transformation beyond mean squared error.
 
 ```{r}
 # Plot for Specific Comparisons
 Xr <- bxcx(X, rl0[[1]])
 y_trans_hat <- bxcx(y_hat, rl0[[2]])
-xy_trans_hat <- cbind(Murder=y_trans_hat, Xr)
-Regr <- lm(Murder ~ Assault+UrbanPop, data=xy_trans_hat)
+xy_trans_hat <- cbind(wage=y_trans_hat, Xr)
+Regr <- lm(wage ~ school + exper, data=xy_trans_hat)
 y_fit <- bxcx_inv(predict(Regr), rl0[[2]])
 
-cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
-plot(y_hat, y_fit, pch=16, col=cols[1], ylab='Prediction', xlab='Observed Murder',
-    main=NA, ylim=range(y_hat, y_fit))
-points(y_hat, predict(reg), pch=16, col=cols[2])
+# Faint points, since each model has 3294 of them
+pt_cols <- c(rgb(.8, 0, 0, .1), rgb(0, 0, .8, .1))
+cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5)) # stronger, for the legend
+# The axes stop just past 20 dollars, so the 16 largest wages are not drawn
+plot(y_hat, y_fit, pch=16, col=pt_cols[1], ylab='Prediction',
+    xlab='Observed hourly wage (1980 dollars)',
+    main=NA, xlim=c(0, 20), ylim=c(0, 20))
+points(y_hat, predict(reg), pch=16, col=pt_cols[2])
 legend('topleft', pch=c(16), col=cols,
     title=expression(rho~', '~lambda),
     legend=c( paste0(rl0, collapse=', '), '1, 1') )
-abline(a=0, b=1, lty=2)
+abline(a=0, b=1, col=rgb(0, 0, 1, .8), lty=2)
+# Both models predict between about 2 and 9 dollars, while wages reach about 40.
+# Their predictions differ by only about 0.12 dollars on average.
 ```
 
 We can compare the fit on the original scale: the grid-search optimum versus the untransformed linear baseline.
 ```{r}
-# Compare prediction MSE on the original Murder scale
+# Compare prediction MSE on the original wage scale
 mse_linear <- mean(resid(reg)^2)
 mse_boxcox <- min(rl_df$mse, na.rm=TRUE)
 mse_loglog <- rl_df$mse[rl_df$rho == 0 & rl_df$lambda == 0]
 c(rl0, mse_linear=round(mse_linear, 3), mse_boxcox=round(mse_boxcox, 3),
     mse_loglog=round(mse_loglog, 3))
+# The grid's best fit, 9.686, beats the linear model, 9.707, by only about 0.2%.
+# So the linear model is the easier choice, at a small loss in fit.
+# The log-log model, 10.344, fits about 6.6% worse than the linear model.
+# On this measure the loss in fit is too large to choose it.
+# Most of that gap is bias from undoing the log, since exp() predicts too low.
 ```
-The Box-Cox grid lowers the prediction MSE relative to the linear baseline, at the cost of two extra parameters and a less direct interpretation of the coefficients.
+The grid contains the linear baseline, so its best MSE can only match or beat it.
+That gain comes at the cost of two extra parameters and a less direct interpretation of the coefficients.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the grid search and the comparisons for `lm(Murder ~ Assault + UrbanPop)` on `USArrests`, using `bxcx()` and `bxcx_inv()` from above.
+```{r, fig.height=10, fig.width=10, fig.align="center"}
+# Which Variables
+xy2_hat <- USArrests
+reg2 <- lm(Murder ~ Assault + UrbanPop, data=xy2_hat)
+X2 <- xy2_hat[, c('Assault', 'UrbanPop')]
+y2_hat <- xy2_hat[, 'Murder']
+
+# Simple Grid Search over potential (Rho, Lambda)
+rl2_df <- expand.grid(rho=seq(-2, 2, by=.5), lambda=seq(-2, 2, by=.5))
+
+# Compute Mean Squared Error
+# from OLS on Transformed Data
+errors2 <- apply(rl2_df, 1, function(rl){
+    Xr <- bxcx(X2, rl[[1]])
+    y_trans_hat <- bxcx(y2_hat, rl[[2]])
+    xy_trans_hat <- cbind(Murder=y_trans_hat, Xr)
+    Regr <- lm(Murder ~ Assault + UrbanPop, data=xy_trans_hat)
+    y_fit <- bxcx_inv(predict(Regr), rl[[2]])
+    e_hat  <- (y2_hat - y_fit)
+    return(e_hat)
+})
+rl2_df$mse <- colMeans(errors2^2)
+
+# Want Small MSE and Interpretable
+layout(matrix(1:2, ncol=2), width=c(3, 1), height=c(1, 1))
+par(mar=c(4, 4, 2, 0))
+plot(lambda ~ rho, rl2_df, cex=8, pch=15,
+    xlab=expression(rho),
+    ylab=expression(lambda),
+    col=hcl.colors(25)[cut(1/rl2_df$mse, 25)])
+# Which min
+rl2 <- rl2_df[which.min(rl2_df$mse), c('rho', 'lambda')]
+points(rl2$rho, rl2$lambda, pch=0, col=rgb(0, 0, 0, .8), cex=8, lwd=2)
+# Legend
+plot(c(0, 2), c(0, 1), type='n', axes=FALSE,
+    xlab='', ylab='', cex.main=.8,
+    main=expression(frac(1, 'Mean Square Error')))
+rasterImage(as.raster(matrix(hcl.colors(25), ncol=1)), 0, 0, 1, 1)
+text(x=1.5, y=seq(1, 0, l=10), cex=.5,
+    labels=levels(cut(1/rl2_df$mse, 10)))
+# The box marks the minimum, at rho=0 and lambda=0.5, inside the grid.
+```
+
+```{r}
+# Plot for Specific Comparisons
+Xr2 <- bxcx(X2, rl2[[1]])
+y2_trans_hat <- bxcx(y2_hat, rl2[[2]])
+xy2_trans_hat <- cbind(Murder=y2_trans_hat, Xr2)
+Regr2 <- lm(Murder ~ Assault + UrbanPop, data=xy2_trans_hat)
+y2_fit <- bxcx_inv(predict(Regr2), rl2[[2]])
+
+cols2 <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
+plot(y2_hat, y2_fit, pch=16, col=cols2[1], ylab='Prediction', xlab='Observed Murder',
+    main=NA, ylim=range(y2_hat, y2_fit))
+points(y2_hat, predict(reg2), pch=16, col=cols2[2])
+legend('topleft', pch=c(16), col=cols2,
+    title=expression(rho~', '~lambda),
+    legend=c( paste0(rl2, collapse=', '), '1, 1') )
+abline(a=0, b=1, col=rgb(0, 0, 1, .8), lty=2)
+# The two models' predictions differ by about 0.42 arrests on average.
+
+# Compare prediction MSE on the original Murder scale
+mse2_linear <- mean(resid(reg2)^2)
+mse2_boxcox <- min(rl2_df$mse, na.rm=TRUE)
+mse2_loglog <- rl2_df$mse[rl2_df$rho == 0 & rl2_df$lambda == 0]
+c(rl2, mse_linear=round(mse2_linear, 3), mse_boxcox=round(mse2_boxcox, 3),
+    mse_loglog=round(mse2_loglog, 3))
+# The grid's best fit, 5.999, beats the linear model, 6.257, by about 4%.
+# The log-log model, 6.446, fits about 3% worse than the linear model.
+# So the loss in fit is too large to choose it.
+```
+:::
 
 When explicitly transforming data according to $\lambda$ and $\rho$, these parameters increase the degrees of freedom by two.
 The default hypothesis testing procedures do not account for you trying out different transformations, and should be adjusted by the increased degrees of freedom.
@@ -390,7 +628,7 @@ To understand when you might be better off sticking with an untransformed outcom
    Identify the state with the highest leverage (using `hatvalues()`) and the state with the largest standardized residual (using `rstandard()`).
    Are they the same state?
 
-4. Fit the model `lm(Murder ~ Assault + UrbanPop, data=xy_hat)` and then fit a log-linear version `lm(log(Murder) ~ Assault + UrbanPop, data=xy_hat)`.
+4. Fit the model `lm(Murder ~ Assault + UrbanPop, data=USArrests)` and then fit a log-linear version `lm(log(Murder) ~ Assault + UrbanPop, data=USArrests)`.
    Compare the two models by computing the mean squared prediction error in the original (untransformed) scale for each.
    Which specification fits better?
 
@@ -406,4 +644,4 @@ To understand when you might be better off sticking with an untransformed outcom
 This chapter checked a fitted regression with four diagnostic plots for outliers, leverage, normality, and scale.
 It measured collinearity with the Variance Inflation Factor and tested for heteroskedasticity with the Breusch-Pagan test.
 It then used Box-Cox transformations to try to rescue a misspecified linear model.
-The Box-Cox grid-search on `Murder ~ Assault + UrbanPop` made the trade-off concrete: searching over $(\rho, \lambda)$ on $\{-2, -1.5, \ldots, 2\}^2$ found a fit with lower MSE on the original Murder scale than the untransformed baseline.
+The Box-Cox grid-search on `wage ~ school + exper` made the trade-off concrete: searching over $(\rho, \lambda)$ on $\{-2, -1.5, \ldots, 2\}^2$ found a fit with MSE $9.686$ on the original wage scale, barely below the untransformed baseline's $9.707$.

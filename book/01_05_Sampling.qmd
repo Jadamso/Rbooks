@@ -7,9 +7,17 @@ set.seed(1)
 ```
 
 We rarely observe an entire population; instead we work with a sample and ask what its statistics tell us about the population that produced it.
-This chapter introduces sampling distributions, which show how a statistic varies from sample to sample.
-We then cover the Law of Large Numbers and the Central Limit Theorem, two profound results about sampling distributions.
-Finally, we use the jackknife and the bootstrap to approximate sampling variability from a single dataset.
+
+This chapter asks three questions.
+
+* How much does a statistic change from one sample to the next?
+    * *Sampling distribution*: this shows how a statistic, such as the [mean](01_03_SummaryStatistics.qmd#mean-and-variance), varies across samples from one population.
+* What happens to the sample mean as samples grow?
+    * *Central Limit Theorem*: this says the sampling distribution of $\hat{m}$ becomes approximately Normal.
+    * *Law of Large Numbers*: this says the sampling distribution of $\hat{m}$ tightens around the population mean.
+* How sure are we?
+    * *Bootstrap and jackknife*: with only one sample, these resample the data to approximate the sampling distribution.
+    * *Standard error*: this is the standard deviation of a sampling distribution, which reports precision as one number.
 
 ## Sampling
 
@@ -72,15 +80,16 @@ sample(population_values, 2, replace=TRUE)
 #### **Population Theory** {-}
 
 In practice, we never see the whole population, so we cannot check how close a sample statistic is to the truth.
-To make such checks possible, this chapter pretends that the $3294$ workers in the `Wages1` dataset are the entire population.
-They are really a sample themselves, but pretending lets us compute the true population mean and compare it with what one sample of workers tells us.
-The data come from the `Ecdat` package, which you need to install once.
+To make such checks possible, this chapter pretends that one dataset is the entire population.
+It is really a sample itself, but pretending lets us compute the true population mean and compare it with what one sample tells us.
 ```{r}
+## MAIN EXAMPLE
+# The data come from the Ecdat package, which you need to install once.
 # install.packages('Ecdat') # only once
 data(Wages1, package='Ecdat')
 
 # Pretend these 3294 hourly wages are the whole population
-population_wages <- Wages1[, 'wage']
+population_wages <- Wages1[, 'wage'] # hourly wage in 1980 dollars
 
 # One simple random sample of 50 workers
 # Each time you run, you get a different sample of workers.
@@ -282,9 +291,10 @@ title('Sampling Distribution of the mean', font.main=1)
 ```
 :::
 
-Now draw three samples of $50$ workers from the wage population.
+Now draw three samples from the pretend population.
 Each sample mean (red) lands near, but not on, the population mean (blue dashed).
 ```{r}
+## MAIN EXAMPLE
 # Population mean
 population_wage_mean <- mean(population_wages)
 
@@ -296,7 +306,7 @@ for(b in 1:3){
     hist(x_sim,
         breaks=seq(0, 40, by=2), #for comparability
         freq=FALSE, main=NA, border=NA,
-        xlab='hourly wage')
+        xlab='Hourly wage (1980 dollars)')
     rug(x_sim, col=grey(0, .5))
     abline(v=m_hat, col=rgb(1, 0, 0, .8), lwd=2)
     abline(v=population_wage_mean, col=rgb(0, 0, 1, .8), lty=2)
@@ -304,10 +314,11 @@ for(b in 1:3){
 }
 ```
 
-Repeating this for many samples of workers gives the sampling distribution of the mean wage.
+Repeating this for many samples gives the sampling distribution of the mean.
 We color this histogram red to make clear we are looking at the distribution of a statistic, while the grey histograms above show data.
 In what follows, we typically use the default grey for both sampling distributions and data.
 ```{r}
+## MAIN EXAMPLE
 # Many samples of workers
 wage_means <- rep(NA, 500)
 for(i in seq_along(wage_means)){
@@ -362,20 +373,23 @@ lines(x, fx, col=rgb(0, 0, 1, .8), lty=2)
 ```
 :::
 
-The wage population is a harder case, because wages are strongly skewed: most workers earn a moderate wage and a few earn much more.
-The means of samples of $50$ workers are not skewed in the same way.
+A strongly skewed population is a harder case.
+The figure below compares the population with the means of many samples drawn from it.
 ```{r}
+## MAIN EXAMPLE
 par(mfrow=c(1, 2))
 
 # Population: skewed
 hist(population_wages,
     breaks=seq(0, 40, by=1),
     border=NA, freq=FALSE,
-    xlab='hourly wage',
+    xlab='Hourly wage (1980 dollars)',
     main=NA)
 rug(population_wages, col=grey(0, .5))
 abline(v=population_wage_mean, col=rgb(0, 0, 1, .8), lty=2)
 title('Population', font.main=1)
+# Wages are strongly skewed.
+# Most workers earn a moderate wage and a few earn much more.
 
 # Sampling distribution: approximately Normal?
 hist(wage_means,
@@ -389,6 +403,7 @@ x <- seq(min(wage_means), max(wage_means), length.out=200)
 fx <- dnorm(x, m_sampling_hat, s_sampling_hat)
 lines(x, fx, col=rgb(0, 0, 1, .8), lty=2)
 title('Sample means, n=50', font.main=1)
+# The means of samples of 50 workers are not skewed in the same way.
 ```
 
 Many statistics have an approximately Normal sampling distribution.
@@ -400,7 +415,7 @@ For an example with another statistic, let's examine the sampling distribution o
 sample_sds <- rep(NA, 1000)
 for(i in seq_along(sample_sds)){
     x_sim <- runif(100) # same distribution
-    s_hat <- sd(x_sim) # different statistic
+    s_hat <- sqrt(mean((x_sim - mean(x_sim))^2)) # different statistic, which divides by n, unlike sd()
     sample_sds[i] <- s_hat
 }
 hist(sample_sds,
@@ -422,7 +437,7 @@ lines(x, fx, col=rgb(0, 0, 1, .8), lty=2)
 :::
 
 
-It is beyond this class to prove this result mathematically, but you should know that not all sampling distributions are standard normal.
+It is beyond this book to prove this result mathematically, but you should know that not all sampling distributions are Normal.
 The CLT approximation is better for "large $n$" datasets with "well behaved" variances.
 The CLT also does not apply to "extreme" statistics. 
 
@@ -441,8 +456,8 @@ length(X_samples[1, ])
 x_mins <- apply(X_samples, 1, quantile, probs=0)
 x_maxs <- apply(X_samples, 1, quantile, probs=1)
 
-# Plot the sampling distributions of min, median, and max
-# Median looks normal. Maximum and minimum do not!
+# Plot the sampling distributions of the min and max
+# Neither one looks normal.
 par(mfrow=c(1, 2))
 hist(x_mins, breaks=100, main=NA,
     xlab=expression(hat(q)[0]), border=NA, freq=FALSE)
@@ -527,13 +542,14 @@ for(n in c(5, 50, 500)){
 ```
 :::
 
-In the wage population, the sample means are centered on the population mean
+In the pretend population, the sample means are centered on the population mean
 ```{r}
 round(mean(wage_means), 3) # center of the sampling distribution
 round(population_wage_mean, 3) # population mean
 ```
-and are more tightly centered with larger samples of workers.
+and are more tightly centered with larger samples.
 ```{r}
+## MAIN EXAMPLE
 par(mfrow=c(1, 3))
 for(n in c(5, 50, 500)){
     wage_means_n <- rep(NA, 299)
@@ -658,7 +674,7 @@ for(n in c(5, 50, 500)){
 
 In fact, the entire empirical distribution converges, not just individual statistics like the mean, median, or a proportion.
 
-::::{.callout-important icon=false title="Key Definition" collapse="false"}
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *Fundamental Theorem of Statistics* says that the ECDF converges to the true CDF as $n$ grows: the two curves get uniformly close across the entire range of values.
 :::
 
@@ -678,7 +694,7 @@ for (n in c(50, 500, 5000)) {
 ```
 :::
 
-In the wage population, the ECDF of a sample of workers (red) gets closer to the population CDF (black) as the sample grows.
+In the pretend population, the ECDF of a sample (red) gets closer to the population CDF (black) as the sample grows.
 ```{r}
 F_population <- ecdf(population_wages)
 par(mfrow=c(1, 3))
@@ -686,7 +702,7 @@ for(n in c(5, 50, 500)){
     x_sim <- sample(population_wages, n, replace=FALSE)
     F_hat <- ecdf(x_sim)
     plot(F_population, do.points=FALSE,
-        xlim=c(0, 20), xlab='hourly wage', main=NA)
+        xlim=c(0, 20), xlab='Hourly wage (1980 dollars)', main=NA)
     plot(F_hat, do.points=FALSE, add=TRUE, col=rgb(1, 0, 0, .8))
     title(paste0('n=', n), font.main=1)
 }
@@ -730,14 +746,17 @@ With $n=5$ the only possible sample is the whole population, so $\hat{F}=F$ exac
 
 ## Resampling Distributions
 
-With the wage population, we could draw as many samples as we liked.
+With the pretend population, we could draw as many samples as we liked.
 Often, we only have one sample, and no population to draw more samples from.
-The lab data on murder arrests are one such sample.
+To mimic this, we draw one sample as our lab data, and pretend it is all we observed.
 How then can we estimate the sampling distribution of a statistic?
 ```{r}
-x_hat <- USArrests[, 'Murder'] # lab data: murder arrests per 100,000
+## MAIN EXAMPLE
+# Lab data: one random sample of 50 workers, as if it were all we observed
+x_hat <- sample(population_wages, 50, replace=FALSE)
 m_hat <- mean(x_hat)
 m_hat
+# The sample mean is about 5.63, a little below the population mean of 5.758.
 ```
 
 We can *resample* our data.
@@ -760,7 +779,6 @@ rPopulation <- function(n){
 
 # Compute Sample Mean
 n <- 25
-set.seed(2)
 x_sim <- rPopulation(n)
 m_hat <- mean(x_sim)
 ```
@@ -811,7 +829,7 @@ PlotSample(x_sim, lineM=m_hat)
 axis(1, m_hat, expression(hat(m)), col=rgb(1, 0, 0, .8))
 
 ### Bootstrap samples
-set.seed(2)  ## Cherry Pick Some Good Ones
+## Cherry Pick Some Good Ones
 boot_samples <- lapply(1:20, function(b) { sample(x_sim, replace=TRUE) })
 boot_hists <- lapply(boot_samples, hist, breaks=seq(-6, 8, length=21), plot=FALSE)
 boot_ids <- which(sapply(boot_hists, function(f_hat) max(f_hat[['counts']])) <= 5)
@@ -826,7 +844,6 @@ PlotSample(boot_samples[[boot_ids[2]]], m_hat, line_mean=FALSE, star=TRUE)
 ### Bootstrap Distribution
 par(fig=c(divideX[2], 1, 0, .5), new=TRUE)
 par(mar=c(4.1, 0, 0, 0))
-set.seed(2)
 boot_means <- sapply(1:999, function(b) {
     x_boot <- sample(x_sim, replace=TRUE) # c.f. jackknife
     mean(x_boot)
@@ -885,7 +902,6 @@ For instance, one resample might be $\{6,6,7,22\}$: sorted, the two middle value
 Another might be $\{1,1,7,7\}$, with median $(1+7)/2=4$.
 Repeating this $B=8$ times gives the bootstrap distribution of the median.
 ```{r}
-set.seed(1)
 x0_hat <- c(1, 6, 7, 22)
 boot_medians <- rep(NA, 8)
 for(b in seq_along(boot_medians)){
@@ -898,6 +914,7 @@ boot_medians
 
 
 ```{r}
+## MAIN EXAMPLE
 # Bootstrap estimates
 boot_means <- rep(NA, 9999)
 for(b in seq_along(boot_means)){
@@ -909,7 +926,30 @@ for(b in seq_along(boot_means)){
 hist(boot_means, breaks=25,
     border=NA, freq=FALSE,
     main=NA, xlab=expression(hat(m)^group('(', b, ')')))
+# The bootstrap means center on the sample mean of about 5.63.
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the bootstrap with the murder arrests in `USArrests`.
+```{r}
+# These 50 US states are one sample, with no known population.
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+m2_hat <- mean(x2_hat)
+m2_hat
+
+# Bootstrap estimates
+boot_means2 <- rep(NA, 9999)
+for(b in seq_along(boot_means2)){
+    x_boot <- sample(x2_hat, replace=TRUE) # c.f. jackknife
+    m_b_hat <- mean(x_boot)
+    boot_means2[b] <- m_b_hat
+}
+
+hist(boot_means2, breaks=25,
+    border=NA, freq=FALSE,
+    main=NA, xlab=expression(hat(m)^group('(', b, ')')))
+```
+:::
 
 Why does this work?
 The sample: $\{\hat{x}_{1}, \hat{x}_{2}, ... \hat{x}_{n}\}$ is drawn from a CDF $F$.
@@ -964,6 +1004,7 @@ mean(jackknife_meds)
 
 
 ```{r}
+## MAIN EXAMPLE
 # Jackknife Estimates
 n <- length(x_hat)
 jack_means <- rep(NA, n)
@@ -975,7 +1016,28 @@ for(i in seq_along(jack_means)){
 hist(jack_means, breaks=25,
     border=NA, freq=FALSE,
     main=NA, xlab=expression(hat(m)^group('(', -i, ')')))
+# The estimates stay close together, since each drops only one of 50 workers.
+# The lowest one, about 5.36, drops the highest wage of about 19 dollars.
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the jackknife with the murder arrests in `USArrests`.
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+
+# Jackknife Estimates
+n2 <- length(x2_hat)
+jack_means2 <- rep(NA, n2)
+for(i in seq_along(jack_means2)){
+    x_jack <- x2_hat[-i]
+    m_i_hat <- mean(x_jack)
+    jack_means2[i] <- m_i_hat
+}
+hist(jack_means2, breaks=25,
+    border=NA, freq=FALSE,
+    main=NA, xlab=expression(hat(m)^group('(', -i, ')')))
+```
+:::
 
 Note that both Jackknife and Bootstrap resampling methods provide imperfect estimates, and can give different numbers.
 
@@ -1007,7 +1069,8 @@ Here, the superscript $(b)$ identifies one bootstrap replicate, while $\text{boo
 Using the bootstrap distribution above, with many replicates, we can compute this easily as
 ```{r}
 sd(boot_means) # standard error estimate for the mean
-sd(x_hat) # standard deviation
+sqrt(mean((x_hat - mean(x_hat))^2)) # standard deviation, which divides by n, unlike sd()
+# The sample sd, about 3.25, is close to the population sd of 3.269.
 ```
 
 We can also calculate this explicitly for a small number of replicates.
@@ -1035,35 +1098,39 @@ The superscript $(-i)$ marks the sample with observation $i$ omitted.
 ```{r}
 sd(jack_means)*sqrt(n) # standard error estimate for the mean
 sd(boot_means) # standard error estimate for the mean
+# The two estimates nearly agree, at about 0.47 and 0.46.
 ```
 
 We modify the `sd` calculation with a correction, $\sqrt{n}$, because leave-one-out estimates barely move (only one point changes out of $n$).
-Their spread is therefore of order $1/n$ smaller than the real sampling spread, and the correction puts us back on the right scale.
+Their spread is therefore smaller than the real sampling spread by a factor of about $\sqrt{n}$, and the correction puts us back on the right scale.
 :::
 
-The wage population lets us check whether the bootstrap works.
-Take one sample of $50$ workers, and pretend it is all we observed.
+The pretend population lets us check whether the bootstrap works.
+The lab data are one sample from it, which we pretend is all we observed.
 Its bootstrap standard error can then be compared with the true standard error: the standard deviation of the $500$ sample means `wage_means` drawn from the population in [Sampling Distributions](#sampling-distributions).
 ```{r}
-# One sample of 50 workers, as if it were all we observed
-x_sim <- sample(population_wages, 50, replace=FALSE)
-
-# Bootstrap standard error, from that one sample
-boot_means_wage <- rep(NA, 9999)
-for(b in seq_along(boot_means_wage)){
-    x_boot <- sample(x_sim, replace=TRUE)
-    m_b_hat <- mean(x_boot)
-    boot_means_wage[b] <- m_b_hat
-}
-round(sd(boot_means_wage), 3)
+## MAIN EXAMPLE
+# Bootstrap standard error, from the one lab sample
+round(sd(boot_means), 3)
 
 # True standard error, from many samples of the population
 round(sd(wage_means), 3)
+# The bootstrap estimate lands in the same range as the true standard error.
+# It is about 0.46 against about 0.44, so not exactly on it.
 ```
 The bootstrap used only one sample, so its answer is itself noisy.
-It lands in the same range as the true standard error, but not exactly on it.
-With skewed data like wages, one sample may include a few very high earners or none at all, which moves the bootstrap estimate.
-Run the chunk again to see how much the bootstrap estimate itself changes from one sample to the next.
+With skewed data, one sample may include a few very large values or none at all, which moves the bootstrap estimate.
+To see how much the bootstrap estimate itself changes from one sample to the next, draw a new sample into `x_hat` and repeat the bootstrap.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Compute the same standard errors for the murder arrests, using the callouts in [Bootstrap Distribution](#bootstrap-distribution) and [Jackknife Distribution](#jackknife-distribution).
+With no known population, there is no true standard error to compare with.
+```{r}
+sd(boot_means2) # bootstrap standard error estimate for the mean
+sd(jack_means2)*sqrt(n2) # jackknife standard error estimate for the mean
+sqrt(mean((x2_hat - mean(x2_hat))^2)) # standard deviation, which divides by n, unlike sd()
+```
+:::
 
 
 
@@ -1072,6 +1139,7 @@ Run the chunk again to see how much the bootstrap estimate itself changes from o
 The above procedure works for many different statistics
 ```{r}
 med_hat <- quantile(x_hat, prob=0.5)
+# The sample median is about 4.84, below the population median of 5.206.
 
 # Bootstrap estimates
 boot_medians <- rep(NA, 9999)
@@ -1087,6 +1155,7 @@ hist(boot_medians, breaks=25,
     main=paste0('SE=', round(SE_med,2)),
     font.main=1,
     xlab=expression(Med[b]))
+# The bootstrap medians bunch near a few values in the middle of the sample.
 ```
 
 This means we can compute bootstrap SEs for other statistics, too.
@@ -1101,6 +1170,30 @@ Taking the bootstrap distribution of the median, for example, we have
 ```{r}
 # Standard error estimate for the median
 sd(boot_medians)
+# In this sample it is about 0.39, below the mean's standard error, about 0.46.
+```
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the bootstrap of the median with the murder arrests in `USArrests`.
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+med2_hat <- quantile(x2_hat, prob=0.5)
+
+# Bootstrap estimates
+boot_medians2 <- rep(NA, 9999)
+for(b in seq_along(boot_medians2)){
+    x_boot <- sample(x2_hat, replace=TRUE) # c.f. jackknife
+    med_b_hat <- quantile(x_boot, prob=0.5)
+    boot_medians2[b] <- med_b_hat
+}
+SE_med2 <- sd(boot_medians2)
+
+hist(boot_medians2, breaks=25,
+    border=NA, freq=FALSE,
+    main=paste0('SE=', round(SE_med2,2)),
+    font.main=1,
+    xlab=expression(Med[b]))
 ```
 :::
 

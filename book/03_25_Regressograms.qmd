@@ -9,8 +9,17 @@ set.seed(1)
 In [Local Regression](02_16_LocalRegression.qmd), we estimated nonparametric models with a single explanatory variable.
 We now extend those tools to multiple explanatory variables.
 The ideas carry over directly: instead of binning one variable, we bin each variable, and instead of fitting a line in pieces, we fit a plane in pieces.
-This chapter covers three nonparametric tools for multivariate data: regressograms, piecewise regressions, and [cross-validated](02_15_SimpleRegression.qmd#cross-validation) model selection.
-It then shows how to summarize the gradients these models produce.
+
+This chapter asks three questions.
+
+* How does the mean of $\hat{y}$ vary with several explanatory variables when no single plane fits?
+    * *Multivariate regressogram*: this gives each combination of bins its own mean, generalizing the [univariate regressogram](02_16_LocalRegression.qmd#regressograms).
+    * *Piecewise regression*: this bins one explanatory variable and fits a plane within each bin, where the [bivariate version](02_16_LocalRegression.qmd#piecewise-regression) fits a line.
+* How many bins should we use?
+    * *$k$-fold cross-validation*: this model assessment check picks the number of bins by prediction error on held-out observations.
+      It drops a group at a time, where [leave-one-out cross-validation](02_15_SimpleRegression.qmd#cross-validation) drops one observation.
+* How does $\hat{y}$ change with $\hat{x}_{k}$ at different points in the data?
+    * *Finite differences and within-bin slopes*: these estimate [gradients](02_17_Gradients.qmd#gradients) the same two ways as before, now from the regressogram and the piecewise regression.
 
 ## Regressograms
 
@@ -29,6 +38,7 @@ As the number of explanatory variables grows, the cells empty out and prediction
 The simulated data below uses two predictors so we can plot it.
 
 ```{r}
+## MAIN EXAMPLE
 ## Simulate data: y_sim is a nonlinear function of x1_sim and x2_sim plus noise.
 N <- 10000
 e <- rnorm(N)
@@ -75,6 +85,7 @@ add_legend(x='topright', col_scale=col_scale,
 
 We start with a global linear baseline, fitted without an interaction.
 ```{r}
+## MAIN EXAMPLE
 ## OLS (without interaction; the additive baseline)
 reg <- lm(y_sim ~ x1_sim+x2_sim, data=xy_sim)
 
@@ -110,6 +121,7 @@ add_legend(x='topright', col_scale=col_scale,
 #### **Multivariate Bins** {-}
 
 ```{r}
+## MAIN EXAMPLE
 ##################
 # Multivariate Regressogram
 ##################
@@ -173,7 +185,7 @@ A regressogram is *locally constant*, so every point in a bin gets the same pred
 We sometimes want slopes within each bin instead of a flat shelf.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-A multivariate *piecewise regression* bins one explanatory variable and fits a separate OLS line on the others within each bin.
+A multivariate *piecewise regression* bins one explanatory variable and fits a separate OLS plane on all the explanatory variables within each bin.
 :::
 
 A *piecewise regression* is useful when you want something between the flat regressogram and the global OLS plane.
@@ -181,6 +193,7 @@ It tracks gradients within each bin, so predictions vary smoothly within a bin a
 We bin one variable, then fit a full linear model of $\hat{y}$ on the explanatory variables within each bin.
 
 ```{r}
+## MAIN EXAMPLE
 ##################
 # Multivariate Piecewise Regression
 ##################
@@ -224,33 +237,35 @@ We can then use $F$-tests to examine whether a break is statistically significan
 Both the interaction-model $F$-test (`anova`) and the *Chow test* [@Chow1960] below test the same null of "no break", and give the same answer.
 ```{r}
 data(Wages1, package='Ecdat')
-xy2_hat <- Wages1[, c('school', 'wage')]
-colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
-reg <- lm(y_hat ~ x_hat, data=xy2_hat)
+xy_hat <- Wages1[, c('school', 'wage')]
+colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
+reg <- lm(y_hat ~ x_hat, data=xy_hat)
 
 # F-test for a break at school = 12
-reg2 <- lm(y_hat ~ x_hat*I(x_hat>12), data=xy2_hat)
+reg2 <- lm(y_hat ~ x_hat*I(x_hat>12), data=xy_hat)
 anova(reg, reg2)
 
 # Chow test for the same break
-data_splits <- split(xy2_hat, xy2_hat$x_hat <= 12)
-resids <- sapply(data_splits, function(xy2_sub){
-    reg_sub <- lm(y_hat ~ x_hat, data=xy2_sub)
+data_splits <- split(xy_hat, xy_hat$x_hat <= 12)
+resids <- sapply(data_splits, function(xy_sub){
+    reg_sub <- lm(y_hat ~ x_hat, data=xy_sub)
     sum(resid(reg_sub)^2)
 })
-Ns <- sapply(data_splits, function(xy2_sub){ nrow(xy2_sub) })
+Ns <- sapply(data_splits, function(xy_sub){ nrow(xy_sub) })
 
 # Chow F-statistic: does splitting the sample reduce RSS enough?
 Rt <- (sum(resid(reg)^2) - sum(resids))/sum(resids)
 Rb <- (sum(Ns) - 2*reg$rank)/reg$rank
 Ft <- Rt*Rb
 pf(Ft, reg$rank, sum(Ns)-2*reg$rank, lower.tail=FALSE)
+# The p-value is about 5e-06, which is evidence of a break at 12 years.
+# Twelve years is the end of secondary school.
 
 # See also
-# strucchange::sctest(y_hat ~ x_hat, data=xy2_hat, type='Chow', point=.5)
+# strucchange::sctest(y_hat ~ x_hat, data=xy_hat, type='Chow', point=.5)
 # segmented::segmented(reg)
 ```
-A small $p$-value is evidence that the wage-schooling slope changes at 12 years (the end of secondary school).
+A small $p$-value is evidence that the line changes at the candidate break.
 The ratio `Rt` in the Chow test is the drop in the residual sum of squares, divided by the unrestricted residual sum of squares.
 This is the same loss-in-fit ratio as in [Model Fit](02_17_Gradients.qmd#model-fit).
 
@@ -305,11 +320,11 @@ The bandwidth $\mathbf{H}$ that minimizes cross-validation error balances flexib
 
 To make this concrete, we use cross-validation to choose the number of `x1_sim` bins for the piecewise regression above.
 We split the data into 5 folds, fit the model on 4 of them, and measure the squared prediction error on the held-out fold.
-The noise in `y_sim` is tiny compared to its curvature, so we first add more noise (standard deviation $2500$); otherwise the error would keep falling across all the bin counts we try.
+With almost no noise, finer bins tend to keep lowering the error, so we first add more noise to `y_sim` (standard deviation $2500$).
 
 ```{r}
+## MAIN EXAMPLE
 ## 5-fold cross-validation for the number of x1_sim bins
-set.seed(1)
 n_folds <- 5
 fold_id <- sample(rep(1:n_folds, length.out=nrow(xy_sim)))
 bin_counts <- c(2, 6, 10, 14, 18, 22)
@@ -317,6 +332,8 @@ bin_counts <- c(2, 6, 10, 14, 18, 22)
 ## Noisier copy of the data, so that too many bins overfit
 xy_cv_sim <- xy_sim
 xy_cv_sim$y_sim <- xy_sim$y_sim + rnorm(nrow(xy_sim), sd=2500)
+# The noise in y_sim alone is tiny compared to its curvature.
+# Without more, the error would keep falling across all these bin counts.
 
 cv_mse <- sapply(bin_counts, function(L){
     bks <- seq(0, 20, length.out=L+1)
@@ -339,10 +356,11 @@ plot(bin_counts, cv_mse, type='o', pch=16,
 L_star <- bin_counts[which.min(cv_mse)]
 abline(v=L_star, col=rgb(1, 0, 0, .8), lwd=2)
 title(paste0('CV-optimal: ', L_star, ' bins'), font.main=1)
+# The error is smallest at 10 bins, between too few and too many.
 ```
 
 Too few bins cannot capture the curvature in `x1_sim` (high bias); too many bins split the data so finely that each local regression is noisy (high variance).
-The cross-validated error is smallest in between.
+The cross-validated error is usually smallest in between.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 The cross-validation above selects bins for the piecewise model.
@@ -391,6 +409,7 @@ We illustrate both methods on the models fit earlier in this chapter.
 Method 1 differences the regressogram predictions; method 2 reads the slopes directly off the piecewise regression.
 
 ```{r}
+## MAIN EXAMPLE
 ##################
 # Method 1: finite-difference gradients from the regressogram
 ##################
@@ -420,6 +439,7 @@ title('Gradient vs x1', font.main=1)
 #### **Slope Coefficients** {-}
 
 ```{r}
+## MAIN EXAMPLE
 ##################
 # Method 2: slope coefficients from the piecewise regression
 ##################

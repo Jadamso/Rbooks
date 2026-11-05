@@ -7,9 +7,18 @@ set.seed(1)
 ```
 
 The previous chapter showed how observational data complicate causal inference.
-This chapter introduces the standard remedies.
 Experiments combine *control*, where the researcher fixes other factors, and *randomization*, where the researcher manipulates one factor independently of the others.
-Quasi-experimental methods such as RDD, DID, and 2SLS can recover causal estimates when full experimental control is unavailable.
+
+This chapter asks two questions.
+
+* How does an experiment recover a causal effect?
+    * *Control and randomization*: these break the correlation between a regressor and the error term that produces [endogeneity](03_26_ObservationalData.qmd#endogeneity).
+      A cost shock in the [competitive market](03_26_ObservationalData.qmd#competitive-market-equilibrium) shows how.
+    * *Blocking*: this randomizes treatment within homogeneous groups, so the estimated effect is more precise.
+* How do quasi-experiments recover a causal effect without full control?
+    * *Regression discontinuity design (RDD)*: this estimates the effect as the jump in the outcome at a known cutoff.
+    * *Difference-in-differences (DID)*: this compares the pre/post change in a treated group to the pre/post change in a control group.
+    * *Two-stage least squares (2SLS)*: this uses an instrumental variable to recover the causal effect of an endogenous regressor.
 
 ## Design Basics
 
@@ -31,6 +40,7 @@ To be concrete, we will continue with our supply and demand example from the las
 #### **Competitive Equilibrium Example** {-}
 
 ```{r}
+## MAIN EXAMPLE
 # Demand Curve Simulator
 qd_fun <- function(p, Ad=8, Bd=-.8, Ed_sigma=.25){
     Qd <- Ad + Bd*p + rnorm(1, 0, Ed_sigma)
@@ -56,6 +66,7 @@ eq_fun <- function(demand, supply, P){
 ```
 
 ```{r}
+## MAIN EXAMPLE
 N <- 300 # Number of Market Interactions
 P <- seq(5, 10, by=.01) # Price Range to Consider
 EQ1 <- sapply(1:N, function(n){
@@ -92,6 +103,7 @@ Shifting $\alpha_{S}$ from $-8$ to $-6.5$ (a change of $3/2$) predicts a price d
 :::
 
 ```{r}
+## MAIN EXAMPLE
 # New Observations After Cost Change
 EQ2 <- sapply(1:N, function(n){
     demand <- qd_fun(P)
@@ -135,6 +147,7 @@ RDD/RKD is useful when a policy rule or natural threshold supplies a sharp sourc
 In our canonical competitive market example, the RDD estimate is the difference between the lines at $T=300$.
 
 ```{r}
+## MAIN EXAMPLE
 # Locally Linear Regression 
 # (Compare means near break)
 
@@ -198,6 +211,7 @@ The estimator is the interaction coefficient `Post × Treated` in a regression a
 DID is useful when a treatment hits one group but not another and we observe both before and after: the control group's pre/post change estimates the counterfactual trend, and the treatment effect is what is left after subtracting it (see [The Effect, Ch. Difference-in-Differences](https://theeffectbook.net/ch-DifferenceinDifference.html) for more detail).
 
 ```{r}
+## MAIN EXAMPLE
 EQ3 <- sapply(1:(2*N), function(n){
 
     # Market Mechanisms
@@ -246,6 +260,7 @@ lines(x3b_sim, predict(regQ3b), col=rgb(1, 0, 0, .8), lwd=2)
 
 Linear Regression Estimates
 ```{r, message=FALSE, warning=FALSE, results='asis'}
+## MAIN EXAMPLE
 # Pool Data
 xy_pooled_sim <- rbind(
     cbind(xy2_sim, EverTreated=1, PostPeriod=(xy2_sim$T > N)),
@@ -301,8 +316,8 @@ Continuing with supply and demand example, we might manipulate costs (randomize 
 With a completely randomized design, industry composition can differ between treatment and control purely by chance; blocking by industry removes that source of imbalance.
 
 ```{r}
+## MAIN EXAMPLE
 # Contrast completely randomized vs blocked assignment
-set.seed(1)
 industry <- rep(c('Computer', 'Lumber'), each=20)
 n <- length(industry)
 
@@ -317,9 +332,10 @@ for(g in unique(industry)){
     blocked[idx] <- sample(rep(c('Treat','Control'), each=length(idx)/2))
 }
 table(industry, blocked)
+# Every seed gives 10-10 in each industry.
 ```
 
-Notice that the blocked design always returns 10-10 in each industry, whereas the completely randomized design can drift away from that balance from one realization to the next.
+Notice that the blocked design always returns an even split in each industry, whereas the completely randomized design can drift away from that balance from one realization to the next.
 
 A within-subject design takes blocking to its limit, with each subject as its own block [@Fisher1935].
 Standard errors can then be clustered by session or by matched pair, using a cluster bootstrap or jackknife [@CameronEtAl2008; @CameronMiller2015; @MacKinnonEtAl2023; @MacKinnonEtAl2023_Jackknife; @Hansen2026].
@@ -351,10 +367,9 @@ reg2 <- lm(Q ~ P, data=xy2_sim)
 summary(reg2)
 ```
 It turns out that the noisiness of the process within each group affects our OLS estimate: $\hat{b}=\hat{c}_{Q^{*}P^{*}} / \hat{v}_{P^{*}}$.
-For details, see
-<details>
-<summary><i>Within Group Variance</i></summary>
-You can experiment with the effect of different variances on both OLS and IV in the code below.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+You can experiment with the effect of different within-group variances on both OLS and IV in the code below.
 And note that if we had multiple supply shifts and recorded their magnitudes, then we could recover more information about demand, perhaps tracing it out entirely.
 ```{r}
 library('fixest')
@@ -391,7 +406,8 @@ lapply( list(Egrid_OLS, Egrid_IV), function(ei){
     return( round(Emat, 2))
 })
 ```
-</details>
+:::
+
 To overcome this issue, we can compute the change in the expected values $d \mathbb{E}[Q^{*}] / d \mathbb{E}[P^{*}] =-\beta_{D}$.
 Empirically, this is estimated via the change in average value.
 ```{r}
@@ -430,6 +446,7 @@ P &= -\frac{\alpha_{S}}{{\beta_{S}}} + \frac{Q_{D}}{\beta_{S}} - \frac{E_{S}}{\b
 Q_{D} &= \alpha_{D} - \beta_{D} P + E_{D}.
 \end{aligned}$$
 ```{r}
+## MAIN EXAMPLE
 # Two Stage Least Squares Estimate
 ols_1 <- lm(P ~ cost, data=xy2_sim)
 xy2_new_sim  <- cbind(xy2_sim, p_fit=predict(ols_1))

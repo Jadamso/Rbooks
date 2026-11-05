@@ -10,51 +10,72 @@ Often, we are interested in *gradients*: how $\hat{y}$ changes with $\hat{x}$.
 The linear model from [Simple Regression](02_15_SimpleRegression.qmd) depicts this as a single constant, $\hat{b}_{1}$, but the local-regression models from [Local Regression](02_16_LocalRegression.qmd) do not.
 A great first step to assess gradients is to plot the predicted values over the explanatory values.
 A great second step is to compute gradients and summarize them.
-In any case, we compute confidence intervals and conduct hypothesis tests to account for variability across samples.
-This chapter takes these steps with LOESS, a local regression that adapts its window to the data.
+
+This chapter asks three questions.
+
+* How do we fit a curve when $\hat{x}$ is unevenly spread?
+    * *LOESS*: this is a new local regression that adapts its window to the data.
+* How does $\hat{y}$ change with $\hat{x}$ when the fitted curve bends?
+    * *Gradients*: these are the local version of the [regression slope](02_15_SimpleRegression.qmd#model-and-objective), with one slope $\hat{b}_{1}(x)$ at each design point $x$.
+    * *Mean of the gradients and gradient at the mean*: these new statistics collapse the gradients into a single number.
+* How sure are we?
+    * *Confidence band and gradient standard errors*: these assess sampling variability with the same [bootstrap](02_15_SimpleRegression.qmd#bootstrap) recipe as the slope.
+    * *Invert a CI*: this reuses the bootstrap interval for the mean gradient, and rejects zero if it falls outside, as we did for [the mean](01_08_HypothesisTests.qmd#invert-a-ci).
+    * *Mean gradient test and Racine's test*: these test whether the mean gradient is zero and whether all gradients are zero.
+      They impose the null as we did for [the mean](01_08_HypothesisTests.qmd#impose-the-null) and for [correlation](02_14_Associations.qmd#hypothesis-testing).
+    * *R-squared and cross-validation*: these assess goodness of fit, the same model assessment as for the [line](02_15_SimpleRegression.qmd#goodness-of-fit).
 
 ## LOESS
 
 Two problems with the local regressions from [Local Regression](02_16_LocalRegression.qmd) motivate LOESS, which R fits with `loess()`.
 ```{r}
-## Data
+## MAIN EXAMPLE
+## Data: 3294 US workers, with hourly wages in 1980 dollars
 data(Wages1, package='Ecdat')
-xy2_hat <- Wages1[order(Wages1[, 'school']), c('school', 'wage')]
-colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
+xy_hat <- Wages1[order(Wages1[, 'school']), c('school', 'wage')]
+colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
 
 # Mean wage at each schooling level
-school_means <- aggregate(y_hat ~ x_hat, data=xy2_hat, mean)
+school_means <- aggregate(y_hat ~ x_hat, data=xy_hat, mean)
 ```
 
 #### **Boundary Bias** {-}
 
 The regressogram has a bias at the edges of the bins, which is addressed by the [locally constant regression](02_16_LocalRegression.qmd#locally-constant-regression).
 Still, the locally constant regression has a bias near the edges of the dataset.
-At $x=15$, near the top of the data, the window $[11.5, 18.5]$ runs past the most schooling anyone has, 16 years.
-So most of the observations in it, about 92 percent, have less schooling than the design point.
-The window average then describes a group whose average schooling is about 12.7 years, not 15.
-Because wages rise with schooling, that average understates the mean wage of workers with 15 years of schooling.
+Near the top of the data, the window around a design point can run past the largest $\hat{x}_{i}$.
+So most of the observations in it have $\hat{x}_{i}$ below the design point.
+The window average then describes a group centered below the design point.
+If $\hat{y}$ rises with $\hat{x}$, that average understates the mean of $\hat{y}$ at the design point.
+The code below computes the window mean, a line fit to the same window, and the grouped mean at one such design point.
 ```{r}
 # Locally constant fit near the top edge of the data
 x <- 15 # design point
 h <- 3.5 # window [11.5, 18.5] holds schooling levels 12 to 16
-k_weights <- dunif( abs(xy2_hat[, 'x_hat']-x)/h, -1, 1) # the uniform kernel k_U
-xy2_window <- xy2_hat[k_weights > 0, ]
-m_x <- mean(xy2_window[, 'x_hat']) # average schooling in the window
-m_y <- mean(xy2_window[, 'y_hat']) # locally constant fit at x=15
+# The window runs past the most schooling anyone has, 16 years.
+k_weights <- dunif( abs(xy_hat[, 'x_hat']-x)/h, -1, 1) # the uniform kernel k_U
+xy_window <- xy_hat[k_weights > 0, ]
+m_x <- mean(xy_window[, 'x_hat']) # average schooling in the window
+m_y <- mean(xy_window[, 'y_hat']) # locally constant fit at x=15
 c(m_x=m_x, m_y=m_y)
+# About 92 percent of workers in the window have under 15 years of schooling.
+# So the window mean describes a group averaging about 12.7 years, not 15.
 
 # A line fit to the same window, evaluated at the design point
-reg_window <- lm(y_hat ~ x_hat, data=xy2_window)
+reg_window <- lm(y_hat ~ x_hat, data=xy_window)
 y_pred_line <- predict(reg_window, newdata=data.frame(x_hat=x))
 y_pred_line
+# The line follows the trend out to x=15, where it predicts about 8.24.
 
 # Grouped mean wage at the design point
 y_grp <- school_means[school_means[, 'x_hat'] == x, 'y_hat']
 y_grp
+# The window mean, about 6.29, sits far below the grouped mean of 8.38.
+# Wages rise with schooling.
+# So the window mean understates the mean wage at x=15.
 
 # Plot the window
-plot(y_hat ~ x_hat, data=xy2_window, pch=16, col=grey(0, .1),
+plot(y_hat ~ x_hat, data=xy_window, pch=16, col=grey(0, .1),
     ylim=c(0, 15), # zoom in on the fits
     main=NA, xlab='School', ylab='Wage')
 abline(h=m_y, col=rgb(0, 0, 1, .8), lwd=2) # window mean
@@ -63,52 +84,59 @@ lines(c(12, 16), predict(reg_window, newdata=data.frame(x_hat=c(12, 16))),
 points(m_x, m_y, pch=16, col=rgb(0, 0, 0, .8), cex=1.5) # window center
 points(c(x, x), c(m_y, y_pred_line), pch=16, cex=1.5,
     col=c(rgb(0, 0, 1, .8), rgb(1, 0, 0, .8))) # the two fits at x=15
-abline(h=y_grp, col=rgb(0, 0, 0, .8), lty=2) # grouped mean at x=15
+points(y_hat ~ x_hat, data=school_means, pch=24, col='white', bg=rgb(0, 0, 0, .8), cex=1.3) # grouped means
 abline(v=x, col=grey(.5), lty=3)
 legend('topleft',
-    legend=c('Window mean', 'Window line', 'Window center', 'Grouped mean at 15'),
-    col=c(rgb(0, 0, 1, .8), rgb(1, 0, 0, .8), rgb(0, 0, 0, .8), rgb(0, 0, 0, .8)),
-    lty=c(1, 1, NA, 2), pch=c(NA, NA, 16, NA), lwd=2, cex=.8, bg='white')
+    legend=c('Window mean', 'Window line', 'Window center', 'Grouped mean'),
+    col=c(rgb(0, 0, 1, .8), rgb(1, 0, 0, .8), rgb(0, 0, 0, .8), 'white'),
+    lty=c(1, 1, NA, NA), pch=c(NA, NA, 16, 24), lwd=2, pt.bg=rgb(0, 0, 0, .8), cex=.8, bg='white')
 ```
 
-The window mean, about $6.29$, sits far below the grouped mean of $8.38$.
 A line fit to the same window passes through the window center $(\hat{m}_{X}(x,h), \hat{m}_{Y}(x,h))$, just as the simple regression line passes through the point of means in [Simple Linear Regression](02_15_SimpleRegression.qmd#model-and-objective).
-Unlike the window mean, the line follows the trend out to the design point, where it predicts about $8.24$.
+Unlike the window mean, the line follows the trend out to the design point.
 So a [local linear regression](02_16_LocalRegression.qmd#local-linear-regression) has less bias near the edges of the data.
 
 #### **Small Samples** {-}
 
-Another problem is that a fixed bandwidth gives each window a very different number of workers.
-Few workers have fewer than $8$ years of schooling or exactly $16$ years, so the windows there are small samples.
-The code below fits a local line with $h=1$ at every schooling level and counts the workers in each window.
+Another problem is that a fixed bandwidth gives each window a very different number of observations.
+Where the data are sparse, the windows are small samples.
+The code below fits a local line with $h=1$ at every value of $\hat{x}$ and counts the observations in each window.
 ```{r}
+## MAIN EXAMPLE
 # Fixed bandwidth: count the workers in each window and fit a line in it
 x_values <- 3:16 # every schooling level
 h <- 1 # each window holds three schooling levels
 n_window <- rep(NA, length(x_values))
 y_pred_fixed <- rep(NA, length(x_values))
 for (i in seq_along(x_values)) {
-    ki <- dunif( abs(xy2_hat[, 'x_hat']-x_values[i])/h, -1, 1) # the uniform kernel k_U
+    ki <- dunif( abs(xy_hat[, 'x_hat']-x_values[i])/h, -1, 1) # the uniform kernel k_U
     n_window[i] <- sum(ki > 0) # workers in the window
-    reg_i <- lm(y_hat ~ x_hat, data=xy2_hat, weights=ki) # weighted line
+    reg_i <- lm(y_hat ~ x_hat, data=xy_hat, weights=ki) # weighted line
     y_pred_fixed[i] <- predict(reg_i, newdata=data.frame(x_hat=x_values[i]))
 }
 rbind(x=x_values, n_window=n_window)
+# With h=1, the window at 3 years holds 3 workers and the one at 11 holds 2248.
+# Few workers have fewer than 8 years of schooling or exactly 16 years.
+# So the windows there are small samples.
 
-# Fitted line at each schooling level, with the workers in each window along the top
-plot(y_hat ~ x_hat, data=school_means, pch=17, col=grey(0, .5),
-    main=NA, xlab='School', ylab='Mean Wage')
-lines(x_values, y_pred_fixed, col=rgb(0, 0, 1, .8), lwd=2, type='o')
-axis(3, at=x_values, labels=n_window, tick=FALSE, line=-.5, cex.axis=.7, col.axis=rgb(0, 0, 1, .8))
-mtext('Workers in window', side=3, line=1.5, cex=.8, col=rgb(0, 0, 1, .8))
+# Raw data with the grouped means and the fitted line at each schooling level
+# The workers in each window run along the top
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .1),
+    ylim=c(0, 15), # zoom in on the fits, which hides the 43 highest wages
+    main=NA, xlab='School', ylab='Wage')
+lines(x_values, y_pred_fixed, col=rgb(1, 0, 0, .8), lwd=2, type='o')
+points(y_hat ~ x_hat, data=school_means, pch=24, col='white', bg=rgb(0, 0, 0, .8), cex=1.3) # grouped means
+axis(3, at=x_values, labels=n_window, tick=FALSE, line=-.5, cex.axis=.7, col.axis=rgb(1, 0, 0, .8))
+mtext('Workers in window', side=3, line=1.5, cex=.8, col=rgb(1, 0, 0, .8))
 legend('topleft', legend=c('Grouped mean', 'Local line, h=1'),
-    pch=c(17, 1), lty=c(NA, 1), col=c(grey(0, .5), rgb(0, 0, 1, .8)), cex=.8, bty='n')
+    pch=c(24, 1), lty=c(NA, 1), lwd=c(NA, 2), pt.bg=rgb(0, 0, 0, .8),
+    col=c('white', rgb(1, 0, 0, .8)), cex=.8, bty='n')
+# The fitted wage falls from 3 to 8 years of schooling.
+# The windows at 3, 4, and 5 years hold only 3, 8, and 21 workers.
+# It also falls from 15 to 16 years, a dip set by the 16 workers with 16 years.
 ```
 
-With $h=1$, the window at $3$ years of schooling holds $3$ workers, while the window at $11$ years holds $2248$.
-Fits in the smallest windows follow the few workers in them.
-The fitted wage falls from $3$ to $8$ years of schooling, and the windows at $3$, $4$, and $5$ years hold only $3$, $8$, and $21$ workers.
-It also falls from $15$ to $16$ years, a dip set by the $16$ workers with $16$ years of schooling.
+Fits in the smallest windows follow the few observations in them.
 
 #### **Adaptive Bandwidths** {-}
 
@@ -137,50 +165,68 @@ weights observations with $|\hat{x}_{i}-x| < h(x)$ and gives the rest weight $0$
 :::
 
 LOESS is useful for smoothing data with uneven $\hat{x}$.
-Because the *share* of points in each neighborhood is fixed, the local fit has roughly the same effective sample size everywhere, even where the data are sparse.
+Because the *share* of points in each neighborhood is fixed, every window reaches the same number of nearest points, even where the data are sparse.
+The kernel weights still depend on distance, so the effective sample size can differ from window to window.
 The `span` argument plays the role $h$ does for fixed-bandwidth methods, so smaller spans mean narrower neighborhoods, more flexibility, and noisier curves, while larger spans pool more data and smooth more aggressively.
 
 With `degree=1`, `loess()` fits a weighted line in each window, as the local linear regression does, so the main difference below is the window.
+We set `span=.4`, smaller than the default of $0.75$, so the windows are narrower where the data are dense.
 ```{r}
+## MAIN EXAMPLE
 # Loess with a line in each window, so mainly the window differs from the fit above
-reg_lo1 <- loess(y_hat ~ x_hat, data=xy2_hat, degree=1)
+reg_lo1 <- loess(y_hat ~ x_hat, data=xy_hat, degree=1, span=.4)
 y_pred_lo1 <- predict(reg_lo1, newdata=data.frame(x_hat=x_values))
 
-# Every window includes the same number of nearest workers
-floor(reg_lo1$pars$span*nrow(xy2_hat))
+# Every window reaches the same number of nearest workers
+floor(reg_lo1$pars$span*nrow(xy_hat))
+# Each window reaches the 40 percent of workers nearest x, 1317 of the 3294.
+# Schooling has ties, and workers exactly at the edge get zero weight.
+# So at 3 years, only the 692 workers with under 11 years get positive weight.
+# At 11, 12, and 13 years, only the workers at that level get positive weight.
+# A line cannot be fit to one level, so loess() warns and its fit there is that level's mean.
 
 # Compare the two fits
-lo_col <- adjustcolor('#20B2AA', alpha.f=.75)  # teal green
-plot(y_hat ~ x_hat, data=school_means, pch=17, col=grey(0, .5),
-    ylim=range(school_means[, 'y_hat'], y_pred_fixed, y_pred_lo1),
-    main=NA, xlab='School', ylab='Mean Wage')
-lines(x_values, y_pred_fixed, col=rgb(0, 0, 1, .8), lwd=2, type='o')
-lines(x_values, y_pred_lo1, col=lo_col, lwd=2, type='o', pch=2)
-legend('topleft', legend=c('Grouped mean', 'Local line, h=1', 'Loess, degree=1'),
-    pch=c(17, 1, 2), lty=c(NA, 1, 1), col=c(grey(0, .5), rgb(0, 0, 1, .8), lo_col), cex=.8, bty='n')
+lo_col <- rgb(0, .7, .7, .8) # teal, the color of every LOESS fit
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .1),
+    ylim=c(0, 15), # zoom in on the fits
+    main=NA, xlab='School', ylab='Wage')
+lines(x_values, y_pred_fixed, col=rgb(1, 0, 0, .8), lwd=2, type='o')
+lines(x_values, y_pred_lo1, col=lo_col, lwd=2, type='o')
+points(y_hat ~ x_hat, data=school_means, pch=24, col='white', bg=rgb(0, 0, 0, .8), cex=1.3) # grouped means
+legend('topleft', legend=c('Grouped mean', 'Local line, h=1', 'Loess, span=.4'),
+    pch=c(24, 1, 1), lty=c(NA, 1, 1), lwd=c(NA, 2, 2), pt.bg=rgb(0, 0, 0, .8),
+    col=c('white', rgb(1, 0, 0, .8), lo_col), cex=.8, bty='n')
+# From 8 to 15 years, where workers are plentiful, the two fits differ by at most 20 cents.
+# The loess fit does not follow the 3 workers with 3 or 4 years of schooling.
+# It also does not follow the 16 workers with 16 years.
+# The price is a much wider window: at 3 years, it reaches out to 11 years.
 ```
 
-Every LOESS window includes the $75$ percent of workers nearest the design point, $2470$ of the $3294$.
-So the LOESS fit does not follow the few workers with $3$ to $5$ years of schooling, or the $16$ workers with $16$ years.
-The price is a much wider window: at $3$ years of schooling, the LOESS window reaches out to $12$ years.
+With `span=.4`, every LOESS window includes the $40$ percent of observations nearest the design point.
+So the LOESS fit does not follow the few observations where the data are sparse.
+The price is a much wider window there.
+
+By default, `loess()` fits a local quadratic (`degree=2`) instead of a line, so the fitted curve can bend within each window.
+The rest of this chapter uses the default.
+```{r}
+## MAIN EXAMPLE
+# Fit loess with the default span and degree
+reg_lo <- loess(y_hat ~ x_hat, data=xy_hat)
+```
 
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 A local quadratic adds the term $b_{2}(x)\hat{x}_{i}^{2}$ in each window, so the coefficients at $x$ solve $\min_{b_{0}(x), b_{1}(x), b_{2}(x)} \sum_{i=1}^{n}\left[\hat{y}_{i} - b_{0}(x) - b_{1}(x) \hat{x}_{i} - b_{2}(x)\hat{x}_{i}^{2} \right]^{2} k\left(\hat{x}_{i}, x, h(x)\right)$.
-By default, `loess()` fits a local quadratic (`degree=2`) instead of a line, so the fitted curve can bend within each window.
-The rest of this chapter uses the default.
 ```{r}
-# Fit loess with the default span
-reg_lo <- loess(y_hat ~ x_hat, data=xy2_hat)
-
-plot(y_hat ~ x_hat, pch=16, col=grey(0, .1), data=xy2_hat,
+# reg_lo defined above
+plot(y_hat ~ x_hat, pch=16, col=grey(0, .1), data=xy_hat,
     main=NA, xlab='School', ylab='Wage')
-lines(xy2_hat[, 'x_hat'], predict(reg_lo),
-    col=lo_col, type='o', pch=2)
+lines(xy_hat[, 'x_hat'], predict(reg_lo),
+    col=lo_col, lwd=2)
 
 legend('topleft',
     legend=sprintf('Loess (span = %.2f)', reg_lo$pars$span),
-    lty=1, col=lo_col, cex=.8)
+    lty=1, lwd=2, col=lo_col, cex=.8)
 ```
 :::
 
@@ -189,11 +235,11 @@ legend('topleft',
 Each model produces fitted values $\hat{y}_{i}^{\mathrm{fit}}$ and residuals $\hat{e}_{i} = \hat{y}_{i} - \hat{y}_{i}^{\mathrm{fit}}$.
 To compare models, we often summarize the residuals with a single number.
 
-The *mean squared error* averages the squared residuals,
+The [mean squared error](02_15_SimpleRegression.qmd#goodness-of-fit) averages the squared residuals,
 $$\begin{aligned}
 \hat{\text{MSE}} &= \frac{1}{n}\sum_{i=1}^{n} \hat{e}_{i}^2 = \frac{1}{n}\sum_{i=1}^{n} \left(\hat{y}_{i} - \hat{y}_{i}^{\mathrm{fit}}\right)^2.
 \end{aligned}$$
-Squaring penalizes large misses heavily, and the units are the square of $\hat{y}_{i}$ (squared dollars for wages).
+Squaring penalizes large misses heavily, and the units are the square of the units of $\hat{y}_{i}$.
 
 The [R-squared](02_15_SimpleRegression.qmd#goodness-of-fit) rescales $\hat{\text{MSE}}$ by the variance of $\hat{y}$,
 $$\begin{aligned}
@@ -227,17 +273,18 @@ mean(e0_hat^2) # MSE
 
 We can compute these for the linear model, the [regressogram](02_16_LocalRegression.qmd#fixed-bins) with three bins, and LOESS.
 ```{r}
-# xy2_hat and reg_lo defined above
+## MAIN EXAMPLE
+# xy_hat and reg_lo defined above
 
 # Two more models for wage on schooling
-reg_lin <- lm(y_hat ~ x_hat, data=xy2_hat)        # globally linear
-xy2_hat[, 'xcf'] <- cut(xy2_hat[, 'x_hat'], 3)
-reg_rgram <- lm(y_hat ~ xcf, data=xy2_hat)         # regressogram, 3 bins
+reg_lin <- lm(y_hat ~ x_hat, data=xy_hat)        # globally linear
+xy_hat[, 'xcf'] <- cut(xy_hat[, 'x_hat'], 3)
+reg_rgram <- lm(y_hat ~ xcf, data=xy_hat)         # regressogram, 3 bins
 
 # Mean squared error and both R-squared statistics
 fit_stats <- function(model){
     e_hat <- resid(model)
-    y_hat <- xy2_hat[, 'y_hat']
+    y_hat <- xy_hat[, 'y_hat']
     c(MSE=mean(e_hat^2),
         R2=1 - mean(e_hat^2)/mean((y_hat-mean(y_hat))^2),
         R2_gen=cor(y_hat, y_hat-e_hat)^2)
@@ -247,10 +294,12 @@ fit_table <- rbind(
     Regressogram = fit_stats(reg_rgram),
     LOESS        = fit_stats(reg_lo))
 round(fit_table, 3)
+# MSE is in squared dollars.
+# LOESS has the smallest MSE, and the regressogram has the largest.
+# Every R-squared is below 0.1.
+# So each model leaves over 90 percent of the variation in wages unexplained.
 ```
 
-LOESS has the smallest $\hat{\text{MSE}}$, and the regressogram has the largest.
-Every $\hat{R}^{2}$ is below $0.1$, so each model leaves over $90\%$ of the variation in wages unexplained.
 A smaller error on the data used to fit a model does not guarantee smaller errors on new data, since a flexible enough model also fits the noise in the sample.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -276,13 +325,15 @@ The model misses by about $10\%$ of each wage.
 
 # reg_lin, reg_rgram, and reg_lo defined above
 mape <- function(model){
-    100*mean(abs(resid(model)/xy2_hat[, 'y_hat']))
+    100*mean(abs(resid(model)/xy_hat[, 'y_hat']))
 }
 round(c(Linear=mape(reg_lin), Regressogram=mape(reg_rgram), LOESS=mape(reg_lo)), 3)
+# LOESS has the smallest MAPE and the regressogram the largest, as with MSE.
+# Every model misses by over 70 percent on average.
+# Partly that is because a few workers earn less than 20 cents an hour.
+# Their percentage errors are huge.
 ```
-LOESS has the smallest $\hat{\text{MAPE}}$ and the regressogram the largest, the same ranking as $\hat{\text{MSE}}$.
-Every model misses by over $70\%$ on average, partly because a few workers earn less than 20 cents an hour, so their percentage errors are huge.
-The two measures can rank models differently, because MAPE weights workers with low wages more heavily.
+The two measures can rank models differently, because MAPE weights observations with low $\hat{y}_{i}$ more heavily.
 :::
 
 @Adamson2025_Greece tests whether a more flexible model's gain in fit is larger than chance, using a loss-in-fit statistic [@HardleMammen1993; @hendersonparmeter2015].
@@ -293,27 +344,28 @@ It is a nonparametric analog of the [$F$-statistic](02_13_MultipleGroups.qmd#the
 To measure out-of-sample fit, we use the [leave-one-out cross-validation](02_15_SimpleRegression.qmd#cross-validation) error $\hat{\text{CV}}$, the $\hat{\text{MSE}}$ of predictions for held-out observations.
 A model that fits the noise in the sample predicts held-out observations poorly, so its $\hat{\text{CV}}$ rises above its $\hat{\text{MSE}}$.
 
-The code below refits each model $n$ times, each time without one worker, and predicts that worker's wage.
+The code below refits each model $n$ times, each time without one observation, and predicts that observation's $\hat{y}_{i}$.
 ```{r}
-# xy2_hat defined above, including the bins xcf
+## MAIN EXAMPLE
+# xy_hat defined above, including the bins xcf
 
 # Leave-one-out prediction errors, one column per model
-loo_errors <- matrix(NA, nrow=nrow(xy2_hat), ncol=3)
+loo_errors <- matrix(NA, nrow=nrow(xy_hat), ncol=3)
 colnames(loo_errors) <- c('Linear', 'Regressogram', 'LOESS')
-loo_errors_mean <- rep(NA, nrow(xy2_hat))
-for (i in seq_len(nrow(xy2_hat))) {
-    xy2_i <- xy2_hat[-i, ] # drop worker i
-    reg_lin_i   <- lm(y_hat ~ x_hat, data=xy2_i)
-    reg_rgram_i <- lm(y_hat ~ xcf, data=xy2_i)
-    reg_lo_i    <- loess(y_hat ~ x_hat, data=xy2_i)
+loo_errors_mean <- rep(NA, nrow(xy_hat))
+for (i in seq_len(nrow(xy_hat))) {
+    xy_i <- xy_hat[-i, ] # drop worker i
+    reg_lin_i   <- lm(y_hat ~ x_hat, data=xy_i)
+    reg_rgram_i <- lm(y_hat ~ xcf, data=xy_i)
+    reg_lo_i    <- loess(y_hat ~ x_hat, data=xy_i)
     # Predict worker i from the fits without worker i
     y_pred_i <- c(
-        predict(reg_lin_i, newdata=xy2_hat[i, ]),
-        predict(reg_rgram_i, newdata=xy2_hat[i, ]),
-        predict(reg_lo_i, newdata=xy2_hat[i, ]))
-    loo_errors[i, ] <- xy2_hat[i, 'y_hat'] - y_pred_i
+        predict(reg_lin_i, newdata=xy_hat[i, ]),
+        predict(reg_rgram_i, newdata=xy_hat[i, ]),
+        predict(reg_lo_i, newdata=xy_hat[i, ]))
+    loo_errors[i, ] <- xy_hat[i, 'y_hat'] - y_pred_i
     # Compare worker i with the mean wage of the other workers
-    loo_errors_mean[i] <- xy2_hat[i, 'y_hat'] - mean(xy2_i[, 'y_hat'])
+    loo_errors_mean[i] <- xy_hat[i, 'y_hat'] - mean(xy_i[, 'y_hat'])
 }
 
 # LOESS does not extrapolate, so it cannot predict the only worker with 3 years of schooling
@@ -326,25 +378,34 @@ v_cv_hat <- mean(loo_errors_mean[loo_ok]^2)
 r2_cv <- 1 - cv_hat/v_cv_hat
 
 # Out-of-sample generalized R-squared squares the correlation of wages and held-out predictions
-y_ok <- xy2_hat[loo_ok, 'y_hat']
+y_ok <- xy_hat[loo_ok, 'y_hat']
 y_pred_cv <- y_ok - loo_errors[loo_ok, ]
 r2_gen_cv <- cor(y_ok, y_pred_cv)[1, ]^2
 round(cbind(fit_table, CV=cv_hat, R2_CV=r2_cv, R2_gen_CV=r2_gen_cv), 3)
+# Every model predicts held-out workers a little worse than those it was fit to.
+# The gap between CV and MSE grows with flexibility.
+# It runs from about 0.01 for the line to about 0.04 for LOESS.
+# LOESS still predicts held-out workers best.
+# Its lead over the line shrinks from about 0.11 in sample to about 0.08.
+# R2_gen_CV falls below its in-sample version for every model.
+# R2_CV also falls, except that the line's rounds to its in-sample R-squared.
+# That is because R2_CV omits the one worker LOESS cannot predict.
+# R2_CV and R2_gen_CV are within about 0.001 of each other.
+# They differ more for the USArrests line in Simple Regression (not run here).
+# Its R2_CV is negative, about -0.04, yet its R2_gen_CV is about 0.22.
+# That is above its in-sample R-squared of about 0.005.
+# Squaring hides the sign of the correlation, which is about -0.47.
 ```
 
-Every model predicts held-out workers a little worse than the workers it was fit to.
-The gap between $\hat{\text{CV}}$ and $\hat{\text{MSE}}$ grows with flexibility, from about $0.01$ for the line to about $0.04$ for LOESS.
-LOESS still predicts held-out workers best, but its lead over the line shrinks from about $0.11$ in sample to about $0.08$.
+The gap between $\hat{\text{CV}}$ and $\hat{\text{MSE}}$ tends to grow with a model's flexibility.
 The *out-of-sample generalized $R^{2}$* replaces the fitted values in $\hat{R}^{2}_{\text{gen}}$ with the held-out predictions $\hat{y}^{\mathrm{pred}(-i)}(\hat{x}_{i})$,
 $$\begin{aligned}
 \hat{R}^{2}_{\text{gen,CV}} &= \hat{r}_{YY^{\mathrm{pred}(-i)}}^{2},
 \end{aligned}$$
 where $\hat{r}_{YY^{\mathrm{pred}(-i)}}$ is the correlation between $\hat{y}_{i}$ and $\hat{y}^{\mathrm{pred}(-i)}(\hat{x}_{i})$.
-It falls below its in-sample version for every model here.
-The [out-of-sample R-squared](02_15_SimpleRegression.qmd#cross-validation) $\hat{R}^{2}_{\text{CV}}$ also falls, except that the line's rounds to its in-sample $\hat{R}^{2}$, because $\hat{R}^{2}_{\text{CV}}$ omits the one worker LOESS cannot predict.
-$\hat{R}^{2}_{\text{CV}}$ is negative when a model predicts held-out workers worse than the mean wage of the other workers would, but $\hat{R}^{2}_{\text{gen,CV}}$ always lies between $0$ and $1$.
-Here the two are within about $0.001$ of each other, but they can differ by more, since a squared correlation ignores whether the predictions are shifted or scaled away from the observed wages.
-Squaring also hides a negative correlation: the [line for murder arrests](02_15_SimpleRegression.qmd#cross-validation) has an $\hat{R}^{2}_{\text{gen,CV}}$ of about $0.22$, above its in-sample $\hat{R}^{2}$ of about $0.005$, even though its $\hat{R}^{2}_{\text{CV}}$ is negative.
+The [out-of-sample R-squared](02_15_SimpleRegression.qmd#cross-validation) $\hat{R}^{2}_{\text{CV}}$ is negative when a model predicts held-out observations worse than the mean of the other observations would, but $\hat{R}^{2}_{\text{gen,CV}}$ always lies between $0$ and $1$.
+The two can differ, since a squared correlation ignores whether the predictions are shifted or scaled away from the observed $\hat{y}_{i}$.
+Squaring also hides a negative correlation, so a model can have an $\hat{R}^{2}_{\text{gen,CV}}$ above its in-sample $\hat{R}^{2}$ even when its $\hat{R}^{2}_{\text{CV}}$ is negative, as a Test Yourself in [Cross-Validation](02_15_SimpleRegression.qmd#cross-validation) shows.
 
 @Adamson2025_Greece compares a local constant regression with a linear model using both in-sample and out-of-sample errors [@MullainathanSpiess2017].
 It notes that fitting simple models to complex relationships is believed to be a major source of false positives [@hendersonparmeter2015; @racine2019; @hansen2022b].
@@ -395,6 +456,7 @@ These plots show how the gradient varies within the sample.
 You can also plot all gradients with their confidence intervals [@Chaudhuri1999; @HendersonEtAl2012].
 
 ```{r}
+## MAIN EXAMPLE
 ## Gradient at each observation, as a centered finite difference with d=1
 ## Many workers share a schooling level, so compute it once per level
 grad_by_obs <- function(xy, reg, d=1) {
@@ -408,21 +470,38 @@ grad_by_obs <- function(xy, reg, d=1) {
     grad_obs <- grad_levels[match(xy[, 'x_hat'], x_levels)]
     return(grad_obs)
 }
-grad_obs <- grad_by_obs(xy2_hat, reg_lo)
+grad_obs <- grad_by_obs(xy_hat, reg_lo)
 
 ## Visual Summary
-par(mfrow=c(1, 2))
-hist(grad_obs,  breaks=20,
-    border=NA, freq=FALSE,
-    col=lo_col,
-    xlab=expression(d~hat(y)^plain(pred)/dx),
-    main=NA) ## Distributional Summary
+f_grad <- hist(grad_obs, breaks=20, plot=FALSE)
+layout(matrix(1:2, ncol=2), widths=c(4/5, 1/5))
 
-## Visual Summary 2
-plot(xy2_hat[, 'x_hat'], grad_obs,
+# One point per schooling level, since all workers at a level share one gradient
+x_levels <- sort(unique(xy_hat[, 'x_hat']))
+grad_levels <- grad_obs[match(x_levels, xy_hat[, 'x_hat'])]
+n_levels <- as.numeric(table(xy_hat[, 'x_hat']))
+
+# Point area scales with the number of workers
+sizes <- sqrt(n_levels / max(n_levels)) * 4
+
+# Scatterplot, with limits that line up with the marginal bars below
+par(mar=c(4, 4, 1, 1))
+plot(x_levels, grad_levels, cex=sizes,
     xlab='x', ylab=expression(d~hat(y)^plain(pred)/dx),
     mgp=c(2.5, 1, 0),
+    ylim=range(f_grad[['breaks']]),
     col=lo_col, pch=16, main=NA) ## Diminishing Returns?
+legend('bottomright', bty='n', y.intersp=1.6, x.intersp=1.4,
+    legend=c('10 workers', '100 workers', '1000 workers'),
+    pch=16, col=lo_col, pt.cex=sqrt(c(10, 100, 1000) / max(n_levels)) * 4)
+
+# Add Marginal
+par(mar=c(4, 0, 1, 1))
+barplot(f_grad[['density']], axes=FALSE, space=0, horiz=TRUE, border=NA,
+    col=lo_col) ## Distributional Summary
+# The largest point is at 12 years, where 1188 workers share one gradient.
+# The longest bar, gradients from 0.6 to 0.7, holds the 1851 workers with 10, 12, or 14 years.
+# Only the 46 workers with under 8 years of schooling have negative gradients.
 ```
 
 A different kind of summary collapses the whole gradient curve into a single number for tabular reporting.
@@ -447,7 +526,9 @@ mean(grads)   # mean of the gradients
 ```
 :::
 
+The code below computes the gradient at the mean, along with the mean and the standard deviation of the gradients.
 ```{r}
+## MAIN EXAMPLE
 ## Gradient at the mean, as a centered finite difference with d=1 around the mean schooling
 grad_at_mean <- function(xy, reg, d=1) {
     m_hat <- mean(xy[, 'x_hat'])
@@ -459,14 +540,15 @@ grad_at_mean <- function(xy, reg, d=1) {
 ## Tabular Summary
 ## grad_obs defined above
 tab_stats <- c(
-    'At the mean'=grad_at_mean(xy2_hat, reg_lo),
+    'At the mean'=grad_at_mean(xy_hat, reg_lo),
     Mean=mean(grad_obs),
     SD=sd(grad_obs))
 round(tab_stats, 3)
+# The gradient at the mean, about 0.24, is much smaller than the mean gradient.
+# The mean of the gradients is about 0.58.
+# The mean schooling, about 11.6 years, falls between 11 and 12 years.
+# The loess curve is flatter there than at the neighboring levels.
 ```
-
-The gradient at the mean, about $0.24$, is much smaller than the mean of the gradients, about $0.58$.
-The mean schooling, about $11.6$ years, falls between $11$ and $12$ years, where the LOESS curve is flatter than at the neighboring levels.
 
 ## Variability Estimates
 
@@ -485,21 +567,21 @@ The same bootstrap that produces the band also produces standard errors for any 
 The band shows variability across samples, whereas the [gradient plots](#gradients) show variability within the sample.
 
 ```{r}
+## MAIN EXAMPLE
 # Same loess fit as above (default span)
-pred_design <- data.frame(x_hat=unique(xy2_hat[, 'x_hat']))
+pred_design <- data.frame(x_hat=unique(xy_hat[, 'x_hat']))
 y_pred <- predict(reg_lo, newdata=pred_design)
 
-plot(y_hat ~ x_hat, pch=16, col=grey(0, .1), data=xy2_hat,
+plot(y_hat ~ x_hat, pch=16, col=grey(0, .1), data=xy_hat,
     main=NA, xlab='School', ylab='Wage')
-lo_col <- adjustcolor('#20B2AA', alpha.f=.5)  # same teal green
 lines(pred_design[, 'x_hat'], y_pred,
-    col=lo_col, type='o', pch=2)
+    col=lo_col, lwd=2, type='o')
 
 # Boot CI with the same default-span loess
 boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
 for (b in 1:399) {
-    xy2_boot <- xy2_hat[sample(nrow(xy2_hat), replace=TRUE), ]
-    reg_b <- loess(y_hat ~ x_hat, data=xy2_boot)
+    xy_boot <- xy_hat[sample(nrow(xy_hat), replace=TRUE), ]
+    reg_b <- loess(y_hat ~ x_hat, data=xy_boot)
     boot_lo[, b] <- predict(reg_b, newdata=pred_design)
 }
 boot_cb <- apply(boot_lo, 1, quantile,
@@ -509,7 +591,7 @@ boot_cb <- apply(boot_lo, 1, quantile,
 polygon(
     c(pred_design[[1]], rev(pred_design[[1]])),
     c(boot_cb[1, ], rev(boot_cb[2, ])),
-    col=adjustcolor('#20B2AA', alpha.f=.3),
+    col=rgb(0, .7, .7, .3),
     border=NA)
 ```
 
@@ -517,17 +599,16 @@ polygon(
 Construct a bootstrap confidence band for the following loess regression
 ```{r}
 # Adaptive-width subsamples with non-uniform weights
-xy_hat <- USArrests[, c('UrbanPop', 'Murder')]
-colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
-xy_ord_hat <- xy_hat[order(xy_hat[, 'x_hat']), ]
+xy2_hat <- USArrests[, c('UrbanPop', 'Murder')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+xy2_ord_hat <- xy2_hat[order(xy2_hat[, 'x_hat']), ]
 
-plot(y_hat ~ x_hat, pch=16, col=grey(0, .5), data=xy_ord_hat,
+plot(y_hat ~ x_hat, pch=16, col=grey(0, .5), data=xy2_ord_hat,
     main=NA, xlab='Urban Population', ylab='Murder Arrests')
-reg_lo_usa <- loess(y_hat ~ x_hat, data=xy_ord_hat, span=.6)
+reg_lo_usa <- loess(y_hat ~ x_hat, data=xy2_ord_hat, span=.6)
 
-red_col <- rgb(1, 0, 0, .5)
-lines(xy_ord_hat[, 'x_hat'], predict(reg_lo_usa),
-    col=red_col, type='o', pch=2)
+lines(xy2_ord_hat[, 'x_hat'], predict(reg_lo_usa),
+    col=lo_col, lwd=2)
 ```
 :::
 
@@ -535,14 +616,15 @@ lines(xy_ord_hat[, 'x_hat'], predict(reg_lo_usa),
 
 Repeating the gradient summaries on each bootstrap resample gives their standard errors and confidence intervals.
 ```{r}
+## MAIN EXAMPLE
 ## Use bootstrap to approximate sampling dist
 boot_stats <- matrix(NA, nrow=299, ncol=3)
 colnames(boot_stats) <- c('At the mean', 'Mean', 'SD')
 for(b in 1:nrow(boot_stats)){
-    xy2_boot <- xy2_hat[sample(1:nrow(xy2_hat), replace=TRUE), ]
-    reg_lo_b <- loess(y_hat ~ x_hat, data=xy2_boot)
-    grad_m_b_hat <- grad_at_mean(xy2_boot, reg_lo_b)
-    grad_obs_b <- grad_by_obs(xy2_boot, reg_lo_b)
+    xy_boot <- xy_hat[sample(1:nrow(xy_hat), replace=TRUE), ]
+    reg_lo_b <- loess(y_hat ~ x_hat, data=xy_boot)
+    grad_m_b_hat <- grad_at_mean(xy_boot, reg_lo_b)
+    grad_obs_b <- grad_by_obs(xy_boot, reg_lo_b)
     m_grad_b_hat <- mean(grad_obs_b)
     s_grad_b_hat <- sd(grad_obs_b)
     boot_stats[b, 1] <- grad_m_b_hat
@@ -561,6 +643,10 @@ tab_regstyle <- data.frame(
   CI_95 = paste0('[', boot_quants, ']')
 )
 tab_regstyle
+# The gradient at the mean varies more across samples: its SE is about 0.15.
+# The SE of the mean of the gradients is about 0.047.
+# The interval for the gradient at the mean includes zero.
+# The interval for the mean of the gradients does not.
 ```
 
 ```{r}
@@ -584,16 +670,45 @@ kable(
   caption = 'Summary of Local Gradients')
 ```
 
-The gradient at the mean depends on the fit near a single design point, so it varies more across samples than the mean of the gradients, which averages over all workers.
-Its confidence interval includes zero, while the interval for the mean of the gradients does not.
+The gradient at the mean depends on the fit near a single design point, so it tends to vary more across samples than the mean of the gradients, which averages over all observations.
 
 ## Hypothesis Testing
 
 We can test whether the mean gradient is statistically different from zero.
-We can compute the p-value directly from the bootstrap distribution in [Gradient Standard Errors](#gradient-standard-errors).
+The first way is to [invert a confidence interval](01_08_HypothesisTests.qmd#invert-a-ci).
+A $95\%$ confidence interval gives a test at the $5\%$ level: reject a hypothesized value if it falls outside the interval, and fail to reject it if it falls inside.
+So we need no new resampling to test $H_{0}$: the mean gradient equals zero.
+We only check whether the bootstrap interval from [Gradient Standard Errors](#gradient-standard-errors) contains $0$.
+
+```{r}
+## MAIN EXAMPLE
+## Bootstrap distribution of the mean gradient, with its 95% CI and zero marked
+## boot_stats defined above
+boot_ci_mean <- quantile(boot_stats[, 'Mean'], probs=c(.025, .975))
+
+hist(boot_stats[, 'Mean'], breaks=25,
+    border=NA, freq=FALSE,
+    xlim=range(c(0, boot_stats[, 'Mean'])),
+    xlab='Mean of the Gradients',
+    main=NA)
+title('Bootstrap Distribution with 95% CI', font.main=1)
+abline(v=boot_ci_mean, col=rgb(0, 0, 0, .8), lwd=2) # 95% CI
+abline(v=0, col=rgb(0, 0, 1, .8), lty=2)            # H0: mean gradient=0
+
+## Does the 95% interval contain zero?
+boot_ci_mean
+unname(boot_ci_mean[1] <= 0 & boot_ci_mean[2] >= 0)
+# The interval, about 0.49 to 0.67, does not contain 0.
+# So we reject the null that the mean gradient is zero at the 5% level.
+# The interval for the gradient at the mean, about -0.05 to 0.53, does contain 0.
+# So we fail to reject the same null for that statistic.
+```
+
+We can also compute the p-value directly from the same bootstrap distribution.
 Under $H_{0}$, the mean gradient equals zero, so we center the bootstrap distribution at zero, as in [Impose the Null](01_08_HypothesisTests.qmd#impose-the-null), and ask how often it produces values as extreme as the observed mean gradient.
 
 ```{r}
+## MAIN EXAMPLE
 ## P-value via null bootstrap ECDF
 ## Center bootstrap means at zero (impose H0)
 boot_centered <- boot_stats[, 'Mean'] - mean(boot_stats[, 'Mean'])
@@ -606,11 +721,15 @@ p_boot <- 1 - F_hat(abs(tab_stats['Mean'])) +
               F_hat(-abs(tab_stats['Mean']))
 
 cat('Bootstrap p-value (ECDF):', p_boot, '\n')
+# The observed mean gradient is farther from zero than all 299 centered means.
+# So the p-value is 0.
+# That means only that it is below 1/299, about 0.003.
+# The mean gradient is statistically distinguishable from zero.
+# On average, wages increase with schooling.
 ```
 
-None of the $299$ centered bootstrap means is as far from zero as the observed mean gradient, so the p-value is $0$.
-With $299$ resamples, this means only that the p-value is below $1/299 \approx 0.003$.
-The small p-value indicates that the mean gradient is statistically distinguishable from zero: on average, wages increase with schooling.
+With $B$ resamples, a p-value of $0$ means only that the p-value is below $1/B$.
+A small p-value indicates that the mean gradient is statistically distinguishable from zero.
 
 We can also use a normal approximation.
 Under the null hypothesis $H_{0}$: the mean gradient equals zero, we use the test statistic
@@ -634,12 +753,12 @@ Compute the t-statistic and p-value using jackknife standard errors instead of t
 
 ```{r}
 ## Jackknife SE for mean gradient
-n <- nrow(xy2_hat)
+n <- nrow(xy_hat)
 jack_means <- numeric(n)
 for (i in 1:n) {
-    xy2_i  <- xy2_hat[-i, ]
-    reg_i  <- loess(y_hat ~ x_hat, data=xy2_i)
-    grad_i <- grad_by_obs(xy2_i, reg_i)
+    xy_i  <- xy_hat[-i, ]
+    reg_i  <- loess(y_hat ~ x_hat, data=xy_i)
+    grad_i <- grad_by_obs(xy_i, reg_i)
     jack_means[i] <- mean(grad_i)
 }
 
@@ -683,12 +802,13 @@ mean(grads_age^2) # Racine's statistic
 ```
 :::
 
-To impose $H_{0}$, we shuffle schooling across workers, as in the [permutation test](02_14_Associations.qmd#hypothesis-testing) for correlation.
+To impose $H_{0}$, we shuffle $\hat{x}_{i}$ across observations, as in the [permutation test](02_14_Associations.qmd#hypothesis-testing) for correlation.
 Each permutation refits LOESS and recomputes $\hat{G}^2$.
 The p-value is the share of permuted $\hat{G}^2$ at least as large as the observed one.
-Shuffling makes wages unrelated to schooling in every respect, such as their spread, so it imposes slightly more than $H_{0}$.
+Shuffling makes $\hat{y}$ unrelated to $\hat{x}$ in every respect, such as its spread, so it imposes slightly more than $H_{0}$.
 
 ```{r}
+## MAIN EXAMPLE
 ## Racine's statistic: mean of the squared gradients
 ## grad_obs defined above
 racine_hat <- mean(grad_obs^2)
@@ -696,10 +816,10 @@ racine_hat <- mean(grad_obs^2)
 ## Null permutation distribution: shuffle schooling across workers
 null_racine <- rep(NA, 299)
 for(b in seq_along(null_racine)){
-    xy2_perm <- xy2_hat
-    xy2_perm[, 'x_hat'] <- sample(xy2_perm[, 'x_hat'], replace=FALSE) ## Reshuffle X
-    reg_lo_b <- loess(y_hat ~ x_hat, data=xy2_perm)
-    grad_obs_b <- grad_by_obs(xy2_perm, reg_lo_b)
+    xy_perm <- xy_hat
+    xy_perm[, 'x_hat'] <- sample(xy_perm[, 'x_hat'], replace=FALSE) ## Reshuffle X
+    reg_lo_b <- loess(y_hat ~ x_hat, data=xy_perm)
+    grad_obs_b <- grad_by_obs(xy_perm, reg_lo_b)
     null_racine[b] <- mean(grad_obs_b^2)
 }
 perm_cut <- quantile(null_racine, probs=0.95)
@@ -721,11 +841,14 @@ p_racine <- 1 - F_racine(racine_hat)
 cat('Observed statistic: ', round(racine_hat, 3), '\n')
 cat('95% cutoff:         ', round(perm_cut, 3), '\n')
 cat('Permutation p-value:', p_racine, '\n')
+# The observed statistic, about 0.39, is far above the 95% cutoff of about 0.05.
+# None of the 299 permuted values is as large, so the p-value is 0.
+# That means only that it is below 1/299, about 0.003.
+# Both tests reject: about 99 percent of workers have a positive gradient.
+# So little cancels.
 ```
 
-The observed $\hat{G}^2$, about $0.39$, is far above the $95\%$ permutation cutoff of about $0.05$.
-None of the $299$ permuted values is as large, so the p-value is $0$, or below $1/299 \approx 0.003$.
-Here both tests reject, because about $99\%$ of workers have a positive gradient, so little cancels.
+If most gradients share a sign, little cancels, so this test and the test of the mean gradient tend to agree.
 
 ## Exercises
 

@@ -2,9 +2,27 @@
 # Statistics of Association
 ***
 
+```{r seed, include=FALSE}
+# Hidden seed so every render draws the same random numbers
+set.seed(1)
+```
+
 There are several ways to statistically assess the relationship between two variables.
 The major differences surround whether the data are cardinal or an ordered/unordered factor.
 In all cases, these statistics measure association, not causation.
+
+This chapter asks three questions.
+
+* How strongly are two variables associated?
+    * *Pearson correlation*: this is a new statistic for cardinal data, $\hat{r}_{XY}=\hat{c}_{XY}/(\hat{s}_{X}\hat{s}_{Y})$.
+    * *Falk's median correlation*: this is a new statistic for cardinal data with outliers.
+    * *Kendall's rank correlation and Cramer's V*: these are new statistics for ordered factors and for unordered factors.
+* How sure are we?
+    * *Bootstrap confidence interval and permutation test*: these assess sampling variability, or the correlation's precision.
+      They use the same recipes as [intervals](01_07_Intervals.qmd#resampling-intervals) and [group comparisons](02_12_TwoGroups.qmd#permutation-tests) in earlier chapters.
+* Does an association mean that one variable causes the other?
+    * *Causation without correlation*: nonlinear or heterogeneous effects can average out, which leaves a correlation near zero.
+    * *Correlation without causation*: shared denominators and selection can create a correlation between unrelated variables.
 
 ## Cardinal Data
 
@@ -122,50 +140,40 @@ cor(x0_hat, y0_hat)
 ```
 :::
 
-For example, consider years of schooling and hourly wages for the $3294$ workers in `Wages1`.
+For example, the code below draws a scatterplot of two cardinal variables and computes their covariance and correlation.
 ```{r}
-# Load the Data
+## MAIN EXAMPLE
+# Load the Data: 3294 US workers, with hourly wages in 1980 dollars
 data(Wages1, package='Ecdat')
-xy2_hat <- Wages1[, c('school', 'wage')]
-colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
+xy_hat <- Wages1[, c('school', 'wage')]
+colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
 
 # Scatterplot
-plot(y_hat ~ x_hat, data=xy2_hat, pch=16, col=grey(0, .1),
+plot(y_hat ~ x_hat, data=xy_hat, pch=16, col=grey(0, .1),
     main=NA, xlab='Years of schooling', ylab='Hourly wage (1980 dollars)')
+# Workers with more schooling tend to earn more.
+# Wages vary a lot at every level of schooling.
 
 # Covariance: cov() divides by n-1 rather than n, which barely matters with n=3294
-cov(xy2_hat[, 'x_hat'], xy2_hat[, 'y_hat'])
+cov(xy_hat[, 'x_hat'], xy_hat[, 'y_hat'])
+# The covariance is positive.
+# Its units (years times dollars per hour) are hard to judge.
 
 # Correlation
-xy2_cor <- cor(xy2_hat[, 'x_hat'], xy2_hat[, 'y_hat'])
-xy2_cor
+xy_cor <- cor(xy_hat[, 'x_hat'], xy_hat[, 'y_hat'])
+xy_cor
+# The correlation of about 0.28 suggests a positive but weak linear association.
 ```
-The covariance is positive, but its units (years times dollars per hour) are hard to judge.
-The correlation of about $0.28$ suggests a positive but weak linear association.
-Workers with more schooling tend to earn more, but wages vary a lot at every level of schooling.
 
 #### **Hypothesis Testing** {-}
 
 You can conduct hypothesis tests for these statistics using the same procedures we learned for univariate data, [Intervals](01_07_Intervals.qmd).
 For example, you can do so by inverting a confidence interval.
-Consider the correlation between urban population share and murder arrests across US states.
-`USArrests` covers all $50$ states, so it is the whole population of states rather than a sample from it.
-To make the bootstrap below meaningful, pretend we observed only a random sample of $35$ states, as in [Comparing Multiple Groups](02_13_MultipleGroups.qmd#describing-groups).
-
-```{r}
-# Draw one random sample of 35 of the 50 states, and use only it from here on
-set.seed(1)
-state_id <- sample(nrow(USArrests), 35)
-
-# Load the Data for the sampled states
-xy_hat <- USArrests[state_id, c('UrbanPop', 'Murder')]
-colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
-xy_cor <- cor(xy_hat[, 'x_hat'], xy_hat[, 'y_hat'])
-xy_cor
-```
+The histogram below shows the bootstrap distribution of the correlation, with the interval and $0$ marked.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 ```{r}
+## MAIN EXAMPLE
 # xy_hat and xy_cor defined above
 # Bootstrap Distribution of Correlation
 n <- nrow(xy_hat)
@@ -177,6 +185,7 @@ for(b in seq(bootstrap_cor) ){
 }
 hist(bootstrap_cor, breaks=100,
     border=NA, freq=FALSE,
+    xlim=range(c(0, bootstrap_cor)),
     xlab='Correlation',
     main=NA)
 title('Bootstrap Distribution', font.main=1)
@@ -185,6 +194,8 @@ title('Bootstrap Distribution', font.main=1)
 boot_ci <- quantile(bootstrap_cor, probs=c(0.025, 0.975))
 abline(v=boot_ci, col=rgb(0, 0, 0, .8), lwd=2)
 abline(v=0, col=rgb(0, 0, 1, .8), lty=2)
+boot_ci
+# The interval, from about 0.25 to 0.32, does not contain 0.
 ```
 :::
 
@@ -194,6 +205,7 @@ If we resample without replacement, this is known as a *permutation test*.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 ```{r}
+## MAIN EXAMPLE
 # xy_hat and xy_cor defined above
 # Null Permutation Distribution of Correlation
 n <- nrow(xy_hat)
@@ -206,6 +218,7 @@ for(b in seq(null_permutation_cor) ){
 }
 hist(null_permutation_cor, breaks=100,
     border=NA, freq=FALSE,
+    xlim=range(c(null_permutation_cor, xy_cor)),
     xlab='Correlation',
     main=NA)
 title('Null Permutation Distribution', font.main=1)
@@ -214,17 +227,63 @@ title('Null Permutation Distribution', font.main=1)
 perm_ci <- quantile(null_permutation_cor, probs=c(0.025, 0.975))
 abline(v=perm_ci, col=rgb(0, 0, 0, .8), lwd=2)
 abline(v=xy_cor, col=rgb(1, 0, 0, .8), lwd=2)
+perm_ci
+# The shuffled correlations stay within a few hundredths of 0.
+# So the observed correlation of about 0.28 is far outside them.
 ```
 Any association between $\hat{x}$ and $\hat{y}$ comes from how their values are paired.
 Shuffling $\hat{x}$ keeps its values but breaks the pairing.
 :::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Here is the same permutation test for the correlation between schooling and wages in `Wages1`.
+Edit the code above to use years of experience (`exper`) in place of schooling.
+The code below computes that correlation.
+Is it statistically different from $0$?
 ```{r}
-# xy2_hat and xy2_cor defined above
-# Null Permutation Distribution of Correlation
+# Wages1 loaded above
+cor(Wages1[, 'exper'], Wages1[, 'wage'])
+# The correlation of about 0.05 is much smaller than the 0.28 for schooling.
+```
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat both tests for the correlation between urban population share and murder arrests across US states.
+Use one random sample of $35$ of the $50$ states, as in [Comparing Multiple Groups](02_13_MultipleGroups.qmd#describing-groups).
+```{r}
+# USArrests covers all 50 states, so it is the whole population of states.
+# To make the bootstrap meaningful, pretend we observed only a random sample.
+# Draw one random sample of 35 of the 50 states, and use only it from here on
+state_id <- sample(nrow(USArrests), 35)
+
+# Load the Data for the sampled states
+xy2_hat <- USArrests[state_id, c('UrbanPop', 'Murder')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+xy2_cor <- cor(xy2_hat[, 'x_hat'], xy2_hat[, 'y_hat'])
+xy2_cor
+# The correlation is about 0.16, a weak association.
+
+# Bootstrap Distribution of Correlation
 n2 <- nrow(xy2_hat)
+bootstrap_cor2 <- rep(NA, 9999)
+for(b in seq(bootstrap_cor2) ){
+    xy2_boot <- xy2_hat[sample(n2, replace=TRUE), ]
+    xy2_cor_b <- cor(xy2_boot[, 'x_hat'], xy2_boot[, 'y_hat'])
+    bootstrap_cor2[b] <- xy2_cor_b
+}
+hist(bootstrap_cor2, breaks=100,
+    border=NA, freq=FALSE,
+    xlab='Correlation',
+    main=NA)
+title('Bootstrap Distribution', font.main=1)
+
+## Test whether correlation is statistically different from 0
+boot_ci2 <- quantile(bootstrap_cor2, probs=c(0.025, 0.975))
+abline(v=boot_ci2, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=0, col=rgb(0, 0, 1, .8), lty=2)
+boot_ci2
+# The interval, from about -0.18 to 0.49, contains 0.
+
+# Null Permutation Distribution of Correlation
 null_permutation_cor2 <- rep(NA, 9999)
 for(b in seq(null_permutation_cor2) ){
     xy2_perm <- xy2_hat
@@ -234,7 +293,6 @@ for(b in seq(null_permutation_cor2) ){
 }
 hist(null_permutation_cor2, breaks=100,
     border=NA, freq=FALSE,
-    xlim=range(c(null_permutation_cor2, xy2_cor)),
     xlab='Correlation',
     main=NA)
 title('Null Permutation Distribution', font.main=1)
@@ -243,10 +301,9 @@ title('Null Permutation Distribution', font.main=1)
 perm_ci2 <- quantile(null_permutation_cor2, probs=c(0.025, 0.975))
 abline(v=perm_ci2, col=rgb(0, 0, 0, .8), lwd=2)
 abline(v=xy2_cor, col=rgb(1, 0, 0, .8), lwd=2)
+perm_ci2
+# The observed correlation is well inside the middle 95% of shuffled values.
 ```
-With $3294$ workers, the shuffled correlations stay within a few hundredths of $0$, so the observed correlation of about $0.28$ is far outside them.
-Edit the code to use years of experience (`exper`) in place of schooling.
-That correlation is much smaller; is it still statistically different from $0$?
 :::
 
 So the bootstrap evaluates sampling variability in the world that generated your data.
@@ -275,6 +332,7 @@ for(b in seq(null_bootstrap_cor) ){
 }
 hist(null_bootstrap_cor, breaks=100,
     border=NA, freq=FALSE,
+    xlim=range(c(null_bootstrap_cor, xy_cor)),
     xlab='Correlation',
     main=NA)
 title('Null Bootstrap Distribution', font.main=1)
@@ -283,6 +341,7 @@ title('Null Bootstrap Distribution', font.main=1)
 boot_ci <- quantile(null_bootstrap_cor, probs=c(0.025, 0.975))
 abline(v=boot_ci, col=rgb(0, 0, 0, .8), lwd=2)
 abline(v=xy_cor, col=rgb(1, 0, 0, .8), lwd=2)
+# The observed correlation of about 0.28 is far outside this distribution too.
 ```
 Drawing $\hat{x}$ with replacement also breaks the pairing, which gives the Null Bootstrap row of the table.
 Compare this distribution to the permutation distribution above.
@@ -302,7 +361,10 @@ The Falk codeviance is useful for cardinal data with outliers or heavy tails, su
 One extreme observation can move $\hat{c}_{XY}$ by a lot but $\tilde{c}_{XY}$ by very little.
 The median, $\hat{\text{IQR}}$, and $\hat{\text{MAD}}$ from Part 1 are robust for the same reason.^[See [Center/Spread based on Quantiles](01_03_SummaryStatistics.qmd#centerspread-based-on-quantiles). See also the *Theil-Sen Estimator* [@Theil1950; @Sen1968], which may be seen as a precursor.]
 Falk's median correlation $\tilde{r}_{XY}$ typically lies in $[-1,1]$ but, unlike the Pearson correlation, not always.
+Ties can be a problem, however.
+Every observation tied at a median has a product of $0$, so with enough ties the median product is also $0$.
 ```{r}
+## MAIN EXAMPLE
 codev <- function(xy) {
   # Compute medians for each column
   med_hat <- apply(xy, 2, median)
@@ -320,10 +382,14 @@ med_cor <- function(xy) {
   # Return the robust correlation measure
   return( codev(xy) / MadProd)
 }
+# xy_hat defined above
 xy_codev <- codev(xy_hat)
 xy_codev
 xy_med_cor <- med_cor(xy_hat)
 xy_med_cor
+# Both are exactly 0, although the Pearson correlation is about 0.28.
+# The median worker has 12 years of schooling, and so do 36% of all workers.
+# Their products are all 0, and the median product falls among them.
 ```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -350,26 +416,69 @@ med_cor(xy0_hat)
 You construct sampling distributions and conduct hypothesis tests for Falk's codeviance and median correlation in the same way you do for Pearson's Correlation statistic.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Shuffling a variable keeps its ties, so with enough ties every shuffled value is $0$.
+Add noise to break the ties, then test whether Falk's median correlation is statistically different from $0$.
 ```{r}
-# xy_hat and xy_med_cor defined above
-# Null Permutation Distribution of Falk's Median Correlation
+# xy_hat and med_cor defined above
+# Many workers tie at the median years of schooling.
+# So shuffling them gives a value of 0 every time.
+# Years of schooling are recorded as whole numbers.
+# Noise of up to half a year keeps each worker within their recorded year.
 n <- nrow(xy_hat)
+xy_noise_hat <- xy_hat
+xy_noise_hat[, 'x_hat'] <- xy_hat[, 'x_hat'] + runif(n, -.5, .5)
+xy_noise_med_cor <- med_cor(xy_noise_hat)
+xy_noise_med_cor
+
+# Null Permutation Distribution of Falk's Median Correlation
 null_permutation_med_cor <- rep(NA, 9999)
 for(b in seq(null_permutation_med_cor) ){
-    xy_perm <- xy_hat
-    xy_perm[, 'x_hat'] <- xy_hat[sample(n, replace=FALSE), 'x_hat'] ## Reshuffle X
+    xy_perm <- xy_noise_hat
+    xy_perm[, 'x_hat'] <- xy_noise_hat[sample(n, replace=FALSE), 'x_hat'] ## Reshuffle X
     xy_med_cor_b <- med_cor(xy_perm)
     null_permutation_med_cor[b] <- xy_med_cor_b
 }
 hist(null_permutation_med_cor, breaks=100,
     border=NA, freq=FALSE,
+    xlim=range(c(null_permutation_med_cor, xy_noise_med_cor)),
     xlab="Falk's Median Correlation",
     main=NA)
 title('Null Permutation Distribution', font.main=1)
 
 ## Test whether Falk's median correlation is statistically different from 0
 abline(v=quantile(null_permutation_med_cor, probs=c(0.025, 0.975)), col=rgb(0, 0, 0, .8), lwd=2)
-abline(v=xy_med_cor, col=rgb(1, 0, 0, .8), lwd=2)
+abline(v=xy_noise_med_cor, col=rgb(1, 0, 0, .8), lwd=2)
+# The observed value of about 0.13 is far outside the shuffled values.
+```
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Here are the same statistics and the same test for the sampled states from [Hypothesis Testing](#hypothesis-testing).
+```{r}
+# xy2_hat and n2 defined above
+xy2_codev <- codev(xy2_hat)
+xy2_codev
+xy2_med_cor <- med_cor(xy2_hat)
+xy2_med_cor
+
+# Null Permutation Distribution of Falk's Median Correlation
+null_permutation_med_cor2 <- rep(NA, 9999)
+for(b in seq(null_permutation_med_cor2) ){
+    xy2_perm <- xy2_hat
+    xy2_perm[, 'x_hat'] <- xy2_hat[sample(n2, replace=FALSE), 'x_hat'] ## Reshuffle X
+    xy2_med_cor_b <- med_cor(xy2_perm)
+    null_permutation_med_cor2[b] <- xy2_med_cor_b
+}
+hist(null_permutation_med_cor2, breaks=100,
+    border=NA, freq=FALSE,
+    xlab="Falk's Median Correlation",
+    main=NA)
+title('Null Permutation Distribution', font.main=1)
+
+## Test whether Falk's median correlation is statistically different from 0
+abline(v=quantile(null_permutation_med_cor2, probs=c(0.025, 0.975)), col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=xy2_med_cor, col=rgb(1, 0, 0, .8), lwd=2)
+# The observed value of about 0.11 is inside the middle 95% of shuffled values.
 ```
 :::
 
@@ -390,21 +499,24 @@ $$\text{sgn}(z) = \begin{cases} +1 & \text{if } z > 0\\ 0  & \text{if } z = 0 \\
 Kendall's $\hat{\text{KT}}$ is useful for any *monotone* relationship: the values do not have to fall on a straight line, only have consistent ordering.
 Because it only uses signs, it works for any ordinal data (rankings, ordered categories) where arithmetic averages are not meaningful.
 The bounds $[-1, 1]$ make it directly comparable to the Pearson correlation: a value closer to $+1$ suggests positive association in rankings, $-1$ negative, and $0$ no association in the ordering.
-For example, consider years of schooling and wage brackets for the $3294$ workers in `Wages1`.
-Both are ordered categories: $12$ years is more than $10$, and the top bracket pays more than the bottom one.
+For example, the table below cross-classifies two ordered variables, and $\hat{\text{KT}}$ summarizes it.
 ```{r}
+## MAIN EXAMPLE
 # Load the Data
 data(Wages1, package='Ecdat')
 # Group hourly wages into four ordered brackets
 wage_bracket <- cut(Wages1[, 'wage'], breaks=c(0, 4, 6, 8, Inf), ordered_result=TRUE)
 xy_ord_hat <- data.frame(x_hat=Wages1[, 'school'], y_hat=wage_bracket) # x_hat=years of schooling, y_hat=wage bracket
 table(xy_ord_hat)
+# Both are ordered categories: 12 years is more than 10.
+# The top bracket pays more than the bottom one.
 
 # Kendall's rank correlation uses only the order of the categories
 KT <- cor(xy_ord_hat[, 'x_hat'], as.integer(xy_ord_hat[, 'y_hat']), method='kendall')
 round(KT, 3)
+# The value is positive.
+# So workers with more schooling tend to be in higher wage brackets.
 ```
-The value is positive, which suggests that workers with more schooling tend to be in higher wage brackets.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Kendall's $\hat{\text{KT}}$ also applies to cardinal data, because it only uses the ordering of the values.
@@ -415,7 +527,7 @@ Converting each variable to ranks first does not change the statistic.
 xy_rank_hat <- xy_hat
 xy_rank_hat[, 'x_hat'] <- rank(xy_hat[, 'x_hat'])
 xy_rank_hat[, 'y_hat'] <- rank(xy_hat[, 'y_hat'])
-# plot(xy_rank_hat, pch=16, col=grey(0, .25))
+# plot(xy_rank_hat, pch=16, col=grey(0, .1))
 KT_rank <- cor(xy_rank_hat[, 'x_hat'], xy_rank_hat[, 'y_hat'], method = 'kendall')
 round(KT_rank, 3)
 # Same value using the raw data
@@ -527,14 +639,16 @@ The chi-squared piece measures how far observed counts are from what we would ex
 Dividing by $n \cdot \min(J - 1, K - 1)$ rescales it into a bounded score, so different tables are comparable.
 A value of $0$ suggests no association, and a value closer to $1$ suggests a strong association.
 
-For example, consider the census region of each sampled state and its murder arrest rate grouped into three bands.
-Regions have no natural order, so we treat both variables as unordered categories.
-The `state.region` vector lists states in the same alphabetical order as the rows of `USArrests`, so `state_id` picks out the same states from both.
+For example, the table below cross-classifies two categorical variables, and the function below computes their Cramer's V.
 ```{r}
-# Pair each sampled state's region with its murder band (low, middle, high)
-murder_band <- cut(USArrests[state_id, 'Murder'], 3, labels=c('low', 'middle', 'high'))
-xy_cat_hat <- data.frame(x_hat=state.region[state_id], y_hat=murder_band) # x_hat=census region, y_hat=murder band
+## MAIN EXAMPLE
+# Pair each worker's sex with a schooling group, as in Comparing Multiple Groups
+# The schooling groups have an order, but Cramer's V ignores it.
+# So we treat both variables as unordered.
+school_g <- cut(Wages1[, 'school'], breaks=c(0, 11, 12, 16), labels=c('<12', '12', '>12'))
+xy_cat_hat <- data.frame(x_hat=Wages1[, 'sex'], y_hat=school_g) # x_hat=sex, y_hat=schooling group
 table(xy_cat_hat)
+# Men are more likely than women to have fewer than 12 years of schooling.
 
 CV <- function(xy){
     # Create a contingency table from the categorical variables
@@ -550,25 +664,43 @@ CV <- function(xy){
     return(V)
 }
 CV(xy_cat_hat)
+# Cramer's V of about 0.10 suggests a weak association.
 
 # DescTools::CramerV( table(xy_cat_hat) )
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Here is the same calculation for $4526$ applications to six graduate departments at Berkeley in 1973, from the built-in `UCBAdmissions` table.
-Department and admission outcome are both unordered.
+Here is the same calculation for a second table, `UCBAdmissions`.
 ```{r}
 # CV defined above
+# Built-in: 4526 applications to six graduate departments at Berkeley in 1973
 # One row per (Admit, Gender, Dept) cell, with the number of applicants in Freq
 ucb_cells <- as.data.frame(UCBAdmissions)
 # Repeat each row Freq times, so there is one row per applicant
 ucb_hat <- ucb_cells[rep(seq_len(nrow(ucb_cells)), ucb_cells[, 'Freq']), ]
+# Department and admission outcome are both unordered.
 xy_cat2_hat <- data.frame(x_hat=ucb_hat[, 'Dept'], y_hat=ucb_hat[, 'Admit']) # x_hat=department, y_hat=admission outcome
 table(xy_cat2_hat)
+# Department A admits about 64% of its applicants and department F about 6%.
 CV(xy_cat2_hat)
+# Cramer's V is about 0.41.
+# This reflects a strong association between department and admission.
 ```
-Department A admits about $64\%$ of its applicants and department F about $6\%$.
-Cramer's V of about $0.41$ reflects this strong association between department and admission.
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the calculation with the census region of each sampled state from [Hypothesis Testing](#hypothesis-testing) and its murder arrest rate grouped into three bands.
+```{r}
+# state_id and CV defined above
+# Regions have no natural order, so we treat both variables as unordered.
+# state.region lists states in the same alphabetical order as USArrests.
+# So state_id picks out the same states from both.
+# Pair each sampled state's region with its murder band (low, middle, high)
+murder_band <- cut(USArrests[state_id, 'Murder'], 3, labels=c('low', 'middle', 'high'))
+xy_cat3_hat <- data.frame(x_hat=state.region[state_id], y_hat=murder_band) # x_hat=census region, y_hat=murder band
+table(xy_cat3_hat)
+CV(xy_cat3_hat)
+```
 :::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
@@ -576,10 +708,11 @@ You can also apply Cramer's V to cardinal data after cutting each variable into 
 This throws away the ordering of the bins, so Kendall's $\hat{\text{KT}}$ or Pearson's $\hat{r}_{XY}$ usually make better use of the data.
 ```{r}
 # xy_hat and CV defined above
-# Cut each variable into bins: UrbanPop into 4, Murder into 3
+# Cut each variable into bins: years of schooling into 3, hourly wages into 4
+# Wages have a long right tail, so use the brackets above, not equal widths
 xy_bin_hat <- xy_hat
-xy_bin_hat[, 'x_hat'] <- cut(xy_hat[, 'x_hat'], 4)
-xy_bin_hat[, 'y_hat'] <- cut(xy_hat[, 'y_hat'], 3)
+xy_bin_hat[, 'x_hat'] <- cut(xy_hat[, 'x_hat'], 3)
+xy_bin_hat[, 'y_hat'] <- cut(xy_hat[, 'y_hat'], breaks=c(0, 4, 6, 8, Inf))
 table(xy_bin_hat)
 CV(xy_bin_hat)
 ```
@@ -642,6 +775,7 @@ Examples of the first problem include *nonlinear effects* and *heterogeneous eff
 For example, wages tend to rise with age early in a career and then flatten or fall, and a minimum wage increase can raise pay for some workers while others lose their jobs.
 
 ```{r}
+## MAIN EXAMPLE
 n <- 10000
 
 # X causes Y via Y = X^2 + noise
@@ -683,6 +817,7 @@ We can induce a mechanical relationship between the first two variables by divid
 Per-capita statistics are a common real case, such as crimes per resident and police officers per resident across cities, which share population as the denominator.
 
 ```{r}
+## MAIN EXAMPLE
 n <- 20000
 
 # Independent components
@@ -709,7 +844,7 @@ cor(x_sim, y_sim)
 
 Consider an admissions rule into university: applicants are accepted if they have either high test scores or strong extracurriculars.
 Even if there is no general relationship between test scores and extracurriculars, you will see one amongst university students.
-Real datasets are often selected in a similar way; for example, `Wages1` only includes people with observed wages, so its relationships describe workers rather than everyone who could have worked.
+Real datasets are often selected in a similar way, so their relationships describe the selected group rather than everyone.
 
 ```{r}
 
@@ -741,22 +876,44 @@ cor(test_score[admitted], extracurriculars[admitted])
 
 
 Real data often mix several of these issues.
-The `USArrests` data record arrests per $100,000$ residents in each U.S. state in 1973.
-States with more assault arrests also tend to have more murder arrests.
+Two variables can also move together because both respond to common factors.
+The scatterplot below shows one correlation that need not be causal.
 
 ```{r}
+# xy_hat defined above: years of schooling and hourly wages of 3294 workers
+plot(y_hat ~ x_hat, xy_hat, pch=16, col=grey(0, .1),
+    main=NA, xlab='Years of schooling', ylab='Hourly wage (1980 dollars)')
+cor_wages <- round(cor(xy_hat[, 'x_hat'], xy_hat[, 'y_hat']), 2)
+title(paste0('Cor: ', cor_wages), font.main=1)
+
+# Correlation across workers
+cor(xy_hat[, 'x_hat'], xy_hat[, 'y_hat'])
+# The correlation is about 0.28.
+# This alone does not show that schooling raises wages.
+# Both likely respond to common factors, such as ability or family background.
+# Wages1 also only includes people with observed wages.
+# So its relationships describe workers, not everyone who could have worked.
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat this for murder and assault arrests across US states in `USArrests`.
+```{r}
+# Arrests per 100,000 residents in each US state in 1973
 plot(Murder ~ Assault, USArrests, pch=16, col=grey(0, .5),
     main=NA, xlab='Assault Arrests', ylab='Murder Arrests')
 cor_arrests <- round(cor(USArrests$Murder, USArrests$Assault), 2)
 title(paste0('Cor: ', cor_arrests), font.main=1)
+# States with more assault arrests also tend to have more murder arrests.
 
 # Correlation across states
 cor(USArrests$Murder, USArrests$Assault)
+# The correlation is about 0.8.
+# This does not mean that assaults cause murders.
+# Both variables are divided by the same state population.
+# Both also likely respond to common factors.
+# Examples are policing practices or local economic conditions.
 ```
-
-The correlation is about $0.8$, but this does not mean that assaults cause murders.
-Both variables are divided by the same state population.
-Both also likely respond to common factors, such as policing practices or local economic conditions.
+:::
 
 Note that the examples above are not the only examples of "correlation does not mean causation" [@Freedman1991].
 Many real datasets have temporal and spatial interdependence that create additional issues.

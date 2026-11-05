@@ -2,29 +2,39 @@
 ***
 
 [Comparing Two Groups](02_12_TwoGroups.qmd) split a cardinal outcome by a two-level factor and tested whether the two groups differed.
-This chapter extends that idea to $G$ groups.
-We first describe several groups at once and compare their medians with bootstrap intervals.
-We then test whether the groups differ in three ways, using means, ranks, and category proportions.
+We now extend that idea to $G$ groups.
+
+This chapter asks three questions.
+
+* How does $\hat{y}$ differ across $G$ groups?
+    * *Group ECDFs and conditional means*: these use the [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function) and the [conditional mean](02_12_TwoGroups.qmd#discrete-data) from earlier chapters, with one for each group.
+* How sure are we?
+    * *Notched boxplot*: this is new, and it draws a bootstrap confidence interval for each group's median.
+      It uses the same recipe as the [difference between two medians](02_12_TwoGroups.qmd#quantile-differences).
+* Are the differences larger than we would expect by chance?
+    * *ANOVA $F$-statistic and permutation test*: the statistic is new, and it compares variation between groups to variation within groups.
+      The test uses the same recipe as [two groups](02_12_TwoGroups.qmd#permutation-tests).
+    * *Kruskal-Wallis test*: this is a new test that compares average ranks, so it only requires ordinal data.
+    * *Categorical ANOVA*: this is a new statistic for a factor outcome, which measures variation with one minus the [Herfindahl index](01_03_SummaryStatistics.qmd#unordered-factors).
 
 ## Describing Groups
 
-The [census regions](01_03_SummaryStatistics.qmd#unordered-factors) are an unordered factor with $G=4$ levels.
-The built-in `state.region` vector lists them in the same state order as the rows of `USArrests`, so it can be paired directly with the murder rates.
-`USArrests` covers all $50$ states, so it is the whole population of states rather than a sample from it.
-To make the bootstrap intervals below meaningful, pretend we observed only a random sample of $35$ states, as we did with workers in [Sampling](01_05_Sampling.qmd#population-theory).
+A cardinal variable can be grouped into a factor with $G$ levels.
+We pair these groups with a cardinal outcome.
 
 ```{r}
-# Draw one random sample of 35 of the 50 states, and use only it from here on
-set.seed(111)
-state_id <- sample(nrow(USArrests), 35)
-
-# Outcome: murder arrests per 100K, one value per sampled state
-y_hat <- USArrests[state_id, 'Murder']
-# Group: the four-level region factor, for the same sampled states.
+## MAIN EXAMPLE
+# Load the data: 3294 US workers
+data(Wages1, package='Ecdat')
+# Outcome: hourly wage in 1980 dollars, one value per worker
+y_hat <- Wages1[, 'wage']
+# Group: years of schooling, cut into three levels (G=3).
 # Its levels are the values the categorical variable can take.
-region <- state.region[state_id]
-levels(region)
-table(region)
+# Here they are fewer than 12 years, exactly 12 years, and more than 12 years.
+school_g <- cut(Wages1[, 'school'], breaks=c(0, 11, 12, 16),
+    labels=c('<12', '12', '>12'))
+levels(school_g)
+table(school_g)
 ```
 
 #### **Group Summaries** {-}
@@ -32,11 +42,73 @@ table(region)
 A factor with $G$ levels splits a cardinal variable into $G$ conditional distributions, one per group.
 The group summaries from [Bivariate Distributions](02_11_BivariateDistributions.qmd#conditional-distributions) apply directly.
 The [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function) shows every observation, and drawing one per group on the same axes compares the whole distributions at once: a curve further to the right has higher values at every quantile.
-The regions are ordered by median murder rate from lowest to highest, so South is last in the legend, and each line's thickness scales with its group size.
+Each line's thickness scales with its group size.
+
+```{r}
+## MAIN EXAMPLE
+# One ECDF per schooling group, on the same axes
+cols <- c(rgb(.8, 0, 0, .5), rgb(0, .8, 0, .5), rgb(0, 0, .8, .5))
+n_g <- table(school_g)
+lwd_g <- 1.5 + 2.5 * (n_g - min(n_g)) / (max(n_g) - min(n_g))
+
+# The axis stops just past 20 dollars, so the 16 largest wages are not drawn
+plot(NULL, xlim=c(0, 20), ylim=c(0, 1),
+    xlab='Hourly wage (1980 dollars)', ylab='Proportion of workers', main=NA)
+for (g in seq_along(levels(school_g))) {
+    F_g_hat <- ecdf(y_hat[school_g == levels(school_g)[g]])
+    plot(F_g_hat, add=TRUE, col=cols[g], lwd=lwd_g[g],
+        verticals=TRUE, do.points=FALSE, col.01line=NA)
+}
+legend('bottomright', bty='n',
+    legend=paste0(levels(school_g), ' years (n=', n_g, ')'), col=cols, lty=1, lwd=lwd_g)
+# The curve for more than 12 years sits to the right of the other two.
+# That holds over the whole range shown.
+# So its higher wages are not driven by a few workers.
+```
+
+A table of group sizes and centers puts numbers on the figure.
+The *conditional mean* $\hat{m}_{Y}(g)$ is the average of $\hat{y}_{i}$ among the $n_{g}$ observations in group $g$, and `aggregate()` computes it for every group at once.
+
+```{r}
+## MAIN EXAMPLE
+# Group size, mean, and median of the hourly wage by schooling group
+summary_fun <- function(y_hat) {
+    out <- c(n=length(y_hat), mean=mean(y_hat), median=median(y_hat))
+    return(out)
+}
+aggregate(y_hat ~ school_g, FUN=summary_fun)
+# Workers with more than 12 years of schooling have the highest center.
+# Those with fewer than 12 years have the lowest.
+```
+
+Are the differences between group centers larger than we would expect by chance?
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Here is another example, with murder arrest rates across the four [census regions](01_03_SummaryStatistics.qmd#unordered-factors), an unordered factor with $G=4$ levels.
+To make the bootstrap intervals in the later callouts meaningful, pretend we observed only a random sample of $35$ states, as we did with workers in [Sampling](01_05_Sampling.qmd#population-theory).
+
+```{r}
+# USArrests covers all 50 states, so it is the whole population of states.
+# Draw one random sample of 35 of the 50 states, and use only it from here on
+set.seed(111)
+state_id <- sample(nrow(USArrests), 35)
+
+# Outcome: murder arrests per 100K, one value per sampled state
+murder_hat <- USArrests[state_id, 'Murder']
+# Group: the four-level region factor, for the same sampled states.
+# Its levels are the values the categorical variable can take.
+# The built-in state.region lists them in the same state order as USArrests.
+# So it can be paired directly with the murder rates.
+region <- state.region[state_id]
+levels(region)
+table(region)
+```
+
+The regions are ordered by median murder rate from lowest to highest, and each line's thickness scales with its group size.
 
 ```{r, fig.height=5.2}
 # Order regions by their median murder rate, lowest to highest
-region_order <- names(sort(tapply(y_hat, region, median)))
+region_order <- names(sort(tapply(murder_hat, region, median)))
 region <- factor(region, levels=region_order)
 
 # One ECDF per region, on the same axes
@@ -45,33 +117,28 @@ n_g <- table(region)
 lwd_g <- 1.5 + 2.5 * (n_g - min(n_g)) / (max(n_g) - min(n_g))
 
 par(mar=c(4, 4, 4.5, 1))
-plot(NULL, xlim=range(y_hat), ylim=c(0, 1),
+plot(NULL, xlim=range(murder_hat), ylim=c(0, 1),
     xlab='Murder arrests (per 100,000)', ylab='Proportion of states', main=NA)
 for (g in seq_along(levels(region))) {
-    F_g_hat <- ecdf(y_hat[region == levels(region)[g]])
+    F_g_hat <- ecdf(murder_hat[region == levels(region)[g]])
     plot(F_g_hat, add=TRUE, col=line_cols[g], lwd=lwd_g[g],
         verticals=TRUE, do.points=FALSE, col.01line=NA)
 }
 legend('topleft', inset=c(0, -.2), xpd=TRUE, ncol=2, bty='n',
     legend=paste0(levels(region), ' (n=', n_g, ')'), col=line_cols, lty=1, lwd=lwd_g)
+# The South has the highest median, so it is last in the legend.
+# Its curve sits to the right of the others over its whole range.
+# So its higher values are not driven by a few states.
 ```
 
-The South's curve sits to the right of the others over its whole range, so its higher values are not driven by a few states.
-
 A table of group sizes and centers puts numbers on the figure.
-The *conditional mean* $\hat{m}_{Y}(g)$ is the average of $\hat{y}_{i}$ among the $n_{g}$ observations in group $g$, and `aggregate()` computes it for every group at once.
 
 ```{r}
 # Group size, mean, and median of the murder rate by region
-summary_fun <- function(y_hat) {
-    out <- c(n=length(y_hat), mean=mean(y_hat), median=median(y_hat))
-    return(out)
-}
-aggregate(y_hat ~ region, FUN=summary_fun)
+aggregate(murder_hat ~ region, FUN=summary_fun)
+# The South has the highest center and the Northeast the lowest.
 ```
-
-The South has the highest center and the Northeast the lowest.
-Are these differences larger than we would expect by chance?
+:::
 
 ## Equal Medians
 
@@ -91,6 +158,52 @@ Unlike R's built-in notches, the bootstrap interval needs no normal-theory formu
 R's built-in `notch=TRUE` draws $\pm 1.58 \hat{\text{IQR}}/\sqrt{n_{g}}$ around each median, a rule of thumb from normal theory (see `?boxplot.stats`).]
 
 
+```{r}
+## MAIN EXAMPLE
+# Bootstrap the median within each schooling group, keeping each group's size
+n_boot <- 999
+boot_medians <- matrix(NA, n_boot, nlevels(school_g))
+colnames(boot_medians) <- levels(school_g)
+for (b in seq(n_boot)) {
+    for (g in levels(school_g)) {
+        y_boot <- sample(y_hat[school_g == g], replace=TRUE)
+        boot_medians[b, g] <- median(y_boot)
+    }
+}
+
+# 95% bootstrap percentile intervals: one column per schooling group
+med_ci <- apply(boot_medians, 2, quantile, probs=c(.025, .975))
+round(med_ci, 2)
+
+# Boxplot statistics, with the bootstrap intervals as the notches
+bx <- boxplot(y_hat ~ school_g, plot=FALSE)
+bx[['conf']] <- med_ci
+
+# One notched box per schooling group, box width scaled to group size
+# The axis stops just past 20 dollars, so the 16 largest wages are not drawn
+bxp(bx, notch=TRUE, varwidth=TRUE,
+    boxfill=cols, ylim=c(0, 20),
+    whisklty=0, staplelty=0, outpch=NA,
+    ylab='Hourly wage (1980 dollars)', xlab='Years of schooling', main=NA)
+title('Wages by years of schooling', font.main=1)
+# Raw Observations, in place of whiskers and outliers
+stripchart(y_hat ~ school_g,
+    pch='-', col=grey(0, .2), cex=1,
+    vert=TRUE, add=TRUE)
+# With 753 to 1353 workers per group, every interval is narrow.
+# Each one stays well inside its box.
+# No two notches overlap.
+# That is strong evidence that all three medians differ.
+```
+
+Each box shows the median and the two quartiles, and each dash is one observation.
+`varwidth=TRUE` also scales each box's width to $\sqrt{n_{g}}$, so a group with more observations draws a wider box.
+
+Researchers use the same displays [@Tukey1977] to compare treatments in experiments.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Here are the notched boxplots for the sampled states from [Describing Groups](#describing-groups).
+
 ```{r, warning=FALSE}
 # Bootstrap the median within each region, keeping each region's size
 n_boot <- 999
@@ -98,7 +211,7 @@ boot_medians <- matrix(NA, n_boot, nlevels(region))
 colnames(boot_medians) <- levels(region)
 for (b in seq(n_boot)) {
     for (g in levels(region)) {
-        y_boot <- sample(y_hat[region == g], replace=TRUE)
+        y_boot <- sample(murder_hat[region == g], replace=TRUE)
         boot_medians[b, g] <- median(y_boot)
     }
 }
@@ -108,7 +221,7 @@ med_ci <- apply(boot_medians, 2, quantile, probs=c(.025, .975))
 round(med_ci, 2)
 
 # Boxplot statistics, with the bootstrap intervals as the notches
-bx <- boxplot(y_hat ~ region, plot=FALSE)
+bx <- boxplot(murder_hat ~ region, plot=FALSE)
 bx[['conf']] <- med_ci
 
 # One notched box per region, box width scaled to group size
@@ -118,25 +231,25 @@ bxp(bx, notch=TRUE, varwidth=TRUE,
     ylab='Murder arrests (per 100,000)', xlab='Region', main=NA)
 title('Murder rates by region', font.main=1)
 # Raw Observations, in place of whiskers and outliers
-stripchart(y_hat ~ region,
+stripchart(murder_hat ~ region,
     pch='-', col=grey(0, .5), cex=2,
     vert=TRUE, add=TRUE)
+# Each dash is one state's murder rate.
+# There are only 5 to 14 sampled states per region.
+# So three of the four intervals are wider than the box itself.
+# Only the South, with the most states, has an interval inside its box.
+# The South's notch lies above the Northeast's, so the South's median is higher.
 ```
 
-Each box shows the median and the two quartiles, and each dash is one state's murder rate.
-`varwidth=TRUE` also scales each box's width to $\sqrt{n_{g}}$, so a region with more states draws a wider box.
-With only $5$ to $14$ sampled states per region, three of the four intervals are wider than the box itself.
 When an interval reaches past a quartile, the notch folds back outside the box.
-Only the South, with the most states, has an interval that stays inside its box.
-The South's notch lies above the Northeast's, so the South's median is higher.
-Do any other pairs of regions have notches that do not overlap?
-
-Researchers use the same displays [@Tukey1977] to compare treatments in experiments.
+Besides the South and the Northeast, do any other pairs of regions have notches that do not overlap?
+:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Here is another example of monthly earnings of $935$ US working men in 1980, by years of education.
+Here is another example, with monthly earnings by years of education.
 
 ```{r}
+# Monthly earnings of 935 US working men in 1980
 data(wage2, package='wooldridge')
 wage_hat <- wage2[, 'wage']
 educ <- wage2[, 'educ']
@@ -192,7 +305,7 @@ stripchart(wage_hat ~ educ_g, pch='-', col=grey(0, .2), cex=1, vert=TRUE, add=TR
 
 ## Equal Means (ANOVA)
 
-In [Comparing Groups](02_12_TwoGroups.qmd), we tested whether two groups had the same mean.
+In [Comparing Two Groups](02_12_TwoGroups.qmd), we tested whether two groups had the same mean.
 We now extend this to $G$ groups.
 The *Analysis of Variance* (ANOVA) approach asks: are the observed differences in group means larger than we would expect from random variation alone?
 
@@ -219,10 +332,10 @@ If they do not, $\hat{\text{BSS}}$ should be small relative to $\hat{\text{WSS}}
 The equality holds exactly because the cross-term $\sum_{g,i}(\hat{y}_{ig}-\hat{m}_{Y}(g))(\hat{m}_{Y}(g)-\hat{m}_{Y})$ vanishes, since the within-group deviations sum to zero around their own group mean.
 
 In R, `aov()` fits the ANOVA model and `summary()` returns the standard ANOVA table.
-The ANOVA table reports $\hat{\text{BSS}}$ ("Sum Sq" for `region`) and $\hat{\text{WSS}}$ ("Sum Sq" for `Residuals`).
+The ANOVA table reports $\hat{\text{BSS}}$ ("Sum Sq" for the group factor) and $\hat{\text{WSS}}$ ("Sum Sq" for `Residuals`).
 ```{r}
 # Fit ANOVA
-reg_aov <- aov(y_hat ~ region)
+reg_aov <- aov(y_hat ~ school_g)
 summary(reg_aov)
 ```
 
@@ -281,6 +394,7 @@ The ANOVA F-statistic is useful as the global "do any means differ?" test: one n
 A large $\hat{F}$ means the group means are more spread out than individual-level noise would predict.
 
 ```{r}
+## MAIN EXAMPLE
 F_fun <- function(y_hat,g){
     m_y_hat <- mean(y_hat)
     m_g_hat <- aggregate(y_hat, list(g), mean)$x
@@ -294,20 +408,21 @@ F_fun <- function(y_hat,g){
     F_obs <- (BSS/(G-1)) / (WSS/(n-G))
     return(F_obs)
 }
-F_obs <- F_fun(y_hat=y_hat, g=region)
+F_obs <- F_fun(y_hat=y_hat, g=school_g)
 F_obs
 ```
 
 
-To compute a $p$-value, we use a [permutation test](02_12_TwoGroups.qmd#permutation-tests): shuffle the region labels, which keeps each region's number of states fixed, and recompute $\hat{F}$ each time.
+To compute a $p$-value, we use a [permutation test](02_12_TwoGroups.qmd#permutation-tests): shuffle the group labels, which keeps each group's number of observations fixed, and recompute $\hat{F}$ each time.
 Only large values of $\hat{F}$ count against the null.
 As with KS and CVM in [Comparing Two Groups](02_12_TwoGroups.qmd#permuting-distributions), we reject at the $5\%$ level when $\hat{F}$ exceeds the $95$th percentile of the permutation distribution.
 
 ```{r}
-# Null distribution: shuffle region labels to break the Y--group pairing
+## MAIN EXAMPLE
+# Null distribution: shuffle schooling labels to break the Y--group pairing
 F_perm <- vector(length=999)
 for( b in seq_along(F_perm)){
-    g_perm <- sample(region, replace=FALSE)
+    g_perm <- sample(school_g, replace=FALSE)
     F_perm[b] <- F_fun(y_hat=y_hat, g=g_perm)
 }
 
@@ -327,10 +442,12 @@ abline(v = F_crit, col = rgb(0, 0, 0, .8), lwd = 2)
 abline(v = F_obs, col = rgb(1, 0, 0, .8), lwd = 2)
 legend('top', legend = c('Observed F', '95th percentile'),
     col = c(rgb(1, 0, 0, .8), rgb(0, 0, 0, .8)), lwd = 2, bty='n')
+# No shuffle comes close to the observed F of about 128.
+# So the permutation p-value is zero.
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Pairing the observed murder rates `y_hat` with a *shuffled* `region` vector breaks the link between outcome and group: under the null, group labels are exchangeable, so this approximates the distribution of $\hat{F}$ when no group effect exists.
+Pairing the observed outcomes `y_hat` with a *shuffled* vector of group labels breaks the link between outcome and group: under the null, group labels are exchangeable, so this approximates the distribution of $\hat{F}$ when no group effect exists.
 :::
 
 Under the null and additional parametric assumptions, $\hat{F}$ follows an [$F_{G-1,\;n-G}$ distribution](01_09_AdvancedProbability.qmd#f).
@@ -338,10 +455,47 @@ The parametric $F_{G-1,\;n-G}$ null distribution requires three assumptions: ind
 R reports $p$-values from this theoretical distribution by default.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-The figure below draws the theoretical $F_{G-1,\;n-G}$ density over the permutation distribution from above.
+Here is the same test for the sampled states from [Describing Groups](#describing-groups).
+
+```{r}
+# Fit ANOVA
+summary(aov(murder_hat ~ region))
+
+# F-statistic
+F_obs <- F_fun(y_hat=murder_hat, g=region)
+F_obs
+
+# Null distribution: shuffle region labels to break the Y--group pairing
+F_perm <- vector(length=999)
+for( b in seq_along(F_perm)){
+    g_perm <- sample(region, replace=FALSE)
+    F_perm[b] <- F_fun(y_hat=murder_hat, g=g_perm)
+}
+
+# Permutation p-value
+p_perm <- mean(F_perm >= F_obs)
+p_perm
+
+# One-sided critical value: 95th percentile of the permutation distribution
+F_crit <- quantile(F_perm, probs=.95)
+
+hist(F_perm, breaks = 40,
+    border = NA,
+    freq = FALSE, main = NA, xlab = 'Null Permutation F-statistic',
+    xlim = range(c(0, F_perm, F_obs)))
+title('Null Permutation F-test', font.main = 1)
+abline(v = F_crit, col = rgb(0, 0, 0, .8), lwd = 2)
+abline(v = F_obs, col = rgb(1, 0, 0, .8), lwd = 2)
+legend('top', legend = c('Observed F', '95th percentile'),
+    col = c(rgb(1, 0, 0, .8), rgb(0, 0, 0, .8)), lwd = 2, bty='n')
+```
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+The figure below draws the theoretical $F_{G-1,\;n-G}$ density over the permutation distribution for the sampled states, from the callout above.
 ```{r}
 # Degrees of freedom for the regional data
-n <- length(y_hat)
+n <- length(murder_hat)
 G <- nlevels(region)
 p_param <- 1 - pf(F_obs, G-1, n-G)
 
@@ -432,19 +586,34 @@ Interpretation template:
 * Report both statistical and practical importance (distribution plots + effect size summaries), not only p-values.
 
 ```{r}
-kw <- kruskal.test(y_hat ~ region)
+## MAIN EXAMPLE
+kw <- kruskal.test(y_hat ~ school_g)
 kw
 ```
 
-The test above does not tell us *which* regions differ.
+The test above does not tell us *which* groups differ.
 To answer *which*, use a post-hoc pairwise test together with a multiple-comparisons correction.
-Here, `pairwise.wilcox.test()` runs a Mann-Whitney test on each pair of regions, and the Holm correction [@Holm1979] adjusts the $p$-values for the number of pairs tested.
+Here, `pairwise.wilcox.test()` runs a Mann-Whitney test on each pair of groups, and the Holm correction [@Holm1979] adjusts the $p$-values for the number of pairs tested.
 
 ```{r}
-pairwise.wilcox.test(y_hat, region, p.adjust.method='holm')
+pairwise.wilcox.test(y_hat, school_g, p.adjust.method='holm')
+# All three adjusted p-values are tiny, so every pair of groups differs.
 ```
 
-Looking back at the boxplot in [Equal Medians](#equal-medians), which region stands out?
+Looking back at the boxplot in [Equal Medians](#equal-medians), which two groups are closest?
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Here are the same tests for the sampled states from [Describing Groups](#describing-groups).
+
+```{r}
+kw <- kruskal.test(murder_hat ~ region)
+kw
+
+pairwise.wilcox.test(murder_hat, region, p.adjust.method='holm')
+```
+
+Looking back at the boxplot in the [Equal Medians](#equal-medians) callout, which region stands out?
+:::
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Worked example: $G=3$ groups with values $A=\{1,2,3\}$, $B=\{4,5,6\}$, $C=\{7,8,9\}$.
@@ -479,7 +648,7 @@ Otherwise, it tests whether a draw from one group is as likely to exceed a draw 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 **Same shape.** Suppose hourly wages in two labor markets have the same right-skewed shape, but every wage in the second market is $2$ dollars higher.
 The population medians are $15$ and $17$.
-A worker drawn from the second market earns more than a worker drawn from the first about $74\%$ of the time.
+Consider the probability that a worker drawn from the second market earns more than a worker drawn from the first.
 Its sample analog is the share of pairs that the second group wins, $\hat{U}_{2}/(n_{1}n_{2})$ in the notation above.
 With `conf.int=TRUE`, `wilcox.test` also reports a shift estimate, the median of all differences $\hat{y}_{i}-\hat{y}_{j}$ between a worker $i$ in the second group and a worker $j$ in the first.
 Because the shapes match, the shift estimate and the difference in sample medians both estimate the $2$ dollar gap.
@@ -495,6 +664,7 @@ median(y2_sim) - median(y1_sim)
 
 # Share of pairs that market 2 wins
 mean(outer(y2_sim, y1_sim, '>'))
+# A market 2 worker earns more than a market 1 worker about 74% of the time.
 
 # Mann-Whitney test and its shift estimate
 mw <- wilcox.test(y2_sim, y1_sim, conf.int=TRUE)
@@ -518,8 +688,8 @@ legend('bottomright', legend=c('Market 1', 'Market 2'),
 **Different shapes.** Now suppose wages in the first market are symmetric around $15$, while the second market keeps the right-skewed shape from above, also with median $15$.
 The medians are equal, but the second market has no wages below about $12.92$, while the first market has a long left tail.
 When both workers earn less than $15$, the worker from the second market earns more about $70\%$ of the time.
-Overall, the second market wins about $56\%$ of pairs.
-So the Mann-Whitney test rejects, and its shift estimate stays well above zero (about $0.55$ in the population), even though the medians are equal.
+Overall, the second market wins more than half of all pairs.
+So the Mann-Whitney test can reject, with a shift estimate above zero, even though the medians are equal.
 ```{r}
 # Same population median of 15, different shapes
 y1_sim <- 15 + 3 * rnorm(n_g)             # symmetric
@@ -530,10 +700,13 @@ median(y2_sim) - median(y1_sim)
 
 # Yet market 2 wins more than half of the pairs
 mean(outer(y2_sim, y1_sim, '>'))
+# The sample share is about 54%, and the population share is about 56%.
 
 # So the Mann-Whitney test rejects
 mw <- wilcox.test(y2_sim, y1_sim, conf.int=TRUE)
 c(shift=unname(mw[['estimate']]), p_value=mw[['p.value']])
+# The shift estimate is about 0.42, and the population shift is about 0.55.
+# Both are well above zero, even though the medians are equal.
 
 # The ECDFs cross at the median but differ below it
 F1_hat <- ecdf(y1_sim)
@@ -570,30 +743,33 @@ Adding each piece up across the categories and halving it gives the three pieces
 With a binary outcome, the two indicators have the same sums of squares, so the categorical ANOVA is exactly the ANOVA of a single 0/1 variable.
 The share $\hat{\text{BSS}}/\hat{\text{TSS}}$ reports the fraction of the variation in $\hat{y}$ that lies between groups.^[See Light, R. J., and B. H. Margolin (1971), "An Analysis of Variance for Categorical Data," *Journal of the American Statistical Association*, 66(335), 534--544, <https://doi.org/10.1080/01621459.1971.10482297>.]
 
-For example, the urban population bands from [Ordered Factors](01_03_SummaryStatistics.qmd#ordered-factors) sort each region's states into mostly rural, mixed, and mostly urban.
-The bands are ordered, but the categorical ANOVA ignores that order, so it treats them as it would any unordered factor.
+For example, cut a cardinal outcome into brackets and sort each group's observations into them.
+The brackets are an [ordered factor](01_03_SummaryStatistics.qmd#ordered-factors), but the categorical ANOVA ignores that order, so it treats them as it would any unordered factor.
 
 ```{r, fig.height=5.2}
-# Outcome: urban population in three bands, an ordered factor, for the sampled states
-urban_band <- cut(USArrests[state_id, 'UrbanPop'], breaks=c(0, 50, 75, 100),
-    labels=c('mostly rural', 'mixed', 'mostly urban'), ordered_result=TRUE)
-tab <- table(region, urban_band)
+## MAIN EXAMPLE
+# Outcome: hourly wage in four brackets, an ordered factor
+# The brackets are up to 4 dollars an hour, 4 to 6, 6 to 8, and above 8.
+wage_bracket <- cut(y_hat, breaks=c(0, 4, 6, 8, Inf), ordered_result=TRUE)
+tab <- table(school_g, wage_bracket)
 tab
 
-# Proportions within each region: each bar sums to 1
-p_band_region <- prop.table(tab, 1)
-cols <- c(rgb(.8, 0, 0, .5), rgb(0, .8, 0, .5), rgb(0, 0, .8, .5))
+# Proportions within each schooling group: each bar sums to 1
+p_bracket_school <- prop.table(tab, 1)
+cols <- hcl.colors(4, alpha=.45)
 par(mar=c(4, 4, 3.5, 1))
-barplot(t(p_band_region), col=cols, border=NA,
-    xlab='Region', ylab='Proportion of states', main=NA)
-legend('top', inset=c(0, -.15), xpd=TRUE, ncol=3, bty='n',
-    fill=cols, border=NA, legend=levels(urban_band))
+barplot(t(p_bracket_school), col=cols, border=NA,
+    xlab='Years of schooling', ylab='Proportion of workers', main=NA)
+legend('top', inset=c(0, -.15), xpd=TRUE, ncol=4, bty='n',
+    fill=cols, border=NA, legend=levels(wage_bracket))
+# Workers with more schooling are less often in the lowest bracket.
+# They are more often in the highest.
 ```
 
-The South and North Central lean rural, while the Northeast and West lean urban.
 The function below computes the three pieces and the between-group share.
 
 ```{r}
+## MAIN EXAMPLE
 # Categorical ANOVA: variation is measured by one minus the Herfindahl index
 cat_anova <- function(y_hat, g) {
     # Total variation, from the pooled proportions
@@ -610,10 +786,9 @@ cat_anova <- function(y_hat, g) {
     BSS <- TSS - WSS
     return(c(BSS=BSS, WSS=WSS, TSS=TSS, share=BSS / TSS))
 }
-cat_anova(urban_band, region)
+cat_anova(wage_bracket, school_g)
+# About 2.5% of the variation in wage brackets lies between schooling groups.
 ```
-
-About $22\%$ of the variation in urban bands lies between regions.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Suppose we record how $n=8$ workers commute, $n_{g}=4$ from each of two neighborhoods.
@@ -633,7 +808,81 @@ cat_anova(y0_hat, g0)
 ```
 :::
 
-As with the [ANOVA $F$-statistic](#the-f-statistic), we get a $p$-value by shuffling the region labels and recomputing the share each time.
+As with the [ANOVA $F$-statistic](#the-f-statistic), we get a $p$-value by shuffling the group labels and recomputing the share each time.
+
+```{r}
+# Observed between-group share
+share_obs <- cat_anova(wage_bracket, school_g)[['share']]
+
+# Null distribution: shuffle schooling labels to break the outcome--group pairing
+share_perm <- rep(NA, 999)
+for (b in seq_along(share_perm)) {
+    g_perm <- sample(school_g, replace=FALSE)
+    share_perm[b] <- cat_anova(wage_bracket, g_perm)[['share']]
+}
+
+# Permutation p-value
+p_perm <- mean(share_perm >= share_obs)
+p_perm
+
+# One-sided critical value: 95th percentile of the permutation distribution
+share_crit <- quantile(share_perm, probs=.95)
+
+hist(share_perm, breaks=40,
+    border=NA,
+    freq=FALSE, main=NA, xlab='Null Permutation Between-Group Share',
+    xlim=range(c(0, share_perm, share_obs)))
+title('Null Permutation Categorical ANOVA', font.main=1)
+abline(v=share_crit, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=share_obs, col=rgb(1, 0, 0, .8), lwd=2)
+legend('top', legend=c('Observed share', '95th percentile'),
+    col=c(rgb(1, 0, 0, .8), rgb(0, 0, 0, .8)), lwd=2, bty='n')
+```
+
+Because the brackets are ordered, the Kruskal-Wallis test also applies.
+
+```{r}
+# Kruskal-Wallis ranks the brackets, so it uses their order
+kruskal.test(wage_bracket ~ school_g)
+# Both this test and the categorical ANOVA reject.
+# The schooling groups differ along one direction, from low to high brackets.
+```
+
+Ranks concentrate on differences along one direction, from low to high brackets.
+The categorical ANOVA spreads its attention over every way the proportions could differ, so a rank test is usually more powerful when the categories are ordered.
+The categorical ANOVA can still detect differences that ranks miss, such as one group concentrated in the middle brackets and another split between the two extremes.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Here is the same analysis for the sampled states from [Describing Groups](#describing-groups).
+The urban population bands from [Ordered Factors](01_03_SummaryStatistics.qmd#ordered-factors) sort each region's states into mostly rural, mixed, and mostly urban.
+
+```{r, fig.height=5.2}
+# Outcome: urban population in three bands, an ordered factor, for the sampled states
+urban_band <- cut(USArrests[state_id, 'UrbanPop'], breaks=c(0, 50, 75, 100),
+    labels=c('mostly rural', 'mixed', 'mostly urban'), ordered_result=TRUE)
+tab <- table(region, urban_band)
+tab
+
+# Proportions within each region: each bar sums to 1
+p_band_region <- prop.table(tab, 1)
+cols <- c(rgb(.8, 0, 0, .5), rgb(0, .8, 0, .5), rgb(0, 0, .8, .5))
+par(mar=c(4, 4, 3.5, 1))
+barplot(t(p_band_region), col=cols, border=NA,
+    xlab='Region', ylab='Proportion of states', main=NA)
+legend('top', inset=c(0, -.15), xpd=TRUE, ncol=3, bty='n',
+    fill=cols, border=NA, legend=levels(urban_band))
+# The South and North Central lean rural.
+# The Northeast and West lean urban.
+```
+
+The function from above computes the three pieces and the between-group share.
+
+```{r}
+cat_anova(urban_band, region)
+# About 22% of the variation in urban bands lies between regions.
+```
+
+As above, we get a $p$-value by shuffling the group labels and recomputing the share each time.
 
 ```{r}
 # Observed between-group share
@@ -669,17 +918,17 @@ Because the bands are ordered, the Kruskal-Wallis test also applies.
 ```{r}
 # Kruskal-Wallis ranks the bands, so it uses their order
 kruskal.test(urban_band ~ region)
+# The categorical ANOVA gives the smaller p-value, about 0.018 against 0.026.
+# The regions differ partly along one direction, from rural to urban.
+# Ranks concentrate on that direction.
+# In this sample, 7 of North Central's 8 states are in the middle band.
+# That pattern contributes more to the categorical ANOVA than any other region.
+# It contributes the least to the Kruskal-Wallis statistic.
 ```
-
-Here the categorical ANOVA gives the smaller $p$-value.
-The regions differ partly along one direction, from rural to urban, and ranks concentrate on that direction.
-The categorical ANOVA spreads its attention over every way the proportions could differ, so a rank test is usually more powerful when the categories are ordered.
-The categorical ANOVA can still detect differences that ranks miss, such as one group concentrated in the middle band and another split between the two extremes.
-In this sample, $7$ of North Central's $8$ states are in the middle band.
-That pattern contributes more to the categorical ANOVA than any other region does, but the least to the Kruskal-Wallis statistic.
+:::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Make a binary outcome that marks the mostly urban states.
+For the sampled states in the callout above, make a binary outcome that marks the mostly urban states.
 Check that the categorical ANOVA of this outcome gives the same $\hat{\text{BSS}}$ and $\hat{\text{WSS}}$ as the ordinary ANOVA of the 0/1 variable.
 ```{r}
 # 1 for mostly urban states, 0 otherwise

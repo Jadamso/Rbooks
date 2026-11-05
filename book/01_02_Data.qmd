@@ -1,10 +1,17 @@
 # Data & Visualization
 ***
 
-This chapter classifies the kinds of data you will work with and gives you the basic tools to visualize and summarize a single variable.
-We start with the two data types, cardinal and factor.
-We then look at lists and data.frames, which hold datasets in R.
-We finish with proportions, histograms, ECDFs, quantiles, and boxplots, which are the standard ways to depict a distribution.
+This chapter asks three questions.
+
+* What kind of data do we have?
+    * *Cardinal and factor data*: differences between cardinal values always mean the same thing, while differences between factor values do not.
+* How does R hold a dataset?
+    * *Lists and data.frames*: a list can hold objects of different shapes, and a data.frame is like a [matrix](00_01_FirstSteps.qmd#matrices) whose columns can have different types.
+* What does the distribution of one variable look like?
+    * *Proportions and histograms*: these show how often values occur, with the proportion $\hat{p}(x)$ for discrete data and the histogram density $\hat{f}(x)$ for continuous data.
+    * *ECDFs and quantiles*: the ECDF $\hat{F}(x)$ is the proportion of data at or below $x$, and a quantile reverses that question.
+    * *Boxplots*: these compress the distribution into the median, the interquartile range, and any outliers.
+
 Which depiction to use depends on the data type.
 
 ## Data Types
@@ -97,6 +104,7 @@ But they can be analyzed in R in three basic ways.
 
 Lists are probably the most basic type
 ```{r}
+## MAIN EXAMPLE
 x0_hat <- seq(1, 10)                       # vector of 1..10
 y_hat <- 2*x0_hat                              # element-wise doubling
 list(x0_hat, y_hat)                            # list holds two vectors of equal length
@@ -148,23 +156,26 @@ The generalization to three or more dimensions is the *array*.
 #### **Initial Data Inspection** {-}
 Regardless of the data types you have, you typically begin by inspecting your data by examining the first few observations.
  
-Consider, for example, historical data on crime in the US.
-
+The `Ecdat` package you installed in [First Steps](00_01_FirstSteps.qmd#packages) contains economics datasets, such as `Wages1`.
 ```{r}
-head(USArrests) # Actual Data
+## MAIN EXAMPLE
+# Each row is one of 3294 US workers.
+# The wage is hourly, in 1980 dollars, and school and exper are in years.
+data(Wages1, package='Ecdat') # every session, saved in your script
+head(Wages1) # Actual Data
 
 # Check NA values
 x0_na <- c(3, 3.1, NA, 0.02) # Small dataset with a missing value
 sum( is.na(x0_na) )
 ```
-
-The `Ecdat` package you installed in [First Steps](00_01_FirstSteps.qmd#packages) contains economics datasets, such as `Wages1` on the hourly wages of $3294$ workers.
-```{r}
-data(Wages1, package='Ecdat') # every session, saved in your script
-head(Wages1)
-```
 To list every dataset in a package, use `data(package='Ecdat')`.
 To read about one dataset, use `?Ecdat::Wages1`.
+
+R also comes with [built-in datasets](00_01_FirstSteps.qmd#packages), which need no `data()` call.
+```{r}
+# 50 US states in 1973: arrests per 100,000 residents, and percent urban.
+head(USArrests)
+```
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Restart R and run `head(Wages1)` before loading the data.
@@ -213,21 +224,39 @@ table(x0_hat)/length(x0_hat)
 :::
 
 ```{r}
+## MAIN EXAMPLE
 # Discretized data
-x_hat <- USArrests[, 'Murder'] # lab data: murder arrests per 100,000
+x_hat <- Wages1[, 'wage'] # lab data: hourly wages in 1980 dollars
 x_hat[1:3]
 x_rounded <- floor(x_hat) #rounded down, to be discrete
 x_rounded[1:3]
 
 p_hat <- table(x_rounded)/length(x_rounded)
 plot(p_hat, col=grey(0, .5),
-    xlab='Murder Arrests (Discretized)',
-    ylab='Proportion of States with each value')
+    xlab='Hourly wage (1980 dollars, discretized)',
+    ylab='Proportion of workers with each value')
+# The tallest line says about 16% of workers earn from 4 up to 5 dollars.
 ```
 
 There are several stylistic variations: a *bar plot* uses thick bars for each outcome, a *lollipop plot* above uses skinny lines with a circle on top.
 E.g., add `points(names(p_hat), p_hat, pch=16)`
 The most important point is that the height of each line equals the proportion of data with a specific value.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the empirical mass function with murder arrest rates across US states.
+```{r}
+# Discretized data
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+x2_hat[1:3]
+x2_rounded <- floor(x2_hat) #rounded down, to be discrete
+x2_rounded[1:3]
+
+p2_hat <- table(x2_rounded)/length(x2_rounded)
+plot(p2_hat, col=grey(0, .5),
+    xlab='Murder Arrests (Discretized)',
+    ylab='Proportion of States with each value')
+```
+:::
 
 #### **Histogram Density** {-}
 
@@ -300,14 +329,35 @@ height <- f_hat[['density']]
 sum(base*height)
 
 # as a default, R uses bins (, ] instead of [, )
-# but you can change that with 'right=F'
-# hist(x0_hat, breaks=c(0, 4/3, 8/3, 4), plot=F, right=F)
+# but you can change that with 'right=FALSE'
+# hist(x0_hat, breaks=c(0, 4/3, 8/3, 4), plot=FALSE, right=FALSE)
 ```
 :::
 
 ```{r}
+## MAIN EXAMPLE
 # Practical Example
 hist(x_hat,
+    breaks=seq(0, 40, by=1), # bin width =1, so the half-width is h=1/2
+    freq=FALSE,
+    border=NA,
+    main=NA,
+    xlab='Hourly wage (1980 dollars)')
+title('Hourly Wages', font.main=1)
+# Raw Observations
+rug(x_hat, col=grey(0, .5))
+# About three quarters of wages lie between 2 and 8 dollars.
+# A long right tail reaches almost 40 dollars.
+
+# Since 2h=1, the density equals the proportion of workers in each bin
+# Redo this example with h=1 (i.e., breaks spaced 2h=2 apart)
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the histogram with murder arrest rates.
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+hist(x2_hat,
     breaks=seq(0, 20, by=1), # bin width =1, so the half-width is h=1/2
     freq=FALSE,
     border=NA,
@@ -315,16 +365,17 @@ hist(x_hat,
     xlab='Murder Arrests')
 title('Murder Arrests', font.main=1)
 # Raw Observations
-rug(x_hat, col=grey(0, .5))
+rug(x2_hat, col=grey(0, .5))
 
 # Since 2h=1, the density equals the proportion of states in each bin
 # Redo this example with h=1 (i.e., breaks spaced 2h=2 apart)
 ```
- 
+:::
+
 Note that histograms qualitatively depict proportions over multiple bins (since each bar represents the proportion of data in its bins), but you can also directly compute proportions.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-E.g., the proportion of murder rates in $(2,4)$ is
+E.g., the proportion of wages in $(2,4)$ is
 ```{r}
 mean( x_hat > 2 & x_hat <4)
 ```
@@ -384,19 +435,44 @@ diff(F_hat(x)) # proportion of data in each bin, as in the histogram
 :::
 
 ```{r}
+## MAIN EXAMPLE
 F_hat <- ecdf(x_hat)
-# proportion of murders <= 10
+# proportion of wages <= 10
 F_hat(10)
+# About 91% of workers earn at most 10 dollars an hour.
+
+# proportion of wages <= x, for all x
+# The axis stops just past 20 dollars, so the 16 largest wages are not drawn.
+plot(F_hat, main=NA, xlim=c(0, 20),
+    xlab='Hourly wage (1980 dollars)',
+    ylab='Proportion of workers with wage <= x',
+    do.points=FALSE, verticals=TRUE)
+title('Hourly Wage ECDF', font.main=1)
+rug(x_hat[x_hat <= 20], col=grey(0, .5))
+# With 3294 workers each step is tiny, so the ECDF looks like a smooth curve.
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the ECDF with murder arrest rates.
+What fraction of states have at most $10$ murders per $100$k?
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+F2_hat <- ecdf(x2_hat)
+# proportion of murders <= 10
+F2_hat(10)
+# 70% of states have at most 10 murders per 100k.
+
 # proportion of murders <= x, for all x
-plot(F_hat, main=NA,
+plot(F2_hat, main=NA,
     xlab='Murder Arrests (x)',
     ylab='Proportion of States with Murder Arrests <= x',
     pch=16, col=grey(0, .5))
 title('Murder Arrests ECDF', font.main=1)
-rug(x_hat)
+rug(x2_hat)
 ```
+:::
 
-The ECDF is useful when we want precise numbers rather than a picture of shape: "what fraction of states have at most $10$ murders per $100$k?" reads off directly without choosing bin widths or smoothing parameters.
+The ECDF is useful when we want precise numbers rather than a picture of shape: "what fraction of the data is at most $x$?" reads off directly without choosing bin widths or smoothing parameters.
 The ECDF also applies to more data types than the two previous depictions.
 The mass function $\hat{p}$ needs values that repeat, so it suits discrete data, and the histogram $\hat{f}$ needs a bin width, so it suits continuous data.
 The ECDF needs neither, since its only operation is checking whether $\hat{x}_{i} \leq x$, so it works for discrete and continuous data alike [@DvoretzkyEtAl1956].
@@ -414,12 +490,12 @@ where $x_{1}$ is the first midpoint.
 The lowest bin edge $x_{1}-h$ lies below every observation, so $\hat{F}(x_{1}-h)=0$ and the bar areas up to $x$ add up to $\hat{F}(x+h)$.
 For discrete data the same relationship holds without bins: $\hat{F}(x)=\sum_{x' \leq x} \hat{p}(x')$ accumulates the proportions, and the size of each jump in $\hat{F}$ is $\hat{p}(x)$.
 ]
-For a continuous example, the shaded bars on the histogram cover the states with at most $5$ murder arrests, and their total area equals the height of the colored point on the ECDF, $\hat{F}(5)$.
+For a continuous example, the shaded bars on the histogram cover the observations at or below a particular value $x$, and their total area equals the height of the colored point on the ECDF, $\hat{F}(x)$.
 
 
 ```{r}
 F_hat <- ecdf(x_hat)
-breaks <- seq(0, 20, by=1) # bin width 2h=1
+breaks <- seq(0, 40, by=1) # bin width 2h=1
 f_hat <- hist(x_hat, breaks=breaks, plot=FALSE)
 
 # Same data, stacked: the shaded area on top equals the height of the point below
@@ -431,16 +507,18 @@ par(mfrow=c(2, 1), mar=c(4, 4, 1, 1))
 # Numerically verify shaded area equals point height
 sum(f_hat[['density']][below]*diff(breaks)[below])
 F_hat(x)
+# Both are about 0.47, the proportion of workers earning at most 5 dollars.
 
 # Histogram: shade the bins at or below x
-hist(x_hat, breaks=breaks, freq=FALSE, border=NA,
+# Both panels stop just past 20 dollars, so the 16 largest wages are not drawn.
+hist(x_hat, breaks=breaks, freq=FALSE, border=NA, xlim=c(0, 20),
     col=ifelse(below, col_x, grey(.8)),
     main=NA, xlab=NA, ylab='Density')
-rug(x_hat, col=grey(0, .5))
+rug(x_hat[x_hat <= 20], col=grey(0, .5))
 
 # ECDF: mark the point (x, F_hat(x))
-plot(F_hat, xlim=range(breaks), pch=16, col=grey(0, .5),
-    main=NA, xlab='Murder Arrests', ylab='Proportion <= x')
+plot(F_hat, xlim=c(0, 20), do.points=FALSE, verticals=TRUE,
+    main=NA, xlab='Hourly wage (1980 dollars)', ylab='Proportion <= x')
 segments(x, F_hat(x), -10, F_hat(x), col=col_x)
 segments(x, F_hat(x), x, -1, col=col_x)
 points(x, F_hat(x), pch=16, col=rgb(1, 0, 0, .8), cex=1.5)
@@ -456,7 +534,7 @@ The relationship between $\hat{f}$ and $\hat{F}$ is easy to check with real data
 ```{r}
 # Histogram density from the ECDF, and back again
 F_hat <- ecdf(x_hat)
-breaks <- seq(0, 20, by=1) # bin width 2h=1
+breaks <- seq(0, 40, by=1) # bin width 2h=1
 f_hat <- hist(x_hat, breaks=breaks, plot=FALSE)
 
 # Rise in F_hat across each bin, divided by the bin width
@@ -520,16 +598,19 @@ Hint: split the ordered observations into four groups.
 :::
 
 ```{r}
+## MAIN EXAMPLE
 # common quantiles
 quantile(x_hat)
 
 # All deciles are quantiles
 quantile(x_hat, probs=seq(0, 1, by=.1))
+# The top tenth of wages spans about 9.75 to 39.81 dollars, a long right tail.
 
 # Visualized: Inverting the Empirical Distribution
+# The axis stops just past 20 dollars, so the 16 largest wages are not drawn.
 F_hat <- ecdf(x_hat)
 plot(F_hat, lwd=2, xlim=c(0, 20),
-    pch=16, col=grey(0, .5), main=NA)
+    do.points=FALSE, verticals=TRUE, main=NA)
 title('Inverting the ECDF', font.main=1)
 # Two Examples of Quantiles
 p <- c(.25, .9) # Lower Quartile, Upper Decile
@@ -539,7 +620,35 @@ q_hat
 segments(q_hat, p, -10, p, col=cols)
 segments(q_hat, p, q_hat, 0, col=cols)
 mtext( round(q_hat, 2), 1, at=q_hat, col=cols)
+# A quarter of wages are at or below about 3.62 dollars.
+# Nine tenths are at or below about 9.75 dollars.
 ```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the quantiles with murder arrest rates.
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+# common quantiles
+quantile(x2_hat)
+
+# All deciles are quantiles
+quantile(x2_hat, probs=seq(0, 1, by=.1))
+
+# Visualized: Inverting the Empirical Distribution
+F2_hat <- ecdf(x2_hat)
+plot(F2_hat, lwd=2, xlim=c(0, 20),
+    pch=16, col=grey(0, .5), main=NA)
+title('Inverting the ECDF', font.main=1)
+# Two Examples of Quantiles
+p <- c(.25, .9) # Lower Quartile, Upper Decile
+cols <- c(rgb(1, 0, 0, .8), rgb(0, 0, 1, .8))
+q2_hat <- quantile(x2_hat, p, type=1)
+q2_hat
+segments(q2_hat, p, -10, p, col=cols)
+segments(q2_hat, p, q2_hat, 0, col=cols)
+mtext( round(q2_hat, 2), 1, at=q2_hat, col=cols)
+```
+:::
 
 There are some issues with quantiles with smaller datasets.
 E.g., to compute the median of $\{3,3.1,0,1\}$, we need some ways to break ties (of which there are many options).
@@ -550,7 +659,7 @@ To calculate quantiles, the computer defaults to sorting the observations from s
 There are different ways to break ties and the min ($p=0$) is a special case.
 ```{r}
 x_sorted_hat <- sort(x_hat)
-x_sorted_hat
+head(x_sorted_hat) # the smallest few of 3294 wages
 
 # median
 x_sorted_hat[ceiling(length(x_sorted_hat)*.5)]
@@ -577,35 +686,62 @@ Statistical packages differ in how they compute both the quartiles and the fence
 See also <https://stackoverflow.com/questions/40634693/lower-and-upper-quartiles-in-boxplot-in-r>.
 ]
 As a default, whiskers are shown as $1.5\times \text{IQR}$ and values beyond that are highlighted as *outliers* (so whiskers do not typically show the data range).
-No state sits more than $1.5\times \text{IQR}$ beyond a quartile, so the boxplot below draws no outlier circles.
 Like the ECDF, the boxplot works for discrete and continuous data alike, since it is built from quantiles rather than from bins or repeated values.
 It does need cardinal data: the whiskers extend $1.5\times \text{IQR}$ beyond the box, and that distance is only meaningful when differences are.
 
 ```{r}
+## MAIN EXAMPLE
 # Default: median, box (IQR), whiskers at 1.5*IQR, outliers as circles
 boxplot(x_hat,
-    main=NA, ylab='Murder Arrests')
+    main=NA, ylab='Hourly wage (1980 dollars)')
 title('Default', font.main=1)
+# 96 wages sit more than 1.5*IQR above the upper quartile, drawn as circles.
+# None sits that far below the lower quartile.
 ```
 
-The default boxplot compresses $n$ observations into five numbers, which discards information about shape.
+The default boxplot compresses $n$ observations into five numbers and any outliers, which discards information about shape.
 You can alternatively show all the raw data points instead of whisker+outliers.
 This exposes the gaps, clusters, and repeated values that a five-number summary hides [@weissgerber2015].
 
 ```{r}
 # Alternative: every observation, in place of whiskers and outliers
+# Without ylim, outline=FALSE would leave the long right tail out of the figure.
 boxplot(x_hat,
-    main=NA, ylab='Murder Arrests',
+    main=NA, ylab='Hourly wage (1980 dollars)', ylim=range(x_hat),
     whisklty=0, staplelty=0, outline=FALSE)
 title('With Raw Data', font.main=1)
 # Raw Observations
 stripchart(x_hat,
-    pch='-', col=grey(0, .5), cex=2,
+    pch='-', col=grey(0, .1), cex=2,
     vert=TRUE, add=TRUE)
 ```
 
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat both boxplots with murder arrest rates.
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+
+# Default: median, box (IQR), whiskers at 1.5*IQR, outliers as circles
+boxplot(x2_hat,
+    main=NA, ylab='Murder Arrests')
+title('Default', font.main=1)
+# No state sits more than 1.5*IQR beyond a quartile.
+# So the boxplot draws no outlier circles.
+
+# Alternative: every observation, in place of whiskers and outliers
+boxplot(x2_hat,
+    main=NA, ylab='Murder Arrests',
+    whisklty=0, staplelty=0, outline=FALSE)
+title('With Raw Data', font.main=1)
+# Raw Observations
+stripchart(x2_hat,
+    pch='-', col=grey(0, .5), cex=2,
+    vert=TRUE, add=TRUE)
+```
+:::
+
 Each depiction in this chapter suits some data types and not others.
-Boxplots are generally not well suited for factor data but better suited for comparing groups (discussed later in Bivariate Data).
+Boxplots are generally not well suited for factor data but better suited for comparing groups.
 For a single data vector, the mass function needs repeating values but works for unordered factors whereas the ECDF works for discrete and continuous data but requires an ordering.^[
 In R, `ecdf` and `quantile(..., type=1)` accept ordered factors, but `boxplot` silently treats the levels as the numbers $1, 2, 3, \ldots$.
 ]

@@ -11,24 +11,32 @@ In the previous chapter, we summarized the strength of association between two v
 Correlation tells us *how strongly* $\hat{x}$ and $\hat{y}$ move together, but not *by how much* $\hat{y}$ changes per unit change in $\hat{x}$.
 Regression answers that question by fitting a line through the data.
 
-```{r}
+This chapter asks two questions.
+
+* How is a change in $\hat{y}$ associated with a change in $\hat{x}$?
+    * *Regression slope*: this is a new statistic, $\hat{b}_{1}=\hat{c}_{XY}/\hat{v}_{X}$.
+* How sure are we?
+    * *Bootstrap confidence interval and permutation test*: these assess sampling variability, or the slope's precision.
+      Both use the same recipe as [correlation](02_14_Associations.qmd#hypothesis-testing) and other statistics in earlier chapters.
+    * *R-squared and cross-validation*: these assess goodness of fit, or the line's predictive accuracy.
+      Both are new, and we call this kind of check *model assessment*.
+
+```{r, echo=FALSE}
 # Pull two columns from USArrests and rename for compact code below
-xy_hat <- USArrests[, c('UrbanPop', 'Murder')]
-colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+xy2_hat <- USArrests[, c('UrbanPop', 'Murder')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
 
 # Scatter the data
-plot(y_hat ~ x_hat, xy_hat, col=grey(0, .5), pch=16,
+plot(y_hat ~ x_hat, xy2_hat, col=grey(0, .5), pch=16,
     main=NA,
     xlab='Population Share in Urban Area',
     ylab='Murder Arrests per 100K')
-title('Data from American States, 1975', font.main=1)
+title('Data from American States, 1973', font.main=1)
 
-# Pearson Correlation
-cor(xy_hat$x_hat, xy_hat$y_hat)
 
 # Fit the line via OLS and overlay it on the scatter
-reg <- lm(y_hat ~ x_hat, data=xy_hat)
-abline(reg, lty=2)
+reg <- lm(y_hat ~ x_hat, data=xy2_hat)
+abline(reg, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 
 
@@ -74,11 +82,20 @@ You can do that in this [example](https://myshiny.duckdns.org/least-squares/), w
 This problem has an analytic solution, however, which means we know that the optimal OLS slope and intercept are
 $$\hat{b}_{1} = \frac{\hat{c}_{XY}}{\hat{v}_{X}}, \qquad \hat{b}_{0} = \hat{m}_{Y} - \hat{b}_{1} \hat{m}_{X}.$$
 The computer uses this math to find the coefficients quickly.
+For example, the code below fits a line to two cardinal variables and checks the coefficients with these formulas.
 
 ```{r}
+## MAIN EXAMPLE
+# Lab data: 3294 US workers, with hourly wages in 1980 dollars
+# Pull two columns from Wages1 and rename for compact code below
+data(Wages1, package='Ecdat')
+xy_hat <- Wages1[, c('school', 'wage')]
+colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
+
 # Run a Simple Regression
 reg <- lm(y_hat ~ x_hat, data=xy_hat)
 coef(reg)
+# The intercept of about -0.72 is a negative hourly wage.
 
 # Manual verification
 x_hat <- xy_hat[, 'x_hat']
@@ -90,12 +107,15 @@ b0
 ```
 
 
-The *least-squares slope* $\hat{b}_{1}$ seeks to answer "how much does the prediction $\hat{y}^{\mathrm{fit}}$ change per one-unit change in $\hat{x}$?"
+The *least-squares slope* $\hat{b}_{1}$ seeks to answer "how much does the fitted value $\hat{y}^{\mathrm{fit}}$ change per one-unit change in $\hat{x}$?"
 When the data are not known to be linearly related, the formula shows the slope is generally just the covariance divided by the variance of $\hat{x}$.
 As such, $\hat{b}_{1}$ is generally interpreted as a summary statistic for associations, just like the correlation.
 In fact, $\hat{b}_{1} = \hat{r}_{XY} \cdot \hat{s}_{Y}/\hat{s}_{X}$, so the simple regression slope is a rescaled version of the Pearson correlation statistic.
 ```{r}
-coef(reg)
+# Slope
+coef(reg)[2]
+# Pearson Correlation
+cor(xy_hat$x_hat, xy_hat$y_hat)
 # Slope from correlation: R_{XY} * S_Y / S_X
 cor(xy_hat$x_hat, xy_hat$y_hat) * sd(xy_hat$y_hat)/sd(xy_hat$x_hat)
 ```
@@ -143,16 +163,18 @@ This point is a minimum and not a maximum because each squared residual is U-sha
 :::
 
 
-
 #### **Predictions** {-}
 
-Plugging the coefficients into the line gives the fitted value for observation $i$:
-$$\hat{y}_{i}^{\mathrm{fit}} = \hat{b}_{0} + \hat{b}_{1} \hat{x}_{i}.$$
-Fitted values are useful for *in-sample* diagnostics: comparing $\hat{y}_{i}^{\mathrm{fit}}$ to $\hat{y}_{i}$ shows where the model fits well and where it misses (these are the residuals $\hat{e}_{i}$ we minimized).
-Predictions at new values are useful for *out-of-sample* questions like "what murder arrest rate would the model predict for a state with 70 percent of people in urban areas?".
+Plugging the coefficients into the line gives the fitted value for observation $i$.
+A *prediction* uses the same line at any design point $x$.
+A fitted value is thus the prediction at a sample point.
+$$\begin{aligned}
+\hat{y}^{\mathrm{pred}}(x) &= \hat{b}_{0} + \hat{b}_{1} x \\
+\hat{y}_{i}^{\mathrm{fit}} &= \hat{y}^{\mathrm{pred}}(\hat{x}_{i}) = \hat{b}_{0} + \hat{b}_{1} \hat{x}_{i}.
+\end{aligned}$$
 
-A *prediction* $$\hat{y}^{\mathrm{pred}}(x) = \hat{b}_{0} + \hat{b}_{1} x$$ uses the same line at any design point $x$.
-A fitted value is the prediction at a sample point: $\hat{y}_{i}^{\mathrm{fit}} = \hat{y}^{\mathrm{pred}}(\hat{x}_{i})$.
+Fitted values are useful for *in-sample* diagnostics: comparing $\hat{y}_{i}^{\mathrm{fit}}$ to $\hat{y}_{i}$ shows where the model fits well and where it misses (these are the residuals $\hat{e}_{i}$ we minimized).
+Predictions at new values are useful for *out-of-sample* questions like "what hourly wage would the model predict for a worker with 14 years of schooling?".
 Making predictions far away from your observations is risky, with no nearby data to anchor its prediction.
 Also note that a model can predict well and still not tell us what would happen.
 For example, a store's daily umbrella sales predict its raincoat sales well, yet a discount that raises umbrella sales need not raise raincoat sales.
@@ -169,6 +191,42 @@ y_fit
 e_hat <- y_hat - y_fit
 e_hat
 ```
+
+```{r, echo=FALSE}
+# Scatter the data
+plot(y_hat ~ x_hat, xy_hat, col=grey(0, .1), pch=16,
+    main=NA,
+    xlab='Years of Schooling',
+    ylab='Hourly Wage (1980 Dollars)')
+title('Data from American Workers', font.main=1)
+
+# overlay predictions on the scatter
+abline(reg, col=rgb(1, 0, 0, .8), lwd=2)
+```                                          
+
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Suppose the intercept is a value the outcome cannot take, such as a negative hourly wage.
+What went wrong?
+
+Nothing went wrong with the fit.
+The intercept is the prediction at $x=0$, $\hat{b}_{0}=\hat{y}^{\mathrm{pred}}(0)$.
+When no observation has $\hat{x}_{i}$ near zero, this prediction is far away from the observations.
+The intercept sets the height of the line so that it passes through the point of means, and need not be a good guess for the outcome at $x=0$.
+The code below checks the observed range of $\hat{x}$ and the predictions at both ends.
+```{r}
+# The intercept from above, about -0.72, is a negative hourly wage.
+# Range of schooling in the sample
+range(x_hat)
+# No worker in the sample has fewer than 3 years of schooling.
+# So the prediction at zero years is far away from the observations.
+# The intercept is not a good guess for the wage of a worker with no schooling.
+
+# Predictions at the lowest and highest observed years of schooling
+predict(reg, newdata=data.frame(x_hat=range(x_hat)))
+# Over the observed range of 3 to 16 years, every prediction is positive.
+```
+:::
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Suppose we have a dataset with $n = 3$ observations: $\{(1,2), (2,2.5), (3,4)\}$.
@@ -253,41 +311,6 @@ predict(reg0, newdata=data.frame(x_hat=c(2.5)))
 
 :::
 
-
-```{r, echo=FALSE}
-# Plot Data and Predictions
-library('plotly')
-# Copy the data and attach state names, fitted values, and residuals for hover text
-xy_plot_hat <- xy_hat
-xy_plot_hat[, 'ID'] <- rownames(USArrests)
-xy_plot_hat[, 'y_fit'] <- predict(reg)
-xy_plot_hat[, 'e_hat'] <- resid(reg)
-fig <- plotly::plot_ly(
-  xy_plot_hat, x= ~ x_hat, y= ~ y_hat,
-  mode='markers',
-  type='scatter',
-  hoverinfo='text',
-  marker=list(color=grey(0, .25), size=10),
-  text= ~ paste('<b>', ID, '</b>',
-              '<br>Urban  :', x_hat,
-              '<br>Murder :', y_hat,
-              '<br>Predicted Murder :', round(y_fit, 2),
-              '<br>Residual :', round(e_hat, 2)))
-# Add Legend
-fig <- plotly::layout(fig,
-          showlegend=FALSE,
-          title='Crime and Urbanization in America 1975',
-          xaxis = list(title='Percent of People in an Urban Area'),
-          yaxis = list(title='Homicide Arrests per 100, 000 People'))
-# Plot Model Predictions
-add_trace(fig, x= ~ x_hat, y= ~ y_fit,
-    inherit=FALSE, hoverinfo='none',
-    mode='lines+markers', type='scatter',
-    color=I('black'),
-    line=list(width=1/2),
-    marker=list(symbol=134, size=5))
-```
-
 #### **Simple Constant Regression** {-}
 
 Sometimes we restrict one coefficient of the simple linear model to zero, to get an even simpler model.
@@ -328,7 +351,7 @@ $$
 $$
 where the *coefficient* $b_{1}$ is a slope with no intercept.
 This model is useful when theory says $\hat{y}$ must be zero whenever $\hat{x}$ is zero, such as a firm's total cost when it has no fixed costs.
-Fit this model to the murder data, and compare its slope with the slope of the unrestricted line.
+Fit this model to the wage data, and compare its slope with the slope of the unrestricted line.
 
 Minimizing $\sum_{i=1}^{n} ( \hat{y}_{i} - b_{1}\hat{x}_{i} )^2$ gives
 $$\begin{aligned}
@@ -340,25 +363,28 @@ Unlike $\hat{c}_{XY}/\hat{v}_{X}$, this slope does not subtract the means $\hat{
 # Regress without an intercept: '0 +' drops b0 from the model
 reg_origin <- lm(y_hat ~ 0 + x_hat, data=xy_hat)
 coef(reg_origin)
+# The unrestricted line already has an intercept near zero, about -0.72.
+# So pinning the line to the origin changes its slope only a little.
+# The slope moves from about 0.56 to about 0.50.
 
 # Manual verification
 sum(x_hat*y_hat)/sum(x_hat^2)
 
 # Scatter with the axes extended to the origin, then add all three fitted lines
-plot(y_hat ~ x_hat, xy_hat, col=grey(0, .5), pch=16,
-    xlim=c(0, 100), ylim=c(0, max(y_hat)),
+plot(y_hat ~ x_hat, xy_hat, col=grey(0, .1), pch=16,
+    xlim=c(0, max(x_hat)), ylim=c(0, max(y_hat)),
     main=NA,
-    xlab='Population Share in Urban Area',
-    ylab='Murder Arrests per 100K')
+    xlab='Years of Schooling',
+    ylab='Hourly Wage (1980 Dollars)')
 abline(reg, col=rgb(1, 0, 0, .8), lwd=2)
-abline(reg_origin, col=rgb(0, 0, 1, .8), lty=2)
-abline(h=coef(reg_const), col=rgb(0, 0, 0, .8), lty=2)
+abline(reg_origin, col=rgb(1, 0, 0, .8), lwd=2, lty=2)
+abline(h=coef(reg_const), col=rgb(0, 0, 1, .8), lwd=2)
 legend('topleft', legend=c('Unrestricted', 'Through origin', 'Constant'),
-    col=c(rgb(1, 0, 0, .8), rgb(0, 0, 1, .8), rgb(0, 0, 0, .8)),
-    lwd=c(2, 1, 1), lty=c(1, 2, 2), bty='n')
+    col=c(rgb(1, 0, 0, .8), rgb(1, 0, 0, .8), rgb(0, 0, 1, .8)),
+    lwd=2, lty=c(1, 2, 1), bty='n')
 ```
 
-No state is less than 32 percent urban, so the line is pinned to a point far from the data and its slope rises from about 0.02 to about 0.11.
+When the unrestricted line already has an intercept near zero, pinning the line to the origin changes its slope only a little.
 :::
 
 
@@ -370,8 +396,8 @@ After fitting the line, the next question is how much of the variation in $\hat{
 The *R-squared* (or *coefficient of determination*) $\hat{R}^{2}$ is the share of total variation in $\hat{y}_{i}$ that the model explains.
 Using the Total, Explained, and Residual sums of squares,
 $$\underbrace{\sum_{i}(\hat{y}_{i}-\hat{m}_{Y})^2}_{\text{TSS}} = \underbrace{\sum_{i}(\hat{y}_{i}^{\mathrm{fit}}-\hat{m}_{Y})^2}_{\text{ESS}}+\underbrace{\sum_{i}\hat{e}_{i}^2}_{\text{RSS}},$$
-$$\hat{R}^{2} = \frac{\hat{\text{ESS}}}{\hat{\text{TSS}}}=1-\frac{\hat{\text{RSS}}/n}{\hat{v}_{Y}},$$
-where $\hat{v}_{Y}=\hat{\text{TSS}}/n$ is the variance of $\hat{y}$.
+$$\hat{R}^{2} = \frac{\hat{\text{ESS}}}{\hat{\text{TSS}}}=1-\frac{\hat{\text{MSE}}}{\hat{v}_{Y}},$$
+where $\hat{\text{MSE}}=\hat{\text{RSS}}/n$ is the *mean squared error* and $\hat{v}_{Y}=\hat{\text{TSS}}/n$ is the variance of $\hat{y}$.
 Equivalently, $\hat{R}^{2}$ equals the squared Pearson correlation between the fitted values $\hat{y}_{i}^{\mathrm{fit}}$ and the actual $\hat{y}_{i}$; $\hat{r}_{YY^{\mathrm{fit}}}^{2}$.
 :::
 
@@ -383,12 +409,13 @@ The first qualitative check should still be a plot of the line over the data, ho
 
 
 ```{r}
+## MAIN EXAMPLE
 # Manually Compute R2
 e_hat <- resid(reg)
-RSS_n  <- mean(e_hat^2)
+mse_hat  <- mean(e_hat^2)
 y_hat <- xy_hat[, 'y_hat']
 v_hat  <- mean((y_hat-mean(y_hat))^2)
-R2 <- 1 - RSS_n/v_hat
+R2 <- 1 - mse_hat/v_hat
 R2
 
 # Check R2
@@ -525,10 +552,31 @@ where $\hat{y}^{\mathrm{pred}(-i)}(\hat{x}_{i})$ is the model's prediction at $\
 
 $\hat{\text{CV}}$ is useful for comparing models by how well they predict new observations, rather than the observations used to fit them.
 It drops one observation at a time, like the [jackknife](01_05_Sampling.qmd#jackknife-distribution).
-A model that fits the noise in the sample predicts held-out observations poorly, so its $\hat{\text{CV}}$ rises above its in-sample average $\hat{\text{RSS}}/n$.
+A model that fits the noise in the sample predicts held-out observations poorly, so its $\hat{\text{CV}}$ rises above its in-sample $\hat{\text{MSE}}$.
 
-The *out-of-sample R-squared* replaces the fitted values in $\hat{R}^{2}=1-(\hat{\text{RSS}}/n)/\hat{v}_{Y}$ with the held-out predictions $\hat{y}^{\mathrm{pred}(-i)}(\hat{x}_{i})$.
-The average squared residual $\hat{\text{RSS}}/n$ then becomes $\hat{\text{CV}}$, and the variance $\hat{v}_{Y}$ becomes its leave-one-out version $\hat{v}_{Y}^{\text{CV}}$, which gives
+The code below refits the line $n$ times, each time without one observation, and predicts that observation's outcome.
+```{r}
+## MAIN EXAMPLE
+# Leave-one-out errors for the line
+n <- nrow(xy_hat)
+loo_errors <- rep(NA, n)
+for(i in seq_len(n)){
+    xy_i <- xy_hat[-i, ] # drop worker i
+    reg_i <- lm(y_hat ~ x_hat, data=xy_i)
+    # Predict worker i from the fit without worker i
+    y_pred_i <- predict(reg_i, newdata=xy_hat[i, ])
+    loo_errors[i] <- xy_hat[i, 'y_hat'] - y_pred_i
+}
+
+# CV
+cv_hat <- mean(loo_errors^2)
+cv_hat
+# The line's CV of about 9.84 is just above its MSE of about 9.83.
+# It predicts held-out workers only slightly worse than those it was fit to.
+```
+
+The *out-of-sample R-squared* replaces the fitted values in $\hat{R}^{2}=1-\hat{\text{MSE}}/\hat{v}_{Y}$ with the held-out predictions $\hat{y}^{\mathrm{pred}(-i)}(\hat{x}_{i})$.
+The mean squared error $\hat{\text{MSE}}$ then becomes $\hat{\text{CV}}$, and the variance $\hat{v}_{Y}$ becomes its leave-one-out version $\hat{v}_{Y}^{\text{CV}}$, which gives
 $$\begin{aligned}
 \hat{R}^{2}_{\text{CV}} &= 1 - \frac{\hat{\text{CV}}}{\hat{v}_{Y}^{\text{CV}}}, \\
 \hat{v}_{Y}^{\text{CV}} &= \frac{1}{n}\sum_{i=1}^{n} \left[ \hat{y}_{i} - \hat{m}_{Y}^{(-i)} \right]^2,
@@ -538,29 +586,20 @@ Since $\hat{v}_{Y}^{\text{CV}}$ is the $\hat{\text{CV}}$ of the [simple constant
 Unlike $\hat{R}^{2}$, $\hat{R}^{2}_{\text{CV}}$ can be negative and is when a model predicts held-out observations worse than the mean of the other observations would.
 Unlike $\hat{R}^{2}$, the out-of-sample version is not equivalent to the squared correlation between the observations and the predictions ($\hat{y}_{i}$ and $\hat{y}^{\mathrm{pred}(-i)}(\hat{x}_{i})$).
 
-The code below refits the line $n$ times, each time without one state, and predicts that state's murder arrest rate.
+The code below compares each observation with the mean of the other observations, which gives $\hat{v}_{Y}^{\text{CV}}$ and then $\hat{R}^{2}_{\text{CV}}$.
 ```{r}
-# Leave-one-out errors for the line and for the mean
-n <- nrow(xy_hat)
-loo_errors <- rep(NA, n)
+# Leave-one-out errors for the mean
 loo_errors_mean <- rep(NA, n)
 for(i in seq_len(n)){
-    xy_i <- xy_hat[-i, ] # drop state i
-    reg_i <- lm(y_hat ~ x_hat, data=xy_i)
-    # Predict state i from the fit without state i
-    y_pred_i <- predict(reg_i, newdata=xy_hat[i, ])
-    loo_errors[i] <- xy_hat[i, 'y_hat'] - y_pred_i
-    # Compare state i with the mean of the other states
+    xy_i <- xy_hat[-i, ] # drop worker i
+    # Compare worker i with the mean of the other workers
     loo_errors_mean[i] <- xy_hat[i, 'y_hat'] - mean(xy_i[, 'y_hat'])
 }
-
-# CV
-cv_hat <- mean(loo_errors^2)
-cv_hat
 
 # Leave-one-out version of the variance
 v_cv_hat <- mean(loo_errors_mean^2)
 v_cv_hat
+# The line's CV of about 9.84 is below this value of about 10.69.
 
 # Out-of-sample R-squared
 r2_cv <- 1 - cv_hat/v_cv_hat
@@ -568,23 +607,26 @@ r2_cv <- 1 - cv_hat/v_cv_hat
 r_cv <- cor(xy_hat[, 'y_hat'], xy_hat[, 'y_hat'] - loo_errors)
 r2_gen_cv <- r_cv^2
 c(R2=R2, R2_CV=r2_cv, r_CV=r_cv, R2_gen_CV=r2_gen_cv)
+# R2_CV is positive, about 0.079, since CV is below the leave-one-out variance.
+# Out of sample, the line predicts wages better than the other workers' mean.
+# With 3294 workers, dropping one barely moves the line.
+# So R2_CV is close to the in-sample R2 of about 0.080.
+# The squared correlation of about 0.079 is close to both.
+# The correlation itself is positive, about 0.28.
 ```
 
-The line predicts held-out states worse than the states it was fit to: its $\hat{\text{CV}}$ of about $20.1$ is above its $\hat{\text{RSS}}/n$ of about $18.5$.
-Its $\hat{\text{CV}}$ is also above $\hat{v}_{Y}^{\text{CV}}$ of about $19.4$, so its $\hat{R}^{2}_{\text{CV}}$ of about $-0.04$ is negative: out of sample, the line predicts murder arrests worse than the mean of the other states would.
-Its squared correlation of about $0.22$ looks better than its $\hat{R}^{2}$ of about $0.005$, but only because squaring hides the sign of the correlation, which is about $-0.47$.
-Dropping a state with a high murder arrest rate lowers the prediction for that state, so the held-out predictions tend to move against the observations.
+With many observations, dropping one barely moves the line, so $\hat{R}^{2}_{\text{CV}}$ is close to the in-sample $\hat{R}^{2}$.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 We can also compare the line with the [simple constant regression](#simple-constant-regression) out of sample.
-The code below repeats the loop for the constant model, whose held-out prediction for each state is the mean of the other states.
+The code below repeats the loop for the constant model, whose held-out prediction for each observation is the mean of the other observations.
 ```{r}
 # Leave-one-out prediction errors for the constant model
 loo_errors_const <- rep(NA, n)
 for(i in seq_len(n)){
-    xy_i <- xy_hat[-i, ] # drop state i
+    xy_i <- xy_hat[-i, ] # drop worker i
     reg_const_i <- lm(y_hat ~ 1, data=xy_i)
-    # Predict state i from the fit without state i
+    # Predict worker i from the fit without worker i
     y_pred_i <- predict(reg_const_i, newdata=xy_hat[i, ])
     loo_errors_const[i] <- xy_hat[i, 'y_hat'] - y_pred_i
 }
@@ -593,17 +635,69 @@ r2_cv_const <- 1 - cv_const_hat/v_cv_hat
 
 # In-sample and out-of-sample fit of both models
 fit_compare <- rbind(
-    Line=c(RSS_n=RSS_n, CV=cv_hat, R2=R2, R2_CV=r2_cv),
-    Constant=c(RSS_n=sum(resid(reg_const)^2)/n, CV=cv_const_hat,
+    Line=c(MSE=mse_hat, CV=cv_hat, R2=R2, R2_CV=r2_cv),
+    Constant=c(MSE=mean(resid(reg_const)^2), CV=cv_const_hat,
         R2=summary(reg_const)$r.squared, R2_CV=r2_cv_const))
 round(fit_compare, 3)
+# The line fits better in sample, and the order holds out of sample.
+# The line's CV is about 9.84, while the constant model's is about 10.69.
+# Schooling explains enough of the variation in wages.
+# So estimating a slope removes more error from predictions than its noise adds.
 ```
 
-In sample, the line fits slightly better than the constant model, as it must, since the constant model is the line with $b_{1}=0$.
-Out of sample, the order flips: the line's $\hat{\text{CV}}$ is about $20.1$, while the constant model's is about $19.4$.
-Urbanization explains so little of the variation in murder arrests that estimating a slope adds more noise to the predictions than it removes.
+In sample, the line fits better than the constant model, as it must, since the constant model is the line with $b_{1}=0$.
+Out of sample, the line does better only when $\hat{x}$ explains enough of the variation in $\hat{y}$ that estimating a slope removes more error from the predictions than its noise adds.
 The constant model's $\hat{\text{CV}}$ is exactly $\hat{v}_{Y}^{\text{CV}}$, so its $\hat{R}^{2}_{\text{CV}}$ is $0$, the same as its in-sample $\hat{R}^{2}$.
-With $\hat{v}_{Y}$ in the denominator instead, even the constant model would score below $0$, because each held-out prediction is the mean of the other $49$ states, while $\hat{m}_{Y}$ also includes the state being predicted.
+With $\hat{v}_{Y}$ in the denominator instead, even the constant model would score below $0$, because each held-out prediction is the mean of the other $n-1$ observations, while $\hat{m}_{Y}$ also includes the observation being predicted.
+:::
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the cross-validation for the $50$ states in `USArrests`, the data in the figure that opens this chapter.
+Regress murder arrests per 100K on the urban population share, then compare $\hat{R}^{2}$, $\hat{R}^{2}_{\text{CV}}$, and the squared correlation of the observations and the held-out predictions.
+```{r}
+xy2_hat <- USArrests[, c('UrbanPop', 'Murder')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
+reg_usa <- lm(y_hat ~ x_hat, data=xy2_hat)
+
+# Leave-one-out errors for the line and for the mean
+n_usa <- nrow(xy2_hat)
+loo_errors_usa <- rep(NA, n_usa)
+loo_errors_mean_usa <- rep(NA, n_usa)
+for(i in seq_len(n_usa)){
+    xy2_i <- xy2_hat[-i, ] # drop state i
+    reg_usa_i <- lm(y_hat ~ x_hat, data=xy2_i)
+    # Predict state i from the fit without state i
+    y_pred_i <- predict(reg_usa_i, newdata=xy2_hat[i, ])
+    loo_errors_usa[i] <- xy2_hat[i, 'y_hat'] - y_pred_i
+    # Compare state i with the mean of the other states
+    loo_errors_mean_usa[i] <- xy2_hat[i, 'y_hat'] - mean(xy2_i[, 'y_hat'])
+}
+
+# In-sample error, CV, and the leave-one-out version of the variance
+cv_usa_hat <- mean(loo_errors_usa^2)
+v_cv_usa_hat <- mean(loo_errors_mean_usa^2)
+c(MSE=mean(resid(reg_usa)^2), CV=cv_usa_hat, v_CV=v_cv_usa_hat)
+# The line's CV of about 20.1 is above its MSE of about 18.5.
+# It predicts held-out states worse than the states it was fit to.
+# Its CV is also above the leave-one-out variance of about 19.4.
+# That variance is the constant model's CV, so we would choose it over the line.
+
+# In-sample and out-of-sample fit
+r_cv_usa <- cor(xy2_hat[, 'y_hat'], xy2_hat[, 'y_hat'] - loo_errors_usa)
+c(R2=summary(reg_usa)$r.squared, R2_CV=1 - cv_usa_hat/v_cv_usa_hat, r_CV=r_cv_usa, R2_gen_CV=r_cv_usa^2)
+# R2_CV is negative, about -0.04.
+# Out of sample, the line predicts worse than the mean of the other states.
+# Urbanization explains very little of the variation in murder arrests.
+# So estimating a slope adds more noise to the predictions than it removes.
+# The squared correlation of about 0.22 looks better than the R2 of about 0.005.
+# That is only because squaring hides the sign of the correlation, about -0.47.
+# Dropping a state with a high murder arrest rate lowers its prediction.
+# So the held-out predictions tend to move against the observations.
+```
+
+When $\hat{x}$ explains very little of the variation in $\hat{y}$, estimating a slope can add more noise to the predictions than it removes, and $\hat{R}^{2}_{\text{CV}}$ can be negative.
+The squared correlation can then look better than $\hat{R}^{2}$, but only because squaring hides the sign of the correlation.
+With such a line, dropping an observation with a high $\hat{y}_{i}$ lowers the prediction for that observation, so the held-out predictions tend to move against the observations.
 :::
 
 
@@ -631,6 +725,7 @@ When bootstrapping a dataset with $n$ observations, you randomly resample all $n
 We can then just take the percentiles of the bootstrap distribution.
 
 ```{r}
+## MAIN EXAMPLE
 # Original OLS coefficient
 slope <-  coef(reg)[2]
 
@@ -721,9 +816,11 @@ abline(v=0, col=rgb(0, 0, 1, .8), lty=2)
 # Does the 95% interval contain zero?
 boot_ci_percentile
 unname(boot_ci_percentile[1] <= 0 & boot_ci_percentile[2] >= 0)
+# The interval does not contain 0.
+# So a slope of zero is not consistent with the data at the 95% level.
 ```
 
-The interval contains $0$, so a slope of zero is consistent with the data at the $95\%$ level.
+If the interval does not contain $0$, a slope of zero is not consistent with the data at the $95\%$ level.
 
 #### **Impose the Null**{-}
 We can also compute a null distribution.
@@ -732,6 +829,7 @@ Specifically, we compute the distribution of slopes on data with randomly reshuf
 We can sample with replacement (i.e., the null bootstrap) or without (permutation), just as with the [correlation](02_14_Associations.qmd#cardinal-data) statistic.
 
 ```{r}
+## MAIN EXAMPLE
 # Null Distribution for Reg Coef
 null_coefs <-  rep(NA, 399)
 for(b in seq_along(null_coefs)){
@@ -790,49 +888,52 @@ if(p_slope < 0.05){
 :::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Suppose you have data on years of schooling and hourly wages for all $3294$ workers in `Wages1`.
+Suppose you have data on the urban population share and murder arrests per 100K for the $50$ states in `USArrests`, the data in the figure that opens this chapter.
 Conduct a linear regression.
 Summarize the model relationship and how well it fits the data.
 Then construct a $95\%$ bootstrap confidence interval for the slope coefficient.
-Finally, compute a permutation $p$-value for the null hypothesis of no relationship between schooling and wages.
+Finally, compute a permutation $p$-value for the null hypothesis of no relationship between urbanization and murder arrests.
 ```{r}
-data(Wages1, package='Ecdat')
-xy2_hat <- Wages1[, c('school', 'wage')]
-colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly wage
+xy2_hat <- USArrests[, c('UrbanPop', 'Murder')]
+colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
 
 # Regression and goodness of fit
-reg2 <- lm(y_hat ~ x_hat, data=xy2_hat)
-coef(reg2)
-summary(reg2)$r.squared
+reg_usa <- lm(y_hat ~ x_hat, data=xy2_hat)
+coef(reg_usa)
+# Each extra percentage point of urban population goes with more murder arrests.
+# The difference is about 0.02 arrests per 100K, on average.
+summary(reg_usa)$r.squared
+# R-squared of about 0.005 is close to zero.
+# Urbanization leaves nearly all of the variation in murder arrests unexplained.
 
 # Bootstrap percentile CI for the slope
-slope2 <- coef(reg2)[2]
-boot_coefs2 <- rep(NA, 399)
-for(b in seq_along(boot_coefs2)){
+slope_usa <- coef(reg_usa)[2]
+boot_coefs_usa <- rep(NA, 399)
+for(b in seq_along(boot_coefs_usa)){
     b_id <- sample(nrow(xy2_hat), replace=TRUE)
     xy2_boot <- xy2_hat[b_id, ]
-    reg2_b <- lm(y_hat ~ x_hat, data=xy2_boot)
-    boot_coefs2[b] <- coef(reg2_b)[2]
+    reg_usa_b <- lm(y_hat ~ x_hat, data=xy2_boot)
+    boot_coefs_usa[b] <- coef(reg_usa_b)[2]
 }
-quantile(boot_coefs2, probs=c(.025, .975))
+quantile(boot_coefs_usa, probs=c(.025, .975))
+# The bootstrap interval contains zero.
 
 # Permutation p-value, using the slope as the statistic
-null_coefs2 <- rep(NA, 399)
-for(b in seq_along(null_coefs2)){
+null_coefs_usa <- rep(NA, 399)
+for(b in seq_along(null_coefs_usa)){
     xy2_perm <- xy2_hat
     xy2_perm[, 'y_hat'] <- sample(xy2_perm[, 'y_hat'], replace=FALSE)
-    reg2_b <- lm(y_hat ~ x_hat, data=xy2_perm)
-    null_coefs2[b] <- coef(reg2_b)[2]
+    reg_usa_b <- lm(y_hat ~ x_hat, data=xy2_perm)
+    null_coefs_usa[b] <- coef(reg_usa_b)[2]
 }
 # Middle 95% of the permuted slopes
-quantile(null_coefs2, probs=c(.025, .975))
-F2_hat <- ecdf(abs(null_coefs2))
-1-F2_hat(abs(slope2))
+quantile(null_coefs_usa, probs=c(.025, .975))
+# The observed slope is also inside the middle 95% of permuted slopes.
+# That range runs from about -0.08 to 0.08.
+F_usa_hat <- ecdf(abs(null_coefs_usa))
+1-F_usa_hat(abs(slope_usa))
+# The p-value is large, so we fail to reject the null of no relationship.
 ```
-Each extra year of schooling goes with a higher hourly wage, on average.
-The $\hat{R}^{2}$ is small, so schooling alone leaves most of the variation in wages unexplained.
-The bootstrap interval is far from zero.
-The observed slope of about $0.56$ is also far outside the middle $95\%$ of permuted slopes, from about $-0.06$ to $0.07$, so the $p$-value is essentially zero.
 :::
 
 
@@ -844,14 +945,13 @@ However, just like confidence intervals, those hard decision rules can be sensit
 "No association" is the [most common null hypothesis](01_08_HypothesisTests.qmd#choosing-a-null) in practice, but we can also use bootstrapping to test against other specific hypothesized values of $\beta_{1}$, the population slope.
 The simplest way is to check whether $\beta_{1}$ lies inside the bootstrap interval for $\hat{b}_{1}$.
 To impose the null instead, you recenter the bootstrap distribution of $\hat{b}_{1}$ around the hypothetical value, as we did for the mean in [Impose the Null](01_08_HypothesisTests.qmd#impose-the-null).
-In the known-population check above, the population slope is `population_slope`, which we could compute only because we pretended `Wages1` was the whole population.
 
 Although two-sided hypothesis tests are most common, you can also test one-sided hypotheses.
 
 #### **Standardized Slopes**{-}
 
 Software typically reports a *$t$-value* for each coefficient, which divides the coefficient by its standard error: $\hat{t} = \frac{\hat{b}_{1}}{\hat{\text{SE}}(B_{1})}$, where $\hat{\text{SE}}(B_{1})$ is the estimated standard error of the coefficient.
-For reasons we won't go into in this class, $\hat{t}$ is often used instead of $\hat{b}_{1}$ as the test statistic.
+For reasons we won't go into in this book, $\hat{t}$ is often used instead of $\hat{b}_{1}$ as the test statistic.
 As a final example, we redo the permutation test with $\hat{t}$, using the jackknife standard error from above.
 Each permutation recomputes both the slope and its jackknife standard error.
 ```{r}
@@ -859,6 +959,7 @@ Each permutation recomputes both the slope and its jackknife standard error.
 t_hat <- slope/jack_se
 
 # Null Distribution for t-stat
+# This takes a minute or two: each permutation recomputes n jackknife slopes
 null_t <-  rep(NA, 399)
 for(b in seq_along(null_t)){
     # Permuted data
@@ -868,11 +969,12 @@ for(b in seq_along(null_t)){
     reg_b <- lm(y_hat ~ x_hat, data=xy_perm)
     slope_b <- coef(reg_b)[2]
     # Redo Jackknife SEs
+    # Each slope is cov/var, which matches lm() and is much faster inside nested loops
+    x_perm <- xy_perm[, 'x_hat']
+    y_perm <- xy_perm[, 'y_hat']
     jack_coefs_b <- rep(NA, nrow(xy_perm))
     for(i in seq_along(jack_coefs_b)){
-        xy_perm_i <- xy_perm[-i, ]
-        reg_b_i <- lm(y_hat ~ x_hat, data=xy_perm_i)
-        jack_coefs_b[i] <- coef(reg_b_i)[2]
+        jack_coefs_b[i] <- cov(x_perm[-i], y_perm[-i])/var(x_perm[-i])
     }
     n_b <- length(jack_coefs_b)
     jack_se_b <- sqrt((n_b - 1)/n_b * sum((jack_coefs_b - mean(jack_coefs_b))^2))
@@ -893,9 +995,82 @@ abline(v=t_hat, col=rgb(1, 0, 0, .8), lwd=2)
 F_t_hat <- ecdf(abs(null_t))
 p_t <- 1-F_t_hat(abs(t_hat))
 c(slope=p_slope, t=p_t)
+# Both p-values are essentially zero.
+# So both tests reject the null of no relationship between schooling and wages.
 ```
 
-Both $p$-values are large, so both tests fail to reject the null of no relationship between urbanization and murder arrests.
+#### **Precision and Fit** {-}
+
+A slope can be estimated precisely, with a narrow interval and a small $p$-value.
+But $\hat{R}^{2}$ can still be low, so the line leaves most of the variation in $\hat{y}$ unexplained.
+Real data are often noisy, so a precise slope with a low $\hat{R}^{2}$ is common.
+Outcomes differ across observations for many reasons other than $\hat{x}$.
+The two results do not conflict, because they answer different questions.
+
+* *Estimated association, given the model*: the slope, its standard error, and the $p$-value take the line as given and ask how well we have estimated it.
+* *How much to trust the model*: goodness of fit asks how well the model accounts for the data.
+  Unlike the standard error, it does not keep shrinking as $n$ grows, and it is useful as a comparison between models.
+
+More observations pin down the line more precisely, but they do not move the outcomes closer to the line.
+With enough observations, even a weak association has a small $p$-value, so a small $p$-value does not mean a good fit.
+A low $\hat{R}^{2}$ is also not a reason to dismiss a precise slope.
+
+To compare models, we can ask which one predicts held-out observations better.
+When the line has a lower $\hat{\text{CV}}$ than the [simple constant regression](#simple-constant-regression), we would choose the line to predict the outcome, even if it leaves most of the variation unexplained.
+When the constant model has the lower $\hat{\text{CV}}$, we would choose it over the line.
+The sign of $\hat{R}^{2}_{\text{CV}}$ reports the same comparison: it is positive when the line has the lower $\hat{\text{CV}}$ and negative when the constant model does.
+The code below collects these results.
+```{r}
+# Wage data: the slope's 95% bootstrap interval and p-value, then R-squared
+boot_ci_percentile
+p_slope
+# The slope is estimated precisely.
+# Its 95% bootstrap interval runs from about 0.50 to 0.62.
+# Its p-value is essentially zero.
+R2
+# R-squared is only about 0.08.
+# So the line leaves most of the variation in wages unexplained.
+# Wages differ across workers for many reasons other than schooling.
+
+# Wage data: CV of the line and of the constant model, then R2_CV
+c(line=cv_hat, constant=v_cv_hat, R2_CV=r2_cv)
+# The line has the lower CV, about 9.84 against 10.69, and R2_CV is positive.
+# So we would choose the line to predict wages.
+# That holds even though it leaves most of the variation unexplained.
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Suppose the $p$-value is essentially zero but $\hat{R}^{2}$ is low.
+Does $\hat{x}$ matter?
+
+The $p$-value asks whether the slope can be told apart from zero.
+The slope itself says how large the association is.
+The code below prints the $p$-value and compares the size of the slope with the mean of $\hat{y}$.
+```{r}
+# The p-value, from the permutation test above
+p_slope
+# With 3294 workers, the slope is estimated precisely.
+# A slope of zero is not consistent with the data.
+
+# Four more years of schooling, then the mean wage for scale
+4*slope
+mean(xy_hat[, 'y_hat'])
+# Four more years go with about 2.23 dollars more per hour, on average.
+# The mean wage is about 5.76 dollars.
+```
+
+$\hat{R}^{2}$ asks how much of the variation in $\hat{y}$ the line accounts for.
+So $\hat{x}$ can matter for the average $\hat{y}$, while observations with the same $\hat{x}$ still have very different $\hat{y}$.
+The code below compares the spread of the residuals with the spread of $\hat{y}$.
+```{r}
+# Standard deviation of the residuals and of wages
+c(residuals=sqrt(mse_hat), wages=sqrt(v_hat))
+# Residuals have a standard deviation of about 3.14 dollars, wages about 3.27.
+# The line accounts for about 8% of the variation in wages.
+# So schooling matters for the average wage.
+# But workers with the same schooling still earn very different wages.
+```
+:::
 
 ## Regression and Causation
 
@@ -916,10 +1091,12 @@ for(i in 1:4){
         pch=16, col=grey(0, .6), main=NA,
         xlab=paste0('x', i), ylab=paste0('y', i))
     reg <- lm(y_hat ~ x_hat)
+    # Slope, its p-value, and R-squared for the panel title
     b <- round(coef(reg)[2], 2)
     p <- round(summary(reg)$coefficients[2, 4], 4)
-    abline(reg, col=rgb(1, 0.6, 0, .8))
-    title(paste0('Slope=', b, ', p=', p), font.main=1)
+    r2 <- round(summary(reg)$r.squared, 2)
+    abline(reg, col=rgb(1, 0, 0, .8), lwd=2)
+    title(bquote(paste('Slope=', .(b), ', p=', .(p), ', ', R^2, '=', .(r2))), font.main=1)
 }
 
 ## For an even better example, see `Datasaurus Dozen'
@@ -973,7 +1150,9 @@ Before trying to find a regression specification that makes sense for the entire
 
 The OLS line for bivariate data has slope $\hat{b}_{1}=\hat{c}_{XY}/\hat{v}_{X}$ and intercept $\hat{b}_{0}=\hat{m}_{Y}-\hat{b}_{1}\hat{m}_{X}$.
 We measured its goodness of fit with $\hat{R}^{2}$ in sample and with leave-one-out cross-validation out of sample.
+For the wage data, the line predicted held-out workers better than the constant model, and its $\hat{R}^{2}_{\text{CV}}$ of about $0.079$ was close to its $\hat{R}^{2}$.
 For the murder data, the line predicted held-out states worse than the constant model, and its $\hat{R}^{2}_{\text{CV}}$ was about $-0.04$.
 We built confidence intervals and $p$-values by resampling the data with the bootstrap, the jackknife, and permutations.
-The correlation examples showed both causation without linear correlation and correlation without causation.
+For the wage data, the slope's $p$-value was essentially zero while $\hat{R}^{2}$ was only about $0.08$, since precision and fit answer different questions.
+Anscombe's Quartet gave four very different datasets the same linear regression coefficients, and only the scatterplots showed the difference.
 The three-observation worked example $\{(1,2),(2,2.5),(3,4)\}$ traced through every step by hand and produced slope $\hat{b}_{1}=1$, intercept $\hat{b}_{0}=5/6$, $\hat{\text{TSS}}=13/6$, $\hat{\text{RSS}}=1/6$, and $\hat{R}^{2}=12/13\approx 0.92$.

@@ -12,21 +12,22 @@ A histogram of data summarizes the $n$ observations you actually have.
 The two panels below plot the same data with R's defaults and with the book's conventions.
 
 ```{r, fig.height=4}
-x_hat <- USArrests[,'Murder']
+data(Wages1, package='Ecdat')
+x_hat <- Wages1[, 'wage'] # lab data: hourly wages in 1980 dollars
 par(mfrow=c(1,2), mar=c(4, 4, 2, 1))
 
 # Default settings
 hist(x_hat)
 
 # House style
-hist(x_hat, breaks=15, border=NA, freq=FALSE, main=NA,   # fewer bins, since n is only 50
-    xlab='Murder arrests (per 100k)')
+hist(x_hat, breaks=25, border=NA, freq=FALSE, main=NA,   # more bins, since n is 3294
+    xlab='Hourly wage (1980 dollars)')
 rug(x_hat, col=grey(0, .5))
 ```
 
 The bar borders are gone, so the distribution reads as one silhouette instead of twenty outlined boxes.
 The vertical axis is a density rather than a count, so a fitted curve can be drawn on the same axes.
-The axis label gives the variable and its units, and the rug along the bottom marks each of the 50 observations that the bars summarize.
+The axis label gives the variable and its units, and the rug along the bottom marks each of the observations that the bars summarize.
 
 | Argument | Convention | Notes |
 |---|---|---|
@@ -49,7 +50,7 @@ It keeps the default grey fill, `border=NA`, and `freq=FALSE`, but differs from 
 | Vertical lines | A sample statistic in red, `lwd=2` | Interval bounds in black and, for null bootstrap or permutation distributions, the observed statistic in red, both `lwd=2` |
 
 ```{r, fig.height=4}
-# Bootstrap distribution of the mean murder arrest rate
+# Bootstrap distribution of the mean hourly wage
 set.seed(1) # to be replicable
 boot_means <- rep(NA, 999)
 for (b in seq_along(boot_means)) {
@@ -59,7 +60,7 @@ for (b in seq_along(boot_means)) {
 boot_ci <- quantile(boot_means, probs=c(.025, .975))
 
 hist(boot_means, breaks=50, border=NA, freq=FALSE, main=NA,
-    xlab='Bootstrap means of murder arrests (per 100k)')
+    xlab='Bootstrap means of hourly wages (1980 dollars)')
 abline(v=boot_ci, col=rgb(0, 0, 0, .8), lwd=2) # 95% bootstrap interval
 ```
 
@@ -74,7 +75,7 @@ The same line styles apply to any figure that marks a value, not only to histogr
 | Observed statistic | $\hat{m}$, $\hat{t}$, $\hat{F}$, a bandwidth chosen by cross-validation | `rgb(1, 0, 0, .8)` | `2` | `1` |
 | Interval bounds | CI limits, critical values, a significance level $\alpha$, the middle 95% of a null distribution | `rgb(0, 0, 0, .8)` | `2` | `1` |
 | Second interval | Normal against percentile, 90% against 95% | `rgb(0, 0, 0, .8)` | `2` | `2` |
-| Null or population value | A hypothesized value, a null of 0, a true mean | `rgb(0, 0, 1, .8)` | `1` | `2` |
+| Null or population value | A hypothesized value, a null of 0, a true mean, a 45-degree line | `rgb(0, 0, 1, .8)` | `1` | `2` |
 | Theoretical density over a histogram | A Normal or $t$ curve | `rgb(0, 0, 1, .8)` | `1` | `2`, or `3` for a second curve |
 | Neutral guide | A baseline at 0, 0.5 on a CDF, $\pm 1.96$ | `grey(.5)` | `1` | `3` |
 
@@ -114,9 +115,30 @@ plot(y_hat ~ x_hat, pch=16, col=grey(0, .5), data=xy_hat, main=NA, xlab='x', yla
 
 Transparency is how a scatterplot survives a large sample, since transparent points darken where observations pile up instead of overplotting into a solid blob.
 
-Draw fitted lines with `lines(x_sorted, y_fit)` rather than `curve()`, using red at `lwd=2` for the primary fit and blue at `lwd=1, lty=2` for a comparison fit.
+## Regression Lines
+
+Each model keeps one color, so a reader can follow it from figure to figure.
+
+| Model | Includes | col | lwd | lty |
+|---|---|---|---|---|
+| Straight line | OLS, through the origin, piecewise, local line | `rgb(1, 0, 0, .8)` | `2` | `1` |
+| Constant | A mean, regressogram, local constant | `rgb(0, 0, 1, .8)` | `2` | `1` |
+| LOESS | Any span or degree | `rgb(0, .7, .7, .8)` | `2` | `1` |
+
+Every fit is thick, since it is computed from this sample.
+A population line keeps the population style from [Histograms of Resampled Data](#histograms-of-resampled-data), so a thick blue constant is a fit and a thin dashed blue line is a known value.
+Variants of one model in the same figure, such as two bandwidths or a fit through the origin, share the model's color and differ by line type: `lty=1`, then `2`, then `3`.
+Fits drawn separately by group take the group's color instead of the model's.
+
+Draw a straight line with `abline(reg)` and any other fit with `lines(x_sorted, y_fit)`, rather than `curve()`.
 `lines()` takes the fitted values you actually computed, whereas `curve()` re-evaluates a function, which can quietly differ from the model you fit.
 Sort by the horizontal variable first, or `lines()` will zigzag back and forth across the plot.
+
+Fitted values and predictions share the model's color and width, and differ only in their markers.
+Fitted values `y_fit` are a plain line.
+Predictions `y_pred` at a few design points use `type='o'`, whose open circles mark where the curve was actually computed.
+Predictions on a dense grid stay a plain line, since the circles would merge.
+When a legend shows circles on dashed lines, set `seg.len=4`, or the circle hides the dashes.
 
 ## Polishing
 
@@ -131,30 +153,32 @@ on.exit(par(op), add=TRUE)
 Position legends with a string such as `'topright'` or `'topleft'` rather than coordinates, so the legend moves with the data instead of landing on top of it.
 Add `bty='n'` to drop the box when it clutters the plot, keep entries to one to three words, and match `lty`, `pch`, and `col` to the plot symbols.
 
-The figure below splits the states at the median assault rate and shows the two groups in two panels, with one legend for both.
+The figure below splits the workers by sex and shows the two groups in two panels, with one legend for both.
 
 ```{r, fig.height=4}
-high <- USArrests[,'Assault'] > median(USArrests[,'Assault'])
+female <- Wages1[, 'sex'] == 'female'
 cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
 par(mfrow=c(1,2), mar=c(4, 4, 1, 1), oma=c(0, 0, 2, 0))
 
 # Scatterplot
-plot(USArrests[,'Murder'] ~ USArrests[,'UrbanPop'],
-    pch=16, col=ifelse(high, cols[1], cols[2]),
-    xlab='Urban population (%)', ylab='Murder arrests (per 100k)')
+# Both panels stop near 20 dollars, so the 16 largest wages are not drawn
+# alpha.f=.2 fades cols from an alpha of .5 to .1, since n is 3294
+plot(Wages1[, 'wage'] ~ Wages1[, 'school'], ylim=c(0, 20),
+    pch=16, col=adjustcolor(ifelse(female, cols[1], cols[2]), alpha.f=.2),
+    xlab='Years of schooling', ylab='Hourly wage (1980 dollars)')
 
 # ECDFs
-F_hi_hat <- ecdf(USArrests[high, 'Murder'])
-F_lo_hat <- ecdf(USArrests[!high, 'Murder'])
-plot(F_hi_hat, col=cols[1], lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA,
-    xlim=range(USArrests[,'Murder']), main=NA,
-    xlab='Murder arrests (per 100k)', ylab='Proportion of states')
-plot(F_lo_hat, add=TRUE, col=cols[2], lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA)
+F_female_hat <- ecdf(Wages1[female, 'wage'])
+F_male_hat <- ecdf(Wages1[!female, 'wage'])
+plot(F_female_hat, col=cols[1], lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA,
+    xlim=c(0, 20), main=NA,
+    xlab='Hourly wage (1980 dollars)', ylab='Proportion of workers')
+plot(F_male_hat, add=TRUE, col=cols[2], lwd=2, verticals=TRUE, do.points=FALSE, col.01line=NA)
 
 # One legend for both panels, in the outer margin above them
 par(fig=c(0, 1, 0, 1), oma=c(0, 0, 0, 0), mar=c(0, 0, 0, 0), new=TRUE)
 plot.new()
-legend('top', legend=c('High assault', 'Low assault'),
+legend('top', legend=c('Women', 'Men'),
     pch=16, lwd=2, col=cols, horiz=TRUE, bty='n',
     text.width=.2) # room between entries, which horiz=TRUE packs tightly
 ```
@@ -175,8 +199,9 @@ Scatterpoints and histogram fills use `grey(0, alpha)`, varying only the transpa
 
 | Code | Color | Use for |
 |---|---|---|
-| `rgb(1, 0, 0, .8)` | Red | Means, fitted lines, key statistics |
-| `rgb(0, 0, 1, .8)` | Blue | SD bounds, secondary reference lines |
+| `rgb(1, 0, 0, .8)` | Red | Means, straight-line fits, key statistics |
+| `rgb(0, 0, 1, .8)` | Blue | SD bounds, secondary reference lines, constant fits |
+| `rgb(0, .7, .7, .8)` | Teal | LOESS fits |
 | `rgb(0, 0, 0, .8)` | Black | Interval bounds, and horizontal and vertical reference lines |
 
 Avoid numeric codes such as `col=2`, which depend on the current palette, and names such as `'red'`, since neither form lets you set transparency.
@@ -197,9 +222,10 @@ With four or more groups, `hcl.colors()` spaces the colors evenly in a perceptua
 3. Interval bounds in black and, for null bootstrap or permutation distributions, the observed statistic in red, both `lwd=2`.
 4. Null values, population values, and theoretical densities over a histogram in blue, with `lwd=1` and `lty=2`.
 5. `pch=16` and `grey(0, alpha)` for scatterplots, with alpha matched to $n$.
-6. `font.main=1` for every title.
-7. `rgb()` with alpha for emphasis colors, never `col=2` or `'red'`.
-8. `par(mfrow=...)` for multi-panel layouts, not `layout()`.
+6. One color per model at `lwd=2`: red for straight lines, blue for constants, and teal for LOESS, with line type for variants and `type='o'` for predictions at design points.
+7. `font.main=1` for every title.
+8. `rgb()` with alpha for emphasis colors, never `col=2` or `'red'`.
+9. `par(mfrow=...)` for multi-panel layouts, not `layout()`.
 
 #### **Further Reading** {-}
 

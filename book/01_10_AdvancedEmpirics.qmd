@@ -6,11 +6,18 @@
 set.seed(1)
 ```
 
-This chapter collects three tools that extend the univariate toolkit but sit outside the main path from data to inference.
-Kernel densities smooth the histogram into a continuous curve.
-Data transformations reshape a variable before summarizing or modeling it, and Jensen's inequality says how the mean of transformed data relates to the transformed mean.
-Inverse sampling generates random draws from either an empirical or a theoretical distribution.
+The tools in this chapter extend the univariate toolkit but sit outside the main path from data to inference.
 Each section stands on its own, so you can read them in any order.
+
+This chapter asks three questions.
+
+* How can we draw a distribution as a smooth curve?
+    * *Kernel density*: this is a new estimate that replaces the fixed bins of a [histogram](01_02_Data.qmd#histogram-density) with a moving window of half-width $h$.
+* What happens when we transform a variable?
+    * *Data transformations*: these reshape a variable before summarizing or modeling it, and the Box–Cox transform nests many common cases.
+    * *Jensen's inequality*: this says how the mean of transformed data relates to the transformed mean, as we saw for logged data in [LOTUS](01_06_EstimationTheory.qmd#law-of-the-unconscious-statistician-lotus).
+* How can we generate random draws from a distribution?
+    * *Inverse sampling*: this feeds uniform probabilities through a [quantile function](01_02_Data.qmd#quantiles), for either an empirical or a theoretical distribution.
 
 
 ## Kernel Density
@@ -47,9 +54,34 @@ The conversion is a constant that depends on the kernel: the half-width is $\sqr
 ]
 
 ```{r}
+## MAIN EXAMPLE
 # Practical Example
-x_hat <- USArrests[, 'Murder'] # lab data: murder arrests per 100,000
+data(Wages1, package='Ecdat')
+x_hat <- Wages1[, 'wage'] # lab data: hourly wages in 1980 dollars
+# The axis stops just past 20 dollars, so the 16 largest wages are not drawn
 hist(x_hat,
+    breaks=seq(0, 40, by=1), # bin width =1, so h=1/2
+    xlim=c(0, 20),
+    freq=FALSE,
+    border=NA,
+    main=NA,
+    xlab='Hourly wage (1980 dollars)')
+title('Hourly Wages', font.main=1)
+# Density Estimate with half-width h=1
+# 'density' reads bw as the kernel's standard deviation, so pass bw=h/sqrt(3)
+h <- 1
+f_hat <- density(x_hat, bw=h/sqrt(3), kernel='rectangular')
+lines(f_hat)
+# Raw Observations, nearly transparent since thousands of marks overlap
+rug(x_hat[x_hat <= 20], col=grey(0, .1))
+# The curve peaks between 4 and 5 dollars and has a long right tail.
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the density estimate with murder arrest rates, using a half-width of $h=3$.
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+hist(x2_hat,
     breaks=seq(0, 20, by=2), # bin width =2, so h=1
     freq=FALSE,
     border=NA,
@@ -58,14 +90,15 @@ hist(x_hat,
 title('Murder Arrests', font.main=1)
 # Density Estimate with half-width h=3
 # 'density' reads bw as the kernel's standard deviation, so pass bw=h/sqrt(3)
-h <- 3
-f_hat <- density(x_hat, bw=h/sqrt(3), kernel='rectangular')
-lines(f_hat)
+h2 <- 3
+f2_hat <- density(x2_hat, bw=h2/sqrt(3), kernel='rectangular')
+lines(f2_hat)
 # Raw Observations
-rug(x_hat, col=grey(0, .5))
+rug(x2_hat, col=grey(0, .5))
 ```
+:::
 
-We can also replace the uniform kernel with other kernel functions to create even smoother lines. 
+We can also replace the uniform kernel with other kernel functions to create even smoother lines.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 There are many [kernels](https://en.wikipedia.org/wiki/Kernel_(statistics)#In_non-parametric_statistics), but these are the most intuitive and commonly used.
@@ -126,20 +159,23 @@ Once we have picked a kernel (which particular one is not particularly important
 
 ```{r}
 # Practical Example
+# The axis stops just past 20 dollars, so the 16 largest wages are not drawn
 hist(x_hat,
-    breaks=seq(0, 20, by=2), # bin width 2h=2, so h=1
+    breaks=seq(0, 40, by=1), # bin width 2h=1, so h=1/2
+    xlim=c(0, 20),
     freq=FALSE,
     border=NA,
     main=NA,
-    xlab='Murder Arrests')
-title('Murder Arrests', font.main=1)
-# Same half-width h=3 as the rectangular kernel above, but a smoother weight
+    xlab='Hourly wage (1980 dollars)')
+title('Hourly Wages', font.main=1)
+# Same half-width h=1 as the rectangular kernel above, but a smoother weight
 # For the Epanechnikov kernel, bw=h/sqrt(5)
-h <- 3
+h <- 1
 f_hat <- density(x_hat, bw=h/sqrt(5), kernel='epanechnikov')
 lines(f_hat)
 # Raw Observations
-rug(x_hat, col=grey(0, .5))
+rug(x_hat[x_hat <= 20], col=grey(0, .1))
+# The overall shape matches the rectangular kernel, with fewer wiggles.
 ```
 
 :::
@@ -228,6 +264,7 @@ $$
 This function is continuous over $\lambda$.
 
 ```{r}
+## MAIN EXAMPLE
 # Box–Cox transform and inverse
 bc_transform <- function(x_hat, lambda) {
   if (any(x_hat <= 0)) stop('Box-Cox requires x > 0')
@@ -237,19 +274,43 @@ bc_inverse <- function(t, lambda) {
   if (abs(lambda) < 1e-8) exp(t) else (lambda*t + 1)^(1/lambda)
 }
 
-hist(x_hat, main=NA, border=NA, freq=FALSE)
-rug(x_hat, col=grey(0, .5))
+hist(x_hat, breaks=seq(0, 40, by=1), main=NA, border=NA, freq=FALSE,
+    xlab='Hourly wage (1980 dollars)')
+rug(x_hat, col=grey(0, .1))
+# Wages are right-skewed, with 18 above 20 dollars.
 
 par(mfrow=c(1, 3))
 for(lambda in c(-1, 0, 1)){
     y_hat <- bc_transform(x_hat, lambda)
-    hist(y_hat,
+    hist(y_hat, breaks=25,
         main=NA,
         border=NA, freq=FALSE)
-    rug(y_hat, col=grey(0, .5))
+    rug(y_hat, col=grey(0, .1))
+    title(bquote(paste(lambda, '=', .(lambda))), font.main=1)
+}
+# lambda=1 only shifts wages, so it keeps the long right tail.
+# lambda=0 pulls in that tail, but stretches out the few wages near zero.
+# lambda=-1 stretches them further, so about 93% of workers fall in one bar.
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the Box–Cox transforms with murder arrest rates.
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+hist(x2_hat, main=NA, border=NA, freq=FALSE)
+rug(x2_hat, col=grey(0, .5))
+
+par(mfrow=c(1, 3))
+for(lambda in c(-1, 0, 1)){
+    y2_hat <- bc_transform(x2_hat, lambda)
+    hist(y2_hat,
+        main=NA,
+        border=NA, freq=FALSE)
+    rug(y2_hat, col=grey(0, .5))
     title(bquote(paste(lambda, '=', .(lambda))), font.main=1)
 }
 ```
+:::
 
 Be careful about transforming your data, as the interpretation can be harder.
 
@@ -257,7 +318,7 @@ The mean of transformed data is not equivalent to transforming the mean, for exa
 
 #### **Jensen’s inequality** {-}
 
-We can actually say more about how the mean of transformed data is not equivalent to transforming the mean, which we saw for log wages in [LOTUS](01_06_EstimationTheory.qmd#law-of-the-unconscious-statistician-lotus).
+We can actually say more about how the mean of transformed data is not equivalent to transforming the mean, which we saw for logged data in [LOTUS](01_06_EstimationTheory.qmd#law-of-the-unconscious-statistician-lotus).
 To do that, we define two types of functions:
 
 * *Concave* functions curve inwards, like the inside of a cave.
@@ -267,12 +328,13 @@ Let $\hat{y}_{i}=g( \hat{x}_{i})$, and denote the mean as $\hat{m}_{Y}$.
 
 If $g$ is a *concave* function, then $g( \hat{m}_{X} ) \geq \hat{m}_{Y}$ [@Jensen1906].
 The square root and the log are both concave.
-Every murder rate is positive, so we can take logs of them all.
 ```{r}
+## MAIN EXAMPLE
 # Concave: mean of the transform vs transform of the mean
 mean( sqrt(x_hat) )
 sqrt( mean(x_hat) )
 
+# Every wage is positive, so we can take logs of them all.
 mean( log(x_hat) )
 log( mean(x_hat) )
 ```
@@ -313,6 +375,25 @@ mean( x_hat^2 )
 mean( x_hat )^2
 ```
 
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat the concave and convex comparisons with murder arrest rates.
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+
+# Concave: mean of the transform vs transform of the mean
+mean( sqrt(x2_hat) )
+sqrt( mean(x2_hat) )
+
+# Every murder rate is positive, so we can take logs of them all.
+mean( log(x2_hat) )
+log( mean(x2_hat) )
+
+# Convex: mean of the transform vs transform of the mean
+mean( x2_hat^2 )
+mean( x2_hat )^2
+```
+:::
+
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 The exponential is also convex.
 Here it is with three small numbers.
@@ -345,12 +426,16 @@ To implement this, we
 * draw $p~\text{in}~[0,1]$ as a uniform random variable
 * find the associated quantile via the ECDF
 
-Here is an example of generating random murder rates for US states.
+Here is an example of generating random draws from the lab data.
 ```{r}
+## MAIN EXAMPLE
 # Empirical Distribution
 F_hat <- ecdf(x_hat)
+# The axis stops just past 20 dollars, so the 16 largest wages are not drawn
 plot(F_hat, lwd=2, xlim=c(0, 20),
-    pch=16, col=grey(0, .5), main=NA)
+    do.points=FALSE, verticals=TRUE, main=NA,
+    xlab='Hourly wage (1980 dollars)', ylab='Proportion of workers')
+# With 3294 workers, most jumps are too small to see.
 
 # Generating random variables via inverse ECDF
 p <- runif(3000) ## Multiple Draws
@@ -362,7 +447,29 @@ x_sim <- quantile(x_hat, p, type=1)
 x_sim[c(1, 2, 3)]
 ```
 
-Every draw is one of the observed murder rates, since the ECDF only jumps at the data.
+Every draw is one of the observed values, since the ECDF only jumps at the data.
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Generate random murder rates for US states by inverse sampling, as above.
+```{r}
+x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
+
+# Empirical Distribution
+F2_hat <- ecdf(x2_hat)
+plot(F2_hat, lwd=2, xlim=c(0, 20),
+    pch=16, col=grey(0, .5), main=NA)
+
+# Generating random variables via inverse ECDF
+p2 <- runif(3000) ## Multiple Draws
+x2_sim <- quantile(F2_hat, p2, type=1)
+x2_sim[c(1, 2, 3)]
+
+## Can also do directly from the data
+x2_sim <- quantile(x2_hat, p2, type=1)
+x2_sim[c(1, 2, 3)]
+# Every draw is one of the observed murder rates.
+```
+:::
 
 #### **Theoretically** {-}
 
@@ -422,8 +529,8 @@ x_sim[c(1, 2, 3)]
    That is, for each $x$ count the observations within $h$ of $x$ and divide by $n \cdot 2h$.
    Then write a short R function that does the same count and verify your three answers.
 
-3. Load `USArrests` in R and extract the `Assault` variable.
-   Compute `mean(log(x_hat))` and `log(mean(x_hat))`.
+3. Load `USArrests` in R and extract the `Assault` variable as `x2_hat`.
+   Compute `mean(log(x2_hat))` and `log(mean(x2_hat))`.
    Which is larger, and which case of Jensen's inequality does this illustrate?
    Then apply the Box–Cox transform with $\lambda~\text{in}~\{-1, 0, 1/2, 1\}$ using `bc_transform` from this chapter, and plot the four histograms side by side.
    Which $\lambda$ gives the most symmetric histogram?
