@@ -18,7 +18,7 @@ This chapter asks three questions.
 * Do the whole distributions differ?
     * *KS and CVM statistics*: these are new statistics that summarize the gaps between two [ECDFs](01_02_Data.qmd#empirical-cumulative-distribution-function).
 * How sure are we?
-    * *Bootstrap confidence interval*: this resamples each group separately and uses the recipe from [Hypothesis Testing](01_08_HypothesisTests.qmd) to test the difference.
+    * *Bootstrap confidence interval*: this resamples each group separately and tests the difference by [inverting a CI](01_07_Intervals.qmd#invert-a-ci).
     * *Permutation test*: this is a new way to [impose the null](01_08_HypothesisTests.qmd#impose-the-null), by reshuffling the group labels.
 
 ## Discrete Data
@@ -554,11 +554,52 @@ Point 1, $(18,19)$, lies above the line, and so do points 2 and 4.
 :::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Compare the distribution of arrests for two different counties, each with data over time.
+Repeat these comparisons for the $50$ states in `USArrests`, with murder arrests split into the South and the other census regions.
+Compute the KS and CVM statistics, then draw the two ECDFs and a QQ plot.
+Is the South higher at every percentile?
 
-```{r, eval=FALSE}
-data(countymurders, package='wooldridge')
-countymurders
+```{r}
+# 50 US states in 1973, with murder arrests per 100,000 people.
+# The built-in state.region lists regions in the same state order as USArrests.
+D_south <- state.region == 'South'
+murder1_hat <- USArrests[D_south, 'Murder']  # 16 southern states
+murder2_hat <- USArrests[!D_south, 'Murder'] # 34 states in other regions
+
+# KS and CVM statistics, with ks_cvm() from above
+stat2_obs <- ks_cvm(murder1_hat, murder2_hat)
+round(stat2_obs, 2)
+# The two ECDFs are up to 0.58 apart.
+
+par(mfrow=c(1, 2))
+
+# ECDFs on a common axis
+ry2 <- range(c(murder1_hat, murder2_hat))
+plot(ecdf(murder1_hat), col=cols[1], pch=16, xlim=ry2,
+    xlab='Murder Arrests per 100,000', ylab='ECDF',
+    main=NA, bty='n')
+plot(ecdf(murder2_hat), add=TRUE, col=cols[2], pch=16)
+title(paste0('KS: ', round(stat2_obs[['KS']], 2)), adj=0, font.main=1)
+title(paste0('CVM: ', round(stat2_obs[['CVM']], 2)), adj=1, font.main=1)
+legend('bottomright', bty='n', cex=.8, inset=c(0, .05),
+    col=cols, pch=15,
+    legend=c('South', 'Other Regions'))
+
+# Percentiles of each group's murder arrests
+Q1_murder <- quantile(murder1_hat, probs=quants)
+Q2_murder <- quantile(murder2_hat, probs=quants)
+
+# Compare Quantiles
+plot(Q1_murder, Q2_murder, xlim=ry2, ylim=ry2,
+    xlab='South Murder Arrests', ylab='Other Regions Murder Arrests',
+    main=NA,
+    pch=16, col=grey(0, .25))
+title('Quantile-Quantile Plot', font.main=1)
+abline(a=0, b=1, col=rgb(0, 0, 1, .8), lty=2) # 45 degree line: identical distributions
+# Raw observations for each group along its own axis
+rug(murder1_hat, side=1, col=cols[1])
+rug(murder2_hat, side=2, col=cols[2])
+# Every percentile is higher in the South, so all the points lie below the line.
+# The gap is largest near the median, at about 7.6 arrests per 100,000.
 ```
 
 :::
@@ -577,7 +618,7 @@ Because each reshuffle keeps the pooled data but breaks the link between label a
 The *permutation test* (also called a *randomization test*) is useful when the null hypothesis is "no association".
 Reshuffling the labels imposes that null, and we do not need to assume a distributional form.
 Every reshuffle uses the same pooled data, so the only variability comes from re-splitting the labels.
-If using a hard decision rule, it is most common to reject the null at the $5\%$ level when $p<0.05$ and fail to reject when $p>0.05$.
+If using a hard decision rule, it is most common to reject the null at the $5\%$ level when $p<0.05$ and fail to reject when $p \geq 0.05$.
 Alternatively, we can reject when the observed statistic falls outside the middle $95\%$ of the permutation distribution, as with the null bootstrap in [Hypothesis Testing](01_08_HypothesisTests.qmd#impose-the-null).
 
 #### **Permuting Means** {-}
@@ -773,4 +814,4 @@ round(c(KS_stat=stat_obs[['KS']], KS_crit=perm_crit[['KS']], KS_pval=p_ks,
 This chapter compared two groups by their means, their quantiles, and their whole distributions using $\hat{\text{KS}}$ and $\hat{\text{CVM}}$.
 The main example compared wages in `Wages1` for workers with 12 and 16 years of schooling, with permutation tests for $p$-values.
 A small example used summer earnings $A=\{18,20,25,30\}$ and $B=\{19,21,24,35\}$.
-By hand, we found $\hat{d}=-1.5$ with a permutation $p$-value of about $0.77$, and computed $\hat{\text{CVM}}=1/4$ cell by cell.
+We found $\hat{d}=-1.5$ by hand, listed all $70$ relabelings in R for a permutation $p$-value of about $0.77$, and computed $\hat{\text{CVM}}=1/4$ cell by cell.

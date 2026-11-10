@@ -757,7 +757,7 @@ abline(v=boot_ci_percentile, col=rgb(0, 0, 0, .8), lwd=2)
 #### **Normal Approximation with Jackknife SE** {-}
 We also use the jackknife, which loops through each row of the dataset.
 In each iteration of the loop, we drop that observation from the dataset and reestimate the statistic of interest.
-We then calculate the standard deviation of the statistic across all subsamples to get jackknife standard errors and, assuming the data are approximately normal, use Normal quantiles to construct a CI.^[Recall that jackknife standard errors need to be rescaled because each jackknife resample is too similar to the next. For this reason, we also do not simply take the percentiles of the jackknife distribution. We can also calculate the standard deviation of the statistic across all bootstrap samples instead.]
+We then calculate the standard deviation of the statistic across all subsamples to get jackknife standard errors and, assuming the statistic's sampling distribution is approximately Normal, use Normal quantiles to construct a CI.^[Recall that jackknife standard errors need to be rescaled because each jackknife resample is too similar to the next. For this reason, we also do not simply take the percentiles of the jackknife distribution. We can also calculate the standard deviation of the statistic across all bootstrap samples instead.]
 
 
 ```{r}
@@ -800,7 +800,7 @@ We are rarely interested in computing standard errors and conducting hypothesis 
 
 #### **Invert a CI** {-}
 
-One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value.
+One main way to conduct hypothesis tests is to examine whether a confidence interval contains a hypothesized value, as in [Invert a CI](01_07_Intervals.qmd#invert-a-ci).
 Does the slope coefficient equal $0$?
 We already have a bootstrap percentile interval for $\hat{b}_{1}$, so we check whether it contains $0$.
 ```{r}
@@ -861,7 +861,7 @@ Smaller $p$-values suggest more evidence against the null.
 ```{r}
 # Two Sided Test for P(|b1| >= |observed b1| | Null of b1=0)
 F_hat <- ecdf(abs(null_coefs))
-p_slope <- 1-F_hat(abs(slope))
+p_slope <- mean(abs(null_coefs) >= abs(slope))
 p_slope
 plot(F_hat, xlim=range(abs(null_coefs), abs(slope)),
     xlab=expression( abs(hat(b)[1]) ),
@@ -930,8 +930,7 @@ for(b in seq_along(null_coefs_usa)){
 quantile(null_coefs_usa, probs=c(.025, .975))
 # The observed slope is also inside the middle 95% of permuted slopes.
 # That range runs from about -0.08 to 0.08.
-F_usa_hat <- ecdf(abs(null_coefs_usa))
-1-F_usa_hat(abs(slope_usa))
+mean(abs(null_coefs_usa) >= abs(slope_usa))
 # The p-value is large, so we fail to reject the null of no relationship.
 ```
 :::
@@ -992,8 +991,7 @@ abline(v=quantile(null_t, probs=c(.025, .975)), col=rgb(0, 0, 0, .8), lwd=2)
 abline(v=t_hat, col=rgb(1, 0, 0, .8), lwd=2)
 
 # Two Sided Test for P(|t| >= |observed t| | Null of t=0), next to the slope version
-F_t_hat <- ecdf(abs(null_t))
-p_t <- 1-F_t_hat(abs(t_hat))
+p_t <- mean(abs(null_t) >= abs(t_hat))
 c(slope=p_slope, t=p_t)
 # Both p-values are essentially zero.
 # So both tests reject the null of no relationship between schooling and wages.

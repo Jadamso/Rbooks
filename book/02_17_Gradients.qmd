@@ -20,7 +20,7 @@ This chapter asks three questions.
     * *Mean of the gradients and gradient at the mean*: these new statistics collapse the gradients into a single number.
 * How sure are we?
     * *Confidence band and gradient standard errors*: these assess sampling variability with the same [bootstrap](02_15_SimpleRegression.qmd#bootstrap) recipe as the slope.
-    * *Invert a CI*: this reuses the bootstrap interval for the mean gradient, and rejects zero if it falls outside, as we did for [the mean](01_08_HypothesisTests.qmd#invert-a-ci).
+    * *Invert a CI*: this reuses the bootstrap interval for the mean gradient, and rejects zero if it falls outside, as we did for [the mean](01_07_Intervals.qmd#invert-a-ci).
     * *Mean gradient test and Racine's test*: these test whether the mean gradient is zero and whether all gradients are zero.
       They impose the null as we did for [the mean](01_08_HypothesisTests.qmd#impose-the-null) and for [correlation](02_14_Associations.qmd#hypothesis-testing).
     * *R-squared and cross-validation*: these assess goodness of fit, the same model assessment as for the [line](02_15_SimpleRegression.qmd#goodness-of-fit).
@@ -407,7 +407,7 @@ The [out-of-sample R-squared](02_15_SimpleRegression.qmd#cross-validation) $\hat
 The two can differ, since a squared correlation ignores whether the predictions are shifted or scaled away from the observed $\hat{y}_{i}$.
 Squaring also hides a negative correlation, so a model can have an $\hat{R}^{2}_{\text{gen,CV}}$ above its in-sample $\hat{R}^{2}$ even when its $\hat{R}^{2}_{\text{CV}}$ is negative, as a Test Yourself in [Cross-Validation](02_15_SimpleRegression.qmd#cross-validation) shows.
 
-@Adamson2025_Greece compares a local constant regression with a linear model using both in-sample and out-of-sample errors [@MullainathanSpiess2017].
+@Adamson2025_Greece compares a locally constant regression with a linear model using both in-sample and out-of-sample errors [@MullainathanSpiess2017].
 It notes that fitting simple models to complex relationships is believed to be a major source of false positives [@hendersonparmeter2015; @racine2019; @hansen2022b].
 
 ## Gradients
@@ -675,7 +675,7 @@ The gradient at the mean depends on the fit near a single design point, so it te
 ## Hypothesis Testing
 
 We can test whether the mean gradient is statistically different from zero.
-The first way is to [invert a confidence interval](01_08_HypothesisTests.qmd#invert-a-ci).
+The first way is to [invert a confidence interval](01_07_Intervals.qmd#invert-a-ci).
 A $95\%$ confidence interval gives a test at the $5\%$ level: reject a hypothesized value if it falls outside the interval, and fail to reject it if it falls inside.
 So we need no new resampling to test $H_{0}$: the mean gradient equals zero.
 We only check whether the bootstrap interval from [Gradient Standard Errors](#gradient-standard-errors) contains $0$.
@@ -709,26 +709,23 @@ Under $H_{0}$, the mean gradient equals zero, so we center the bootstrap distrib
 
 ```{r}
 ## MAIN EXAMPLE
-## P-value via null bootstrap ECDF
+## P-value via null bootstrap
 ## Center bootstrap means at zero (impose H0)
 boot_centered <- boot_stats[, 'Mean'] - mean(boot_stats[, 'Mean'])
 
-## ECDF of centered bootstrap distribution
-F_hat <- ecdf(boot_centered)
-
 ## Two-sided p-value: P(|centered mean| >= |observed mean|)
-p_boot <- 1 - F_hat(abs(tab_stats['Mean'])) +
-              F_hat(-abs(tab_stats['Mean']))
+p_boot <- mean(abs(boot_centered) >= abs(tab_stats['Mean']))
 
-cat('Bootstrap p-value (ECDF):', p_boot, '\n')
+cat('Bootstrap p-value:', p_boot, '\n')
 # The observed mean gradient is farther from zero than all 299 centered means.
 # So the p-value is 0.
-# That means only that it is below 1/299, about 0.003.
+# That only says the p-value is probably below about 3/299, or 0.01.
 # The mean gradient is statistically distinguishable from zero.
 # On average, wages increase with schooling.
 ```
 
-With $B$ resamples, a p-value of $0$ means only that the p-value is below $1/B$.
+With $B$ resamples, a p-value of $0$ means only that no resample was as extreme as the observed statistic.
+The p-value with unlimited resamples could still be about $3/B$, which would produce no such resample about $5\%$ of the time.
 A small p-value indicates that the mean gradient is statistically distinguishable from zero.
 
 We can also use a normal approximation.
@@ -835,15 +832,14 @@ abline(v=racine_hat, col=rgb(1, 0, 0, .8), lwd=2) # observed statistic
 abline(v=perm_cut, col=rgb(0, 0, 0, .8), lwd=2)   # 95% permutation cutoff
 
 ## One-sided p-value: P(permuted statistic >= observed statistic)
-F_racine <- ecdf(null_racine)
-p_racine <- 1 - F_racine(racine_hat)
+p_racine <- mean(null_racine >= racine_hat)
 
 cat('Observed statistic: ', round(racine_hat, 3), '\n')
 cat('95% cutoff:         ', round(perm_cut, 3), '\n')
 cat('Permutation p-value:', p_racine, '\n')
 # The observed statistic, about 0.39, is far above the 95% cutoff of about 0.05.
 # None of the 299 permuted values is as large, so the p-value is 0.
-# That means only that it is below 1/299, about 0.003.
+# That only says the p-value is probably below about 3/299, or 0.01.
 # Both tests reject: about 99 percent of workers have a positive gradient.
 # So little cancels.
 ```

@@ -22,7 +22,25 @@ This chapter asks three questions.
 
 Scatterplots are a great and simple plot for bivariate data that simply plots each observation.
 There are many extensions and similar tools.
-The example below helps understand how both the central tendency and dispersion change.
+Many of them summarize $\hat{y}_{i}$ using only the observations whose $\hat{x}_{i}$ is near some value $x$.
+
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+An observation is "local" to $x$ when $|\hat{x}_{i}-x|\leq h$, for some *bandwidth* $h$.
+:::
+
+The bandwidth $h$ is the same $h$ that set the bin half-width of a [histogram](01_02_Data.qmd#histogram-density) and the spread of a [kernel density](01_10_AdvancedEmpirics.qmd#kernel-density).
+It is useful for controlling how smooth a local estimate is.
+
+The example below uses a small bandwidth for local means and medians to help understand how the central tendency changes.
+Each value of $\hat{x}$ is a group, so the red triangles are the conditional means $\hat{m}_{Y}(g)$ from [Comparing Multiple Groups](02_13_MultipleGroups.qmd#group-summaries), now ordered along $\hat{x}$.
+This chapter writes means $\hat{m}_{Y}(g)$ as $\hat{m}_{Y}(x,h)$, because each group is the set of observations with $\hat{x}_{i}~\text{in}~[x-h,x+h]$.
+The bandwidth $h$ is small enough here that each group holds only that value, but we could expand it to pool more data.
+The histogram bandwidth $h$ controlled how much data went into a density estimate at $x$ whereas here $h$ controls how much data goes into a conditional estimate at $x$.
+
+Overlayed on a scatterplot, we can also get a sense of how dispersion changes too.
+The blue squares show the grouped medians, the [conditional quantile](02_12_TwoGroups.qmd#discrete-data) $\hat{F}_{Y}^{-1}(0.5 \mid x)$ at each value of $\hat{x}$.
+A median below its mean is a sign that $\hat{y}$ is skewed right within that group, so we can also get a sense of whether skew is changing with $x$.
+
 ```{r}
 ## MAIN EXAMPLE
 # Running example for the whole chapter: wages and years of schooling
@@ -52,21 +70,9 @@ title('Grouped Means, Medians, and Scatterplot', font.main=1)
 # That is a sign that wages within each level are skewed right.
 ```
 
-Each value of $\hat{x}$ is a group, so the red triangles are the conditional means $\hat{m}_{Y}(g)$ from [Comparing Multiple Groups](02_13_MultipleGroups.qmd#group-summaries), now ordered along $\hat{x}$.
-The blue squares are the grouped medians, the [conditional quantile](02_12_TwoGroups.qmd#discrete-data) $\hat{F}_{Y}^{-1}(0.5 \mid x)$ at each value of $\hat{x}$.
-A median below its mean is a sign that $\hat{y}$ is skewed right within that group.
 
-:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Examine the local relationship between 'Murder' and 'Urbanization' in the `USArrests` dataset.
-Use custom bins.
-```{r, eval=FALSE}
-xy2_hat <- USArrests[, c('UrbanPop', 'Murder')]
-colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=murder arrests per 100K
-bins <- cut(xy2_hat[, 'x_hat'], 6)
-```
-:::
 
-Regression models offer another way to describe how $\hat{y}_{i}$ changes with $\hat{x}_{i}$.
+Regression models provide a general way to describe how the mean $\hat{y}_{i}$ changes with $\hat{x}_{i}$.
 A [simple linear regression](02_15_SimpleRegression.qmd) fits one straight line to all of the data, which can miss a relationship that bends.
 The methods in this chapter instead fit a simple model to the observations within a window of $\hat{x}_{i}$ values.
 Each method splits the outcome into two parts,
@@ -77,33 +83,48 @@ where the fitted value $\hat{y}_{i}^{\mathrm{fit}}$ can bend with $\hat{x}_{i}$ 
 After minimizing the sum of squared errors in the regressions below, our estimated models will also predict local averages.
 
 The methods differ in two choices: whether the windows are fixed bins or slide along with $x$, and whether the model within each window is a constant or a line.
+All four methods in the table use a bandwidth $h$, which controls how "local" a local estimate actually is.
 
 |  | Constant within each window | Line within each window |
 |---|---|---|
 | **Fixed bins** | Regressogram | Piecewise regression |
-| **Window slides with $x$** | Locally constant regression | Locally linear regression |
+| **Window slides with $x$** | Locally constant regression | Local linear regression |
 : Local Regression Methods
 
-Each window also needs a width, which controls how "local" a local estimate actually is.
 
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
-The *bandwidth* $h$ is the half-width of a local bin around the design point $x$: an observation is "local" to $x$ when $|\hat{x}_{i}-x|\leq h$.
-:::
 
-The bandwidth is useful for controlling how smooth a local estimate is.
-All four methods in the table above use it.
-It is the same $h$ that set the bin half-width of a [histogram](01_02_Data.qmd#histogram-density) and the spread of a [kernel density](01_10_AdvancedEmpirics.qmd#kernel-density).
-There, it controlled how much data went into a density estimate at $x$.
-Here, it controls how much data goes into a conditional-mean estimate at $x$.
-Larger $h$ pools more observations into each estimate but smooths over real variation; smaller $h$ tracks the data more closely but uses fewer points per estimate, so the fitted curve becomes noisier.
+Each step fixes one problem with the step before it.
+Adding a slope captures the trend within a bin.
+Sliding the window replaces the jump at the bin edge with smaller steps.
+Adding a slope to the sliding window reduces bias near the edges of the data.
+A window near an edge can hold many observations from one side of the design point, which pulls the window average away from the trend.
+The local linear fit follows the trend.
+The code below checks this at one design point near an edge.
 
-This chapter writes the grouped means $\hat{m}_{Y}(g)$ as $\hat{m}_{Y}(x,h)$, because each group is the set of observations with $\hat{x}_{i}~\text{in}~[x-h,x+h]$.
-In the grouped-means figure, $x$ is one value of $\hat{x}$, and $h$ is small enough that each group holds only that value.
+```{r}
+# The figure above uses half-width h=3.5 and two fixed bins.
+# The bins hold schooling levels 3 to 9 and 10 to 16, with midpoints 6 and 13.
+
+# The sliding window around 15 years of schooling, near the top of the range
+xy_window <- xy_hat[abs(xy_hat[, 'x_hat']-15) <= 3.5, ]
+table(xy_window[, 'x_hat'])
+# Of its 1941 workers, 1188 have 12 years of schooling.
+
+# Grouped mean at 15 years, then the locally constant and local linear fits
+school_means[school_means[, 'x_hat']==15, 'y_hat']
+mean(xy_window[, 'y_hat'])
+predict(lm(y_hat ~ x_hat, data=xy_window), newdata=data.frame(x_hat=15))
+# Near the top, the locally constant fit falls below the grouped means.
+# At 15 years it is about 6.29, and the grouped mean is about 8.38.
+# The many workers with 12 years of schooling pull the window average down.
+# The local linear fit, about 8.24, follows the trend.
+```
+
 
 The figure below fits all four methods to the running example, each with the same half-width $h$.
 The left panel uses two fixed bins, and the right panel slides a window of the same width along $x$.
 The grey triangles are the grouped means from the figure above.
-The dotted lines in the left panel mark the bin midpoints.
+The dotted lines in the left panel mark the bin midpoints, and the circles mark the predictions there.
 At these midpoints, each window holds exactly one bin, so the sliding fits equal the fixed-bin fits there.
 
 ```{r, echo=FALSE, fig.height=4}
@@ -122,6 +143,12 @@ preg_bins <- lm(y_hat ~ xcc*x_hat, data=xy_bins)
 pred_bins <- data.frame(x_hat=x_grid, xcc=cut(x_grid, breaks=bin_breaks))
 y_pred_rgram <- predict(rgram_bins, newdata=pred_bins)
 y_pred_preg <- predict(preg_bins, newdata=pred_bins)
+
+# Predictions at the bin midpoints, the design points of the fixed bins
+x_mid <- c(6, 13)
+pred_mid <- data.frame(x_hat=x_mid, xcc=cut(x_mid, breaks=bin_breaks))
+y_pred_rgram_mid <- predict(rgram_bins, newdata=pred_mid)
+y_pred_preg_mid <- predict(preg_bins, newdata=pred_mid)
 
 # Sliding window: weighted mean and weighted line at every design point
 y_pred_lc <- rep(NA, length(x_values))
@@ -142,9 +169,11 @@ plot(y_hat ~ x_hat, data=school_means, pch=17, col=grey(0, .5), ylim=y_range,
     main=NA, xlab='School', ylab='Mean Wage')
 lines(x_grid, y_pred_rgram, col=cols[1], lwd=2)
 lines(x_grid, y_pred_preg, col=cols[2], lwd=2)
-abline(v=c(6, 13), col=grey(.5), lty=3) # bin midpoints
+points(x_mid, y_pred_rgram_mid, col=cols[1], lwd=2) # open circles, as with type='o'
+points(x_mid, y_pred_preg_mid, col=cols[2], lwd=2)
+abline(v=x_mid, col=grey(.5), lty=3) # bin midpoints
 legend('topleft', legend=c('Constant', 'Line'),
-    lty=1, lwd=2, col=cols, cex=.8, bty='n')
+    pch=1, lty=1, lwd=2, col=cols, cex=.8, bty='n')
 title('Fixed Bins', font.main=1)
 
 plot(y_hat ~ x_hat, data=school_means, pch=17, col=grey(0, .5), ylim=y_range,
@@ -153,34 +182,6 @@ lines(x_values, y_pred_lc, col=cols[1], lwd=2, type='o')
 lines(x_values, y_pred_ll, col=cols[2], lwd=2, type='o')
 title('Sliding Window', font.main=1)
 ```
-
-Each step fixes one problem with the step before it.
-Adding a slope captures the trend within a bin.
-Sliding the window replaces the jump at the bin edge with smaller steps.
-Adding a slope to the sliding window reduces bias near the edges of the data.
-A window near an edge can hold many observations from one side of the design point, which pulls the window average away from the trend.
-The locally linear fit follows the trend.
-The code below checks this at one design point near an edge.
-
-```{r}
-# The figure above uses half-width h=3.5 and two fixed bins.
-# The bins hold schooling levels 3 to 9 and 10 to 16, with midpoints 6 and 13.
-
-# The sliding window around 15 years of schooling, near the top of the range
-xy_window <- xy_hat[abs(xy_hat[, 'x_hat']-15) <= 3.5, ]
-table(xy_window[, 'x_hat'])
-# Of its 1941 workers, 1188 have 12 years of schooling.
-
-# Grouped mean at 15 years, then the locally constant and locally linear fits
-school_means[school_means[, 'x_hat']==15, 'y_hat']
-mean(xy_window[, 'y_hat'])
-predict(lm(y_hat ~ x_hat, data=xy_window), newdata=data.frame(x_hat=15))
-# Near the top, the locally constant fit falls below the grouped means.
-# At 15 years it is about 6.29, and the grouped mean is about 8.38.
-# The many workers with 12 years of schooling pull the window average down.
-# The locally linear fit, about 8.24, follows the trend.
-```
-
 
 ## Fixed Bins
 
@@ -243,7 +244,7 @@ $$\begin{aligned}
 This separation allows us to analytically optimize for each bin separately
 $$\begin{aligned}
 \min_{ \left\{ b_{0}(x,h) \right\} } \sum_{i}^{n}\left[\hat{e}_{i}\right]^2
-&= \min_{ \left\{ b_{0}(x,h) \right\} } \sum_{i}^{n(x,h)}\left[\hat{y}_{i}- b_{0}\left(x,h\right) \right]^2,
+&= \sum_{x~\text{in}~\{x_{1}, ..., x_{L} \}} \min_{ b_{0}(x,h) } \sum_{i}^{n(x,h)}\left[\hat{y}_{i}- b_{0}\left(x,h\right) \right]^2.
 \end{aligned}$$
 Within each bin, this is the [simple constant regression](02_15_SimpleRegression.qmd#simple-constant-regression) applied to the observations in that bin, so minimizing yields the optimal coefficient as follows
 $$\begin{aligned}
@@ -371,6 +372,7 @@ colnames(xy2_hat) <- c('x_hat', 'y_hat') # x_hat=urban population share, y_hat=m
 reg <- lm(y_hat ~ x_hat, data=xy2_hat)
 ```
 
+Now examine the local relationship between 'Murder' and 'Urbanization' using custom bins.
 Try to do so on your own before looking at the code below, which compares two piecewise regressions to a simple linear regression.
 ```{r, eval=FALSE}
 # Diagnose Fit
@@ -487,7 +489,7 @@ $$\min_{b_{0}(x, h)} \sum_{i=1}^{n}\left[\hat{y}_{i} - b_{0}(x, h) \right]^{2} k
 where $k(\hat{x}_{i}, x, h)$ is a kernel weight that down-weights observations far from $x$.
 :::
 
-The locally constant regression is useful as the simplest smoother that produces a continuous fitted curve: at each $x$ it returns a kernel-weighted average of nearby $\hat{y}_{i}$.
+The locally constant regression is useful as the simplest smoother that avoids jumps at fixed bin edges: at each $x$ it returns a kernel-weighted average of nearby $\hat{y}_{i}$.
 With a uniform kernel and exclusive bins it reduces to a regressogram, so the regressogram is just its simplest special case.
 
 For some intuition, note that this model is a weighted version of the [simple constant regression](02_15_SimpleRegression.qmd#simple-constant-regression).
@@ -541,7 +543,7 @@ legend('topleft', title='Locally Constant',
 When $n$ is small, $\hat{b}_{0}(x, h)$ is typically estimated at each unique observed value of $\hat{x}_{i}$.
 For large datasets, you can select a subset or evenly spaced values of $x$ for which to make predictions.
 
-If $\hat{x}_{i}$ represents time, then the local constant regression is also called a *moving average*.
+If $\hat{x}_{i}$ represents time, then the locally constant regression is also called a *moving average*.
 We can create a *weighted* moving average by using a different distribution.
 I.e. using the Normal `dnorm` instead of the Uniform `dunif`.
 
@@ -580,7 +582,6 @@ Interestingly, we can also obtain the piecewise regression estimates from weight
 For some specific design point, $x$, we can find $\hat{b}_{0}(x,h)$ and $\hat{b}_{1}(x,h)$ by minimizing
 $$\begin{aligned}
 \sum_{i}^{n}\left[ \hat{e}_{i} \right]^2  \hat{d}_{i}(x,h) &= \sum_{i}^{n}\left[ \hat{y}_{i}- b_{0}(x,h) - b_{1}(x,h) \hat{x}_{i} \right]^2  \hat{d}_{i}(x,h) \\
-&= \sum_{i}^{n(x_{1},h)}\left[ \hat{y}_{i}- b_{0}(x_{1},h) - b_{1}(x_{1},h) \hat{x}_{i}  \right]^2  \hat{d}_{i}(x_{1},h) + ... \sum_{i}^{n(x_{L},h)}\left[ \hat{y}_{i}- b_{0}(x_{L},h) - b_{1}(x_{L},h) \hat{x}_{i}  \right]^2  \hat{d}_{i}(x_{L},h) \\
 &= \sum_{i}^{n(x,h)}\left[\hat{y}_{i}- b_{0}\left(x,h\right) - b_{1}(x,h) \hat{x}_{i}  \right]^2
 \end{aligned}$$
 
@@ -684,19 +685,19 @@ plot(y_hat ~ x_hat, pch=16, data=xy_hat, col=grey(0, .1),
     main=NA, ylab='Wage', xlab='School')
 lines(x_values, y_pred_1, col=rgb(1, 0, 0, .8), lwd=2, type='o')
 lines(x_values, y_pred_2, col=rgb(1, 0, 0, .8), lwd=2, lty=2, type='o')
-legend('topleft', title='Locally Linear',
+legend('topleft', title='Local Linear',
     legend=c('h=2', 'h=6'),
     lty=c(1, 2), lwd=2, pch=1, col=rgb(1, 0, 0, .8), cex=.8,
     seg.len=4) # long enough that the circle does not hide the dashes
 ```
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
-Compare local linear and local constant regressions using <https://shinyserv.es/shiny/kreg/>, with degree $0$ and $1$.
+Compare local linear and locally constant regressions using <https://shinyserv.es/shiny/kreg/>, with degree $0$ and $1$.
 Also try different kernels and different datasets.
 :::
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Examine the local relationship between 'Murder' and 'Urbanization' in the `USArrests` dataset using LLLS.
+Examine the local relationship between 'Murder' and 'Urbanization' in the `USArrests` dataset using local linear regression.
 ```{r, eval=FALSE}
 # xy2_hat defined above
 # Same smoother as pred_fun, but for any data with columns x_hat and y_hat
@@ -724,7 +725,7 @@ for (i in seq_along(x_values)) {
 
 lines(x_values, y_pred_1, col=rgb(1, 0, 0, .8), lwd=2, type='o')
 lines(x_values, y_pred_2, col=rgb(1, 0, 0, .8), lwd=2, lty=2, type='o')
-legend('topleft', title='Locally Linear',
+legend('topleft', title='Local Linear',
     legend=c('h=2 ', 'h=20'),
     lty=c(1, 2), lwd=2, pch=1, col=rgb(1, 0, 0, .8), cex=.8,
     seg.len=4) # long enough that the circle does not hide the dashes
@@ -759,6 +760,7 @@ legend('topleft', title='Locally Linear',
 
 We let the relationship between wages and schooling in `Wages1` bend by fitting local models.
 Regressograms fit a mean in each bin, and piecewise regressions fit a line in each bin.
-Locally constant and locally linear regressions do the same within a sliding window.
+Locally constant and local linear regressions do the same within a sliding window, which avoids the jumps at the bin edges.
+The bandwidth $h$ is the half-width that sets how local each estimate is: larger $h$ pools more observations, and smaller $h$ tracks the data more closely.
 The three-observation worked example $\{(3, 2), (4, 4), (12, 3)\}$ split into two bins at $h=7/2$ gave regressogram coefficients $\hat{b}_{0}(x=6, h=7/2)=(2+4)/2=3$ and $\hat{b}_{0}(x=13, h=7/2)=3$.
 

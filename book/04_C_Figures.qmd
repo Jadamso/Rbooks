@@ -6,7 +6,9 @@ A default R plot is rarely a good plot, and the gap between the two is mostly a 
 This appendix collects the choices the book makes and what each one is for, so you can apply them to figures the book never draws.
 They are house style, and the theme running through them is that ink should carry information, since borders, bold titles, and full-strength colors draw the eye without telling the reader anything.
 
-## Histograms of Data
+## Distributions of Data
+
+Whatever figure you have, show the raw data with it, such as a rug under a histogram or a stripchart on a boxplot.
 
 A histogram of data summarizes the $n$ observations you actually have.
 The two panels below plot the same data with R's defaults and with the book's conventions.
@@ -37,6 +39,42 @@ The axis label gives the variable and its units, and the rug along the bottom ma
 | `breaks` | 15--25 integer | Fewer bins when $n$ is small, so each bin holds several observations |
 | `col` | Default grey, or group colors | Use transparency for overlays |
 | `xlab` | Short descriptive string | Use `expression()` for math notation |
+
+An [ECDF](01_02_Data.qmd#empirical-cumulative-distribution-function) shows the same observations without any bins, so it needs no choice of `breaks`.
+
+#### **Boxplots** {-}
+
+A [boxplot](01_02_Data.qmd#boxplots) compresses the data into five numbers and any outliers, and `stripchart()` adds back the raw data.
+The two panels below plot the same groups with R's defaults and with the book's conventions.
+
+```{r, fig.height=4}
+cols <- c(rgb(.8, 0, 0, .5), rgb(0, 0, .8, .5))
+med_cols <- adjustcolor(cols, alpha.f=2, red.f=.5, green.f=.5, blue.f=.5) # darker shades, for the medians
+par(mfrow=c(1,2), mar=c(4, 4, 2, 1))
+
+# Default settings
+boxplot(wage ~ sex, data=Wages1)
+
+# House style
+# The axis stops just past 20 dollars, so the 16 largest wages are not drawn
+boxplot(wage ~ sex, data=Wages1, col=cols, border=NA, medcol=med_cols, main=NA, ylim=c(0, 20),
+    whisklty=0, staplelty=0, outline=FALSE,
+    xlab='Sex', ylab='Hourly wage (1980 dollars)')
+# Raw Observations, in place of whiskers and outliers
+stripchart(wage ~ sex, data=Wages1,
+    pch='-', col=grey(0, .2), cex=1,
+    vert=TRUE, add=TRUE)
+```
+
+Each dash is one observation, which exposes the gaps, clusters, and repeated values that five numbers hide.
+`whisklty=0`, `staplelty=0`, and `outline=FALSE` remove the whiskers and outliers, since the dashes now show those observations.
+`outline=FALSE` also drops the outliers from the axis range, so set `ylim` yourself.
+`add=TRUE` draws the dashes on the existing boxplot, and `vert=TRUE` matches its orientation.
+
+Use `main=NA` in `boxplot()` and add titles with `title(..., font.main=1)`.
+Color grouped boxplots with the group colors from [The Grey and RGB System](#the-grey-and-rgb-system), set `border=NA`, and color the median a darker shade of the same color with `medcol`.
+The `adjustcolor()` call above gives that shade by halving the red, green, and blue values and doubling the alpha.
+`border` also colors the median, whiskers, and outliers, so `medcol` restores the median and the raw data replace the rest.
 
 ## Histograms of Resampled Data
 
@@ -91,16 +129,7 @@ A density that is the subject of its own figure, rather than a comparison for a 
 Draw a confidence band around a curve with `polygon(..., border=NA)`, filled with the fit's color at an alpha of .3, or with `grey(0, .25)` when the fit has no color.
 Coverage plots of many intervals are an exception: intervals that cover are `rgb(0, 0, 0, .3)` and intervals that miss are `rgb(1, 0, 0, .5)`, and the title says so.
 
-## Boxplots
-
-```r
-boxplot(x1_hat, x2_hat, names=c('A', 'B'), main=NA, xlab='Groups')
-```
-
-Use `main=NA` in `boxplot()` and add titles with `title(..., font.main=1)`.
-Color grouped boxplots with the group colors from [The Grey and RGB System](#the-grey-and-rgb-system), and set `border='white'` or `border=NA` when a fill color is specified.
-
-## Scatterplots
+## Scatterplots and Regression Lines
 
 ```r
 plot(y_hat ~ x_hat, pch=16, col=grey(0, .5), data=xy_hat, main=NA, xlab='x', ylab='y')
@@ -114,8 +143,9 @@ plot(y_hat ~ x_hat, pch=16, col=grey(0, .5), data=xy_hat, main=NA, xlab='x', yla
 | `cex` | Reduce for large $n$ (e.g., `.5`) | Default is fine for small datasets |
 
 Transparency is how a scatterplot survives a large sample, since transparent points darken where observations pile up instead of overplotting into a solid blob.
+To add the marginal distribution of each variable along its axis, see the figure in [Joint Distributions](02_11_BivariateDistributions.qmd#continuous-data), which uses `layout()` because its panels differ in size.
 
-## Regression Lines
+#### **Regression Lines** {-}
 
 Each model keeps one color, so a reader can follow it from figure to figure.
 
@@ -218,14 +248,15 @@ With four or more groups, `hcl.colors()` spaces the colors evenly in a perceptua
 ## Reference Card
 
 1. `border=NA` and `freq=FALSE` for every histogram.
-2. A rug under histograms of data; more bins and no rug for histograms of resampled data.
-3. Interval bounds in black and, for null bootstrap or permutation distributions, the observed statistic in red, both `lwd=2`.
-4. Null values, population values, and theoretical densities over a histogram in blue, with `lwd=1` and `lty=2`.
-5. `pch=16` and `grey(0, alpha)` for scatterplots, with alpha matched to $n$.
-6. One color per model at `lwd=2`: red for straight lines, blue for constants, and teal for LOESS, with line type for variants and `type='o'` for predictions at design points.
-7. `font.main=1` for every title.
-8. `rgb()` with alpha for emphasis colors, never `col=2` or `'red'`.
-9. `par(mfrow=...)` for multi-panel layouts, not `layout()`.
+2. Raw data in whatever figure you have, such as a rug under a histogram or a stripchart on a boxplot.
+3. More bins and no rug for histograms of resampled data.
+4. Interval bounds in black and, for null bootstrap or permutation distributions, the observed statistic in red, both `lwd=2`.
+5. Null values, population values, and theoretical densities over a histogram in blue, with `lwd=1` and `lty=2`.
+6. `pch=16` and `grey(0, alpha)` for scatterplots, with alpha matched to $n$.
+7. One color per model at `lwd=2`: red for straight lines, blue for constants, and teal for LOESS, with line type for variants and `type='o'` for predictions at design points.
+8. `font.main=1` for every title.
+9. `rgb()` with alpha for emphasis colors, never `col=2` or `'red'`.
+10. `par(mfrow=...)` for multi-panel layouts, not `layout()`, unless panels differ in size.
 
 #### **Further Reading** {-}
 

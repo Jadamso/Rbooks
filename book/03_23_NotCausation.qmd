@@ -284,7 +284,7 @@ Instead, give each city its own dummy variable, or equivalently its own fixed ef
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 *Fixed effects* are group-specific intercepts that absorb every time-invariant feature of the group, entering the regression as
 $$
-\hat{y}_{i} = \sum_{k=0}^{K} b_{k} \hat{x}_{ik} + \sum_{g}\hat{d}_{g}b_{g}.
+\hat{y}_{i} = \sum_{k=1}^{K} b_{k} \hat{x}_{ik} + \sum_{g}\hat{d}_{ig}b_{g} + \hat{e}_{i}.
 $$
 Including the dummy variables directly in OLS or using a dedicated routine such as `fixest::feols()` gives the same coefficients on the remaining regressors and the same residuals.
 :::
@@ -447,13 +447,14 @@ for (b in seq(n_perm)) {
     F_perm[b] <- F_stat(y_hat=xy_hat[,'wage'], group=group_b)
 }
 
-# Add one simulated result to avoid reporting a zero Monte Carlo p-value.
-p_perm <- (sum(F_perm >= F_obs) + 1)/(n_perm + 1)
+# Permutation p-value
+p_perm <- mean(F_perm >= F_obs)
 p_param <- anova(reg_lm)[['Pr(>F)']][1]
 c(F_obs=F_obs, p_permutation=p_perm, p_parametric=p_param)
 # No shuffle reached the observed F of about 128.
-# So p_permutation is 1/10000, the smallest value 9999 shuffles can report.
-# It is limited by the number of shuffles, so p_parametric can be far smaller.
+# So p_permutation is 0.
+# With 9999 shuffles, that only says the p-value is probably below about 3/9999, or 0.0003.
+# A formula has no such limit, so p_parametric can report a far smaller value.
 
 hist(F_perm, breaks=40, border=NA, freq=FALSE, main=NA,
     xlim=c(0, F_obs*1.05),
@@ -485,8 +486,8 @@ for (b in seq(n_perm)) {
     F2_perm[b] <- F_stat(y_hat=xy2_hat[,'Murder'], group=group2_b)
 }
 
-# Add one simulated result to avoid reporting a zero Monte Carlo p-value.
-p2_perm <- (sum(F2_perm >= F2_obs) + 1)/(n_perm + 1)
+# Permutation p-value
+p2_perm <- mean(F2_perm >= F2_obs)
 p2_param <- anova(reg2_lm)[['Pr(>F)']][1]
 c(F_obs=F2_obs, p_permutation=p2_perm, p_parametric=p2_param)
 
@@ -816,4 +817,6 @@ These limits extend the distinction introduced in [Association is not Causation]
 
 This chapter rewrote ANOVA as a regression with a factor variable and showed that treatment and effect coding change coefficient meanings without changing the fitted model.
 The schooling example gave an effect-coded intercept of about $5.98$, the unweighted mean of the three group means, while its global $F$-statistic was identical under both codings.
+With a fixed effect for each schooling group, a year of experience went with about $0.10$ dollars more per hour, and the schooling gaps barely moved.
+Nested-model $F$-tests asked whether each added layer adds information, and all three rejected the simpler model.
 The permutation test shuffled the factor labels to test a no-association null, whereas random delete-$d$ subsampling preserved each row and measured sensitivity to omitted observations.

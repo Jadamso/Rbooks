@@ -187,7 +187,7 @@ The `psych` package adds histograms on the diagonal and a summary of each pairwi
 # With this many workers, smoother=TRUE shades each scatterplot by point density.
 psych::pairs.panels(xy_hat[, c('wage', 'school', 'exper')],
     hist.col=grey(0, .25), breaks=30, density=FALSE, hist.border=NA, # Diagonal
-    ellipses=FALSE, rug=FALSE, smoother=TRUE, pch=16, col=rgb(0, .7, .7, .8) # Lower Triangle
+    ellipses=FALSE, rug=FALSE, smoother=FALSE, pch=16, col=rgb(0, .7, .7, .8) # Lower Triangle
     )
 # Wages have a long right tail, and schooling piles up at 12 years.
 ```
@@ -462,12 +462,18 @@ Color keeps the group hues used in [Conditioning Plots](#conditioning-plots) abo
 col_f_shade <- adjustcolor(g_hues, alpha.f=.35)
 col_m_shade <- adjustcolor(g_hues, alpha.f=.85)
 box_cols <- as.vector(rbind(col_f_shade, col_m_shade))
+med_cols <- adjustcolor(box_cols, alpha.f=2, red.f=.5, green.f=.5, blue.f=.5) # darker shades, for the medians
 
 # The wage axis ends just above 20 dollars, leaving out the 16 highest wages.
 par(mar=c(4, 4, 4, 1))
 boxplot(wage ~ sex + school_g, data=xy_hat,
-    col=box_cols, xaxt='n', ylim=c(0, 20),
+    col=box_cols, border=NA, medcol=med_cols, xaxt='n', ylim=c(0, 20),
+    whisklty=0, staplelty=0, outline=FALSE,
     xlab='Years of schooling', ylab='Hourly wage (1980 dollars)', main=NA)
+# Raw Observations, in place of whiskers and outliers
+stripchart(wage ~ sex + school_g, data=xy_hat,
+    pch='-', col=grey(0, .2), cex=1,
+    vert=TRUE, add=TRUE)
 axis(1, at=seq(1.5, by=2, length.out=3), labels=levels(xy_hat$school_g), tick=FALSE, line=0.5)
 axis(1, at=seq_len(6), labels=FALSE)
 legend('topleft', inset=c(0, -.16), xpd=TRUE, horiz=TRUE, bty='n',
@@ -475,7 +481,7 @@ legend('topleft', inset=c(0, -.16), xpd=TRUE, horiz=TRUE, bty='n',
 # In every schooling group the median wage for men is above the median for women.
 ```
 
-The same comparison as an ECDF, one panel per group, shows the full distribution rather than five numbers per box, with a single legend shared across all the panels.
+The same comparison as an ECDF, one panel per group, shows each full distribution as one curve rather than a box and dashes, with a single legend shared across all the panels.
 
 ```{r, fig.height=4, fig.width=8}
 # One panel per schooling group; within each panel, one ECDF for each sex
@@ -531,11 +537,17 @@ region2_hues <- setNames(hcl.colors(4), levels(xy2_hat$Region))
 col2_low_shade  <- sapply(region2_hues[region2_order], adjustcolor, alpha.f=.35)
 col2_high_shade <- sapply(region2_hues[region2_order], adjustcolor, alpha.f=.85)
 box2_cols <- as.vector(rbind(col2_low_shade, col2_high_shade))
+med2_cols <- adjustcolor(box2_cols, alpha.f=2, red.f=.5, green.f=.5, blue.f=.5) # darker shades, for the medians
 
 par(mar=c(4, 4, 4, 1))
 boxplot(Murder ~ AssaultLevel + RegionOrdered, data=xy2_hat,
-    col=box2_cols, xaxt='n',
+    col=box2_cols, border=NA, medcol=med2_cols, xaxt='n', ylim=range(xy2_hat$Murder),
+    whisklty=0, staplelty=0, outline=FALSE,
     xlab='Region (ordered by median murder rate)', ylab='Murder arrests (per 100,000)', main=NA)
+# Raw Observations, in place of whiskers and outliers
+stripchart(Murder ~ AssaultLevel + RegionOrdered, data=xy2_hat,
+    pch='-', col=grey(0, .5), cex=2,
+    vert=TRUE, add=TRUE)
 axis(1, at=seq(1.5, by=2, length.out=4), labels=region2_order, tick=FALSE, line=0.5)
 axis(1, at=seq_len(8), labels=FALSE)
 legend('topleft', inset=c(0, -.16), xpd=TRUE, horiz=TRUE, bty='n',
@@ -690,9 +702,9 @@ The [Simple Regression](02_15_SimpleRegression.qmd) chapter explains how these l
 
 This chapter described data with three or more variables without fitting a model.
 Three-way tables and `prop.table()` with a `margin=` argument showed that men were admitted to Berkeley at a higher rate than women when departments were pooled.
-Yet women were admitted at a similar or higher rate within most departments, because women applied to the more selective departments.
+Yet women were admitted at a similar or higher rate within most departments, and the pooled gap mostly reflected women applying to the more selective departments.
 This reversal is *Simpson's paradox*, and a simulated example showed that it can happen with continuous data too.
-Scatterplot matrices and extra point channels did the same job for continuous data.
+Scatterplot matrices and extra point channels described continuous data.
 Conditioning plots, grouped boxplots, and ECDFs did it for mixed data.
 The panels by schooling group showed a pattern that the pooled scatterplot hid.
 Among workers with exactly $12$ years of schooling, the mean wage rose from about $5$ to about $6$ dollars with experience.

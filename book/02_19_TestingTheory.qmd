@@ -14,7 +14,7 @@ This chapter asks two questions.
     * *Welch's $t$-test and the $z$-statistic*: these divide a difference in means by its standard error, as the [$t$-value](01_08_HypothesisTests.qmd#t-values) did for one mean.
       When the data are well-behaved, the sampling distribution of this ratio is known in advance, so a formula gives the $p$-value.
     * *$t$-statistic for a slope*: this applies the same ratio to the [regression slope](02_15_SimpleRegression.qmd#model-and-objective), $\hat{t}=\hat{b}_{1}/\hat{\text{SE}}(B_{1})$.
-    * *$z$-statistic for a difference in medians*: this forms the same ratio from the standard errors behind the [boxplot notches](02_13_MultipleGroups.qmd#equal-medians).
+    * *$z$-statistic for a difference in medians*: this forms the same ratio from the standard errors behind R's default [boxplot notches](02_13_MultipleGroups.qmd#equal-medians).
 * How do regression estimates miss their target?
     * *Bias-variance tradeoff*: with the [conditional expectation](02_18_BivariateProbability.qmd#conditional-expectation) as the target, this splits prediction error into squared bias and variance.
       Cutting one piece usually raises the other.
@@ -45,7 +45,7 @@ The modifications use the [Welch-Satterthwaite approximation](https://en.wikiped
 The two-sample $\hat{t}$ is useful as a standardized test statistic for comparing two means.
 Dividing by the standard error puts the gap in standard-error units.
 So the same numerator can be large or small in $\hat{t}$ units, depending on $n_{1}, n_{2}$ and the within-group variances.
-With normally distributed group means, this statistic follows Student's [t-distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution) [@Student1908], so we can read a $p$-value from a formula rather than from resampling.
+With normally distributed data in each group, this statistic follows Student's [t-distribution](https://en.wikipedia.org/wiki/Student%27s_t-distribution) [@Student1908], so we can read a $p$-value from a formula rather than from resampling.
 When the two groups have unequal variances or sample sizes, a small adjustment to the degrees of freedom keeps the $t$-distribution approximation accurate.
 
 The $t$-distribution result needs normal data, but in large samples the [central limit theorem](01_05_Sampling.qmd#central-limit-theorem-clt) makes the difference in means approximately normal whatever the shape of the data.
@@ -324,7 +324,7 @@ c(t=p_theory, z=p_normal, bootstrap=p_boot)
 # All three are essentially zero, because the observed t is about 16.9.
 # The t and z values differ by a large ratio only this far into the tails.
 # No bootstrap t came close, so the bootstrap p-value prints as exactly 0.
-# With 399 resamples, that only says the p-value is below about 1/399.
+# With 399 resamples, that only says the p-value is probably below about 3/399, or 0.008.
 ```
 
 The $t_{n-2}$ distribution gets closer to the standard normal as $n$ grows, so the $t$ and $z$ $p$-values differ less in larger samples.
@@ -560,11 +560,11 @@ beta0 <- coef(reg)[1]
 beta1_true <- coef(reg)[2]
 s_adj_hat <- summary(reg)$sigma
 m_x_hat <- mean(xy_hat[, 'x_hat'])
-s_x_hat <- sd(xy_hat[, 'x_hat'])
+s_adj_x_hat <- sd(xy_hat[, 'x_hat'])
 
 # Function: simulate data, return theoretical p-value for slope
 sim_pval <- function(n, beta1) {
-    x_sim <- rnorm(n, mean = m_x_hat, sd = s_x_hat)
+    x_sim <- rnorm(n, mean = m_x_hat, sd = s_adj_x_hat)
     y_sim <- beta0 + beta1 * x_sim + rnorm(n, 0, s_adj_hat)
     summary(lm(y_sim ~ x_sim))$coefficients[2, 4]
 }

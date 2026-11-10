@@ -3,16 +3,11 @@
 
 The sampling distribution describes how a statistic varies across samples; the *confidence interval* turns knowledge about that sampling distribution into a statement about the unknown parameter.
 
-This chapter asks three questions.
+This chapter asks one main question: *Which population values are reasonable, and which are unreasonable?*
 
-* How sure are we?
-    * *Bootstrap percentile interval*: this takes the middle quantiles of the [bootstrap distribution](01_05_Sampling.qmd#bootstrap-distribution) of a statistic.
-    * *Normal approximation*: this gives the interval $\hat{m} \pm E$, where the margin of error $E$ is a critical value times the [standard error](01_05_Sampling.qmd#standard-errors).
-      It needs no resampling loop, but the sampling distribution might be far from Normal.
-* What does it mean to be $Z\%$ confident?
-    * *Coverage*: this is the share of intervals from repeated samples that contain the true value, which we can count with a [pretend population](01_05_Sampling.qmd#population-theory).
-* What makes an interval narrower?
-    * *Interval size*: this shrinks with more data or with lower coverage, so for a fixed $n$ there is a trade-off between precision and accuracy.
+* *Bootstrap percentile interval*: this takes the middle quantiles of the [bootstrap distribution](01_05_Sampling.qmd#bootstrap-distribution) of a statistic as the reasonable values.
+* *Normal approximation*: this gives the interval $\hat{m} \pm E$, where the margin of error $E$ comes from the estimated [standard error](01_05_Sampling.qmd#standard-errors) and a mathematical formula for the Normal distribution.
+
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 A *confidence interval* is a range of values, computed from the sample, intended to contain the unknown population parameter.
@@ -20,21 +15,16 @@ A *confidence interval* is a range of values, computed from the sample, intended
 The *coverage* level $1-\alpha$ is the long-run proportion of intervals (constructed from repeated samples by the same procedure) that contain the true parameter.
 :::
 
-Confidence intervals are useful for *reporting uncertainty* alongside an estimate.
-Along with the estimate $\hat{m}$, we report a range and a coverage level.
-The range shows how much sampling noise could plausibly move the estimate.
-The width depends on the sample size, the spread of the data, and the coverage level $1-\alpha$ that the user chooses.
+Along with the estimate $\hat{m}$, we report a range and a coverage level as a "$Z\%$ CI".
 
+Confidence intervals are also useful for *reporting uncertainty* alongside an estimate.
+The range shows how much sampling noise could plausibly move the estimate.
 
 ## Resampling Intervals
 
 If we have a sampling distribution for a statistic, the simplest way to read off a confidence interval is to take its middle quantiles.
 
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *critical values* of a sampling distribution are the lower and upper quantiles that bracket the middle $Z\%$ of the distribution.
-For a $95\%$ confidence interval, the critical values are the $2.5$th and $97.5$th percentiles.
-:::
-
 Critical values are useful because they translate any coverage level into a pair of numbers that can be looked up or simulated, without committing to a parametric model for the sampling distribution.
 Often, we have only one sample, in which case we can construct a bootstrap or jackknife sampling distribution (as in [Sampling & Resampling](01_05_Sampling.qmd#resampling-distributions)) and compute the critical values directly from it:
 
@@ -81,6 +71,7 @@ hist(boot_means, freq=FALSE,
 title('Bootstrap CI', font.main=1)
 abline(v=boot_ci, col=rgb(0, 0, 0, .8), lwd=2)
 ```
+
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Using the bootstrap distribution above, here are the $90\%$ and $99\%$ confidence intervals.
@@ -194,18 +185,24 @@ abline(v=boot_ci, col=rgb(0, 0, 0, .8), lwd=2)
 ## Normal Approximation
 
 When the sampling distribution is well approximated by a Normal curve, the confidence interval has a simple closed form built from the standard error.
+The formula lets us see that the CI width depends on
+
+* the sample size
+* the spread of the data
+* the coverage level $1-\alpha$
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *margin of error* $E$ is the half-width of a Normal-approximation confidence interval, so the interval is $\hat{m} \pm E$.
-It equals the critical value times the standard error, $E = q(\alpha/2) \cdot \text{SE}(M)$, and shrinks as $n$ grows.
+It equals the critical value times the standard error, $E = q(\alpha/2) \cdot \text{SE}(M) \approx q(\alpha/2) \hat{s}/\sqrt{n}$.
 :::
 
-The Normal-approximation interval is useful because it requires only an estimate $\hat{m}$, a standard error $\text{SE}(M)$, and a single Normal quantile (no resampling loop, no full sampling distribution).
-The $95\%$ interval is the most common and uses critical value $q=1.96$ (the $97.5$th percentile of the standard Normal); the $90\%$ interval uses $q=1.645$.
-$\text{SE}(M)$ can come from the classical formula $\hat{s}_{\text{adj}}/\sqrt{n}$, the bootstrap, or the jackknife.
-The classical formula uses the [adjusted sample standard deviation](01_06_EstimationTheory.qmd#bias) $\hat{s}_{\text{adj}}$.
 
-A *coverage* level of $1-\alpha$ means that if the same sampling procedure were repeated $100$ times from the same population, approximately $100(1-\alpha)$ percent of the intervals are expected to contain the true population mean.
+The Normal-approximation interval is useful because it requires only an estimate $\hat{m}$, a standard error $\text{SE}(M)$, and a single Normal quantile (no resampling loop, no full sampling distribution).
+I.e., the classical formula uses the [adjusted sample standard deviation](01_06_EstimationTheory.qmd#bias) $\hat{s}_{\text{adj}}$; compute $\text{SE}(M) \approx \hat{s}_{\text{adj}}/\sqrt{n}$.
+While $\text{SE}(M)$ typically comes from the classical formula, it can also come from the jackknife (or even the bootstrap).
+
+The $95\%$ interval is the most common and uses critical value $q=1.96$ (the $97.5$th percentile of the standard Normal); the $90\%$ interval uses $q=1.645$.
+In any case, a *coverage* level of $1-\alpha$ means that if the same sampling procedure were repeated $100$ times from the same population, approximately $100(1-\alpha)$ percent of the intervals are expected to contain the true population mean.
 ^[Generally, a coverage level of $1-\alpha$ means $\text{Prob}( M - E < \mathbb{E}[X_{i}] < M + E)=1-\alpha$.
 Notice that $\text{Prob}( M - E < \mathbb{E}[X_{i}] < M + E) = \text{Prob}( - E < \mathbb{E}[X_{i}] - M < + E) = \text{Prob}( \mathbb{E}[X_{i}] + E > M > \mathbb{E}[X_{i}] - E)$.
 So if the interval $[\mathbb{E}[X_{i}] - 10, \mathbb{E}[X_{i}] + 10]$ contains $95\%$ of all $M$, then the interval $[M-10, M+10]$ will also contain $\mathbb{E}[X_{i}]$ in $95\%$ of the samples.
@@ -632,6 +629,134 @@ cat(sprintf('Estimated coverage probability: %.2f%%\n', 100 * coverage_rate))
 ```
 :::
 
+## Invert a CI
+
+One way to test a hypothesis is to look at whether a confidence interval contains the hypothesized value: if the value lies outside the interval, sampling variability alone cannot easily explain the gap.
+This gives a decision rule:
+
+* reject the hypothesis if the hypothesized value falls outside the interval
+* fail to reject the hypothesis if it falls inside
+
+A $95\%$ confidence interval leaves $5\%$ of the sampling distribution outside it, split between the two tails.
+So a test at level $\alpha$ uses an interval with coverage $1-\alpha$.
+
+For example, suppose you hypothesize the mean equals $m_{0}$.
+You then construct a bootstrap distribution with $95\%$ confidence interval, and find your hypothesized value falls outside of the confidence interval.
+Then, after accounting for sampling variability (which you estimate), it still seems extremely unlikely that the theoretical mean actually equals $m_{0}$, so you reject that hypothesis.
+(If the theoretical value landed in the interval, you would "fail to reject" the theoretical mean equals $m_{0}$.)
+```{r}
+## MAIN EXAMPLE
+# x_hat (the sample of 50 workers) and boot_means defined above
+ci_95 <- quantile(boot_means, probs=c(.025, .975))
+ci_95
+
+hist(boot_means, breaks=25,
+    border=NA,
+    freq=FALSE,
+    main=NA,
+    xlab='Bootstrap means of hourly wages (1980 dollars)')
+abline(v=ci_95, col=rgb(0, 0, 0, .8), lwd=2)
+# Hypothesized mean: 6.5
+abline(v=6.5, col=rgb(0, 0, 1, .8), lty=2)
+# The 95% interval runs from about 4.97 to 6.46 dollars an hour.
+# The hypothesized 6.5 falls just above it, so we reject this hypothesis.
+# The population mean is about 5.76, so this hypothesis is in fact false.
+```
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+Repeat this test with the murder arrest rates in `x3_hat`, for the hypothesized mean of $9$ arrests per $100{,}000$.
+
+```{r}
+# x3_hat and boot_means3 defined above
+ci3_95 <- quantile(boot_means3, probs=c(.025, .975))
+ci3_95
+
+hist(boot_means3, breaks=25,
+    border=NA,
+    freq=FALSE,
+    main=NA,
+    xlab='Bootstrap Samples')
+abline(v=ci3_95, col=rgb(0, 0, 0, .8), lwd=2)
+# Hypothesized mean: 9
+abline(v=9, col=rgb(0, 0, 1, .8), lty=2)
+# The hypothesized 9 falls just above the 95% interval, so we reject it.
+```
+:::
+
+
+:::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+The above procedure also generalizes to many other statistics.
+Perhaps the most informative are those for spread or shape.
+E.g., you can conduct hypothesis tests for `sd` and `IQR`, or `skew` and `kurtosis`.
+
+```{r}
+# Bootstrap Distribution for SD
+s_adj_hat <- sd(x_hat)
+boot_sds <- rep(NA, 999)
+for(b in seq_along(boot_sds)){
+    x_boot <- sample(x_hat, replace=TRUE)
+    s_adj_b_hat <- sd(x_boot)
+    boot_sds[b] <- s_adj_b_hat
+}
+
+# Test for SD Differences (Invert CI)
+sd_0 <- 2.2 # hypothesized SD
+hist(boot_sds, freq=FALSE, breaks=50,
+    border=NA, xlab='Bootstrap',
+    main=NA)
+title('Standard Deviations (Invert CI)', font.main=1)
+sd_ci <- quantile(boot_sds, probs=c(0.025, .975) )
+abline(v=sd_ci, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=sd_0, col=rgb(0, 0, 1, .8), lty=2)
+# The hypothesized 2.2 falls just inside the 95% interval, so we fail to reject it.
+```
+
+To better your understanding, try redoing the above for any function (such as `IQR(x_boot)/median(x_boot)`)
+:::
+
+:::{.callout-note icon=false collapse="false" title="Must Know"}
+Suppose a student scores $77\%$ on a $44$-question multiple-choice exam but believes they are really an $85\%$ student who had a bad day.
+The professor is skeptical: "where's your evidence?"
+The student bootstraps a confidence interval for their "true" proportion correct, resampling from the $44$ right/wrong answers on that one exam.
+
+This creates a conundrum.
+If the confidence interval comes out narrow, it may exclude $85\%$, and the $85\%$ hypothesis is rejected.
+But an interval wide enough to contain $85\%$ is also wide enough to contain $70\%$, so the same evidence fails to rule out a worse student who simply got lucky.
+A single exam cannot easily distinguish the two stories.
+
+We compute the student's interval and mark both $70\%$ and $85\%$ on it.
+
+```{r}
+# One exam: 34 correct out of 44 questions
+n_questions <- 44
+n_correct <- 34
+outcomes <- c(rep(1, n_correct), rep(0, n_questions - n_correct)) # 1=correct, 0=incorrect
+
+# Bootstrap Distribution for the proportion correct
+boot_props <- rep(NA, 999)
+for(b in seq_along(boot_props)){
+    x_boot <- sample(outcomes, replace=TRUE)
+    boot_props[b] <- mean(x_boot)
+}
+
+hist(boot_props, breaks=25,
+    border=NA, freq=FALSE,
+    main=NA, xlab='Bootstrap Proportion Correct')
+ci_95 <- quantile(boot_props, probs=c(.025, .975))
+abline(v=ci_95, col=rgb(0, 0, 0, .8), lwd=2)
+abline(v=c(.70, .85), col=rgb(0, 0, 1, .8), lty=2)
+# The 95% interval runs from about 0.64 to 0.89.
+# It comfortably contains both 0.70 and 0.85.
+# So the student can reject neither story.
+```
+
+The deeper issue is what the bootstrap resample actually represents.
+Resampling only reshuffles the same $44$ questions, so it approximates how the score would vary if the student retook that exact exam.
+It says nothing about how the student would do on a different exam with different questions.
+The student needs that sampling distribution to make their case.
+Estimating that sampling distribution properly needs new, independent samples: more exams, not more resamples of one exam, and that is a cost the student is unlikely to accept for the rest of the semester.
+:::
+
 ## Misc. Topics
 
 #### **Prediction Intervals** {-}
@@ -648,6 +773,7 @@ For example, a firm may want to forecast whether a single warranty claim will fa
 Note that $Z\%$ confidence intervals do not generally cover $Z\%$ of the data.
 Compare the $90\%$ bootstrap confidence interval for the mean with the middle $90\%$ of the observations themselves.
 ```{r}
+## MAIN EXAMPLE
 # 90% CI for the mean, from the bootstrap distribution above
 boot_ci_90 <- quantile(boot_means, probs=c(.05, .95))
 boot_ci_90
@@ -830,6 +956,8 @@ abline(v=ci_95, col=rgb(0, 0, 0, .8), lwd=2)
 We built *confidence intervals* in two ways, with the *bootstrap percentile* method and the *Normal approximation*.
 Being "$Z\%$ confident" means that $Z\%$ of intervals built on different samples will contain the true value.
 For a fixed sample size, there is a trade-off between precision and accuracy.
+*Inverting a CI* tests a hypothesized value: reject it if it falls outside the interval, and fail to reject it otherwise.
+A *prediction interval* aims to contain a single new observation, so it uses quantiles of the data themselves and is much wider than a confidence interval for the mean.
 In the electricity-bill example, $\hat{m}=142$, $\hat{s}_{\text{adj}}=30$, and $n=36$.
 The classical standard error is $\text{SE}(M) = 30/\sqrt{36} = 5$.
 The $95\%$ margin of error is $E = 1.96 \times 5 = 9.8$, giving a confidence interval of $[\$132.20, \$151.80]$.
