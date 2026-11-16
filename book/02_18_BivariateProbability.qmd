@@ -16,7 +16,7 @@ This chapter asks three questions.
     * *Joint, marginal, and conditional distributions*: these are the theoretical versions of the tables from [Bivariate Distributions](02_11_BivariateDistributions.qmd), with probabilities in place of proportions.
     * *Conditional expectation*: this new object, $\mathbb{E}[Y_{i}\mid X_{i}=x]$, is the population target for regression.
     * *Covariance, correlation, and regression coefficient*: these are the population counterparts of the sample [covariance and correlation](02_14_Associations.qmd#pearson-linear-correlation) and the sample [slope](02_15_SimpleRegression.qmd#model-and-objective).
-      In a linear data generating process, the population slope is $\beta_{1}=\mathbb{C}[X_{i}, Y_{i}]/\mathbb{V}[X_{i}]$.
+      In a linear data generating process, the population slope $\beta_{1}$ is the covariance divided by the variance of $X_{i}$.
 * How often does a test give the wrong answer?
     * *Type I error rate and statistical power*: these are the chances of a false positive and of detecting a true effect.
       Both reuse the [permutation test](02_15_SimpleRegression.qmd#impose-the-null) on repeated samples.
@@ -27,11 +27,8 @@ This chapter asks three questions.
 ## Theoretical Distributions
 
 To talk about what sample statistics estimate, we need a theoretical counterpart to the bivariate observations of the previous chapters.
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
 A *random vector* $(X_{i}, Y_{i})$ is a pair of random variables drawn together.
 It is the population analog of one paired observation $(\hat{x}_{i}, \hat{y}_{i})$, described before the data exist.
-:::
 
 The random vector is useful as the formal object that the empirical pair $(\hat{x}_{i}, \hat{y}_{i})$ samples from.
 For example, if we are going to flip two coins, then $(X_{i}, Y_{i})$ corresponds to the unflipped coins and $(\hat{x}_{i}, \hat{y}_{i})$ to the concrete outcomes once they are flipped.
@@ -51,30 +48,32 @@ The *joint distribution* is the table of these probabilities over all pairs $(x,
 The joint probability is useful as the theoretical version of the empirical joint distribution $\hat{p}(x,y)$ from [Bivariate Distributions](02_11_BivariateDistributions.qmd): the same table structure, but with population probabilities in place of sample proportions.
 With enough draws, $\hat{p}(x,y)$ approaches the joint distribution.
 
-A particularly simple special case is when the two variables carry no information about each other.
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
-Two random variables are *statistically independent* when the joint probability factors as the product of the marginals:
-$$\text{Prob}(X_{i}=x, Y_{i}=y)=\text{Prob}(X_{i}=x)\text{Prob}(Y_{i}=y) \quad \text{for every } (x, y).$$
-Equivalently, knowing $Y_{i}$ tells you nothing about the distribution of $X_{i}$.
-:::
-
-Independence is useful as the cleanest baseline against which to compare real data: most of the dependence statistics in [Statistics of Association](02_14_Associations.qmd) take value zero when the variables are independent.
-Independence is sometimes assumed for mathematical simplicity, not because it generally fits data well.^[The same can be said about assuming normally distributed errors.
-At least that assumption can be motivated by the Central Limit Theorems.]
-
-The marginal distributions are then defined as
+The marginal distributions are then defined by summing the joint distribution over all values of the other variable:
 $$\begin{aligned}
-\text{Prob}(X_{i} = x) &= \sum_{y} \text{Prob}(X_{i} = x \mid Y_{i} = y) \text{Prob}( Y_{i} = y ) \\
-\text{Prob}(Y_{i} = y) &= \sum_{x} \text{Prob}(Y_{i} = y \mid X_{i} = x) \text{Prob}( X_{i} = x ),
+\text{Prob}(X_{i} = x) &= \sum_{y} \text{Prob}(X_{i} = x, Y_{i} = y) \\
+\text{Prob}(Y_{i} = y) &= \sum_{x} \text{Prob}(X_{i} = x, Y_{i} = y).
 \end{aligned}$$
-which is also known as the law of total probability.
 
 The conditional distributions are defined as
 $$\begin{aligned}
 \text{Prob}(X_{i} = x \mid Y_{i} = y) &= \frac{ \text{Prob}(X_{i} = x, Y_{i} = y)}{ \text{Prob}( Y_{i} = y )} \\
 \text{Prob}(Y_{i} = y \mid X_{i} = x) &= \frac{ \text{Prob}(X_{i} = x, Y_{i} = y)}{ \text{Prob}( X_{i} = x )}
 \end{aligned}$$
+
+Multiplying each conditional distribution by its denominator and substituting the result into the marginals gives the law of total probability:
+$$\begin{aligned}
+\text{Prob}(X_{i} = x) &= \sum_{y} \text{Prob}(X_{i} = x \mid Y_{i} = y) \text{Prob}( Y_{i} = y ) \\
+\text{Prob}(Y_{i} = y) &= \sum_{x} \text{Prob}(Y_{i} = y \mid X_{i} = x) \text{Prob}( X_{i} = x ).
+\end{aligned}$$
+
+A particularly simple special case is when the two variables carry no information about each other.
+Two random variables are *statistically independent* when the joint probability factors as the product of the marginals:
+$$\text{Prob}(X_{i}=x, Y_{i}=y)=\text{Prob}(X_{i}=x)\text{Prob}(Y_{i}=y) \quad \text{for every } (x, y).$$
+Equivalently, knowing $Y_{i}$ tells you nothing about the distribution of $X_{i}$.
+
+Independence is useful as the cleanest baseline against which to compare real data: most of the dependence statistics in [Statistics of Association](02_14_Associations.qmd) take value zero when the variables are independent.
+Independence is sometimes assumed for mathematical simplicity, not because it generally fits data well.^[The same can be said about assuming normally distributed errors.
+At least that assumption can be motivated by the Central Limit Theorems.]
 
 
 #### **Coin Flips Example** {-}
@@ -343,10 +342,7 @@ Variables are statistically independent if $F(x, y) = F_{X}(x)F_{Y}(y)$ for all 
 
 
 The most-used parametric joint distribution on continuous data is the bivariate analog of the Normal.
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
 A *bivariate normal distribution* describes a random vector $(X_{i}, Y_{i})$ whose joint density is the multivariate normal with mean vector $(\mathbb{E}[X_{i}], \mathbb{E}[Y_{i}])$, variances $(\mathbb{V}[X_{i}], \mathbb{V}[Y_{i}])$, and correlation $\rho$.
-:::
 
 The bivariate normal is useful for analytical work on multivariate random variables.
 Both marginals are normal, and every conditional $Y_{i} \mid X_{i} = x$ is also normal with a linear conditional mean.
@@ -722,7 +718,7 @@ Reducing one error rate usually raises the other for a fixed sample.
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Here is a Courtroom example: Someone suspected of committing a crime is at trial, and they are either guilty or not (a Bernoulli random variable).
 You hypothesize that the suspect is innocent, and a jury can either convict them (decide guilty) or free them (decide not-guilty).
-Recall that [fail-to-reject a hypothesis does not mean accepting it](01_08_HypothesisTests.qmd#caveats), so deciding not-guilty does not necessarily mean innocent.
+Recall that [fail-to-reject a hypothesis does not mean accepting it](01_08_HypothesisTests.qmd#caveats-on-interpretation), so deciding not-guilty does not necessarily mean innocent.
 
 | True Situation | Decision: Free | Decision: Convict |
 |---|---|---|
@@ -909,17 +905,11 @@ For two states, the posterior odds equal the prior odds times a likelihood ratio
 #### **Bayesian Screening** {-}
 
 A common application of Bayes' theorem is interpreting a positive result from a diagnostic test.
-
-:::{.callout-important icon=false title="Key Definition" collapse="false"}
 For a binary screening test where $X_{i}=1$ means "condition present" and $Y_{i}=1$ means "test positive":
 
-*Prevalence* $\text{Prob}(X_{i}=1)$ is the base rate of the condition in the population.
-
-*Sensitivity* $\text{Prob}(Y_{i}=1\mid X_{i}=1)$ is the probability of a positive result when the condition is present.
-
-*False positive rate* $\text{Prob}(Y_{i}=1\mid X_{i}=0)$ is the probability of a positive result when it is absent.
-
-:::
+* *Prevalence* $\text{Prob}(X_{i}=1)$ is the base rate of the condition in the population.
+* *Sensitivity* $\text{Prob}(Y_{i}=1\mid X_{i}=1)$ is the probability of a positive result when the condition is present.
+* *False positive rate* $\text{Prob}(Y_{i}=1\mid X_{i}=0)$ is the probability of a positive result when it is absent.
 
 Screening is useful for converting test accuracy and base rates into the quantity an individual actually cares about: the posterior $\text{Prob}(X_{i}=1\mid Y_{i}=1)$, the probability of having the condition given a positive result.
 The three inputs play different roles: sensitivity and the false positive rate describe the test, while prevalence describes the population.

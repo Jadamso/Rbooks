@@ -9,23 +9,15 @@ set.seed(1)
 We will now dig a little deeper theoretically into the statistics we compute.
 When we know how the data are generated theoretically, we can often compute the theoretical value of the two most basic and often-used statistics: the mean and variance.
 
-This chapter asks three questions.
+This chapter asks two questions.
 
 * What does a statistic estimate?
     * *Parameter, estimator, and estimate*: these separate a fixed population number, a formula for any sample, and the specific number from our sample.
     * *Expected value and population variance*: these are the theoretical mean and variance, computed from known probabilities.
-    * *Plug-in principle*: this puts sample proportions into a population formula, which recovers the sample [mean and variance](01_03_SummaryStatistics.qmd#mean-and-variance).
 * How sure are we?
-    * *Mean and variance of the sample mean*: these are $\mathbb{E}[M]=\mathbb{E}[X_{i}]$, from linearity of expectation, and $\mathbb{V}[M]=\mathbb{V}[X_{i}]/n$, which shrinks like $1/n$.
-      These two results set the center and spread of the Normal curve in the [central limit theorem](01_05_Sampling.qmd#central-limit-theorem-clt), but they do not explain why the curve is Normal.
-    * *Standard error formula*: this estimates $\text{SE}(M)$ with $\hat{s}/\sqrt{n}$, as an alternative to the [bootstrap](01_05_Sampling.qmd#standard-errors).
-    * *Law of the Unconscious Statistician (LOTUS)*: this gives the expected value of a function of $X_{i}$ without first deriving that function's distribution.
-      It supplies the center and spread of the Normal curve for the variance estimator $V$.
-* How do we judge an estimator?
-    * *Bias*: this asks whether an estimator is right on average.
-      The divide-by-$n$ variance estimator is biased, so we often use the adjusted sample standard deviation $\hat{s}_{\text{adj}}$, which divides by $n-1$.
-    * *Consistency*: this asks whether estimates get closer to the parameter as the sample grows.
-      The shrinking variance explains why the sample mean is consistent, which is the [law of large numbers](01_05_Sampling.qmd#law-of-large-numbers-lln).
+    * *Mean and variance of the sample mean*: the mean of $M$ equals the population mean and its variance is the population variance divided by $n$.
+    * *Standard error formula*: this estimates $\text{SE}(M)$ from the sample standard deviation and $n$, as an alternative to the [bootstrap](01_05_Sampling.qmd#standard-errors).
+      These supply the center and spread of the Normal approximation based on the [central limit theorem](01_05_Sampling.qmd#central-limit-theorem-clt).
 
 ## Statistical Theory
 
@@ -383,7 +375,6 @@ c(m_hat, v_hat)
 With many unique values, the plug-in mean and variance still match the averages over the observations.
 To see this, take one sample from the pretend population, as if it were all we observed.
 ```{r}
-## MAIN EXAMPLE
 # One sample of 50 workers, as if it were all we observed
 x_sim <- sample(population_wages, 50, replace=FALSE)
 
@@ -429,19 +420,30 @@ x_sim <- runif(2000, -1, 1)
 
 ## Estimators
 
+:::{.callout-important icon=false title="Key Definition" collapse="false"}
+The *sample mean estimator* averages $n$ random variables,
+$$M = \sum_{i=1}^{n} X_{i}/n.$$
+If each $X_{i}$ is a single draw from a distribution, then $M$ is approximately Normally distributed with this *expected value* and *standard error*:
+$$\begin{aligned}
+\mathbb{E}[M] &= \mathbb{E}[X_{i}] \approx \hat{m} \\
+\text{SE}\left(M\right) &= \sqrt{\mathbb{V}[X_{i}]}/\sqrt{n} \approx \hat{s}/\sqrt{n}.
+\end{aligned}$$
+:::
+
 #### **Means** {-}
 
 The LLN says the sample mean concentrates on the population mean as $n$ grows.
-To explain it, we first find where the sampling distribution of $M$ is centered, using a basic rule about how expectations distribute over sums.
+To explain it, we first find where the sampling distribution of the sample mean is centered.
+
+This result is useful because it says the sample mean is right on average: across all possible samples, its estimates center on the population mean.
+The reason is a basic rule about how expectations distribute over sums.
 *Linearity of expectation* states that for any random variables $X_{1}, X_{2}$ and constants $a, b$,
 $$\mathbb{E}[a X_{1} + b X_{2}] = a \mathbb{E}[X_{1}] + b \mathbb{E}[X_{2}].$$
-This is useful because it lets us reason about the mean of any *linear combination* of random variables without computing a joint distribution.
-
-Applied to the sample mean estimator $M = \sum_{i=1}^{n} X_{i}/n$, with the constants $1/n$:
+This rule lets us reason about the mean of any *linear combination* of random variables without computing a joint distribution.
+Applied to $M$, with the constants $1/n$,
 $$
-\mathbb{E}\left[M\right] = \mathbb{E}\left[ \sum_{i=1}^{n} X_{i}/n \right] = \sum_{i=1}^{n} \mathbb{E}[X_{i}]/n.
+\mathbb{E}\left[M\right] = \mathbb{E}\left[ \sum_{i=1}^{n} X_{i}/n \right] = \sum_{i=1}^{n} \mathbb{E}[X_{i}]/n = n \mathbb{E}[X_{i}]/n = \mathbb{E}[X_{i}].
 $$
-Assuming each observation has the same finite expected value, the expected value of the sample average equals this common population mean: $\mathbb{E}\left[M\right] = \mathbb{E}[X_{i}]$ for every $i$.
 For a detailed treatment, see [here](https://dlsun.github.io/probability/linearity.html).
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
@@ -687,7 +689,6 @@ mean(g(x_sim))
 Economists often work with logged data.
 LOTUS gives the population mean of the logged values directly from the original distribution, with $g(x)=\log(x)$.
 ```{r}
-## MAIN EXAMPLE
 # E[log(X)] by LOTUS
 sum(log(population_wages) * wage_probs)
 # The population mean of log wages is 1.59.
@@ -862,7 +863,6 @@ However, the $1/\sqrt{n}$ rate means each additional data point lowers the stand
 In economics, this is known as diminishing returns, and it is why economists may recommend you do not get more data.
 
 ```{r}
-## MAIN EXAMPLE
 # One sample of 50 workers, as if it were all we observed
 x_sim <- sample(population_wages, 50, replace=FALSE)
 

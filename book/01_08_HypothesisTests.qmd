@@ -3,18 +3,14 @@
 
 A *hypothesis test* turns a question about the population into a decision: given the data, do we have enough evidence to reject a specific value for the parameter?
 
-This chapter asks three questions.
+This chapter asks two questions.
 
 * How do we decide whether to reject a value?
-    * *Impose the null*: this is a new use of the [bootstrap](01_05_Sampling.qmd#bootstrap-distribution), which centers the resampled statistics on the value and checks how unusual the observed statistic is.
+    * *Impose the null*: this shifts the [bootstrap distribution](01_05_Sampling.qmd#bootstrap-distribution) so it is centered on the hypothesized value, then checks how unusual the observed statistic is.
       It is an alternative to [inverting a CI](01_07_Intervals.qmd#invert-a-ci).
-    * *Level $\alpha$*: this sets the coverage $1-\alpha$ of the interval, so a smaller $\alpha$ gives a wider interval and makes rejection harder.
+    * *Level $\alpha$*: this sets the coverage $1-\alpha$ of a confidence interval and the $p$-value cutoff.
 * How strong is the evidence against that value?
-    * *Two-sided and one-sided $p$-values*: these give the probability, if the null is true, of a statistic at least as extreme as the one observed, looking in both tails or in one.
-    * *$t$-value*: this measures the distance from the null in standard errors, $t=(M-m_{0})/\text{SE}(M)$, so it does not depend on units.
-* What does "statistically significant" mean?
-    * *False rejections*: when the null is true, $p$-values still vary from sample to sample, and some fall below $0.05$ by chance.
-      So "significant" says only that the $p$-value fell below a chosen cutoff.
+    * *$p$-value*: this is the probability of a statistic at least as extreme as the one observed, assuming the null is true.
 
 ## Testing Methods
 
@@ -30,19 +26,20 @@ The *null hypothesis* $H_{0}$ is the specific claim about the parameter that we 
 
 The *alternative hypothesis* $H_{A}$ is the competing claim.
 
-A *two-sided hypothesis test* covers deviations from the null in either direction (alternative values are higher or lower than the null). 
+A *two-sided hypothesis test* covers alternative values that are either smaller or larger than the null. 
 :::
 
-This setup is useful because the test only ever asks about $H_{0}$.
-Either the data contradict $H_{0}$ enough to reject it, or they do not.
-The data never "prove" $H_{A}$.
 The most common test concerns the mean, $H_{0}: \mathbb{E}[X_{i}] = m_{0}$, where $m_{0}$ is a hypothesized value.
 The two-sided alternative is $H_{A}: \mathbb{E}[X_{i}] \neq m_{0}$.
 E.g., you hypothesize your stock returns have earnings $m_{0}=0$ and consider that the returns could truly be either positive or negative.
 
 #### **Choosing a Null** {-}
 
-Where does a hypothesized value like $m_{0}$ come from?
+This setup is useful because the test only ever asks about $H_{0}$.
+Either the data contradict $H_{0}$ enough to reject it, or they do not.
+(The data never "prove" $H_{A}$.)
+
+But where does a hypothesized value like $m_{0}$ come from?
 It comes from outside the sample, and it is best written down before looking at the data.
 Common sources include
 
@@ -51,8 +48,6 @@ Common sources include
 * a policy target or legal standard, such as a central bank's $2\%$ inflation target
 * an earlier value, such as last year's average wage
 * "no effect" or "no change", such as a mean change in store sales of zero after a new layout, which is the most common null in practice
-
-For example, @AdamsonKimbrough2023 and @AdamsonWilson2024 test whether the estimates from their laboratory experiments equal the values an economic model predicts, rather than zero [@LehmannRomano2005].
 
 A null chosen after seeing the data is circular: you could always pick a value that the data already contradict and then reject it.
 
@@ -120,8 +115,26 @@ abline(v=m_hat, col=rgb(1, 0, 0, .8), lwd=2)
 # The sample mean of about 5.71 falls just below it, so we reject this null.
 ```
 
+:::{.callout-note icon=false collapse="true" title="Must Know"}
+Why does adding $(m_{0} - \hat{m})$ impose the null?
+A bootstrap resample of the data has a mean that varies around the sample mean $\hat{m}$, not around the hypothesized $m_{0}$.
+Adding the constant $(m_{0} - \hat{m})$ slides the whole resampling distribution over so it is centered at $m_{0}$ instead.
+A shift moves the center but leaves the spread and shape unchanged, so the result is a sampling distribution with the null mean and the same variability as the data.
+
+For example, take the three observations $\{2, 4, 9\}$, which have mean $\hat{m}=5$, and the null $m_{0}=6$.
+Adding $m_{0}-\hat{m}=1$ to every observation gives $\{3, 5, 10\}$, which has mean $6$ and the same spread.
+```{r}
+x0_hat <- c(2, 4, 9)
+m0_hat <- mean(x0_hat)
+x0_null <- x0_hat + (6 - m0_hat) # shift so the mean equals 6
+x0_null
+c(mean(x0_null), sd(x0_hat), sd(x0_null))
+```
+:::
+
+
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
-Repeat this test with the murder arrest rates in `USArrests`, again for the hypothesized mean of $9$.
+Repeat the following test with the murder arrest rates in `USArrests`, again for the hypothesized mean of $9$.
 
 ```{r}
 x2_hat <- USArrests[, 'Murder'] # murder arrests per 100,000
@@ -146,36 +159,6 @@ abline(v=m2_hat, col=rgb(1, 0, 0, .8), lwd=2)
 ```
 :::
 
-:::{.callout-note icon=false collapse="true" title="Must Know"}
-Why does adding $(m_{0} - \hat{m})$ impose the null?
-A bootstrap resample of the data has a mean that varies around the sample mean $\hat{m}$, not around the hypothesized $m_{0}$.
-Adding the constant $(m_{0} - \hat{m})$ slides the whole resampling distribution over so it is centered at $m_{0}$ instead.
-A shift moves the center but leaves the spread and shape unchanged, so the result is a sampling distribution with the null mean and the same variability as the data.
-
-For example, take the three observations $\{2, 4, 9\}$, which have mean $\hat{m}=5$, and the null $m_{0}=6$.
-Adding $m_{0}-\hat{m}=1$ to every observation gives $\{3, 5, 10\}$, which has mean $6$ and the same spread.
-```{r}
-x0_hat <- c(2, 4, 9)
-m0_hat <- mean(x0_hat)
-x0_null <- x0_hat + (6 - m0_hat) # shift so the mean equals 6
-x0_null
-c(mean(x0_null), sd(x0_hat), sd(x0_null))
-```
-:::
-
-
-
-
-The Normal approximation from the previous chapter can also impose the null: center the interval at the hypothesized value $m_{0}$ and use $m_{0} \pm q(\alpha/2) \cdot \text{SE}(M)$, where $\text{SE}(M)$ is estimated via bootstrap or classical formulas.
-(While we could also use a Null Jackknife distribution, that is rarely done in practice.)
-Altogether, there are two different types of confidence intervals that "impose the null".
-Until you know more, a conservative rule-of-thumb is to take the larger estimate.
-
-| Interval | Mechanism |
-| -------- | ------- |
-| Bootstrap (Percentile) | randomly resample $n$ observations with replacement and shift |
-| Normal | assume sampling distribution is Normal and use formula $\pm q(\alpha/2) \cdot \text{SE}$ |
-: Types of Confidence Interval Estimates that "impose the null"
 
 
 #### **Coverage and Rejection** {-}
@@ -226,14 +209,18 @@ Lowering $\alpha$ makes it rarer to reject a null that is true, but it also make
 So the choice of $\alpha$ is a trade-off, and, like the null, it is best made before looking at the data.
 
 
+The Bootstrap (Percentile) randomly resamples $n$ observations with replacement and shifts.
+The [Normal approximation](01_07_Intervals.qmd#normal-approximation) from the previous chapter can also impose the null: center the interval at the hypothesized value $m_{0}$ and use $m_{0} \pm q(\alpha/2) \cdot \text{SE}(M)$, where $\text{SE}(M)$ is estimated via bootstrap or classical formulas.
+(While we could also use a Null Jackknife distribution, that is rarely done in practice.)
+Altogether, there are two different types of confidence intervals that "impose the null", each with its own pros and cons.
+
 ## $p$-values
 
 Reading a hypothesis test off a confidence interval is binary (reject or not); often we also want a number that describes *how* extreme the observed statistic is relative to the null.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *$p$-value* is the probability, under the null hypothesis, of seeing a statistic at least as extreme as the one observed.
-Small $p$-values give evidence against the null; the threshold $p \leq 0.05$ is a convention, not a law of nature.
-The $p$-value is *not* the probability that the null is true.
+Small $p$-values give evidence against the null, with $p \leq 0.05$ as a convention for rejecting $H_{0}$.
 :::
 
 The $p$-value is useful as a *continuous summary* of how strongly the data oppose the null, whereas a confidence interval gives only a yes/no answer at a fixed coverage level.
@@ -242,13 +229,14 @@ For the running mean example, we want the probability that the random variable $
 Recall that we used the bootstrap to estimate the distribution of the sample statistic like the mean, and the null-bootstrap shifted the bootstrap to be centered at a hypothesized value.
 The bootstrap idea here is to approximate $M-\mathbb{E}[X_{i}]$, the difference between the sample mean $M$ and the unknown theoretical mean $\mathbb{E}[X_{i}]$, with $M^{\text{boot}}-\hat{m}$.
 To test $H_{0}: \mathbb{E}[X_{i}]=m_{0}$, we recenter the bootstrap mean as $M^{\text{boot}}_{0}=M^{\text{boot}}+(m_{0}-\hat{m})$, so $M^{\text{boot}}_{0}-m_{0}=M^{\text{boot}}-\hat{m}$.
-The two-sided $p$-value is then
+The two-sided $p$-value can then be estimated using $\hat{F}^{|\text{boot}|}_{0}$: the ECDF of $|M^{\text{boot}}_{0}- m_{0}|$.
 $$\begin{aligned}
 &  \text{Prob}( |M - m_{0}| \geq |\hat{m} - m_{0}| \mid \mathbb{E}[X_{i}] = m_{0} ) \\
-&  \approx \text{Prob}( |M^{\text{boot}}_{0}- m_{0}| \geq |\hat{m}- m_{0}| ),
+&  \approx \text{Prob}( |M^{\text{boot}}_{0}- m_{0}| \geq |\hat{m}- m_{0}| ) \\
+&  \approx 1-\hat{F}^{|\text{boot}|}_{0}(|\hat{m}-m_{0}|)
 \end{aligned}$$
 which is the share of null bootstrap means at least as far from $m_{0}$ as $\hat{m}$.
-Without ties at the observed distance, this share equals $1-\hat{F}^{|\text{boot}|}_{0}(|\hat{m}-m_{0}|)$, where $\hat{F}^{|\text{boot}|}_{0}$ is the ECDF of $|M^{\text{boot}}_{0}- m_{0}|$.
+The last approximation assumes no ties at the observed distance.
 
 
 Using the null bootstrap distribution `boot_means_null` from above, we compute the two-sided $p$-value for the lab data.
@@ -398,7 +386,7 @@ With $50$ extreme draws, they give $50/999 > 1/20$ and $51/1000 > 1/20$, so neit
 This uses the rule $p \leq 0.05$, since the add-one version can equal $1/20$ exactly.
 :::
 
-#### **Caveats** {-}
+#### **Caveats on Interpretation** {-}
 
 Beware of a common misreading of the $p$-value as "the probability the null is true".
 That is false.
@@ -406,12 +394,11 @@ A $p$-value is the frequency you see something at least as extreme as your stati
 
 Failing to reject $H_{0}$ does not show that $H_{0}$ is true [@AltmanBland1995; @Abadie2020].
 The exam example above is a case in point, because the student's true score cannot be both $70\%$ and $85\%$.
-A large $p$-value can simply mean that the sample is too small to tell nearby values apart.
+A large $p$-value can simply mean that the sample is too small to tell nearby values apart: *the absence of evidence is not evidence of absence.*
 This is one reason why we say "fail to reject" rather than "accept".
 Another reason is that we can "fail to reject" multiple different hypotheses, and "accepting" them all would be nonsense.
 E.g., we cannot accept the mean is both $4$ and $2$ even if both fall inside of a confidence interval.
-@Adamson2025_Greece makes this point about earlier work that "ruled out" trade because a proxy for trade was statistically insignificant.
-As the paper puts it, "the absence of evidence is not evidence of absence."
+
 
 Often, one may also see or hear "$p<.05$: statistically significant" and "$p>.05$: not statistically significant".
 That is decision making on purely statistical grounds, and it may or may not be suitable for your context.
@@ -421,7 +408,7 @@ A rejection also does not mean the null is far from the truth [@McCloskeyZiliak1
 
 Running many hypothesis tests inflates the chance of a false rejection.
 At the $5\%$ level, you expect roughly $1$ in $20$ true nulls to be rejected by chance alone, so if you test $20$ independent nulls and find $1$ "significant" result, that result is what you would expect even when every null is true.
-The fix is to correct the level (e.g., @Bonferroni1936: use $0.05/k$ when running $k$ tests) or to pre-specify a small set of hypotheses before looking at the data.
+
 
 ```{r}
 # Purely-Statistical Decision Making
@@ -437,7 +424,6 @@ Also note that the $p$-value is itself a function of data, and hence a random va
 To see this, return to the pretend population from [Sampling](01_05_Sampling.qmd#population-theory).
 We know its mean, so we can draw many samples and test the null that is actually true.
 ```{r}
-## MAIN EXAMPLE
 # Known population mean, from the pretend population defined above
 population_wage_mean <- mean(population_wages)
 
@@ -496,11 +482,16 @@ When the $p$-value is close to the cutoff, rerunning the bootstrap alone could f
 This is one more reason not to lean on the exact $5\%$ cutoff.
 :::
 
+
+
+
+
 ## Other Statistics
 
-#### **$t$-values** {-}
+#### **$t$-values for mean testing** {-}
 
-Different studies have different $\text{SE}(M)$, so the raw difference $\hat{m} - m_{0}$ is hard to compare across studies; we need to express the deviation in standard-error units.
+Different studies have different standard errors, so the raw difference in statistics is hard to compare across studies.
+For the mean, we have a $t$-value test statistic that does not depend on units.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
 The *$t$-value* (or $t$-statistic) standardizes the deviation of $\hat{m}$ from the hypothesized $m_{0}$ by the standard error,
@@ -508,12 +499,22 @@ $$t = \frac{M - m_{0}}{\text{SE}(M)}.$$
 Using a standardized statistic makes results comparable across studies and connects to a well-studied reference distribution (Normal in large samples, Student's $t$ in small).
 :::
 
-The $t$-value is useful as a *test statistic* that does not depend on units.
-The units cancel between the numerator and the denominator.
-So a given $t$-value means roughly the same thing whether the data are measured in dollars or hours.
-For any specific sample we must approximate the standard error.
-Using the theory-driven approach, we compute $\hat{t}=(\hat{m}-m_{0})/(\hat{s}_{\text{adj}}/\sqrt{n})$, with the [adjusted sample standard deviation](01_06_EstimationTheory.qmd#bias) $\hat{s}_{\text{adj}}$.
-Using the data-driven approach, we compute $\hat{t}=(\hat{m}-m_{0})/(\hat{\text{SE}}^{\text{jack}})$ or $\hat{t}=(\hat{m}-m_{0})/(\hat{\text{SE}}^{\text{boot}})$.
+A given $t$-value means roughly the same thing whether the data are measured in dollars or hours.
+There are several benefits to this statistic:
+
+* uses the same statistic for different hypothesis tests
+* makes the statistic comparable across different studies
+* removes dependence on unknown parameters by normalizing with a standard error
+* makes the null distribution theoretically known asymptotically (approximately)
+
+Using the theory-driven approach, we use the [adjusted sample standard deviation](01_06_EstimationTheory.qmd#bias) $\hat{s}_{\text{adj}}$.
+Using the data-driven approach, we use either the jackknife or bootstrap.
+So there are three sample analogs.
+
+* $\hat{t}=(\hat{m}-m_{0})/(\hat{s}_{\text{adj}}/\sqrt{n})$
+* $\hat{t}=(\hat{m}-m_{0})/(\hat{\text{SE}}^{\text{jack}})$
+* $\hat{t}=(\hat{m}-m_{0})/(\hat{\text{SE}}^{\text{boot}})$
+
 In any case, we can use bootstrapping to estimate the variability of the $t$ statistic, just like we did with the mean.
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
@@ -531,7 +532,6 @@ c(se0_hat, t0_hat)
 
 For the lab data, we compute $\hat{t}$ with jackknife standard errors and then bootstrap its null distribution.
 ```{r}
-## MAIN EXAMPLE
 #null hypothesis
 null_mean <- 6.5
 
@@ -587,20 +587,13 @@ if(p >.05){
 ```
 
 
-There are several benefits to this statistic:
-
-* uses the same statistic for different hypothesis tests
-* makes the statistic comparable across different studies
-* removes dependence on unknown parameters by normalizing with a standard error
-* makes the null distribution theoretically known asymptotically (approximately)
-
 The last point implies we are typically dealing with a normal distribution that is well-studied, or another well-studied distribution derived from it.
-Because $\hat{t}$ is comparable across tests, many null distributions can share one figure.
-For example, @Adamson2022_EAUP summarizes many simulated null distributions of $t$-values [@Hope1968; @BesagDiggle1977; @baddeley2015] with "spreadplots".
-Each spreadplot draws the range as a black line, the middle $95\%$ between the $0.025$ and $0.975$ quantiles as a thick grey bar, and the median as a white line.
-The observed $t$-values appear as points, with reference lines at $0$ and $\pm 1.96$.
+Because $\hat{t}$ is comparable across tests, many null distributions can share one figure [@Hope1968; @BesagDiggle1977; @baddeley2015; @Adamson2022_EAUP].
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
+A spreadplot draws the range as a black line, the middle $95\%$ between the $0.025$ and $0.975$ quantiles as a thick grey bar, and the median as a white line.
+The observed $t$-values appear as points, with reference lines at $0$ and $\pm 1.96$.
+
 Make a spreadplot for three tests at once.
 In `USArrests`, test the nulls $\mathbb{E}[X_{i}]=9$ for `Murder`, $\mathbb{E}[X_{i}]=150$ for `Assault`, and $\mathbb{E}[X_{i}]=70$ for `UrbanPop`.
 For each variable, compute $\hat{t}$ and bootstrap its null distribution as above.
@@ -783,14 +776,22 @@ One-sided hypothesis tests can be conducted by inverting a one-sided confidence 
 
 The $p$-value for a one-sided test is more straightforward to implement via a bootstrap null distribution.
 
-For a left-tail test, we examine $$\begin{aligned}
+For a left-tail test, we examine
+$$\begin{aligned}
 p = \text{Prob}( M \leq \hat{m} \mid \mathbb{E}[X_{i}] = m_{0} )
     &\approx \text{Prob}( M^{\text{boot}}_{0} \leq \hat{m} ) = \hat{F}^{\text{boot}}_{0}(\hat{m}),
 \end{aligned}$$
 where $\hat{F}^{\text{boot}}_{0}$ is the ECDF of the bootstrap null distribution.
-We reject the null if $p \leq 0.05$ at the $5\%$ level, and otherwise fail to reject.
+We typically reject the null if $p \leq 0.05$ at the $5\%$ level, and otherwise fail to reject.
 
-For a right-tail test, we examine $p=\text{Prob}( M \geq \hat{m} \mid \mathbb{E}[X_{i}] = m_{0} ) \approx \text{Prob}( M^{\text{boot}}_{0} \geq \hat{m} )$, the share of null bootstrap means at least as large as $\hat{m}$.
+For a right-tail test, we examine the share of null bootstrap means at least as large as $\hat{m}$.
+This uses the other side of the same null distribution.
+$$\begin{aligned}
+p=\text{Prob}( M \geq \hat{m} \mid \mathbb{E}[X_{i}] = m_{0} ) 
+  & \approx \text{Prob}( M^{\text{boot}}_{0} \geq \hat{m} )
+  \approx 1- \hat{F}^{\text{boot}}_{0}(\hat{m}),
+\end{aligned}$$ 
+
 
 
 ```{r}
@@ -813,7 +814,7 @@ if(p1 >.05){
 # The sample mean is below 6.5, so it gives no evidence for a mean above 6.5.
 ```
 
-The left-tail test uses the other side of the same null distribution.
+
 ```{r}
 # Left-tail Test, ALTERNATIVE: mean < 6.5
 # Compute left-tail prob: p = F(m_hat)

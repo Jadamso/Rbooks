@@ -16,7 +16,7 @@ This chapter asks four questions.
 * Which observations can we use to estimate a time series at $t$?
     * *Filtering and smoothing*: filtering uses only current and past observations, while smoothing also uses future ones.
 * What does `lm()` compute with several explanatory variables?
-    * *Matrix OLS*: this is the formula $\hat{\mathbf{b}}=(\hat{\textbf{X}}'\hat{\textbf{X}})^{-1}\hat{\textbf{X}}'\hat{y}$.
+    * *Matrix OLS*: this writes the OLS coefficients as one matrix formula.
       The same algebra shows when OLS is unbiased.
 * How do we avoid [false discoveries](03_28_DataScientism.qmd#false-discovery) when we run many tests?
     * *Family-wise error rate*: this is the chance of at least one false positive across $K$ tests.
@@ -99,7 +99,9 @@ y_pred_lo <- predict(reg_lo, newdata=data.frame(x_hat=x_values))
 n <- nrow(xy_hat)
 res_lo <- lapply(1:399, function(i){
     xy_boot <- xy_hat[sample(n, replace=TRUE), ]
-    reg_b <- loess(y_hat ~ x_hat, data=xy_boot, span=.8)
+    # Only the residuals are used, so skip the standard-error statistics to save time
+    reg_b <- loess(y_hat ~ x_hat, data=xy_boot, span=.8,
+        control=loess.control(statistics='none'))
     resids_b <- resid(reg_b)
     cbind(e_hat=resids_b, x_hat=xy_boot[, 'x_hat'])
 })
@@ -198,7 +200,8 @@ y_pred_lo <- predict(reg_lo, newdata=data.frame(x_hat=x_values))
 n2 <- nrow(xy2_hat)
 res_lo <- lapply(1:399, function(i){
     xy2_boot <- xy2_hat[sample(n2, replace=TRUE), ]
-    reg_b <- loess(y_hat ~ x_hat, data=xy2_boot, span=.8)
+    reg_b <- loess(y_hat ~ x_hat, data=xy2_boot, span=.8,
+        control=loess.control(statistics='none'))
     resids_b <- resid(reg_b)
     cbind(e_hat=resids_b, x_hat=xy2_boot[, 'x_hat'])
 })
@@ -262,8 +265,9 @@ colnames(xy_hat) <- c('x_hat', 'y_hat') # x_hat=years of schooling, y_hat=hourly
 BWS <- c(0.75, 1, 1.5, 2, 3)
 BWS_CV <- sapply(BWS, function(h){
     e_bw_hat <- sapply(1:nrow(xy_hat), function(i){
+        # Only the prediction is used, so skip the standard-error statistics to save time
         llls <- loess(y_hat ~ x_hat, data=xy_hat[-i, ], span=h,
-            degree=1)
+            degree=1, control=loess.control(statistics='none'))
         y_pred_i <- predict(llls, newdata=xy_hat[i, ])
         e_i_hat <-  (y_pred_i- xy_hat[i, 'y_hat'])
         return(e_i_hat)
@@ -307,7 +311,7 @@ BWS <- c(0.5, 0.75, 1, 1.5, 2, 3)
 BWS_CV <- sapply(BWS, function(h){
     e_bw_hat <- sapply(1:nrow(xy2_hat), function(i){
         llls <- loess(y_hat ~ x_hat, data=xy2_hat[-i, ], span=h,
-            degree=1, surface='direct')
+            degree=1, control=loess.control(statistics='none'))
         y_pred_i <- predict(llls, newdata=xy2_hat[i, ])
         e_i_hat <-  (y_pred_i- xy2_hat[i, 'y_hat'])
         return(e_i_hat)
@@ -326,7 +330,7 @@ plot(BWS, BWS_CV, ylab='CV error', pch=3,
 ## Plot Optimal Predictions
 h_star <- BWS[which.min(BWS_CV)]
 llls <- loess(y_hat ~ x_hat, data=xy2_hat, span=h_star,
-    degree=1, surface='direct')
+    degree=1)
 plot(xy2_hat, pch=16, col=grey(0, .25),
     xlab='X', ylab='Predictions', main=NA)
 
