@@ -503,9 +503,8 @@ window.Quarto = {
 <ul>
 <li>How strongly are two variables associated?
 <ul>
-<li><em>Pearson correlation</em>: this is a new statistic for cardinal data, <span class="math inline">\(\hat{r}_{XY}=\hat{c}_{XY}/(\hat{s}_{X}\hat{s}_{Y})\)</span>.</li>
-<li><em>Falk’s median correlation</em>: this is a new statistic for cardinal data with outliers.</li>
-<li><em>Kendall’s rank correlation and Cramer’s V</em>: these are new statistics for ordered factors and for unordered factors.</li>
+<li><em>Pearson correlation</em>: this is a new statistic for cardinal data, the covariance divided by both standard deviations.</li>
+<li><em>Kendall’s rank correlation</em>: another new statistic for ordered factors and an alternative to Pearson correlation for cardinal data.</li>
 </ul></li>
 <li>How sure are we?
 <ul>
@@ -1043,34 +1042,33 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>codev <span class="ot">&lt;-</span> <span class="cf">function</span>(xy) {</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute medians for each column</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  med_hat <span class="ot">&lt;-</span> <span class="fu">apply</span>(xy, <span class="dv">2</span>, median)</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Subtract the medians from each column</span></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  xm <span class="ot">&lt;-</span> <span class="fu">sweep</span>(xy, <span class="dv">2</span>, med_hat, <span class="st">'-'</span>)</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Return the median of the paired products</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  CoDev <span class="ot">&lt;-</span> <span class="fu">median</span>(xm[, <span class="dv">1</span>] <span class="sc">*</span> xm[, <span class="dv">2</span>])</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(CoDev)</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>med_cor <span class="ot">&lt;-</span> <span class="cf">function</span>(xy) {</span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute the medians of absolute deviation</span></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>  med_hat <span class="ot">&lt;-</span> <span class="fu">apply</span>(xy, <span class="dv">2</span>, median)</span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>  xm <span class="ot">&lt;-</span> <span class="fu">sweep</span>(xy, <span class="dv">2</span>, med_hat, <span class="st">'-'</span>)</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>  MadProd <span class="ot">&lt;-</span> <span class="fu">prod</span>( <span class="fu">apply</span>(<span class="fu">abs</span>(xm), <span class="dv">2</span>, median) )</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Return the robust correlation measure</span></span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>( <span class="fu">codev</span>(xy) <span class="sc">/</span> MadProd)</span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="co"># xy_hat defined above</span></span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>xy_codev <span class="ot">&lt;-</span> <span class="fu">codev</span>(xy_hat)</span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>xy_codev</span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0</span></span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>xy_med_cor <span class="ot">&lt;-</span> <span class="fu">med_cor</span>(xy_hat)</span>
-<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>xy_med_cor</span>
-<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0</span></span>
-<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Both are exactly 0, although the Pearson correlation is about 0.28.</span></span>
-<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a><span class="co"># The median worker has 12 years of schooling, and so do 36% of all workers.</span></span>
-<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Their products are all 0, and the median product falls among them.</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>codev <span class="ot">&lt;-</span> <span class="cf">function</span>(xy) {</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute medians for each column</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  med_hat <span class="ot">&lt;-</span> <span class="fu">apply</span>(xy, <span class="dv">2</span>, median)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Subtract the medians from each column</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  xm <span class="ot">&lt;-</span> <span class="fu">sweep</span>(xy, <span class="dv">2</span>, med_hat, <span class="st">'-'</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Return the median of the paired products</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  CoDev <span class="ot">&lt;-</span> <span class="fu">median</span>(xm[, <span class="dv">1</span>] <span class="sc">*</span> xm[, <span class="dv">2</span>])</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(CoDev)</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>med_cor <span class="ot">&lt;-</span> <span class="cf">function</span>(xy) {</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute the medians of absolute deviation</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  med_hat <span class="ot">&lt;-</span> <span class="fu">apply</span>(xy, <span class="dv">2</span>, median)</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>  xm <span class="ot">&lt;-</span> <span class="fu">sweep</span>(xy, <span class="dv">2</span>, med_hat, <span class="st">'-'</span>)</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>  MadProd <span class="ot">&lt;-</span> <span class="fu">prod</span>( <span class="fu">apply</span>(<span class="fu">abs</span>(xm), <span class="dv">2</span>, median) )</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Return the robust correlation measure</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>( <span class="fu">codev</span>(xy) <span class="sc">/</span> MadProd)</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="co"># xy_hat defined above</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>xy_codev <span class="ot">&lt;-</span> <span class="fu">codev</span>(xy_hat)</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>xy_codev</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>xy_med_cor <span class="ot">&lt;-</span> <span class="fu">med_cor</span>(xy_hat)</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>xy_med_cor</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Both are exactly 0, although the Pearson correlation is about 0.28.</span></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a><span class="co"># The median worker has 12 years of schooling, and so do 36% of all workers.</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Their products are all 0, and the median product falls among them.</span></span></code></pre></div>
 </details>
 </div>
 <div class="callout callout-style-default callout-tip no-icon callout-titled">
@@ -1439,38 +1437,37 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Pair each worker's sex with a schooling group, as in Comparing Multiple Groups</span></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="co"># The schooling groups have an order, but Cramer's V ignores it.</span></span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="co"># So we treat both variables as unordered.</span></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>school_g <span class="ot">&lt;-</span> <span class="fu">cut</span>(Wages1[, <span class="st">'school'</span>], <span class="at">breaks=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">11</span>, <span class="dv">12</span>, <span class="dv">16</span>), <span class="at">labels=</span><span class="fu">c</span>(<span class="st">'&lt;12'</span>, <span class="st">'12'</span>, <span class="st">'&gt;12'</span>))</span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>xy_cat_hat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x_hat=</span>Wages1[, <span class="st">'sex'</span>], <span class="at">y_hat=</span>school_g) <span class="co"># x_hat=sex, y_hat=schooling group</span></span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(xy_cat_hat)</span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="do">##         y_hat</span></span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="do">## x_hat    &lt;12  12 &gt;12</span></span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="do">##   female 567 594 408</span></span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="do">##   male   786 594 345</span></span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Men are more likely than women to have fewer than 12 years of schooling.</span></span>
-<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>CV <span class="ot">&lt;-</span> <span class="cf">function</span>(xy){</span>
-<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Create a contingency table from the categorical variables</span></span>
-<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>    tbl <span class="ot">&lt;-</span> <span class="fu">table</span>(xy)</span>
-<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute the chi-square statistic (without Yates' continuity correction)</span></span>
-<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a>    chi2 <span class="ot">&lt;-</span> <span class="fu">chisq.test</span>(tbl, <span class="at">correct=</span><span class="cn">FALSE</span>)[[<span class="st">'statistic'</span>]]</span>
-<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Total sample size</span></span>
-<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>    n <span class="ot">&lt;-</span> <span class="fu">sum</span>(tbl)</span>
-<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute the minimum degrees of freedom (min(rows-1, columns-1))</span></span>
-<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a>    df_min <span class="ot">&lt;-</span> <span class="fu">min</span>(<span class="fu">nrow</span>(tbl) <span class="sc">-</span> <span class="dv">1</span>, <span class="fu">ncol</span>(tbl) <span class="sc">-</span> <span class="dv">1</span>)</span>
-<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Calculate Cramer's V</span></span>
-<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a>    V <span class="ot">&lt;-</span> <span class="fu">sqrt</span>((chi2 <span class="sc">/</span> n) <span class="sc">/</span> df_min)</span>
-<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(V)</span>
-<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a><span class="fu">CV</span>(xy_cat_hat)</span>
-<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a><span class="do">## X-squared </span></span>
-<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a><span class="do">## 0.1007045</span></span>
-<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Cramer's V of about 0.10 suggests a weak association.</span></span>
-<span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-32"><a href="#cb24-32" aria-hidden="true" tabindex="-1"></a><span class="co"># DescTools::CramerV( table(xy_cat_hat) )</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Pair each worker's sex with a schooling group, as in Comparing Multiple Groups</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="co"># The schooling groups have an order, but Cramer's V ignores it.</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="co"># So we treat both variables as unordered.</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>school_g <span class="ot">&lt;-</span> <span class="fu">cut</span>(Wages1[, <span class="st">'school'</span>], <span class="at">breaks=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">11</span>, <span class="dv">12</span>, <span class="dv">16</span>), <span class="at">labels=</span><span class="fu">c</span>(<span class="st">'&lt;12'</span>, <span class="st">'12'</span>, <span class="st">'&gt;12'</span>))</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>xy_cat_hat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x_hat=</span>Wages1[, <span class="st">'sex'</span>], <span class="at">y_hat=</span>school_g) <span class="co"># x_hat=sex, y_hat=schooling group</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(xy_cat_hat)</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="do">##         y_hat</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="do">## x_hat    &lt;12  12 &gt;12</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="do">##   female 567 594 408</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="do">##   male   786 594 345</span></span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Men are more likely than women to have fewer than 12 years of schooling.</span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>CV <span class="ot">&lt;-</span> <span class="cf">function</span>(xy){</span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Create a contingency table from the categorical variables</span></span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>    tbl <span class="ot">&lt;-</span> <span class="fu">table</span>(xy)</span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute the chi-square statistic (without Yates' continuity correction)</span></span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>    chi2 <span class="ot">&lt;-</span> <span class="fu">chisq.test</span>(tbl, <span class="at">correct=</span><span class="cn">FALSE</span>)[[<span class="st">'statistic'</span>]]</span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Total sample size</span></span>
+<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a>    n <span class="ot">&lt;-</span> <span class="fu">sum</span>(tbl)</span>
+<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute the minimum degrees of freedom (min(rows-1, columns-1))</span></span>
+<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a>    df_min <span class="ot">&lt;-</span> <span class="fu">min</span>(<span class="fu">nrow</span>(tbl) <span class="sc">-</span> <span class="dv">1</span>, <span class="fu">ncol</span>(tbl) <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Calculate Cramer's V</span></span>
+<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a>    V <span class="ot">&lt;-</span> <span class="fu">sqrt</span>((chi2 <span class="sc">/</span> n) <span class="sc">/</span> df_min)</span>
+<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(V)</span>
+<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a><span class="fu">CV</span>(xy_cat_hat)</span>
+<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a><span class="do">## X-squared </span></span>
+<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a><span class="do">## 0.1007045</span></span>
+<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Cramer's V of about 0.10 suggests a weak association.</span></span>
+<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a><span class="co"># DescTools::CramerV( table(xy_cat_hat) )</span></span></code></pre></div>
 </details>
 </div>
 <div class="callout callout-style-default callout-note no-icon callout-titled">

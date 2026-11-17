@@ -498,7 +498,42 @@ window.Quarto = {
 
 
 <hr>
-<p>We often summarize distributions with <em>statistics</em>: functions of data. We will go through some specific examples mathematically below, but can intuitively understand that they are generally computed as <code>statistic &lt;- function(x){ .... }</code>.</p>
+<p>We often summarize distributions with <em>statistics</em>: functions of data. This chapter computes statistics to answer four questions.</p>
+<ul>
+<li>Where is the center of the data?
+<ul>
+<li><em>Mean and median</em>: the mean <span class="math inline">\(\hat{m}\)</span> averages every observation, while the median <span class="math inline">\(\tilde{m}\)</span> is the middle <a href="./01_02_Data.html#quantiles">quantile</a> and barely moves with one extreme value.</li>
+</ul></li>
+<li>How spread out are the data?
+<ul>
+<li><em>Variance and standard deviation</em>: the variance <span class="math inline">\(\hat{v}\)</span> averages squared deviations from the mean, and its square root, the standard deviation <span class="math inline">\(\hat{s}\)</span>, is in the data’s units.</li>
+<li><em>IQR and MAD</em>: these are built from quantiles, so extreme values have little influence on them.</li>
+<li><em>Standardized values</em>: these measure distance from the mean in standard deviations.</li>
+</ul></li>
+<li>What shape does the distribution have?
+<ul>
+<li><em>Skewness and kurtosis</em>: these put numbers on two things a <a href="./01_02_Data.html#histogram-density">histogram</a> shows, asymmetry and heavy tails.</li>
+</ul></li>
+<li>What if the data are factors?
+<ul>
+<li><em>Mode and Herfindahl index</em>: the mode is the most common category, and the Herfindahl index <span class="math inline">\(\hat{H}\)</span> measures how concentrated the categories are. Ordered factors also have a median and quartiles.</li>
+</ul></li>
+</ul>
+<p>The most basic way to compute statistics is with <code>summary</code>, which reports multiple values that can all be calculated individually.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># A sample of real data: 3294 US workers</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Wages1, <span class="at">package=</span><span class="st">'Ecdat'</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> Wages1[, <span class="st">'wage'</span>] <span class="co"># lab data: hourly wages in 1980 dollars</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(x_hat)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="do">##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. </span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="do">##  0.07656  3.62157  5.20578  5.75758  7.30451 39.80892</span></span></code></pre></div>
+</details>
+</div>
+<p>Together, the sample mean and variance statistics summarize the central tendency and dispersion of a distribution. In some special cases, such as with the normal distribution, they completely describe the distribution. Other distributions are better described with other statistics, either as an alternative or in addition to the mean and variance.</p>
+<p>We will go through specific examples mathematically below, but can intuitively understand that they are generally computed as <code>statistic &lt;- function(x){ .... }</code>.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -515,54 +550,19 @@ window.Quarto = {
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>statistic <span class="ot">&lt;-</span> <span class="cf">function</span>(x_hat, f){</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    stat_hat <span class="ot">&lt;-</span> <span class="fu">f</span>(x_hat)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(stat_hat)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>x0_hat <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">10</span>, <span class="dv">6</span>) <span class="co"># Data</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">statistic</span>(x0_hat, sum)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 20</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>statistic <span class="ot">&lt;-</span> <span class="cf">function</span>(x_hat, f){</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    stat_hat <span class="ot">&lt;-</span> <span class="fu">f</span>(x_hat)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(stat_hat)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>x0_hat <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">10</span>, <span class="dv">6</span>) <span class="co"># Data</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">statistic</span>(x0_hat, sum)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 20</span></span></code></pre></div>
 </details>
 </div>
 </div>
 </div>
 </div>
-<p>This chapter asks four questions.</p>
-<ul>
-<li>Where is the center of the data?
-<ul>
-<li><em>Mean and median</em>: the mean <span class="math inline">\(\hat{m}\)</span> averages every observation, while the median <span class="math inline">\(\tilde{m}\)</span> is the middle <a href="./01_02_Data.html#quantiles">quantile</a> and barely moves with one extreme value.</li>
-</ul></li>
-<li>How spread out are the data?
-<ul>
-<li><em>Variance and standard deviation</em>: the variance <span class="math inline">\(\hat{v}\)</span> averages squared deviations from the mean, and <span class="math inline">\(\hat{s}=\sqrt{\hat{v}}\)</span> is in the data’s units.</li>
-<li><em>IQR and MAD</em>: these are built from quantiles, so extreme values have little influence on them.</li>
-<li><em>Standardized values</em>: these measure distance from the mean in standard deviations, <span class="math inline">\(\hat{z}_{i}=(\hat{x}_{i}-\hat{m})/\hat{s}\)</span>.</li>
-</ul></li>
-<li>What shape does the distribution have?
-<ul>
-<li><em>Skewness and kurtosis</em>: these put numbers on two things a <a href="./01_02_Data.html#histogram-density">histogram</a> shows, asymmetry and heavy tails.</li>
-</ul></li>
-<li>What if the data are factors?
-<ul>
-<li><em>Mode and Herfindahl index</em>: the mode is the most common category, and <span class="math inline">\(\hat{H}=\sum_{x}\hat{p}(x)^2\)</span> measures how concentrated the categories are. Ordered factors also have a median and quartiles.</li>
-</ul></li>
-</ul>
-<p>The most basic way to compute statistics is with <code>summary</code>, which reports multiple values that can all be calculated individually.</p>
-<div class="cell">
-<details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># A sample of real data: 3294 US workers</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Wages1, <span class="at">package=</span><span class="st">'Ecdat'</span>)</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> Wages1[, <span class="st">'wage'</span>] <span class="co"># lab data: hourly wages in 1980 dollars</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(x_hat)</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="do">##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. </span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="do">##  0.07656  3.62157  5.20578  5.75758  7.30451 39.80892</span></span></code></pre></div>
-</details>
-</div>
-<p>Together, the sample mean and variance statistics summarize the central tendency and dispersion of a distribution. In some special cases, such as with the normal distribution, they completely describe the distribution. Other distributions are better described with other statistics, either as an alternative or in addition to the mean and variance.</p>
 <section id="mean-and-variance" class="level2" data-number="3.1">
 <h2 data-number="3.1" class="anchored" data-anchor-id="mean-and-variance"><span class="header-section-number">3.1</span> Mean and Variance</h2>
 <p>The mean and variance are the two most basic statistics that summarize the center and how spread apart the values are for data in your sample. As before, we represent data as vector <span class="math inline">\(\hat{x}=(\hat{x}_{1}, \hat{x}_{2}, ....\hat{x}_{n})\)</span>, where there are <span class="math inline">\(n\)</span> observations and <span class="math inline">\(\hat{x}_{i}\)</span> is the value of the <span class="math inline">\(i\)</span>th one.</p>
