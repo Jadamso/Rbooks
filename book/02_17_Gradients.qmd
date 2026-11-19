@@ -16,7 +16,7 @@ This chapter asks three questions.
 * How do we fit a curve when $\hat{x}$ is unevenly spread?
     * *LOESS*: this is a new local regression that adapts its window to the data.
 * How does $\hat{y}$ change with $\hat{x}$ when the fitted curve bends?
-    * *Gradients*: these are the local version of the [regression slope](02_15_SimpleRegression.qmd#model-and-objective), with one slope $\hat{b}_{1}(x)$ at each design point $x$.
+    * *Gradients*: these are the local version of the [regression slope](02_15_SimpleRegression.qmd#model-and-objective), with one slope $\hat{\text{grad}}(x)$ at each design point $x$.
     * *Mean of the gradients and gradient at the mean*: these new statistics collapse the gradients into a single number.
 * How sure are we?
     * *Confidence band and gradient standard errors*: these assess sampling variability with the same [bootstrap](02_15_SimpleRegression.qmd#bootstrap) recipe as the slope.
@@ -109,10 +109,11 @@ h <- 1 # each window holds three schooling levels
 n_window <- rep(NA, length(x_values))
 y_pred_fixed <- rep(NA, length(x_values))
 for (i in seq_along(x_values)) {
-    ki <- dunif( abs(xy_hat[, 'x_hat']-x_values[i])/h, -1, 1) # the uniform kernel k_U
+    x <- x_values[i] # design point
+    ki <- dunif( abs(xy_hat[, 'x_hat']-x)/h, -1, 1) # the uniform kernel k_U
     n_window[i] <- sum(ki > 0) # workers in the window
     reg_i <- lm(y_hat ~ x_hat, data=xy_hat, weights=ki) # weighted line
-    y_pred_fixed[i] <- predict(reg_i, newdata=data.frame(x_hat=x_values[i]))
+    y_pred_fixed[i] <- predict(reg_i, newdata=data.frame(x_hat=x))
 }
 rbind(x=x_values, n_window=n_window)
 # With h=1, the window at 3 years holds 3 workers and the one at 11 holds 2248.
@@ -350,20 +351,23 @@ The code below refits each model $n$ times, each time without one observation, a
 # xy_hat defined above, including the bins xcf
 
 # Leave-one-out prediction errors, one column per model
-loo_errors <- matrix(NA, nrow=nrow(xy_hat), ncol=3)
+n <- nrow(xy_hat)
+loo_errors <- matrix(NA, nrow=n, ncol=3)
 colnames(loo_errors) <- c('Linear', 'Regressogram', 'LOESS')
-loo_errors_mean <- rep(NA, nrow(xy_hat))
-for (i in seq_len(nrow(xy_hat))) {
+loo_errors_mean <- rep(NA, n)
+for (i in seq(n)) {
     xy_i <- xy_hat[-i, ] # drop worker i
+    # Refit each model without worker i
     reg_lin_i   <- lm(y_hat ~ x_hat, data=xy_i)
     reg_rgram_i <- lm(y_hat ~ xcf, data=xy_i)
     reg_lo_i    <- loess(y_hat ~ x_hat, data=xy_i)
-    # Predict worker i from the fits without worker i
-    y_pred_i <- c(
-        predict(reg_lin_i, newdata=xy_hat[i, ]),
-        predict(reg_rgram_i, newdata=xy_hat[i, ]),
-        predict(reg_lo_i, newdata=xy_hat[i, ]))
-    loo_errors[i, ] <- xy_hat[i, 'y_hat'] - y_pred_i
+    # Predict worker i from each fit
+    y_pred_lin_i   <- predict(reg_lin_i, newdata=xy_hat[i, ])
+    y_pred_rgram_i <- predict(reg_rgram_i, newdata=xy_hat[i, ])
+    y_pred_lo_i    <- predict(reg_lo_i, newdata=xy_hat[i, ])
+    loo_errors[i, 'Linear']       <- xy_hat[i, 'y_hat'] - y_pred_lin_i
+    loo_errors[i, 'Regressogram'] <- xy_hat[i, 'y_hat'] - y_pred_rgram_i
+    loo_errors[i, 'LOESS']        <- xy_hat[i, 'y_hat'] - y_pred_lo_i
     # Compare worker i with the mean wage of the other workers
     loo_errors_mean[i] <- xy_hat[i, 'y_hat'] - mean(xy_i[, 'y_hat'])
 }
@@ -415,32 +419,20 @@ It notes that fitting simple models to complex relationships is believed to be a
 Once the fitted curve can bend, "the slope" is no longer a single number; we want the slope locally at each $x$.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-A *gradient* $\hat{b}_{1}(x)$ at the design point $x$ is the rate of change of the prediction $\hat{y}^{\mathrm{pred}}(x)$ with respect to $x$ in a neighborhood of $x$.
-
-The *mean of the gradients* (sometimes called the *average effect* or *mean marginal effect*) averages $\hat{b}_{1}(x)$ across every observation in the dataset:
-$$\frac{1}{n}\sum_{i=1}^{n} \hat{b}_{1}(x=\hat{x}_{i}).$$
-:::
-
-The gradient is useful as the local analog of the simple-regression slope.
-For a globally linear model, it equals the single coefficient $\hat{b}_{1}$ everywhere.
-For a local model, it varies with $x$ and shows how the marginal relationship changes across the range of $\hat{x}$.
-Three common ways to estimate gradients are:
-
-1. For all methods, including regressograms, you can approximate gradients with small finite differences.
-   For some small difference $d$, we can manually compute
+A *gradient* at the design point $x$ is the rate of change of the prediction $\hat{y}^{\mathrm{pred}}(x)$ with respect to $x$ in a neighborhood of $x$. For some small difference $d$, we compute
 $$\begin{aligned}
-\hat{b}_{1}(x) &= \frac{ \hat{y}^{\mathrm{pred}}(x+\frac{d}{2}) - \hat{y}^{\mathrm{pred}}(x-\frac{d}{2})}{d},
+\hat{\text{grad}}(x) &= \frac{ \hat{y}^{\mathrm{pred}}(x+\frac{d}{2}) - \hat{y}^{\mathrm{pred}}(x-\frac{d}{2})}{d}.
 \end{aligned}$$
 
-2. When using split-sample regressions or local linear regressions, you can use the estimated slope coefficients $\hat{b}_{1}(x)$ as a gradient estimate.
-
-3. More sophisticated methods that are beyond the scope of this book.
+The *mean of the gradients* (sometimes called the *average effect* or *mean marginal effect*) averages $\hat{\text{grad}}(x)$ across every observation in the dataset:
+$$\frac{1}{n}\sum_{i=1}^{n} \hat{\text{grad}}(\hat{x}_{i}).$$
+:::
 
 :::{.callout-note icon=false collapse="true" title="Must Know"}
 Suppose a local model predicts wages near $x=12$ years of schooling: $\hat{y}^{\mathrm{pred}}(11.5)=9.2$ and $\hat{y}^{\mathrm{pred}}(12.5)=10.4$ (dollars per hour).
 With step $d=1$, the finite-difference gradient at $x=12$ is
 $$
-\hat{b}_{1}(12) = \frac{\hat{y}^{\mathrm{pred}}(12.5) - \hat{y}^{\mathrm{pred}}(11.5)}{d} = \frac{10.4 - 9.2}{1} = 1.2.
+\hat{\text{grad}}(12) = \frac{\hat{y}^{\mathrm{pred}}(12.5) - \hat{y}^{\mathrm{pred}}(11.5)}{d} = \frac{10.4 - 9.2}{1} = 1.2.
 $$
 Near $12$ years of schooling, each extra year is associated with about $\$1.20$ more per hour.
 ```{r}
@@ -450,6 +442,18 @@ y_pred_lo <- 9.2   # prediction at x - d/2
 (y_pred_hi - y_pred_lo) / d
 ```
 :::
+
+For other methods, you can also estimate gradients.
+(For a regressogram, which is flat within each bin, set $d$ to the bin width and $x$ to the edge between two bins.)
+
+When using a local linear regression (or LOESS with `degree=1`), you can use the estimated slope coefficients as gradient estimates; $\hat{b}_{1}(x,h) \approx \hat{\text{grad}}(x)$.
+As such, the gradient is useful as the local analog of the simple-regression slope.
+For a globally linear model, it equals the single coefficient $\hat{b}_{1}$ everywhere.
+For a local model, it varies with $x$ and shows how the marginal relationship changes across the range of $\hat{x}$.
+
+There are also more sophisticated methods that are beyond the scope of this book.
+
+
 
 After computing gradients, you can summarize them in various plots, such as histograms and scatterplots.
 These plots show how the gradient varies within the sample.
@@ -487,7 +491,7 @@ sizes <- sqrt(n_levels / max(n_levels)) * 4
 # Scatterplot, with limits that line up with the marginal bars below
 par(mar=c(4, 4, 1, 1))
 plot(x_levels, grad_levels, cex=sizes,
-    xlab='x', ylab=expression(d~hat(y)^plain(pred)/dx),
+    xlab='x', ylab=expression(hat(grad)(x)),
     mgp=c(2.5, 1, 0),
     ylim=range(f_grad[['breaks']]),
     col=lo_col, pch=16, main=NA) ## Diminishing Returns?
@@ -506,16 +510,16 @@ barplot(f_grad[['density']], axes=FALSE, space=0, horiz=TRUE, border=NA,
 
 A different kind of summary collapses the whole gradient curve into a single number for tabular reporting.
 The *mean of the gradients* answers "what is the average slope across the sample?".
-This generally differs from the *gradient at the mean* (sometimes called the *marginal effect at the mean*) which evaluates the gradient at a single design point: $\hat{b}_{1}(x=\hat{m}_{X})$ and answers "what is the slope at a typical $\hat{x}_{i}$?"
+This generally differs from the *gradient at the mean* (sometimes called the *marginal effect at the mean*) which evaluates the gradient at a single design point: $\hat{\text{grad}}(x=\hat{m}_{X})$ and answers "what is the slope at a typical $\hat{x}_{i}$?"
 The two coincide for a globally linear model but can differ for any other, sometimes substantially when the relationship bends [@HendersonEtAl2012; @Adamson2021_Africa].
 You may also be interested in the *median* of the gradients, or in measures of *effect heterogeneity* like the interquartile range or standard deviation of the gradients.
 Such statistics can be presented in tabular form with estimates of sampling variability.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 These two summaries usually differ.
-Suppose a local model has gradients $\hat{b}_{1}(x)$ at schooling levels $x=(8,10,12,14,16)$ equal to $(0.4, 0.8, 1.2, 0.9, 0.3)$, and the sample mean schooling is $\hat{m}_{X}=12$.
+Suppose a local model has gradients $\hat{\text{grad}}(x)$ at schooling levels $x=(8,10,12,14,16)$ equal to $(0.4, 0.8, 1.2, 0.9, 0.3)$, and the sample mean schooling is $\hat{m}_{X}=12$.
 
-* The *gradient at the mean* is the single gradient at $x=\hat{m}_{X}$: $\hat{b}_{1}(12) = 1.2$.
+* The *gradient at the mean* is the single gradient at $x=\hat{m}_{X}$: $\hat{\text{grad}}(12) = 1.2$.
 * The *mean of the gradients* averages over all five points: $\frac{0.4+0.8+1.2+0.9+0.3}{5} = \frac{3.6}{5} = 0.72$.
 
 They differ because the gradient is not constant: here the relationship is steepest near the mean and flatter at the extremes.
@@ -578,8 +582,10 @@ lines(pred_design[, 'x_hat'], y_pred,
     col=lo_col, lwd=2, type='o')
 
 # Boot CI with the same default-span loess
-boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=399)
-for (b in 1:399) {
+n_boot <- 399
+boot_lo <- matrix(NA, nrow=nrow(pred_design), ncol=n_boot)
+for (b in seq(n_boot)) {
+    # Resample workers and refit loess
     xy_boot <- xy_hat[sample(nrow(xy_hat), replace=TRUE), ]
     reg_b <- loess(y_hat ~ x_hat, data=xy_boot)
     boot_lo[, b] <- predict(reg_b, newdata=pred_design)
@@ -618,18 +624,18 @@ Repeating the gradient summaries on each bootstrap resample gives their standard
 ```{r}
 ## MAIN EXAMPLE
 ## Use bootstrap to approximate sampling dist
-boot_stats <- matrix(NA, nrow=299, ncol=3)
+n_boot <- 299
+boot_stats <- matrix(NA, nrow=n_boot, ncol=3)
 colnames(boot_stats) <- c('At the mean', 'Mean', 'SD')
-for(b in 1:nrow(boot_stats)){
-    xy_boot <- xy_hat[sample(1:nrow(xy_hat), replace=TRUE), ]
-    reg_lo_b <- loess(y_hat ~ x_hat, data=xy_boot)
-    grad_m_b_hat <- grad_at_mean(xy_boot, reg_lo_b)
-    grad_obs_b <- grad_by_obs(xy_boot, reg_lo_b)
-    m_grad_b_hat <- mean(grad_obs_b)
-    s_grad_b_hat <- sd(grad_obs_b)
-    boot_stats[b, 1] <- grad_m_b_hat
-    boot_stats[b, 2] <- m_grad_b_hat
-    boot_stats[b, 3] <- s_grad_b_hat
+for (b in seq(n_boot)) {
+    # Resample workers and refit loess
+    xy_boot <- xy_hat[sample(nrow(xy_hat), replace=TRUE), ]
+    reg_b <- loess(y_hat ~ x_hat, data=xy_boot)
+    # Recompute the three summaries in tab_stats
+    grad_obs_b <- grad_by_obs(xy_boot, reg_b)
+    boot_stats[b, 'At the mean'] <- grad_at_mean(xy_boot, reg_b)
+    boot_stats[b, 'Mean'] <- mean(grad_obs_b)
+    boot_stats[b, 'SD'] <- sd(grad_obs_b)
 }
 ## SEs and CIs
 boot_se <- apply(boot_stats, 2, sd)
@@ -751,12 +757,12 @@ Compute the t-statistic and p-value using jackknife standard errors instead of t
 ```{r}
 ## Jackknife SE for mean gradient
 n <- nrow(xy_hat)
-jack_means <- numeric(n)
-for (i in 1:n) {
-    xy_i  <- xy_hat[-i, ]
-    reg_i  <- loess(y_hat ~ x_hat, data=xy_i)
-    grad_i <- grad_by_obs(xy_i, reg_i)
-    jack_means[i] <- mean(grad_i)
+jack_means <- rep(NA, n)
+for (i in seq(n)) {
+    xy_i <- xy_hat[-i, ] # drop worker i
+    reg_i <- loess(y_hat ~ x_hat, data=xy_i)
+    grad_obs_i <- grad_by_obs(xy_i, reg_i)
+    jack_means[i] <- mean(grad_obs_i)
 }
 
 ## Jackknife SE
@@ -778,14 +784,14 @@ The mean gradient can be near zero even when the gradients are not, because posi
 To test whether all gradients equal zero, @Racine1997 squares them so they cannot cancel.
 
 *Racine's statistic* is the mean of the squared gradients:
-$$\hat{G}^2 = \frac{1}{n}\sum_{i=1}^{n} \hat{b}_{1}(x=\hat{x}_{i})^{2}.$$
-It tests the null hypothesis that the population gradient is zero at every design point, $H_{0}$: $m_{Y}'(x)=0$ for all $x$.
+$$\hat{G}^2 = \frac{1}{n}\sum_{i=1}^{n} \hat{\text{grad}}(\hat{x}_{i})^{2}.$$
+It tests the null hypothesis $H_{0}$: the population gradient is zero at every design point.
 
 The statistic $\hat{G}^2$ is zero only when every gradient is zero, so only large values count against $H_{0}$.
 
 :::{.callout-tip icon=false collapse="true" title="Test Yourself"}
 Suppose wages rise with age early in a career and fall near retirement.
-A local model has gradients $\hat{b}_{1}(x)$ at ages $x=(20, 30, 40, 50, 60)$ equal to $(0.6, 0.3, 0, -0.3, -0.6)$.
+A local model has gradients $\hat{\text{grad}}(x)$ at ages $x=(20, 30, 40, 50, 60)$ equal to $(0.6, 0.3, 0, -0.3, -0.6)$.
 Compute the mean of the gradients and $\hat{G}^2$.
 
 * The mean of the gradients is $\frac{0.6+0.3+0-0.3-0.6}{5} = 0$.
@@ -811,12 +817,15 @@ Shuffling makes $\hat{y}$ unrelated to $\hat{x}$ in every respect, such as its s
 racine_hat <- mean(grad_obs^2)
 
 ## Null permutation distribution: shuffle schooling across workers
-null_racine <- rep(NA, 299)
-for(b in seq_along(null_racine)){
+n_perm <- 299
+null_racine <- rep(NA, n_perm)
+for (b in seq(n_perm)) {
+    # Shuffle schooling and refit loess
     xy_perm <- xy_hat
-    xy_perm[, 'x_hat'] <- sample(xy_perm[, 'x_hat'], replace=FALSE) ## Reshuffle X
-    reg_lo_b <- loess(y_hat ~ x_hat, data=xy_perm)
-    grad_obs_b <- grad_by_obs(xy_perm, reg_lo_b)
+    xy_perm[, 'x_hat'] <- sample(xy_hat[, 'x_hat'], replace=FALSE)
+    reg_b <- loess(y_hat ~ x_hat, data=xy_perm)
+    # Recompute Racine's statistic
+    grad_obs_b <- grad_by_obs(xy_perm, reg_b)
     null_racine[b] <- mean(grad_obs_b^2)
 }
 perm_cut <- quantile(null_racine, probs=0.95)
@@ -825,7 +834,7 @@ perm_cut <- quantile(null_racine, probs=0.95)
 hist(null_racine, breaks=50,
     border=NA, freq=FALSE,
     xlim=range(c(null_racine, racine_hat)),
-    xlab=expression(hat(G)^2),
+    xlab=expression(hat(G)*''^2),
     main=NA)
 title('Null Permutation Distribution', font.main=1)
 abline(v=racine_hat, col=rgb(1, 0, 0, .8), lwd=2) # observed statistic
@@ -853,14 +862,14 @@ If most gradients share a sign, little cancels, so this test and the test of the
    Finish with your own questions about whatever you found hardest.
 
 2. Using the `USArrests` dataset, fit a loess regression of `Murder` on `UrbanPop` with `span = 0.6`.
-   Compute the finite-difference gradients $\hat{b}_{1}(x)$ and report their mean and standard deviation.
+   Compute the finite-difference gradients $\hat{\text{grad}}(x)$ and report their mean and standard deviation.
    Compare these to the OLS slope $\hat{b}_{1}$ from a simple linear regression.
 
 3. Explain the difference between the gradient at the mean and the mean of the gradients.
    Why are the two equal for a simple linear regression?
    Describe a relationship between wages and schooling for which the mean of the gradients is larger than the gradient at the mean.
 
-4. Using the `Wages1` dataset and the default-span loess fit from this chapter, recompute the gradient at the mean, $\hat{b}_{1}(x=\hat{m}_{X})$, as a finite difference with $d=0.2$ and with $d=2$ instead of $d=1$.
+4. Using the `Wages1` dataset and the default-span loess fit from this chapter, recompute the gradient at the mean, $\hat{\text{grad}}(x=\hat{m}_{X})$, as a finite difference with $d=0.2$ and with $d=2$ instead of $d=1$.
    How much does it change, and how does the fitted curve near $\hat{m}_{X}$ explain the change?
 
 5. Using the loess fit from Exercise 2, compute the gradient at each observation with `grad_by_obs()`, and bootstrap the standard error of the mean gradient with $B = 299$ replicates.
@@ -877,6 +886,6 @@ We used LOESS to reduce bias at the edges of the data and to avoid small samples
 We compared its fit with the line and the regressogram, both in sample and with cross-validation.
 We then summarized and tested the gradients of a LOESS fit to the `Wages1` data.
 At $x=15$, the locally constant window mean of about $6.29$ fell far below the grouped mean of $8.38$, while a line through the same window predicted about $8.24$.
-The small worked example with $\hat{y}^{\mathrm{pred}}(11.5)=9.2$ and $\hat{y}^{\mathrm{pred}}(12.5)=10.4$ gave a finite-difference gradient $\hat{b}_{1}(12)=1.2$ dollars per year of schooling, and the gradient-vector example $(0.4, 0.8, 1.2, 0.9, 0.3)$ at $x=(8, 10, 12, 14, 16)$ showed the gradient at the mean ($1.2$) and the mean of the gradients ($0.72$) diverging when the relationship bends.
+The small worked example with $\hat{y}^{\mathrm{pred}}(11.5)=9.2$ and $\hat{y}^{\mathrm{pred}}(12.5)=10.4$ gave a finite-difference gradient $\hat{\text{grad}}(12)=1.2$ dollars per year of schooling, and the gradient-vector example $(0.4, 0.8, 1.2, 0.9, 0.3)$ at $x=(8, 10, 12, 14, 16)$ showed the gradient at the mean ($1.2$) and the mean of the gradients ($0.72$) diverging when the relationship bends.
 The mean gradient of the LOESS fit, about $0.58$ dollars per year of schooling, had a bootstrap standard error of about $0.047$ and a $\hat{t}$-statistic of about $12$, while the gradient at the mean, about $0.24$, had a 95% confidence interval that included zero.
 Racine's statistic $\hat{G}^2$, about $0.39$, was far above the $95\%$ permutation cutoff of about $0.05$, so we rejected that all gradients are zero.

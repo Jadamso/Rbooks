@@ -337,7 +337,7 @@ xy_cv_sim$y_sim <- xy_sim$y_sim + rnorm(nrow(xy_sim), sd=2500)
 
 cv_mse <- sapply(bin_counts, function(L){
     bks <- seq(0, 20, length.out=L+1)
-    fold_mse <- sapply(1:n_folds, function(k){
+    fold_mse <- sapply(seq(n_folds), function(k){
         xy_train_sim <- xy_cv_sim[fold_id != k, ]
         xy_test_sim  <- xy_cv_sim[fold_id == k, ]
         xy_train_sim$x1c_sim <- cut(xy_train_sim$x1_sim, bks)
@@ -380,10 +380,11 @@ A gradient describes how $\hat{y}^{\mathrm{pred}}$ changes with each $x_{k}$ at 
 We first summarize gradients, then test them.
 
 :::{.callout-important icon=false title="Key Definition" collapse="false"}
-A *gradient* of a fitted multivariate model is the partial derivative $\partial \hat{y}^{\mathrm{pred}}/\partial x_{k}$ evaluated at a point.
-For a regressogram with no slope coefficients, it must be approximated by a finite difference between adjacent bins,
+A *gradient* $\hat{\text{grad}}_{k}(\mathbf{x})$ of a fitted multivariate model is the rate of change of the prediction $\hat{y}^{\mathrm{pred}}$ with respect to $x_{k}$ in a neighborhood of the point $\mathbf{x}$, holding the other variables fixed.
+For a smooth fit, this is close to the partial derivative $\partial \hat{y}^{\mathrm{pred}}/\partial x_{k}$ at $\mathbf{x}$.
+A regressogram is flat within each bin, so its gradient is a finite difference across two adjacent bins,
 $$\begin{aligned}
-\hat{b}_{k}(\mathbf{x}) &= \frac{ \hat{y}^{\mathrm{pred}}(x_{1},...,x_{k}+ \frac{d}{2}...,x_{K})-\hat{y}^{\mathrm{pred}}(x_{1},...,x_{k}-\frac{d}{2}...,x_{K})}{d},
+\hat{\text{grad}}_{k}(\mathbf{x}) &= \frac{ \hat{y}^{\mathrm{pred}}(x_{1},...,x_{k}+ \frac{d}{2}...,x_{K})-\hat{y}^{\mathrm{pred}}(x_{1},...,x_{k}-\frac{d}{2}...,x_{K})}{d},
 \end{aligned}$$
 where the step $d$ is the bin width and $x_{k}$ is the edge between two bins, while a piecewise or local linear regression has within-bin slopes that are themselves gradient estimates.
 :::
@@ -392,16 +393,17 @@ The gradient is useful because, unlike the single OLS coefficient, it varies wit
 This lets us see whether the marginal effect of $\hat{x}_{k}$ is the same at small, medium, and large values of the other regressors.
 We can compute it two ways:
 
-1. For regressograms, approximate the gradient with a small finite difference between adjacent bins (formula above).
+1. For regressograms, compute the gradient as a finite difference between adjacent bins (formula above).
 
 2. For split-sample regressions or local linear regressions, read the within-bin slope coefficients $\hat{b}_{k}(\mathbf{x})$ directly as gradient estimates.
+   A local linear slope is typically close to $\hat{\text{grad}}_{k}(\mathbf{x})$ but not equal to it, because the local coefficients change with $\mathbf{x}$.
 
-After computing gradients, you can summarize them in various plots: a histogram of $\hat{b}_{k}(\mathbf{x})$, a scatterplot of $\hat{b}_{k}(\mathbf{x})$ against $x_{k}$, or the sorted gradients shown with their confidence intervals [@Chaudhuri1999; @HendersonEtAl2012].
+After computing gradients, you can summarize them in various plots: a histogram of $\hat{\text{grad}}_{k}(\mathbf{x})$, a scatterplot of $\hat{\text{grad}}_{k}(\mathbf{x})$ against $x_{k}$, or the sorted gradients shown with their confidence intervals [@Chaudhuri1999; @HendersonEtAl2012].
 
 
 You may also be interested in a particular gradient or a single summary statistic.
-For example, a bivariate regressogram can estimate the marginal effect of $\hat{x}_{1}$ at the means, $\hat{b}_{1}(\mathbf{x}=[\hat{m}_{X_{1}}, \hat{m}_{X_{2}}])$, where $\hat{m}_{X_{k}}$ is the mean of $\hat{x}_{k}$.
-You may also be interested in the mean of the marginal effects (sometimes said simply as "average effect"), which averages the marginal effect over all datapoints in the dataset: $1/n \sum_{i=1}^{n} \hat{b}_{1}(\mathbf{x}=\hat{\mathbf{x}}_{i})$, or the median marginal effect.
+For example, a bivariate regressogram can estimate the marginal effect of $\hat{x}_{1}$ at the means, $\hat{\text{grad}}_{1}(\mathbf{x}=[\hat{m}_{X_{1}}, \hat{m}_{X_{2}}])$, where $\hat{m}_{X_{k}}$ is the mean of $\hat{x}_{k}$.
+You may also be interested in the mean of the marginal effects (sometimes said simply as "average effect"), which averages the marginal effect over all datapoints in the dataset: $1/n \sum_{i=1}^{n} \hat{\text{grad}}_{1}(\mathbf{x}=\hat{\mathbf{x}}_{i})$, or the median marginal effect.
 Such statistics are single numbers that can be presented similar to an OLS regression table, where each row corresponds to a variable and each cell has two elements: "mean gradient (sd gradient)".
 A single average can hide gradients that change sign [@HendersonEtAl2012; @Adamson2021_Africa].
 
