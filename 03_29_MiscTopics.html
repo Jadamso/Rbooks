@@ -629,41 +629,42 @@ window.Quarto = {
 <span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap Residuals</span></span>
 <span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(xy_hat)</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>res_lo <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">399</span>, <span class="cf">function</span>(i){</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    xy_boot <span class="ot">&lt;-</span> xy_hat[<span class="fu">sample</span>(n, <span class="at">replace=</span><span class="cn">TRUE</span>), ]</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Only the residuals are used, so skip the standard-error statistics to save time</span></span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    reg_b <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_boot, <span class="at">span=</span>.<span class="dv">8</span>,</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>        <span class="at">control=</span><span class="fu">loess.control</span>(<span class="at">statistics=</span><span class="st">'none'</span>))</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    resids_b <span class="ot">&lt;-</span> <span class="fu">resid</span>(reg_b)</span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cbind</span>(<span class="at">e_hat=</span>resids_b, <span class="at">x_hat=</span>xy_boot[, <span class="st">'x_hat'</span>])</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>res_lo <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, res_lo)</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="do">## Smooth residuals</span></span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>res_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(x0, h){</span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Include only residuals within h distance to x0</span></span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    ki0 <span class="ot">&lt;-</span> <span class="fu">abs</span>(res_lo[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x0)<span class="sc">/</span>h</span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>    ki0 <span class="ot">&lt;-</span> <span class="fu">dunif</span>(ki0)<span class="sc">/</span>h</span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    e_local_hat <span class="ot">&lt;-</span> res_lo[ki0 <span class="sc">!=</span> <span class="dv">0</span>, <span class="st">'e_hat'</span>] <span class="co">#subset estimates</span></span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    <span class="do">## Local quantiles</span></span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    res_i <span class="ot">&lt;-</span> <span class="fu">quantile</span>(e_local_hat, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>), <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    res_i</span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>res_ci <span class="ot">&lt;-</span> <span class="fu">sapply</span>(x_values, res_fun, <span class="at">h=</span><span class="dv">2</span>)</span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a><span class="do">## Prediction Interval</span></span>
-<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>pi_lo1 <span class="ot">&lt;-</span> y_pred_lo <span class="sc">+</span> res_ci[<span class="dv">1</span>, ]</span>
-<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>pi_lo2 <span class="ot">&lt;-</span> y_pred_lo <span class="sc">+</span> res_ci[<span class="dv">2</span>, ]</span>
-<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a><span class="co">#Plot</span></span>
-<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>),</span>
-<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>    <span class="at">data=</span>xy_hat, <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">40</span>), <span class="at">main=</span><span class="cn">NA</span>,</span>
-<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Years of schooling'</span>, <span class="at">ylab=</span><span class="st">'Hourly wage (1980 dollars)'</span>)</span>
-<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_lo,</span>
-<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, .<span class="dv">7</span>, .<span class="dv">7</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
-<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a><span class="fu">polygon</span>( <span class="fu">c</span>(x_values, <span class="fu">rev</span>(x_values)),</span>
-<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(pi_lo1, <span class="fu">rev</span>(pi_lo2)),</span>
-<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, .<span class="dv">7</span>, .<span class="dv">7</span>, .<span class="dv">3</span>), <span class="at">border=</span><span class="cn">NA</span>)</span></code></pre></div>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>n_boot <span class="ot">&lt;-</span> <span class="dv">399</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>res_lo <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">seq</span>(n_boot), <span class="cf">function</span>(i){</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    xy_boot <span class="ot">&lt;-</span> xy_hat[<span class="fu">sample</span>(n, <span class="at">replace=</span><span class="cn">TRUE</span>), ]</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Only the residuals are used, so skip the standard-error statistics to save time</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    reg_b <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_boot, <span class="at">span=</span>.<span class="dv">8</span>,</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>        <span class="at">control=</span><span class="fu">loess.control</span>(<span class="at">statistics=</span><span class="st">'none'</span>))</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    resids_b <span class="ot">&lt;-</span> <span class="fu">resid</span>(reg_b)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cbind</span>(<span class="at">e_hat=</span>resids_b, <span class="at">x_hat=</span>xy_boot[, <span class="st">'x_hat'</span>])</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>res_lo <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, res_lo)</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="do">## Smooth residuals</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>res_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(x0, h){</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Include only residuals within h distance to x0</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>    ki0 <span class="ot">&lt;-</span> <span class="fu">abs</span>(res_lo[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x0)<span class="sc">/</span>h</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    ki0 <span class="ot">&lt;-</span> <span class="fu">dunif</span>(ki0)<span class="sc">/</span>h</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    e_local_hat <span class="ot">&lt;-</span> res_lo[ki0 <span class="sc">!=</span> <span class="dv">0</span>, <span class="st">'e_hat'</span>] <span class="co">#subset estimates</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    <span class="do">## Local quantiles</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    res_i <span class="ot">&lt;-</span> <span class="fu">quantile</span>(e_local_hat, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>), <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    res_i</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>res_ci <span class="ot">&lt;-</span> <span class="fu">sapply</span>(x_values, res_fun, <span class="at">h=</span><span class="dv">2</span>)</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a><span class="do">## Prediction Interval</span></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>pi_lo1 <span class="ot">&lt;-</span> y_pred_lo <span class="sc">+</span> res_ci[<span class="dv">1</span>, ]</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>pi_lo2 <span class="ot">&lt;-</span> y_pred_lo <span class="sc">+</span> res_ci[<span class="dv">2</span>, ]</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a><span class="co">#Plot</span></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>),</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>    <span class="at">data=</span>xy_hat, <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">40</span>), <span class="at">main=</span><span class="cn">NA</span>,</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'Years of schooling'</span>, <span class="at">ylab=</span><span class="st">'Hourly wage (1980 dollars)'</span>)</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_lo,</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, .<span class="dv">7</span>, .<span class="dv">7</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a><span class="fu">polygon</span>( <span class="fu">c</span>(x_values, <span class="fu">rev</span>(x_values)),</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(pi_lo1, <span class="fu">rev</span>(pi_lo2)),</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, .<span class="dv">7</span>, .<span class="dv">7</span>, .<span class="dv">3</span>), <span class="at">border=</span><span class="cn">NA</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -692,32 +693,33 @@ window.Quarto = {
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap Prediction Interval</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>boot_resids <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">399</span>, <span class="cf">function</span>(b){</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    b_id <span class="ot">&lt;-</span> <span class="fu">sample</span>( <span class="fu">nrow</span>(xy_hat), <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    xy_boot <span class="ot">&lt;-</span> xy_hat[b_id, ]</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    reg_b <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_boot)</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    e_b_hat <span class="ot">&lt;-</span> <span class="fu">resid</span>(reg_b)</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> reg_b[[<span class="st">'model'</span>]][[<span class="st">'x_hat'</span>]]</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    res_b <span class="ot">&lt;-</span> <span class="fu">cbind</span>(e_b_hat, x_boot)</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>boot_resids <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">do.call</span>(rbind, boot_resids))</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Errors do not vary with x_hat</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>q_e_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(boot_resids[, <span class="st">'e_b_hat'</span>], <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="co"># PI</span></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>y_fit <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg)</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>boot_pi <span class="ot">&lt;-</span> <span class="fu">cbind</span>(y_fit <span class="sc">+</span> q_e_hat[<span class="dv">1</span>], y_fit <span class="sc">+</span> q_e_hat[<span class="dv">2</span>])</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot Bootstrap PI</span></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>), <span class="at">main=</span><span class="cn">NA</span>,</span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">40</span>), <span class="at">xlab=</span><span class="st">'Years of schooling'</span>, <span class="at">ylab=</span><span class="st">'Hourly wage (1980 dollars)'</span>)</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Prediction Intervals'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> xy_hat[, <span class="st">'x_hat'</span>]</span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_hat, y_fit, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="fu">polygon</span>( <span class="fu">c</span>(x_hat, <span class="fu">rev</span>(x_hat)),</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(boot_pi[, <span class="dv">1</span>], <span class="fu">rev</span>(boot_pi[, <span class="dv">2</span>])),</span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">3</span>), <span class="at">border=</span><span class="cn">NA</span>)</span></code></pre></div>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>n_boot <span class="ot">&lt;-</span> <span class="dv">399</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>boot_resids <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">seq</span>(n_boot), <span class="cf">function</span>(b){</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    b_id <span class="ot">&lt;-</span> <span class="fu">sample</span>( <span class="fu">nrow</span>(xy_hat), <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    xy_boot <span class="ot">&lt;-</span> xy_hat[b_id, ]</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    reg_b <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_boot)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    e_b_hat <span class="ot">&lt;-</span> <span class="fu">resid</span>(reg_b)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    x_boot <span class="ot">&lt;-</span> reg_b[[<span class="st">'model'</span>]][[<span class="st">'x_hat'</span>]]</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    res_b <span class="ot">&lt;-</span> <span class="fu">cbind</span>(e_b_hat, x_boot)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>boot_resids <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">do.call</span>(rbind, boot_resids))</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Errors do not vary with x_hat</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>q_e_hat <span class="ot">&lt;-</span> <span class="fu">quantile</span>(boot_resids[, <span class="st">'e_b_hat'</span>], <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>))</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co"># PI</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>y_fit <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>boot_pi <span class="ot">&lt;-</span> <span class="fu">cbind</span>(y_fit <span class="sc">+</span> q_e_hat[<span class="dv">1</span>], y_fit <span class="sc">+</span> q_e_hat[<span class="dv">2</span>])</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot Bootstrap PI</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>), <span class="at">main=</span><span class="cn">NA</span>,</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">40</span>), <span class="at">xlab=</span><span class="st">'Years of schooling'</span>, <span class="at">ylab=</span><span class="st">'Hourly wage (1980 dollars)'</span>)</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Prediction Intervals'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>x_hat <span class="ot">&lt;-</span> xy_hat[, <span class="st">'x_hat'</span>]</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_hat, y_fit, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="fu">polygon</span>( <span class="fu">c</span>(x_hat, <span class="fu">rev</span>(x_hat)),</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(boot_pi[, <span class="dv">1</span>], <span class="fu">rev</span>(boot_pi[, <span class="dv">2</span>])),</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">3</span>), <span class="at">border=</span><span class="cn">NA</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -771,39 +773,40 @@ window.Quarto = {
 <span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap Residuals</span></span>
 <span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>n2 <span class="ot">&lt;-</span> <span class="fu">nrow</span>(xy2_hat)</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>res_lo <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">399</span>, <span class="cf">function</span>(i){</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    xy2_boot <span class="ot">&lt;-</span> xy2_hat[<span class="fu">sample</span>(n2, <span class="at">replace=</span><span class="cn">TRUE</span>), ]</span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    reg_b <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_boot, <span class="at">span=</span>.<span class="dv">8</span>,</span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">control=</span><span class="fu">loess.control</span>(<span class="at">statistics=</span><span class="st">'none'</span>))</span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    resids_b <span class="ot">&lt;-</span> <span class="fu">resid</span>(reg_b)</span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cbind</span>(<span class="at">e_hat=</span>resids_b, <span class="at">x_hat=</span>xy2_boot[, <span class="st">'x_hat'</span>])</span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>res_lo <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, res_lo)</span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="do">## Smooth residuals</span></span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>res_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(x0, h){</span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Include only residuals within h distance to x0</span></span>
-<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    ki0 <span class="ot">&lt;-</span> <span class="fu">abs</span>(res_lo[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x0)<span class="sc">/</span>h</span>
-<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    ki0 <span class="ot">&lt;-</span> <span class="fu">dunif</span>(ki0)<span class="sc">/</span>h</span>
-<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>    e_local_hat <span class="ot">&lt;-</span> res_lo[ki0 <span class="sc">!=</span> <span class="dv">0</span>, <span class="st">'e_hat'</span>] <span class="co">#subset estimates</span></span>
-<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>    <span class="do">## Local quantiles</span></span>
-<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>    res_i <span class="ot">&lt;-</span> <span class="fu">quantile</span>(e_local_hat, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>), <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
-<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>    res_i</span>
-<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>res_ci <span class="ot">&lt;-</span> <span class="fu">sapply</span>(x_values, res_fun, <span class="at">h=</span><span class="dv">2</span>)</span>
-<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a><span class="do">## Prediction Interval</span></span>
-<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>pi_lo1 <span class="ot">&lt;-</span> y_pred_lo <span class="sc">+</span> res_ci[<span class="dv">1</span>, ]</span>
-<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>pi_lo2 <span class="ot">&lt;-</span> y_pred_lo <span class="sc">+</span> res_ci[<span class="dv">2</span>, ]</span>
-<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a><span class="co">#Plot</span></span>
-<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">25</span>),</span>
-<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">data=</span>xy2_hat, <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">3100</span>), <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'educ'</span>, <span class="at">ylab=</span><span class="st">'wage'</span>)</span>
-<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_lo,</span>
-<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, .<span class="dv">7</span>, .<span class="dv">7</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
-<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a><span class="fu">polygon</span>( <span class="fu">c</span>(x_values, <span class="fu">rev</span>(x_values)),</span>
-<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(pi_lo1, <span class="fu">rev</span>(pi_lo2)),</span>
-<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, .<span class="dv">7</span>, .<span class="dv">7</span>, .<span class="dv">3</span>), <span class="at">border=</span><span class="cn">NA</span>)</span></code></pre></div>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>n_boot <span class="ot">&lt;-</span> <span class="dv">399</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>res_lo <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">seq</span>(n_boot), <span class="cf">function</span>(i){</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    xy2_boot <span class="ot">&lt;-</span> xy2_hat[<span class="fu">sample</span>(n2, <span class="at">replace=</span><span class="cn">TRUE</span>), ]</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    reg_b <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_boot, <span class="at">span=</span>.<span class="dv">8</span>,</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">control=</span><span class="fu">loess.control</span>(<span class="at">statistics=</span><span class="st">'none'</span>))</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    resids_b <span class="ot">&lt;-</span> <span class="fu">resid</span>(reg_b)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cbind</span>(<span class="at">e_hat=</span>resids_b, <span class="at">x_hat=</span>xy2_boot[, <span class="st">'x_hat'</span>])</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>res_lo <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, res_lo)</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="do">## Smooth residuals</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>res_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(x0, h){</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Include only residuals within h distance to x0</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    ki0 <span class="ot">&lt;-</span> <span class="fu">abs</span>(res_lo[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x0)<span class="sc">/</span>h</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>    ki0 <span class="ot">&lt;-</span> <span class="fu">dunif</span>(ki0)<span class="sc">/</span>h</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>    e_local_hat <span class="ot">&lt;-</span> res_lo[ki0 <span class="sc">!=</span> <span class="dv">0</span>, <span class="st">'e_hat'</span>] <span class="co">#subset estimates</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>    <span class="do">## Local quantiles</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>    res_i <span class="ot">&lt;-</span> <span class="fu">quantile</span>(e_local_hat, <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>), <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>    res_i</span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>res_ci <span class="ot">&lt;-</span> <span class="fu">sapply</span>(x_values, res_fun, <span class="at">h=</span><span class="dv">2</span>)</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a><span class="do">## Prediction Interval</span></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>pi_lo1 <span class="ot">&lt;-</span> y_pred_lo <span class="sc">+</span> res_ci[<span class="dv">1</span>, ]</span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>pi_lo2 <span class="ot">&lt;-</span> y_pred_lo <span class="sc">+</span> res_ci[<span class="dv">2</span>, ]</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a><span class="co">#Plot</span></span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">25</span>),</span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>    <span class="at">data=</span>xy2_hat, <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">3100</span>), <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'educ'</span>, <span class="at">ylab=</span><span class="st">'wage'</span>)</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_lo,</span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, .<span class="dv">7</span>, .<span class="dv">7</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a><span class="fu">polygon</span>( <span class="fu">c</span>(x_values, <span class="fu">rev</span>(x_values)),</span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(pi_lo1, <span class="fu">rev</span>(pi_lo2)),</span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, .<span class="dv">7</span>, .<span class="dv">7</span>, .<span class="dv">3</span>), <span class="at">border=</span><span class="cn">NA</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -852,7 +855,7 @@ window.Quarto = {
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co"># With a span of 0.5, only workers with exactly 12 years of schooling get weight at 12 years.</span></span>
 <span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>BWS <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.75</span>, <span class="dv">1</span>, <span class="fl">1.5</span>, <span class="dv">2</span>, <span class="dv">3</span>)</span>
 <span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>BWS_CV <span class="ot">&lt;-</span> <span class="fu">sapply</span>(BWS, <span class="cf">function</span>(h){</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    e_bw_hat <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(xy_hat), <span class="cf">function</span>(i){</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    e_bw_hat <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="fu">seq</span>(<span class="fu">nrow</span>(xy_hat)), <span class="cf">function</span>(i){</span>
 <span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Only the prediction is used, so skip the standard-error statistics to save time</span></span>
 <span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>        llls <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat[<span class="sc">-</span>i, ], <span class="at">span=</span>h,</span>
 <span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>            <span class="at">degree=</span><span class="dv">1</span>, <span class="at">control=</span><span class="fu">loess.control</span>(<span class="at">statistics=</span><span class="st">'none'</span>))</span>
@@ -916,7 +919,7 @@ window.Quarto = {
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Grid Search</span></span>
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>BWS <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="fl">0.75</span>, <span class="dv">1</span>, <span class="fl">1.5</span>, <span class="dv">2</span>, <span class="dv">3</span>)</span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>BWS_CV <span class="ot">&lt;-</span> <span class="fu">sapply</span>(BWS, <span class="cf">function</span>(h){</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    e_bw_hat <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(xy2_hat), <span class="cf">function</span>(i){</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    e_bw_hat <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="fu">seq</span>(<span class="fu">nrow</span>(xy2_hat)), <span class="cf">function</span>(i){</span>
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        llls <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy2_hat[<span class="sc">-</span>i, ], <span class="at">span=</span>h,</span>
 <span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>            <span class="at">degree=</span><span class="dv">1</span>, <span class="at">control=</span><span class="fu">loess.control</span>(<span class="at">statistics=</span><span class="st">'none'</span>))</span>
 <span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        y_pred_i <span class="ot">&lt;-</span> <span class="fu">predict</span>(llls, <span class="at">newdata=</span>xy2_hat[i, ])</span>

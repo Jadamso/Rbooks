@@ -507,7 +507,7 @@ window.Quarto = {
 </ul></li>
 <li>How does <span class="math inline">\(\hat{y}\)</span> change with <span class="math inline">\(\hat{x}\)</span> when the fitted curve bends?
 <ul>
-<li><em>Gradients</em>: these are the local version of the <a href="./02_15_SimpleRegression.html#model-and-objective">regression slope</a>, with one slope <span class="math inline">\(\hat{b}_{1}(x)\)</span> at each design point <span class="math inline">\(x\)</span>.</li>
+<li><em>Gradients</em>: these are the local version of the <a href="./02_15_SimpleRegression.html#model-and-objective">regression slope</a>, with one slope <span class="math inline">\(\hat{\text{grad}}(x)\)</span> at each design point <span class="math inline">\(x\)</span>.</li>
 <li><em>Mean of the gradients and gradient at the mean</em>: these new statistics collapse the gradients into a single number.</li>
 </ul></li>
 <li>How sure are we?
@@ -610,34 +610,35 @@ window.Quarto = {
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>n_window <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x_values))</span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>y_pred_fixed <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">length</span>(x_values))</span>
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(x_values)) {</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    ki <span class="ot">&lt;-</span> <span class="fu">dunif</span>( <span class="fu">abs</span>(xy_hat[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x_values[i])<span class="sc">/</span>h, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="co"># the uniform kernel k_U</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    n_window[i] <span class="ot">&lt;-</span> <span class="fu">sum</span>(ki <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="co"># workers in the window</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    reg_i <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, <span class="at">weights=</span>ki) <span class="co"># weighted line</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    y_pred_fixed[i] <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg_i, <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span>x_values[i]))</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(<span class="at">x=</span>x_values, <span class="at">n_window=</span>n_window)</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="do">##          [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12] [,13]</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="do">## x           3    4    5    6    7    8    9   10   11    12    13    14    15</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="do">## n_window    3    8   21   43  124  271  646 1221 2248  2188  1791   737   414</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="do">##          [,14]</span></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="do">## x           16</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="do">## n_window   150</span></span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co"># With h=1, the window at 3 years holds 3 workers and the one at 11 holds 2248.</span></span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Few workers have fewer than 8 years of schooling or exactly 16 years.</span></span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co"># So the windows there are small samples.</span></span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Raw data with the grouped means and the fitted line at each schooling level</span></span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="co"># The workers in each window run along the top</span></span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>),</span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">15</span>), <span class="co"># zoom in on the fits, which hides the 43 highest wages</span></span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'School'</span>, <span class="at">ylab=</span><span class="st">'Wage'</span>)</span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_fixed, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>school_means, <span class="at">pch=</span><span class="dv">24</span>, <span class="at">col=</span><span class="st">'white'</span>, <span class="at">bg=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">cex=</span><span class="fl">1.3</span>) <span class="co"># grouped means</span></span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">3</span>, <span class="at">at=</span>x_values, <span class="at">labels=</span>n_window, <span class="at">tick=</span><span class="cn">FALSE</span>, <span class="at">line=</span><span class="sc">-</span>.<span class="dv">5</span>, <span class="at">cex.axis=</span>.<span class="dv">7</span>, <span class="at">col.axis=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>))</span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">'Workers in window'</span>, <span class="at">side=</span><span class="dv">3</span>, <span class="at">line=</span><span class="fl">1.5</span>, <span class="at">cex=</span>.<span class="dv">8</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>))</span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Grouped mean'</span>, <span class="st">'Local line, h=1'</span>),</span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="fu">c</span>(<span class="dv">24</span>, <span class="dv">1</span>), <span class="at">lty=</span><span class="fu">c</span>(<span class="cn">NA</span>, <span class="dv">1</span>), <span class="at">lwd=</span><span class="fu">c</span>(<span class="cn">NA</span>, <span class="dv">2</span>), <span class="at">pt.bg=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>),</span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">c</span>(<span class="st">'white'</span>, <span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>)), <span class="at">cex=</span>.<span class="dv">8</span>, <span class="at">bty=</span><span class="st">'n'</span>)</span></code></pre></div>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    x <span class="ot">&lt;-</span> x_values[i] <span class="co"># design point</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    ki <span class="ot">&lt;-</span> <span class="fu">dunif</span>( <span class="fu">abs</span>(xy_hat[, <span class="st">'x_hat'</span>]<span class="sc">-</span>x)<span class="sc">/</span>h, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) <span class="co"># the uniform kernel k_U</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    n_window[i] <span class="ot">&lt;-</span> <span class="fu">sum</span>(ki <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="co"># workers in the window</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    reg_i <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, <span class="at">weights=</span>ki) <span class="co"># weighted line</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    y_pred_fixed[i] <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg_i, <span class="at">newdata=</span><span class="fu">data.frame</span>(<span class="at">x_hat=</span>x))</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(<span class="at">x=</span>x_values, <span class="at">n_window=</span>n_window)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="do">##          [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12] [,13]</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="do">## x           3    4    5    6    7    8    9   10   11    12    13    14    15</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="do">## n_window    3    8   21   43  124  271  646 1221 2248  2188  1791   737   414</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="do">##          [,14]</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="do">## x           16</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="do">## n_window   150</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co"># With h=1, the window at 3 years holds 3 workers and the one at 11 holds 2248.</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Few workers have fewer than 8 years of schooling or exactly 16 years.</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="co"># So the windows there are small samples.</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Raw data with the grouped means and the fitted line at each schooling level</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="co"># The workers in each window run along the top</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_hat, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">grey</span>(<span class="dv">0</span>, .<span class="dv">1</span>),</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">15</span>), <span class="co"># zoom in on the fits, which hides the 43 highest wages</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>, <span class="at">xlab=</span><span class="st">'School'</span>, <span class="at">ylab=</span><span class="st">'Wage'</span>)</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_values, y_pred_fixed, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>school_means, <span class="at">pch=</span><span class="dv">24</span>, <span class="at">col=</span><span class="st">'white'</span>, <span class="at">bg=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">cex=</span><span class="fl">1.3</span>) <span class="co"># grouped means</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">3</span>, <span class="at">at=</span>x_values, <span class="at">labels=</span>n_window, <span class="at">tick=</span><span class="cn">FALSE</span>, <span class="at">line=</span><span class="sc">-</span>.<span class="dv">5</span>, <span class="at">cex.axis=</span>.<span class="dv">7</span>, <span class="at">col.axis=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>))</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">'Workers in window'</span>, <span class="at">side=</span><span class="dv">3</span>, <span class="at">line=</span><span class="fl">1.5</span>, <span class="at">cex=</span>.<span class="dv">8</span>, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>))</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Grouped mean'</span>, <span class="st">'Local line, h=1'</span>),</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">pch=</span><span class="fu">c</span>(<span class="dv">24</span>, <span class="dv">1</span>), <span class="at">lty=</span><span class="fu">c</span>(<span class="cn">NA</span>, <span class="dv">1</span>), <span class="at">lwd=</span><span class="fu">c</span>(<span class="cn">NA</span>, <span class="dv">2</span>), <span class="at">pt.bg=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>),</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">c</span>(<span class="st">'white'</span>, <span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>)), <span class="at">cex=</span>.<span class="dv">8</span>, <span class="at">bty=</span><span class="st">'n'</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -907,55 +908,58 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># xy_hat defined above, including the bins xcf</span></span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Leave-one-out prediction errors, one column per model</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>loo_errors <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow=</span><span class="fu">nrow</span>(xy_hat), <span class="at">ncol=</span><span class="dv">3</span>)</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(loo_errors) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'Linear'</span>, <span class="st">'Regressogram'</span>, <span class="st">'LOESS'</span>)</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>loo_errors_mean <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="fu">nrow</span>(xy_hat))</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(xy_hat))) {</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    xy_i <span class="ot">&lt;-</span> xy_hat[<span class="sc">-</span>i, ] <span class="co"># drop worker i</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    reg_lin_i   <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_i)</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    reg_rgram_i <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> xcf, <span class="at">data=</span>xy_i)</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    reg_lo_i    <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_i)</span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Predict worker i from the fits without worker i</span></span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    y_pred_i <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>        <span class="fu">predict</span>(reg_lin_i, <span class="at">newdata=</span>xy_hat[i, ]),</span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>        <span class="fu">predict</span>(reg_rgram_i, <span class="at">newdata=</span>xy_hat[i, ]),</span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>        <span class="fu">predict</span>(reg_lo_i, <span class="at">newdata=</span>xy_hat[i, ]))</span>
-<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>    loo_errors[i, ] <span class="ot">&lt;-</span> xy_hat[i, <span class="st">'y_hat'</span>] <span class="sc">-</span> y_pred_i</span>
-<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compare worker i with the mean wage of the other workers</span></span>
-<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>    loo_errors_mean[i] <span class="ot">&lt;-</span> xy_hat[i, <span class="st">'y_hat'</span>] <span class="sc">-</span> <span class="fu">mean</span>(xy_i[, <span class="st">'y_hat'</span>])</span>
-<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a><span class="co"># LOESS does not extrapolate, so it cannot predict the only worker with 3 years of schooling</span></span>
-<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare all models on the workers every model can predict</span></span>
-<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>loo_ok <span class="ot">&lt;-</span> <span class="fu">complete.cases</span>(loo_errors)</span>
-<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>cv_hat <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(loo_errors[loo_ok, ]<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Out-of-sample R-squared rescales CV by the leave-one-out version of the variance, for the same workers</span></span>
-<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>v_cv_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(loo_errors_mean[loo_ok]<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>r2_cv <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> cv_hat<span class="sc">/</span>v_cv_hat</span>
-<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Out-of-sample generalized R-squared squares the correlation of wages and held-out predictions</span></span>
-<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>y_ok <span class="ot">&lt;-</span> xy_hat[loo_ok, <span class="st">'y_hat'</span>]</span>
-<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>y_pred_cv <span class="ot">&lt;-</span> y_ok <span class="sc">-</span> loo_errors[loo_ok, ]</span>
-<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>r2_gen_cv <span class="ot">&lt;-</span> <span class="fu">cor</span>(y_ok, y_pred_cv)[<span class="dv">1</span>, ]<span class="sc">^</span><span class="dv">2</span></span>
-<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">cbind</span>(fit_table, <span class="at">CV=</span>cv_hat, <span class="at">R2_CV=</span>r2_cv, <span class="at">R2_gen_CV=</span>r2_gen_cv), <span class="dv">3</span>)</span>
-<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a><span class="do">##                 MSE    R2 R2_gen     CV R2_CV R2_gen_CV</span></span>
-<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a><span class="do">## Linear        9.832 0.080  0.080  9.840 0.080     0.079</span></span>
-<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a><span class="do">## Regressogram 10.270 0.039  0.039 10.288 0.038     0.037</span></span>
-<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a><span class="do">## LOESS         9.721 0.090  0.090  9.762 0.087     0.087</span></span>
-<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Every model predicts held-out workers a little worse than those it was fit to.</span></span>
-<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a><span class="co"># The gap between CV and MSE grows with flexibility.</span></span>
-<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a><span class="co"># It runs from about 0.01 for the line to about 0.04 for LOESS.</span></span>
-<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a><span class="co"># LOESS still predicts held-out workers best.</span></span>
-<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a><span class="co"># Its lead over the line shrinks from about 0.11 in sample to about 0.08.</span></span>
-<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a><span class="co"># R2_gen_CV falls below its in-sample version for every model.</span></span>
-<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a><span class="co"># R2_CV also falls, except that the line's rounds to its in-sample R-squared.</span></span>
-<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a><span class="co"># That is because R2_CV omits the one worker LOESS cannot predict.</span></span>
-<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a><span class="co"># R2_CV and R2_gen_CV are within about 0.001 of each other.</span></span>
-<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a><span class="co"># They differ more for the USArrests line in Simple Regression (not run here).</span></span>
-<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a><span class="co"># Its R2_CV is negative, about -0.04, yet its R2_gen_CV is about 0.22.</span></span>
-<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a><span class="co"># That is above its in-sample R-squared of about 0.005.</span></span>
-<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a><span class="co"># Squaring hides the sign of the correlation, which is about -0.47.</span></span></code></pre></div>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(xy_hat)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>loo_errors <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow=</span>n, <span class="at">ncol=</span><span class="dv">3</span>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(loo_errors) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'Linear'</span>, <span class="st">'Regressogram'</span>, <span class="st">'LOESS'</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>loo_errors_mean <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, n)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq</span>(n)) {</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    xy_i <span class="ot">&lt;-</span> xy_hat[<span class="sc">-</span>i, ] <span class="co"># drop worker i</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Refit each model without worker i</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    reg_lin_i   <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_i)</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    reg_rgram_i <span class="ot">&lt;-</span> <span class="fu">lm</span>(y_hat <span class="sc">~</span> xcf, <span class="at">data=</span>xy_i)</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    reg_lo_i    <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_i)</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Predict worker i from each fit</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>    y_pred_lin_i   <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg_lin_i, <span class="at">newdata=</span>xy_hat[i, ])</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>    y_pred_rgram_i <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg_rgram_i, <span class="at">newdata=</span>xy_hat[i, ])</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>    y_pred_lo_i    <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg_lo_i, <span class="at">newdata=</span>xy_hat[i, ])</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>    loo_errors[i, <span class="st">'Linear'</span>]       <span class="ot">&lt;-</span> xy_hat[i, <span class="st">'y_hat'</span>] <span class="sc">-</span> y_pred_lin_i</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>    loo_errors[i, <span class="st">'Regressogram'</span>] <span class="ot">&lt;-</span> xy_hat[i, <span class="st">'y_hat'</span>] <span class="sc">-</span> y_pred_rgram_i</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>    loo_errors[i, <span class="st">'LOESS'</span>]        <span class="ot">&lt;-</span> xy_hat[i, <span class="st">'y_hat'</span>] <span class="sc">-</span> y_pred_lo_i</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compare worker i with the mean wage of the other workers</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>    loo_errors_mean[i] <span class="ot">&lt;-</span> xy_hat[i, <span class="st">'y_hat'</span>] <span class="sc">-</span> <span class="fu">mean</span>(xy_i[, <span class="st">'y_hat'</span>])</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a><span class="co"># LOESS does not extrapolate, so it cannot predict the only worker with 3 years of schooling</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare all models on the workers every model can predict</span></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>loo_ok <span class="ot">&lt;-</span> <span class="fu">complete.cases</span>(loo_errors)</span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>cv_hat <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(loo_errors[loo_ok, ]<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Out-of-sample R-squared rescales CV by the leave-one-out version of the variance, for the same workers</span></span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>v_cv_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(loo_errors_mean[loo_ok]<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>r2_cv <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> cv_hat<span class="sc">/</span>v_cv_hat</span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Out-of-sample generalized R-squared squares the correlation of wages and held-out predictions</span></span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>y_ok <span class="ot">&lt;-</span> xy_hat[loo_ok, <span class="st">'y_hat'</span>]</span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>y_pred_cv <span class="ot">&lt;-</span> y_ok <span class="sc">-</span> loo_errors[loo_ok, ]</span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>r2_gen_cv <span class="ot">&lt;-</span> <span class="fu">cor</span>(y_ok, y_pred_cv)[<span class="dv">1</span>, ]<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">cbind</span>(fit_table, <span class="at">CV=</span>cv_hat, <span class="at">R2_CV=</span>r2_cv, <span class="at">R2_gen_CV=</span>r2_gen_cv), <span class="dv">3</span>)</span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a><span class="do">##                 MSE    R2 R2_gen     CV R2_CV R2_gen_CV</span></span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a><span class="do">## Linear        9.832 0.080  0.080  9.840 0.080     0.079</span></span>
+<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a><span class="do">## Regressogram 10.270 0.039  0.039 10.288 0.038     0.037</span></span>
+<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a><span class="do">## LOESS         9.721 0.090  0.090  9.762 0.087     0.087</span></span>
+<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Every model predicts held-out workers a little worse than those it was fit to.</span></span>
+<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a><span class="co"># The gap between CV and MSE grows with flexibility.</span></span>
+<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a><span class="co"># It runs from about 0.01 for the line to about 0.04 for LOESS.</span></span>
+<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a><span class="co"># LOESS still predicts held-out workers best.</span></span>
+<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Its lead over the line shrinks from about 0.11 in sample to about 0.08.</span></span>
+<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a><span class="co"># R2_gen_CV falls below its in-sample version for every model.</span></span>
+<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a><span class="co"># R2_CV also falls, except that the line's rounds to its in-sample R-squared.</span></span>
+<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a><span class="co"># That is because R2_CV omits the one worker LOESS cannot predict.</span></span>
+<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a><span class="co"># R2_CV and R2_gen_CV are within about 0.001 of each other.</span></span>
+<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a><span class="co"># They differ more for the USArrests line in Simple Regression (not run here).</span></span>
+<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a><span class="co"># Its R2_CV is negative, about -0.04, yet its R2_gen_CV is about 0.22.</span></span>
+<span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a><span class="co"># That is above its in-sample R-squared of about 0.005.</span></span>
+<span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a><span class="co"># Squaring hides the sign of the correlation, which is about -0.47.</span></span></code></pre></div>
 </details>
 </div>
 <p>The gap between <span class="math inline">\(\hat{\text{CV}}\)</span> and <span class="math inline">\(\hat{\text{MSE}}\)</span> tends to grow with a model’s flexibility. The <em>out-of-sample generalized <span class="math inline">\(R^{2}\)</span></em> replaces the fitted values in <span class="math inline">\(\hat{R}^{2}_{\text{gen}}\)</span> with the held-out predictions <span class="math inline">\(\hat{y}^{\mathrm{pred}(-i)}(\hat{x}_{i})\)</span>, <span class="math display">\[\begin{aligned}
@@ -979,19 +983,13 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 </div>
 <div id="callout-5" class="callout-5-contents callout-collapse collapse show">
 <div class="callout-body-container callout-body">
-<p>A <em>gradient</em> <span class="math inline">\(\hat{b}_{1}(x)\)</span> at the design point <span class="math inline">\(x\)</span> is the rate of change of the prediction <span class="math inline">\(\hat{y}^{\mathrm{pred}}(x)\)</span> with respect to <span class="math inline">\(x\)</span> in a neighborhood of <span class="math inline">\(x\)</span>.</p>
-<p>The <em>mean of the gradients</em> (sometimes called the <em>average effect</em> or <em>mean marginal effect</em>) averages <span class="math inline">\(\hat{b}_{1}(x)\)</span> across every observation in the dataset: <span class="math display">\[\frac{1}{n}\sum_{i=1}^{n} \hat{b}_{1}(x=\hat{x}_{i}).\]</span></p>
+<p>A <em>gradient</em> at the design point <span class="math inline">\(x\)</span> is the rate of change of the prediction <span class="math inline">\(\hat{y}^{\mathrm{pred}}(x)\)</span> with respect to <span class="math inline">\(x\)</span> in a neighborhood of <span class="math inline">\(x\)</span>. For some small difference <span class="math inline">\(d\)</span>, we compute <span class="math display">\[\begin{aligned}
+\hat{\text{grad}}(x) &amp;= \frac{ \hat{y}^{\mathrm{pred}}(x+\frac{d}{2}) - \hat{y}^{\mathrm{pred}}(x-\frac{d}{2})}{d}.
+\end{aligned}\]</span></p>
+<p>The <em>mean of the gradients</em> (sometimes called the <em>average effect</em> or <em>mean marginal effect</em>) averages <span class="math inline">\(\hat{\text{grad}}(x)\)</span> across every observation in the dataset: <span class="math display">\[\frac{1}{n}\sum_{i=1}^{n} \hat{\text{grad}}(\hat{x}_{i}).\]</span></p>
 </div>
 </div>
 </div>
-<p>The gradient is useful as the local analog of the simple-regression slope. For a globally linear model, it equals the single coefficient <span class="math inline">\(\hat{b}_{1}\)</span> everywhere. For a local model, it varies with <span class="math inline">\(x\)</span> and shows how the marginal relationship changes across the range of <span class="math inline">\(\hat{x}\)</span>. Three common ways to estimate gradients are:</p>
-<ol type="1">
-<li><p>For all methods, including regressograms, you can approximate gradients with small finite differences. For some small difference <span class="math inline">\(d\)</span>, we can manually compute <span class="math display">\[\begin{aligned}
-\hat{b}_{1}(x) &amp;= \frac{ \hat{y}^{\mathrm{pred}}(x+\frac{d}{2}) - \hat{y}^{\mathrm{pred}}(x-\frac{d}{2})}{d},
-\end{aligned}\]</span></p></li>
-<li><p>When using split-sample regressions or local linear regressions, you can use the estimated slope coefficients <span class="math inline">\(\hat{b}_{1}(x)\)</span> as a gradient estimate.</p></li>
-<li><p>More sophisticated methods that are beyond the scope of this book.</p></li>
-</ol>
 <div class="callout callout-style-default callout-note no-icon callout-titled">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-6-contents" aria-controls="callout-6" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -1005,7 +1003,7 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 <div id="callout-6" class="callout-6-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>Suppose a local model predicts wages near <span class="math inline">\(x=12\)</span> years of schooling: <span class="math inline">\(\hat{y}^{\mathrm{pred}}(11.5)=9.2\)</span> and <span class="math inline">\(\hat{y}^{\mathrm{pred}}(12.5)=10.4\)</span> (dollars per hour). With step <span class="math inline">\(d=1\)</span>, the finite-difference gradient at <span class="math inline">\(x=12\)</span> is <span class="math display">\[
-\hat{b}_{1}(12) = \frac{\hat{y}^{\mathrm{pred}}(12.5) - \hat{y}^{\mathrm{pred}}(11.5)}{d} = \frac{10.4 - 9.2}{1} = 1.2.
+\hat{\text{grad}}(12) = \frac{\hat{y}^{\mathrm{pred}}(12.5) - \hat{y}^{\mathrm{pred}}(11.5)}{d} = \frac{10.4 - 9.2}{1} = 1.2.
 \]</span> Near <span class="math inline">\(12\)</span> years of schooling, each extra year is associated with about <span class="math inline">\(\$1.20\)</span> more per hour.</p>
 <div class="cell">
 <details class="code-fold">
@@ -1020,6 +1018,9 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 </div>
 </div>
 </div>
+<p>For other methods, you can also estimate gradients. (For a regressogram, which is flat within each bin, set <span class="math inline">\(d\)</span> to the bin width and <span class="math inline">\(x\)</span> to the edge between two bins.)</p>
+<p>When using a local linear regression (or LOESS with <code>degree=1</code>), you can use the estimated slope coefficients as gradient estimates; <span class="math inline">\(\hat{b}_{1}(x,h) \approx \hat{\text{grad}}(x)\)</span>. As such, the gradient is useful as the local analog of the simple-regression slope. For a globally linear model, it equals the single coefficient <span class="math inline">\(\hat{b}_{1}\)</span> everywhere. For a local model, it varies with <span class="math inline">\(x\)</span> and shows how the marginal relationship changes across the range of <span class="math inline">\(\hat{x}\)</span>.</p>
+<p>There are also more sophisticated methods that are beyond the scope of this book.</p>
 <p>After computing gradients, you can summarize them in various plots, such as histograms and scatterplots. These plots show how the gradient varies within the sample. You can also plot all gradients with their confidence intervals <span class="citation" data-cites="Chaudhuri1999 HendersonEtAl2012">(<a href="#ref-Chaudhuri1999" role="doc-biblioref">Chaudhuri and Marron 1999</a>; <a href="#ref-HendersonEtAl2012" role="doc-biblioref">Henderson et al. 2012</a>)</span>.</p>
 <div class="cell">
 <details class="code-fold">
@@ -1055,7 +1056,7 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 <span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Scatterplot, with limits that line up with the marginal bars below</span></span>
 <span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar=</span><span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">1</span>, <span class="dv">1</span>))</span>
 <span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x_levels, grad_levels, <span class="at">cex=</span>sizes,</span>
-<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'x'</span>, <span class="at">ylab=</span><span class="fu">expression</span>(d<span class="sc">~</span><span class="fu">hat</span>(y)<span class="sc">^</span><span class="fu">plain</span>(pred)<span class="sc">/</span>dx),</span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="st">'x'</span>, <span class="at">ylab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(grad)(x)),</span>
 <span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">mgp=</span><span class="fu">c</span>(<span class="fl">2.5</span>, <span class="dv">1</span>, <span class="dv">0</span>),</span>
 <span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">ylim=</span><span class="fu">range</span>(f_grad[[<span class="st">'breaks'</span>]]),</span>
 <span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span>lo_col, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">main=</span><span class="cn">NA</span>) <span class="do">## Diminishing Returns?</span></span>
@@ -1082,7 +1083,7 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Only the 46 workers with under 8 years of schooling have negative gradients.</span></span></code></pre></div>
 </details>
 </div>
-<p>A different kind of summary collapses the whole gradient curve into a single number for tabular reporting. The <em>mean of the gradients</em> answers “what is the average slope across the sample?”. This generally differs from the <em>gradient at the mean</em> (sometimes called the <em>marginal effect at the mean</em>) which evaluates the gradient at a single design point: <span class="math inline">\(\hat{b}_{1}(x=\hat{m}_{X})\)</span> and answers “what is the slope at a typical <span class="math inline">\(\hat{x}_{i}\)</span>?” The two coincide for a globally linear model but can differ for any other, sometimes substantially when the relationship bends <span class="citation" data-cites="HendersonEtAl2012 Adamson2021_Africa">(<a href="#ref-HendersonEtAl2012" role="doc-biblioref">Henderson et al. 2012</a>; <a href="#ref-Adamson2021_Africa" role="doc-biblioref">Adamson 2021</a>)</span>. You may also be interested in the <em>median</em> of the gradients, or in measures of <em>effect heterogeneity</em> like the interquartile range or standard deviation of the gradients. Such statistics can be presented in tabular form with estimates of sampling variability.</p>
+<p>A different kind of summary collapses the whole gradient curve into a single number for tabular reporting. The <em>mean of the gradients</em> answers “what is the average slope across the sample?”. This generally differs from the <em>gradient at the mean</em> (sometimes called the <em>marginal effect at the mean</em>) which evaluates the gradient at a single design point: <span class="math inline">\(\hat{\text{grad}}(x=\hat{m}_{X})\)</span> and answers “what is the slope at a typical <span class="math inline">\(\hat{x}_{i}\)</span>?” The two coincide for a globally linear model but can differ for any other, sometimes substantially when the relationship bends <span class="citation" data-cites="HendersonEtAl2012 Adamson2021_Africa">(<a href="#ref-HendersonEtAl2012" role="doc-biblioref">Henderson et al. 2012</a>; <a href="#ref-Adamson2021_Africa" role="doc-biblioref">Adamson 2021</a>)</span>. You may also be interested in the <em>median</em> of the gradients, or in measures of <em>effect heterogeneity</em> like the interquartile range or standard deviation of the gradients. Such statistics can be presented in tabular form with estimates of sampling variability.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-7-contents" aria-controls="callout-7" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -1095,9 +1096,9 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 </div>
 <div id="callout-7" class="callout-7-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>These two summaries usually differ. Suppose a local model has gradients <span class="math inline">\(\hat{b}_{1}(x)\)</span> at schooling levels <span class="math inline">\(x=(8,10,12,14,16)\)</span> equal to <span class="math inline">\((0.4, 0.8, 1.2, 0.9, 0.3)\)</span>, and the sample mean schooling is <span class="math inline">\(\hat{m}_{X}=12\)</span>.</p>
+<p>These two summaries usually differ. Suppose a local model has gradients <span class="math inline">\(\hat{\text{grad}}(x)\)</span> at schooling levels <span class="math inline">\(x=(8,10,12,14,16)\)</span> equal to <span class="math inline">\((0.4, 0.8, 1.2, 0.9, 0.3)\)</span>, and the sample mean schooling is <span class="math inline">\(\hat{m}_{X}=12\)</span>.</p>
 <ul>
-<li>The <em>gradient at the mean</em> is the single gradient at <span class="math inline">\(x=\hat{m}_{X}\)</span>: <span class="math inline">\(\hat{b}_{1}(12) = 1.2\)</span>.</li>
+<li>The <em>gradient at the mean</em> is the single gradient at <span class="math inline">\(x=\hat{m}_{X}\)</span>: <span class="math inline">\(\hat{\text{grad}}(12) = 1.2\)</span>.</li>
 <li>The <em>mean of the gradients</em> averages over all five points: <span class="math inline">\(\frac{0.4+0.8+1.2+0.9+0.3}{5} = \frac{3.6}{5} = 0.72\)</span>.</li>
 </ul>
 <p>They differ because the gradient is not constant: here the relationship is steepest near the mean and flatter at the extremes.</p>
@@ -1179,21 +1180,23 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 <span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span>lo_col, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">type=</span><span class="st">'o'</span>)</span>
 <span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Boot CI with the same default-span loess</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>boot_lo <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow=</span><span class="fu">nrow</span>(pred_design), <span class="at">ncol=</span><span class="dv">399</span>)</span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (b <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">399</span>) {</span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    xy_boot <span class="ot">&lt;-</span> xy_hat[<span class="fu">sample</span>(<span class="fu">nrow</span>(xy_hat), <span class="at">replace=</span><span class="cn">TRUE</span>), ]</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    reg_b <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_boot)</span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    boot_lo[, b] <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg_b, <span class="at">newdata=</span>pred_design)</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>boot_cb <span class="ot">&lt;-</span> <span class="fu">apply</span>(boot_lo, <span class="dv">1</span>, quantile,</span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>), <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot CI</span></span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a><span class="fu">polygon</span>(</span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(pred_design[[<span class="dv">1</span>]], <span class="fu">rev</span>(pred_design[[<span class="dv">1</span>]])),</span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(boot_cb[<span class="dv">1</span>, ], <span class="fu">rev</span>(boot_cb[<span class="dv">2</span>, ])),</span>
-<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, .<span class="dv">7</span>, .<span class="dv">7</span>, .<span class="dv">3</span>),</span>
-<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>)</span></code></pre></div>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>n_boot <span class="ot">&lt;-</span> <span class="dv">399</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>boot_lo <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow=</span><span class="fu">nrow</span>(pred_design), <span class="at">ncol=</span>n_boot)</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (b <span class="cf">in</span> <span class="fu">seq</span>(n_boot)) {</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Resample workers and refit loess</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    xy_boot <span class="ot">&lt;-</span> xy_hat[<span class="fu">sample</span>(<span class="fu">nrow</span>(xy_hat), <span class="at">replace=</span><span class="cn">TRUE</span>), ]</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>    reg_b <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_boot)</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>    boot_lo[, b] <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg_b, <span class="at">newdata=</span>pred_design)</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>boot_cb <span class="ot">&lt;-</span> <span class="fu">apply</span>(boot_lo, <span class="dv">1</span>, quantile,</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">probs=</span><span class="fu">c</span>(.<span class="dv">025</span>, .<span class="dv">975</span>), <span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot CI</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="fu">polygon</span>(</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(pred_design[[<span class="dv">1</span>]], <span class="fu">rev</span>(pred_design[[<span class="dv">1</span>]])),</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(boot_cb[<span class="dv">1</span>, ], <span class="fu">rev</span>(boot_cb[<span class="dv">2</span>, ])),</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, .<span class="dv">7</span>, .<span class="dv">7</span>, .<span class="dv">3</span>),</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>)</span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1251,18 +1254,18 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="do">## MAIN EXAMPLE</span></span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="do">## Use bootstrap to approximate sampling dist</span></span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>boot_stats <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow=</span><span class="dv">299</span>, <span class="at">ncol=</span><span class="dv">3</span>)</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(boot_stats) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'At the mean'</span>, <span class="st">'Mean'</span>, <span class="st">'SD'</span>)</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(boot_stats)){</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    xy_boot <span class="ot">&lt;-</span> xy_hat[<span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(xy_hat), <span class="at">replace=</span><span class="cn">TRUE</span>), ]</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    reg_lo_b <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_boot)</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    grad_m_b_hat <span class="ot">&lt;-</span> <span class="fu">grad_at_mean</span>(xy_boot, reg_lo_b)</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    grad_obs_b <span class="ot">&lt;-</span> <span class="fu">grad_by_obs</span>(xy_boot, reg_lo_b)</span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>    m_grad_b_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(grad_obs_b)</span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    s_grad_b_hat <span class="ot">&lt;-</span> <span class="fu">sd</span>(grad_obs_b)</span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    boot_stats[b, <span class="dv">1</span>] <span class="ot">&lt;-</span> grad_m_b_hat</span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    boot_stats[b, <span class="dv">2</span>] <span class="ot">&lt;-</span> m_grad_b_hat</span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>    boot_stats[b, <span class="dv">3</span>] <span class="ot">&lt;-</span> s_grad_b_hat</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>n_boot <span class="ot">&lt;-</span> <span class="dv">299</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>boot_stats <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow=</span>n_boot, <span class="at">ncol=</span><span class="dv">3</span>)</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(boot_stats) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'At the mean'</span>, <span class="st">'Mean'</span>, <span class="st">'SD'</span>)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (b <span class="cf">in</span> <span class="fu">seq</span>(n_boot)) {</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Resample workers and refit loess</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    xy_boot <span class="ot">&lt;-</span> xy_hat[<span class="fu">sample</span>(<span class="fu">nrow</span>(xy_hat), <span class="at">replace=</span><span class="cn">TRUE</span>), ]</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    reg_b <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_boot)</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Recompute the three summaries in tab_stats</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    grad_obs_b <span class="ot">&lt;-</span> <span class="fu">grad_by_obs</span>(xy_boot, reg_b)</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    boot_stats[b, <span class="st">'At the mean'</span>] <span class="ot">&lt;-</span> <span class="fu">grad_at_mean</span>(xy_boot, reg_b)</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    boot_stats[b, <span class="st">'Mean'</span>] <span class="ot">&lt;-</span> <span class="fu">mean</span>(grad_obs_b)</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>    boot_stats[b, <span class="st">'SD'</span>] <span class="ot">&lt;-</span> <span class="fu">sd</span>(grad_obs_b)</span>
 <span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a><span class="do">## SEs and CIs</span></span>
 <span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>boot_se <span class="ot">&lt;-</span> <span class="fu">apply</span>(boot_stats, <span class="dv">2</span>, sd)</span>
@@ -1421,12 +1424,12 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Jackknife SE for mean gradient</span></span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(xy_hat)</span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>jack_means <span class="ot">&lt;-</span> <span class="fu">numeric</span>(n)</span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n) {</span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>    xy_i  <span class="ot">&lt;-</span> xy_hat[<span class="sc">-</span>i, ]</span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>    reg_i  <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_i)</span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    grad_i <span class="ot">&lt;-</span> <span class="fu">grad_by_obs</span>(xy_i, reg_i)</span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>    jack_means[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(grad_i)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>jack_means <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, n)</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq</span>(n)) {</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>    xy_i <span class="ot">&lt;-</span> xy_hat[<span class="sc">-</span>i, ] <span class="co"># drop worker i</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>    reg_i <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_i)</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    grad_obs_i <span class="ot">&lt;-</span> <span class="fu">grad_by_obs</span>(xy_i, reg_i)</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>    jack_means[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(grad_obs_i)</span>
 <span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="do">## Jackknife SE</span></span>
@@ -1450,7 +1453,7 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 <section id="all-gradients" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="all-gradients"><strong>All Gradients</strong></h4>
 <p>The mean gradient can be near zero even when the gradients are not, because positive and negative gradients cancel. To test whether all gradients equal zero, <span class="citation" data-cites="Racine1997">Racine (<a href="#ref-Racine1997" role="doc-biblioref">1997</a>)</span> squares them so they cannot cancel.</p>
-<p><em>Racine’s statistic</em> is the mean of the squared gradients: <span class="math display">\[\hat{G}^2 = \frac{1}{n}\sum_{i=1}^{n} \hat{b}_{1}(x=\hat{x}_{i})^{2}.\]</span> It tests the null hypothesis that the population gradient is zero at every design point, <span class="math inline">\(H_{0}\)</span>: <span class="math inline">\(m_{Y}'(x)=0\)</span> for all <span class="math inline">\(x\)</span>.</p>
+<p><em>Racine’s statistic</em> is the mean of the squared gradients: <span class="math display">\[\hat{G}^2 = \frac{1}{n}\sum_{i=1}^{n} \hat{\text{grad}}(\hat{x}_{i})^{2}.\]</span> It tests the null hypothesis <span class="math inline">\(H_{0}\)</span>: the population gradient is zero at every design point.</p>
 <p>The statistic <span class="math inline">\(\hat{G}^2\)</span> is zero only when every gradient is zero, so only large values count against <span class="math inline">\(H_{0}\)</span>.</p>
 <div class="callout callout-style-default callout-tip no-icon callout-titled">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-11-contents" aria-controls="callout-11" aria-expanded="false" aria-label="Toggle callout">
@@ -1464,7 +1467,7 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 </div>
 <div id="callout-11" class="callout-11-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>Suppose wages rise with age early in a career and fall near retirement. A local model has gradients <span class="math inline">\(\hat{b}_{1}(x)\)</span> at ages <span class="math inline">\(x=(20, 30, 40, 50, 60)\)</span> equal to <span class="math inline">\((0.6, 0.3, 0, -0.3, -0.6)\)</span>. Compute the mean of the gradients and <span class="math inline">\(\hat{G}^2\)</span>.</p>
+<p>Suppose wages rise with age early in a career and fall near retirement. A local model has gradients <span class="math inline">\(\hat{\text{grad}}(x)\)</span> at ages <span class="math inline">\(x=(20, 30, 40, 50, 60)\)</span> equal to <span class="math inline">\((0.6, 0.3, 0, -0.3, -0.6)\)</span>. Compute the mean of the gradients and <span class="math inline">\(\hat{G}^2\)</span>.</p>
 <ul>
 <li>The mean of the gradients is <span class="math inline">\(\frac{0.6+0.3+0-0.3-0.6}{5} = 0\)</span>.</li>
 <li>Racine’s statistic is <span class="math inline">\(\frac{0.36+0.09+0+0.09+0.36}{5} = \frac{0.9}{5} = 0.18\)</span>.</li>
@@ -1493,25 +1496,28 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 <span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>racine_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(grad_obs<span class="sc">^</span><span class="dv">2</span>)</span>
 <span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="do">## Null permutation distribution: shuffle schooling across workers</span></span>
-<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>null_racine <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">299</span>)</span>
-<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(b <span class="cf">in</span> <span class="fu">seq_along</span>(null_racine)){</span>
-<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    xy_perm <span class="ot">&lt;-</span> xy_hat</span>
-<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>    xy_perm[, <span class="st">'x_hat'</span>] <span class="ot">&lt;-</span> <span class="fu">sample</span>(xy_perm[, <span class="st">'x_hat'</span>], <span class="at">replace=</span><span class="cn">FALSE</span>) <span class="do">## Reshuffle X</span></span>
-<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>    reg_lo_b <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_perm)</span>
-<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>    grad_obs_b <span class="ot">&lt;-</span> <span class="fu">grad_by_obs</span>(xy_perm, reg_lo_b)</span>
-<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>    null_racine[b] <span class="ot">&lt;-</span> <span class="fu">mean</span>(grad_obs_b<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>perm_cut <span class="ot">&lt;-</span> <span class="fu">quantile</span>(null_racine, <span class="at">probs=</span><span class="fl">0.95</span>)</span>
-<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot the null distribution, extending the axis to the observed statistic</span></span>
-<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(null_racine, <span class="at">breaks=</span><span class="dv">50</span>,</span>
-<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
-<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlim=</span><span class="fu">range</span>(<span class="fu">c</span>(null_racine, racine_hat)),</span>
-<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(G)<span class="sc">^</span><span class="dv">2</span>),</span>
-<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
-<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Null Permutation Distribution'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
-<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>racine_hat, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>) <span class="co"># observed statistic</span></span>
-<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>perm_cut, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)   <span class="co"># 95% permutation cutoff</span></span></code></pre></div>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>n_perm <span class="ot">&lt;-</span> <span class="dv">299</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>null_racine <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, n_perm)</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (b <span class="cf">in</span> <span class="fu">seq</span>(n_perm)) {</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Shuffle schooling and refit loess</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>    xy_perm <span class="ot">&lt;-</span> xy_hat</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>    xy_perm[, <span class="st">'x_hat'</span>] <span class="ot">&lt;-</span> <span class="fu">sample</span>(xy_hat[, <span class="st">'x_hat'</span>], <span class="at">replace=</span><span class="cn">FALSE</span>)</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>    reg_b <span class="ot">&lt;-</span> <span class="fu">loess</span>(y_hat <span class="sc">~</span> x_hat, <span class="at">data=</span>xy_perm)</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Recompute Racine's statistic</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>    grad_obs_b <span class="ot">&lt;-</span> <span class="fu">grad_by_obs</span>(xy_perm, reg_b)</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>    null_racine[b] <span class="ot">&lt;-</span> <span class="fu">mean</span>(grad_obs_b<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>perm_cut <span class="ot">&lt;-</span> <span class="fu">quantile</span>(null_racine, <span class="at">probs=</span><span class="fl">0.95</span>)</span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a><span class="do">## Plot the null distribution, extending the axis to the observed statistic</span></span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(null_racine, <span class="at">breaks=</span><span class="dv">50</span>,</span>
+<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">border=</span><span class="cn">NA</span>, <span class="at">freq=</span><span class="cn">FALSE</span>,</span>
+<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlim=</span><span class="fu">range</span>(<span class="fu">c</span>(null_racine, racine_hat)),</span>
+<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">xlab=</span><span class="fu">expression</span>(<span class="fu">hat</span>(G)<span class="sc">*</span><span class="st">''</span><span class="sc">^</span><span class="dv">2</span>),</span>
+<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">main=</span><span class="cn">NA</span>)</span>
+<span id="cb27-26"><a href="#cb27-26" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">'Null Permutation Distribution'</span>, <span class="at">font.main=</span><span class="dv">1</span>)</span>
+<span id="cb27-27"><a href="#cb27-27" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>racine_hat, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>) <span class="co"># observed statistic</span></span>
+<span id="cb27-28"><a href="#cb27-28" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v=</span>perm_cut, <span class="at">col=</span><span class="fu">rgb</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, .<span class="dv">8</span>), <span class="at">lwd=</span><span class="dv">2</span>)   <span class="co"># 95% permutation cutoff</span></span></code></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -1546,9 +1552,9 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 <h2 data-number="17.6" class="anchored" data-anchor-id="exercises"><span class="header-section-number">17.6</span> Exercises</h2>
 <ol type="1">
 <li><p>Comment the script you wrote for this chapter, then restart R and check that it runs from a clean session, then check the script with AI as explained in <a href="./04_A_WorkingWithAI.html">Working with AI</a>. Write three sentences from memory on the main statistical idea of this chapter, and ask the assistant what is wrong, vague, or missing. Finish with your own questions about whatever you found hardest.</p></li>
-<li><p>Using the <code>USArrests</code> dataset, fit a loess regression of <code>Murder</code> on <code>UrbanPop</code> with <code>span = 0.6</code>. Compute the finite-difference gradients <span class="math inline">\(\hat{b}_{1}(x)\)</span> and report their mean and standard deviation. Compare these to the OLS slope <span class="math inline">\(\hat{b}_{1}\)</span> from a simple linear regression.</p></li>
+<li><p>Using the <code>USArrests</code> dataset, fit a loess regression of <code>Murder</code> on <code>UrbanPop</code> with <code>span = 0.6</code>. Compute the finite-difference gradients <span class="math inline">\(\hat{\text{grad}}(x)\)</span> and report their mean and standard deviation. Compare these to the OLS slope <span class="math inline">\(\hat{b}_{1}\)</span> from a simple linear regression.</p></li>
 <li><p>Explain the difference between the gradient at the mean and the mean of the gradients. Why are the two equal for a simple linear regression? Describe a relationship between wages and schooling for which the mean of the gradients is larger than the gradient at the mean.</p></li>
-<li><p>Using the <code>Wages1</code> dataset and the default-span loess fit from this chapter, recompute the gradient at the mean, <span class="math inline">\(\hat{b}_{1}(x=\hat{m}_{X})\)</span>, as a finite difference with <span class="math inline">\(d=0.2\)</span> and with <span class="math inline">\(d=2\)</span> instead of <span class="math inline">\(d=1\)</span>. How much does it change, and how does the fitted curve near <span class="math inline">\(\hat{m}_{X}\)</span> explain the change?</p></li>
+<li><p>Using the <code>Wages1</code> dataset and the default-span loess fit from this chapter, recompute the gradient at the mean, <span class="math inline">\(\hat{\text{grad}}(x=\hat{m}_{X})\)</span>, as a finite difference with <span class="math inline">\(d=0.2\)</span> and with <span class="math inline">\(d=2\)</span> instead of <span class="math inline">\(d=1\)</span>. How much does it change, and how does the fitted curve near <span class="math inline">\(\hat{m}_{X}\)</span> explain the change?</p></li>
 <li><p>Using the loess fit from Exercise 2, compute the gradient at each observation with <code>grad_by_obs()</code>, and bootstrap the standard error of the mean gradient with <span class="math inline">\(B = 299\)</span> replicates. Test whether the mean gradient differs from zero.</p></li>
 </ol>
 <section id="further-reading" class="level4 unnumbered">
@@ -1560,7 +1566,7 @@ k\left(\hat{x}_{i}, x, h(x)\right) &amp;= \left(1 - \frac{|\hat{x}_{i}-x|^{3}}{h
 </section>
 <section id="recall" class="level4 unnumbered">
 <h4 class="unnumbered anchored" data-anchor-id="recall"><strong>Recall</strong></h4>
-<p>We used LOESS to reduce bias at the edges of the data and to avoid small samples where the data are sparse. We compared its fit with the line and the regressogram, both in sample and with cross-validation. We then summarized and tested the gradients of a LOESS fit to the <code>Wages1</code> data. At <span class="math inline">\(x=15\)</span>, the locally constant window mean of about <span class="math inline">\(6.29\)</span> fell far below the grouped mean of <span class="math inline">\(8.38\)</span>, while a line through the same window predicted about <span class="math inline">\(8.24\)</span>. The small worked example with <span class="math inline">\(\hat{y}^{\mathrm{pred}}(11.5)=9.2\)</span> and <span class="math inline">\(\hat{y}^{\mathrm{pred}}(12.5)=10.4\)</span> gave a finite-difference gradient <span class="math inline">\(\hat{b}_{1}(12)=1.2\)</span> dollars per year of schooling, and the gradient-vector example <span class="math inline">\((0.4, 0.8, 1.2, 0.9, 0.3)\)</span> at <span class="math inline">\(x=(8, 10, 12, 14, 16)\)</span> showed the gradient at the mean (<span class="math inline">\(1.2\)</span>) and the mean of the gradients (<span class="math inline">\(0.72\)</span>) diverging when the relationship bends. The mean gradient of the LOESS fit, about <span class="math inline">\(0.58\)</span> dollars per year of schooling, had a bootstrap standard error of about <span class="math inline">\(0.047\)</span> and a <span class="math inline">\(\hat{t}\)</span>-statistic of about <span class="math inline">\(12\)</span>, while the gradient at the mean, about <span class="math inline">\(0.24\)</span>, had a 95% confidence interval that included zero. Racine’s statistic <span class="math inline">\(\hat{G}^2\)</span>, about <span class="math inline">\(0.39\)</span>, was far above the <span class="math inline">\(95\%\)</span> permutation cutoff of about <span class="math inline">\(0.05\)</span>, so we rejected that all gradients are zero.</p>
+<p>We used LOESS to reduce bias at the edges of the data and to avoid small samples where the data are sparse. We compared its fit with the line and the regressogram, both in sample and with cross-validation. We then summarized and tested the gradients of a LOESS fit to the <code>Wages1</code> data. At <span class="math inline">\(x=15\)</span>, the locally constant window mean of about <span class="math inline">\(6.29\)</span> fell far below the grouped mean of <span class="math inline">\(8.38\)</span>, while a line through the same window predicted about <span class="math inline">\(8.24\)</span>. The small worked example with <span class="math inline">\(\hat{y}^{\mathrm{pred}}(11.5)=9.2\)</span> and <span class="math inline">\(\hat{y}^{\mathrm{pred}}(12.5)=10.4\)</span> gave a finite-difference gradient <span class="math inline">\(\hat{\text{grad}}(12)=1.2\)</span> dollars per year of schooling, and the gradient-vector example <span class="math inline">\((0.4, 0.8, 1.2, 0.9, 0.3)\)</span> at <span class="math inline">\(x=(8, 10, 12, 14, 16)\)</span> showed the gradient at the mean (<span class="math inline">\(1.2\)</span>) and the mean of the gradients (<span class="math inline">\(0.72\)</span>) diverging when the relationship bends. The mean gradient of the LOESS fit, about <span class="math inline">\(0.58\)</span> dollars per year of schooling, had a bootstrap standard error of about <span class="math inline">\(0.047\)</span> and a <span class="math inline">\(\hat{t}\)</span>-statistic of about <span class="math inline">\(12\)</span>, while the gradient at the mean, about <span class="math inline">\(0.24\)</span>, had a 95% confidence interval that included zero. Racine’s statistic <span class="math inline">\(\hat{G}^2\)</span>, about <span class="math inline">\(0.39\)</span>, was far above the <span class="math inline">\(95\%\)</span> permutation cutoff of about <span class="math inline">\(0.05\)</span>, so we rejected that all gradients are zero.</p>
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" role="list">
